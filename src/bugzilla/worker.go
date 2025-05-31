@@ -118,6 +118,7 @@ func (w *worker) downloadComment(in <-chan int) {
 				continue
 			}
 		}
+		fmt.Printf("worker %d downloaded %d comments for bug %d\n", w.id, len(comments), id)
 	}
 	fmt.Printf("worker %d finished\n", w.id)
 }
@@ -227,7 +228,7 @@ func DownloadComments(bugz *Client, dataDir string) error {
 	wg.Wait()
 
 	for _, w := range workers {
-		fmt.Printf("Worrker %d: finished with %d total errors\n", w.id, w.errcnt)
+		fmt.Printf("Worker %d: finished with %d total errors\n", w.id, w.errcnt)
 		totalErrors += w.errcnt
 	}
 	fmt.Printf("Total comments download errors: %d\n", totalErrors)
