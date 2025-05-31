@@ -108,7 +108,7 @@ func (w *worker) downloadComment(in <-chan int) {
 		for _, comment := range comments {
 			var bytes []byte
 			bytes, err = json.MarshalIndent(comment, "", " ")
-			dir := filepath.Join(w.dataDir, strconv.Itoa(comment.BugID))
+			dir := filepath.Join(w.dataDir, strconv.Itoa(comment.BugID/1000), strconv.Itoa(comment.BugID))
 			filename := filepath.Join(dir, fmt.Sprintf("comment-%d-%d.json", comment.BugID, comment.ID))
 
 			err = os.WriteFile(filename, bytes, 0o644)
@@ -142,7 +142,7 @@ func (w *worker) downloadAttachment(in <-chan int) {
 				continue
 			}
 
-			dir := filepath.Join(w.dataDir, strconv.Itoa(a.BugID))
+			dir := filepath.Join(w.dataDir, strconv.Itoa(a.BugID/1000), strconv.Itoa(a.BugID))
 			filename := filepath.Join(dir, fmt.Sprintf("attachment-%d-%d.json", a.BugID, a.ID))
 			err = os.WriteFile(filename, bytes, 0o644)
 			if err != nil {
