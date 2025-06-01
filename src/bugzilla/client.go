@@ -120,6 +120,7 @@ func (client *Client) GetBugs(bugIds []int) ([]Bug, error) {
 }
 
 func (client *Client) GetComments(bugID int) ([]Comment, error) {
+
 	apiURL := fmt.Sprintf("%s/bug/%d/comment", client.URL, bugID)
 	params := url.Values{}
 	params.Set("token", client.token)
@@ -131,7 +132,14 @@ func (client *Client) GetComments(bugID int) ([]Comment, error) {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode >= http.StatusBadRequest {
+	switch {
+	case response.StatusCode >= 100 && response.StatusCode <= 399:
+	// nop, all good
+	//case response.StatusCode == 429:
+	// TOO Many Requests.
+	//case response.StatusCode == 503:
+	//	// TODO retry
+	default:
 		return nil, fmt.Errorf("comment request error: %s", response.Status)
 	}
 

@@ -1,11 +1,14 @@
 package bugzilla
 
 import (
+	"bufio"
 	_ "context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,7 +24,7 @@ type worker struct {
 	id      int
 	client  *Client
 	wg      *sync.WaitGroup
-	errcnt  int
+	errors  map[int]bool
 	dataDir string
 }
 
@@ -50,8 +53,11 @@ func (w *worker) downloadBugs(limit int) {
 
 		bugs, err := w.client.GetBugs(bugIds)
 		if err != nil {
-			fmt.Printf("worker %d failed to download bugs: %s\n", w.id, err)
-			w.errcnt += 1
+			fmt.Printf("worker %d failed to download bugs [%s] %s\n", w.id, err)
+			for _, bug := range bugs {
+				w.errors[bug.ID] = true
+			}
+
 			continue
 		}
 
@@ -63,7 +69,7 @@ func (w *worker) downloadBugs(limit int) {
 			err = os.MkdirAll(dir, 0o755)
 			if err != nil {
 				fmt.Printf("worker %d failed to make directory for bug %d: %s\n", w.id, bug.ID, err)
-				w.errcnt += 1
+				w.errors[bug.ID] = true
 				continue
 			}
 			filename := filepath.Join(dir, fmt.Sprintf("bug-%d.json", bug.ID))
@@ -71,7 +77,7 @@ func (w *worker) downloadBugs(limit int) {
 			err = os.WriteFile(filename, bytes, 0o644)
 			if err != nil {
 				fmt.Printf("worker %d failed to save bug %d: %s\n", w.id, bug.ID, err)
-				w.errcnt += 1
+				w.errors[bug.ID] = true
 				continue
 			}
 		}
@@ -97,11 +103,11 @@ func (w *worker) downloadBugs(limit int) {
 func (w *worker) downloadComment(in <-chan int) {
 	defer w.wg.Done()
 
-	for id := range in {
-		comments, err := w.client.GetComments(id)
+	for bugid := range in {
+		comments, err := w.client.GetComments(bugid)
 		if err != nil {
-			fmt.Printf("Worker %d: failed to download comments for bug %d: %s\n", w.id, id, err)
-			w.errcnt++
+			fmt.Printf("Worker %d: failed to download comments for bug %d: %s\n", w.id, bugid, err)
+			w.errors[bugid] = true
 			continue
 		}
 
@@ -113,12 +119,11 @@ func (w *worker) downloadComment(in <-chan int) {
 
 			err = os.WriteFile(filename, bytes, 0o644)
 			if err != nil {
-				fmt.Printf("worker %d failed to save comment %d-%d: %s\n", w.id, comment.BugID, comment.ID, err)
-				w.errcnt += 1
+				w.errors[comment.BugID] = true
 				continue
 			}
 		}
-		fmt.Printf("worker %d downloaded %d comments for bug %d\n", w.id, len(comments), id)
+		fmt.Printf("worker %d downloaded %d comments for bug %d\n", w.id, len(comments), bugid)
 	}
 	fmt.Printf("worker %d finished\n", w.id)
 }
@@ -126,11 +131,11 @@ func (w *worker) downloadComment(in <-chan int) {
 func (w *worker) downloadAttachment(in <-chan int) {
 	defer w.wg.Done()
 
-	for id := range in {
-		attachments, err := w.client.GetAttachments(id)
+	for bugid := range in {
+		attachments, err := w.client.GetAttachments(bugid)
 		if err != nil {
-			fmt.Printf("worker %d failed to download attachments for bug %d: %s\n", w.id, id, err)
-			w.errcnt++
+			fmt.Printf("worker %d failed to download attachments for bug %d: %s\n", w.id, bugid, err)
+			w.errors[bugid] = true
 			continue
 		}
 
@@ -139,7 +144,7 @@ func (w *worker) downloadAttachment(in <-chan int) {
 			bytes, err = json.MarshalIndent(a, "", " ")
 			if err != nil {
 				fmt.Printf("worker %d: failed to download attachment %d for bug %d: %s\n", w.id, a.ID, a.BugID, err)
-				w.errcnt++
+				w.errors[a.BugID] = true
 				continue
 			}
 
@@ -148,11 +153,11 @@ func (w *worker) downloadAttachment(in <-chan int) {
 			err = os.WriteFile(filename, bytes, 0o644)
 			if err != nil {
 				fmt.Printf("worker %d: failed to save attachment %d for bug %d: %s\n", w.id, a.ID, a.BugID, err)
-				w.errcnt++
+				w.errors[a.BugID] = true
 				continue
 			}
 		}
-		fmt.Printf("worker %d downloaded %d attachments for bug %d\n", w.id, len(attachments), id)
+		fmt.Printf("worker %d downloaded %d attachments for bug %d\n", w.id, len(attachments), bugid)
 	}
 
 	fmt.Printf("%d finished\n", w.id)
@@ -184,8 +189,8 @@ func DownloadBugs(client *Client, dataDir string) error {
 	wg.Wait()
 
 	for _, w := range workers {
-		fmt.Printf("worker %d: finished with total errors: %d\n", w.id, w.errcnt)
-		totalErrors += w.errcnt
+		fmt.Printf("worker %d: finished with total errors: %d\n", w.id, len(w.errors))
+		totalErrors += len(w.errors)
 	}
 
 	fmt.Printf("Total bug download errors: %d\n", totalErrors)
@@ -227,9 +232,16 @@ func DownloadComments(bugz *Client, dataDir string) error {
 	close(idChan)
 	wg.Wait()
 
+	allErrors := make(map[int]bool)
 	for _, w := range workers {
-		fmt.Printf("Worker %d: finished with %d total errors\n", w.id, w.errcnt)
-		totalErrors += w.errcnt
+		fmt.Printf("Worker %d: finished with %d total errors\n", w.id, len(w.errors))
+		maps.Copy(w.errors, allErrors)
+		totalErrors += len(w.errors)
+	}
+
+	err = writeMapKeysToFile("comments-errors.txt", allErrors)
+	if err != nil {
+		return err
 	}
 	fmt.Printf("Total comments download errors: %d\n", totalErrors)
 	return nil
@@ -238,7 +250,7 @@ func DownloadComments(bugz *Client, dataDir string) error {
 func DownloadAttachments(client *Client, dataDir string) error {
 
 	var wg sync.WaitGroup
-	var errcnt int
+	var totalErrors int
 
 	dir := filepath.Join(dataDir, "bugzilla")
 
@@ -269,21 +281,18 @@ func DownloadAttachments(client *Client, dataDir string) error {
 		idChan <- id
 	}
 	close(idChan)
-
 	wg.Wait()
 
-	for _, d := range workers {
-		fmt.Printf("worker %d finished with %d errors\n", d.id, d.errcnt)
-		errcnt += d.errcnt
+	for _, w := range workers {
+		fmt.Printf("worker %w finished with %w errors\n", w.id, len(w.errors))
+		totalErrors += len(w.errors)
 	}
 
-	fmt.Printf("Total attachments download errors %d\n", errcnt)
-
+	fmt.Printf("Total attachments download errors %w\n", totalErrors)
 	return nil
 }
 
 func findMissingBugIDs(requiredIds []int, received []Bug) []int {
-
 	receivedMap := make(map[int]bool)
 	for _, bug := range received {
 		receivedMap[bug.ID] = true
@@ -338,5 +347,26 @@ func getDownloadedBugs(rootDir string) ([]int, error) {
 		return nil
 	})
 
+	sort.Ints(bugIds)
+
 	return bugIds, err
+}
+
+func writeMapKeysToFile(filename string, errors map[int]bool) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	for key := range errors {
+		_, err := writer.WriteString(strconv.Itoa(key) + "\n")
+		if err != nil {
+			return fmt.Errorf("failed to write key: %w", err)
+		}
+	}
+
+	return nil
 }
