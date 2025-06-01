@@ -1,0 +1,8 @@
+{
+ "id": 666491,
+ "bug_id": 168190,
+ "attachment_id": 0,
+ "creation_time": "2012-06-04T11:25:44Z",
+ "creator": "daniel@benzedrine.cx",
+ "text": "Here's a patch that directly tests this theory.\n\nIf correct, it will replace the panics with simple log messages that\nshow when ipfilter left an m_len==0 mbuf.\n\nDaniel\n\nIndex: sys/contrib/ipfilter/netinet/ip_fil_freebsd.c\n===================================================================\nRCS file: /home/ncvs/src/sys/contrib/ipfilter/netinet/ip_fil_freebsd.c,v\nretrieving revision 1.20.4.1\ndiff -u -r1.20.4.1 ip_fil_freebsd.c\n--- sys/contrib/ipfilter/netinet/ip_fil_freebsd.c       23 Sep 2011 00:51:37 -0000      1.20.4.1\n+++ sys/contrib/ipfilter/netinet/ip_fil_freebsd.c       4 Jun 2012 10:19:04 -0000\n@@ -182,8 +182,18 @@\n static int\n fr_check_wrapper(void *arg, struct mbuf **mp, struct ifnet *ifp, int dir)\n {\n+       int r;\n+\n        struct ip *ip = mtod(*mp, struct ip *);\n-       return fr_check(ip, ip-\u003eip_hl \u003c\u003c 2, ifp, (dir == PFIL_OUT), mp);\n+       ASSERT_HOST_BYTE_ORDER(*mp);\n+       r = fr_check(ip, ip-\u003eip_hl \u003c\u003c 2, ifp, (dir == PFIL_OUT), mp);\n+       if (*mp != NULL \u0026\u0026 (*mp)-\u003em_pkthdr.len \u003e= sizeof(struct ip) \u0026\u0026\n+           (*mp)-\u003em_len \u003c sizeof(struct ip)) {\n+               printf(\"fr_check_wrapper: m_len %d fixed\\n\",\n+                   (int)(*mp)-\u003em_len);\n+               *mp = m_pullup(*mp, sizeof(struct ip));\n+       }\n+       return r;\n }\n\n # ifdef USE_INET6"
+}

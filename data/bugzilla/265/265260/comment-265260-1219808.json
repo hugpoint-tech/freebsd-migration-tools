@@ -1,0 +1,8 @@
+{
+ "id": 1219808,
+ "bug_id": 265260,
+ "attachment_id": 0,
+ "creation_time": "2022-07-18T19:50:09Z",
+ "creator": "warioburn@yahoo.co.jp",
+ "text": "Oops, There was a mistake.\nChinese key is 0xF1, hanyoung key is 0xf2, as opposed to usb.\n\nAnyway, I found a workaround about xorg-xf86-input-keyboard.\n\nstatic int\nisKoreankey(unsigned char c)\n{\n\treturn c == 0xF1 || c== 0xF2;\n}\n\nstatic void\nstdReadInput(InputInfoPtr pInfo)\n{\n    KbdDevPtr pKbd = (KbdDevPtr) pInfo-\u003eprivate;\n    unsigned char rBuf[64];\n    int nBytes, i;\n    if ((nBytes = read( pInfo-\u003efd, (char *)rBuf, sizeof(rBuf))) \u003e 0) {\n       for (i = 0; i \u003c nBytes; i++)\n\t\tif(isKoreankey(rBuf[i])){\n\t\t  pKbd-\u003ePostEvent(pInfo, rBuf[i], TRUE);\n\t\t  pKbd-\u003ePostEvent(pInfo, rBuf[i], FALSE);\n\t\t }else{\n\t\t\tpKbd-\u003ePostEvent(pInfo, rBuf[i] \u0026 0x7f,\n\t\t\trBuf[i] \u0026 0x80 ? FALSE : TRUE);\n\t\t}\n       }\n}\n\nIt's not pretty code, but it seems to work. If there is no problem, I'll make a bug report about it later.\n\n\nIt's not ideal, but I think there is no choice but to take the same approach for evdev .\n\nif (keycode != KEY_RESERVED) {\n if(Korean key){\n  evdev_push_event(state-\u003eks_evdev, EV_KEY,(uint16_t)keycode, 1);\n  evdev_push_event(state-\u003eks_evdev, EV_KEY,(uint16_t)keycode, 0);\n  evdev_sync(state-\u003eks_evdev);\n \n }else{\n \n  //do like before\n\n }\n\n}\n\nK_CODE mode also similar code.\n\n/* keycode to key action */\n\naction = genkbd_keyaction(kbd, keycode, scancode \u0026 0x80,\n\n\u0026state-\u003eks_state, \u0026state-\u003eks_accents);\n\nThe workaround will be similar."
+}

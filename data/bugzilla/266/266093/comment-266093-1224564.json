@@ -1,0 +1,8 @@
+{
+ "id": 1224564,
+ "bug_id": 266093,
+ "attachment_id": 0,
+ "creation_time": "2022-08-29T06:34:12Z",
+ "creator": "t_uemura@macome.co.jp",
+ "text": "I've noticed that on 13.1-STABLE stable/13-n251859-8d4ccb9da29-dirty, my Adafruit PCF8523 RTC on either RPi2B or RPi3B+ failed to work around 80 ~ 90 % of boot-ups, by printing the following log lines.\n\nnxprtc0: \u003cNXP PCF8523 RTC\u003e at addr 0xd0 on iicbus0\nnxprtc0: cannot set up timer\nWarning: no time-of-day clock registered, system time will not be set accurately\n\nThe following log could be seen rarely but on successful boot-ups.\n\nnxprtc0: \u003cNXP PCF8523 RTC\u003e at addr 0xd0 on iicbus0\nnxprtc0: registered as a time-of-day clock, resolution 0.015625s\n\nI've tried the same kernel but with the old 18cd8a2df868a3a7154172348f8bc61f699e78d4 nxprtc.ko and found it worked like a charm. The next revision 2444018f7dd3c0ecd1099d63de0a856e7f6b1984 seemed to introduce a hitch.\n\n\"cannot set up timer\" was printed because pcf8523_start_timer(sc) returned non-zero in nxprtc_start(), so I've added some device_printf() calls and observed that one of the following register access failed.\n\nread_reg(sc, PCF8523_R_TMR_A_FREQ, \u0026tmrfreq)\nread_reg(sc, PCF8523_R_TMR_CLKOUT, \u0026clkout)\nwrite_reg(sc, sc-\u003etmcaddr, 0)\n\npcf8523_start_timer() itself was unmodified in 2444018f7dd3c0ecd1099d63de0a856e7f6b1984 so I couldn't guess the root cause of the above register access failure."
+}

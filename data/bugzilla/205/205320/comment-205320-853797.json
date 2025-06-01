@@ -1,0 +1,8 @@
+{
+ "id": 853797,
+ "bug_id": 205320,
+ "attachment_id": 0,
+ "creation_time": "2015-12-14T16:38:00Z",
+ "creator": "elofu17@hotmail.com",
+ "text": "In e.g. 'netstat -B', the Recv column show the total amount of packets received by BPF.\n\nQuite often, this value is *less* than the Match value.\nThis should be impossible!\n\nExample:\n\nI send 2000000 packets to ix1 while running tcpdump on it.\nAfter the 2000000 packets are sent, I run:\n\n# netstat -B\n  Pid Netif   Flags   Recv    Drop Match   Sblen Hblen Command\n25553 bridge0 p--s--- 1996862 0    2000000 0     0     tcpdump\n\n1996862 is less than 2000000.\n\n\n\nI reported this to the freebsd-net maillist where Alexander V. Chernikov replied that \"Recv\" is read from d-\u003ebd_rcount, which is not a per-cpu counter. Also it is incremented in an unlocked state.\n\"Match\" on the other hand increases when filter returned a match condition, and use a (w)locked bpf descriptor, so this one is accurate.\n\n\nAll sniffing tools that report some form of BPF statistics (snort, suricata, tcpdump, tshark, etc) give very confusing and inaccurate values.\nThis need to be fixed.\n\n/Elof"
+}

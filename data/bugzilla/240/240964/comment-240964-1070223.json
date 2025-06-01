@@ -1,0 +1,8 @@
+{
+ "id": 1070223,
+ "bug_id": 240964,
+ "attachment_id": 0,
+ "creation_time": "2019-10-06T09:02:31Z",
+ "creator": "lantw44@gmail.com",
+ "text": "(In reply to Walter Schwarzenfeld from comment #7)\nThis is still a workaround. You just made the #ifdef check be always false because you checked it before including files which could define it. Therefore, the patch you wrote\n\n+#ifdef Q_OS_FREEBSD\n+#include \u003cdev/evdev/input.h\u003e\n+#else\n+#include \u003clinux/input.h\u003e\n+#endif\n\nis effectively\n\n+#include \u003clinux/input.h\u003e\n\nbecause the false branch is always taken.\n\nThe reason of the compilation error is that both dev/evdev/input.h (from base) and linux/input.h (from devel/evdev-proto) declare the same things. They use different macros as header guards, so including one does not prevent the other one from being included. If a source file includes both header files, it cannot be compiled because of the redefinition error shown above.\n\nQt uses dev/evdev/input.h here, while mtdev.h provided by devel/libmtdev uses linux/input.h. Since Qt also includes mtdev.h in this file, it causes a conflict. This doesn't happen in poudriere because devel/libmtdev does not RUN_DEPENDS on devel/evdev-proto, so devel/evdev-proto isn't installed in the poudriere environment. Therefore, even if devel/libmtdev is pulled in by x11/libinput and installed in the poudriere environment, Qt still disables mtdev because including mtdev.h causes an error due to missing linux/input.h.\n\nI think devel/libmtdev should add devel/evdev-proto as RUN_DEPENDS, and headers installed by devel/evdev-proto should probably guard equivalent headers from base from being included."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1250025,
+ "bug_id": 270048,
+ "attachment_id": 0,
+ "creation_time": "2023-03-08T20:49:02Z",
+ "creator": "freebsd@tim.thechases.com",
+ "text": "To replicate\n\n $ yes hello | head -50 | fmt -100 \u003e wide_lines.txt\n $ vi wide_lines.txt\n :.!fmt\n\ncorrectly formats the first line as expected.  However attempting \nto reformat each individual line with:\n\n :g/^/.!fmt \n\nerrors with \"\"\"\n+=+=+=+=+=+=+=+\nIllegal address: only 6 lines in the file.\nError: unable to retrieve line 7; 4 lines added; 2 lines deleted\nPress any key to continue: \n\"\"\"\n\n(the \"4 lines added; 2 lines deleted\" and possibly the \"Press any \nkey to continue\" might be a screen artifact from prior to the error\nmessage since it's not in reverse video like the rest of the error)\n\nExpected behavior:  each individual line gets passed through fmt(1) \nto reformat it.\n\nObserved behavior:  an error about the number of lines in the file\nand only a portion of the lines are properly reformatted.\n\nIt sounds like something isn't re-calculating the number of lines \nin the file before/after a \"!{cmd}\" invocation within the context \nof a :g// command.  Or perhaps the lines marked by the g:// don't \nget updated after reading data output of an external \"!{cmd}\"\n\nFWIW, this manifests in OpenBSD's nvi(1), too.\n\n(bug encountered when using composing a mail message, wanting to reformat long lines individually rather than by paragraph)"
+}

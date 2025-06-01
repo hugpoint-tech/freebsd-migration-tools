@@ -1,0 +1,8 @@
+{
+ "id": 1284971,
+ "bug_id": 275232,
+ "attachment_id": 246464,
+ "creation_time": "2023-11-21T14:00:49Z",
+ "creator": "pen@lysator.liu.se",
+ "text": "Created attachment 246464\nPatch to fix three small memory leaks in libc / acl_to_text()\n\nThere is a couple of small memory leaks in the libc functions acl_to_text() ad acl_to_text_np() - if the ACL contains user: and/or group: entries then it will leak about sizeof(uid_t) allocated blocks for each ACL entry...\n\n\nCompile with \"cc -g\" and then run with \"valgrind --leak-check=full ./a.out\":\n\n#include \u003cstdio.h\u003e\n#include \u003csys/acl.h\u003e\n\nint\nmain(int argc,\n     char *argv[]) {\n    acl_t a;\n    acl_entry_t e;\n    uid_t uid;\n\n\n    a = acl_init(1);\n    acl_create_entry(\u0026a, \u0026e);\n    acl_set_tag_type(e, ACL_USER);\n    uid = 1001;\n    acl_set_qualifier(e, \u0026uid);\n    acl_set_entry_type_np(e, ACL_ENTRY_TYPE_ALLOW);\n\n    char *s = acl_to_text(a, NULL);\n    puts(s);\n    acl_free(s);\n    acl_free(a);\n    return 0;\n}\n\n\n==94097== 4 bytes in 1 blocks are definitely lost in loss record 1 of 10\n==94097==    at 0x484CBE4: malloc (vg_replace_malloc.c:435)\n==94097==    by 0x4953AB3: acl_get_qualifier (in /lib/libc.so.7)\n==94097==    by 0x49556B8: ??? (in /lib/libc.so.7)\n==94097==    by 0x201B0D: main (acl_to_text_leak.c:20)\n\nThere are at least three missed acl_free() calls for returned identifiers from acl_get_qualifier() in lib/libc/posix1e/acl_to_text_nfs4.c"
+}

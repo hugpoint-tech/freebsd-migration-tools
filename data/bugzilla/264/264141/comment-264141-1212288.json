@@ -1,0 +1,8 @@
+{
+ "id": 1212288,
+ "bug_id": 264141,
+ "attachment_id": 0,
+ "creation_time": "2022-05-22T05:27:29Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "nda is an alternative to nvd that uses CAM. Unless you need really high IOPS, nda generally is better than nvd.\n\nIn loader.conf, add 'hw.nvme.use_nvd=0' and reboot.\n\nWe provide a compatible /dev/nvd* that points to /dev/nda* so almost all uses of /dev/nvd* should work. But with zfs, chances are you won't notice.\n\nI wrote this code, but had trouble driving the nvme drives I have access too off the cliff to test all pathological behaviors. This is one I tested in simulation.\n\nHowever, looking at the code, I fear that this workaround likely won't help you. The message happens when we fail the controller, and that seems to be happening when reset fails (which we should report directly, but apparently don't).\n\nDo you have issues with the machines being too hot or having poor airflow over the nvme cards so they get too hot? In general, FreeBSD (or any OS) shouldn't be able to schedule so much I/O that the card's SoC controller fails... At least not in a repeatable way across multiple drive types. The 'possible hotplug' means we read all 'f's before trying to do a reset. If the card isn't there at all, we'll timeout and fail the controller (which maybe what's really going on). That suggests power and/or cabling issues if it isn't thermal somehow. It would be good to eliminate these possibilities if at all possible."
+}

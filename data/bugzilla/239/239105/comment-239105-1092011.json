@@ -1,0 +1,8 @@
+{
+ "id": 1092011,
+ "bug_id": 239105,
+ "attachment_id": 0,
+ "creation_time": "2020-03-11T11:00:16Z",
+ "creator": "paulo@nlink.com.br",
+ "text": "This problem can be solved using same solution adopted in FreeNAS but inside ports:\n\ncat \u003c\u003c __EOF__ \u003e /usr/ports/net/samba410/files/patch-bfs-provisioning\n--- source3/param/loadparm.c.orig\t2020-03-11 07:17:30.827605000 -0300\n+++ source3/param/loadparm.c\t2020-03-11 07:20:28.867874000 -0300\n@@ -2742,6 +2742,13 @@\n \t\tif (!vfs_objects || !vfs_objects[0]) {\n \t\t\tif (lp_parm_const_string(-1, \"xattr_tdb\", \"file\", NULL)) {\n \t\t\t\tlp_do_parameter(-1, \"vfs objects\", \"dfs_samba4 acl_xattr xattr_tdb\");\n+\t/*\n+ \t * By default, the samba sysvol is located in the statedir. Provisioning will fail in setntacl\n+ \t * unless we have zfacl enabled. Unfortunately, at this point the smb.conf has not been generated.\n+ \t * This workaround is freebsd-specific.\n+ \t */\n+\t\t\t} else if (pathconf(get_dyn_STATEDIR(), _PC_ACL_NFS4) == 1){\n+\t\t\t\tlp_do_parameter(-1, \"vfs objects\", \"dfs_samba4 zfsacl\");\n \t\t\t} else if (lp_parm_const_string(-1, \"posix\", \"eadb\", NULL)) {\n \t\t\t\tlp_do_parameter(-1, \"vfs objects\", \"dfs_samba4 acl_xattr posix_eadb\");\n \t\t\t} else {\n__EOF__\n\nand \ncd /usr/ports/net/samba410\nmake reinstall clean\n\nWith a little bit more time can found an equivalent solution for UFS with ACLS\n\nIt isn't a FreeBSD problema how we can found at internet.\n\nThanks,\nPaulo Fragoso."
+}

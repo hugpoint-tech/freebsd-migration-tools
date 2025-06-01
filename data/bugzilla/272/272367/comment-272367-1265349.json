@@ -1,0 +1,8 @@
+{
+ "id": 1265349,
+ "bug_id": 272367,
+ "attachment_id": 0,
+ "creation_time": "2023-07-04T18:37:37Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "Quick look suggests this is about the P_ADVLOCK flag, which to my reading is not being set for the child. Then fdclosexec -\u003e ... -\u003e closef fails to take action here:\n\n        if (fp-\u003ef_type == DTYPE_VNODE) {\n                vp = fp-\u003ef_vnode;\n                if ((td-\u003etd_proc-\u003ep_leader-\u003ep_flag \u0026 P_ADVLOCK) != 0) {\n                        lf.l_whence = SEEK_SET;\n                        lf.l_start = 0;\n                        lf.l_len = 0;\n                        lf.l_type = F_UNLCK;\n                        (void) VOP_ADVLOCK(vp, (caddr_t)td-\u003etd_proc-\u003ep_leader,\n                            F_UNLCK, \u0026lf, F_POSIX);\n                }\n\nI don't know what the real semantics are supposed to be here. If any close by *anyone* is supposed to do the unlock, then this should be patched to something like this:\n\ndiff --git a/sys/kern/kern_descrip.c b/sys/kern/kern_descrip.c\nindex 908c3352514b..fc03137f6c24 100644\n--- a/sys/kern/kern_descrip.c\n+++ b/sys/kern/kern_descrip.c\n@@ -2790,7 +2790,7 @@ closef(struct file *fp, struct thread *td)\n         */\n        if (fp-\u003ef_type == DTYPE_VNODE) {\n                vp = fp-\u003ef_vnode;\n-               if ((td-\u003etd_proc-\u003ep_leader-\u003ep_flag \u0026 P_ADVLOCK) != 0) {\n+               if ((fp-\u003ef_flag \u0026 FHASLOCK) != 0) {\n                        lf.l_whence = SEEK_SET;\n                        lf.l_start = 0;\n                        lf.l_len = 0;"
+}

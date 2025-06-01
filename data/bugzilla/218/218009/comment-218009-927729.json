@@ -1,0 +1,8 @@
+{
+ "id": 927729,
+ "bug_id": 218009,
+ "attachment_id": 0,
+ "creation_time": "2017-03-26T21:00:46Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "The kldload handler invokes a DTrace callback that inspects the newly loaded file's symbol table and creates probes. The issue is that it runs after the kernel linker invokes sysinits, so we can't trace, for instance, vmm_handler() and its callees.\n\ndtrace -Z does otherwise work properly with FBT probes, but there's another bug that breaks it for SDT probes: the sdt provider registers probes from its own callback rather than via dtps_provide_module method. (This is due to lock ordering issues.) But dtrace's callback searches for matches of retained enablings, and it runs before the sdt callback, so we don't end up matching probes. To address this, we just need to adjust the ordering with EVENTHANDLER_REGISTER."
+}

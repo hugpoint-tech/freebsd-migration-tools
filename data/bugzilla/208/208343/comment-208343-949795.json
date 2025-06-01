@@ -1,0 +1,8 @@
+{
+ "id": 949795,
+ "bug_id": 208343,
+ "attachment_id": 0,
+ "creation_time": "2017-08-28T23:11:46Z",
+ "creator": "kaho@elam.kais.kyoto-u.ac.jp",
+ "text": "(In reply to Marius Strobl from comment #47)\n\nif_em.c at r322955 in 11-stable:\n\n5294\tif (eeprom_data \u0026 apme_mask)\n5295\t\tadapter-\u003ewol = (E1000_WUFC_MAG | E1000_WUFC_MC);\n\nDo you describe about it? Yes, it sets both WOL_MAGIC and WOL_MCAST.\nBut then only WOL_MAGIC is enabled in line 3260.\nBy default, em(4) sets all WOL capabilities and enables only WOL_MAGIC,\nif EEPROM enabled WOL. If EEPROM disabled WOL, all WOL capabilities\nare disabled.\n\n3257\t/* Enable only WOL MAGIC by default */\n3258\tif (adapter-\u003ewol) {\n3259\t\tif_setcapabilitiesbit(ifp, IFCAP_WOL, 0);\n3260\t\tif_setcapenablebit(ifp, IFCAP_WOL_MAGIC, 0);\n3261\t}\n\n At suspend or shutdown time, these bits are cleared,\nif the functionalities are disabled.\n\n5361\t/*\n5362\t** Determine type of Wakeup: note that wol\n5363\t** is set with all bits on by default.\n5364\t*/\n5365\tif ((if_getcapenable(ifp) \u0026 IFCAP_WOL_MAGIC) == 0)\n5366\t\tadapter-\u003ewol \u0026= ~E1000_WUFC_MAG;\n5367\n5368\tif ((if_getcapenable(ifp) \u0026 IFCAP_WOL_MCAST) == 0)\n5369\t\tadapter-\u003ewol \u0026= ~E1000_WUFC_MC;"
+}

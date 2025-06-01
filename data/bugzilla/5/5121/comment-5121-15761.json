@@ -1,0 +1,8 @@
+{
+ "id": 15761,
+ "bug_id": 5121,
+ "attachment_id": 0,
+ "creation_time": "1997-11-21T21:40:00Z",
+ "creator": "mph@pobox.com",
+ "text": "\nAs discussed in freebsd-questions, the Cyrix 6x86 has a lockup\nbug that should be cured with the CPU_CYRIX_NO_LOCK kernel option.\n\nFor more info, see http://www.tux.org/~balsa/linux/cyrix/p11.html.\n\ninitcpu.c reads:\n\n        /* Initialize CCR0. */\n        write_cyrix_reg(CCR0, read_cyrix_reg(CCR0) | CCR0_NC1);\n\n        /* Initialize CCR1. */\n#ifdef CPU_CYRIX_NO_LOCK\n        write_cyrix_reg(CCR0, read_cyrix_reg(CCR0) | CCR1_NO_LOCK);\n#else\n#ifdef FAILSAFE\n        write_cyrix_reg(CCR0, read_cyrix_reg(CCR0) \u0026 ~CCR1_NO_LOCK);\n#endif\n#endif\n\nWhen the comments and the code disagree, it's a good sign that something\nis wrong.  In fact, the code is modifying the wrong register, CCR0\ninstead of CCR1.  With initcpu.c unchanged, and CPU_CYRIX_NO_LOCK\ndefined, the machine is still susceptible to the attack.\n\nFix: Apply the following patch to initcpu.c; with this patch, and\nCPU_CYRIX_NO_LOCK defined, the attack just runs forever, and can\nbe stopped with control-C.\n\nHow-To-Repeat: \nDo not modify initcpu.c.  Compile with the CPU_CYRIX_NO_LOCK option.\nRun the exploit:\n\nstatic unsigned char c[4] = {0x36, 0x78, 0x38, 0x36};\n\nmain() {\n\tasm (\"movl $_c, %ebx\\n\\t\"\n\t\"again: xchgl (%ebx), %eax\\n\\t\"\n\t\"movl %eax, %edx\\n\\t\"\n\t\"jmp again\\n\\t\");\n}"
+}

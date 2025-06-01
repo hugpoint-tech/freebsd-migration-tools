@@ -1,0 +1,8 @@
+{
+ "id": 1037721,
+ "bug_id": 235747,
+ "attachment_id": 0,
+ "creation_time": "2019-02-14T17:21:09Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "vmem_bt_alloc() is somewhat magical in that it must use the vmem allocator to allocate boundary tags for the vmem allocator.  It uses a reserve of boundary tags and a global mutex to avoid infinite recursion.  If the reserve somehow gets depleted, vmem_bt_alloc() effectively gets stuck and the system will grind to a halt; jhibbits has observed this happening on a powerpc64 platform.\n\nI think this can happen in the following scenario: vmem_bt_alloc() calls vmem_xalloc() on the per-domain kernel arena and puts some reserved boundary tags into the arena's pool.  The attempt to allocate a KVA range subsequently fails because the per-domain arena has no free ranges and we cannot import from kernel_arena because it is too fragmented to satisfy a KVA_QUANTUM-sized allocation.  So, vmem_xalloc() fails, leaving the reserved boundary tags up for grabs.  Later, even if the per-domain kernel arena can satisfy an allocation for vmem_bt_alloc(), we may not have any boundary tags left to actually perform the allocation, and we're stuck."
+}

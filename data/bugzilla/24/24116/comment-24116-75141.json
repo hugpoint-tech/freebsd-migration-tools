@@ -1,0 +1,8 @@
+{
+ "id": 75141,
+ "bug_id": 24116,
+ "attachment_id": 0,
+ "creation_time": "2001-01-06T21:30:01Z",
+ "creator": "archie@packetdesign.com",
+ "text": "\n\tWhen pcap_compile_nopcap() returns an error, subsequent\n\tcompilations of valid input also (incorrectly) return\n\tan error.\n\n\tAs a side note, there's no way to get the error string\n\twhen pcap_compile_nopcap() is used because pcap_geterr()\n\trequires a pcap_t * which you don't have if you're using\n\tpcap_compile_nopcap(). So a feature request is that\n\tpcap_geterr() accept NULL as an argument and if so return\n\tthe error from the most recent call to pcap_compile_nopcap().\n\nFix: \n\nI'm going to work on this one myself but wanted to\n\trecord it as a PR anyway.\nHow-To-Repeat: \n\tRun this program:\n\n\t#include \u003cstdio.h\u003e\n\t#include \u003cstdlib.h\u003e\n\t#include \u003cerr.h\u003e\n\t#include \u003cpcap.h\u003e\n\n\t#include \u003cnet/ethernet.h\u003e\n\n\tstatic char *tests[] = {\n\t\t\"pcaptest\",\n\t\t\"tcp dst port 80\",\n\t\t\"udp dst host 1.1.1.1 and tcp port 80\",\n\t\t\"tcp dst port 80\",\n\t};\n\n\tint\n\tmain(int ac, char **av)\n\t{\n\t\tstruct bpf_program bpf;\n\t\tint i, r;\n\n\t\tif (ac \u003c 2) {\n\t\t\tac = sizeof(tests) / sizeof(*tests);\n\t\t\tav = tests;\n\t\t}\n\n\t\tmemset(\u0026bpf, 0, sizeof(bpf));\n\t\tfor (i = 1; i \u003c ac; i++) {\n\t\t\tprintf(\"Compiling \\\"%s\\\"\\n\", av[i]);\n\t\t\tr = pcap_compile_nopcap(ETHER_MAX_LEN - ETHER_HDR_LEN,\n\t\t\t    DLT_RAW, \u0026bpf, av[i], 1, ~0);\n\t\t\tif (r != 0)\n\t\t\t\tprintf(\"--\u003e Failed\\n\");\n\t\t\telse\n\t\t\t\tprintf(\"--\u003e OK\\n\");\n\t\t}\n\n\t\treturn (0);\n\t}\n\n\tThe third compilation should succeed, but it fails."
+}

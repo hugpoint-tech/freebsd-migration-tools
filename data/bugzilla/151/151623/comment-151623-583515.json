@@ -1,0 +1,8 @@
+{
+ "id": 583515,
+ "bug_id": 151623,
+ "attachment_id": 0,
+ "creation_time": "2010-10-21T17:30:10Z",
+ "creator": "vivek@khera.org",
+ "text": "\t\n\nI updated a box running apache 2.2 with multiple profiles to the 2.2.16_2\nversion. Controlling the individual profiles suddenly stopped working, and I\ntraced it down to the pidfile being written incorrectly.  It was always\nwriting the pid file as /var/run/httpd.pid regardless of the profile I was\nstarting.\n\nI looked into the port's change long on freshports and discovered that the\npatch from 2.2.16_1 to 2.2.16_2 introduced this change.  The comment indicates\nthat \"With profiles the old defaults remain unchanged\" which is incorrect.  To\nachieve this change the following patch is required.\n\nThis would have been disastrous had this happened on a production server\nrather than a development server.\n\nFix: This patch restores the original default pid file value for systems with\napache and profiles.  Without it, each apache instance will overwrite the\n/var/run/httpd.pid file causing great confusion when you try to stop/restart\none of the profiles.\n\nYou can still override the pid file with the new config settings (which are\ntotally not documented in the apache22 rc.d file, either.)\n\nHow-To-Repeat: \t\n\nSet up a system running 2.2.16_1 with at least two profiles that write to\ndifferent PID files. They will be named /var/run/httpd.PROFILENAME.pid\n\nNow upgrade to 2.2.16_2 and start the profiles.  Now try to stop just one of\nthem.  The one started last will be stopped because the pidfile is now called\n/var/run/httpd.pid for all instances.\n\nNote also how it totally overrides the PidFile directive in the httpd.conf for\neach profile."
+}

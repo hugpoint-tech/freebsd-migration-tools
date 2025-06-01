@@ -1,0 +1,8 @@
+{
+ "id": 1013477,
+ "bug_id": 231728,
+ "attachment_id": 0,
+ "creation_time": "2018-09-29T14:02:55Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "(In reply to Andrey V. Elsukov from comment #11)\n\nYupp.  That was the obvious one.  I kept wondering if we can hit this otherwise and came to the conclusion only if bind or connect do something wrong.  Would you agree?\n\nCan you try this patch?\n\nIndex: sys/netinet6/udp6_usrreq.c\n===================================================================\n--- sys/netinet6/udp6_usrreq.c  (revision 338966)\n+++ sys/netinet6/udp6_usrreq.c  (working copy)\n@@ -784,8 +784,20 @@ udp6_output(struct socket *so, int flags_arg, stru\n                        return ((*pru-\u003epru_send)(so, flags_arg, m,\n                            (struct sockaddr *)sin6, control, td));\n                }\n+       } else\n+#endif\n+       if (IN6_IS_ADDR_V4MAPPED(\u0026sin6-\u003esin6_addr)) {\n+               /*\n+                * Given this is either an IPv6-only socket or not INET is\n+                * supported we will fail the send if the given destination\n+                * address is a v4mapped address.\n+                */\n+               if (unlock_inp == UH_WLOCKED)\n+                       INP_WUNLOCK(inp);\n+               else\n+                       INP_RUNLOCK(inp);\n+               return (EINVAL);\n        }\n-#endif\n\n        if (control) {\n                if ((error = ip6_setpktopts(control, \u0026opt,"
+}

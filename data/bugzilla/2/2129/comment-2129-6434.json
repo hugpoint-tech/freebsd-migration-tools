@@ -1,0 +1,8 @@
+{
+ "id": 6434,
+ "bug_id": 2129,
+ "attachment_id": 0,
+ "creation_time": "1996-11-30T15:20:01Z",
+ "creator": "simokawa@sat.t.u-tokyo.ac.jp",
+ "text": "\nI have trouble with using 2.1.x binaries on 2.2-ALPHA.\nThey are linked with libc.so.2.2 and they can not get a passwd entry for\nNIS users.\n\nLike the followings,\n(User simokawa is not in local passwd file but in NIS map.)\n% csh\n% echo ~simokawa\n/home/sat/simokawa\n% zsh\n% echo ~simokawa\nzsh: user not found: simokawa\n% ldd /usr/local/bin/zsh\n/usr/local/bin/zsh:\n        -ltermcap.2 =\u003e /usr/lib/libtermcap.so.2.1 (0x8065000)\n\t-lc.2 =\u003e /usr/lib/libc.so.2.2 (0x8069000)\n\nIf I rebuild pwd.db by old pwd_mkdb or relink zsh with libc.so.3.0,\nit works fine.\n\nI think this is very bad and many pepole upgrading to 2.2 will\nencounter same problem. It takes me more than 2 weeks to find out the\nreason :-(.\n\n\nI guess this is because of the following change on mk_pwd.c\n\n-----\nrevision 1.10\ndate: 1996/04/16 00:23:59;  author: wpaul;  state: Exp;  lines: +11 -56\nNIS cleanups and fixes, the next generation, continued.\n\npwd_mkdb.c:\n\n- Don't save the PLUSCNT and MINUSCNT tokens: we don't need them anymore.\n\n- Count the + and - entires for NIS together instead of counting + and -\n  entries seperately. Index all special NIS entries using new _PW_KEYYPBYNUM\n  token.\n\npwd.h:\n\n- Remove the PLUSBYNUM, MINUSBYNUM, PLUSCNT and MINUSCNT tokens and replace\n  then with a single _PW_KEYYPBYNUM token.\n----\n\nFix: \n\npwd_mkdb.c should have compatibility with old libc.\n\tChanging pwd_mkdb.c, so that it adds PLUSBYNUM, MINUSBYNUM,\n\tPLUSCNT and MINUSCNT tokens to pwd.db, should solve this problem,\n\tbut I'm not sure.\nHow-To-Repeat: \n\tSee above."
+}

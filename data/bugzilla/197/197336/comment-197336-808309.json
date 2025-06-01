@@ -1,0 +1,8 @@
+{
+ "id": 808309,
+ "bug_id": 197336,
+ "attachment_id": 152566,
+ "creation_time": "2015-02-04T23:19:51Z",
+ "creator": "wdormann@gmail.com",
+ "text": "Created attachment 152566\npython script to generate a bunch of subdirectories with files in them\n\nWhen a directory has more than 32765 subdirectories in it, the find command fails to find all of the contents if the find command is executed in a ZFS filesystem. \nIf the same command is executed in another filesystem that FreeBSD supports that also supports large counts of subdirectories, the find command sees everything.  I've confirmed the correct behavior with both Reiserfs and unionfs.  So it appears to be something about the interaction between find and ZFS that triggers the bug.\n\nSteps to reproduce:\n\n1. Create a directory structure using the attached dirgen.py script\n2. Verify the file count with the ls command. e.g.: ls -lR find_test_q65puW | egrep \"txt$\" | wc -l\n3. Verify the file count with the find command. e.g.: find find_test_q65puW -name \"*.txt\" | wc -l\n\nActual results:\n[~/test]$ python ./dirgen.py\nndirs: 300000 nfiles: 300000\n[~/test]$ ls -l\ntotal 219058\n-rw-r--r--      1 user  user       861 Feb  4 15:30 dirgen.py\ndrwx------  32767 user  user    300002 Feb  4 15:31 find_test_q65puW\n[~/test]$ ls -lR find_test_q65puW | egrep \"txt$\" | wc -l\n  300000\n[~/test]$ find find_test_q65puW -name \"*.txt\" | wc -l\n   32765\n\nThe count is not complete. (32765 instead of 300000)\n\nExpected results:\nThe find command should indicate that there are 300000 files."
+}

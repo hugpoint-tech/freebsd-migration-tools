@@ -1,0 +1,8 @@
+{
+ "id": 60059,
+ "bug_id": 19569,
+ "attachment_id": 0,
+ "creation_time": "2000-06-29T01:00:01Z",
+ "creator": "kevin@telco21.com",
+ "text": "ipfw stock rules have loosely defined rules for udp port 53 and the ntp port \n(123 I think). the rules are defined in such a fashion that once a packet is\ncoming from (internet anywhere) port 53 to any port (on for example your outside\n interface) 'you' assume its a DNS lookup response or once a udp packet is going \nout to port 53 from any port on your outside interface 'you' assume its a dns query. \n\nThis assumption, allows me to write a port scanner that binds as port 53 on the \nscanning machine and scan all udp ports on FreeBSD machines that use these rules to \nallow DNS/NTP but are assuming that they have blocked all other UDP access\nSo if I am running another udp based service that I thought was protected \nby a ipfw rules on the outside interface it may actually be wide open once the attacking \nclient bound to port 53 to initiate contact with the service.\n\nFix: \n\nFix that works on certain configurations is to tightly specify \nthe rules as \n\n # Allow DNS queries out in the world : note query port set to 53 in named\n.conf\n    $fwcmd add pass udp from any 53 to ${oip} 53\n    $fwcmd add pass udp from ${oip} 53  to any 53\n## now internet based clients bound to port 53 can only connect to named\n## instead of having free reign. \n\n#same thing for NTP\n # Allow NTP queries out in the world\n    $fwcmd add pass udp from any 123 to ${oip} 123\n    $fwcmd add pass udp from ${oip} 123 to any 123\nHow-To-Repeat: \nas part of stock install, compile kernel to use IPFW with the\n'simple' rules enabled to nat an internal 192.168.X network of home PC's"
+}

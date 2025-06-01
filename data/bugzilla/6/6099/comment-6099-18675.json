@@ -1,0 +1,8 @@
+{
+ "id": 18675,
+ "bug_id": 6099,
+ "attachment_id": 0,
+ "creation_time": "1998-03-23T07:05:16Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003epanic: Allocating used mbuf\n\u003e...\n\u003e\u003eHow-To-Repeat:\n\u003e\n\u003eThe problem appears to be related to an interrupt window associated\n\u003ewith the LPIP code.  I have not found a short command sequence that is\n\nThere is one obvious bug that can probably cause the problem.  splimp()\ndoesn't always block lpintr(), so critical mbuf code can be reentered.\nThe splhigh() at the beginning of lpintr() helps to hide the problem.\n\nThere used to be a similar problems for SLIP and PPP.  isa.c has\nan old hack to set `net_imask = tty_imask = net_imask | tty_imask;'.\nPPP needed this too but only got it when SLIP was configured.  (PPP now\nneeds a little more and handles it directly.)  LPIP needs it too but\nonly gets it when SLIP or maybe PPP is configured (lpt is (bogusly)\nin the tty device class, so the tty hack also works for it).\n\nThe simplest fix is to configure SLIP.  Check that net_imask contains\nthe lpt irq bit after everything is initialized.  You can also set the\nmasks using gdb to fix a running system (OR them together as above,\nand put the result in intr_mask[irq_number_of_lpt]).\n\nBruce"
+}

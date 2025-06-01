@@ -1,0 +1,8 @@
+{
+ "id": 932372,
+ "bug_id": 218987,
+ "attachment_id": 182207,
+ "creation_time": "2017-05-01T09:36:43Z",
+ "creator": "luke.tw@gmail.com",
+ "text": "Created attachment 182207\npatch for linux_sys_futex()\n\nIn linux compat layer, the syscall futex does not handle FUTEX_WAKE_OP well when using the same address for arguments uaddr and uaddr2. \n\nThe following linux program can result in kernel panic.\n\n#define _GNU_SOURCE\n#include \u003cstdio.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003csys/wait.h\u003e\n#include \u003csys/mman.h\u003e\n#include \u003csys/syscall.h\u003e\n\n#include \u003clinux/futex.h\u003e\n#include \u003csys/time.h\u003e\n\nstatic int\nfutex(int *uaddr, int futex_op, int val,\n\t\tint val2, int *uaddr2, int val3)\n{\n\treturn syscall(SYS_futex, uaddr, futex_op, val,\n\t\t\tval2, uaddr, val3);\n}\n\nint main(void){\n\tint ret;\n\tint addr;\n\n\tret = futex(\u0026addr, FUTEX_WAKE_OP, 1, 1, \u0026addr, 2);\n\tprintf(\"ret: %d\\n\", ret);\n}"
+}

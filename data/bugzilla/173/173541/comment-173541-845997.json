@@ -1,0 +1,8 @@
+{
+ "id": 845997,
+ "bug_id": 173541,
+ "attachment_id": 0,
+ "creation_time": "2015-10-27T08:33:02Z",
+ "creator": "mav@FreeBSD.org",
+ "text": "I don't know whether it is the only cause of such behavior, but I have one logical explanation.  The problem goes from the sampled nature of our load average calculation.  To reduce power usage new clock code tries to aggregate events in bursts to reduce number of CPU wakeups.  As result, if system is idle, its CPU may wakeup as low as two times per second.  And if that CPU has some other events waking it up, it is quite likely they will be aggregated with load average sampling.  As result, there is high enough probability that sampler will see some \"load\" to account, while it has no idea that that load will disappear in microsecond for another second.  Enabling periodic interrupts breaks the event aliasing -- load average sampling will more likely fire in moments when system is really idle.  But do we want to consume several extra watts of power just for one good looking number?  To solve this we should probably change our mechanism of load average calculation somehow.  If anybody have ideas -- I am all ears."
+}

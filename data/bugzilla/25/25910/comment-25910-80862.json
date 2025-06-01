@@ -1,0 +1,8 @@
+{
+ "id": 80862,
+ "bug_id": 25910,
+ "attachment_id": 0,
+ "creation_time": "2001-03-19T06:00:02Z",
+ "creator": "natedac@kscable.com",
+ "text": "\nIf a program crashes while it's using the sound device, the kernel fails \nto close the device so that other programs may use it.  The device is left \nin an open, \"busy\" state.\n\nFix: \n\nDon't compile the sound driver into the kernel.  Instead, use the loadable \nmodule.  I got a chance to test this out, and sure enough, I can restore \nthe sound after the driver dies, without rebooting the system (which is \nthe case with the in-kernel driver)...\n\nExit all audio applications, including those that may be using the mixer \ndevice (gqmpeg, aumix) or that are just acting as a server/daemon for \nother programs (esd).  Unload the driver modules and reload them.\n\nThese few lines will automate the process a little bit:\n\n#!/usr/local/bin/bash   # or any other path-capable shell.\nkillall esd\nkillall mpg123\nkillall gqmpeg\nkillall xmp\nkillall aumix\n\nsleep 1\n\nkldunload snd_pcm\nkldunload snd_solo\n\nsleep 1\n\nkldload /modules/snd_pcm\nkldload /modules/snd_solo\n\nmixer line 0\nmixer line1 0\nmixer mic 0\nmixer synth 0\nmixer cd 100\nmixer pcm 50\nmixer vol 50\n#  end...\n\nIf the sound drivers are compiled into the kernel, it is necessary to shut \nthe computer down and re-start it to restore sound once the driver dies.  \nWith the modules, the above code seems to work, preserving what may be \nrather important uptime.\nHow-To-Repeat: \nRun any program like mpg123, and find a way to cause it to crash.  Now try \nto play something else with that or any other audio application."
+}

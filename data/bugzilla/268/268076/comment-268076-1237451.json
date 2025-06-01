@@ -1,0 +1,8 @@
+{
+ "id": 1237451,
+ "bug_id": 268076,
+ "attachment_id": 0,
+ "creation_time": "2022-11-30T15:03:46Z",
+ "creator": "gavin@gavinhoward.com",
+ "text": "Author of the bc/dc here.\n\nI have reproduced this behavior. A couple notes first.\n\nI don't think bc's error handling \"obscures\" things. When it outputs the error it did, that's because there *was* an I/O error, but one on either `stdin`, `stdout`, or `stderr`. Handling terminal stuff requires a lot of I/O, and if any of it fails, especially since it would have happened on one of the standard streams that should nearly always work, bc/dc has to assume that something has gone terribly wrong, so it quits with a complaint.\n\nBut the error handling is actually the same between the calculators, so dc should not have acted differently from bc if history were activated.\n\nThat was the problem: in dc, history is *not* activated by default. The bug is that el_resize() was called anyway, despite not being initialized.\n\nI have pushed a commit (https://git.yzena.com/gavin/bc/commit/19f8e4f325f538) that fixes the crash. That seems to have fixed the problem.\n\nCan you pull my changes and test that it works for you? You will need to build like so:\n\n```\n./configure -e -gO0\nmake\n```\n\nAnd the built programs will be `bin/bc` and `bin/dc`.\n\nBy the way, if you want to activate history in dc, you need to set the `DC_TTY_MODE` environment variable to a non-zero integer value. The reason it is not activated by default is because that's the behavior of the old dc."
+}

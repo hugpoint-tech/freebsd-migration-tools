@@ -1,0 +1,8 @@
+{
+ "id": 489225,
+ "bug_id": 132554,
+ "attachment_id": 0,
+ "creation_time": "2009-03-11T18:20:00Z",
+ "creator": "axel@axel.truedestiny.net",
+ "text": "When using IPFilter there is a way to store ip pools, sort of like pf tables, \nin a configuration file (/etc/ippool.conf) which you can use in your ruleset.\nSee manpages for ippool for details.\n\nThese pools should be loaded before the ruleset but there is no /etc/rc.d/ippool\nor magic in /etc/rc.d/ipfilter to do so, I've created this small quick 'n dirty\ndiff for /etc/rc.d/ipfilter, I don't know if it's better to include a seperate\nstartup script since these pools are kind of static, you can't edit them on the\nfly without having to reload ipfilter anyway. :(\n\n--- ipfilter.orig       2009-03-11 16:31:53.000000000 +0100\n+++ ipfilter    2009-03-11 16:34:51.000000000 +0100\n@@ -33,6 +33,11 @@\n        if [ `sysctl -n net.inet.ipf.fr_running` -le 0 ]; then\n                ${ipfilter_program:-/sbin/ipf} -E\n        fi\n+        # load ippools if needed\n+        if [ -f /etc/ippool.conf ]; then \n+            /sbin/ippool -F\n+            /sbin/ippool -f /etc/ippool.conf\n+        fi\n        ${ipfilter_program:-/sbin/ipf} -Fa\n        if [ -r \"${ipfilter_rules}\" ]; then\n                ${ipfilter_program:-/sbin/ipf} \\\n\nFix: \n\nEither fiddle in the magic in /etc/rc.d/ipfilter or provide an /etc/rc.d/ippool\nHow-To-Repeat: create an ip pool in /etc/ippool.conf, use it in your ipfilter rules and see\nthey're not loaded."
+}

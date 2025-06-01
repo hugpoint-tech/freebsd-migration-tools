@@ -1,0 +1,8 @@
+{
+ "id": 1004159,
+ "bug_id": 230242,
+ "attachment_id": 0,
+ "creation_time": "2018-07-31T14:54:45Z",
+ "creator": "timo.voelker@fh-muenster.de",
+ "text": "My router sometimes sends IPv6 Prefixes with a lifetime of 0. My FreeBSD box creates an IPv6 address from the prefix and adds it as deprecated address to the interface. So far so good.\n\nThe problem is that SCTP sometimes uses one of the deprecated addresses to initiate a new association. Since the deprecated addresses are no valid addresses in my configuration, this fails.\n\nFor me it looks like the sysctl variable net.inet6.ip6.use_deprecated is misinterpreted. The RFC\n\nhttps://tools.ietf.org/html/rfc2462#section-5.5.4\n\nsays, if activated, use deprecated address in open associations, only. It seems SCTP uses deprecated addresses even for new associations, if the variable is activated. \n\nIn https://svnweb.freebsd.org/base/head/sys/netinet/sctp_bsd_addr.c starting from line 126 a interface address gets marked as SCTP_ADDR_IFA_UNUSEABLE only, if ip6_use_deprecated is false (which is basically net.inet6.ip6.use_deprecated) and the interface address is marked as IN6_IFF_DEPRECATED. Maybe this is the right position to start fixing this issue.\n\nThanks,\n\nTimo"
+}

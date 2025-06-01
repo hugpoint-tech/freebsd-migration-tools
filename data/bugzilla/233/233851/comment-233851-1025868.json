@@ -1,0 +1,8 @@
+{
+ "id": 1025868,
+ "bug_id": 233851,
+ "attachment_id": 0,
+ "creation_time": "2018-12-10T17:03:54Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "(In reply to Trond.Endrestol from comment #7)\nSo the /dev/crypto engine in OpenSSL is a bit limited in what it can do.  The engine in OpenSSL 1.0.2 only supported a few ciphers like AES-CBC and older SHA1 and SHA2/256 digests.  It did not support AES-GCM, etc.  I had patches to 1.0.2 to add GCM support as a proof of concept, though I was focused on HTTPS testing rather than SSH.  I haven't tested the 1.1.1 engine yet, but when I looked at the code in 1.1.x a few months ago it was even more limited in terms of what ciphers it supported than 1.0.2.  It certainly did not support offloading AES-GCM.  So, I currently would not expect OpenSSH in FreeBSD to use /dev/crypto.  Web servers like apache and nginx will not make use of /dev/crypto either with the current engine.  I would like to eventually upstream support for AES-GCM and TLS to OpenSSL 1.1.x so that they are not local patches in the FreeBSD version, but I haven't circled back to working on that.\n\nThe reason OpenSSH is probably opening /dev/crypto currently is to try to offload the RSA operations during connection setup, but the requests are probably failing and it is still doing RSA in software.\n\nPlaces where I expect ccr(4) to be useful currently are in-kernel crypto acceleration for things like GELI and IPSec."
+}

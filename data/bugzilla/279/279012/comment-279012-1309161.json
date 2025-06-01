@@ -1,0 +1,8 @@
+{
+ "id": 1309161,
+ "bug_id": 279012,
+ "attachment_id": 0,
+ "creation_time": "2024-05-15T17:38:02Z",
+ "creator": "gnats@duck.com",
+ "text": "In commit https://cgit.freebsd.org/src/commit?id=b977dd1ea5fbc2df3f1279330be4d089322eb2cf , the check\n\nif (hdr-\u003enlmsg_len \u003c sizeof(struct nlmsghdr) + sizeof(struct ifaddrmsg))\n    return (EBADMSG);\n\nin `sys/compat/linux/linux_netlink.c:97` was added and caused glibc's \ngetaddrinfo(3) to break. This, as one might think, causes quite a few \nprograms in the linuxulator to stop working. After looking into it, glibc \nis indeed not sending what we're expecting. Not only are they not \nincluding the space of the header, but they're also using the seemingly \ndepreciated (i.e no documentation [i could find] speaking of it) \n`rtgenmsg` format. [1] While indeed we also have this in our source tree \n`sys/netlink/route/route.h:363`, it's used nowhere except in \n`crypto/heimdal/lib/roken/getifaddrs.c:275`; however, even in that code, \nthey make sure to include the space of the header with the \n`NLMSG_LENGTH` macro. Obliviously, please take this with a large grain \nof salt as I'm quite inexperienced. That being said, I believe our best \nbet would be to contact upstream, and in the meantime, implement this \nfunctionality. On the latter half, I would be more than happy to do said \nimplementing, all I would need are some pointers to relevant \ndocumentation.\n\nCheers!\n\n[1] https://elixir.bootlin.com/glibc/latest/source/sysdeps/unix/sysv/linux/check_pf.c#L92"
+}

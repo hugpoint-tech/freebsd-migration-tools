@@ -1,0 +1,8 @@
+{
+ "id": 1055089,
+ "bug_id": 238725,
+ "attachment_id": 0,
+ "creation_time": "2019-06-20T18:45:48Z",
+ "creator": "bugzilla.freebsd@omnilan.de",
+ "text": "Hello,\n\nI've been using semi-sophisticated exports(5), last adjusted with FreeBSD-9 and reused sucessfully on FreeBSD-10+11.\nRecently I upgraded one machine From FreeBSD-11 to FreeBSD-12-stable and now the \":group\" definition of -maproot= in exports(5) has no effect anymore.\n\nHere are the relevant infos for reproduction (NFSv4):\n/zfs/netshares/deployment  -ro -maproot=65534:65533 -network 192.0.2.0/24\ngetent passwd 65534\nnobody:*:65534:65534:Unprivileged user:/nonexistent:/usr/sbin/nologin\ngetent group 65534\nnobody:*:65534\nThis is verified to be identical on the 11 and 12 servers!\n\n\nOn the NFS server, cd into /zfs/netshares/deploymemt and:\nmkdir test \u0026\u0026 touch test/testfile\nsetfacl -b test \u0026\u0026 chown root:nogroup test \u0026\u0026 chmod 750 test                                                             \n\nOn the client, issue as root: ls /$nfsservermounpoint/zfs/netshares/deployment/test\nClients mounting from FreeBSD-12 tell \"ls: .../deployment/test: Permission denied\"\nClients mounting from FreeBSD-11 list the \"testfile\".\n\nThe -maproot=user part works, but not the :group anymore.\nThis is also falsified using nfsv3 (with ESXi client).\n\nHope somebody has an idea which change could be the culprit.  Needless to say that this was really unexpected and badly breaks a lot of things.\n\nThanks,\n-harry"
+}

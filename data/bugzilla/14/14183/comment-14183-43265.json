@@ -1,0 +1,8 @@
+{
+ "id": 43265,
+ "bug_id": 14183,
+ "attachment_id": 0,
+ "creation_time": "1999-10-07T17:00:01Z",
+ "creator": "santa@sitara.net",
+ "text": "\nUpon receiving broadcast IP packets, such as DHCP or ping 10.1.2.255\npackets, the bridge frequently forwards the packets with the ip_len,\nip_id, and ip_off fields in host order.\n\nThe problem is because the received packet is store in an mbuf\ncluster, and bdg_forward() (in net/bridge.c) calls m_copypacket() to\nduplicate the mbuf cluster.  The copy of the mbuf goes out to an\noutgoing interface, and the original mbuf up to the local IP stack.\nSince m_copypacket() does not copy the external storage of the mbuf,\nit is possible that the local IP stack modifies the external storage\nwhile a copy of the mbuf is still pending in the interface output\nqueue.\n\nThe problem affects broadcast and multicast IP packets.  I noticed the\nproblem when DHCP address request operation works only intermittenly.\nIt would also affects the operations of RIP, etc.\n\nFix: \n\nProvide a function similar to m_copypacket() that allocates a new\nexternal storage, rather than just referencing the external storage of\nthe source mbuf cluster.\nHow-To-Repeat: \nConfigure a FreeBSD system with options BRIDGE.  Let it bridge between\ntwo LAN segments.  On one side, have a system ping to the broadcast\naddress.  On the other side, run tcpdump.  Frequently tcpdump will\nreport a \"truncated-ip\" packet.  This is because the ip_len field is\nnot in network order."
+}

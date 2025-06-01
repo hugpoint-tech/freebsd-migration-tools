@@ -1,0 +1,8 @@
+{
+ "id": 98678,
+ "bug_id": 31280,
+ "attachment_id": 0,
+ "creation_time": "2001-10-15T05:20:00Z",
+ "creator": "gshapiro+FreeBSD-gnats@gshapiro.net",
+ "text": "\nWhile configuring a host as an NFS server, I noticed some problems with\n/etc/rc.network:\n\nIn the \"nfs_server_enable\" section, this is done after starting nfsd:\n\n\tif [ -n \"${nfs_bufpackets}\" ]; then\n\t\tsysctl -w vfs.nfs.bufpackets=${nfs_bufpackets} \\\n\t\t\t\u003e /dev/null\n\tfi\n\nThe entry in /etc/defaults/rc.conf is:\n\n      nfs_bufpackets=\"DEFAULT\"\t# bufspace (in packets) for client (or DEFAULT)\n\nThere are a couple of problems with this:\n\n   a. Unless the user overrides in /etc/rc.conf, the command that ends up\n      being run at boot is:\n\n\tsysctl -w vfs.nfs.bufpackets=DEFAULT\n\n      which is bad as sysctl treats the \"DEFAULT\" as 0:\n\n\t# sysctl -w vfs.nfs.bufpackets=DEFAULT\n\tvfs.nfs.bufpackets: 4 -\u003e 0\n\n   b. The comment in the /etc/defaults/rc.conf entry says that nfs_bufpackets\n      is for the client, not the NFS server.  The usage in\n      /usr/src/sys/nfs/nfs_socket.c:nfs_connect() lends credence to it being\n      a client-only sysctl.\n\nFix: \n\na. If nfs_bufpackets is set to DEFAULT, don't run the sysctl.\nb. Move the nfs_bufpackets code to the nfs_client_enable section of\n   /etc/rc.network."
+}

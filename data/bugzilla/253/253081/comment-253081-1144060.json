@@ -1,0 +1,8 @@
+{
+ "id": 1144060,
+ "bug_id": 253081,
+ "attachment_id": 0,
+ "creation_time": "2021-01-29T15:38:10Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "I am not sure exactly when this happened because I'd forgotten that I was carrying a local patch to rtld to fix it for a while and reverted to a pristine upstream after the new git migration to be reapply my patches.\n\nrtld fails in _rtld_bind with a library opened with fdlopen on this line:\n\nhttps://github.com/freebsd/freebsd-src/blob/f56d7f838f5b3aa0f55b10406eaa7eb760a3ba18/libexec/rtld-elf/rtld.c#L879\n\nThis line and the basename implementation it called appear not to have been modified in the last 23 years, so the root cause is, unfortunately, somewhere else (it's not actually clear to me that this code ever worked, unless perhaps `fdlopen` was never tested without `RTLD_NOW`?).  \n\nRemoving this line causes my code to work again but with it the call to `basename(obj-\u003epath`) crashes in the `strrchr` call because `obj-\u003epath` is null.  I believe this is the expected behaviour with fdlopen, because the file descriptor (in my case, inherited from a parent).  I have had a local patch to the `basename` implementation to handle being passed a null argument and return null, but this caller seems to be the only one that triggers it and so it's probably better to not call `basename` with a NULL argument on that line."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1141044,
+ "bug_id": 252165,
+ "attachment_id": 0,
+ "creation_time": "2021-01-11T12:59:03Z",
+ "creator": "ali.abdallah@suse.com",
+ "text": "How can that be even possible? I've added also the following static variable in ure_tick\n\nURE_LOCK_ASSERT(sc, MA_OWNED);                                                          \nprintf(\"\\ntick begin thread %p\\n\", curthread);\nticking = 1;\nmii_tick(mii);                                                                                                                \nticking = 0;\nprintf(\"\\ntick end thread %p\\n\", curthread);\n\nAnd in ure_ifmedia_sts\n\nURE_LOCK(sc);\nprintf(\"poll begin %p\\n\", curthread);\nif (!ticking)                                                                                                                 \n  mii_pollstat(mii);\nprintf(\"poll end %p\\n\", curthread);\n...\nURE_UNLOCK(sc);\n\nAnd it is running fine since last Friday, which proves further that the poll thread is being executed while the tick on is running, despite the fact that they use the same lock!\n\nThe only difference I personally see here, unlike mii_tick, ure_ifmedia_sts is called at the end of a syscall, not sure if this is relevant here."
+}

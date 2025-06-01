@@ -1,0 +1,8 @@
+{
+ "id": 1241502,
+ "bug_id": 268684,
+ "attachment_id": 239166,
+ "creation_time": "2022-12-31T19:38:25Z",
+ "creator": "alois+freebsd@aloisklink.com",
+ "text": "Created attachment 239166\n`git format-patch` patch file\n\nOn RISC-V, calling `longjmp(x, 0);` makes `setjmp(x)` return 0, which normally causes an infinite loop, and is against the ISO C standard for setjmp/longjmp. \n\nInstead, using a value of 0 should make `setjmp` return 1:\n    \n\u003e The `longjmp` function cannot cause the `setjmp` macro to return the\n\u003e value 0; if `val` is 0, the `setjmp` macro returns the value 1.\n\u003e\n\u003e _Taken from §7.13.2.1.4 of the C99 spec_\n\nSee https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=268521 for my similar patch for arm64 libc. That patch also has a test-case that I used to test this RISC-V implementation.\n\n---\n\nI think I've actually managed to beat the compiler in this patch.\n    \nBoth GCC and Clang do something like the following at `-Os`:\n    \n```Assembly\n        mv      a0,a1\n        bne     a1,zero,.L2\n        li      a0,1\n.L2:\n        ret\n```\n    \nIt took a while of scouring the RISC-V ISA spec (it's my first time using RISC-V assembly), but I found a method that doesn't use branching and has less one less instruction!"
+}

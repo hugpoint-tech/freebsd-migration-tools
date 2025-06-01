@@ -1,0 +1,8 @@
+{
+ "id": 667227,
+ "bug_id": 168335,
+ "attachment_id": 0,
+ "creation_time": "2012-05-25T14:00:08Z",
+ "creator": "u-fbmk4r@aetey.se",
+ "text": "While accessing nfs shares exported with NFSv4 sec=krb5i,\nno other export types,\nvfs.nfsd.server_max_nfsvers: 4\nvfs.nfsd.server_min_nfsvers: 4\n\naccess rights to be provided by some groups are not granted (permission denied).\nA test reveals it to be the case with the groups not within the first 16 ones in the output of \"id [-G] \u003caccount\u003e\" command (on the server).\n\nA quick glance at the source suggests that it may have to do with\n\nfs/nfs/rpcv2.h:#define    RPCAUTH_UNIXGIDS 16\n\nwhich is being used in\n\n./../rpc/rpcsec_gss/svc_rpcsec_gss.c:  gid_t cl_gid_storage[RPCAUTH_UNIXGIDS];\n./../rpc/rpcsec_gss/svc_rpcsec_gss.c:  numgroups = RPCAUTH_UNIXGIDS;\n\nThis problem is a showstopper for a deployment (migrating from a *Solaris server) as we are using groups very extensively.\n\nRegards,\nRune\n\nHow-To-Repeat: put an account in more than 16 unix groups\nexport a share over NFSv4 sec=krb5i  (well, any krb*)\ncreate a directory not owned by the account, chgrp to the account's group with a highest gid (or otherwise \"one of the later groups on its list\"), chmod 770\n\naccess the share (e.g. from a RHEL5.6 Linux client) with the Kerberos credentials of the corresponding account\n\nls -ld \u003cthe-directory\u003e   shows owner,group and the rwxrwx--- permissions\nls -l \u003cthe-directory\u003e    yields \"permission denied\"\n\nNote that the same test passes (no \"permission denied\") against both Solaris and Linux NFSv4 servers with the same Kerberos realm, passwd/group database, accounts and client hosts."
+}

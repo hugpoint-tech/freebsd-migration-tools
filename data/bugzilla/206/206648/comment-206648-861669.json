@@ -1,0 +1,8 @@
+{
+ "id": 861669,
+ "bug_id": 206648,
+ "attachment_id": 0,
+ "creation_time": "2016-01-26T17:45:35Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "The code is fine correctness-wise, although indeed could be improved by getting rid of double strlen, I'll maybe commit that later.\n\nIf you make changes you would like to submit, please make actual patches (diff -u, svn diff, git diff, whatever).\n\nNow to the point:\nbuflen = strlen(name) + 1 datalen;                   \nbuf = malloc(buflen, M_KTRACE, M_WAITOK);\nstrcpy(buf, name);\nbcopy(data, buf + strlen(name) + 1, datalen);\n\nThe claim is that calling strlen twice would be problematic if the string could change.\n\nFirst of all, if that was really the case, we would run into trouble with strcpy. Further, if it could change, maybe it also could be freed?\n\nClearly, the kernel code needs to ensure the stability of the string. If it is assumed the string is not going to change, the code is perfectly fine, although somewhat inefficient.\n\nIf the string is in kernel memory and can change, appropriate locks need to be held across the call. If it is in user memory, it has to be brought in with things like copyin().\n\nRegardless, I see no bug nor an insecure practice here. If one was to not trust anything, it would be impossible to implement stuff.\n\nThat said thanks for bringing this up, that strlen would really use getting rid of, but there is nothing to fix correctness-wise or even in the spirit of defensive programming. One could consider adding an assertion the buffer belongs to the kernel, but then why would this function be special."
+}

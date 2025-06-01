@@ -1,0 +1,8 @@
+{
+ "id": 11296,
+ "bug_id": 3671,
+ "attachment_id": 0,
+ "creation_time": "1997-10-17T03:29:30Z",
+ "creator": "markd@grizzly.com",
+ "text": "\u003eDate: Thu, 16 Oct 1997 16:21:26 -0700 (PDT)\n\u003eGot an error, it made it to the error log, once, but each line \n\u003ewas repeated twice on each Xterm.\n\u003e\n\u003eOct 16 16:09:14 jbr /kernel: ahc0:A:5: ahc_intr - referenced scb not valid durin\n\u003eg seqint 0x71 scb(255)\n\u003eOct 16 16:09:14 jbr /kernel: ahc0: WARNING no command for scb 255 (cmdcmplt)\n\u003eOct 16 16:09:14 jbr /kernel: QOUTCNT == 1\n\nDoes this happen on rewind?  On my system, all is fine until rewind, then it\nhangs because of a scsi timeout.  I was able to track it to a timeout on a\nPREVENT_ALLOW scsi request to the tape drive.  The enclosed patch hacks around\nit the timeout, although it doesn't deal with why the system is hanging\ninstead of handling the timeout.\n\nMark\n\n\n\n\n*** scsi_base.c.ORG\tFri Jun 13 19:21:17 1997\n--- scsi_base.c\tThu Oct 16 18:52:50 1997\n***************\n*** 310,316 ****\n--- 310,327 ----\n  \t\t0,\n  \t\t0,\n  \t\t2,\n+ #if 0\n  \t\t5000,\n+ #else\n+ /*\n+  * HACK from markd@grizzly.com:  Adaptec 2940/WANGTEK 6130-FS DAT: this will\n+  * time out and cause a system hang when st issues this command after a rewind.\n+  * To avoid timeout, set it to larger than the time to rewind the tape.\n+  * Don't know the true cause here.\n+  */\n+ \n+ \t\t1000*60*10,  /* 10 minutes */\n+ #endif\n  \t\tNULL,\n  \t\tflags));\n  }"
+}

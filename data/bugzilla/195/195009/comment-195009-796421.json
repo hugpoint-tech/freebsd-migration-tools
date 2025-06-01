@@ -1,0 +1,8 @@
+{
+ "id": 796421,
+ "bug_id": 195009,
+ "attachment_id": 0,
+ "creation_time": "2014-11-18T02:02:15Z",
+ "creator": "ian@FreeBSD.org",
+ "text": "(In reply to Luiz Otavio O Souza from comment #2)\n\u003e (In reply to Scott Ellis from comment #0)\n\u003e \u003e The I2C bus speed for OMAP4 boards defaults to 842 kHz.\n\u003e \u003e \n\u003e \u003e The formula for calculating this comes from the TRM table 23-8\n\u003e \u003e \n\u003e \u003e     scl = i2c_fclk / ( ( psc + 1) * ( (scll + 7) + (sclh + 5) ) )\n\u003e \u003e \n\u003e \u003e The code says it's attempting 1 MHz, but it's using the wrong values.\n\u003e \n\u003e Yes, that is right.\n\u003e \n\u003e These values comes from TRM table 23-9 in \"Fast Mode+\".\n\u003e \n\u003e The TRM doesn't take into account the '+ 1' for the prescaler value (psc),\n\u003e but only for Fast Mode+, all the other values seems correct.\n\u003e \n\u003e For a internal clock frequency of 19.2 MHz we need to set the prescaler to 4:\n\u003e \n\u003e 96 MHz / (4 + 1) = 19.2 MHz\n\u003e \n\u003e And then the bus frequency is:\n\u003e \n\u003e 19.2 MHz / (3 + 7) + (4 + 5) = 1.010 MHz\n\u003e \n\u003e Good catch! Thanks!\n\nI'm thinking of fixing this a different way...\n\n  { 1000000,  5,   1,   3,  0,  0},\n\nThat gives 96 / 6 = 16 MHz then 16 / (1 + 7 + 3 + 5) = 1 MHz exactly.  I've got another commit coming that fixes this and the fact that we've been running the i2c bus at half speed on beaglebone/am335x systems (root clock is 48mhz not 96)."
+}

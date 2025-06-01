@@ -1,0 +1,8 @@
+{
+ "id": 1143981,
+ "bug_id": 253069,
+ "attachment_id": 0,
+ "creation_time": "2021-01-28T22:56:33Z",
+ "creator": "brian90013@gmail.com",
+ "text": "Hello,\n\nToday I tried using the hw.cxgbe.fl_pktshift sysctl to see if it would improve the overall packet rate. I was using hw.cxgbe.fl_pktshift=2 to produce 4 byte alignment with my Ethernet/IP data. After looking at the data, I realized the Ethernet frames were not being recognized. I am using the cc0 interface in netmap mode.\n\nI captured packets from the interface and viewed them using tcpdump. It looks like the pktshift is not being accounted for by the driver as the first two byte are the EtherType from the Ethernet header.\n\n17:42:12.555105 1a:84:9a:83:ca:44 \u003e 00:00:8b:cb:f9:5d, ethertype Unknown (0x268f), length 811: \n        0x0000:  0800 4500 031d 0001 0000 4011 07bd 8fdb\n\nI reviewed the driver code and found this segment in eth_rx():\n\n    m0-\u003em_pkthdr.len -= sc-\u003eparams.sge.fl_pktshift;\n    m0-\u003em_len -= sc-\u003eparams.sge.fl_pktshift;\n    m0-\u003em_data += sc-\u003eparams.sge.fl_pktshift;\n\nSo the driver is transparently removing the shift from the length and the data pointer. However, in service_nm_rxq() I see only:\n\n    case CPL_RX_PKT:\n                ring-\u003eslot[fl_cidx].len = G_RSPD_LEN(lq) -\n                    sc-\u003eparams.sge.fl_pktshift;\n\nThe length is being adjusted. However does the data pointer need adjusting as well? Is this sysctl not supported while in netmap mode?"
+}

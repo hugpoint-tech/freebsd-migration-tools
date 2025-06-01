@@ -1,0 +1,8 @@
+{
+ "id": 876072,
+ "bug_id": 209019,
+ "attachment_id": 169642,
+ "creation_time": "2016-04-24T20:56:57Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 169642\nFix net/mosh build with libc++ 3.8.0\n\nDuring the exp-run in bug 208158, it was found that net/mosh gives errors with libc++ 3.8.0 [1]:\n\nocb.cc:111:26: error: expected ')'\n         static inline uint64_t bswap64(uint64_t x) {\n                                ^\n/usr/include/sys/endian.h:61:20: note: expanded from macro 'bswap64'\n#define bswap64(x)      __bswap64(x)\n                        ^\n/usr/include/x86/endian.h:80:27: note: expanded from macro '__bswap64'\n        (__builtin_constant_p(x) ?      \\\n                                 ^\n\nI'm not completely sure why this is suddenly a problem when building with a newer libc++, other than maybe a different include order.  In any case, mosh tries to redefine its own flavor of bswap64() here, and its configure script fails to properly detect __builtin_bswap64(), which should really be used.\n\nTherefore, add ac_cv_have_decl___builtin_bswap64=yes (and ac_cv_have_decl___builtin_ctz=yes) to the configure arguments, and also add #include \"config.h\" to ocb.cc, since it didn't include that file yet.\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR208158-default/2016-03-22_18h30m05s/logs/errors/mosh-1.2.5.log"
+}

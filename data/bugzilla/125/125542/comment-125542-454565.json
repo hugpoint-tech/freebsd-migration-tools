@@ -1,0 +1,8 @@
+{
+ "id": 454565,
+ "bug_id": 125542,
+ "attachment_id": 0,
+ "creation_time": "2008-07-12T17:00:03Z",
+ "creator": "martin.laabs@mailbox.tu-dresden.de",
+ "text": "I'm using the \"ich\" OSS driver for my soundcard because the freebsd driver does not support changing the mic input to the auxiliary channel.\nNow - many programs (i.e. xwave, teamspeak, skype) rely on the SNDCTL_DSP_GETBLKSIZE ioctl that is handled incorrect by the OSS-driver which returns an \"Invalid argument\" error. (At least the ich driver)\n\nI attached my dmesg output and a little test program.\n\nThank you,\n Martin L.\n\nFix: use the original sound_ich driver and forgo the features of the oss driver\n\nPatch attached with submission follows:\nHow-To-Repeat: Install OSS and try the following test-program: (or try to use xwave for playback or recording)\n\n#include \u003csys/ioctl.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003csys/soundcard.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cerrno.h\u003e\n\nmain()\n{\n        int             audio;\n        int             size = 0;\n        int             ioctl_retval;\n\n        audio = open(\"/dev/dsp\", O_RDONLY);\n        if (audio == -1)\n                printf(\"open(\\\"/dev/dsp\\\",O_RDONLY): %s\\n\", strerror(errno));\n        printf(\"audio: %d\\n\", audio);\n\n        ioctl_retval = ioctl(audio, SNDCTL_DSP_GETBLKSIZE, \u0026size);\n\n        printf(\"SNDCTL_DSP_GETBLKSIZE: %i\\n\", size);\n        if (ioctl_retval == -1)\n                printf(\"ioctl(audio, SNDCTL_DSP_GETBLKSIZE, \u0026size): %s\\n\", strer\n\n        close(audio);\n        return 0;\n}"
+}

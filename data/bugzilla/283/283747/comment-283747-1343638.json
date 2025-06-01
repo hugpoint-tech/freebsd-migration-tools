@@ -1,0 +1,8 @@
+{
+ "id": 1343638,
+ "bug_id": 283747,
+ "attachment_id": 0,
+ "creation_time": "2025-01-13T14:01:11Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "Thanks, Eero! This gives a bit more of insight.  So we see that the actual\npanic happens in kern_mutex.c:592:\n\n                owner = lv_mtx_owner(v);\n                if (TD_IS_RUNNING(owner)) {\n\nThe TD_IS_RUNNING() dereferences td-\u003etd_state, which is exactly at 0x458 offset\ninside struct thread.  So, lv_mtx_owner() gave us NULL on the previous line.\nBut a few lines above we see that the lock value is not MTX_UNOWNED.  This\nmeans that the value has one of the flags set: (MTX_RECURSED | MTX_CONTESTED |\nMTX_DESTROYED).  Apparently it is MTX_DESTROYED, cause other flags are interal\nto the mutex subsystem and having them on would mean there is a bug in mutex\nitself and we would see all different kinds of a panics.\n\nSo, we got valid inpcb pointer with valid cred pointer, but the cred itself has\nalready went through crfree_final().  We got a step closer to understanding the\nproblem.  Myself or Mark might come up with an idea, but getting more\ninformation would be very helpful.  If you find a way to reproduce that, please\nlet us know."
+}

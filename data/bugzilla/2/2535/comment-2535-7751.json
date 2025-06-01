@@ -1,0 +1,8 @@
+{
+ "id": 7751,
+ "bug_id": 2535,
+ "attachment_id": 0,
+ "creation_time": "1997-01-21T01:54:14Z",
+ "creator": "davidn@unique.usn.blaze.net.au",
+ "text": "Bruce Evans writes:\n\u003e \u003e+     /* p-\u003ep_rlimit[RLIMIT_FSIZE].rlim_cur = RLIM_INFINITY; */\n\u003e \n\u003e rlimits are copy on write (implemented in software; grep for p_limit\n\u003e in kern_fork.c and kern_resource.c).  The above code neglects to\n\u003e duplicate the struct before writing to it.\n\nSuddenly things make sense - thanks Bruce. :-)\n\nIs this patch the correct fix?\n\n--- kern_exit.c.orig\tWed Jan 15 14:55:26 1997\n+++ kern_exit.c\tTue Jan 21 12:48:57 1997\n@@ -222,6 +222,10 @@\n \t\tsp-\u003es_leader = NULL;\n \t}\n \tfixjobc(p, p-\u003ep_pgrp, 0);\n+\tif (p-\u003ep_limit-\u003ep_refcnt \u003e 1 \u0026\u0026 p-\u003ep_limit-\u003ep_lflags \u0026 PL_SHAREMOD) {\n+\t\tp-\u003ep_limit-\u003ep_refcnt--;\n+\t\tp-\u003ep_limit = limcopy(p-\u003ep_limit);\n+\t}\n \tp-\u003ep_rlimit[RLIMIT_FSIZE].rlim_cur = RLIM_INFINITY;\n \t(void)acct_process(p);\n #ifdef KTRACE\n\n\nRegards,\n\nDavid Nugent - Unique Computing Pty Ltd - Melbourne, Australia\nVoice +61-3-9791-9547  Data/BBS +61-3-9792-3507  3:632/348@fidonet\ndavidn@freebsd.org davidn@blaze.net.au http://www.blaze.net.au/~davidn/"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 955456,
+ "bug_id": 222632,
+ "attachment_id": 0,
+ "creation_time": "2017-10-12T17:57:38Z",
+ "creator": "emaste@freebsd.org",
+ "text": "\u003e There does seem to be a discrepancy across the documentation and what is\n\u003e actually implemented, as CAP_CONNECT explicitly states that connect(2) is\n\u003e allowed and the check is in place in the actual implementation, but connect\n\u003e is not present in sys/kern/capabilities.conf, resulting in ECAPMODE.\n\nIndeed, it appears there is a discrepancy between what's implemented, what is documented, and what we believe the expected behaviour should be.\n\nDescriptions from sys/capsicum.h:\n\n/* Allows for connect(2). */\n#define CAP_CONNECT             CAPRIGHT(0, 0x0000000080000000ULL)\n/* Allows for connectat(2) on a directory descriptor. */\n#define CAP_CONNECTAT           (CAP_LOOKUP | 0x0000010000000000ULL)\n\n#define CAP_SOCK_CLIENT \\\n        (CAP_CONNECT | CAP_GETPEERNAME | CAP_GETSOCKNAME | CAP_GETSOCKOPT | \\\n         CAP_PEELOFF | CAP_RECV | CAP_SEND | CAP_SETSOCKOPT | CAP_SHUTDOWN)\n\nAnd reference \"Declare more capability method rights\" in r224255 and \"Capsicum overhaul\" in r247602.\n\nThus it seems the original design intent was to allow connect(2) in capability mode subject to CAP_CONNECT on the socket, but it was never added to capabilities.conf. With later refinement on thoughts on ambient authority connect() does not fit into that model and thus would not be allowed in capability mode."
+}

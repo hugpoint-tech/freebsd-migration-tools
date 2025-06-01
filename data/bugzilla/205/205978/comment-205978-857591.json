@@ -1,0 +1,8 @@
+{
+ "id": 857591,
+ "bug_id": 205978,
+ "attachment_id": 0,
+ "creation_time": "2016-01-06T19:23:45Z",
+ "creator": "satorium77@gmail.com",
+ "text": "Hi!\n\nSending SMS using sendsms script and UTF8 text as argument script not working as it should.\n\nHow to reproduce:\n\n1. sendsms 7903xxxxxxx \"тест\"\n2. on mobile phone you will see something but not you're expecting\n\nThe reason of it is in this part of sendsms script:\n\nALPHABET=\"\"\nif which iconv \u003e /dev/null 2\u003e\u00261; then\n  if ! $ECHO -n \"$TEXT\" | iconv -t ISO-8859-15 \u003e/dev/null 2\u003e\u00261; then\n    ALPHABET=\"Alphabet: UCS\"\n  fi\nfi\n\niconv in FreeBSD returns 0 exit code even if there were some invalid chars, so \"Alphabet: UCS\" will never be set.\n\nHow to fix:\n\n1. If there are some errors in conversion iconv in FreeBSD will return message in stderr which can be parsed. So to fix this bug the code above should be replaced with:\n\nALPHABET=\"\"\nif which iconv \u003e /dev/null 2\u003e\u00261; then\n  if $ECHO -n \"$TEXT\" | iconv -t ISO-8859-15 2\u003e\u00261 | grep \"invalid\" \u003e /dev/null; then\n    ALPHABET=\"Alphabet: UCS\"\n  fi\nfi"
+}

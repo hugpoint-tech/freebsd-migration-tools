@@ -1,0 +1,8 @@
+{
+ "id": 1088964,
+ "bug_id": 244241,
+ "attachment_id": 0,
+ "creation_time": "2020-02-20T13:59:49Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "Yes, it seems that netgraph needs some love.\n\nIn this case, the function ngc_send() entering to the epoch. So, this is the control path, not data. Data path enter to the epoch from ngthread(), ng_callout_trampoline() and if node really need it:\nhttp://bxr.su/FreeBSD/sys/netgraph/ng_base.c#3423\nhttp://bxr.su/FreeBSD/sys/netgraph/ng_base.c#3778\nhttp://bxr.su/FreeBSD/sys/netgraph/ng_device.c#475\n\nAfter a quick research (http://bxr.su/search?q=NET_EPOCH_ENTER\u0026defs=\u0026refs=\u0026path=sys%2Fnetgraph\u0026project=FreeBSD):\n\n1. http://bxr.su/FreeBSD/sys/netgraph/ng_ip_input.c#131 - already in epoch.\n2. http://bxr.su/FreeBSD/sys/netgraph/ng_ether.c#601 - already in epoch.\n3. http://bxr.su/FreeBSD/sys/netgraph/ng_ether.c#743 - already in epoch.\n4. http://bxr.su/FreeBSD/sys/netgraph/ng_eiface.c#517 - already in epoch.\n5. http://bxr.su/FreeBSD/sys/netgraph/ng_iface.c#735 - already in epoch.\n\nDo we really need to entering the epoch from control path?\nhttp://bxr.su/FreeBSD/sys/netgraph/ng_socket.c#341"
+}

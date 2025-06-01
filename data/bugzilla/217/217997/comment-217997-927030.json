@@ -1,0 +1,8 @@
+{
+ "id": 927030,
+ "bug_id": 217997,
+ "attachment_id": 0,
+ "creation_time": "2017-03-22T10:12:58Z",
+ "creator": "rs@bytecamp.net",
+ "text": "There seems to be a flaw in the src-track cleanup code. This has been discovered since 10.3.\n\npf.conf is (stripped down to the relevant parts):\n\n-- 8\u003c ------------------------\n\nrdr proto tcp from any to $public-ip port http -\u003e \u003cwww-pool\u003e port http \\\n        round-robin sticky-address\n\ntable \u003cwww-pool\u003e persist  { $www-addr, $www-addr2, $www-addr3 }\n\nblock in all\nblock out all\n\npass quick proto tcp from any to \u003cwww-pool\u003e port 80 \\\n        keep state \\\n        ( source-track rule, max 8192, max-src-states 96, \\\n          tcp.closing 20, tcp.finwait 15 )\n\n-- 8\u003c ------------------------\n\nThe problem is, that src-track table grows until no more entries can be inserted. Although there are no states from a sample ip-address in the state table, there are still references in the src-track table:\n\n# pfctl -vsS | grep -A1 $example-address\n$example-address -\u003e $www-addr ( states 4, connections 0, rate 0.0/0s )\n   age 01:47:25, 4808 pkts, 1713437 bytes, rdr rule 0\n\n# pfctl -sS | grep $example-address\n(nothing shown)\n\nTo circumvent this problem, we have to parse pfctl output and kill over-aged source tracking entries manually.\n\nMaybe someone can track this down.\n\nRegards,\nRobert Schulze"
+}

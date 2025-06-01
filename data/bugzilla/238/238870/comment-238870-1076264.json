@@ -1,0 +1,8 @@
+{
+ "id": 1076264,
+ "bug_id": 238870,
+ "attachment_id": 0,
+ "creation_time": "2019-11-21T15:52:33Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Bjoern A. Zeeb from comment #19)\nI believe it is related to epair, yes. There are some notes in https://reviews.freebsd.org/D20868\n\nMy recollection from when I was chasing this is that the problem occurs when a vnet jail (which contains one or more pair interfaces) is destroyed and immediately afterwards the epair interface is destroyed (or possibly the other way around).\n\nDestroying the vnet jail moves the epair interface back into the host, but because it's also being destroyed at the same time we end up moving an ifp into the host which will be freed afterwards. A freed ifp in the host's list of interfaces is obviously a panic waiting to happen.\n\nI'm not 100% clear on the exact order of operations here, but I am fully convinced that it's related to interfaces being moved due to a vnet destroy, and epairs destroying two interfaces at a time (i.e. a and b)."
+}

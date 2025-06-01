@@ -1,0 +1,8 @@
+{
+ "id": 76238,
+ "bug_id": 24465,
+ "attachment_id": 0,
+ "creation_time": "2001-01-19T21:10:02Z",
+ "creator": "pantzer@ludd.luth.se",
+ "text": "\nFreeBSD will respond to ethernet packets for other computers if IP forwarding\nis on and netgraph is used for bridging. It will send packets with a mac\nadress that is diffrent from the interfaces adress to the IP layer.\n\nIf IP forwaring is on then the IP layer will try to route the packets even if\nthey where sent to a diffrent computer.\n\nFix: \n\nThere is a check for the mac adress in ether_input in net/if_ethersubr.c:\n\n        /* Discard packet if upper layers shouldn't see it. This should\n           only happen when the interface is in promiscuous mode. */\n        if ((ifp-\u003eif_flags \u0026 IFF_PROMISC) != 0\n            \u0026\u0026 (eh-\u003eether_dhost[0] \u0026 1) == 0\n            \u0026\u0026 bcmp(eh-\u003eether_dhost,\n              IFP2AC(ifp)-\u003eac_enaddr, ETHER_ADDR_LEN) != 0) {\n                m_freem(m);\n                return;\n        }\n\nThat check will not be done if netgraph is used on the interface, from what I \ncan find it shoud be added to ng_ether_rcv_upper in netgraph/ng_ether.c"
+}

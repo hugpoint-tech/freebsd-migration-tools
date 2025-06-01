@@ -1,0 +1,8 @@
+{
+ "id": 944017,
+ "bug_id": 213896,
+ "attachment_id": 0,
+ "creation_time": "2017-07-24T17:05:04Z",
+ "creator": "stefan@gronke.net",
+ "text": "I used a similar script to reproduce the bug and noticed it only occurs when the host's epair nic went up before destroying the jail.\n\nThis snippet manually attaches the nic to the jail after it was started and takes \"yes\" as first argument to change the host's nic state.\n\n$ ./crash-demo.sh no\n...\n\u003e done\n$ ./crash-demo.sh yes\n\u003e crash\n\n--\n\n#!/bin/sh\n\nUPDOWNIF=\"$1\"\nBRIDGE_IF=bridge1\n\nifconfig $BRIDGE_IF create\nset -x\n\nfor i in $(seq 0 200); do\n\n  #jail -c vnet persist path=$RELEASE_FOLDER name=jail-vnet\n  jail -c vnet persist name=jail-vnet\n\n  epair_a=\"$(ifconfig epair create)\"\n  epair_b=\"$(echo $epair_a | rev | cut -c2- | rev)b\"\n\n  mac_a=$(openssl rand -hex 6 | sed 's/\\(..\\)/\\1:/g; s/.$//')\n\n  ifconfig $epair_a name a-$i\n  ifconfig a-$i ether \"$mac_a\"\n\n  if [ \"$UPDOWNIF\" == \"yes\" ]; then\n    ifconfig a-$i up\n  fi\n\n  ifconfig $BRIDGE_IF addm a-$i\n  ifconfig $epair_b vnet jail-vnet\n\n  jexec jail-vnet /sbin/ifconfig $epair_b name vnet0\n  jexec jail-vnet /sbin/ifconfig vnet0 up\n  jexec jail-vnet /sbin/ifconfig\n\n  jail -r jail-vnet\n\n  if [ \"$UPDOWNIF\" == \"yes\" ]; then\n    ifconfig a-$i down\n  fi\n  ifconfig $BRIDGE_IF deletem a-$i\n  ifconfig a-$i destroy\n\ndone\n\necho \"done\""
+}

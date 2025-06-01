@@ -1,0 +1,8 @@
+{
+ "id": 362234,
+ "bug_id": 106107,
+ "attachment_id": 0,
+ "creation_time": "2006-12-01T03:20:10Z",
+ "creator": "andrej.binder@stuba.sk",
+ "text": "Whenever fsck is run in background mode, a file called fsck_snapshot gets created in the .snap directory on the checked volume. Fsck then runs its check on this file instead of the live filesystem. Filesystem snapshots (which fsck_snapshot essentially is) are designed to persist over mounts and reboots thus if fsck does not terminate properly for some reason (hard reboot etc), the file gets left over.  This is partially solved on the next background fsck run (commonly just after the system reboots if the fs is marked dirty) since fsck overwrites the left over fsck_snapshot whit a new one and removes it when its done.\n\nThe prblem occours when you mark the filesystem clean before the next fsck background run (for example through fsck in singleuser mode). This way the fsck_snapshot file persists and possibly consumes most of the filesystem (depending on the state of the filesystem when the snapshot was made).\n\nFix: \n\nImplement a code (maybe into loader after the the fs is mounted) to check for left over fsck snapshots and remove them if appropriate.\nHow-To-Repeat: 1) run fsck in background mode\n2) halt -qn before fsck finishes (or otherwise terminate it unproperly ... sigkill does not seem to work since fsck is in biord state)\n3) boot into singleuser mode\n4) fsck to mark the filesystem clean\n5) reboot into normal mode and watch the file grow with every change on the live filesystem"
+}

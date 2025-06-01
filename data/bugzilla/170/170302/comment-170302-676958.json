@@ -1,0 +1,8 @@
+{
+ "id": 676958,
+ "bug_id": 170302,
+ "attachment_id": 0,
+ "creation_time": "2012-08-01T00:50:09Z",
+ "creator": "adrian@freebsd.org",
+ "text": "When doing some debugging, I noticed that the rate control code is not transmitting frames with multiple rate retries.\n\nFor example, with 'sysctl dev.ath.0.debug=2' set (TX descriptor debugging):\n\n\nQ1[  0] (DS.V:0xea739000 DS.P:0x1d29c000) L:00000000 D:3958d82c F:0005\n        Seq: 1904 swtry: 0 ADDBAW?: 0 DOBAW?: 0\n        417f0242 00008240 00048000 0000008f 0000803a 00000000\n        00000000 0090000f 00000000 3f000000 3f000000 3f000000 0080292c 00000101\n        4ccfdabf ffffffff ffffffff 2d80282a 80808080 80808080 80808080 0000056b\n  [end]\nQ1[  0] (DS.V:0xea739000 DS.P:0x1d29c000) L:00000000 D:3958d82c F:0005 *\n        Seq: 1904 swtry: 0 ADDBAW?: 0 DOBAW?: 0\n        417f0242 00008240 00048000 0000008f 0000803a 00000000\n        00000000 0090000f 00000000 3f000000 3f000000 3f000000 0080292c 00000101\n        4ccfdabf ffffffff ffffffff 2d80282a 80808080 80808080 80808080 0000056b\n  [end]\n\n. descriptor field 3 is 0x8f, which shows only one 11n rate (rate attempt #0) is set.\n\nFix: \n\nThe TX and rate control paths assume that if RTS/CTS is enabled, multi-rate retry should be disabled.\n\nThis is because of a limitation with the pre-11n chips - the AR5212 supports multi-rate retry but not with RTS/CTS enabled.\nHow-To-Repeat: associate to an 802.11n AP."
+}

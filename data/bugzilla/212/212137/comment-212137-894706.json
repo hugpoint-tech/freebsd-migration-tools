@@ -1,0 +1,8 @@
+{
+ "id": 894706,
+ "bug_id": 212137,
+ "attachment_id": 0,
+ "creation_time": "2016-08-25T11:15:58Z",
+ "creator": "Andrew@FreeBSD.org",
+ "text": "There seems to be a NULL pointer dereference in boot1.efi and loader.efi when probing a vdev.\n\nIn sys/boot/zfs/zfsimpl.c vdev_probe will create a temp vdev to use to read vdev label. As part of this it will memset the vdev to 0, then set the needed data, however the spa remains zero.\n\nIt then calls vdev_read_phys with this temp vdev. This will call back into boot1 to perform the read. It then performs a checksum on the data, however as the spa is NULL this will cause the NULL pointer dereference as the checksum code will make use of this pointer.\n\nI've worked around this for now by only calling zio_checksum_verify in vdev_read_phys when the spa is non-NULL and can load loader.efi from boot1 with that."
+}

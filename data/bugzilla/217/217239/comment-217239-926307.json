@@ -1,0 +1,8 @@
+{
+ "id": 926307,
+ "bug_id": 217239,
+ "attachment_id": 0,
+ "creation_time": "2017-03-17T20:13:20Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "I my test program I reported:\n\n#define region_size (4u*1024u+1u)\n                        // Bad dyn_region pattern, parent and child\n                        // processes:\n                        //     256u,  2u*1024u,  4u*1024u, 8u*1024u,\n                        // 9u*1024u, 12u*1024u, 14u*1024u\n                        // (but see the partial_test_check() call\n                        //  notes above).\n\n                        // Works:\n                        // 14u*1024u+1u, 15u*1024u, 16u*1024u,\n                        // 32u*1024u, 256u*1024u*1024u\n\nIt appears to turn out that the\n14u*1024u vs. 14u*1024+1u boundary matches\nup with jemalloc:\n\ncontrib/jemalloc/include/jemalloc/internal/size_classes.h :\n\n. . . size == 1\u003c\u003clg_grp + ndelta\u003c\u003clg_delta\n. . .\\\n *     bin: 'yes' if a small bin size class, 'no' otherwise.\n. . .\n#if (LG_SIZEOF_PTR == 3 \u0026\u0026 LG_TINY_MIN == 3 \u0026\u0026 LG_QUANTUM == 3 \u0026\u0026 LG_PAGE == 12)\n#define SIZE_CLASSES \\\n  /* index, lg_grp, lg_delta, ndelta, psz, bin, lg_delta_lookup */ \\\n. . .\n    SC( 38,     13,       11,      3,  no, yes, no) \\\n    SC( 39,     13,       11,      4, yes,  no, no) \\\n. . .\n#define SMALL_MAXCLASS          ((((size_t)1) \u003c\u003c 13) + (((size_t)3) \u003c\u003c 11))\n\nSo SMALL_MAXCLASS==(14u*1024u).\n\nThe problem in the example program is tied to small bin size\nhandling in jemalloc."
+}

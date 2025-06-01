@@ -1,0 +1,8 @@
+{
+ "id": 1285313,
+ "bug_id": 275115,
+ "attachment_id": 0,
+ "creation_time": "2023-11-23T17:03:47Z",
+ "creator": "sam3423.yntmr@slmail.me",
+ "text": "I suspect that this touchpad is not working because of undetected serial bus devices.\n\nAs we can see in pciconf output these two devices are undetected:\nnone3@pci0:0:31:4:\tclass=0x0c0500 rev=0x30 hdr=0x00 vendor=0x8086 device=0x34a3 subvendor=0x103c subdevice=0x86c8\nnone4@pci0:0:31:5:\tclass=0x0c8000 rev=0x30 hdr=0x00 vendor=0x8086 device=0x34a4 subvendor=0x103c subdevice=0x86c8\n\nAfter some work I managed to get the none3 device get detected by adding following lines in '/usr/src/sys/dev/ichsmb/ichsmb_pci.c'\n#define\tID_ICELAKE\t\t\t0x34a3\n\t{ PCI_DEV(PCI_VENDOR_INTEL, ID_ICELAKE),\n\t PCI_DESCR(\"Intel Ice Lake SMBus controller\") },\n\nNow new pciconf line for none3 is:\nichsmb0@pci0:0:31:4:\tclass=0x0c0500 rev=0x30 hdr=0x00 vendor=0x8086 device=0x34a3 subvendor=0x103c subdevice=0x86c8\n\nFor none4 I think we need to edit files in '/usr/src/sys/modules/intelspi', but I'm not sure what to put in these files.\nHere is the relevant file from Linux kernel https://lxr.linux.no/#linux+v6.0.9/drivers/spi/spi-intel-pci.c"
+}

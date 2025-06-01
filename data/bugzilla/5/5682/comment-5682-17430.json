@@ -1,0 +1,8 @@
+{
+ "id": 17430,
+ "bug_id": 5682,
+ "attachment_id": 0,
+ "creation_time": "1998-02-08T20:30:00Z",
+ "creator": "laskavy@Hedgehog.CS.MSU.SU",
+ "text": "\nOn a fast network ipfw byte counters grow rapidly.\n\nThis makes IP traffic accounting harder, because we can not just do\n\"ipfw -a list\" monthly, need to count real traffic using external\nprograms.\n\nOn a router with 2Mbit uplink the byte counter may overflow every 5\nhours, on a 100Mbit -- every 3 minutes.\n\nFix: \n\nCan we do ipfw counters at least 64-bit?\n\nIf not, then how do you suggest to collect IP accounting information?\nHow-To-Repeat: \n\u003c---------------------------------------------------------------\n#!/bin/sh\n# We use Bourne shell syntax\n\n# This program will use loopback to test ipfw byte counter\n\n# 1) clear counters for the loopback allow all rule:\nipfw zero `ipfw list|grep 'allow ip from any to any via lo0'|awk '{print$1}'`\n\n# 2) simulate busy network using \"flood ping\":\nping -f -s 8000 127.0.0.1 \u003e/dev/null 2\u003e\u00261 \u0026\n\n# 3) check the packet and byte counter every 10 seconds:\n\nwhile :; do\n\tipfw -a l\n\tsleep 10\ndone | awk '/allow ip from any to any via lo0/{print $3, $2, $3/$2}'\n\n# 4) kill the \"flood ping\" process\nkill $!\n\u003c---------------------------------------------------------------\n\nI got the following output:\n[skipped]\n\t2806396128 349576 8028\n\t3116758608 388236 8028\n\t3427281648 426916 8028\n\t3733630128 465076 8028\n\t4043061360 503620 8028\n--------\u003e here the bytes counter turned oved\n\t56529824 542040 104.291\n\t366378512 580636 630.995\n\t668199200 618232 1080.82\n\nThe overflow of byte counter occured in a few minutes."
+}

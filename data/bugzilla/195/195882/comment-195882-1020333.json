@@ -1,0 +1,8 @@
+{
+ "id": 1020333,
+ "bug_id": 195882,
+ "attachment_id": 0,
+ "creation_time": "2018-11-05T23:40:55Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "\t\tmem = mmap(NULL, write_size, (PROT_READ | PROT_WRITE),\n\t\t    (MAP_SHARED | MAP_NOCORE), fd, (i * write_size));\n. . .\n\t\t//msync(mem, file_size, MS_SYNC);\n\t\t//posix_madvise(mem, file_size, MADV_FREE);\n\t\tmunmap(mem, file_size);\n\nwrite_size for len for mmap but file_size for len for\nmunmap?\n\nQuoting the man page for munmap:\n\n     The munmap() system call will fail\tif:\n\n     [EINVAL]\t\tThe addr argument was not page aligned,\tthe len\targu-\n\t\t\tment was zero or negative, or some part\tof the region\n\t\t\tbeing unmapped is outside the valid address range for\n\t\t\ta process.\n\nAs near as I can tell the munmap calls were returning\nEINVAL and possibly not actually doing the unmap at all.\n\nA correct len for the munmap would be needed in order\nfor the munmap calls to actually guarantee to unmap\nwithout leaving any pages mapped.\n\nThe denial of service could just have the munmap\ncommented out, like the msync and posix_madvise\nare. munmap freeing RAM (or not) is a separate issue.\n\nYou probably would need distinct submittals for the\ntwo issues if both really apply."
+}

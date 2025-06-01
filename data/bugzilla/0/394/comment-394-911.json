@@ -1,0 +1,8 @@
+{
+ "id": 911,
+ "bug_id": 394,
+ "attachment_id": 0,
+ "creation_time": "1995-05-11T14:10:01Z",
+ "creator": "widmer@cisco.com",
+ "text": "\n\tep driver for 3c509 doesn't support IP multicast\n\nFix: \n\nThe following diff to /usr/src/sys/i386/isa/if_ep.c\n\n\t*** 559,564 ****\n\t--- 559,565 ----\n\t      ifp-\u003eif_name = \"ep\";\n\t      ifp-\u003eif_mtu = ETHERMTU;\n\t      ifp-\u003eif_flags = IFF_BROADCAST | IFF_SIMPLEX | IFF_NOTRAILERS;\n\t+     ifp-\u003eif_flags |= IFF_MULTICAST;\n\t      ifp-\u003eif_init = epinit;\n\t      ifp-\u003eif_output = ether_output;\n\t      ifp-\u003eif_start = epstart;\n\t***************\n\t*** 1336,1341 ****\n\t--- 1337,1363 ----\n\t                        ifp-\u003eif_mtu = ifr-\u003eifr_mtu;\n\t                }\n\t                break;\n\t+\n\t+       case SIOCADDMULTI:\n\t+       case SIOCDELMULTI:\n\t+       /*\n\t+        * Update our multicast listeners\n\t+        */\n\t+       if (cmd == SIOCADDMULTI) {\n\t+           ether_addmulti(ifr, \u0026sc-\u003earpcom);\n\t+       } else {\n\t+           ether_delmulti(ifr, \u0026sc-\u003earpcom);\n\t+       }\n\t+\n\t+       if (error == ENETRESET) {\n\t+           /*\n\t+            * Multicast list has changed; set the\n\t+            * hardware filter accordingly\n\t+            */\n\t+           epreset(ifp-\u003eif_unit);\n\t+           error = 0;\n\t+       }\n\t+       break;\n\n\t        default:\n\t                error = EINVAL;\nHow-To-Repeat: \n\tTry running sd using 3c509 gives error message\n\n\tIP_ADD_MEMBERSHIP: Can't assign requested address"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1163939,
+ "bug_id": 256296,
+ "attachment_id": 0,
+ "creation_time": "2021-05-31T15:24:47Z",
+ "creator": "sergii.dmytruk@3mdeb.com",
+ "text": "Background information\n----------------------\n\nfwupd project is using libgusb, which is a Glib wrapper for libusb.\n\nlibgusb uses asynchronous API of libusb with events handled in a separate thread.\n\nfwupd works with devices by opening them, performing operations and then closing.\n\nHow the failure occurs\n----------------------\n\nfwupd closes a device before all events of the operation have been processed. This means that when libusb10_handle_events_sub() eventually processes related event, the device gets marked as gone (device_is_gone field). On all future calls libusb_submit_transfer() fails with LIBUSB_ERROR_NO_DEVICE because that flag is set.\n\nEffectively this means that a device can be used only once in such a way.\n\nAs I understand libgusb uses the API as intended and it is implementation of libusb which shouldn't prevent repeated use of a device. Maybe it should wait before closing or just reset the flag on opening the device."
+}

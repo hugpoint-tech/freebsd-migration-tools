@@ -1,0 +1,8 @@
+{
+ "id": 1128409,
+ "bug_id": 223564,
+ "attachment_id": 0,
+ "creation_time": "2020-10-25T17:45:05Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "Thanks.\n\nI had to patch it a little as the local variant seems to be older. I can confirm the null lookups are gone and at least \"make kernel\" did not run into trouble.\n\ndiff --git a/contrib/bmake/main.c b/contrib/bmake/main.c\nindex f27320c5745..e567166a593 100644\n--- a/contrib/bmake/main.c\n+++ b/contrib/bmake/main.c\n@@ -1390,11 +1390,14 @@ main(int argc, char **argv)\n \n        /* In particular suppress .depend for '-r -V .OBJDIR -f /dev/null' */\n        if (!noBuiltins || !printVars) {\n-           makeDependfile = Var_Subst(\"${.MAKE.DEPENDFILE:T}\",\n+           /* ignore /dev/null and anything starting with \"no\" */\n+           makeDependfile = Var_Subst(\"${.MAKE.DEPENDFILE:N/dev/null:Nno*:T}\",\n                VAR_CMD, VARE_WANTRES);\n-           doing_depend = TRUE;\n-           (void)ReadMakefile(makeDependfile);\n-           doing_depend = FALSE;\n+           if (makeDependfile[0] != '\\0') {\n+                   doing_depend = TRUE;\n+                   (void)ReadMakefile(makeDependfile);\n+                   doing_depend = FALSE;\n+           }\n        }\n \n        if (enterFlagObj)"
+}

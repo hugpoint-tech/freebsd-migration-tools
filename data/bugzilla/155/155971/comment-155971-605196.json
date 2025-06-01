@@ -1,0 +1,8 @@
+{
+ "id": 605196,
+ "bug_id": 155971,
+ "attachment_id": 0,
+ "creation_time": "2011-03-28T15:41:12Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Beat Gätzi:\n\n\u003e Wouldn't that create a conflict between sqlite3 and the new slave port? In\n\u003e this case that isn't the solution too.\n\u003e Is there a way to query sqlite3 to find out if it was build with loadable\n\u003e extensions? If yes, we could query that in the firefox port and set BROKEN\n\u003e if this isn't the case.\n\nIndeed I'd prefer IGNORE or BROKEN, but we can't catch that so early --\nand particularly not without forking processes while the Makefile is\nbeing parsed.\n\nThe test would erroneously fail if py*-sqlite3 and/or sqlite3 is not\ninstalled before you attempt the build, but got installed only as part\nof firefox's depends - so we cannot do this earlier than post depends,\nf. i. in pre-build.\n\nThere's a way that work without python (needed because python may only\nbe installed as firefox's dependency), and that is:\n\n  objdump -R ${LOCALBASE}/libsqlite3.so | grep -w sqlite3_load_extension\n\nWe can additionally try grepping ${PORT_DBDIR}/sqlite3/options and/or\nthe libfile, but again, neither is guaranteed to exist when you \"make\"\nfirefox's Makefile - and we don't want != lines.\n\n\nHow about the attached patch to www/firefox?  It performs this check in\npre-everything (in case sqlite3 is already installed) and again in\npre-build (if it got installed in the 'make depends' stage).\n\nAs a side effect, it also removes the != line (for pthread library\nextraction) as per the recent portlint warning URL, so that reading the\nMakefile doesn't fork a new process.\n\nWorks for me, but please double-check.\n\nBest\nMatthias"
+}

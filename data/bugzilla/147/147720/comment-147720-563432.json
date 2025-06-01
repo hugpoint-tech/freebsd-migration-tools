@@ -1,0 +1,8 @@
+{
+ "id": 563432,
+ "bug_id": 147720,
+ "attachment_id": 0,
+ "creation_time": "2010-06-09T13:30:04Z",
+ "creator": "dima_bsd@inbox.lv",
+ "text": "There is one bug with ipfw keep-state rules and fwd action.\n\nYou are unable to make source based routing of incoming connections using this ruleset:\n\n=======\n# $ext_if1 - ISP1\n# $gw1 - ISP1 GW\n# $ext_if2 - ISP2\n# $gw2 - ISP2 GW\n# $int_if - internal net\n\nipfw add 100 skipto 300 tag 1 in recv $ext_if1 keep-state\nipfw add 200 skipto 300 tag 2 in recv $ext_if2 keep-state\nipfw add 300 allow { recv $ext_if1 or recv $ext_if2 }\nipfw add 400 allow in recv $int_if\nipfw add 500 fwd $gw1 tagged 1\nipfw add 600 fwd $gw2 tagged 2\n=======\n\n\nTo make it working you should patch /sys/netinet/ipfw/ip_fw2.c with this:\n\n====\n(find this line)\nif (!q || dyn_dir == MATCH_FORWARD)\n\n(change it to this)\nif (sa-\u003esin_port \u0026\u0026 (!q || dyn_dir == MATCH_FORWARD))\n====\n\n\n\nThis problem is presend in FreeBSD 9-CURRENT as well.\n\n\nCan somebody please merge this patch to CURRENT?\n\n\nCredits for this patch goes to Vadim Goncharov \nnuclight.livejournal.com/124348.html\n\nFix: \n\napplay patch\nHow-To-Repeat: have FreeBSD host with two NIC's connected to different networks with different GW each. Applay ipfw rules from example provided. Start some service (SSH/Apache/etc). Make a try to connect to connect to service from network behing GW that is not configured as default gateway on FreeBSD host - answer will go via second NIC/default GW. keep-state ruleset do not works."
+}

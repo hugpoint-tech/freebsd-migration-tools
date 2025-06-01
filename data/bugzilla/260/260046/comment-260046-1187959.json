@@ -1,0 +1,8 @@
+{
+ "id": 1187959,
+ "bug_id": 260046,
+ "attachment_id": 229724,
+ "creation_time": "2021-11-25T12:10:04Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 229724\nDemo of an NFS client crashing a server with LISTXATTRS.\n\nnfsrvd_listxattr() calls nfsvno_listxattr(). The latter can return\nzero at the same time as leaving buf == NULL. But if the return value\nis zero, nfsrvd_listxattr() dereferences the NULL buf, causing a\ncrash.\n\nI've attached a demo:\n\n# uname -a\nFreeBSD  14.0-CURRENT FreeBSD 14.0-CURRENT #99 main-n250901-77e3db078984-dirty: Wed Nov 24 05:42:01 EST 2021     rtm@xxx:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM  riscv\n# cc fnfsd_3.c\n# ./a.out\n...\npanic: Fatal page fault at 0xffffffc00026f256: 0000000000000000\ncpuid = 0\ntime = 1637841164\nKDB: stack backtrace:\ndb_trace_self() at db_trace_self\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x38\nkdb_backtrace() at kdb_backtrace+0x2c\nvpanic() at vpanic+0x154\npanic() at panic+0x2a\npage_fault_handler() at page_fault_handler+0x1ee\ndo_trap_supervisor() at do_trap_supervisor+0x76\ncpu_exception_handler_supervisor() at cpu_exception_handler_supervisor+0x70\n--- exception 13, tval = 0\nnfsrvd_listxattr() at nfsrvd_listxattr+0x306\nnfsrvd_dorpc() at nfsrvd_dorpc+0x154c\nnfssvc_program() at nfssvc_program+0x5a4\nsvc_run_internal() at svc_run_internal+0x808\nsvc_run() at svc_run+0x1a8\nnfsrvd_nfsd() at nfsrvd_nfsd+0x30e\nnfssvc_nfsd() at nfssvc_nfsd+0x386\nsys_nfssvc() at sys_nfssvc+0xd0\ndo_trap_user() at do_trap_user+0x206\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72\n--- exception 8, tval = 0"
+}

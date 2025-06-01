@@ -1,0 +1,8 @@
+{
+ "id": 979330,
+ "bug_id": 226166,
+ "attachment_id": 190957,
+ "creation_time": "2018-02-24T13:11:01Z",
+ "creator": "jan.kokemueller@gmail.com",
+ "text": "Created attachment 190957\npatch to fix FTS_FOLLOW when set on entries returned by fts_children()\n\nReading the fts(3) man page something like the example below should work. This sets FTS_FOLLOW on a child named 'symlink' which is a symlink to another folder. fts_read will now recurse into this folder, even though FTS_PHYSICAL is set. Right now it won't recurse, however, when FTS_NOCHDIR is also set.\n\nThe problem is a stale fts_accpath. This leads to fts_stat() calling stat on the wrong file. The attached patch attempts to fix this by switching the order of the fts_stat() and the fts_accpath update.\n\n\n\n#include \u003cerr.h\u003e\n#include \u003cfts.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n\nint\nmain()\n{\n\tFTS *fts;\n\tFTSENT *ftsent, *children;\n\tchar *fts_args[] = { \".\", NULL };\n\n\tfts = fts_open(fts_args, FTS_PHYSICAL | FTS_NOCHDIR, NULL);\n\tif (!fts) {\n\t\terr(1, \"fts\");\n\t}\n\n\twhile ((ftsent = fts_read(fts))) {\n\t\tfprintf(stderr, \"got file: %s\\n\", ftsent-\u003efts_path);\n\n\t\tchildren = fts_children(fts, 0);\n\n\t\tfor (FTSENT *child = children; child;\n\t\t     child = child-\u003efts_link) {\n\t\t\tif (!strcmp(\"symlink\", child-\u003efts_name)) {\n\t\t\t\tif (fts_set(fts, child, FTS_FOLLOW)) {\n\t\t\t\t\terr(1, \"fts_set\");\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\n\tif (fts_close(fts) \u003c 0) {\n\t\twarn(\"fts_close\");\n\t}\n}"
+}

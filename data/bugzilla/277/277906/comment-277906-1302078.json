@@ -1,0 +1,8 @@
+{
+ "id": 1302078,
+ "bug_id": 277906,
+ "attachment_id": 0,
+ "creation_time": "2024-03-23T12:53:06Z",
+ "creator": "Igor.Gusarov@kaspersky.com",
+ "text": "The following code can be found in file /usr/src/sys/netinet/libalias/alias.c around line 1715\n\n        p = dlsym(handle, \"alias_mod\");\n        if ((error = dlerror()) != NULL)  {\n                fprintf(stderr, \"%s\\n\", dlerror());\n                return (EINVAL);\n        }\n\nThis code calls dlerror() function twice: first time to check if there is an error, and the second time to print that error. Such approach is wrong, as described in manual page for dlerror(3):\n\n\u003e At each call\n\u003e to dlerror(), the error indication is reset.  Thus in the case of two\n\u003e calls to dlerror(), where the second call follows the first immediately,\n\u003e the second call will always return a null pointer.\n\nWhich may result in the following not helpful error message when trying to start natd:\n\n# service natd restart\nStopping natd.\nWaiting for PIDS: 23950.\nStarting natd.\n(null)                      \u003c--- Here. This null message is printed at alias.c:1715\n# \n\nSuggested fix:\nApply the following patch to /usr/src/sys/netinet/libalias/alias.c\n\n--- alias.c     2023-11-10 03:07:53.000000000 +0300\n+++ alias.c.new 2024-03-23 15:48:15.335314000 +0300\n@@ -1712,7 +1712,7 @@\n\n        p = dlsym(handle, \"alias_mod\");\n        if ((error = dlerror()) != NULL)  {\n-               fprintf(stderr, \"%s\\n\", dlerror());\n+               fprintf(stderr, \"%s\\n\", error);\n                return (EINVAL);\n        }"
+}

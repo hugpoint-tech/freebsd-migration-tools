@@ -1,0 +1,8 @@
+{
+ "id": 1303462,
+ "bug_id": 274375,
+ "attachment_id": 0,
+ "creation_time": "2024-04-02T15:21:20Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #1)\n\u003e This looks like a problem with DTrace, there is some logic in sdt.ko's kldunload\n\u003e handler to unregister providers, and something's going wrong there.  virtqueue.c\n\u003e defines two rather odd SDT probes, so we're trying to unregister them.\n\nThat happens when a module file with SDT probes is failed to be loaded by kernel linker. While the kernel try to invoke kld_unload_try event handlers for it and apparently it should not, as the file is in the progress of loading, i.e. it is partially linked.\n\nAs for \n\u003e Note: `kldload virtio.ko` can trigger the panic but `kldload virtio` will not.\nkernel linkers will check module named `virtio` firstly and refuse to load so no bad things happen. But for `virtio.ko` the kernel will load the file and get all modules in it before it knows `virtio` is present.\n\nProposed fix https://reviews.freebsd.org/D44594."
+}

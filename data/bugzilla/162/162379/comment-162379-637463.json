@@ -1,0 +1,8 @@
+{
+ "id": 637463,
+ "bug_id": 162379,
+ "attachment_id": 0,
+ "creation_time": "2011-11-08T17:00:25Z",
+ "creator": "naruse@airemix.jp",
+ "text": "When select(2) closed writing pipe, it will sticks.\n\nFreeBSD 9.0-RC1 also reproduces this.\n\nHow-To-Repeat: Run following program, it will sticks.\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003csys/select.h\u003e\n#define max(x,y) ((x \u003e y) ? x : y)\nint\nmain(void) {\n    int pipes[2];\n    int res = pipe(pipes);\n    if (res != 0) abort();\n    int r = pipes[0];\n    int w = pipes[1];\n    res = close(w);\n    if (res != 0) abort();\n    fd_set readfds; FD_ZERO(\u0026readfds);\n    fd_set writefds; FD_ZERO(\u0026writefds);\n    fd_set exceptfds; FD_ZERO(\u0026exceptfds);\n    FD_SET(w, \u0026writefds);\n    res = select(max(r,w)+1, \u0026readfds, \u0026writefds, \u0026exceptfds, NULL);\n    if (res) perror(\"select\");\n    return 0;\n}"
+}

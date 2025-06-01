@@ -1,0 +1,8 @@
+{
+ "id": 1170178,
+ "bug_id": 257151,
+ "attachment_id": 0,
+ "creation_time": "2021-07-13T14:22:36Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Tech-Lists - this works as intended. You explicitly configured poudriere to not install ccache (NO_CCACHE_DEPEND), and please do note that poudriere does not look for outside ccache, whether that be in /ccache/libexec or /usr/local/bin.\n\n[00:00:01] #### /usr/local/etc/poudriere.d/desktop-make.conf ####\n[...]\n[00:00:01] WITH_CCACHE_BUILD=yes\n[00:00:01] CCACHE_DIR=/root/.ccache\n[00:00:01] NO_CCACHE_DEPEND=1\n[00:00:01] CCACHE_WRAPPER_PATH=\t/ccache/libexec/ccache\n\nHow would that CCACHE_WRAPPER_PATH be copied into your poudriere jail?\n\nrawtherapee is a bit special in that its compiler detection would somewhat defeat ccache, so I explicitly force it here in rawtherapee's Makefile:\n\n.if \"${WITH_CCACHE_BUILD}\" == \"yes\" \u0026\u0026 !defined(NO_CCACHE)\nCMAKE_ARGS+=    -DCMAKE_C_COMPILER_LAUNCHER=${CCACHE_BIN} \\\n                -DCMAKE_CXX_COMPILER_LAUNCHER=${CCACHE_BIN}\n.endif\n\n\n=\u003e Please remove NO_CCACHE_DEPEND from your desktop-make.conf and retry."
+}

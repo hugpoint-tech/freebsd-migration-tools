@@ -1,0 +1,8 @@
+{
+ "id": 1045287,
+ "bug_id": 236381,
+ "attachment_id": 0,
+ "creation_time": "2019-04-04T16:52:27Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: asomers\nDate: Thu Apr  4 16:51:35 UTC 2019\nNew revision: 345876\nURL: https://svnweb.freebsd.org/changeset/base/345876\n\nLog:\n  fusefs: correctly handle short writes\n\n  If a FUSE daemon returns FOPEN_DIRECT_IO when a file is opened, then it's\n  allowed to write less data than was requested during a FUSE_WRITE operation\n  on that file handle.  fusefs should simply return a short write to userland.\n\n  The old code attempted to resend the unsent data.  Not only was that\n  incorrect behavior, but it did it in an ineffective way, by attempting to\n  \"rewind\" the uio and uiomove the unsent data again.\n\n  This commit correctly handles short writes by returning directly to\n  userland if FOPEN_DIRECT_IO was set.  If it wasn't set (making the short\n  write technically a protocol violation), then we resend the unsent data.\n  But instead of rewinding the uio, just resend the data that's already in the\n  kernel.\n\n  That necessitated a few changes to fuse_ipc.c to reduce the amount of bzero\n  activity.  fusefs may be marginally faster as a result.\n\n  PR:\t\t236381\n  Sponsored by:\tThe FreeBSD Foundation\n\nChanges:\n  projects/fuse2/sys/fs/fuse/fuse_internal.c\n  projects/fuse2/sys/fs/fuse/fuse_io.c\n  projects/fuse2/sys/fs/fuse/fuse_ipc.c\n  projects/fuse2/sys/fs/fuse/fuse_ipc.h\n  projects/fuse2/sys/fs/fuse/fuse_vnops.c\n  projects/fuse2/tests/sys/fs/fusefs/mockfs.cc\n  projects/fuse2/tests/sys/fs/fusefs/write.cc"
+}

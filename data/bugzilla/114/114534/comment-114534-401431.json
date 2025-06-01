@@ -1,0 +1,8 @@
+{
+ "id": 401431,
+ "bug_id": 114534,
+ "attachment_id": 0,
+ "creation_time": "2007-07-12T19:30:05Z",
+ "creator": "samm@FreeBSD.org",
+ "text": "\n\nI found a bug on auditreduce tool.\nThe problem is with '-a' key, which allow us to select records that\noccurred after or on the given datetime.\n\nMan states that it has format:\n -a YYYYMMDD[HH[MM[SS]]]\n\nWhen i`m using -a with full format (e.g. -a -a 20070712175500)\nauditreduce work correctly, but with short format (e.g. -a 200707121755)\nit fail. After some testing i found that problem is with strptime function. \nHere is a quote from the manual:\n\n     If the format string does not contain enough conversion specifications to\n     completely specify the resulting struct tm, the unspecified members of\n     timeptr are left untouched.  For example, if format is ``%H:%M:%S'', only\n     tm_hour, tm_sec and tm_min will be modified.  If time relative to today\n     is desired, initialize the timeptr structure with today's date before\n     passing it to strptime().\n\nBut tm structure in the sources was not zerowed and contain garbage, so we got random result with the short form.\n\nHow-To-Repeat: \n\nrun auditreduce with short form and see no output.\nAfter patch all work as designed"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1339365,
+ "bug_id": 260248,
+ "attachment_id": 0,
+ "creation_time": "2024-12-15T23:22:47Z",
+ "creator": "crest@rlwinm.de",
+ "text": "The problem is that the support for /etc/jail.conf.d/$name was implemented inside the rc.d script instead of jail.conf. Inside said script each jail is started/stopped by invoking jail -f $conf ... $name. The other config files aren't read so separate invocations of the jail command don't know about each others configuration. It was a useful hack at the time, but FreeBSD ≥ 14.0 support native .include directives with globs. The proper solution is to put something like this in your /etc/jail.conf:\n\n    .include \"/usr/local/etc/jail[.]conf\";   # load local defaults\n    .include \"/etc/jail.d/*.conf\";           # don't have /etc/jail.conf.d because\n    .include \"/usr/local/etc/jail.d/*.conf\"; # it triggers the rc.d workaround.\n\nYou can't just have the rc.d script generate a jail.conf(5) that includes all configs in /etc/jail.conf.d, because the global variable would carry over between files which would be a massive POLA violation."
+}

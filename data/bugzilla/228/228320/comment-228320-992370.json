@@ -1,0 +1,8 @@
+{
+ "id": 992370,
+ "bug_id": 228320,
+ "attachment_id": 0,
+ "creation_time": "2018-05-17T17:15:12Z",
+ "creator": "mgrooms@shrew.net",
+ "text": "I believe this is due to 11.2 containing a newer version of LLVM. If I add the following to the Makefile, the build completes successfully.\n\nMakefile Diff ...\n\n--- Makefile.old        2018-05-17 11:45:28.661295000 -0500\n+++ Makefile    2018-05-17 11:45:45.353226000 -0500\n@@ -39,6 +39,9 @@\n CXXFLAGS+=     -Wno-tautological-undefined-compare\n .if ${COMPILER_VERSION} \u003e= 36\n CXXFLAGS+=     -Wno-unused-local-typedef\n+.if ${COMPILER_VERSION} \u003e= 60\n+CXXFLAGS+=     -Wno-null-pointer-arithmetic -Wno-vexing-parse\n+.endif\n .endif\n .endif\n .endif\n\n\nSource code diff ( not sure how to make that conditional on clang 6.0 ) ...\n\n--- src/stub-cache.cc.old       2018-05-17 12:13:38.104285000 -0500\n+++ src/stub-cache.cc   2018-05-17 12:13:53.180471000 -0500\n@@ -1474,7 +1474,7 @@\n                                             Handle\u003cName\u003e name) {\n   return (FLAG_print_code_stubs \u0026\u0026 !name.is_null() \u0026\u0026 name-\u003eIsString())\n       ? GetCodeWithFlags(flags, *Handle\u003cString\u003e::cast(name)-\u003eToCString())\n-      : GetCodeWithFlags(flags, reinterpret_cast\u003cchar*\u003e(NULL));\n+      : GetCodeWithFlags(flags, static_cast\u003cchar*\u003e(NULL));\n }"
+}

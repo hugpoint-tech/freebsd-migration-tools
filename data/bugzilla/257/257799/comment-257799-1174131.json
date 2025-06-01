@@ -1,0 +1,8 @@
+{
+ "id": 1174131,
+ "bug_id": 257799,
+ "attachment_id": 0,
+ "creation_time": "2021-08-12T23:54:04Z",
+ "creator": "andrew.daugherity@gmail.com",
+ "text": "I recently discovered that the venerable c_rehash Perl script has been replaced by builtin openssl(1) commands, first by 'openssl certhash' in LibreSSL and then a different implementation known as 'openssl rehash' in OpenSSL 1.1+.\n\nFreeBSD 12.2 ships OpenSSL 1.1.1h but somehow lacks the man page for this command.  openssl(1) mentions rehash(1) in its \"SEE ALSO\" list at the bottom, but the only installed man page matching that is an alias to builtin(1).  There is no openssl-rehash(1) installed, either.  (The OpenSSL subcommands all have man page aliases of that form, e.g. openssl-req(1) and req(1).)\n\nIt appears that the rehash man page *is* present in the source directory in POD form.  I wrote a quick shell script that found two other missing man pages:\n====\n#!/bin/sh\n\ncd /usr/src/crypto/openssl/doc\nfor sec in man*; do\n\tfor f in $sec/*.pod; do\n\t\tif ! [ -f /usr/share/openssl/man/${f%.pod}.${sec#man}.gz ]; then\n\t\t\techo \"Missing man page ${f%.pod}!\"\n\t\tfi\n\tdone\ndone\n====\n\nOutput on 12.2 is:\nMissing man page man1/rehash!\nMissing man page man5/config!\nMissing man page man7/crypto!\n\nIt appears that 13.0 does have rehash(1) -- although due the shadowing by builtin(1) you have to search for openssl-rehash(1) -- but lacks config(5) [about the openssl.cnf file] and crypto(7).  Note that while man pages do exist under those names, they cover unrelated topics."
+}

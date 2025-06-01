@@ -1,0 +1,8 @@
+{
+ "id": 540286,
+ "bug_id": 143037,
+ "attachment_id": 0,
+ "creation_time": "2010-01-20T22:20:06Z",
+ "creator": "paulguyot@ieee.org",
+ "text": "Calling strtod with \"2.225073858507201e-308\" yields 2^-1022 (0,16,0,0,0,0,0,0), while it should yield 2^-1022 - 2^-1074 (0,15,255,255,255,255,255,255), which is the nearest representable value.\n\ngcc on the very same FreeBSD box rounds this to the proper value (see sample code below).\n\nHow-To-Repeat: #include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cfenv.h\u003e\n\nint main() {\nif (fegetround() == FE_TONEAREST) {\nprintf(\"rounding to nearest\\n\");\n} else {\nprintf(\"not rounding to nearest\\n\");\n}\nconst char* fp_str = \"2.225073858507201e-308\";\nprintf(\"string  = %s\\n\", fp_str);\ndouble fp_gcc = 2.225073858507201e-308;\nprintf(\"gcc     = %.20g\\n\", fp_gcc);\ndouble parsed = strtod(fp_str, NULL);\nprintf(\"parsed  = %.20g\\n\", parsed);\ndouble fp = 0.0;\nchar* fp_p = (char*) \u0026fp;\nfp_p[0] = 255;\nfp_p[1] = 255;\nfp_p[2] = 255;\nfp_p[3] = 255;\nfp_p[4] = 255;\nfp_p[5] = 255;\nfp_p[6] = 15;\nfp_p[7] = 0;\nprintf(\"smaller = %.20g\\n\", fp);\nif (fp == parsed) {\nprintf(\"actually rounded to nearest (and towards zero)\\n\");\n}\nfp_p[0] = 0;\nfp_p[1] = 0;\nfp_p[2] = 0;\nfp_p[3] = 0;\nfp_p[4] = 0;\nfp_p[5] = 0;\nfp_p[6] = 16;\nfp_p[7] = 0;\nprintf(\"larger  = %.20g\\n\", fp);\nif (fp == parsed) {\nprintf(\"actually rounded towards +infinity\\n\");\n}\n\nreturn 0;\n}"
+}

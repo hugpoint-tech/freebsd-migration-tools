@@ -1,0 +1,8 @@
+{
+ "id": 992223,
+ "bug_id": 208261,
+ "attachment_id": 0,
+ "creation_time": "2018-05-16T18:03:38Z",
+ "creator": "freebsd@oldach.net",
+ "text": "I think we're hitting the 1000 limit again in local.c. This happens when a line is split into precisely 1000 characters including trailing \\n.\n\nWhen such a line is read from the queue file (or upon immediate local delivery), deliver_local() chokes at this point:\n\n                if (fgets(line, sizeof(line), it-\u003emailf) == NULL)\n                        break;\n                linelen = strlen(line);\n                if (linelen == 0 || line[linelen - 1] != '\\n') {\n\nSince we are reading exactly 1000 bytes, we don't get a trailing \\0 within line[0..999]. strlen(line) therefore goes beyond the actual length of line until a \\0 is located, likely somewhere on the stack. When it doesn't find a \\n immediately preceding the \\0, we're getting an error.\n\nActually this is more like a security issue as we are reading beyond the allocated length of line into some random stack area. This must not happen.\n\nA quick fix would be to limit strlen:\n\n                linelen = strnlen(line, sizeof(line));\n\nThe same issue exists in net.c in deliver_to_host()."
+}

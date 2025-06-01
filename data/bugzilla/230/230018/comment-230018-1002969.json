@@ -1,0 +1,8 @@
+{
+ "id": 1002969,
+ "bug_id": 230018,
+ "attachment_id": 0,
+ "creation_time": "2018-07-24T16:48:34Z",
+ "creator": "val@packett.cool",
+ "text": "Official FreeBSD packages for 32-bit ARM are built using cross-compilation, and the ARM system root in that case is /nxb-bin/.\n\nSo these paths are baked directly into libtool:\n\n$ grep nxb-bin /usr/local/bin/libtool\nLTCC=\"/nxb-bin/usr/bin/cc\"\nsys_lib_search_path_spec=\"/nxb-bin/usr/lib/clang/6.0.0 /usr/lib \"\nLD=\"/nxb-bin/usr/bin/ld\"\nCC=\"/nxb-bin/usr/bin/cc\"\nLD=\"/nxb-bin/usr/bin/ld\"\nCC=\"/nxb-bin/usr/bin/c++\"\nLD=\"/nxb-bin/usr/bin/ld\"\nLD=\"/nxb-bin/usr/bin/ld\"\n\nWhich results in surprising errors when building stuff natively on arm:\n\nlibtool: link: /nxb-bin/usr/bin/cc -shared  -fPIC -DPIC  .libs/sgc.o      -Wl,-soname -Wl,libmzgc-6.12.so -o ../.libs/libmzgc-6.12.so                                            \neval: /nxb-bin/usr/bin/cc: not found\n\nI'm not sure what's the right solution for this. Make a symlink from /nxb-bin to / on arm installs? Ugly. s|/nxb-bin||g on the generated libtool package? Will break the cross-compilation environment I think.\n\nActually, shouldn't all libtool invocations override these variables, so that both cross and native always work?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 803607,
+ "bug_id": 196471,
+ "attachment_id": 151308,
+ "creation_time": "2015-01-03T23:02:57Z",
+ "creator": "markus.heinz@uni-dortmund.de",
+ "text": "Created attachment 151308\ntestcase for libusb segmentation fault\n\nI have encountered a segmentation fault when using libusb on an i386 FreeBSD 10.1 system with the latest patches applied:\n\nSteps to reproduce:\n\n- get a pointer libusb_device *device\n- use it in some way\n- close it\n- reopen it\n- claim an interface of the device handle\n- then it crashes with a segmentation fault\n\nDebugging the libusb_claim_interface method led to this observation:\n\nI am referring to this source code: http://svnweb.freebsd.org/base/stable/10/lib/libusb/libusb10.c?view=markup#l611\n\nIn line 615 the libusb_device * is calculated from the given libusb_device_handle *. The device does contain a NULL pointer as dev-\u003ectx. This null pointer is passed to CTX_LOCK in line 622. Then the segmentation fault occurs.\n\nIf this line is inserted before line 622 the segmentation fault does not occur:\n\ndev-\u003ectx = GET_CONTEXT(dev-\u003ectx);\n\nBut I am not sure if this is the right way to address the problem.\n\nI have created a testcase which I will attach. You need to replace the manufacturer and product ids with some values for a connected usb device. The values in the example are for a HP Deskjet 5550 printer.\n\nThe same testcase works as expected on an Ubuntu 14.04 system with libusbx 1.0.17."
+}

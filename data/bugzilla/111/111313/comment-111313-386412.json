@@ -1,0 +1,8 @@
+{
+ "id": 386412,
+ "bug_id": 111313,
+ "attachment_id": 0,
+ "creation_time": "2007-06-01T22:13:19Z",
+ "creator": "saper@system.pl",
+ "text": "This modification goes down to the patch listed below.\n\nI am experiencing similar problem with IPSec ESP+NAT-T\nencapsulated packets, so maybe there is something there.\n\n(It still applies cleanly to the sys/netinet/ip_output.c revision\n1.242.2.15 or even 1.242.2.18 (current as of time of the writing)).\n\n-- \n              \u003c\u003c Marcin Cieslak // saper@system.pl \u003e\u003e\n\n--- ip_output.c\tFri Jun  1 22:56:35 2007\n+++ ip_output_111313.c\tFri Jun  1 22:55:50 2007\n@@ -159,6 +159,10 @@\n \t}\n \tip = mtod(m, struct ip *);\n\n+\t/* luping modification */\n+\tstruct m_tag *dn_tag;\n+\tdn_tag = m_tag_find(m, PACKET_TAG_DUMMYNET, NULL);\n+\n \t/*\n \t * Fill in IP header.  If we are not allowing fragmentation,\n \t * then the ip_id field is meaningless, but we don't set it\n@@ -172,7 +176,11 @@\n \t */\n \tif ((flags \u0026 (IP_FORWARDING|IP_RAWOUTPUT)) == 0) {\n \t\tip-\u003eip_v = IPVERSION;\n-\t\tip-\u003eip_hl = hlen \u003e\u003e 2;\n+\t\t//luping modification\n+\t\tif (dn_tag == NULL)\n+\t\t\tip-\u003eip_hl = hlen \u003e\u003e 2;\n+\t\telse\n+\t\t\thlen = ip-\u003eip_hl \u003c\u003c 2;\n \t\tip-\u003eip_id = ip_newid();\n \t\tipstat.ips_localout++;\n \t} else {"
+}

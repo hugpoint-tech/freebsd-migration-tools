@@ -1,0 +1,8 @@
+{
+ "id": 545105,
+ "bug_id": 144061,
+ "attachment_id": 0,
+ "creation_time": "2010-05-26T12:02:14Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "Dear all:\n\nThanks for your reports of the ENOTCONN socket close() race.  As those of you \nfollowing the PR have likely by now seen, I've committed a version of \nMikolaj's regression test to the 9-CURRENT tree.  I'd now like to commit the \nattached useful workaround, which is similar to the ones proposed by several \nof you except that it skips linger-handling in the event of ENOTCONN, which \nmight otherwise sleep indefinitely (linger is rarely used with UNIX domain \nsockets but could happen).\n\nCould I ask you to give it a spin and make sure it resolves the problem for \nyou, as well as not introducing new problems?  If all goes well, I'll commit \nthis in the next day or so.  We should then be able to merge for 8.1.  Thanks \nfor your patience...\n\n(I'm currently unable to reproduce the problem on two boxes, but was \npreviously, so it seems fairly timing-sensitive).\n\nRobert N M Watson\nComputer Laboratory\nUniversity of Cambridge\n\nIndex: uipc_socket.c\n===================================================================\n--- uipc_socket.c\t(revision 208558)\n+++ uipc_socket.c\t(working copy)\n@@ -665,8 +665,11 @@\n  \tif (so-\u003eso_state \u0026 SS_ISCONNECTED) {\n  \t\tif ((so-\u003eso_state \u0026 SS_ISDISCONNECTING) == 0) {\n  \t\t\terror = sodisconnect(so);\n-\t\t\tif (error)\n+\t\t\tif (error) {\n+\t\t\t\tif (error == ENOTCONN)\n+\t\t\t\t\terror = 0;\n  \t\t\t\tgoto drop;\n+\t\t\t}\n  \t\t}\n  \t\tif (so-\u003eso_options \u0026 SO_LINGER) {\n  \t\t\tif ((so-\u003eso_state \u0026 SS_ISDISCONNECTING) \u0026\u0026"
+}

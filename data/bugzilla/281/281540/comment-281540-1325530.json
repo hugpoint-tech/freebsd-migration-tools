@@ -1,0 +1,8 @@
+{
+ "id": 1325530,
+ "bug_id": 281540,
+ "attachment_id": 0,
+ "creation_time": "2024-09-16T18:00:10Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "As noted in the libc++ 19 release notes [1], std::char_traits\u003c\u003e is now\nonly provided for char, char8_t, char16_t, char32_t and wchar_t, and any\ninstantiation for other types will fail.\n\nThis causes devel/sfml to fail to compile with clang 19 and libc++ 19,\nresulting in errors similar to:\n\n  /usr/include/c++/v1/string:820:42: error: implicit instantiation of undefined template 'std::char_traits\u003cunsigned int\u003e'\n    820 |   static_assert(is_same\u003c_CharT, typename traits_type::char_type\u003e::value,\n        |                                          ^\n  /wrkdirs/usr/ports/devel/sfml/work/SFML-2.6.1/include/SFML/System/String.hpp:52:18: note: in instantiation of template class 'std::basic_string\u003cunsigned int\u003e' requested here\n     52 |     typedef std::basic_string\u003cUint32\u003e::iterator       Iterator;      //!\u003c Iterator type\n        |                  ^\n  /usr/include/c++/v1/__fwd/string.h:23:29: note: template is declared here\n     23 | struct _LIBCPP_TEMPLATE_VIS char_traits;\n        |                             ^\n\nSFML makes heavy use of the no-longer-existing basic_string variants, so\nI had to add a rudimentary set of char_traits classes, for unsigned\nchar, unsigned short and unsigned int, otherwise this would not compile.\n\n[1] https://libcxx.llvm.org/ReleaseNotes/19.html#deprecations-and-removals"
+}

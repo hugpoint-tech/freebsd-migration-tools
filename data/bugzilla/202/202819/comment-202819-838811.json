@@ -1,0 +1,8 @@
+{
+ "id": 838811,
+ "bug_id": 202819,
+ "attachment_id": 160609,
+ "creation_time": "2015-09-01T23:27:14Z",
+ "creator": "brd@FreeBSD.org",
+ "text": "Created attachment 160609\npatch\n\nRecent update of openladap-sasl-client changed the sendto(2) \"tolen\" argument from:\nsendto(..., dst, sizeof(sruct sockaddr));\nto:\nsendto(..., dst, sizeof(struct sockaddr_storage)); \n\nOn FreeBSD with UDP sockets this change is invalid.\n\nFreeBSD's getsockaddr() will copyin((dst, sa, len); and then set sa-\u003esa_len = len. With the above change sa_len will be 128.\n\nLater in in_pcbconnect_setup() this socket address will be rejected with EINVAL because sa_len != sizeof(struct sockaddr_in)\n\nPatch openldap's liblber to always issue a the sendto(2) as follows:\nsendto(..., dst, dst-\u003esa_len);\n\nThis fixes both IPv4 and IPv6 sockaddrs in a manner compatible with the kernel's getsockaddr() semantics."
+}

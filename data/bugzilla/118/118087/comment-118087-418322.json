@@ -1,0 +1,8 @@
+{
+ "id": 418322,
+ "bug_id": 118087,
+ "attachment_id": 0,
+ "creation_time": "2007-11-16T16:10:03Z",
+ "creator": "jmrueda@diatel.upm.es",
+ "text": "In 7.0, restore checks the dumpdate which is recorded in every tape block to validate the tape. I imagine this was added as a fool-proof measure to detect if the operator mixes up the tapes of a multivolume backup.\n\nThis brings two problems, as far as I have seen:\n\n1) If you make a backup in 7.0 and then restore it in 7.0, you get a disturbing \"Header with wrong dumpdate\" message when restore starts, although everything works just fine. After checking the source code, it seems the cause is that restore checks the dumpdate before initializing the variable where it is supposed to be, and therefore the message is spureous.\n\n2) If you make a backup in 6.2 and then restore it in 7.0, you get thousands of \"Header with wrong dumpdate\" messages. I haven't confirmed it, but I suspect that dump in earlier FreeBSD releases recorded the dumpdate only in the first tape block. As restore in 7.0 checks the dumpdate in every single tape block, we get an error message for every block in the tape.\n\nFix: I propose this patch. If one of the two dates being compared is zero (that is, uninitialized or unrecorded), then restore will not complain.\n\nPatch attached with submission follows:\nHow-To-Repeat: # dump 0aLf /var/tmp/aux.dump /\n  ... Usual messages, everything fine ...\n# restore -if\nHeader with wrong dumpdate.\nrestore \u003e\n\nIn 7.0, you only get the above error message.\n\nIf you make a backup in 6.2, and try to restore it in 7.0, you will get many more error messages."
+}

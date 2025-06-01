@@ -1,0 +1,8 @@
+{
+ "id": 959048,
+ "bug_id": 223519,
+ "attachment_id": 0,
+ "creation_time": "2017-11-09T23:50:32Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Unfortunately, this is inherent in the design of __BUS_ACCESSOR.  There is no universal value to return to indicate an invalid ivar (e.g. ivars can have a value of -1).  In essence, the assumption is that _BUS_ACCESSOR is a convenience wrapper for ivars that are always valid.  One should use BUS_READ_IVAR() directly if one wishes to handle possibly invalid ivars.\n\nThe ACPI ivars accessors use a different macro that returns a default value of 0 so that acpi_get_handle() will \"fail\" properly, but that is only ok for ACPI.\n\nI think it would perhaps be useful to extend the ACPI model slightly to have a __BUS_ACCESSOR_DEFAULT() that accepts an additional \"default value\" parameter which is returned if BUS_READ_IVAR fails perhaps?  That could replace the ACPI macro and be useful for other cases since on an individual ivar you might be able to return a suitable value for error.\n\nIn general with ivars I have wanted a way to name them by a tuple (group, index) (ACPI just starts indices at 100 to get around this) and then have a way to say \"do you have this group\".  This would let you ask a given device \"do you have PCI ivars\" (i.e. are you a PCI device).  However, this would require restructuring ivars a bit.  That wouldn't help with your bug where a single ivar out of a group was not properly implemented either."
+}

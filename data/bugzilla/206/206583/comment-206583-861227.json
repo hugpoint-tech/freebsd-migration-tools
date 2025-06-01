@@ -1,0 +1,8 @@
+{
+ "id": 861227,
+ "bug_id": 206583,
+ "attachment_id": 0,
+ "creation_time": "2016-01-24T17:16:48Z",
+ "creator": "woodsb02@freebsd.org",
+ "text": "Some information provided by Marko Zec on the freebsd-net@freebsd.org mailing list:\nhttps://lists.freebsd.org/pipermail/freebsd-net/2016-January/044447.html\n\nIn this particular case the problem is that ip_mroute demands more\nspace for \"virtualized global\" variables than what kernel linker has\nput aside for each vnet.\n\nBumping VNET_MODMIN to 24 should circumvent the issue that Ben is\nobserving.  A more vnet-friendly fix would require refactoring\nip_mroute's arrays so that they get malloc()ed / free()d from SYSINIT\nhandlers instead of being declared \"virtualized global\".\n\nMarko\n\n===================================================================\n--- vnet.c      (revision 294659)\n+++ vnet.c      (working copy)\n@@ -170,7 +170,7 @@\n  * we want the virtualized global variable space to be page-sized, we\nmay\n  * have more space than that in practice.\n  */\n-#define        VNET_MODMIN     8192\n+#define        VNET_MODMIN     3 * 8192\n #define        VNET_SIZE       roundup2(VNET_BYTES, PAGE_SIZE)\n #define        VNET_MODSIZE    (VNET_SIZE - (VNET_BYTES - VNET_MODMIN))"
+}

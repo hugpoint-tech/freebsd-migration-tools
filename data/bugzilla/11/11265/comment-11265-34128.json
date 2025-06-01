@@ -1,0 +1,8 @@
+{
+ "id": 34128,
+ "bug_id": 11265,
+ "attachment_id": 0,
+ "creation_time": "1999-04-21T21:20:01Z",
+ "creator": "lennox@cs.columbia.edu",
+ "text": "I pulled down the egcs-1.1.2 port in late March.  When I build a shared\nlibrary with it, the resulting .so has undefined symbols in it that\naren't pulled in from anyplace.  This isn't a problem when I link, but\nwhen I try to run an executable linked with the .so, I get errors from\n/usr/libexec/ld-elf.so of the form\n/usr/libexec/ld-elf.so.1: ./libbaz.so: Undefined symbol \"__deregister_frame_info\"\n\nThis only seems to happen if both the shared library and the executable\nuse only C code; if anything uses C++ the missing symbols seem to get\npulled in from somewhere.\n\nThis symbol seems to be coming in from the two files\n/usr/local/lib/gcc-lib/i386-portbld-freebsd3.1/egcs-2.91.66/crtbeginS.o\n/usr/local/lib/gcc-lib/i386-portbld-freebsd3.1/egcs-2.91.66/crtendS.o\n\nHow-To-Repeat: bash-2.02$ cat bar.c\nextern void baz(void);\n\nint main()\n{\n  baz();\n  exit(0);\n}\nbash-2.02$ cat baz.c\n#include \u003cstdio.h\u003e\n\nvoid baz(void)\n{\n  printf(\"baz: hello world!\\n\");\n}\nbash-2.02$ egcc -Wall -c -fPIC baz.c\nbash-2.02$ egcc -shared -Wl,-h -Wl,libbaz.so -o libbaz.so baz.o\nbash-2.02$ egcc -Wall -c bar.c\nbash-2.02$ egcc -o bar -L. bar.o -lbaz\nbash-2.02$ LD_LIBRARY_PATH=. ./bar\n/usr/libexec/ld-elf.so.1: ./libbaz.so: Undefined symbol \"__deregister_frame_info\"\nbash-2.02$ egcc -v\nReading specs from /usr/local/lib/gcc-lib/i386-portbld-freebsd3.1/egcs-2.91.66/specs\ngcc version egcs-2.91.66 19990314 (egcs-1.1.2 release)\n\n(Note: this is a (very) simplified version of a part of the Mozilla\nbuild system, which is where I noticed the problem.)"
+}

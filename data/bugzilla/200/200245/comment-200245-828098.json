@@ -1,0 +1,8 @@
+{
+ "id": 828098,
+ "bug_id": 200245,
+ "attachment_id": 0,
+ "creation_time": "2015-06-16T16:54:44Z",
+ "creator": "johan@stromnet.se",
+ "text": "Okay. If I understand correct, the same compilation is done later in post-install anyway, since we have to build with the specific hack from https://www.freebsd.org/doc/en_US.ISO8859-1/books/porters-handbook/using-python.html.\n\nI did some testing. The optimized files (-O) are not actually built at all, maybe erased somehow? If I add the following...\n\n\t(cd ${STAGEDIR}${PREFIX} \\\n\t\t \u0026\u0026 ${PYTHON_CMD} -O ${PYTHON_LIBDIR}/compileall.py \\\n\t\t-d ${PYTHONPREFIX_SITELIBDIR} -f ${PYTHONPREFIX_SITELIBDIR:S;${PREFIX}/;;})\n\n..I get the following errors:\n\nError: Orphaned: %%PYTHON_SITELIBDIR%%/ow/__init__.pyo\nError: Orphaned: %%PYTHON_SITELIBDIR%%/ownet/__init__.pyo\nError: Orphaned: %%PYTHON_SITELIBDIR%%/ownet/connection.pyo\n\nWithout the above change (only having @${PYTHON_CMD} -O -m compileall ${WRKSRC}), the .pyo files are never installed and thus never orphaned.\n\n\nMy vote is to do the following:\n\n* Remove the do-build section python calls\n* Add the above compileall with the -O flag to post-install\n* Add .pyo files for each .pyc file in pkg-plist\n\nWith those changes, it builds fine here, with .pyo files installed.\n\nTo admin@lissyara.su, could you add those minor changes to the patch you've already created please? Then I think we're good for maintainer-approval."
+}

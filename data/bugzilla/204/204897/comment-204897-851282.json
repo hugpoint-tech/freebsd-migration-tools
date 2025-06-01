@@ -1,0 +1,8 @@
+{
+ "id": 851282,
+ "bug_id": 204897,
+ "attachment_id": 163656,
+ "creation_time": "2015-11-29T18:13:10Z",
+ "creator": "doublef.mobile@gmail.com",
+ "text": "Created attachment 163656\nUntested sample patch\n\nIf, for example, the following command starts a jail:\n\n# jail -n someday ...\n\nand so does the following command:\n\n# jail -n 1day ...\n\nthis one doesn't:\n\n# jail -n 0day /var/empty empty 10.0.0.1 /bin/sh\njail: name cannot be numeric (unless it is the jid)\n\nApart from people making up stupid names for jails, this affects anyone trying to run Docker on FreeBSD. The behavior is due to a bug in sys/kern/kern_jail.c's detection of numeric JIDs, which dates back to 2009:\n\nhttps://svnweb.freebsd.org/base/head/sys/kern/kern_jail.c?revision=285685\u0026view=markup\n\n\u003e else if (*namelc == '0' || (strtoul(namelc, \u0026p, 10) != jid \u0026\u0026 *p == '\\0')))\n\nIt thinks everything that starts with a '0' is numeric, and doesn't\ncheck that it's the only character, e.g. namelc[1] == '\\0'. Untested sample patch is attached."
+}

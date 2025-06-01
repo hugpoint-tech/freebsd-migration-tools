@@ -1,0 +1,8 @@
+{
+ "id": 85091,
+ "bug_id": 27232,
+ "attachment_id": 0,
+ "creation_time": "2001-05-09T18:20:01Z",
+ "creator": "conrad@th.physik.uni-bonn.de",
+ "text": "On NFSv3 mounts, stat returns st_blksize=512 for every regular file.\nThis in turn is used by libc routines as a default buffer size, as it\nshould be the 'optimal' io blocksize.\n\nHowever, this leads to a drastic performance decrease. For example\na mailbox save of a 3MB messages (by pine) takes over half a minute\nwith 512 byte writes whereas it takes only a second or so with a 16kB\nbuffer.\n\nFix: \n\nThe whole thing can be traced back to the NFS code in the kernel.\nThe function nfs_loadattrcache of sys/nfs/nfs_subs.c makes the\nassignement\n\n\t\tvap-\u003eva_blocksize = NFS_FABLKSIZE;\n\nfor NFSv3, where NFS_FABLKSIZE is 512.\n\nIn my opinion the assignement should be something like\n\n\t\tvap-\u003eva_blocksize = vp-\u003ev_mount-\u003emnt_stat.f_iosize;\n\ni.e. va_blocksize should be assigned the 'optimal' iosize for the\nmounted file system. I think that this is the maximum of the read\nand write blocksize of the nfs-mount (search for nfs_iosize in\nnfs_vfsops.c).\n\nThis should solve the problem, but I am no kernel hacker :-)\nHow-To-Repeat: See above."
+}

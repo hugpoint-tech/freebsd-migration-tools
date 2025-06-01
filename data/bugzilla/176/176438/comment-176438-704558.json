@@ -1,0 +1,8 @@
+{
+ "id": 704558,
+ "bug_id": 176438,
+ "attachment_id": 0,
+ "creation_time": "2013-02-26T11:30:00Z",
+ "creator": "kajetan.staszkiewicz@innogames.de",
+ "text": "When nrpe2 built with SSL support accepts a new connection, it enters a loop waiting for SSL handshake. If no handshake occurs but the tcp connection is established, the loop consumes all available cpu time.\n\n1004             /* keep attempting the request if needed */\n1005                         while(((rc=SSL_accept(ssl))!=1) \u0026\u0026 (SSL_get_error(ssl,rc)==SSL_ERROR_WANT_READ));\n\nI've observed this behavior on FreeBSD 9.0 and 9.1, I was told it happens also on 6.x.\n\nThis does not happen on nrpe2 running on Debian. Running strace/gdb on the process shows that in Linux it is waiting on read(), while on FreeBSD it iterates the loop over and over very fast.\n\nFix: \n\nA dirty hack is to add usleep(100000) in the aforementioned loop.\nHow-To-Repeat: `telnet localhost 5666` is enough to observe 100% cpu usage in top."
+}

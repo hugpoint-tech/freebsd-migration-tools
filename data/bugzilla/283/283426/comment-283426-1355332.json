@@ -1,0 +1,8 @@
+{
+ "id": 1355332,
+ "bug_id": 283426,
+ "attachment_id": 0,
+ "creation_time": "2025-03-17T19:18:40Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "May I have a suggestion:  no matter what, can we please fix the panic message in stable/14 directly if this no longer applies to main to at least print m0 %p and some of the mbuf flags;  Seems this wasn't done in 2014 but would have probably answered half of the questions here and now.\n\n\n\nThe iwm rx ring is populated from:\n   m = m_getjcl(M_NOWAIT, MT_DATA, M_PKTHDR, IWM_RBUF_SIZE);\n\nAnd according to the offsets (line numbers) what is passed up comes out of:\n   5321                          * We need to start m_copym() at offset 0, to get the\n   5322                          * M_PKTHDR flag preserved.\n   5323                          */\n   5324                         m1 = m_copym(m, 0, M_COPYALL, M_NOWAIT);\n   5325                         if (m1) {\n   5326                                 if (iwm_rx_mpdu(sc, m1, offset, stolen))\n\nSo given we assume to have a copy (reference count increased) with M_PKTHDR the question then is where in the stack up could we lose this?\n\nip_input (at least on releng/14.2) does: M_ASSERTPKTHDR() but that's likely compiled out on the release.\n\nAssuming we pass that the next question would be: IPsec?  Firewall?\n\nI don't see much else in the path to lose the M_PKTHDR.\n\nThe only other difference between (likely 14.1? and 14.2) there is that I moved the epoch from the driver into net80211 but that should not have an effect on that mbuf."
+}

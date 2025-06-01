@@ -1,0 +1,8 @@
+{
+ "id": 1014246,
+ "bug_id": 231933,
+ "attachment_id": 197768,
+ "creation_time": "2018-10-04T05:45:14Z",
+ "creator": "vladimirv@ixsystems.com",
+ "text": "Created attachment 197768\nPatch that fixes described issue\n\nIn our system (http://www.freenas.org/) uwsgi application server calls a python program that calls a shell script that calls a shell script that calls bc and it hangs leaving us with hanging process tree like this:\n\n```\n3135   |-- /usr/local/bin/uwsgi \u003c...long text cut\u003e\n4435   | `-- /usr/local/bin/uwsgi \u003c...long text cut\u003e\n8952   |   |-- /bin/sh /usr/sbin/service smartd-daemon status\n9087   |   | `-- /bin/sh /usr/sbin/service smartd-daemon status\n9088   |   |   `-- /bin/sh /usr/sbin/service smartd-daemon status\n9090   |   |     `-- /usr/bin/bc\n9091   |   |       `-- \u003cdefunct\u003e\n```\n\nThis happens because bc relies on SIGCHLD to determine that dc has completed, wait for it and exit on it's own. SIGCHLD is blocked by uwsgi and this blocking is inherited by each it's subprocess. Our shell scripts are rather complicated and call a lot of other programs and bc was the only one that has this issue, so, despite no specification defines who should clear process signal mask, caller or callee, I think this should be fixed with simple patch attached."
+}

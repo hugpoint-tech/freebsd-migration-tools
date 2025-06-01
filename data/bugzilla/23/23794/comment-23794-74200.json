@@ -1,0 +1,8 @@
+{
+ "id": 74200,
+ "bug_id": 23794,
+ "attachment_id": 0,
+ "creation_time": "2000-12-24T02:33:47Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "In message \u003c200012231336.eBNDaMp03117@curry.mchp.siemens.de\u003e, Andre Albsmeier w\nrites:\n\u003e\u003eSynopsis:       reboot after panic: backgroundwritedone: lost buffer\n\nThis is interesting, since it relates to the discussions which\npreceded revision 1.267 of vfs_bio.c. There was a piece of code in\nbrelse() that was supposed to ensure that buffers with associated\nbackground writes would remain until the background write completed.\n\nHowever the logic of this code had always been wrong so it never\nfunctioned, and Matt removed it in vfs_bio.c revision 1.267 (and\nin 4.x revision 1.242.2.3). This panic may indicate that this check\nreally does need to be added (correctly this time).\n\nWhat is the version number of /usr/src/sys/kern/vfs_bio.c that you\nare using?\n\nI think to re-introduce the test for background writes we need\nsomething like the patch below, though I haven't looked too carefully.\n\nIan\n\n\nIndex: vfs_bio.c\n===================================================================\nRCS file: /home/iedowse/CVS/src/sys/kern/vfs_bio.c,v\nretrieving revision 1.268\ndiff -u -r1.268 vfs_bio.c\n--- vfs_bio.c\t2000/12/15 20:08:19\t1.268\n+++ vfs_bio.c\t2000/12/23 14:54:44\n@@ -1009,6 +1009,7 @@\n \t * background write.\n \t */\n \tif ((bp-\u003eb_flags \u0026 B_VMIO)\n+\t    \u0026\u0026 !(bp-\u003eb_xflags \u0026 BX_BKGRDINPROG)\n \t    \u0026\u0026 !(bp-\u003eb_vp-\u003ev_tag == VT_NFS \u0026\u0026\n \t\t !vn_isdisk(bp-\u003eb_vp, NULL) \u0026\u0026\n \t\t (bp-\u003eb_flags \u0026 B_DELWRI))"
+}

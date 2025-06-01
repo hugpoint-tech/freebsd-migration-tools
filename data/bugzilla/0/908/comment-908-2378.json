@@ -1,0 +1,8 @@
+{
+ "id": 2378,
+ "bug_id": 908,
+ "attachment_id": 0,
+ "creation_time": "1995-12-28T07:19:57Z",
+ "creator": "mark@linus.demon.co.uk",
+ "text": "\u003e From: Mark Valentine \u003cmark@linus.demon.co.uk\u003e\n\u003e Date: Thu 21 Dec, 1995\n\u003e Subject: bin/908: sed bug with trailing backslashes\n\n\u003e \u003eDescription:\n\u003e \n\u003e \tSed misinterprets the pair of backslashes at the end of line 2 of\n\u003e \tthe following script, resulting in line 3 being taken as part of\n\u003e \tthe inserted text.\n\u003e \n\u003e \t    1i\\\n\u003e \t    char foo[] = \"\\\\\n\u003e \t    s/$/\\\\n\\\\/\n\u003e \t    $a\\\n\u003e \t    \";\n\nThis small patch to usr.bin/sed/compile.c seems to fix it.  It replaces\nescaping backslashes in the input buffer with NULs, and uses those to\ndetermine whether the newline was escaped, rather than looking for a\n(possibly escaped) preceding backslash.\n\n--- compile.c.dist\tWed Aug 16 21:21:55 1995\n+++ compile.c\tThu Dec 28 06:32:03 1995\n@@ -628,11 +628,11 @@\n \t\tEATSPACE();\n \t\tfor (; *p; p++) {\n \t\t\tif (*p == '\\\\')\n-\t\t\t\tp++;\n+\t\t\t\t*p++ = '\\0';\n \t\t\t*s++ = *p;\n \t\t}\n \t\tsize += s - op;\n-\t\tif (p[-2] != '\\\\') {\n+\t\tif (p[-2] != '\\0') {\n \t\t\t*s = '\\0';\n \t\t\tbreak;\n \t\t}\n\nThis patch doesn't seem to break any of the regression tests.\n\n\t\tMark."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1153542,
+ "bug_id": 254590,
+ "attachment_id": 223621,
+ "creation_time": "2021-03-26T21:01:29Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 223621\nadd soshutdown() calls to server side krpc for non-functional TCP conn\n\nJason Breitman reported \"stuck\" Linux NFSv4.1 mounts\nagainst a FreeBSD NFSv4.1 server.\nAlthough the underlying cause is not known, the\nTCP connection is in FIN_WAIT2 on the client\nand CLOSE_WAIT on the server.\n\nThe server side TCP remains in CLOSE_WAIT because\nthe server's krpc cannot soclose() the socket until\nthe backchannel is re-assigned to another TCP connection.\nThis re-assignment happens when the client establishes\na new TCP connection and does a BindConnectionToSession\noperation on the new connection.\n\nThis patch adds soshutdown(SHUT_WR) calls in the 3 places\nwhere the server krpc knows that the TCP socket is no\nlonger usable.\n--\u003e I think this will allow the TCP connection to proceed\n    past CLOSE_WAIT and allow the TCP connection closure\n    to complete.\nThis will hopefully get the Linux mount \"unstuck\"."
+}

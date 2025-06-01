@@ -1,0 +1,8 @@
+{
+ "id": 946893,
+ "bug_id": 221385,
+ "attachment_id": 185224,
+ "creation_time": "2017-08-10T08:30:58Z",
+ "creator": "seb@struchtrup.com",
+ "text": "Created attachment 185224\nTest case to reproduce the problem\n\nHaving set sysctl net.inet6.ip6.v6only=0, v6-mapped v4 addresses used to work on 11.0 and on previous versions.\n\nOn 11.1-RELEASE, I am now getting EAFNOSUPPORT on connect() when using a v6-mapped address on a PF_INET6 socket.\n\nAdding an extra setsockopt to clear IPV6_V6ONLY will work around this.\n\n\n# sysctl net.inet6.ip6.v6only\nnet.inet6.ip6.v6only: 0\n\n# uname -a\nFreeBSD s5.struchtrup.com 11.1-RELEASE FreeBSD 11.1-RELEASE #0 r321309: Fri Jul 21 02:08:28 UTC 2017     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC  amd64\n\ntruss output (stripped) - failing case w/o setsockopt:\n\nsocket(PF_INET6,SOCK_STREAM,0)                   = 3 (0x3)\nconnect(3,{ AF_INET6 [::ffff:127.0.0.1]:1234 },28) ERR#47 'Address family not supported by protocol family'\n\n\ntruss output with setsockopt:\n\nsocket(PF_INET6,SOCK_STREAM,0)                   = 3 (0x3)\nsetsockopt(3,IPPROTO_IPV6,IPV6_V6ONLY,0x7fffffffea94,4) = 0 (0x0)\nconnect(3,{ AF_INET6 [::ffff:127.0.0.1]:1234 },28) = 0 (0x0)"
+}

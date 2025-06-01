@@ -1,0 +1,8 @@
+{
+ "id": 1179665,
+ "bug_id": 249357,
+ "attachment_id": 0,
+ "creation_time": "2021-09-26T13:59:35Z",
+ "creator": "jwb@freebsd.org",
+ "text": "FYI, I was able to get Xorg working on the X120e with the following contortions:\n\n1. Manually kldload amdgpu.  This was just a \"Hail Mary\".  For some reason, this sometimes allows Xorg to start without freezing the system.  Adding it to kld_list in rc.conf still causes a freeze during boot.\n\n2. Run Xorg -configure as a shortcut for generating a driver config.\n\n3. Extract Device section from Xorg.conf.new and replace \"radeon\" with \"scfb\".  Install fragment to /etc/X11/xorg.conf.d/40-driver.conf (actual name not important).\n\nSection \"Device\"\n  Identifier \"Card0\"\n  Driver \"scfb\"\n  BusID \"PCI:0:1:0\"\nEndSection\n\nBusID will be different for each machine.  I got it using Xorg -configure, but it will also be reported by pciconf -lv.  Look for class=display.  Using pciconf to get the BusID will avoid the need to run Xorg successfully before forcing \"scfb\".\n\nRadeonkms and related modules are auto-loaded when Xorg starts, but with scfb forced in the config, Xorg does not freeze as it did with the radeon driver."
+}

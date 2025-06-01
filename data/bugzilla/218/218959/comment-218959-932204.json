@@ -1,0 +1,8 @@
+{
+ "id": 932204,
+ "bug_id": 218959,
+ "attachment_id": 182180,
+ "creation_time": "2017-04-29T21:37:24Z",
+ "creator": "webpages@sprow.co.uk",
+ "text": "Created attachment 182180\nPatch to parms.c\n\nIn the process of starting in main() routed gets \n  rt_sock = socket(AF_ROUTE, SOCK_RAW, 0);\nwhich on my test system is the first socket to be opened, and hence rt_sock is 0.\n[https://svnweb.freebsd.org/base/head/sbin/routed/main.c?annotate=314436#l309]\n\nA little further down main() we call gwkludge(), which parses the /etc/gateways file and adds fake interfaces for passive networks. \n[https://svnweb.freebsd.org/base/head/sbin/routed/main.c?annotate=314436#l350]\n\nThen, still in msin() we call ifinit() which looks through the interfaces known and turns on router discovery and RIP \n  if_ok_rdisc(ifp);\n  rip_on(ifp);\n[https://svnweb.freebsd.org/base/head/sbin/routed/if.c?annotate=314436#l1141]\n\nIn the rip_on() function for any interfaces that are having RIP turned on any query sockets are closed\n  (void)close(ifp-\u003eint_rip_sock);\n[https://svnweb.freebsd.org/base/head/sbin/routed/main.c?annotate=314436#l770]\n\nThe problem is that when the fake interface was created memset was used to clear the struct interface, but the member int_rip_sock is never initialised. Therefore, when the loop iterates over the interfaces to turn RIP on it finds a positive number (0) and closes the socket - inadvertantly closing the rt_sock by mistake.\n\nPatch attached initialises that member to -1, an invalid socket number."
+}

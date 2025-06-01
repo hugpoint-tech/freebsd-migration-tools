@@ -1,0 +1,8 @@
+{
+ "id": 821570,
+ "bug_id": 199776,
+ "attachment_id": 0,
+ "creation_time": "2015-04-29T12:30:07Z",
+ "creator": "dirkx@webweaving.org",
+ "text": "The automated IDS currently (by default) outputs the host from which the fingerprints where received:\n\n\n   $ sudo freebsd-update IDS\n   ...\n   /Fetching metadata signature for 10.1-RELEASE from update1.freebsd.org... done\n   ...\n   $\n\nThis means that things such as a periodic/security script cannot blindly compare the output. Hence it would be useful to\n\n1) either have a flag to suppress such non-unique flags\nor \n2) modify the IDS periodic script along the lines below; removing such lines.\n\nI guess '1' is a cleaner option. Less ways to abuse.\n\nDw.\n\n#/bin/sh\nset -e\n\necho IDS - comparing install\necho\n\nDATE=$(/bin/date +%Y%d%m)\n\n/usr/sbin/freebsd-update IDS |/usr/bin/tee /var/db/ids.${DATE} | while read file a b c hash rest; do\n        if [ \"$a\" != \"has\" -o \"$b\" != \"SHA256\" -o \"$c\" != \"hash\" ] || ! /usr/bin/grep -q \"${hash}\" /var/db/ids.last; then\n                echo \"$file $a $b $c $hash $rest\";\n        fi\ndone\n\necho\necho\necho Comparing with previous IDS run\necho\nfor file in /var/db/ids.${DATE} /var/db/ids.last\ndo\n        test -f $file \u0026\u0026 \\\n                cat $file | sed -E 's/^Fetching metadata signature for 10.([0-9]+)-RELEASE from update([0-9]+).freebsd.org... done./Fetching metadata signature for 10.1-RELEASE from updateX.freebsd.org... done./' \u003e $file.tmp\ndone\n\nif diff /var/db/ids.${DATE}.tmp /var/db/ids.last.tmp; then\n        echo No changes.\nelse\n        diff /var/db/ids.${DATE} /var/db/ids.last\nfi\n\nrm -f /var/db/ids.${DATE}.tmp /var/db/ids.last.tmp\ncp /var/db/ids.${DATE} /var/db/ids.last\n\nexit 0"
+}

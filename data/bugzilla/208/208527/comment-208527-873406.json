@@ -1,0 +1,8 @@
+{
+ "id": 873406,
+ "bug_id": 208527,
+ "attachment_id": 169020,
+ "creation_time": "2016-04-06T04:28:46Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 169020\nshell |for| loops\n\nLooks like a regression from ports r412305 as |.include \u003cbsd.port.options.mk\u003e| pulled some variables definitions from bsd.port.mk later used for expansion in |.for| loops. The error is probably not always triggered due to |test -f ...|. Try the attached patch (barring typos). \n\n  $ make\n  manifest-rustc\n  manifest-rust-std--unknown-\n\n  $ cat Makefile\n  RUST_ARCH_amd64=\tx86_64\n  RUST_ARCH_i386=\t\ti686\n  RUST_TARGET=\t\t${RUST_ARCH_${ARCH}}-unknown-${OPSYS:tl}\n\n  all:\n  .for f in manifest-rustc manifest-rust-std-${RUST_TARGET}\n\t  @echo ${f}\n  .endfor\n\n  # actually defined in bsd.port.mk \n  OPSYS!=\tuname -s\n  ARCH!=\tuname -p\n\nvs.\n\n  $ make\n  manifest-rustc\n  manifest-rust-std-x86_64-unknown-freebsd\n\n  $ cat Makefile\n  RUST_ARCH_amd64=\tx86_64\n  RUST_ARCH_i386=\t\ti686\n  RUST_TARGET=\t\t${RUST_ARCH_${ARCH}}-unknown-${OPSYS:tl}\n\n  all:\n\t  @for f in manifest-rustc manifest-rust-std-${RUST_TARGET}; do \\\n\t\t  echo $$f; \\\n\t  done\n\n  # actually defined in bsd.port.mk \n  OPSYS!=\tuname -s\n  ARCH!=\tuname -p"
+}

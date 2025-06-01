@@ -1,0 +1,8 @@
+{
+ "id": 372269,
+ "bug_id": 108216,
+ "attachment_id": 0,
+ "creation_time": "2007-01-22T17:50:19Z",
+ "creator": "freebsd@spatula.net",
+ "text": "\n\nIPv6 in FreeBSD 6.2-RELEASE and -STABLE as of this writing is broken.  The symptom is that any attempt to send\na packet results in a \"no route to host\" message.  This was tested using v6v4 over a gif interface using\nfreenet6.net (which configures with the tspc daemon).\n\nFix: \n\nAs mentioned in http://lists.freebsd.org/pipermail/freebsd-stable/2006-December/031853.html this problem can\nbe traced to a single commit.\n\nThe workaround is to back out this commit locally, by fetching the diff to the previous commit:\n\nhttp://www.freebsd.org/cgi/cvsweb.cgi/src/sys/netinet6/nd6.c.diff?r1=1.48.2.15\u0026r2=1.48.2.16\n\nAnd then doing a patch -R against sys/netinet6/nd6.c , then recompiling the kernel.\n\n\nAt the very least, this bug should be noted in the 6.2 errata (at the time of this writing it still wasn't) since\nit is complete breakage of major system functionality.\n\n\nVisual inspection suggests that the problem may be related to this change:\n\n \t\t\tlookup:\n-\t\t\t\trt-\u003ert_gwroute = rtalloc1(rt-\u003ert_gateway, 1, 0UL);\n-\t\t\t\tif ((rt = rt-\u003ert_gwroute) == 0)\n+\t\t\t\tRT_UNLOCK(rt0);\n+\t\t\t\trt = rtalloc1(rt-\u003ert_gateway, 1, 0UL);\n\nNote that the assignment changed from rt-\u003egwroute to rt itself.  This seems suspicious.  Unfortunately I do not\nhave a test system available at the moment to change this code to see if it corrects the trouble.\nHow-To-Repeat: \nUpgrade to 6.2.  Create an ipv6 tunnel with any tunnel broker.  Attempt to ping6 any ipv6 destination."
+}

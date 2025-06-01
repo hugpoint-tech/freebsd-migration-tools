@@ -1,0 +1,8 @@
+{
+ "id": 914872,
+ "bug_id": 215799,
+ "attachment_id": 0,
+ "creation_time": "2017-01-05T16:46:27Z",
+ "creator": "girgen@FreeBSD.org",
+ "text": "Hi, \n\nDownloaded `CentOS-7-x86_64-Everything-1611.iso`, and also `rhel-server-7.3-x86_64-dvd.iso`, and tried to install on\n\n- FreeBSD 11.0-p6 host\n- grub2-bhyve-0.40_1 from ports\n\nAfter successful installation of the linux host from ISO image, restart the bhyve with GRUB and it fails to read the XFS file system – [see also this forum post (https://forums.freebsd.org/threads/58981/):\n\ngrub\u003e ls\n(lvm/cl-root) (lvm/cl-swap) (hd0) (hd0,msdos2) (hd0,msdos1) (host) \ngrub\u003e ls (lvm/cl-root)/\nerror: not a correct XFS inode.\n...\ngrub\u003e ls (hd0,msdos2)/\nerror: unknown filesystem.\ngrub\u003e ls (hd0,msdos1)/\nerror: not a correct XFS inode.\n...\n\nI tried all options for standard partition, btreefs, LVM, etc with the latest Centos and RHEL7 ISO:s. There is no alternative that works, they all give the same problem.\n\n$ cat device-cd.map \n(hd0) /dev/zvol/tank/bhyves/rhel/disk\n(cd0) /home/girgen/rhel-server-7.3-x86_64-dvd.iso\n$ cat grub-cd.in \nlinux  (cd0)/isolinux/vmlinuz\ninitrd  (cd0)/isolinux/initrd.img \nboot\n$ cat rhel-cd.sh \n#! /bin/sh\n\ngrub-bhyve -m device-cd.map -r cd0 -M 16384 rhel \u003c grub-cd.in \nbhyve -A -H -P -s 0:0,hostbridge -s 1:0,lpc -s 2:0,virtio-net,tap0 \\\n\t-s 3:0,virtio-blk,/dev/zvol/tank/bhyves/rhel/disk \\\n\t-s 4:0,ahci-cd,/home/girgen/rhel-server-7.3-x86_64-dvd.iso \\\n\t-l com1,stdio -c 4 -m 16384 rhel\nbhyvectl --vm=rhel --destroy\n\nrunning the script, all is dandy. after installation has finished, restarting grub with `grub-bhyve -m device-cd.map -M 16384 rhel` gives the problems above."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 349597,
+ "bug_id": 103428,
+ "attachment_id": 0,
+ "creation_time": "2006-09-20T15:40:31Z",
+ "creator": "sra@hactrn.net",
+ "text": "Initial problem was that a machine with static IP address and route\nconfiguration was losing the 2002::/16 route associated with its stf0\ninterface.  Upon investigation, machine was accepting router advertisements,\nwhich it should not have been since all interfaces were staticly configured.\nFollowing this trail eventually led to pccard_ether, which is not only\nbringing up interfaces before the /etc/rc.d/network_ipv6 script has had a\nchance to run but is also (incorrectly) enabling net.inet6.ip6.accept_rtadv.\n\npccard_ether checks for interfaces that are already up, so my guess is that\nthis mess is an accidental side effect of somebody having re-ordered the\nscripts in /etc/rc.d so that devd now comes up earlier than it once did\n(I have not checked CVS to confirm this theory).  In any case, what it does\nnow is wrong. :)\n\nFix: \n\nWorkaround: disable devd. :)\n\nFix: reorder /etc/rc.d scripts or rewrite /etc/pccard_ether.\nHow-To-Repeat: Something like the following in /etc/rc.conf, on a network that sends IPv6\nrouter advertisements:\n\nifconfig_foo0=\"inet 192.0.2.2 netmask 255.255.255.0\"\ndefaultrouter=\"192.0.2.1\"\nipv6_enable=\"YES\"\nipv6_ifconfig_foo0=\"2001:db8::2 prefixlen 64\"\nipv6_defaultrouter=\"2001:db8::1\"\nstf_interface_ipv4addr=\"192.0.2.2\"\ndevd_enable=\"YES\""
+}

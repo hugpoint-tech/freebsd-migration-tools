@@ -1,0 +1,8 @@
+{
+ "id": 943413,
+ "bug_id": 220888,
+ "attachment_id": 184554,
+ "creation_time": "2017-07-20T17:53:53Z",
+ "creator": "kxie@xiplink.com",
+ "text": "Created attachment 184554\nprevent race in ng_socket\n\nRecently we got some \"Fatal trap 12\" panics when the userland processes which used ng_socket to communicate got killed. The panics happened in ng_queue and the backtrace is\n\nTracing pid 12 tid 100009 td 0xfffffe0001514490\n_mtx_lock_sleep() at _mtx_lock_sleep+0x70/frame 0xffffff800025a700\n_mtx_lock_flags() at _mtx_lock_flags+0x4d/frame 0xffffff800025a710\nngs_rcvdata() at ngs_rcvdata+0xfa/frame 0xffffff800025a870\nng_apply_item() at ng_apply_item+0x1f2/frame 0xffffff800025a970\nngthread() at ngthread+0x1c6/frame 0xffffff800025a9a0\nfork_exit() at fork_exit+0x114/frame 0xffffff800025a9f0\nfork_trampoline() at fork_trampoline+0xe/frame 0xffffff800025a9f0\n\nThe reason is that soclose() closed the data socket while ngs_rcvdata() in ng_socket.c was still using it.\n\nngs_rcvmsg() in the same file applies locking to prevent the race in r208300, so we borrowed the idea to ngs_rcvdata() and got a patch attached here.\n\nWe tested the patched system and the described problem does not happen anymore."
+}

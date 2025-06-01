@@ -1,0 +1,8 @@
+{
+ "id": 1272981,
+ "bug_id": 273211,
+ "attachment_id": 0,
+ "creation_time": "2023-09-04T06:09:05Z",
+ "creator": "guru@unixarea.de",
+ "text": "The last part of the script ./make-memstick.sh which should produce the final\nimage, but the processes mkimg never end, is:\n\n\n...\n# Make an ESP in a file.\nespfilename=$(mktemp /tmp/efiboot.XXXXXX)\nmake_esp_file ${espfilename} ${fat32min} ${BASEBITSDIR}/boot/loader.efi\n\nmkimg -s mbr \\\n    -b ${BASEBITSDIR}/boot/mbr \\\n    -p efi:=${espfilename} \\\n    -p freebsd:-\"mkimg -s bsd -b ${BASEBITSDIR}/boot/boot -p\nfreebsd-ufs:=${2}.part\" \\\n    -a 2 \\\n    -o ${2}\n...\n\nI've split the two processes, connected my the pipe, and run them one\nafter the other as:\n\n\n#!/bin/sh\n\n# set -x\n\nBASEBITSDIR=/home/guru/140.root\nimg=/home/guru/zdata/memstick.img\n\nespfilename=/home/guru/zdata/efiboot.7S9yjL\n\nmkimg -s bsd -b ${BASEBITSDIR}/boot/boot \\\n      -p freebsd-ufs:=${img}.part \u003e ${img}.part.mkimg\n\nmkimg -s mbr \\\n    -b ${BASEBITSDIR}/boot/mbr \\\n    -p efi:=${espfilename} \\\n    -p freebsd:=${img}.part.mkimg \\\n    -a 2 \\\n    -o ${img}\n\n# ls -l /home/guru/zdata\n# -rw-r--r--  1 root wheel 23795073024 Sep  3 17:12 memstick.img.part\n# -rw-------  1 root wheel    34091008 Sep  3 17:12 efiboot.7S9yjL\n# -rw-r--r--  1 root wheel 23795081216 Sep  3 18:25 memstick.img.part.mkimg\n# -rw-r--r--  1 root wheel 23829172736 Sep  3 18:34 memstick.img\n\nThe resulting file 'memstick.img' (copied with dd to an USB key)\nboots fine.\n\nNow I'm clueless about why the pipe between\n\nmkimg ... -p freebsd:-\"mkimg -s bsd ...\" ...\n\ndoes not work as it should."
+}

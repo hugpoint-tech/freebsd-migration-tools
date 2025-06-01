@@ -1,0 +1,8 @@
+{
+ "id": 1140428,
+ "bug_id": 252488,
+ "attachment_id": 0,
+ "creation_time": "2021-01-07T09:25:28Z",
+ "creator": "mail@fbsd2.e4m.org",
+ "text": "Prerequisites: tape written with 128k block size, mt blocksize 131072\n\nbsdtar -tf /dev/sa0 -b 256\n\ngives\n\nsa0: request ptr 0x2888ed80 is not on a page boundary; cannot split request\nbsdtar: Error opening archive: Error reading '/dev/sa0'\n\nThis seems to be an alignment problem. The problem goes away after aligning\nthe buffer in archive_read_open_filename.c:\n\n--- archive_read_open_filename.c.ORI   2020-03-13 08:22:53.000000000 +0100\n+++ archive_read_open_filename.c       2021-01-06 10:37:34.176333000 +0100\n@@ -359,12 +359,17 @@\n                        new_block_size *= 2;\n                mine-\u003eblock_size = new_block_size;\n        }\n+#if 0\n        buffer = malloc(mine-\u003eblock_size);\n+#else\n+       buffer = malloc(mine-\u003eblock_size + 4096);\n+#endif\n        if (buffer == NULL) {\n                archive_set_error(a, ENOMEM, \"No memory\");\n                goto fail;\n        }\n        mine-\u003ebuffer = buffer;\n+       mine-\u003ebuffer = (void*)(((u_int32_t)buffer + 4096) \u0026 ~4095);\n        mine-\u003efd = fd;\n        /* Remember mode so close can decide whether to flush. */\n        mine-\u003est_mode = st.st_mode;\n\n\nThis is NO patch to fix the issue -- it's just to show the origin of the problem . A proper patch will probably use PAGESIZE and distinguish between malloc start and aligned buffer (so it can bee free()ed)."
+}

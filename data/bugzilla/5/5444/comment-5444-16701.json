@@ -1,0 +1,8 @@
+{
+ "id": 16701,
+ "bug_id": 5444,
+ "attachment_id": 0,
+ "creation_time": "1998-01-08T22:31:55Z",
+ "creator": "sparky@tccn.cs.kun.nl",
+ "text": "A ping to a (short named) local host on a NIS client leads to an\nunreasonable long timeout. A fully qualified hostname (that is including \nthe local domainname) works without problems.\n\nFix: Inspection of the ypserv code reveals that ypserv does _not_ use libc to\nresolve dns queries (to prevent recursion), but calls 'named' on its own.\nThe following patch to yp_dnslookup.c will change the query order (first \nthe specified search domains from /etc/resolv.conf, followed by\nthe plain name).\nHow-To-Repeat: Set up a FreeBSD NIS server (use ypserv -n). Configure a NIS client so that\nit will _not_ perform DNS queries on its own (a Sun3 always uses NIS or YP\nto resolve hosts). Ping a local (short named) host on your local net\n(for example 'charon'). Watch the debug output from 'named' running on\nyour FreeBSD machine. You'll see ypserv querying 'charon' and \n'charon.my.domain' in that order. If you configured your local name server\nto resolve '.my.domain' hosts, and forward all other queries to a name server\non the internet, this particular search order can lead to long timeouts\n(especially if the gateway is not connected to the internet).\nPing a local (short named) host on your FreeBSD box. You'll notice that\nthe libc resolver routines will first try to resolv 'charon.my.domain' and\nif that fails 'charon'."
+}

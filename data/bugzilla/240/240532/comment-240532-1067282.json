@@ -1,0 +1,8 @@
+{
+ "id": 1067282,
+ "bug_id": 240532,
+ "attachment_id": 0,
+ "creation_time": "2019-09-16T06:13:57Z",
+ "creator": "pen@lysator.liu.se",
+ "text": "I ran those tests you mention and some other stuff, and it looks like the \"accumulation\" was due to Linux (Ubuntu 18.04 for what it's worth) NFS clients bombarding our servers with new TCP connections (which they just as quickly teared down). Like 200-400 new requests/s with unique client source port numbers - no surprise those states accumulated quickly.\n\nExactly why those Linux clients are doing this is a bit unclear but it looks like it have something to do with users having their home directory mounted via NFSv4 with sec=krb5, and then their Kerberos tickets expiring (on the client). Possibly while they were running \"evolution\" which has a number of files/databases opened on the users home directory. This seems to cause \"rpc.gssd\" (on the client) to go into a spin (100% CPU) and somehow causes this endless stream of new TCP connections...\n\nThe stream of IP packets we are seeing look like this:\n\n0.001280 Client -\u003e Server SYN\n0.001289 Server -\u003e Client SYN+ACK\n0.001516 Client -\u003e Server ACK\n0.003609 Client -\u003e Server FIN+ACK\n0.003615 Server -\u003e Client ACK\n0.003620 Server -\u003e Client FIN+ACK\n0.003841 Client -\u003e Server ACK\n\u003crepeat 400 times/s\u003e\n\nAnyway I don't think this is a problem in FreeBSD/pf so we can close this bug. Looking more like (yet another) Linux bug.\n\n(I wonder if it would be possible to throttle misbehaving clients like these somehow, perhaps some rate-limiting in PF could do the trick? Hmm...)"
+}

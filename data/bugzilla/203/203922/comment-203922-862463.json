@@ -1,0 +1,8 @@
+{
+ "id": 862463,
+ "bug_id": 203922,
+ "attachment_id": 0,
+ "creation_time": "2016-01-31T10:04:05Z",
+ "creator": "alfred@FreeBSD.org",
+ "text": "OK, I am trying out this patch, it should work, however cursory testing isn't working out as I'd hope.  When I am running the following python program:\n\nimport socket\nimport struct\n\nserversocket = socket.socket(\n    socket.AF_INET, socket.SOCK_STREAM)\n#bind the socket to a public host,\n# and a well-known port\nserversocket.bind(('0.0.0.0', 8080))\n#become a server socket\nserversocket.listen(5)\nqlimit = serversocket.getsockopt(socket.SOL_SOCKET, 0x1011)\nprint qlimit\n#print struct.unpack(\"i\", qlimit)\ns = serversocket.accept()\n\nAnd then I run in another terminal \"netstat -L\" I get the following output:\nspigot# netstat -L\nCurrent listen queue sizes (qlen/incqlen/maxqlen)\nProto Listen         Local Address         \nspigot# \n\nIt seems like qlimit is being set to zero as I've added this snippet of code to instrument:\n@@ -460,8 +460,10 @@\n \t\t\txo_emit(\"\\n\");\n \t\t\tfirst = 0;\n \t\t}\n-\t\tif (Lflag \u0026\u0026 so-\u003eso_qlimit == 0)\n+\t\tif (Lflag \u0026\u0026 so-\u003eso_qlimit == 0) {\n+\t\t\tfprintf(stderr, \"qlimit==0\\n\");\n \t\t\tcontinue;\n+\t\t}\n \t\txo_open_instance(\"socket\");\n \t\tif (Aflag) {\n \t\t\tif (istcp)\n\nI will test some more tomorrow, I am probably just using netstat incorrectly or something else is broken with my setup.\n\nHowever if you want to maybe tell me if this works with testing and why my test program fails to show listening queue max, that would be splendid.\n\nThank you."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 96975,
+ "bug_id": 30781,
+ "attachment_id": 0,
+ "creation_time": "2001-09-24T10:00:02Z",
+ "creator": "dwchoe@naver.com",
+ "text": "A program using msgrcv call and pthread do not run as expected.\nOne thread calls msgrcv and wait until some messages are arrived.\nOther thread does its given jobs.\nAnd some other threads can call msgsnd to send messages.\nAll threads need to run concurruntly.\nIt's just ok under Linux or SunOS.\n\nHow-To-Repeat: ----- test.c ------------- \n#include \u003cstdio.h\u003e \n#include \u003cstdlib.h\u003e \n#include \u003cunistd.h\u003e \n#include \u003cpthread.h\u003e \n#include \u003csys/ipc.h\u003e \n#include \u003csys/msg.h\u003e \n\nvoid *Thread(void *vArg); \nstruct stmq { \nlong id; \n}; \nstruct stmq mqSt; \n\nmain(int argc, char *argv[]) \n{ \nint i; \nint mqid; \npthread_t thSelect; \npthread_attr_t taAttr; \n\nif( (mqid = msgget(0x20, 0666 | IPC_CREAT)) == -1 ) exit(0); \n\npthread_attr_init (\u0026taAttr); \npthread_attr_setscope (\u0026taAttr, PTHREAD_SCOPE_SYSTEM); \npthread_attr_setdetachstate(\u0026taAttr, PTHREAD_CREATE_DETACHED); \n\nfor(i=0; i\u003c2; i++) { \nif(pthread_create(\u0026thSelect, \u0026taAttr, Thread, NULL) != 0) exit(0); \n} \n\nwhile(1) { \nprintf(\"Main...\\n\"); fflush(stdout); \nmsgrcv(mqid, \u0026mqSt, sizeof(mqSt)-sizeof(long), 0, 0); \n} \n} \n\nvoid *Thread(void *vArg) \n{ \nprintf(\"Thread...\\n\"); fflush(stdout); \nwhile(1); \n} \n------- End of test.c \n\nUnder FreeBSD\n$ gcc test.c -pthread \n$ a.out \nMain... \n\nUnder Linux or SunOS\n$ a.out\nMain...\nThread...\nThread..."
+}

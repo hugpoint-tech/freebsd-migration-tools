@@ -1,0 +1,8 @@
+{
+ "id": 970355,
+ "bug_id": 211501,
+ "attachment_id": 0,
+ "creation_time": "2018-01-09T12:26:15Z",
+ "creator": "lists@peter.de.com",
+ "text": "(In reply to Wolfram Schneider from comment #1)\n\nEmpty testcase:\n  backup locate # rm /var/db/locate.database\n  backup locate # touch /var/db/locate.database\n  backup locate # ./locate emacs\n  locate: database empty: /var/db/locate.database\n  Run /etc/periodic/weekly/310.locate                                                                                                                                         \n\nCorruption testcase:\n  backup locate # echo foobar \u003e\u003e /var/db/locate.database\n  backup locate # ./locate emacs\n  locate: database corrupted: /var/db/locate.database\n  Run /etc/periodic/weekly/310.locate\n\nbackup src # git --no-pager diff\ndiff --git a/usr.bin/locate/locate/locate.c b/usr.bin/locate/locate/locate.c\nindex 31b75efd1b0..4e2aa161587 100644\n--- a/usr.bin/locate/locate/locate.c\n+++ b/usr.bin/locate/locate/locate.c\n@@ -297,9 +297,13 @@ search_mmap(char *db, char **s)\n            fstat(fd, \u0026sb) == -1)\n                err(1, \"`%s'\", db);\n        len = sb.st_size;\n-       if (len \u003c (2*NBG))\n+       if (len \u003e 0 \u0026\u0026 len \u003c (2*NBG))\n                errx(1,\n-                   \"database too small: %s\\nRun /usr/libexec/locate.updatedb\",\n+                   \"database corrupted: %s\\nRun /etc/periodic/weekly/310.locate\",\n+                   db);\n+       if (len == 0)\n+               errx(1,\n+                   \"database empty: %s\\nRun /etc/periodic/weekly/310.locate\",\n                    db);\n \n        if ((p = mmap((caddr_t)0, (size_t)len,"
+}

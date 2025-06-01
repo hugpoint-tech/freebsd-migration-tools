@@ -1,0 +1,8 @@
+{
+ "id": 761329,
+ "bug_id": 189089,
+ "attachment_id": 0,
+ "creation_time": "2014-04-28T23:50:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "If you assign the same IP address to multiple interfaces simultaneously, then remove it from one of them, the system will panic with this message:\n\npanic: rtalloc1_fib: bad fibnum\n\nThe panic was introduced by revision 264887, which changed the fibnum parameter in the call to rtalloc1_fib() in ifa_switch_loopback_route() from RT_DEFAULT_FIB to RT_ALL_FIBS.  Prior to 264887 the call would always succeed, but it could corrupt the network stack if the route in question was not located in the default fib.  That wasn't a big deal though, since prior to 264887 it was very difficult create that route in a nondefault fib.\n\nFix: The solution is to use the interface fib instead of either the default fib or ALL_FIBS.  This will give equivalent behavior as the pre-264887 status quo for the majority of users.\n\nPatch attached with submission follows:\nHow-To-Repeat: # # Set net.fibs=1 and net.add_addr_allfibs=1\n# ifconfig tap0 create\n# ifconfig tap1 create\n# ifconfig tap0 192.0.0.2/24 up\n# ifconfig tap1 192.0.0.2/32 up\n# netstat -rn -f inet\nRouting tables\n\nInternet:\nDestination        Gateway            Flags    Netif Expire\ndefault            10.1.0.1           UGS       em0\n10.1.0.0/20        link#1             U         em0\n10.1.3.220         link#1             UHS       lo0\n127.0.0.1          link#2             UH        lo0\n192.0.0.0/24       link#3             U        tap0\n192.0.0.2          link#3             UHS       lo0\n192.0.0.2/32       link#4             U        tap1\n# ifconfig tap1 -alias 192.0.0.2 # This line will panic!"
+}

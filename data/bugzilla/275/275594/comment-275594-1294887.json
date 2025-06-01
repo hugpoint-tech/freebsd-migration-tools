@@ -1,0 +1,8 @@
+{
+ "id": 1294887,
+ "bug_id": 275594,
+ "attachment_id": 0,
+ "creation_time": "2024-01-31T07:52:56Z",
+ "creator": "seigo.tanimura@gmail.com",
+ "text": "(In reply to Thomas Mueller from comment #41)\n\nThank you so much and sorry for the delayed reply.  I now believe the fix works on your case as well.\n\n* Fix Status\n\nI am now checking the ARC eviction and pruning triggered by the vm_lowmem kernel event.  There was a case where the system stalled with pagedaemon{uma} running at the WCPU of ~0.3% in the late stage of poudriere-bulk(8).  I suspect that a pagedaemon thread put itself to the arc_evict_waiters list in arc_wait_for_eviction(), called by arc_lowmem(), to handle the vm_lowmem kernel event.  In such the case, the ARC pruning has to work more eagerly so that the pagedaemon thread does not block forever.\n\nThe issue above has been confirmed experimentally by checking for the non-empty arc_evict_waiters list in {arc,zfs}_prune_task().  Also, arc_lowmem() has the lines for such the case.\n\n\u003e static void\n\u003e arc_lowmem(void *arg __unused, int howto __unused)\n\u003e {\n\u003e \t(snip)\n\u003e \t/*\n\u003e \t * It is unsafe to block here in arbitrary threads, because we can come\n\u003e \t * here from ARC itself and may hold ARC locks and thus risk a deadlock\n\u003e \t * with ARC reclaim thread.\n\u003e \t */\n\u003e \tif (curproc == pageproc)\n\u003e \t\tarc_wait_for_eviction(to_free, B_FALSE);\n\u003e }\n\nAfter the current test, I will see if this issue can be worked out somehow."
+}

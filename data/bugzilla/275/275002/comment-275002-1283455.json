@@ -1,0 +1,8 @@
+{
+ "id": 1283455,
+ "bug_id": 275002,
+ "attachment_id": 0,
+ "creation_time": "2023-11-10T03:01:13Z",
+ "creator": "aly@aaronly.me",
+ "text": "Well, the m_copyback() may need to allocate new mbufs in order to hold the data, so the allocation may fail because it uses the 'M_NOWAIT' flag and doesn't provided any parameter to use the 'M_WAITOK' flag for allocation.  (For the reference, OpenBSD extended m_copyback() to have the extra 'how' parameter for this purpose.)\n\nAs a consequence, the caller should check the resulting packet length for m_copyback() failure.  Below is the patch to 'if_wg.c' function 'wg_send_buf()', please review.\n\n--- if_wg.c.orig\t2023-10-12 09:06:16.983637264 +0800\n+++ if_wg.c\t2023-10-21 15:29:47.928807521 +0800\n@@ -911,6 +911,11 @@ retry:\n \t\tgoto out;\n \t}\n \tm_copyback(m, 0, len, buf);\n+\tif (m-\u003em_pkthdr.len != len) {\n+\t\tm_freem(m);\n+\t\tret = ENOMEM;\n+\t\tgoto out;\n+\t}\n \n \tif (ret == 0) {\n \t\tret = wg_send(sc, e, m);"
+}

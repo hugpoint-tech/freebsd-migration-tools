@@ -1,0 +1,8 @@
+{
+ "id": 1022247,
+ "bug_id": 230773,
+ "attachment_id": 0,
+ "creation_time": "2018-11-18T01:08:11Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: jhb\nDate: Sun Nov 18 01:07:37 UTC 2018\nNew revision: 340545\nURL: https://svnweb.freebsd.org/changeset/base/340545\n\nLog:\n  MFC 339312,339364: Restore more descriptors during VM exits.\n\n  339312:\n  Fully restore the GDTR, IDTR, and LDTR after VT-x VM exits.\n\n  The VT-x VMCS only stores the base address of the GDTR and IDTR.  As a\n  result, VM exits use a fixed limit of 0xffff for the host GDTR and\n  IDTR losing the smaller limits set in when the initial GDT is loaded\n  on each CPU during boot.  Explicitly save and restore the full GDTR\n  and IDTR contents around VM entries and exits to restore the correct\n  limit.\n\n  Similarly, explicitly save and restore the LDT selector.  VM exits\n  always clear the host LDTR as if the LDT was loaded with a NULL\n  selector and a userspace hypervisor is probably using a NULL selector\n  anyway, but save and restore the LDT explicitly just to be safe.\n\n  339364:\n  Reload the LDT selector after an AMD-v #VMEXIT.\n\n  cpu_switch() always reloads the LDT, so this can only affect the\n  hypervisor process itself.  Fix this by explicitly reloading the host\n  LDT selector after each #VMEXIT.  The stock bhyve process on FreeBSD\n  never uses a custom LDT, so this change is cosmetic.\n\n  PR:\t\t230773\n\nChanges:\n_U  stable/11/\n  stable/11/sys/amd64/include/cpufunc.h\n  stable/11/sys/amd64/vmm/amd/svm.c\n  stable/11/sys/amd64/vmm/intel/vmx.c"
+}

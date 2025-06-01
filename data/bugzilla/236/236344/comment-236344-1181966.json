@@ -1,0 +1,8 @@
+{
+ "id": 1181966,
+ "bug_id": 236344,
+ "attachment_id": 0,
+ "creation_time": "2021-10-12T08:56:05Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "From the stack trace, it looks as if this is linking both from the base system libcxxrt.so and libstdc++.so from the gcc8 port.  The version of libstdc++.so from the base system was modified to link libcxxrt.so but I believe the versions from ports embed libsupc++.a.  Both libcxxrt and libsupc++ define the same symbols and so you end up with a mixture of them being called.  In particular, you're mixing part of the `dynamic_cast` implementation from libsupc++ (frame #1) with part from libcxxrt (frame #0).  This is very unlikely to work.\n\nThe correct fix for this would be to make the GCC ports link libstdc++.so against libcxxrt.so instead of building libsupc++.a, but that probably requires some invasive changes to the build system.\n\nIn general, mixing code linked against libc++ and libstdc++ is unlikely to work.  There are three ways of fixing this:\n\n - Teach the libstdc++ build to use libcxxrt\n - Teach gcc to support -stdlib=libc++\n - Use something like `-nostdinc++ -nodefaultlibs -isystem \u003cinstall\u003e/include/c++/v1    -lc++ -lcxxrt -lm -lc -lgcc_s -lgcc` when compiling / linking C++ things with gcc."
+}

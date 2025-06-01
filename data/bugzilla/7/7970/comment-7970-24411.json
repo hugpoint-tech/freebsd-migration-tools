@@ -1,0 +1,8 @@
+{
+ "id": 24411,
+ "bug_id": 7970,
+ "attachment_id": 0,
+ "creation_time": "1998-09-18T10:00:01Z",
+ "creator": "nialls@euristix.ie",
+ "text": "\nThere is a bug in the implementation of __svfscanf which sometimes\ncauses the %n `conversion' to be ignored.  (%n is used to assign the\nnumber of characters read from the input stream to its corresponding\nargument)\n\nThe following code demonstrates the bug:\n\n#include \u003cstdio.h\u003e\n\nint\nmain()\n{\n        int     i;\n        int     n = 12345678;\n\n        sscanf(\"24\\n\", \"%li %n\", \u0026i, \u0026n);       \n        \n        printf(\"%d %d\\n\", i, n);\n        \n        return 0;\n}\n\nThe output should be \"4 2\", but it is \"4 12345678\"; n is not\nmodified.  The bug arises when a whitespace is present in the\nformat string and __svfscanf hits EOF while skipping \ncorresponding whitespace in the input stream, in this case\nit jumps to input_failure and exits before seeing the %n \nsubsequent in the format string.  Jumping to input_failure\nwould _usually_ be the correct move since most conversions\nwould require input (which is not available) so quitting then\nwould be an optimisation.  The solution is simply to have it\ncontinue in its iteration over the format string, this is the\napproach taken by OpenBSD and I have used their patch.\n\nCredit for patch: Chris Torek \u003ctorek@bsdi.com\u003e\n                  Tod Miller  \u003cmillert@openbsd.org\u003e\n\nHow-To-Repeat: \nSee attached code."
+}

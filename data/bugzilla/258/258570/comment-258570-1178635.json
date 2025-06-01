@@ -1,0 +1,8 @@
+{
+ "id": 1178635,
+ "bug_id": 258570,
+ "attachment_id": 227978,
+ "creation_time": "2021-09-18T10:58:00Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 227978\nFake snmp server to demonstrate bsnmpwalk crash.\n\nsnmp_parse_resp() in libbsnmptools contains:\n\n    if (resp-\u003eerror_status == SNMP_ERR_NOSUCHNAME) {\n        warnx(\"Error - No Such Name\");\n        return (0);\n    }\n\nIt should be return(-1). If the name is bad, the return 0\nwill cause bsnmpwalk to continue with an unchecked reply,\nso (for example) if resp.nbindings is zero or huge, this\nline will generate a wild pointer:\n\n           snmpwalk_nextpdu_create(op,\n                \u0026(resp.bindings[resp.nbindings - 1].var), \u0026req);\n\nThe attached fake snmp server demonstrates the problem:\n% cc bsnmpwalk1.c\n% ./a.out \u0026\nwaiting on port 1610 for a request\n% bsnmpwalk -s localhost:1610\nSNMP: ignoring trailing junk in message\nbsnmpwalk: Error - No Such Name\nBus error (core dumped)"
+}

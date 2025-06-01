@@ -1,0 +1,8 @@
+{
+ "id": 374396,
+ "bug_id": 108656,
+ "attachment_id": 0,
+ "creation_time": "2007-02-01T11:10:31Z",
+ "creator": "ludovic.flament@netasq.com",
+ "text": "When we not used separation privilege, and we do a connection with a\nusername that aren't known, sshd segfault\n\nWe use PAM, but I don't think that problem is linked on, because when we\nsee my solution to fix this crash, PAM have no impact.\n\npid 2029 (sshd), uid 0: exited on signal 11 (core dumped)\n\nFix: \n\nin file /usr/src/crypto/openssh/auth.c\nin function fakepw(void)\n\nreplace the 2 lines :\n  fake.pw_uid = privsep_pw-\u003epw_uid;\n  fake.pw_gid = privsep_pw-\u003epw_gid;\nby :\n  if (use_privsep \u0026\u0026 (privsep_pw != NULL))\n  {\n     fake.pw_uid = privsep_pw-\u003epw_uid;\n     fake.pw_gid = privsep_pw-\u003epw_gid;\n  }\n  else\n  {\n     fake.pw_uid = (uid_t)-1;\n     fake.pw_gid = (gid_t)-1;\n  }\nHow-To-Repeat: Put this option on sshd_config file\n  ChallengeResponseAuthentication yes\n  PasswordAuthentication no\n  PermitEmptyPasswords no\n  PermitRootLogin yes\n  UsePrivilegeSeparation no\n\nconnect on sshd with an unknwon username"
+}

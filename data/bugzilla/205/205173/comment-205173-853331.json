@@ -1,0 +1,8 @@
+{
+ "id": 853331,
+ "bug_id": 205173,
+ "attachment_id": 0,
+ "creation_time": "2015-12-11T21:22:37Z",
+ "creator": "fbsdbug@xploit.com",
+ "text": "Have dug into this a bit more.  The problem seems to be related to the character returned when passwd exits after the user account password has been changed.  The code seems to be looking for the \"\\n\" character to be returned (which it does in previous FreeBSD versions).  However, in 10.2 this seems to have been replaced with a \"\\0\".  This same character is used to terminate the match arrays, so there is no way to match against the returned \\0 without a bit of code changes.  We were able to make it work creating a placeholder value in P4, and then matching on that when the returned string from passwd was \\0:\n\nAdded into P4:\n\"Code0\",\n\nAdded above the \"if (*str == 0) return *pat == 0 ? 2 : 1;\" line in the match function:\n\n   if (strcmp(pat,\"Code0\")==0){\n     if (strcmp(str,\"\\0\")==0){\n       return 2;\n     }\n   }\n\n\nI am not able to determine why passwd returns the \\0 instead of \\n.  The passwd.c is the same between versions, which tells me something else has changed, possibly in the functionality of termios?\n\nAny assistance would be appreciated.\n\n-Russell"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1209178,
+ "bug_id": 263663,
+ "attachment_id": 233589,
+ "creation_time": "2022-04-29T19:13:54Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 233589\na file that causes etdump to crash\n\ndump_section() in /usr/src/usr.bin/etdump/etdump.c says:\n\n        for (i = 1; i \u003c= (int)sh-\u003enum_section_entries[0]; i++) {\n                entry_offset = offset + i * ET_BOOT_ENTRY_SIZE;\n                entry =\n                    (boot_catalog_section_entry *)\u0026buffer[entry_offset];\n\nIf sh-\u003enum_section_entries[0] is large, for example 255, it causes\netdump to read off the end of buffer[2048], and on my machine off the\nend of the stack, and crash.\n\nI've attached a demo image:\n\n% uname -a\nFreeBSD xxx 13.0-RELEASE-p4 FreeBSD 13.0-RELEASE-p4 #0: Tue Aug 24 07:33:27 UTC 2021     root@amd64-builder.daemonology.net:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\n% etdump etbad2\netdump: etbad2: not a valid ISO\netdump: etbad2: not an El Torito bootable ISO\netdump: etbad2: boot catalog checksum is invalid\nImage in etbad2\n\nSection header: invalid\n        Section entry\n                System i386\n                Start LBA 2021161080 (0x78787878), sector count 30840 (0x7878)\n                Media type: invalid\nBus error (core dumped)"
+}

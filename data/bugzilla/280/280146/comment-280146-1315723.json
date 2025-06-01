@@ -1,0 +1,8 @@
+{
+ "id": 1315723,
+ "bug_id": 280146,
+ "attachment_id": 0,
+ "creation_time": "2024-07-06T09:28:59Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "Greetings,\n\nThis change in behaviour is indeed caused by the new SIMD implementation, which copies the string in chunks instead of byte by byte.  This fails in the particular case where source and destination overlap with an offset of less than 16 bytes.\n\nAs is documented in strcpy(3) and pointed out by kib@:\n\n\u003e For all of strcpy(), strncpy(), stpcpy(), and stpncpy(), the result is\n\u003e undefined if src and dst overlap.\n\nWe can therefore not guarantee any behaviour for overlapping inputs.  Extending the definition of strcpy() to handle these cases more gracefully was considered, but ultimately rejected during the design process as it would have adversely affected performance for all callers.\n\nIf you require some sort of defined behaviour for overlapping strings, I recommend you write your own copy routine for this.  For example:\n\n    void strlapcpy(char *dest, const char *src) {\n            size_t len = strlen(src);\n\n            memmove(dest, src, len + 1);\n    }"
+}

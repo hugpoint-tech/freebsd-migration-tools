@@ -1,0 +1,8 @@
+{
+ "id": 952521,
+ "bug_id": 222356,
+ "attachment_id": 0,
+ "creation_time": "2017-09-18T16:45:55Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Tijl Coosemans from comment #8)\nI see, this happens during inactivation.  Please try this.\n\ndiff --git a/sys/kern/vfs_subr.c b/sys/kern/vfs_subr.c\nindex 2c144ab17c2..2e8324a7bf8 100644\n--- a/sys/kern/vfs_subr.c\n+++ b/sys/kern/vfs_subr.c\n@@ -3055,7 +3055,8 @@ vinactive(struct vnode *vp, struct thread *td)\n \t * pending I/O and dirty pages in the object.\n \t */\n \tobj = vp-\u003ev_object;\n-\tif (obj != NULL \u0026\u0026 (obj-\u003eflags \u0026 OBJ_MIGHTBEDIRTY) != 0) {\n+\tif ((vp-\u003ev_vflag \u0026 VV_NOSYNC) == 0 \u0026\u0026 obj != NULL \u0026\u0026\n+\t    (obj-\u003eflags \u0026 OBJ_MIGHTBEDIRTY) != 0) {\n \t\tVM_OBJECT_WLOCK(obj);\n \t\tvm_object_page_clean(obj, 0, 0, 0);\n \t\tVM_OBJECT_WUNLOCK(obj);\ndiff --git a/sys/vm/vm_object.c b/sys/vm/vm_object.c\nindex fa197214296..33e7e6f8643 100644\n--- a/sys/vm/vm_object.c\n+++ b/sys/vm/vm_object.c\n@@ -1083,8 +1068,8 @@ vm_object_sync(vm_object_t object, vm_ooffset_t offset, vm_size_t size,\n \t * I/O.\n \t */\n \tif (object-\u003etype == OBJT_VNODE \u0026\u0026\n-\t    (object-\u003eflags \u0026 OBJ_MIGHTBEDIRTY) != 0) {\n-\t\tvp = object-\u003ehandle;\n+\t    (object-\u003eflags \u0026 OBJ_MIGHTBEDIRTY) != 0 \u0026\u0026\n+\t    ((vp = object-\u003ehandle)-\u003ev_vflag \u0026 VV_NOSYNC) == 0) {\n \t\tVM_OBJECT_WUNLOCK(object);\n \t\t(void) vn_start_write(vp, \u0026mp, V_WAIT);\n \t\tvn_lock(vp, LK_EXCLUSIVE | LK_RETRY);"
+}

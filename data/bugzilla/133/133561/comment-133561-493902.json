@@ -1,0 +1,8 @@
+{
+ "id": 493902,
+ "bug_id": 133561,
+ "attachment_id": 0,
+ "creation_time": "2009-04-10T08:40:00Z",
+ "creator": "netinet-ip-output-apr09@oldach.net",
+ "text": "\nSystem panic:\n\n\tSleeping thread (tid 100071, pid 1003) owns a non-sleepable lock\n\tpanic: sleeping thread\n\nAfter some fiddling I discovered that this may be related to IPSEC. The\nbox does not crash with IPSEC disabled.\n\nAfter browsing through the changes I inspected the code in\nsys/netinet/ip_output.c. SVN r190369 did add three lines to lock/unlock\npcbinfo at apparently appropriate places.\n\nI think the last two additions (case IP_IPSEC_POLICY in\nip_ctloutput_pcbinfo()) are just wrong. IMHO there is no need to lock\npcbinfo as we do not need INP_LOCK(inp) here.\n\nPlease also note that INP_INFO_WUNLOCK only happens *within* the if\nclause, but not if the if clause is not met, so the pbcinfo is kept\nlocked, which is likely not intended.\n\nAnyway, I decided to remove the two additional lines. Testing showed\nthat my box did not crash any longer (of course with IPSEC enabled)."
+}

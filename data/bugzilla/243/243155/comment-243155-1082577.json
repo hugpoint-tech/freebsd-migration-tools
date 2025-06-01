@@ -1,0 +1,8 @@
+{
+ "id": 1082577,
+ "bug_id": 243155,
+ "attachment_id": 0,
+ "creation_time": "2020-01-07T20:10:14Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "(In reply to Mark Johnston from comment #1)\n\n\u003e Are you sure that this isn't just a truss bug?\n\nLet's adjust the test a bit:\n\n% cat fadvice_bug.c\n#define _GNU_SOURCE\n\n#include \u003cassert.h\u003e\n#include \u003cfcntl.h\u003e\n\nint main() {\n  int fd = open(\"/etc/passwd\", O_RDONLY);\n  assert(fd \u003e 0);\n  posix_fadvise(fd, 0, 0, -1);\n  return 0;\n}\n% /compat/linux/bin/gcc -m64 fadvice_bug.c -o fadvice_bug64\n% truss ./fadvice_bug64\n...\nlinux_fadvise64(0x3,0x0,0x0,0xffffffffffffffff)\t ERR#-22 'Invalid argument'\n...\n% /compat/linux/bin/gcc -m32 fadvice_bug.c -o fadvice_bug32\n% truss ./fadvice_bug32\n...\nlinux_fadvise64(0x3,0x0,0x0,0x0)\t\t = 0 (0x0)\n...\n\n\u003e amd64's 32-bit Linux syscall definition for fadvise64 looks right.\n\nThat's the weird part. It looks right to me as well, at least at first sight."
+}

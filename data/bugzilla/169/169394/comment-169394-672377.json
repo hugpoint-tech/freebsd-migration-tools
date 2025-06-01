@@ -1,0 +1,8 @@
+{
+ "id": 672377,
+ "bug_id": 169394,
+ "attachment_id": 0,
+ "creation_time": "2012-06-25T13:50:08Z",
+ "creator": "apronin@me.com",
+ "text": "It is assumed that if a user calls\n\n%make config-recursive\n\nthen options of current port and all it's dependency ports will be processed, but\n\nIf this port(A) enables dependency port(Z) via options then $$(${ALL-DEPENDS-LIST}) will not include this port(Z), hence options of port(Z) will not be processed.\nIf dependency port(B) of port(A) enables another dependency port(X) then options of this port(X) will not be processed either.\n\nFix: --- /Users/scher/tmp/config-recursive/bsd.port.mk\t2012-06-21 22:53:45.000000000 +0400\n+++ /Users/scher/tmp/config-recursive/bsd.port.mk-fixed\t2012-06-21 22:54:35.000000000 +0400\n@@ -6110,8 +6110,8 @@\n \n .if !target(config-recursive)\n-config-recursive:\n+config-recursive: config-conditional\n \t@${ECHO_MSG} \"===\u003e Setting user-specified options for ${PKGNAME} and dependencies\";\n-\t@for dir in ${.CURDIR} $$(${ALL-DEPENDS-LIST}); do \\\n-\t\t(cd $$dir; ${MAKE} config-conditional); \\\n+\t@for dir in $$(${MAKE} run-depends-list build-depends-list | uniq); do \\\n+\t\t(cd $$dir; ${MAKE} config-recursive); \\\n \tdone\n .endif # config-recursive\n\nPatch attached with submission follows:"
+}

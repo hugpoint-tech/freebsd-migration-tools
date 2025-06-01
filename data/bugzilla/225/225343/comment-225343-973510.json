@@ -1,0 +1,8 @@
+{
+ "id": 973510,
+ "bug_id": 225343,
+ "attachment_id": 0,
+ "creation_time": "2018-01-20T18:59:24Z",
+ "creator": "dumbbell@FreeBSD.org",
+ "text": "The `EVIOCGMTSLOTS` ioctl is used to query a touchpad's multitouch state. libevdev calls it to initialise its internal state.\n\nOn Linux, this ioctl is marked as \"read\". However, this is incorrect on FreeBSD because the ioctl takes the multitouch attribute to query as argument. Therefore, the ioctl must be marked as \"read+write\". Otherwise, the attribute doesn't make it to the evdev kernel driver and ioctl(2) returns EINVAL.\n\nThe visible consequence of this problem is libinput: when you use it as your input DDX in X.Org (the same happens with Wayland probably), some touch events early in a session are dropped. You have to release and start another touch move do what you wanted in the first place (move the cursor, scroll, ...).\n\nThe reason is that the multitouch state in libevdev has all fields set to zero at first (because the ioctl(2) failed). And when it receives a first touch event which indicate a tracking ID for 0, libevdev thinks there is a bug because the tracking ID is already set to 0, and decides to drop the entire touch action. Here is the message from libevdev:\n\n    BUG: Device \"...\" received a double tracking ID 0 in slot 0.\n\nWhen the finger is released, the kernel sends a tracking ID of -1 which fixes libevdev internal state. Thus, the next touch action does the right thing."
+}

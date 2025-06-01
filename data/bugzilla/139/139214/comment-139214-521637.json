@@ -1,0 +1,8 @@
+{
+ "id": 521637,
+ "bug_id": 139214,
+ "attachment_id": 0,
+ "creation_time": "2009-09-28T15:20:03Z",
+ "creator": "bond@techno-r.ru",
+ "text": "radius.conf\nacct 10.255.1.1 radius_password\nauth 10.250.1.100 radius_password\nauth 10.250.1.250 radius_password\nauth 10.255.1.1 radius_password\n\nSituation:\n1. Freeradius on host 10.250.1.100 is not started, mpd4.4.1 try to auth user on radius-server. libradius try 10.250.1.100 - wait timeout, then try 10.250.1.250 and succefully authentificate user.\n\n2. HOST 10.205.1.100 is DOWN. mpd4.4.1 try to auth user on radius-server. libradius try 10.250.1.100, get error -1 and exit.\nlibradius do not try other auth-radius-servers !!!\n\nmpd.log\nSep 28 15:06:25 r5 mpd: [pptp14] AUTH: Auth-Thread started\nSep 28 15:06:25 r5 mpd: [pptp14] AUTH: Trying RADIUS\nSep 28 15:06:25 r5 mpd: [pptp14] RADIUS: RadiusAuthenticate for: user_login\nSep 28 15:06:25 r5 mpd: [pptp14] RADIUS: rad_init_send_request failed: -1 sendto: Host is down\nSep 28 15:06:25 r5 mpd: [pptp14] AUTH: RADIUS returned undefined\nSep 28 15:06:25 r5 mpd: [pptp14] AUTH: Trying INTERNAL\n\nI see to radlib.c source:\n        /* Send the request */\n        n = sendto(h-\u003efd, h-\u003erequest, h-\u003ereq_len, 0,\n            (const struct sockaddr *)\u0026h-\u003eservers[h-\u003esrv].addr,\n            sizeof h-\u003eservers[h-\u003esrv].addr);\n        if (n != h-\u003ereq_len) {\n                if (n == -1)\n                        generr(h, \"sendto: %s\", strerror(errno));\n                else\n                        generr(h, \"sendto: short write\");\n                return -1;\n        }\nMaybe remove \"return -1;\" ?\n\nBackup (round-robin) radius server configuration is no work !"
+}

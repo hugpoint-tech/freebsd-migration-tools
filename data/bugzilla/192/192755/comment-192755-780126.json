@@ -1,0 +1,8 @@
+{
+ "id": 780126,
+ "bug_id": 192755,
+ "attachment_id": 0,
+ "creation_time": "2014-08-17T17:24:56Z",
+ "creator": "juanmasf2@ono.com",
+ "text": "For USB audio 1.0 formats the code in uaudio.c uses the value of bBitResolution from the descriptor directly to choose and internal audio format from the array uaudio10_formats. It should use the value from bSubFrameSize instead.\nIt is clearly specified in the official USB document for audio data formats, page 9 under the section \"2.2.2 Audio Subframe\" that the endpoint must be handled using bSubFramSize*8 bits per sample from which the device will take the number of bits it actually uses.\nIn my particular case I own a device reporting bBitResolution of 24 and bSubFrameSize of 4. An unpatched driver will be sending 3-byte subframes to the endpoint resulting in pure noise :)\n\nFor USB 2.0 formats the code already does some conversion to avoid this same problem, using the equivalent bSubslotSize in the function uaudio_chan_fill_info_sub:\n\n                 /* Map 4-byte aligned 24-bit samples into 32-bit */\n                        if (bBitResolution == 24 \u0026\u0026 bSubslotSize == 4)\n                                bBitResolution = 32;\n        \n                        if (bBitResolution != (bSubslotSize * 8)) {\n                                DPRINTF(\"Invalid bSubslotSize\\n\");\n                                goto next_ep;\n                        }"
+}

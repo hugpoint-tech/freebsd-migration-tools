@@ -1,0 +1,8 @@
+{
+ "id": 1055672,
+ "bug_id": 238819,
+ "attachment_id": 0,
+ "creation_time": "2019-06-26T20:42:38Z",
+ "creator": "des@FreeBSD.org",
+ "text": "(In reply to tschweikle from comment #0)\n\u003e Missing are:\n\u003e - allow localhost to query\n\nThis is the built-in default.\n\n\u003e - allow private addresses\n\u003e - allow private addresses reverse lookup\n\nThis is what “unblock-lan-zones” and “insecure-lan-zones” are for.\n\n\u003e - dont cache failed requests to forwarders (may lead to problems if your\n\u003e printer was turned of, you tried to print, and then you notice it is turned\n\u003e of. You turn it on and then: printing just fails, because unbound did cache\n\u003e the \"notfound\").\n\nUnless your printer is also your DNS server, it being off will in no way affect Unbound's behavior.\n\nSince you're running FreeBSD 12, I recommend switching to DNS over TLS, as described here:\n\nhttps://blog.des.no/2018/10/dns-over-tls-in-freebsd-12/\n\nIf you have a local DNS server that serves private zones, you will need to add an exception for those zones. Put something like this in /var/unbound/conf.d/private-zones.conf, then run `local-unbound-control reload`:\n\nforward-zone:\n\t# Replace \"example.local\" with the name of your zone and\n\t# \"172.16.0.1\" with the IP address of your local DNS server.\n\tname: example.local.\n\tforward-addr: 172.16.0.1\n\t# Allow your zone to contain RFC 1918 addresses.\n        private-domain: \"example.local.\"\n\t# Ignore DNSSEC errors for your zone.\n        domain-insecure: \"example.local.\"\n\t# Do not use TLS for this forwarder.\n\tforward-tls-upstream: no\n\t# Fall back to the main forwarder if this one fails.\n\t# This is rarely needed, but it doesn't hurt.\n\tforward-first: yes"
+}

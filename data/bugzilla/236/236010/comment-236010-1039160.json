@@ -1,0 +1,8 @@
+{
+ "id": 1039160,
+ "bug_id": 236010,
+ "attachment_id": 0,
+ "creation_time": "2019-02-24T21:11:19Z",
+ "creator": "yuri@freebsd.org",
+ "text": "---Problem description---\nThis simple program\n\u003e #include \u003cstdlib.h\u003e\n\u003e #include \u003cstdio.h\u003e\n\u003e int main() {\n\u003e   srand(time(0));\n\u003e   printf(\"%d\\n\", rand());\n\u003e }\ndemonstrates how a lot of software uses srand(3)/rand(3) functions.\n\nThe first random number seems to strongly correlate with time, here are subsequent run outputs:\n\u003e $ ./rand \n\u003e 50768478\n\u003e $ ./rand \n\u003e 50785285\n\u003e $ ./rand \n\u003e 50802092\n\u003e $ ./rand \n\u003e 50818899\n\u003e $ ./rand \n\u003e 50852513\n\u003e $ ./rand \n\u003e 50869320\n\nIt's always 50,000,000-something, which is strongly correlated with time.\n\n---Practical problem that this causes---\nPlease observe this use of rand(3): https://github.com/ccxvii/mujs/blob/master/jsmath.c#L71 When the rand(3) output is simply mapped to a floating point like this, the resulting floating point values aren't random at all from run to run. Somebody could use such floating point pseudo-random number, truncate the less significant digits, and get a completely predictable values. The consecutive outputs of this routine that I observed are: 0.03040289788544448, 0.03041072425470755, 0.03041072425470755.\n\n---Proposed solution---\nSome 32-bit hash function can be used on the seed value that would map the value to a less seemingly related value."
+}

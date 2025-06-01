@@ -1,0 +1,8 @@
+{
+ "id": 906030,
+ "bug_id": 213856,
+ "attachment_id": 0,
+ "creation_time": "2016-11-05T22:07:20Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "In both cases, we crashed in bucket_drain() when resetting bucket-\u003eub_cnt to 0:\n\n   0xffffffff80e17d90 \u003c+256\u003e:   movslq %r13d,%r13\n   0xffffffff80e17d93 \u003c+259\u003e:   mov    0x18(%rbx,%r13,8),%rdi\n   0xffffffff80e17d98 \u003c+264\u003e:   mov    0x10c(%r14),%esi\n   0xffffffff80e17d9f \u003c+271\u003e:   callq  *0xe8(%r14)\n   0xffffffff80e17da6 \u003c+278\u003e:   inc    %r13d\n   0xffffffff80e17da9 \u003c+281\u003e:   movswl 0x10(%rbx),%eax\n   0xffffffff80e17dad \u003c+285\u003e:   cmp    %eax,%r13d\n   0xffffffff80e17db0 \u003c+288\u003e:   jl     0xffffffff80e17d90 \u003cbucket_cache_drain+256\u003e\n   0xffffffff80e17db2 \u003c+290\u003e:   mov    0x100(%r14),%rdi\n   0xffffffff80e17db9 \u003c+297\u003e:   movswl %ax,%edx\n   0xffffffff80e17dbc \u003c+300\u003e:   mov    %r12,%rsi\n   0xffffffff80e17dbf \u003c+303\u003e:   callq  *0xf8(%r14)\n   0xffffffff80e17dc6 \u003c+310\u003e:   movw   $0x0,0x10(%rbx) \u003c--\n\nrbx is a callee-saved register that is dereferenced after every call to uz_fini,\nso it seems as though the uz_release function for the zone is somehow corrupting\nits frame. Because this is happening in the context of uma_reclaim(), we know\nthat this can't be a cache zone, so uz_release is zone_release()."
+}

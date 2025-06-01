@@ -1,0 +1,8 @@
+{
+ "id": 1036875,
+ "bug_id": 235582,
+ "attachment_id": 201876,
+ "creation_time": "2019-02-09T23:28:19Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 201876\nfix race in ref counting of svc_rpc_gss_client struct\n\nUpon inspection I found two related races when the svc_rpc_gss_client\nstructure in created/initialized.\n1 - The cl_expiration field is set after the structure is linked into a\n    list, making it visible to other threads when it is still 0.\n    This could result in svc_rpc_gss_timeout_client() freeing it just after\n    being linked into the list.\n2 - Related to #1, cl_refs is initialized to 1 and then incremented by\n    refcount_acquire() after svc_rpc_gss_create_client() returns it,\n    leaving a window where cl_refs could be decremented to 0 and free'd.\n\nThis patch makes two changes to svc_rpc_gss_create_client():\n- Move the code that initializes cl_expiration to before where it is linked\n  into the list, so that it is set before it is visible to other threads.\n- Initialize cl_refs to 2, so a refcount_acquire() is not needed after\n  the svc_rpc_gss_create_client() call.\n\nThese races could allow the structure to be free'd when it is still being\nused in svc_rpc_gss().\n\nThis patch can be applied separately from #201862."
+}

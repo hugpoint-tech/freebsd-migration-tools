@@ -1,0 +1,8 @@
+{
+ "id": 1113271,
+ "bug_id": 247747,
+ "attachment_id": 0,
+ "creation_time": "2020-07-13T02:44:30Z",
+ "creator": "vvd@FreeBSD.org",
+ "text": "(In reply to VVD from comment #16)\n$ ls -dl /var/run/mysql\ndrwxr-xr-x  2 root  17402160  512 Jul 12 20:36 /var/run/mysql\n\nAnd after this the server start script will find dir /var/run/mysql and keep it as-is, then the mariadb server can't start with error in /var/log/mysql/mysqld.err:\n2020-07-13  5:16:50 0 [ERROR] Can't start server : Bind on unix socket: Permission denied\n2020-07-13  5:16:50 0 [ERROR] Do you already have another mysqld server running on socket: /var/run/mysql/mysql.sock ?\n2020-07-13  5:16:50 0 [ERROR] Aborting\n\n# rm -rf /var/run/mysql\n# service mysql-server start\ninstall: unknown group %%MARIADB_GROUP%%\nStarting mysql.\n\nAnd can't start again:\n# grep MARIADB_GROUP /usr/local/etc/rc.d/mysql-server\n                install -d -o ${mysql_user} -g %%MARIADB_GROUP%% \"${mysql_rundir}\"\n\nYou need:\nSUB_LIST+=      MARIADB_LOGDIR=\"${MARIADB_LOGDIR}\" \\\n                MARIADB_GROUP=\"${MARIADB_GROUP}\"\nin server part of if/else section of the databases/mariadb104-server/Makefile."
+}

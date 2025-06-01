@@ -1,0 +1,8 @@
+{
+ "id": 883747,
+ "bug_id": 210336,
+ "attachment_id": 0,
+ "creation_time": "2016-06-16T21:48:04Z",
+ "creator": "olevole@olevole.ru",
+ "text": "Postgresql can't run in jails on FreeBSD 11.0-ALPHA3 amd64\n\nI've try to setup jail with params:\n\nsysvsem = \"new\";\nsysvmsg = \"new\";\nsysvmsg = \"new\";\n\nbut postgres not initialized with follow errors:  \n\ncreating template1 database in /usr/local/pgsql/data/base/1 ... FATAL:  could not create shared memory segment: Function not implemented\nDETAIL:  Failed system call was shmget(key=1, size=48, 03600).\nchild process exited with exit code 1\ninitdb: removing contents of data directory \"/usr/local/pgsql/data\"\n\n\nHow to reproduce:\n\na) have /etc/sysctl.conf with enlarged ipc shm params:\nkern.ipc.shmall=262144\nkern.ipc.shmmax=1073741824\n\nb) Install PgSQL:\npkg install databases/postgres95-server\n\nc) create /etc/jail.conf:\n---\njail {\nexec.start = \"/bin/sh /etc/rc\";\nexec.stop = \"/bin/sh /etc/rc.shutdown\";\nhost.hostname = \"jail.example.com\";\npath = \"/\";\nsysvsem = \"new\";\nsysvmsg = \"new\";\nsysvmsg = \"new\";\nmount.devfs;\ndevfs_ruleset=\"4\";\nallow.dying = \"1\";\n}\n---\n\nd) run jail:\njail -c jail\n\ne) login into jail via \njexec X csh\nand try to run initdb. you got:\n--\ncreating template1 database in /usr/local/pgsql/data/base/1 ... FATAL:  could not create shared memory segment: Function not implemented\nDETAIL:  Failed system call was shmget(key=1, size=48, 03600).\n--\n\nIf you try to create it outside the jail - all will be ok\n\nFreeBSD 11.0-ALPHA3 amd64"
+}

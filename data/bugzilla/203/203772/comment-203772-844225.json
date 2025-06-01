@@ -1,0 +1,8 @@
+{
+ "id": 844225,
+ "bug_id": 203772,
+ "attachment_id": 0,
+ "creation_time": "2015-10-16T04:52:20Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Digging somewhat further, it seems the problem has to do with the encoding of\narray lengths. Contrary to what I thought last night, struct devstat's device_name\nfield is an array, not a pointer. And it turns out that all the array types in\nthe kernel's CTF info have length 0 for some reason. kgdb shows the same thing, so\nI'm guessing it's related to the clang 3.7 import. Interestingly, the new kgdb\nsupport has the correct array sizes:\n\nkgdb710:\n(kgdb) ptype struct devstat\ntype = struct devstat {\n    u_int sequence0;\n    int allocated;\n    u_int start_count;\n    u_int end_count;\n    struct bintime busy_from;\n    struct {\n        struct devstat *stqe_next;\n    } dev_links;\n    u_int32_t device_number;\n    char device_name[16];\n    ...\n\nkgdb (base):\n(kgdb) ptype struct devstat\ntype = struct devstat {\n    u_int sequence0;\n    int allocated;\n    u_int start_count;\n    u_int end_count;\n    struct bintime busy_from;\n    struct {\n        struct devstat *stqe_next;\n    } dev_links;\n    u_int32_t device_number;\n    char device_name[0];\n    ...\n\nI've fixed a few bugs related to zero-length arrays in the CTF code in the past,\nso it's not surprising that it's causing problems for DTrace. There are multiple\nproblems here: we need to figure out why the array lengths are now zero, and\nfix DTrace to handle this case properly (i.e. without crashing the kernel)."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 728553,
+ "bug_id": 181632,
+ "attachment_id": 0,
+ "creation_time": "2013-09-01T07:39:46Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "on 31/08/2013 20:05 Mike Harding said the following:\n\u003e I reverted the single line at\n\u003e \n\u003e http://svnweb.freebsd.org/base/stable/9/sys/dev/acpica/acpi_cpu.c?annotate=244616\u0026pathrev=244616#l978\n\nThank you for narrowing this down!\n\n\u003e Given that the code says\n\u003e \n\u003e /* If disabled, take the safe path. */\n\u003e 977 \tif (is_idle_disabled(sc)) {\n\u003e 978 \tacpi_cpu_c1();\n\u003e 979 \treturn;\n\u003e 980 \t}\n\u003e \n\u003e \n\u003e and then does a 'hlt' or idle if idle is disabled, this might be a problem.\n\nBut it should not be a problem.\n\nFirst, is_idle_disabled should not be normally set.  It is supposed to be set\nonly during short transitional periods.  So it would be useful to understand why\nit is set (after resume) and makes the difference.\n\nSecond, \"idle is disabled\" means that the ACPI C-state machine is disabled, not\nthat the system must not idle at all.  In fact, being in this function\n(acpi_cpu_idle) means that the system explicitly wants to idle.  Using hlt to\nidle is the right / normal / safe thing.  Not using hlt means that the system\nkeeps burning cycles even when it has nothing to do.  So with your change you\nshould observe increased power consumption and heat production.\nSo, this is another mystery as to why the perfectly normal use of hlt affects\nyour system so badly.\n\nP.S. I hope that you noticed a list of things to look at in my previous followup\nto this PR.\n-- \nAndriy Gapon"
+}

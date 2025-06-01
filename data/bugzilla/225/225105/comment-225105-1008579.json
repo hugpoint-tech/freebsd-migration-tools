@@ -1,0 +1,8 @@
+{
+ "id": 1008579,
+ "bug_id": 225105,
+ "attachment_id": 0,
+ "creation_time": "2018-08-27T07:45:06Z",
+ "creator": "yanko.yankulov@gmail.com",
+ "text": "Hi guys,\n\n\nHit this a few weeks ago haven't notice the ticket, the sysarch call will try to load the arguments from userspace and fail as they are on the kernel stack. A working (but ugly) solution is to duplicate the code in linux_machdep:\n\n--- a/sys/amd64/linux/linux_machdep.c\n+++ b/sys/amd64/linux/linux_machdep.c\n@@ -240,10 +240,14 @@ linux_arch_prctl(struct thread *td, struct linux_arch_prctl_args *args)\n                        error = EPERM;\n                break;\n        case LINUX_ARCH_SET_FS:\n-               bsd_args.op = AMD64_SET_FSBASE;\n-               bsd_args.parms = (void *)args-\u003eaddr;\n-               error = sysarch(td, \u0026bsd_args);\n-               if (error == EINVAL)\n+               if (args-\u003eaddr \u003c VM_MAXUSER_ADDRESS) {\n+                       struct pcb *pcb = curthread-\u003etd_pcb;\n+                       set_pcb_flags(pcb, PCB_FULL_IRET);\n+                       pcb-\u003epcb_fsbase = args-\u003eaddr;\n+                       td-\u003etd_frame-\u003etf_fs = _ufssel;\n+                       error = 0;\n+               }\n+               else\n                        error = EPERM;\n\nA better solution will be to change sysarch to accept addition parameter about the location of the memory, but haven't have the time to explore this path yet.\n\nHope this helps."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1035067,
+ "bug_id": 235299,
+ "attachment_id": 0,
+ "creation_time": "2019-01-31T01:53:01Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Directory names don't need to be unique, so I am not sure what you are saying?\nNow, I suppose that mountd could get the unique file handle for the\ndirectory and then an index of those could be maintained in the kernel for\nthe exports to be referenced to.\nBut then, how do files get associated with one of these?\n(Remember that every file gets a vnode and it references the mount point,\n which is where the exports currently live. You propose a separate\n \"fake mountpoint\" for each directory. What about subdirectories or the\n following case of multiple hard links. Hard links are a nightmare for\n distributed file systems.)\n\nFor your example, suppose we create a file in /storage with two hard links\nfor the file:\n/storage/A/foo\n/storage/B/bar\n\nboth these paths represent the same file. For your example, whether it is\nexported to 10.0.0.1 as read/write or read-only is ambiguous.\n\nThere are userspace NFS servers out there that would assign two different\nfile handles to the above file, one for each path it might be looked up via.\nThe Linux and FreeBSD clients break for these servers, because they don't\nrecognize the two files as the \"same file\" and maintain separate caches in\nthe client. (Not a good plan and no way to make it work for at least NFSv3.)"
+}

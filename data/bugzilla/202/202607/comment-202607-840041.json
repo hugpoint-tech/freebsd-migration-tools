@@ -1,0 +1,8 @@
+{
+ "id": 840041,
+ "bug_id": 202607,
+ "attachment_id": 0,
+ "creation_time": "2015-09-12T04:05:24Z",
+ "creator": "gibbs@FreeBSD.org",
+ "text": "(In reply to Xin LI from comment #2)\nI spent some more time this evening reviewing the code. I believe that removing the assert is safe. However, it would be good to assert that the only dbufs on the dnode are either for the bonus buffer or in the evicting state. This should hold true because the dnode free paths at higher levels (e.g. ZPL and ZVOL) enforce mutual exclusion between reads/writes and frees. \n\nCurrently, dbuf_rele_and_unlock() doesn't contain any logic to ensure regular (not bonus buffer) dbufs are immediately evicted for free'd dnodes. So if, due to a bug or regression, a dbuf for a dnode being freed is held during the call to dnode_sync_free() , the dbuf and dnode will stick around in memory until memory pressure evicts the dbuf. From the perspective of dnode_sync_free() and even memory usage, this is no big deal, but it probably indicates a bug."
+}

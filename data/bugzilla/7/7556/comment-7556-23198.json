@@ -1,0 +1,8 @@
+{
+ "id": 23198,
+ "bug_id": 7556,
+ "attachment_id": 0,
+ "creation_time": "1998-08-10T13:10:00Z",
+ "creator": "hm@kts.org",
+ "text": "\nThe subroutine sl_compress_init(comp, max_state) in slcompress.c at least\nimplies, that the state table can be changed to any value dynamically if\ncalled with some appropriate value for max_state.\n\nThis is not true, because the corresponding table is initialized by the\nhardcoded MAX_STATES value in the header file slcompress.h.\n\nCalling sl_compress_init() with a value greater than MAX_STATES will cause\ncause writing outside the slcompress structure - bad things happen.\n\nsl_compress_init() is currently used like this in the kernel PPP driver,\nif_ppp.c:\n\n#ifdef VJC\n    case PPPIOCSMAXCID:\n        if (error = suser(p-\u003ep_ucred, \u0026p-\u003ep_acflag))\n            return (error);\n        s = splnet();\n        sl_compress_init(\u0026sc-\u003esc_comp, *(int *)data);\n        splx(s);\n        break;\n#endif\n\nin this case, if this ioctl routine is ever issued with a value other\nthan -1 or with a value greater MAX_STATES, random writes into other\nunknown data structures will occur!\n\nFix: \n\nImmediately disable the usage of any parameter for max_state other than\n-1 now!\n\nFor the future, make the tstate and rstate structures in struct slcompress\nresize dynamically so sl_compress_init() is able to do what it should be\nable to do.\nHow-To-Repeat: \nCall sl_compress_init() with a max_state value of i.e. 64. (Caution:\nmake a backup before doing this!)."
+}

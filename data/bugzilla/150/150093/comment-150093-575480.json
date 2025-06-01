@@ -1,0 +1,8 @@
+{
+ "id": 575480,
+ "bug_id": 150093,
+ "attachment_id": 0,
+ "creation_time": "2010-08-29T21:00:02Z",
+ "creator": "tech@askold.net",
+ "text": "Standard C++ library, libstdc++, compiled with \"generic\" locale support. So only \"C\" and \"POSIX\" locales are supported.\n\nSetting any other locale will throw the runtime_error exception \"locale::facet::_S_create_c_locale name not valid\". Though locale name is valid and works with setlocale(3).\n\nOn Linux libstdc++ is using \"gnu\" locale configuration. Which takes use of newlocale(3)/uselocale(3)/freelocale(3)/... POSIX calls. FreeBSD does not support these calls so it is not possible to use \"gnu\" configuration.\n\nSince C++ standard allow several locale instances to coexists simultaneously, it must be not possible to implement C++ locales in terms of setlocale(3).\n\nThere are two possible solutions:\n\n1. Implement locale related functions in FreeBSD C Library. This option is preferred: supporting standard functions is always a plus and having these function it is possible to use existing locale model in libstdc++.\n\n2. Implement custom locale support for FreeBSD in libstdc++. Advantage that standard C library would be untouched. But on the other hand, there are many disadvantages (to create libstdc++ locale model from scratch; difficult to implement in terms of setlocale, means use of some hacks with libc internals).\n\nPS. Locale support is really important. C++ programs which use locale is unusable on FreeBSD and there is no workaround.\n\nHow-To-Repeat: Compile and run following C++ code:\n\n#include \u003clocale\u003e\n\nint main()\n{\n  std::locale(\"en_US.UTF-8\");\n}"
+}

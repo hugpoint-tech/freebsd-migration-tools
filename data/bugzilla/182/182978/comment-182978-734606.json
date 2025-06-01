@@ -1,0 +1,8 @@
+{
+ "id": 734606,
+ "bug_id": 182978,
+ "attachment_id": 0,
+ "creation_time": "2013-10-14T20:42:13Z",
+ "creator": "andreast@FreeBSD.org",
+ "text": "Hi,\n\nthe reason is from this commit r256304.\n\nWe're working on it.\n\nBasically, ata_probe does not longer return 0 and ata_kauai and\nata_macio fail now. This is due to the fact that these drivers do not\nhandle properly the BUS_* return codes other than 0.\n\nFor the time being you can try the below.\n\nGruss,\nAndreas\n\nIndex: powerpc/powermac/ata_kauai.c\n===================================================================\n--- powerpc/powermac/ata_kauai.c\t(revision 256444)\n+++ powerpc/powermac/ata_kauai.c\t(working copy)\n@@ -199,7 +199,7 @@\n \tu_int32_t devid;\n \tphandle_t node;\n \tconst char *compatstring = NULL;\n-\tint i, found, rid;\n+\tint err, i, found, rid;\n\n \tfound = 0;\n \tdevid = pci_get_devid(dev);\n@@ -252,8 +252,11 @@\n \t/* XXX: ATAPI DMA is unreliable. We should find out why. */\n \tch-\u003eflags |= ATA_NO_ATAPI_DMA;\n \tata_generic_hw(dev);\n+\terr = ata_probe(dev);\n+\tif (err \u003e 0)\n+\t\treturn (err);\n\n-        return (ata_probe(dev));\n+        return (0);\n }\n\n #if USE_DBDMA_IRQ"
+}

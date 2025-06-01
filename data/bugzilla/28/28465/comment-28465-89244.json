@@ -1,0 +1,8 @@
+{
+ "id": 89244,
+ "bug_id": 28465,
+ "attachment_id": 0,
+ "creation_time": "2001-06-27T22:20:01Z",
+ "creator": "umesh@juniper.net",
+ "text": "If you do a bunch of reads and writes to a filesystem, then mount it\nrdonly and enable softupdates, tunefs will allow you to do so, but \nthe kernel will panic shortly afterwords with the following stack trace.\n\n# tunefs -n enable /altroot\ntunefs: soft updates setp\nanic: softdep_deallocate_dependencies: dangling deps\nsoftdep_deallocate_dependencies(c0368000,dcde5c98,c01b417a,d01cd00c,d01cd00c) at softdep_deallocate_dependencies+0x16\nsoftdep_deallocate_dependencies(d01cd00c) at softdep_deallocate_dependencies+0x16\nbrelse(d01cd00c,d01cd00c) at brelse+0x6a\nvinvalbuf(dcd2ee40,0,c41c9800,dcd92400,0) at vinvalbuf+0x24f\nffs_reload(c3b4be00,c41c9800,dcd92400,0,c3b4be00) at ffs_reload+0x51\nffs_mount(c3b4be00,4810890f,bfbff83c,dcde5e80,dcd92400) at ffs_mount+0x163\nmount(dcd92400,dcde5f80,bfbff83c,bfbffdf9,8049517) at mount+0x4ef\nsyscall2(2f,2f,2f,8049517,bfbffdf9) at syscall2+0x1fd\nXint0x80_syscall() at Xint0x80_syscall+0x25\nDebugger(\"panic\")\nStopped at      Debugger+0x40:  pushl   $-0x1\n\nThe filesystem activity has a bunch of unwritten buffers. When soft\nupdates is enabled in this state, the iodone routine i\n\nHow-To-Repeat: fs is the name of a filesystem. If you do these four steps, you will\npanic the system.\n\nmount /fs\ntar cvfz foo.tgz /usr/lib\nmount -u -o rdonly /fs\ntunefs -n enable /fs\n\nYou will trip into this problem after a bunch of tries. I can successfully\nreproduce this approx 20% of the time."
+}

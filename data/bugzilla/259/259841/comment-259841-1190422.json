@@ -1,0 +1,8 @@
+{
+ "id": 1190422,
+ "bug_id": 259841,
+ "attachment_id": 0,
+ "creation_time": "2021-12-16T04:13:08Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "https://github.com/libjxl/libjxl/commit/bbe0c3789843 made me pause while -CURRENT fixed the headers. Should build fine now, see http://www.ipv6proxy.net/go.php?u=http://beefy18.nyi.freebsd.org/data/main-amd64-default/p772274a15b8b_s0630a06b2a/logs/mesa-devel-21.3.b.1817.log\n\nA more generic solution can be something like:\n\n--- a/lib/libc/gen/sysconf.c\t(git-c1920558b3c4)\n+++ b/lib/libc/gen/sysconf.c\t(working copy)\n@@ -38,6 +38,7 @@ __FBSDID(\"$FreeBSD$\");\n \n #include \"namespace.h\"\n #include \u003csys/param.h\u003e\n+#include \u003csys/cpuset.h\u003e\n #include \u003csys/time.h\u003e\n #include \u003csys/sysctl.h\u003e\n #include \u003csys/resource.h\u003e\n@@ -74,6 +75,7 @@ __FBSDID(\"$FreeBSD$\");\n long\n sysconf(int name)\n {\n+\tcpuset_t cpus;\n \tstruct rlimit rl;\n \tsize_t len;\n \tint mib[2], sverrno, value;\n@@ -583,13 +601,18 @@ sysconf(int name)\n #endif\n \n \tcase _SC_NPROCESSORS_CONF:\n-\tcase _SC_NPROCESSORS_ONLN:\n \t\tif (_elf_aux_info(AT_NCPUS, \u0026value, sizeof(value)) == 0)\n \t\t\treturn ((long)value);\n \t\tmib[0] = CTL_HW;\n \t\tmib[1] = HW_NCPU;\n \t\tbreak;\n \n+\tcase _SC_NPROCESSORS_ONLN:\n+\t\tlen = sizeof(cpus);\n+\t\tif (cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1, len, \u0026cpus))\n+\t\t\treturn (-1);\n+\t\treturn CPU_COUNT(\u0026cpus);\n+\n #ifdef _SC_PHYS_PAGES\n \tcase _SC_PHYS_PAGES:\n \t\tlen = sizeof(lvalue);"
+}

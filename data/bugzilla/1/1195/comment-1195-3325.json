@@ -1,0 +1,8 @@
+{
+ "id": 3325,
+ "bug_id": 1195,
+ "attachment_id": 0,
+ "creation_time": "1996-05-13T01:10:02Z",
+ "creator": "nox@jelal.hb.north.de",
+ "text": "\n\tEvery time i make a DIAGNOSTIC kernel and then dump more than\na few MB to tape using afio, i get this.  Then i disable the panic\nand everything is well again.  So this itself is not critical but...\n\nFix: As all the problematic calls seem to come out of vunmapbuf,\n\n\n\nhope it helps...\n\tJuergen--uhnckE9SfmGEjZd85PwgALJKbKwzGR5sONCPVQPRfOZMukeu\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: i386/i386/vm_machdep.c\n@@ -783,8 +783,20 @@\n \t/*\n \t * release the data page\n \t */\n+#ifdef DIAGNOSTIC\n+\t\tvm_page_t foo;\n+\t\tpa = pmap_kextract((vm_offset_t) addr);\n+\t\tfoo = PHYS_TO_VM_PAGE(pa);\n+\t\tif (foo-\u003ehold_count \u003c= 0) {\n+\t\t\t/* panic in vm_page_unhold -\u003e printf */\n+\t\t\tprintf(\"vunmapbuf: vm_page_unhold: hold count %d \u003c= 0!!!\\n\", foo-\u003ehold_count);\n+\t\t\tfoo-\u003ehold_count = 1;\n+\t\t}\n+\t\tvm_page_unhold(foo);\n+#else\n \t\tpa = pmap_kextract((vm_offset_t) addr);\n \t\tvm_page_unhold(PHYS_TO_VM_PAGE(pa));\n+#endif\n \t}\n }\n \nnow try the write again and you get a console full of these printfs.\nHow-To-Repeat: \n\t(boot DIAGNOSTIC kernel, install afio, mount scratch monk.. errm, tape)\n\n\tfind /usr/src | afio -G 2 -o -v -f -b 5120 -c 1000 -s 100000x -Z /dev/nrst0"
+}

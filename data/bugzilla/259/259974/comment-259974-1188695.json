@@ -1,0 +1,8 @@
+{
+ "id": 1188695,
+ "bug_id": 259974,
+ "attachment_id": 0,
+ "creation_time": "2021-12-02T03:45:39Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "So the root cause of this bug turns out to be pretty stupid.  fusefs special cases lookups for \"..\" by storing some extra information in each vnode.  But that fails for a directory whose parent has been reclaimed.\n\nThe stupid part is that there's no good reason to special-case \"..\" ... except that it's the lowest common denominator for FUSE file systems :facepalm:.  The FUSE documentation is pretty explicit that file systems aren't required to implement lookups for \"..\" unless they opt into it.\n\nFor file systems that do opt-in, the solution to this bug is easy: just ask the FUSE server to lookup \"..\".  In fact, we should be doing that anyway in cases where the server specifies a time-limited entry cache and the parent's cache entry has expired.\n\nFor file systems that don't opt-int, however, I'm not sure that there is a good solution.  We could return EIO or ESTALE, perhaps."
+}

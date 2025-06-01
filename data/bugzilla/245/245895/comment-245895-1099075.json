@@ -1,0 +1,8 @@
+{
+ "id": 1099075,
+ "bug_id": 245895,
+ "attachment_id": 0,
+ "creation_time": "2020-04-25T21:46:42Z",
+ "creator": "cmt@freebsd.org",
+ "text": "This is a good one - but I don't think it's pyside2 which is to blame here.\n\n- nothing in pyside2 references Qt5ImageFormats - it's not even an \"optional\" module to be wrapped via pyside2.\n\nI'll argue that the real culprit here is qt5-gui:\nQt5GuiConfig.cmake pulls in all files ${LOCALBASE}/lib/cmake/Qt5Gui/Qt5Gui_*Plugin.cmake (see Qt5GuiConfig.cmake line 212) - and out friend qt5-imageformat drops a bunch of image format (duh) plugins there. From the history of qt5-imageformat's pkg-plist, the list of plugins hasn't changed for a long time, but of course you'll get funny results if you're mixing Qt 5.13 and 5.14.\n\nI would suspect that all ports using qt5-gui via the \"official\" cmake interfaces will suffer breakage on this mismatch. And as it's qt5-gui's cmake file which is pulling in \"all the plugins\", it should be qt5-gui's responsibility to run-depend on qt5-imageformats. Otherwise every consumer of qt5-gui would have to chase the same problem - and the problem isn't even reproducable in poudriere or any other clean system, as no old qt5-imageformats would exist there.\n\nLet's hear what kde@ has to say about this."
+}

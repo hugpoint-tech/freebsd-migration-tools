@@ -1,0 +1,8 @@
+{
+ "id": 1293834,
+ "bug_id": 276591,
+ "attachment_id": 0,
+ "creation_time": "2024-01-24T15:44:26Z",
+ "creator": "freebsd-bug-report-yf@yf.bsdclub.org",
+ "text": "With ports options:\n\nOPTIONS_FILE_SET+=KERBEROS\nOPTIONS_FILE_SET+=HEIMDAL\nOPTIONS_FILE_UNSET+=HEIMDAL_BASE\nOPTIONS_FILE_UNSET+=MIT\n\npoudriere bulk fails to build electron25 such as:\n[[[\n...\n[14amd64-local-desktop-job-01] Extracting cups-2.4.7_1: .......... done\n===\u003e   electron25-25.9.8_2 depends on shared library: libcups.so - found (/usr/local/lib/libcups.so)\n===\u003e   Returning to build of electron25-25.9.8_2\n===\u003e   electron25-25.9.8_2 depends on shared library: libkrb.so.26 - not found\n===\u003e   Installing existing package /packages/All/heimdal-7.8.0_6.pkg\n[14amd64-local-desktop-job-01] Installing heimdal-7.8.0_6...\nthe most recent version of heimdal-7.8.0_6 is already installed\n===\u003e   electron25-25.9.8_2 depends on shared library: libkrb.so.26 - not found\n*** Error code 1\n\nStop.\n]]]\n\nIt seems this is caused by the typo in Makefile\n[[[\ndiff --git a/devel/electron25/Makefile b/devel/electron25/Makefile\nindex d4947e548c28..4ccef77a42f1 100644\n--- a/devel/electron25/Makefile\n+++ b/devel/electron25/Makefile\n@@ -188,7 +188,7 @@ DEBUG_VARS_OFF=             BUILDTYPE=Release \\\n DIST_IMPLIES=          DRIVER\n DRIVER_MAKE_ARGS=      chromedriver\n \n-HEIMDAL_LIB_DEPENDS=   libkrb.so.26:security/heimdal\n+HEIMDAL_LIB_DEPENDS=   libkrb5.so.26:security/heimdal\n KERBEROS_VARS=         GN_ARGS+=use_kerberos=true\n KERBEROS_VARS_OFF=     GN_ARGS+=use_kerberos=false\n \n]]]\n... and also it might be applied in electron26, electron27.\n\nI'm not sure we can build it even with the change above, I'm just trying (it takes 1 day)."
+}

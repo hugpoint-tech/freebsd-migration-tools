@@ -1,0 +1,8 @@
+{
+ "id": 1287859,
+ "bug_id": 272416,
+ "attachment_id": 0,
+ "creation_time": "2023-12-11T18:49:19Z",
+ "creator": "tino.engel@mail.de",
+ "text": "I had the same problem about a year ago - unfortunately I have forgotten what workaround I used.\nAnyhow when I look at the source of /usr/ports/net/realtek-re-kmod/work/rtl_bsd_drv-d3a7a3d/if_re.c where the problem seems to happen:\n\n  7103\t#if OS_VER \u003c VERSION(4,9)\n  7104\t                /* Remove header from mbuf and pass it on. */\n  7105\t                m_adj(m, sizeof(struct ether_header));\n  7106\t                ether_input(ifp, eh, m);\n  7107\t#else\n  7108\t                (*ifp-\u003eif_input)(ifp, m);\n  7109\t#endif\n  7110\t                RE_LOCK(sc);\n\nFrom the crash dump stacks, it seems to end up in line 7106, which is between \n#if OS_VER \u003c VERSION(4,9)\nand\n#else\n\nsee also Comment #4:\n#8  ether_input (ifp=\u003coptimized out\u003e, m=0xffff)\n    at /usr/src/sys/net/if_ethersubr.c:849\n\nThat seems wrong to me for FreeBSD 13. See if_rereg.h:\n#define OS_VER\t__FreeBSD_version"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1018234,
+ "bug_id": 232673,
+ "attachment_id": 0,
+ "creation_time": "2018-10-26T03:47:42Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I'll take a look and see if there is a simple patch for this particular\ncrash.\nHowever I do know that, in general, that the NLM is not safe for\nforced dismounts and I could never figure out a way to make it safe.\n(Essentially, whenever the vnode is unlocked, a forced dismount can\n cause a crash. However, there are areas in the code where the vnode\n must be unlocked. I could reduce the likelyhood of a crash doing\n something similar to what you suggest, where the code sets local\n variables before unlocking the vnode and using those instead of\n the vnode, but I couldn't do all cases.)\nAt the very least, it should check for a doomed vnode and return EBADF\nwhen it does lock the vnode.\n\nI've said this many times on the mailing lists, but I'll mention it here too.\nThe NLM is a fundamentally flawed protocol that was never published as an RFC.\nI think avoiding use of it is the best way to go.\nIf locks for a file don't need to be visible to other clients, the \"nolockd\"\nmount option should work. For the cases (not very common) where the locks\ndo need to be visible to other client(s), using NFSv4 is a better bet.\n(And NFSv4.1 fixed a lot of things, so I suggest NFSv4.1 over NFSv4.0 if\n possible.)"
+}

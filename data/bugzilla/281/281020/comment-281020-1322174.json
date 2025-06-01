@@ -1,0 +1,8 @@
+{
+ "id": 1322174,
+ "bug_id": 281020,
+ "attachment_id": 0,
+ "creation_time": "2024-08-24T07:24:36Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "On a mixed-mode CD (a CD with both data and sound tracks), it is not possible to play the sound tracks.\n\nThe way that eg. multimedia/vlc reads sound from a CD involves:\nint fd = open(\"/dev/cd0\", ...)\nint block_size = 2352;\nioctl(fd, CDRIOCSETBLOCKSIZE, \u0026block_size);\nlseek(fd, some multiple of 2352, SEEK_SET);\nread(fd, buffer, some multiple of 2352);\nand on a pure sound CD, this works perfectly, both in VLC and a test application I made.\n\nHowever when using that code on a mixed-mode CD (with both data and sound tracks), read() always fails with EINVAL, whether the offset is within a data track or a sound track. The only way to make read() succeed on such CDs, is to use a block size of 2048, and an offset that places the read within a data track. Attempting to read music tracks always fails with EINVAL, regardless of the block size.\n\nIt will take me some time to confirm, but this may be a regression from commit dd78f43259efd551f76a6cb7744bce49c215863e, which was meant to \"make the media check asynchronous\", but also made many other changes, including setting a block size of 2352 for pure sound CDs (which could be why they still work, but mixed-mode CDs don't)."
+}

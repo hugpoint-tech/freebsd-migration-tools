@@ -1,0 +1,8 @@
+{
+ "id": 1167290,
+ "bug_id": 254282,
+ "attachment_id": 0,
+ "creation_time": "2021-06-22T01:58:20Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "The problem is your specification of \"late\" on\nthe nullfs mount lines.\n\nIf you look in /etc/rc.d, you'll find \"statd\"\nrequires \"nfsd\", which requires \"mountd\".\nHowever, it specifies BEFORE DAEMON.\n\"mountlate\" requires DAEMON.\n--\u003e As such, mountd is executed before mountlate,\n    which is what mounts the \"late\" file systems.\n\nTo fix this, you could:\n- Drop \"late\" from the /etc/fstab lines, if you\n  don't need to mount them \"late\".\nor\n- If you don't run rpc.statd and rpc.lockd, you\n  could remove DAEMON from \"statd\" and \"lockd\"\n  and then add \"mountlate\" to the REQUIRES line\n  in \"mountd\".\n\nI don't know why this worked for FreeBSD-12, but\nI suspect that some DAEMON related dependency was\nadded to the scripts (ie. they were broken).\n- Although rpc.statd and rpc.lockd are NFSv3 related\n  protocols I avoid using, they need to be running\n  before nfsd (for server side locking) and NFS\n  mounts are done for client side locking, if you\n  are using them.\n\nI can't think of a way to fix this so that mountd\ncan start after \"mountlate\" and still work correctly,\nfor those who are using rpc.statd, rpc.lockd."
+}

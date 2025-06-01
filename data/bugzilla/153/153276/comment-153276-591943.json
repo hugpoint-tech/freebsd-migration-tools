@@ -1,0 +1,8 @@
+{
+ "id": 591943,
+ "bug_id": 153276,
+ "attachment_id": 0,
+ "creation_time": "2010-12-18T19:20:08Z",
+ "creator": "freebsd@brennanhome.com",
+ "text": "I discovered this problem on my OS X machine, and I am just trying to pass the information upstream as I see it also exists in the FreeBSD source code.\n\nWhen using uudecode, if an improper character is detected, the error message that is printed does not match the actual error. The problem is that the IS_DEC macro allows character 32-96 inclusive. But the error message says that the allowed characters are 33-96. This caused me some trouble in diagnosing a problem with an external uuencode system.\n\n\n#define IS_DEC(c)\t ( (((c) - ' ') \u003e= 0) \u0026\u0026 (((c) - ' ') \u003c= 077 + 1) )\n\n#define OUT_OF_RANGE do {\t\t\t\t\t\t\\\n\twarnx(\"%s: %s: character out of range: [%d-%d]\",\t\t\\\n\t    infile, outfile, 1 + ' ', 077 + ' ' + 1);\t\t\t\\\n\nAs you can see, the error message includes a 1 + ' ', which this IS_DEC macro does not have.\n\nFix: \n\n#define OUT_OF_RANGE do {\t\t\t\t\t\t\\\n\twarnx(\"%s: %s: character out of range: [%d-%d]\",\t\t\\\n\t    infile, outfile, ' ', 077 + ' ' + 1);\t\t\t\\\nHow-To-Repeat: This only occurs with an improperly formatted file. Here is a simple way to improperly format a file.\n$ echo \"This is a test\" \u003etemp.txt\n$ uuencode -o temp.uu temp.txt temp.txt\n$ cat temp.uu\nbegin 644 temp.txt\n/5\u0026AI\u003cR!I\u003cR!A('1E\u003cW0*\n`\nend\n\n$ sed 's/^`$//' temp.uu | uudecode\nuudecode: \n    input file: stdin\n    encoded file: temp.txt\n    character out of range: [33-96]"
+}

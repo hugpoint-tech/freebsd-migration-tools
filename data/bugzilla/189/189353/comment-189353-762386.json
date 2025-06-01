@@ -1,0 +1,8 @@
+{
+ "id": 762386,
+ "bug_id": 189353,
+ "attachment_id": 0,
+ "creation_time": "2014-05-04T13:46:43Z",
+ "creator": "joris@giovannangeli.fr",
+ "text": "\nI've found this issue while implementing semaphores for dragonflyBSD,\nand at first i came with the same solution than yours. But it won't\nwork when you do the same in two processes : unlink will only remove\nthe caching on the process calling unlink, not all of them. See\nattached test case.\n\nIt looks like glibc is using inodes numbers and dev number for that,\nwhich, while not being strictly correct (inodes can be reused), seems\nto work fine on linux.\n\nFor dragonfly, i'm currently trying to keep filedescriptors opened in\nthe nameinfo structure. This adds quite a bit of overhead, but this\nway you can check link count with fstat during a sem_open to see if\nthe semaphore file still exist, and return the cached mapping only if\nst_nlink \u003e 0.\n\nThis solution at least should be strictly correct, but the inode\nsolution could be fine in practice.\n\nRegards,\njoris"
+}

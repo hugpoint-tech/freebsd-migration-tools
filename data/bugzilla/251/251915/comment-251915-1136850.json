@@ -1,0 +1,8 @@
+{
+ "id": 1136850,
+ "bug_id": 251915,
+ "attachment_id": 0,
+ "creation_time": "2020-12-17T10:04:16Z",
+ "creator": "j.piecuch96@gmail.com",
+ "text": "In tty_signal_sessleader():\n\nif (tp-\u003et_session != NULL \u0026\u0026 tp-\u003et_session-\u003es_leader != NULL) {\n\tp = tp-\u003et_session-\u003es_leader;\n\tPROC_LOCK(p);\n\tkern_psignal(p, sig);\n\tPROC_UNLOCK(p);\n}\n\nWe're holding the tty lock, but not the session lock, so the s_leader may be changed to NULL right after the != NULL check by a concurrent invocation of killjobc() by the session leader. The compiler *might* optimize this and only read s_leader a single time, but that's far from guaranteed.\n\nI don't have a patch because I'm not sure what the right way to deal with this is.\nWe could read s_leader a single time, like this:\n\nif (tp-\u003et_session != NULL \u0026\u0026 (p = tp-\u003et_session-\u003es_leader) != NULL) {\n\tPROC_LOCK(p);\n\tkern_psignal(p, sig);\n\tPROC_UNLOCK(p);\n}\n\n...but the compiler may in theory still output vulnerable code. I don't know what assumptions are made in FreeBSD about what compilers can and can't do."
+}

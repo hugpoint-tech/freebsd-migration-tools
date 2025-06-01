@@ -1,0 +1,8 @@
+{
+ "id": 1304144,
+ "bug_id": 278230,
+ "attachment_id": 249800,
+ "creation_time": "2024-04-07T11:05:02Z",
+ "creator": "sap@eseipi.net",
+ "text": "Created attachment 249800\nsh: Reload HISTFILE before saving history if necessary\n\nA basic persistent history for sh(1) was implemented in 988b1bb0c54e, but it doesn't work well when multiple shells coexist at the same time. In addition to the common and obvious situation with two terminal emulators running simultaneously (where history from one session will be overwritten entirely by another), let's consider the following use case: someone starts an X/Wayland session from a login sh(1) interactively. Then, after logging out, HISTFILE will contain commands from the tty session only, but not from any other shells that may have been used.\n\nSteps to reproduce:\n1) Start two sh(1) instances.\n2) Run \"exit 1\" in the 1st one. Now the last line of the HISTFILE is \"exit 1\".\n3) Run \"exit 2\" in the 2nd one. HISTFILE doesn't contain \"exit 1\" anymore, only \"exit 2\".\n\nIt happens because sh(1) dumps only history events it has in memory, i.e. those loaded from HISTFILE at start plus the ones entered by user in the current session, but doesn't care that HISTFILE content may have changed in the meantime.\n\nI wrote a patch that seems to solve the problem for me, but not sure if this can be considered as expected behavior for anyone else."
+}

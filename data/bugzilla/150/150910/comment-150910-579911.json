@@ -1,0 +1,8 @@
+{
+ "id": 579911,
+ "bug_id": 150910,
+ "attachment_id": 0,
+ "creation_time": "2010-09-24T12:40:02Z",
+ "creator": "rs@bytecamp.net",
+ "text": "Mounting an NFS filesystem with a large value for wsize results in\nunexpected behaviour. Before analysis, I got strange errors from vi\nlike \"close: permission denied\" or \"no space left on device\" when\nediting a large textfile and having /var/tmp nfs mounted, although\nthere was enough space.\n\nThe client is 8.1-RELEASE-p1, the server 8.0-RELEASE-p3. Both use nfs version 3.\n\nFix: \n\nApplied to head as patch r213756. The soreserve() call in clnt_dg.c\nalways failed due to the sendsz and recvsz arguments being too large.\nWithout the patch a workaround is to increase kern.ipc.maxsockbuf.\n(Committed to stable/8 as r214415.)\nHow-To-Repeat: # mount_nfs -o noatime,udp,wsize=16384 10.0.0.xx:/var/tmp /var/tmp\n# dd if=/dev/zero of=/var/tmp/foo bs=2M count=100\ndoes not return to prompt\n\n# dmesg\nnfs server 10.0.0.xx:/var/tmp: not responding\nnfs server 10.0.0.xx:/var/tmp: not responding\nnfs server 10.0.0.xx:/var/tmp: not responding\nnfs server 10.0.0.xx:/var/tmp: not responding\nnfs server 10.0.0.xx:/var/tmp: not responding\n\n# top\ndd in state \"nfsaio\"\n\n# umount -f /var/tmp\n\n# mount_nfs -o noatime,udp,wsize=8192 10.0.0.xx:/var/tmp /var/tmp\n# dd if=/dev/zero of=/var/tmp/foo bs=2M count=100\n100+0 records in\n100+0 records out\n209715200 bytes transferred in 3.897668 secs (53805303 bytes/sec)"
+}

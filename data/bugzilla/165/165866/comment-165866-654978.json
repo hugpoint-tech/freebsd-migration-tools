@@ -1,0 +1,8 @@
+{
+ "id": 654978,
+ "bug_id": 165866,
+ "attachment_id": 0,
+ "creation_time": "2012-03-08T23:40:10Z",
+ "creator": "adrian@freebsd.org",
+ "text": "I've been seeing TX hangs during my tests.\n\nInvestigating showed that the TX queue would grow and busy buffers would stay busy.\n\nEg, from sysctl dev.ath.0.txagg=1:\n\n\nHW TXQ 0: axq_depth=0, axq_aggr_depth=0\nHW TXQ 1: axq_depth=184, axq_aggr_depth=0\nHW TXQ 2: axq_depth=0, axq_aggr_depth=0\nHW TXQ 3: axq_depth=0, axq_aggr_depth=0\nHW TXQ 8: axq_depth=1, axq_aggr_depth=0\nBusy: 14\nTotal TX buffers: 15; Total TX buffers busy: 1\n\nThis occured even with a completely idle access point that only responded to probe requests - ie, no active associations.\n\nthe only way to flush things was a 'scan' - this forcibly flushes the TX queue and pending frames are either handled or deleted.\n\nI then flipped on reset debugging (sysctl dev.ath.0.debug=0x20) and forced a scan whenever I saw this occur.\n\nI also dumped the relevant registers when this occured. I found that the TXDP for this queue was completely in the wrong place.\n\nI also found that the TX descriptor list made no sense - there were incomplete and complete descriptor lists in the same TX queue, as well as NULL link pointers half way through the list.\n\nSo, I figured something is splicing the list together incorrectly.\n\nFix: This particular patch seems to quieten down the issues. I'm going to run this a bit more and see what happens.\n\nHow-To-Repeat: This kernel was compiled with TDMA support, so the ATH_BUF_BUSY flag would be set.\n\n* set it up on a 2.4GHz channel;\n* make sure there's lots of STAs and APs around;\n* notice the high level of probe request traffic;\n* .. wait."
+}

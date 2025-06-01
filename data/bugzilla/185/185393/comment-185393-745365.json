@@ -1,0 +1,8 @@
+{
+ "id": 745365,
+ "bug_id": 185393,
+ "attachment_id": 0,
+ "creation_time": "2014-01-05T18:04:37Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/185393, you wrote:\n\u003e The implementation of -lname and -ilname improperly use readlink() by\n\u003e not setting a null character before using the string. readlink() is\n\u003e documented as not doing this for you and returns the length of the\n\u003e link string, requiring the caller to set the null character.\n\n\u003e In particular this is implemented in the usr.bin/find/function.c in\n\u003e the f_name() function. The function uses an automatic buffer which\n\u003e gets reused through multiple calls, resulting in link names that are\n\u003e shorter than the preceding values stored in the buffer to fail to\n\u003e match properly.\n\nThanks for the report.\n\nYour patch works for me. I have changed the 'len' variable from 'int' to\n'ssize_t' matching the prototype of readlink().\n\nI am not entirely happy with the hard-coded PATH_MAX, since the limit is\nhigher on some other operating systems and an overlong symlink might be\nencountered on a shared filesystem. For example, a Linux machine can\ncreate a symlink target of 1024 bytes plus '\\0' which ls -l and Python\nos.readlink() display correctly but readlink and the patched find do\nnot. In the case of ls -l it only works because the target is only one\nbyte \"too long\". I guess that is a \"fringe case\" though, unlike the\nproblems fixed by the patch.\n\n-- \nJilles Tjoelker"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 355872,
+ "bug_id": 104738,
+ "attachment_id": 0,
+ "creation_time": "2006-10-24T08:10:18Z",
+ "creator": "nodummy@yeah.net",
+ "text": "The function inet_ntoa in the /sys/libkern/inet_ntoa.c uses a static array \nstatic char buf[4 * sizeof \"123\"];\nto store the result. And it returns the address of the array to the caller.\n\nI think this inet_ntoa is not reentrant, though there are several functions\ncalling it. If two functions call it simultaneously, the result will be\ncorrupted. Though I haven't really encountered this situation, it may occur\nsomeday, especially when using multi-processor.\n\nFix: \n\nThere is another reentrant version of inet_ntoa called inet_ntoa_r in the\nsame file. It has been there for several years, but just used by ipfw2 for\nabout four times in 7-CURRENT. In my patch, I replaced all the calls to\ninet_ntoa with calls to inet_ntoa_r.\n\nBy the way, some of the original calls is written in this style:\nstrcpy(buf, inet_ntoa(ip))\n\nThe changed code looks like\ninet_ntoa_r(ip, buf)\nThis change avoids a call to strcpy, and can save a little time.\n\nHere is the patch.\nhttp://people.freebsd.org/~delphij/misc/patch-itoa-by-nodummy-at-yeah-net"
+}

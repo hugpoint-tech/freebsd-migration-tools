@@ -1,0 +1,8 @@
+{
+ "id": 86425,
+ "bug_id": 27636,
+ "attachment_id": 0,
+ "creation_time": "2001-05-25T13:40:01Z",
+ "creator": "jdc@parodius.com",
+ "text": "\tinetd's internal \"auth\" service seems to exploit (or itself\n\tcontain) a bug relating to username lookups.  The entry in\n\tinetd.conf is:\n\tauth   stream   tcp   nowait   root   internal   auth -r -t 45\n\n\tWhen a pair of unused ports are provided on port 113 (i.e.\n\t\"1,1\" or \"0,2\"), the daemon returns the error \"No such file or\n\tdirectory\" (taken from strerror()).  I managed to track the\n\terror down to the sysctlbyname() call within builtins.c.\n\n\tsysctlbyname(), in this case, returns -1 and sets errno to\n\tENOENT.  sysctlbyname() is being called against a \"mysterious\"\n\tsysctl variable, \"net.inet.tcp.getcred.\"  I use the word \"mysterious\"\n\tbecause the entry is 1. undocumented, 2. returns ENOENT, and 3.\n\tENOENT is not listed in the sysctlbyname(3) manpage as a valid\n\terror code (but the kernel **DOES** return ENOENT!).\n\n\tCould someone please 1. fix this issue, 2. explain why ENOENT\n\twas chosen as a return value for the kernel (when it doesn't\n\tseem to be interacting with any files in this case), and 3. fix\n\tthe manpage so that it contains proper updated information?\n\n\tIt should be noted that the pidentd daemon in ports/security/pidentd\n\tdoes not exhibit this behaviour, yet does the exact same\n\tsysctlbyname() call.\n\nFix: \n\nNone that I know of.\nHow-To-Repeat: \t$ telnet localhost auth\n\tTrying 127.0.0.1...\n\tConnected to localhost.\n\tEscape character is '^]'.\n\t1,1  \n\t1 , 1 : ERROR : No such file or directory\n\tConnection closed by foreign host."
+}

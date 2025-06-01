@@ -1,0 +1,8 @@
+{
+ "id": 518366,
+ "bug_id": 138540,
+ "attachment_id": 0,
+ "creation_time": "2009-09-04T23:20:00Z",
+ "creator": "huntting@glarp.com",
+ "text": "smartctl likes to read SMART data into 512 byte buffers which it allocates on the stack.  While this _should_ work just fine, I have found that sometimes, when using SATA over SAS (-d sat) with an MPT Fusion HBA, smartctl's buffer gets broken into 2 Scatter Gather Elements (probably because the 512 byte buffer stradles a page boundary).  Sometimes, only the first of these gets filled before the mpt driver records a timeout and subsequently resets the SAS bus.\n\nI have not fully diagnosed the problem or had time to write a sample code'let that can reproduce it.  But in the mean time, this patch moves the data buffer from the stack to the heap where it will be aligned to avoid a page boundary.\n\nHopefully I will have time to diagnose the real problem and either fix it (if it's in the driver) or send in a bug report to LSI (if it's in the MPT controller).\n\nthanx,\nbrad\n\nFix: Attached is a patch to the port that adds a patch that makes shure the data buffers used to read smart attributes and logs do not straddle page boundaries.\n\nPatch attached with submission follows:\nHow-To-Repeat: pray.  Then on a 64bit system, with an 8gig LSI MPT SAS controler\n           Mpi Version 1.5.20.0\n             FWVersion 1.28.0.0\nor           FWVersion 1.28.2.0\nconnected to a SATA drive, turn on all available debugging in CAM and the MPT driver.\n\nrun smartctl -d sat -r ioctl -a /dev/da\u003cfoo\u003e\n\nsometimes, if you're 'lucky', you'll see a bus reset, and smartcl will fail to get some of it's SMART data."
+}

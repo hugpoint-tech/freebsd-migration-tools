@@ -1,0 +1,8 @@
+{
+ "id": 1184062,
+ "bug_id": 259071,
+ "attachment_id": 229053,
+ "creation_time": "2021-10-26T23:46:59Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 229053\ntimestamp file mods so Lookup can discard stale attributes against Writing\n\nSimilar to attachment #228973, I believe there could be a race between the NFS\nclient VOP_LOOKUP() and file Writing that could result in stale file\nattributes being loaded into the NFS vnode by VOP_LOOKUP().\n\nI have not been able to reproduce a failure due to this race, but\nI believe that there are two possibilities:\n\nThe Lookup RPC happens while VOP_WRITE() is being executed and loads stale file attributes after VOP_WRITE() returns when it has already completed the Write/Commit RPC(s). \n--\u003e For this case, setting the local modify timestamp at the end of VOP_WRITE() \n    should ensure that stale file attributes are not loaded.\n\nThe Lookup RPC occurs after VOP_WRITE() has returned, while asynchronous \nWrite/Commit RPCs are in progress and then is blocked by the vnode held by VOP_OPEN/VOP_CLOSE/VOP_FSYNC which will flush writes via ncl_flush() or ncl_vinvalbuf(), clearing the NMODIFIED flag (which indicates Writes-in-progress). The VOP_LOOKUP() then acquires the NFS vnode lock and fills in stale file attributes. \n--\u003e Setting the local modify timestamp in ncl_flsuh() and ncl_vinvalbuf() when \n    they clear NMODIFIED should ensure that stale file attributes are not \n    loaded.\n\nThis patch does the above."
+}

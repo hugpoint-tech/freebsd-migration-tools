@@ -1,0 +1,8 @@
+{
+ "id": 937612,
+ "bug_id": 219926,
+ "attachment_id": 0,
+ "creation_time": "2017-06-11T14:13:55Z",
+ "creator": "tobik@freebsd.org",
+ "text": "When using a pattern that starts with \"%*s\" followed by one or more\nother conversions, the sscanf(3) implementation in FreeBSD's libc\nbehaves differently than the sscanf() implementations in other libcs.\nFor example running this small test program on a bunch of different\nsystems gives the following results:\n\n#include \u003cstdio.h\u003e\n\nint\nmain(int argc, char *argv[])\n{\n\tunsigned int i;\n\tint n = sscanf(\"foo\", \"%*s%u\", \u0026i);\n\tprintf(\"n = %d\\n\", n);\n\treturn 0;\n}\n\nn = 0 on FreeBSD 11.0 and 12.0-CURRENT\nn = 0 on DragonFly BSD 4.6.0rc2\nn = 0 on NetBSD 7.0.1\nn = -1 on Ubuntu 16.04 (Glibc 2.23)\nn = -1 on Alpine Linux (musl 1.1.16)\nn = -1 on OpenBSD 6.1\n\nGlibc, musl, and OpenBSD's libc all return EOF in this case.\n\nnetpbm's ppmtoarbtxt uses a similar pattern and would fail to work\ncorrectly on FreeBSD because it expects that EOF is returned after a\nmatch failure.  This has been worked around now upstream by not using\n\"%*s\" first in the pattern.  But I'm wondering if this a bug or if\nthis is ok?"
+}

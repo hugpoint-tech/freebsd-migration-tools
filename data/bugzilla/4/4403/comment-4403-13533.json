@@ -1,0 +1,8 @@
+{
+ "id": 13533,
+ "bug_id": 4403,
+ "attachment_id": 0,
+ "creation_time": "1997-08-28T06:00:00Z",
+ "creator": "cagney@tpgi.com.au",
+ "text": "\n\tvasprintf.c:vasprintf() unconditionally appends a null\n\tcharacter to its buffer.  Since vasprintf.c:writehook()\n\tallows the buffer to completely fill (left == 0), that store\n\tcan blat memory beyound the buffers bounds.\n\nFix: \n\n1 - Change writehook() to always keep one location in reserve.\n\nor\t2 - (better?) re-order the tail of vasprintf so that it reads:\n\n\t*str = realloc(h.base, (size_t)(h.size - h.left + 1));\n\tif (*str == NULL)\t/* failed to realloc it to actual size */\n\t\t*str = h.base;\t/* return oversize buffer */\n\t(*str)[h.size - h.left] = '\\0';\n\treturn (ret);\nHow-To-Repeat: \n\tCombine FreeBSD with GDB/mmalloc and wait for gdb to panic?\n\n\tI suspect vasprintf (... \"-128-characters-\") will do it."
+}

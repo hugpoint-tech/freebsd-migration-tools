@@ -1,0 +1,8 @@
+{
+ "id": 1182715,
+ "bug_id": 259231,
+ "attachment_id": 0,
+ "creation_time": "2021-10-17T17:48:23Z",
+ "creator": "jamcgee@etherealwake.com",
+ "text": "When an encrypted ZFS dataset has unencrypted child nodes, this breaks the handling of a zfs send stream which will erroneously terminate with \"inherited key must be loaded\" when encountering the unencrypted dataset.\n\nIt's likely this issue will need to be pushed upstream to OpenZFS.\n\nThe following script will demonstrate the behavior:\n\n---BEGIN---\n#!/bin/sh -eux\nif [ ! -f test.key ]; then\n  dd if=/dev/random of=test.key bs=32 count=1\nfi\nKEY=file://$(realpath test.key)\n\nDEV1=$(mdconfig -at swap -s 1G)\nzpool create -Oencryption=on -Okeyformat=raw -Okeylocation=${KEY} test1 ${DEV1}\nzfs create test1/dir1\nzfs create -oencryption=off test1/dir1/dir2\nzfs snap -r test1@snap\n\nDEV2=$(mdconfig -at swap -s 1G)\nzpool create test2 ${DEV2}\nzfs send -Rw test1@snap | zfs recv test2/recv\n---END---\n\nAnd a sample output:\n\n---BEGIN---\n+ [ ! -f test.key ]\n+ dd 'if=/dev/random' 'of=test.key' 'bs=32' 'count=1'\n1+0 records in\n1+0 records out\n32 bytes transferred in 0.000043 seconds (752569 bytes/sec)\n+ realpath test.key\n+ KEY=file:///root/test.key\n+ mdconfig -at swap -s 1G\n+ DEV1=md0\n+ zpool create '-Oencryption=on' '-Okeyformat=raw' '-Okeylocation=file:///root/test.key' test1 md0\n+ zfs create test/dir1\n+ zfs create '-oencryption=off' test1/dir1/dir2\n+ zfs snap -r test1@snap\n+ mdconfig -at swap -s 1G\n+ DEV2=md1\n+ zpool create test2 md1\n+ zfs send -Rw test1@snap\n+ zfs recv test2/recv\ncannot receive new filesystem stream: inherited key must be loaded\nwarning: cannot send 'test1/dir1/dir2@snap': signal received\n---END---"
+}

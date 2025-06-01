@@ -1,0 +1,8 @@
+{
+ "id": 777246,
+ "bug_id": 192415,
+ "attachment_id": 0,
+ "creation_time": "2014-08-06T01:47:30Z",
+ "creator": "adrian@freebsd.org",
+ "text": "The current powersave code in the ath(4) driver / HAL is causing issues on the AR9331.\n\nEven if powersave is disabled, the chip is put into powersave mode when no VAPs are in use. This seems to lock up the DMA side of things.\n\nSymptoms:\n\n* lots of \"disable rx dma failed\" messages\n* no packets being transmitted/received\n* TX/RX interrupt counts don't increase\n* if AH_INTERRUPT_DEBUGGING is defined, then sync interrupts are posted - 0x200 and 0x40.\n\nNow, I'm not sure yet what those bits are. I guess it's similar to the AR9340 ones - AR9340_INTR_SYNC_MAC_SLEEP_ACCESS (0x40). That meant that it was configured whilst the MAC was asleep. Ugh.\n\nIf i disable the power save code in if_ath.c (ie, make all the ath_hal_setpowermode() calls to HAL_PM_AWAKE) then things work fine.\n\nSo, figure out what is being programmed whilst the MAC is asleep, or what is currently not shut down correctly before the MAC is put to sleep."
+}

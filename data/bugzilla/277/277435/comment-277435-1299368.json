@@ -1,0 +1,8 @@
+{
+ "id": 1299368,
+ "bug_id": 277435,
+ "attachment_id": 0,
+ "creation_time": "2024-03-02T15:35:02Z",
+ "creator": "monsterovich@gmail.com",
+ "text": "When developing the tap library, I ran into the problem that you cannot destroy an interface (ex. tap0) while the application is running (via SIOCIFDESTROY).\n\nThe ioctl(SIOCIFDESTROY) call will simply hang until the application using this descriptor finishes (see https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=242841#c0).\n\nOpening \"/dev/tap\" does not check if existing interfaces are being used and creates tap(N+1) every time.\n\nIt would be nice to make a parameter that will control the automatic destruction of the interface when the descriptor is closed.\n\nFor example:\n\nif (ioctl(fd, TAPSIFDCLOSE, 1) \u003c 0) {\n    printf(\"error: ioctl(TAPSIFDCLOSE)\\n\");\n}\n\nclose(fd);\n\nThis mechanism is implemented by default in the Linux driver for tuntap:\n\n\"A network device will appear as tunXX or tapXX, depending on the options chosen. When the program closes the file descriptor, the network device and all corresponding routes will disappear.\"\n\nSource: https://docs.kernel.org/networking/tuntap.html"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 762983,
+ "bug_id": 189513,
+ "attachment_id": 0,
+ "creation_time": "2014-05-09T14:40:00Z",
+ "creator": "software@bertram-scharpf.de",
+ "text": "On a ~5 year old netbook, \"bsdlabel\" writes this to dmesg:\n\nahcich0: Timeout on slot 0 port 0\nahcich0: is 00000000 cs 00000001 ss 00000001 rs 00000001 tfd 50 serr 00000000 cmd 0000e017\n(ada0:ahcich0:0:0:0): WRITE_FPDMA_QUEUED. ACB: 61 10 3f 00 00 40 00 00 00 00 00 00\n(ada0:ahcich0:0:0:0): CAM status: Command timeout\n(ada0:ahcich0:0:0:0): Retrying command\nahcich0: Timeout on slot 0 port 0\nahcich0: is 00000000 cs 00000001 ss 00000000 rs 00000001 tfd 50 serr 00000000 cmd 0000e017\n(ada0:ahcich0:0:0:0): FLUSHCACHE48. ACB: ea 00 00 00 00 40 00 00 00 00 00 00\n(ada0:ahcich0:0:0:0): CAM status: Command timeout\n(ada0:ahcich0:0:0:0): Retrying command\n\n\nAfter restarting the machine, the boot code will not be executed.\n\nThis is really annoying because when I used the old 8.4 everything was fine.\n\nFix: \n\nI downloaded an old 8.4 memstick image, booted from that and\nexecuted the steps until \"bsdlabel\". Then I booted my own 10.0 stable\nand did the rest there.\nHow-To-Repeat: This is what I did:\n\nI built me a USB stick with 10.0 stable. Then I booted it\non my Acer Aspire one. There I wrote:\n\nfdisk -BI ada0\nboot0cfg -B ada0\nbsdlabel -B -w ada0s1\n# -\u003e dmesg contains now the above error messages\n\nnewfs -U /dev/ada0s1a\nmount /dev/ada0s1a /mnt/install\n\nmount -t nfs server:/usr/src /usr/src\nmount -t nfs server:/usr/obj /usr/obj\ncd /usr/usrc\nmake DESTDIR=/mnt/install installkernel installworld\ncp /root/etc.new/{fstab,rc.conf,resolve.conf} /mnt/install/etc\nshutdown -r now"
+}

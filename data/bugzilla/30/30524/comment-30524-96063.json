@@ -1,0 +1,8 @@
+{
+ "id": 96063,
+ "bug_id": 30524,
+ "attachment_id": 0,
+ "creation_time": "2001-09-12T18:00:01Z",
+ "creator": "larse@isi.edu",
+ "text": "My 4.4-RC4 kernel occasionally panics in icmp_reflect() at line 644.\nHere's the relevant code:\n\n\t/*\n\t * The following happens if the packet was not addressed to us,\n\t * and was received on an interface with no IP address.\n\t */\n\tif (ia == (struct in_ifaddr *)0)\n\t\tia = in_ifaddrhead.tqh_first;\n\tt = IA_SIN(ia)-\u003esin_addr;\n\nThe intention here is to find a valid local IP address to send the\nICMP message from.\n\nThe problem is that in_ifaddrhead.tqh_first can be zero (at least in\nsome cases), and dereferencing in the line following the assignment\ncauses a kernel panic.\n\nThe patch below fixes this, by not simply using the first local\nIP address in the TAILQ, but iterating over it until a non-zero one\nis found. Also, it skips sending the ICMP message when no valid\naddress is found in the TAILQ at all.\n\nThis bug may be triggered by a custom startup script in use here\nat ISI, which uses ARP requests very early in the boot process (after\npccardd is started) to determine the network location of the machine\nis at, and configuring it appropriately."
+}

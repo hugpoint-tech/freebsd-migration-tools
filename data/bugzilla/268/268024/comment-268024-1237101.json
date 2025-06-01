@@ -1,0 +1,8 @@
+{
+ "id": 1237101,
+ "bug_id": 268024,
+ "attachment_id": 238381,
+ "creation_time": "2022-11-27T22:53:34Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Created attachment 238381\nfix proposal for check_portepoch to fix various issues with it\n\nI was editing dns/dnsmasq-devel 2.88rc3, to upgrade to rc5, and removed a PORTEPOCH comment. This tripped up check_portepoch, which cannot cope with a situation that git renders PORTEPOCH diffs that do not relate to ^PORTEPOCH=23 lines, and it printed \n\n[pre-commit] dropped PORTEPOCH  in dns/dnsmasq-devel/Makefile\n\nSo, because I was editing PORTEPOCH comments, git was emitting the lines, but grep was not picking them up. Right. And then the first check for the exit 1 path was simplistic and just assumed \"no new portepoch, we're broken\". Untrue.\n\n\nTo fix, only complain about an empty PORTEPOCH if we had one before. If both old and new are empty, we may be safe, so do not complain and do not error out.\n\nAlso note that GNU grep complains about the regexps, because it runs without -E option, but the basic regex has \\- (you never escape -) and \\+ (which has reverse meaning, and you do not want to match multiple ^ anchors instead of matching the literal +), so fix that, too, and be stricter to only look at ^PORTEPOCH lines that have a = somewhere."
+}

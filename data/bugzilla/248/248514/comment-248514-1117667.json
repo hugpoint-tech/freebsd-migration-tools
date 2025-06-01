@@ -1,0 +1,8 @@
+{
+ "id": 1117667,
+ "bug_id": 248514,
+ "attachment_id": 0,
+ "creation_time": "2020-08-11T18:47:53Z",
+ "creator": "rpokala@panasas.com",
+ "text": "(In reply to VVD from comment #4)\n\nAre you sure that smbus1:0xa0 is the proper bus:address for the DIMM in question?\n\nFor experimentation purposes, you could configure the kernel environment to look at all possible addresses:\n\n    kldunload imcsmb.ko smbus.ko jedec_dimm.ko\n    unit=0\n    for bus in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 ; do\n        for addr in 0xa0 0xa2 0xa4 0xa6 0xa8 0xaa 0xac 0xae ; do\n            kenv hint.jedec_dimm.${unit}.at=\"smbus${bus}\"\n            kenv hint.jedec_dimm.${unit}.addr=\"${addr}\"\n            unit=$(( ${unit} + 1 ))\n        done\n    done\n    kldload /path/to/imcsmb.ko /boot/kernel/smbus.ko /boot/kernel/jedec_dimm.ko\n\nCan you try that and let me know if any of them work? When you're done, you can run it again with `kenv -u' to remove all the extra entries, then configure device.hints for the real values."
+}

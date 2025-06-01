@@ -1,0 +1,8 @@
+{
+ "id": 1019131,
+ "bug_id": 232673,
+ "attachment_id": 0,
+ "creation_time": "2018-10-30T05:16:23Z",
+ "creator": "rlibby@freebsd.org",
+ "text": "I was able to reproduce the panic as follows.  The dtrace script inserts\na pause when lockf tries to drop the lock, which opens up the race with\nunmount.\n\numount -f $mp\nmount $mp\ndaemon dtrace -wn 'fbt::nfs_advlock:entry /execname == \"lockf\" \u0026\u0026 args[0]-\u003ea_op == 2/ {chill(500000000);}'\nlockf $mp/foo true \u0026 umount -f $mp; wait; mount $mp\n[...try last line again if it didn't trigger...]\n\nThe panic reproduces before, but not after, the patch in comment 2.\n\nI did not do any kind of thorough functionality testing.  I used NFSv3.\n\nThanks!"
+}

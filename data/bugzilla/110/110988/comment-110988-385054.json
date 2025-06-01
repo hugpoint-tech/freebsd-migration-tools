@@ -1,0 +1,8 @@
+{
+ "id": 385054,
+ "bug_id": 110988,
+ "attachment_id": 0,
+ "creation_time": "2007-03-29T01:20:02Z",
+ "creator": "freebsdusb@bindone.de",
+ "text": "I had to add a new device to usbdevs/umass.c which requires the\nIGNORE_RESIDUE quirk to be set (extra PR will follow). It didn't work,\nbecause IGNORE_RESIDUE isn't handled properly in umass.c (it isn't\nreally handled at all, since Residue is set in lines are 1668-1672 in\numass.c in the following was:\n\nint Residue;\nResidue = UGETDW(sc-\u003ecsw.dCSWDataResidue);\nif (Residue == 0 \u0026\u0026\n\tsc-\u003etransfer_datalen - sc-\u003etransfer_actlen != 0)\n\t\tResidue = sc-\u003etransfer_datalen - sc-\u003etransfer_actlen;\n\nThe patch below fixes this issue (tested and proven to work).\n\nFix: Apply the attached patch, which forces  residue to be calculated if\nIGNORE_RESIDUE is set.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Use a really broken USB device which returns \"random\" values for\nsc-\u003ecsw.dCSWDataResidue (like devices that use the SuperTop IDEDEVICE\nUSB controller, e.g. the ICY BOX IB-220U-Wh). Every attempt to use the\ndevice will lead to error messages, like:\n\ndd if=/dev/zero of=/dev/da0 count=10\nda0: end of device\n\nor\n\ndisklabel da0\nread: Unknown error\netc."
+}

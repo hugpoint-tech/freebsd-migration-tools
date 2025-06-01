@@ -1,0 +1,8 @@
+{
+ "id": 1207802,
+ "bug_id": 261977,
+ "attachment_id": 0,
+ "creation_time": "2022-04-20T06:12:46Z",
+ "creator": "pkubaj@FreeBSD.org",
+ "text": "Would that be good for you?\n--- lang/gcc12-devel/Makefile\n+++ lang/gcc12-devel/Makefile\n@@ -42,9 +42,16 @@ SUFFIX=              ${PORTVERSION:C/([0-9]+).*/\\1/}\n CFLAGS:=       ${CFLAGS:N-mretpoline}\n CXXFLAGS:=     ${CXXFLAGS:N-mretpoline}\n\n-OPTIONS_DEFINE=                BOOTSTRAP GRAPHITE\n-OPTIONS_DEFAULT=       BOOTSTRAP\n-BOOTSTRAP_DESC=                Build using a full bootstrap\n+OPTIONS_DEFINE=                GRAPHITE\n+OPTIONS_DEFAULT=       LTO_BOOTSTRAP\n+OPTIONS_EXCLUDE_armv6= LTO_BOOTSTRAP\n+OPTIONS_EXCLUDE_armv7= LTO_BOOTSTRAP\n+OPTIONS_DEFAULT_armv6= STANDARD_BOOTSTRAP\n+OPTIONS_DEFAULT_armv7= STANDARD_BOOTSTRAP\n+OPTIONS_RADIO= BOOTSTRAP\n+OPTIONS_RADIO_BOOTSTRAP=       LTO_BOOTSTRAP STANDARD_BOOTSTRAP\n+LTO_BOOTSTRAP_DESC=    Build using a full LTO bootstrap\n+STANDARD_BOOTSTRAP_DESC=       Build using a full bootstrap without LTO\n GRAPHITE_DESC=         Support for Graphite loop optimizations\n\n .if exists(/usr/lib32/libc.so)\n@@ -80,11 +87,14 @@ TARGLIB32=  ${PREFIX}/lib32 # The version information i\n LIBEXEC=       ${PREFIX}/libexec/gcc${SUFFIX}\n GNU_CONFIGURE= yes\n CONFIGURE_OUTSOURCE=   yes\n-.if empty(PORT_OPTIONS:MBOOTSTRAP)\n+.if empty(PORT_OPTIONS:M*BOOTSTRAP)\n CONFIGURE_ARGS+=--disable-bootstrap\n-.else\n+.elif ${PORT_OPTIONS:MLTO_BOOTSTRAP}\n CONFIGURE_ARGS+=--with-build-config=bootstrap-lto-noplugin\n ALL_TARGET=    bootstrap-lean\n+.else\n+CONFIGURE_ARGS+=--with-build-config=bootstrap-debug\n+ALL_TARGET=    bootstrap-lean\n .endif\n INSTALL_TARGET=        install-strip\n .if ${UID} != 0"
+}

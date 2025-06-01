@@ -1,0 +1,8 @@
+{
+ "id": 51990,
+ "bug_id": 17084,
+ "attachment_id": 0,
+ "creation_time": "2000-05-16T16:44:41Z",
+ "creator": "tim@localhost.nowhere",
+ "text": "\u003e\n\u003eI have dip a bit into problem and found that memory leaks in\n\u003ecgetent() called from login_getclassbyname()\n\nWill you please tell me if the following patch solves the problem.\n\nThis patch solves what appear to be two memory leaks.  There may be\nmore memory leaks and which ones you run into may depend on your\nsystem's specific login.conf configuration.\n\nI can send you copies of the post-patched files to compile with your\nprogram if you'll find that easier.\n\nPlease be sure to Cc: freebsd-gnats-submit@FreeBSD.org and don't change\nthe Subject: line in your reply.\n\nThanks.\n\n--- src/lib/libutil/~login_cap.c\tTue May 16 11:26:03 2000\n+++ src/lib/libutil/login_cap.c\tTue May 16 11:26:19 2000\n@@ -150,10 +150,11 @@ void\n login_close(login_cap_t * lc)\n {\n     if (lc) {\n \tfree(lc-\u003elc_style);\n \tfree(lc-\u003elc_class);\n+\tfree(lc-\u003elc_cap);\n \tfree(lc);\n \tif (--lc_object_count == 0) {\n \t    free(internal_string);\n \t    free(internal_array);\n \t    internal_array = NULL;\n--- src/lib/libc/gen/~getcap.c\tTue May 16 11:25:16 2000\n+++ src/lib/libc/gen/getcap.c\tTue May 16 11:39:29 2000\n@@ -380,12 +380,14 @@ getent(cap, len, db_array, fd, name, dep\n \t}\n \t\tif (foundit)\n \t\t\tbreak;\n \t}\n \n-\tif (!foundit)\n+\tif (!foundit) {\n+\t\tfree(record);\n \t\treturn (-1);\n+\t}\n \n \t/*\n \t * Got the capability record, but now we have to expand all tc=name\n \t * references in it ...\n \t */"
+}

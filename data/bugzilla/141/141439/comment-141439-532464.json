@@ -1,0 +1,8 @@
+{
+ "id": 532464,
+ "bug_id": 141439,
+ "attachment_id": 0,
+ "creation_time": "2009-12-13T23:20:01Z",
+ "creator": "stefan.schmidt@stadtbuch.de",
+ "text": "Using the 32-bit Linux version of Sun's Java Development Kit 1.6\n(Update 17) on FreeBSD 8.0 (amd64), invocations of \"javac\" (or \"java\")\neventually end with the output of \"Killed\" and exit code 137.\n\nThis is particularly annoying when running e.g. JUnit-tests in a separate\nprocess. The calling process always receives exit code 137 from its\nsub-process and assumes that tests failed.\n\nFix: It seems that linux_exit_group (in linux_misc.c) unconditionally sends\nSIGKILL to the leader of the thread group. This results in exit code 137\nand the output of \"Killed\" as shown above.\n\nI tried to modify linux_exit_group to not kill the group leader and to\nset the exit code appropriately. While this modified linux_exit_group\nworks fine for me, I doubt it is correct (e.g. regarding locking).\nI also had a closer look at NetBSD's version of linux_exit_group, but\ncould not get NetBSD's implementation approach to work (that is setting\np_xstat in linuxulator's process exit hook). Don't know (haven't tried)\nwhether it really works as expected in NetBSD anyway.\n\nPlease find my patch attached.\n\nPatch attached with submission follows:\nHow-To-Repeat: shuttle# /usr/local/linux-sun-jdk1.6.0_17/bin/javac -version\njavac 1.6.0_17\nKilled\nshuttle# echo $?\n137\nshuttle#"
+}

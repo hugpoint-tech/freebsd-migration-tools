@@ -1,0 +1,8 @@
+{
+ "id": 661210,
+ "bug_id": 167103,
+ "attachment_id": 0,
+ "creation_time": "2012-11-22T21:22:54Z",
+ "creator": "markjdb@gmail.com",
+ "text": "The assertion failure is the result of a double free in\ndt_link.c:process_obj, and it's basically happening because libdtrace is\ndependant on some internal behaviour of Solaris' libelf.\n\nIn the block between lines 1358 and 1415, some buffers are injected into\na couple of libelf structures (data_str and data_sym). On Solaris, it\nlooks like the overwritten pointers are just pointers into a larger\nbuffer; on FreeBSD, they're allocated on their own and then freed in\nelf_close(3). Thus the injected buffers get freed by both libdtrace and\nlibelf.\n\nI think the right fix is to just #ifdef the free()s out. One could\nimplement a portable fix by saving pointers to the original buffers\nsomewhere (probably in the struct dt_link_pair) and restore them before\ncalling elf_close(). But I don't think fixes to FreeBSD's dtrace port\nare going to go back upstream anyway, so I've attached a patch with the\nsimple fix.\n\nTo reproduce this on a recent CURRENT, it'll be necessary to follow one\nof the workarounds described in bin/171678 first.\n\nNow, in the case of perl, we immediately run into another problem after\nmy patch. The build then fails with:\n\n\tdtrace: failed to link script perldtrace.d: an error was\n\tencountered while processing pp_ctl.o\n\nIt looks like this is caused by an unrelated dependance on Solaris\nlibelf's behaviour, but I haven't pinned it down yet.\n\nThanks,\n-Mark"
+}

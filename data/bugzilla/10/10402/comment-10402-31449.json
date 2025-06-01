@@ -1,0 +1,8 @@
+{
+ "id": 31449,
+ "bug_id": 10402,
+ "attachment_id": 0,
+ "creation_time": "1999-03-05T16:50:01Z",
+ "creator": "tobez@plab.ku.dk",
+ "text": "\n(I think the correct category is kern;  I might be wrong)\n\nWhen testing recent versions of Perl on also-recent 4.0-current, a\nstrange test failure consistently occurs.  I dug this a little bit,\nand it turned out that sometimes the second (or n-th) call to times(3)\ncan return a value of tms_stime less than that of the first call.\n\nPerl's times() directly translates into a call to times(3) plus\ndivisions to get values in seconds.\n\nRunning a test script below (in How-To-Repeat section) sufficient\nnumber of times, I've got (among the other values)\n\n0 0.0078125\n0 0 (i = 100000, beg = 920651342, time = 920651344)\n----------------\n\nand\n\n0 0.0078125\n0.0078125 0 (i = 100000, beg = 920651344, time = 920651347)\n----------------\n\nwhich clearly shows that system time can actually decrease.\n\nHow-To-Repeat: \nCreate a perl script\n----------------------8\u003c---------------------8\u003c---------------\n#! /usr/bin/perl\n\n($beguser,$begsys) = times;\n$beg = time;\n\nfor ($i = 0; $i \u003c 100000; $i++) {\n    ($nowuser, $nowsys) = times;\n    $i = 200000 if $nowuser \u003e $beguser \u0026\u0026 ( $nowsys \u003e $begsys || \n                                            (!$nowsys \u0026\u0026 !$begsys));\n    last if time - $beg \u003e 20;\n}\nmy $ttt = time;\nif ($i \u003c 200000) {\n   print \"$beguser $begsys\\n\";\n   print \"$nowuser $nowsys (i = $i, beg = $beg, time = $ttt)\\n\";\n   print \"----------------\\n\";\n}\n----------------------8\u003c---------------------8\u003c---------------\n\nand run it several times, better in a shell loop."
+}

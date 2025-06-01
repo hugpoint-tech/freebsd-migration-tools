@@ -1,0 +1,8 @@
+{
+ "id": 1146632,
+ "bug_id": 250652,
+ "attachment_id": 0,
+ "creation_time": "2021-02-14T13:58:12Z",
+ "creator": "rootservice@gmail.com",
+ "text": "This is not a bug in PHP, it is a bug in rtld (RTLD_STATIC_TLS_EXTRA is too small).\nSee also: http://lists.dragonflybsd.org/pipermail/bugs/2013-June/311813.html\n\n\nMy current workaround looks like this:\n\ncd /usr/src\nmake clean\nchflags -R noschg /usr/obj/*\nrm -rf /usr/obj/*\nsvnlite update\ncp -a /usr/src/libexec/rtld-elf/rtld.h /root/patches/rtld.h\nsed -E -e '/RTLD_STATIC_TLS_EXTRA/ s/128/1280/g' -i '' /usr/src/libexec/rtld-elf/rtld.h\n/usr/src/usr.sbin/mergemaster/mergemaster.sh -p\nmake -j4 buildworld\nmake -j4 KERNCONF=GENERIC buildkernel\nmake KERNCONF=GENERIC INSTALLKERNEL=GENERIC INSTKERNNAME=GENERIC installkernel\nmake installworld\n/usr/sbin/mergemaster -iFU --run-updates=always\ncp -a /root/patches/rtld.h /usr/src/libexec/rtld-elf/rtld.h\nmake delete-old -DBATCH_DELETE_OLD_FILES\nmake delete-old-libs -DBATCH_DELETE_OLD_FILES\nshutdown -r now"
+}

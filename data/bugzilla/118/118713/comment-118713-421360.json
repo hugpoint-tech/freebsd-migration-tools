@@ -1,0 +1,8 @@
+{
+ "id": 421360,
+ "bug_id": 118713,
+ "attachment_id": 0,
+ "creation_time": "2007-12-15T03:40:00Z",
+ "creator": "mharo@FreeBSD.org",
+ "text": "My raw swap partition is smaller than the amount of ram on my system.  This is okay since freebsd now has minidump support and it doesn't require swap to be the same size as ram.  Unfortunately I was still unable to save a dump when a kernel panic occured.  The attached patch displays the size required.\n\nI assume you could do a better job at making the output pretty, but this does the job and answered my question, allowing me to resize some partitions so I'd have enough swap space to capture dumps.\n\nFix: \n\nif (error == ECANCELED)\n                printf(\"\\nDump aborted\\n\");\n-       else if (error == ENOSPC)\n+       else if (error == ENOSPC) {\n                printf(\"\\nDump failed. Partition too small.\\n\");\n-       else\n+               printf(\"media size (%llu) \u003c required space (%llu)\\n\",\n+                      (unsigned long long)di-\u003emediasize,\n+                      SIZEOF_METADATA + dumpsize + sizeof(kdh) * 2);\n+       } else\n                printf(\"\\n** DUMP FAILED (ERROR %d) **\\n\", error);\n }--QhO4DAwSflVc4kUEgeubbUj67g64Xg26dp7XAkDy2UiFOtHg\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- i386/i386/minidump_machdep.c.orig   2007-04-06 11:15:02.000000000 -0700\n+++ i386/i386/minidump_machdep.c        2007-12-07 00:04:48.373609771 -0800\n@@ -375,9 +375,12 @@\nHow-To-Repeat: Enter a condition that causes a kernel panic and have a swap partition that's too small to dump to."
+}

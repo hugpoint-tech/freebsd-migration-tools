@@ -1,0 +1,8 @@
+{
+ "id": 603125,
+ "bug_id": 155558,
+ "attachment_id": 0,
+ "creation_time": "2011-03-14T19:40:10Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Since mdf's rototilling of SYSCTL(9) in r217586, emulators/*qemu* is failing to build with errors like this:\n\n/usr/ports/emulators/qemu-devel/work/qemu-0.13.0/bsd-user/syscall.c: In function 'sysctl_oldcvt':\n/usr/ports/emulators/qemu-devel/work/qemu-0.13.0/bsd-user/syscall.c:215: error: 'CTLTYPE_QUAD' undeclared (first use in this function)\n/usr/ports/emulators/qemu-devel/work/qemu-0.13.0/bsd-user/syscall.c:215: error: (Each undeclared identifier is reported only once\n/usr/ports/emulators/qemu-devel/work/qemu-0.13.0/bsd-user/syscall.c:215: error: for each function it appears in.)\n\nWhat needs to happen is that the instance of CTLTYPE_QUAD needs to be replaced with CTLTYPE_U64:\n\n$ grep -B 4 -A 4 _QUAD /usr/ports/emulators/qemu-devel/work/qemu-0.13.0/bsd-user/syscall.c \n    case CTLTYPE_ULONG:\n        *(uint64_t *)holdp = tswap64(*(unsigned long *)holdp);\n        break;\n#endif\n    case CTLTYPE_QUAD:\n        *(uint64_t *)holdp = tswap64(*(uint64_t *)holdp);\n        break;\n    case CTLTYPE_STRING:\n        break;\n\nFix: \n\nPatch with an ifdef, like:\n\n#if __FreeBSD_version__ \u003c 900031\n    case CTLTYPE_QUAD:\n#else\n    case CTLTYPE_U64:\n#endif\n\nUnfortunately mdf@ didn't bump __FreeBSD_version__ appropriately for the SYSCTL(9) KPI change.\nHow-To-Repeat: Upgrade to CURRENT r217586+ and try to build emulators/*qemu*."
+}

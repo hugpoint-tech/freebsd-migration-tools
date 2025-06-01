@@ -1,0 +1,8 @@
+{
+ "id": 56590,
+ "bug_id": 18524,
+ "attachment_id": 0,
+ "creation_time": "2000-05-13T07:00:04Z",
+ "creator": "adsharma@sharmas.dhs.org",
+ "text": "\n\tThe current kernel doesn't keep stats on a per cpu basis\n\nFix: The attached patch creates the right variables within the kernel.\n\tThe kld at http://sharmas.dhs.org/~adsharma/projects/freebsd/sysctl.tar.gz \n        extracts them using a bunch of dynamic sysctls. \n \nImplementation details:\n\n1. On UP,\n \n        sys_time is a global and contains the system wide stats\n        cpu_time is a global and is essentially the same as sys_time.\n \n2. On SMP\n \n        sys_time contains the system wide stats\n        cpu_time has been changed to a pointer in the per-cpu space.\n        On BSP, this pointer points to a static array cpu0_cpu_time\n        On APs, this space is kmem_alloc'ed\n \n        Perhaps I should wrap cpu_time in a structure (cpu_info ?), which\n        could be the right place to store all per CPU info.\n \n3. I've taken the liberty of changing CP_* to CPU_*. I hope the new names\n   better convey the meaning of the variables and are acceptable.   \n\n4. The machine specific code for Alpha will need some changes - which I\n   can implement, but have no way of compiling or testing.\n \n5. All the existing utilties which depended on peeking at cp_time will\n   break (which is a good thing, IMO - so that they can be changed to use \n   the new sysctl :-) \n\n6. After the above kld is loaded, the sysctl's will be at kern.stats.*\n\nHow-To-Repeat: \n \tRun 5.0-current."
+}

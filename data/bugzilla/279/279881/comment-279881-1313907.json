@@ -1,0 +1,8 @@
+{
+ "id": 1313907,
+ "bug_id": 279881,
+ "attachment_id": 0,
+ "creation_time": "2024-06-21T12:41:08Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "So, I used attached test program:\n\n% clang main.c -o test\n% sudo ifconfig lo0 inet 10.0.0.1/24 alias\n% ./test\nmain:74: sysctlbyname(net.inet6.ip6.v6only) = 1\ntest:29: socket fd = 3\ntest:35: getsockopt(IPV6_V6ONLY) = 1\ntest:41: setsockopt(IPV6_V6ONLY) -\u003e 0\ntest:58: connect(::ffff:10.0.0.2) -\u003e 0\ntest:60: ----------\ntest:29: socket fd = 3\ntest:35: getsockopt(IPV6_V6ONLY) = 1\ntest:56: connect(::ffff:10.0.0.2): Invalid argument\ntest:60: ----------\n% sudo sysctl net.inet6.ip6.v6only=0\nnet.inet6.ip6.v6only: 1 -\u003e 0\n% ./test\nmain:74: sysctlbyname(net.inet6.ip6.v6only) = 0\ntest:29: socket fd = 3\ntest:35: getsockopt(IPV6_V6ONLY) = 0\ntest:58: connect(::ffff:10.0.0.2) -\u003e 0\ntest:60: ----------\ntest:29: socket fd = 3\ntest:35: getsockopt(IPV6_V6ONLY) = 0\ntest:41: setsockopt(IPV6_V6ONLY) -\u003e 1\ntest:56: connect(::ffff:10.0.0.2): Invalid argument\ntest:60: ----------\n\n1. As you can see, getsockopt() returns default value of socket option, that depends on sysctl variable.\n2. Depending on V6ONLY sockopt your app can or can not connect.\n\nProbably your problem is python related."
+}

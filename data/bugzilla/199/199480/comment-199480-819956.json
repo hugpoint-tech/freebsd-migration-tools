@@ -1,0 +1,8 @@
+{
+ "id": 819956,
+ "bug_id": 199480,
+ "attachment_id": 155642,
+ "creation_time": "2015-04-16T12:11:13Z",
+ "creator": "vmagerya@gmail.com",
+ "text": "Created attachment 155642\nlua-makeseed.diff\n\nWhen hashing strings into tables, Lua 5.2 uses a semi-random\nhash seed, which is obtained from a mixture of 'time()' and a\nfew global addresses (in hope that ASLR would randomize those).\nSee the 'makeseed' function in 'src/lstate.c' for how it's done.\n\nSince we don't have ASLR, the resulting seed depends only on\ntime(), which means it can only change once a second, instead\nof at every execution.\n\nI think this randomization was meant as a way to prevent DoS\nattacks based on hash table collisions (I'm not sure if it's\neffective, since the random seed is only computed once at startup).\nIn any case, the biggest effect this has for me is that performance\nof various code parts depends on the ordering of table keys (and\nthus, on the seed), but you only get one seed per second, so\nrunning microbenchmarks suddenly becomes a problem.\n\nNow, 'src/lstate.c' provides a way for us to supply a better\nseed: we just need to redefine 'luai_makeseed' (by default it's\njust a 'time()' call).\n\nThe attached patch changes 'luai_makeseed' into an 'arc4random()'\ncall for both lang/lua52 and lang/lua53 (lua51 doesn't seem to\nhave an equivalent randomization).\n\nNote that defining __BSD_VISIBLE is only really needed for lua53,\nsince it defines _XOPEN_SOURCE somewhere above, and without\n__BSD_VISIBLE 'arc4random' prototype is not visible with just a\n'stdlib.h' include."
+}

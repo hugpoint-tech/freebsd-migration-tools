@@ -1,0 +1,8 @@
+{
+ "id": 93711,
+ "bug_id": 29845,
+ "attachment_id": 0,
+ "creation_time": "2001-08-21T14:42:54Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "[ Andre tried adding the kludge from if_sl.c that merges the tty and\nnet interrupt masks - not as a solution - but just to determine if\nthese crashes are caused by an spl problem. It seems they are. ]\n\nIn message \u003c20010821143627.A26964@curry.mchp.siemens.de\u003e, Andre Albsmeier write\ns:\n\u003eOn Tue, 21-Aug-2001 at 11:52:57 +0100, Ian Dowse wrote:\n\u003e\u003e The fact that it is only pccard cards that have problems really\n\u003e\u003e suggests a problem there, but the crashes are so random that it\n\u003e\u003e has to be some kind of spl problem. Previously the cards got their\n\u003e\u003e own IRQ, so they would set it up with the right interrupt mask.\n\u003e\u003e Now all pccard interrupt handlers are called from the pcic one,\n\u003e\u003e so I don't think splimp() is blocking these interrupts.\n\u003e\n\u003eYes, that seems to do it! I have my dd from /dev/zero to /dev/null via\n\u003ersh running in both directions for about 5 minutes now... No problems\n\u003eso far.\n\nSo at the moment, when the network code calls splimp(), it does\nnot block NIC interrupts that come in via the pccard code. That\ncertainly explains all the odd crashes.\n\nI'm not sure how to solve this problem properly, but it seems that\npcic_pci_setup_intr() needs to call bus_generic_setup_intr() to\nproperly update the interrupt masks. I assume there is a reason\nfor not just using bus_generic_setup_intr() as the pcic_pci\nbus_setup_intr method?\n\nThanks for trying out that kludge Andre! Hopefully there's enough\ninformation now to get it fixed properly.\n\nIan"
+}

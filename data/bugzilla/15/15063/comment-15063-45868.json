@@ -1,0 +1,8 @@
+{
+ "id": 45868,
+ "bug_id": 15063,
+ "attachment_id": 0,
+ "creation_time": "2000-01-11T21:10:01Z",
+ "creator": "mckusick@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eclosed\n\nA fix was applied to sys/ufs/ffs/ffs_balloc.c. The checkin comment was: \n\nrevision 1.25 \ndate: 2000/01/11 08:27:00;  author: mckusick;  state: Exp;  lines: +14 -4 \nThe only known cause of this panic is running out of disk space. \nThe problem occurs when an indirect block and a data block are \nbeing allocated at the same time. For example when the 13th block \nof the file is written, the filesystem needs to allocate the first \nindirect block and a data block. If the indirect block allocation \nsucceeds, but the data block allocation fails, the error code \ndellocates the indirect block as it has nothing at which to point. \nUnfortunately, it does not deallocate the indirect block's associated \ndependencies which then fail when they find the block unexpectedly \ngone (ptr == 0 instead of its expected value). The fix is to fsync \nthe file before doing the block rollback, as the fsync will flush \nout all of the dependencies. Once the rollback is done the file \nmust be fsync'ed again so that the soft updates code does not find \nunexpected changes. This approach is much slower than writing the \ncode to back out the extraneous dependencies, but running out of \ndisk space is not expected to be a common occurence, so just getting \nit right is the main criterion. \n\nPR:             kern/15063 \nSubmitted by:   Assar Westerlund \u003cassar@stacken.kth.se\u003e\n"
+}

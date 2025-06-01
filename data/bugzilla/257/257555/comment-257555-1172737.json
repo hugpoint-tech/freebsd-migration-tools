@@ -1,0 +1,8 @@
+{
+ "id": 1172737,
+ "bug_id": 257555,
+ "attachment_id": 0,
+ "creation_time": "2021-08-02T10:03:12Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "When a jail exits, POSIX shared memory segments allocated by it\nwill stay around, unless removed from within the jail in an\norderly fashion.\n\nAs a side effect, this keeps the jail in a dying state forever/until\nnon-anonymous shared memory segments are removed.\n\nBasic example:\nSee below for the most basic example:\n\n    [root@jailhost ~]# jail -c path=/ command=/bin/sh\n    # posixshmcontrol create /removeme\n    # exit\n    [root@jailhost ~]# jls -dv -j shmtest dying\n    true\n\nSo at this point, the jail is stuck in a dying state.\n\nChecking POSIX shared memory segments shows the shared memory segment\nwhich is stopping the jail from crossing the Styx:\n\n    [root@jailhost ~]# posixshmcontrol list\n    MODE            OWNER   GROUP   SIZE    PATH\n    rw-------       root    wheel   0       /removeme\n\nAfter removing the shared memory segment manually...\n\n    [root@jailhost ~]# posixshmcontrol rm /removeme\n\nthe jail passes away peacefully:\n\n    [root@jailhost ~]#  jls -dv -j shmtest dying\n    jls: jail \"shmtest\" not found\n\nIn our discussion on the jails mailing list[0] it was suggested\nthat it might be the easiest and most straightforward way to\nsolve this would be to free shared memory segments based on their\npath, as access is controlled by the path too. The only questions is\nhow to handle multiple jails using the same jailroot in this case\n(and if this is legitimate/important enough use case to bother).\n\n[0]https://lists.freebsd.org/archives/freebsd-jail/2021-June/000029.html"
+}

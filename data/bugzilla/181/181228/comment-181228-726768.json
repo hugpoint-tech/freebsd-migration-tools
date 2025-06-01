@@ -1,0 +1,8 @@
+{
+ "id": 726768,
+ "bug_id": 181228,
+ "attachment_id": 0,
+ "creation_time": "2013-08-11T18:20:02Z",
+ "creator": "c.kworr@gmail.com",
+ "text": "Sometimes server crashes leaving some files behind. Then when everything boots postgresql says that server is already running.\n\nAs postgresql rc.d script doesn't specify a way to handle pid files all file handling is through pg_ctl.\n\nHere's a snip from an IRC log:\n\n[16:53] \u003carcade_\u003e on my system pids are given out in numerical order at boot, so if machine crashes the pid that was used for the server last time can already be present, but occupied by other process\n[16:53] \u003carcade_\u003e does pg_ctl check that this pid belongs to pgsql user or is a server?\n[16:54] \u003cRhodiumToad\u003e it only considers it to be \"running\" if it is allowed to send signals to it\n[16:54] \u003cRhodiumToad\u003e since pg_ctl is supposed to be run as the postgres user, not root, that should suffice\n[16:55] \u003cRhodiumToad\u003e also it checks that it's not the pg_ctl pid itself or its parent shell\n[16:55] \u003cRhodiumToad\u003e there is still one possible failure mode\n[16:55] \u003cRhodiumToad\u003e which is that if you do  su postgres -c \"somecomplexscript\"  which eventually gets to pg_ctl after more than one fork,\n[16:56] \u003cRhodiumToad\u003e it's possible for one of the grandparent processes of pg_ctl to be mistaken for the postmaster\n\nI'm not sure how pg_ctl checks this but can someone confirm or deny such claim?"
+}

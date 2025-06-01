@@ -1,0 +1,8 @@
+{
+ "id": 1002827,
+ "bug_id": 229983,
+ "attachment_id": 0,
+ "creation_time": "2018-07-23T16:20:44Z",
+ "creator": "aniketp@iitk.ac.in",
+ "text": "The logical operator which verifies that the desired limit of auditpipe queue length to be set is between QLIMIT_MIN and QLIMIT_MAX is wrong.\n\ncase AUDITPIPE_SET_QLIMIT:\n\t/* Lockless integer write. */\n\tif (*(u_int *)data \u003e= AUDIT_PIPE_QLIMIT_MIN ||\n            *(u_int *)data \u003c= AUDIT_PIPE_QLIMIT_MAX) {\n\nshould be\n\ncase AUDITPIPE_SET_QLIMIT:\n\t/* Lockless integer write. */\n\tif (*(u_int *)data \u003e= AUDIT_PIPE_QLIMIT_MIN \u0026\u0026\n            *(u_int *)data \u003c= AUDIT_PIPE_QLIMIT_MAX) {\n\n\nSteps to reproduce the bug: (On 12-CURRENT)\n\n#include \u003cstdio.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003csys/ioctl.h\u003e\n#include \u003csecurity/audit/audit_ioctl.h\u003e\n\nvoid main() {\n\tint fd = open(\"/dev/auditpipe\", O_RDWR);\n        if (fd \u003c 0)\n               perror(\"auditpipe\");\n\n\tint qlimit_min;\t\n\tioctl(fd, AUDITPIPE_GET_QLIMIT_MIN, \u0026qlimit_min);\n\n        qlimit_min -= 5;     \\* Not allowed since it is less than QLIMIT_MIN *\\\n\t\n        ioctl(fd, AUDITPIPE_SET_QLIMIT, \u0026qlimit_min);\n        perror(\"set qlimit\");\n\tclose(fd);\n}\n\nOutput: \"set qlimit: No error: 0\""
+}

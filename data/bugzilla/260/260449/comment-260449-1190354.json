@@ -1,0 +1,8 @@
+{
+ "id": 1190354,
+ "bug_id": 260449,
+ "attachment_id": 230154,
+ "creation_time": "2021-12-15T19:56:09Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 230154\nCause iscsi target to crash due to incorrect PRIV_REQUEST() uses.\n\nI suspect this line in cfiscsi_done():\n\n  cs = PRIV_REQUEST(io);\n\nshould be\n\n  request = PRIV_REQUEST(io);\n  cs = PDU_SESSION(request);\n\nAnd this line in cfiscsi_session_terminate_tasks() looks odd:\n\n  PRIV_REQUEST(io) = cs;\n\nI'd expect ... = request, not ... = cs.\n\nI've attached a program that (on my machine) produces panic from the\nfirst problem, and (once the first is fixed) a kernel page fault due to\nthe second.\n\npanic: refcount 0xffffffd0023eb7b4 wraparound\npanic() at panic+0x2a\n_refcount_update_saturated() at _refcount_update_saturated+0x16\nrefcount_releasen() at refcount_releasen+0x4c\nrefcount_release() at refcount_release+0xc\ncfiscsi_done() at cfiscsi_done+0x3e\nctl_process_done() at ctl_process_done+0x460\nctl_work_thread() at ctl_work_thread+0x13e\nfork_exit() at fork_exit+0x80\nfork_trampoline() at fork_trampoline+0xa\n\npanic: Fatal page fault at 0xffffffc0000468c4: 0x000000000000ba\n--- exception 15, tval = 0xba\ncfiscsi_done() at cfiscsi_done+0x5e\nctl_process_done() at ctl_process_done+0x460\nctl_work_thread() at ctl_work_thread+0x13e\nfork_exit() at fork_exit+0x80\nfork_trampoline() at fork_trampoline+0xa\n\nFreeBSD  14.0-CURRENT FreeBSD 14.0-CURRENT #160 main-n250912-e4746deeda02-dirty: Wed Dec 15 14:36:14 EST 2021     rtm@xxx:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM  riscv"
+}

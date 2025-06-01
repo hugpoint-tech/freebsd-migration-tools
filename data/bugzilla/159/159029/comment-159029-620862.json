@@ -1,0 +1,8 @@
+{
+ "id": 620862,
+ "bug_id": 159029,
+ "attachment_id": 0,
+ "creation_time": "2011-10-21T12:13:25Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: glebius\nDate: Fri Oct 21 11:11:18 2011\nNew Revision: 226609\nURL: http://svn.freebsd.org/changeset/base/226609\n\nLog:\n  In FreeBSD ip_output() expects ip_len and ip_off in host byte order\n  \n  PR:\t\tkern/159029\n\nModified:\n  head/sys/contrib/pf/net/if_pfsync.c\n\nModified: head/sys/contrib/pf/net/if_pfsync.c\n==============================================================================\n--- head/sys/contrib/pf/net/if_pfsync.c\tFri Oct 21 11:08:25 2011\t(r226608)\n+++ head/sys/contrib/pf/net/if_pfsync.c\tFri Oct 21 11:11:18 2011\t(r226609)\n@@ -1959,7 +1959,11 @@ pfsyncioctl(struct ifnet *ifp, u_long cm\n \t\tip-\u003eip_hl = sizeof(sc-\u003esc_template) \u003e\u003e 2;\n \t\tip-\u003eip_tos = IPTOS_LOWDELAY;\n \t\t/* len and id are set later */\n+#ifdef __FreeBSD__\n+\t\tip-\u003eip_off = IP_DF;\n+#else\n \t\tip-\u003eip_off = htons(IP_DF);\n+#endif\n \t\tip-\u003eip_ttl = PFSYNC_DFLTTL;\n \t\tip-\u003eip_p = IPPROTO_PFSYNC;\n \t\tip-\u003eip_src.s_addr = INADDR_ANY;\n@@ -2211,7 +2215,11 @@ pfsync_sendout(void)\n \tbcopy(\u0026sc-\u003esc_template, ip, sizeof(*ip));\n \toffset = sizeof(*ip);\n \n+#ifdef __FreeBSD__\n+\tip-\u003eip_len = m-\u003em_pkthdr.len;\n+#else\n \tip-\u003eip_len = htons(m-\u003em_pkthdr.len);\n+#endif\n \tip-\u003eip_id = htons(ip_randomid());\n \n \t/* build the pfsync header */\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

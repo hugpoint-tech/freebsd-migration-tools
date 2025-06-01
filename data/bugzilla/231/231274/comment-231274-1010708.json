@@ -1,0 +1,8 @@
+{
+ "id": 1010708,
+ "bug_id": 231274,
+ "attachment_id": 0,
+ "creation_time": "2018-09-09T22:58:48Z",
+ "creator": "PopularMoment@protonmail.com",
+ "text": "Incoming connections are no longer functional at least for me since the 0.13.7/0.9.7 update.\n\nWith libtorrent-0.13.6_5 / rtorrent-0.9.6_3 on 10.2-RELEASE-p2 any incoming connection initiated to rtorrents listening port would stay open till the timeout of 60 seconds was reached and only then terminated if no further communication had been negotiated.\n\nBeginning with the update to 0.13.7/0.9.7 incoming connections are immediately dropped and no further communication appears possible on incoming connections.\n\nThe issue does not appear to manifest with connections initiated in the opposite direction.\n\nWhen trussing rtorrent and attempting to determine why connections are immediately dropped I can see a call to setsockopt() with IPPROTO_IP on an AF_INET6 socket, this socket is then closed because IPPROTO_IP is invalid for AF_INET6. \n\nThis is despite the listening and remote addresses being *IPv4*.\n\nSo the introduction/improvement/whatever of IPv6 support in 0.13.7/0.9.7 seems to now create all sockets as AF_INET6 and then incorrectly call setsockopt with IPPROTO_IP when it should use IPPROTO_IPV6.\n\nThe code in question:\nhttps://github.com/rakshasa/rtorrent/blob/master/src/utils/socket_fd.cc#L74\nhttps://github.com/rakshasa/libtorrent/blob/master/src/net/socket_fd.cc#L74\n\nTo test my theory I changed both calls to use IPPROTO_IPV6 and IPV6_TCLASS and connections are no longer immediately dropped, no other tests were performed so that may break further functionality but it should be enough to illustrate the problem and a avenue for a possible proper fix."
+}

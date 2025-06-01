@@ -1,0 +1,8 @@
+{
+ "id": 1145064,
+ "bug_id": 253253,
+ "attachment_id": 0,
+ "creation_time": "2021-02-04T20:47:12Z",
+ "creator": "tsoome@freebsd.org",
+ "text": "(In reply to sirdice from comment #2)\n\nvidvonsole is only valid with bios loade, not with uefi (loader.efi).\n\nThere is this block of code:\n\n        rv = efi_global_getenv(\"ConOut\", buf, \u0026sz);\n        if (rv != EFI_SUCCESS) {\n                /* If we don't have any ConOut default to serial */\n                how = RB_SERIAL;\n                goto out;\n        }\n\nThat does explain it... This patch should fix it\n\ntsoome@freebsd-2:/usr/src % git diff\ndiff --git a/stand/efi/loader/main.c b/stand/efi/loader/main.c\nindex ca41cd4a2610..a21e8b0d96ba 100644\n--- a/stand/efi/loader/main.c\n+++ b/stand/efi/loader/main.c\n@@ -735,6 +735,8 @@ parse_uefi_con_out(void)\n        how = 0;\n        sz = sizeof(buf);\n        rv = efi_global_getenv(\"ConOut\", buf, \u0026sz);\n+       if (rv != EFI_SUCCESS) {\n+               rv = efi_global_getenv(\"ConOutDev\", buf, \u0026sz);\n        if (rv != EFI_SUCCESS) {\n                /* If we don't have any ConOut default to serial */\n                how = RB_SERIAL;\ntsoome@freebsd-2:/usr/src %"
+}

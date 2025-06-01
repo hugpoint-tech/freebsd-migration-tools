@@ -1,0 +1,8 @@
+{
+ "id": 999109,
+ "bug_id": 227982,
+ "attachment_id": 0,
+ "creation_time": "2018-06-24T18:55:24Z",
+ "creator": "cem@freebsd.org",
+ "text": "I think the problem is related to g_eli_integrity using the same session for all operations it performs.  There are N g_eli_worker threads for N CPU cores, but they should have independent sessions.\n\nccp_process does not globally lock during work submission today (it does lock over available queues) and uses global state (ccp_session buffers) which must survive for the duration of the request, not just submission.  This is violated even by serial submission in the same context, although that shouldn't lead to this.  ccp needs to allocate per-operation memory for operation-associated data rather than abusing the session to store it.\n\nOne other braindead / bogus thing ccp(4) does today is session allocation -- concurrent newsession + use of existing sid could race and a process thread could end up pointing at a freed session object.  I'm not sure that's what happened here but it could be."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1091703,
+ "bug_id": 244686,
+ "attachment_id": 0,
+ "creation_time": "2020-03-09T01:52:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Every FUSE operation has a unique value in its header.  As the name implies, these values are supposed to be unique among all outstanding operations.  And sine FUSE_INTERRUPT is asynchronous and racy, it is desirable that the unique values be unique among all operations that are \"close in time\".  But in our module, they aren't always unique.  We inadvertently reuse them during fsync, readdir, LISTXATTR, and WRITE.  The problem can be easily demonstrated like this:\n\ncd /usr/tests/sys/fs/fusefs\n\u003e ./xattr --gtest_filter=Listxattr.user -vv\nNote: Google Test filter = Listxattr.user\n[==========] Running 1 test from 1 test case.\n[----------] Global test environment set-up.\n[----------] 1 test from Listxattr\n[ RUN      ] Listxattr.user\nACCESS      ino= 1 uid= 1000 gid= 1000 pid=  848 unique=2 len=48 buflen=48 mask=0x1\nLOOKUP      ino= 1 uid= 1000 gid= 1000 pid=  848 unique=3 len=54 buflen=54 some_file.txt\nLISTXATTR   ino=42 uid= 1000 gid= 1000 pid=  848 unique=4 len=48 buflen=48 size=0\nLISTXATTR   ino=42 uid= 1000 gid= 1000 pid=  848 unique=4 len=48 buflen=48 size=28\n[       OK ] Listxattr.user (3 ms)\n[----------] 1 test from Listxattr (3 ms total)\n\n[----------] Global test environment tear-down\n[==========] 1 test from 1 test case ran. (3 ms total)\n[  PASSED  ] 1 test.\n\n\nWe should ensure that the value is regenerated during fdisp_refresh_vp()."
+}

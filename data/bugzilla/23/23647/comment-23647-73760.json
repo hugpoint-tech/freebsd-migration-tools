@@ -1,0 +1,8 @@
+{
+ "id": 73760,
+ "bug_id": 23647,
+ "attachment_id": 0,
+ "creation_time": "2000-12-19T18:00:04Z",
+ "creator": "tobez@tobez.org",
+ "text": "\nIn the program below the SIGINT signal should be delivered immediately\nafter SIGHUP handler returns.  This does not happen on recent -current\nand -stable boxes.\n\nThe same program compiled with libc works fine.  It also works right on\n3.5, 4.1.1 and older -current boxes.\n\nIt appears that pending signals are simply discarded in\n_thread_sig_handle_pending() after thread_sig_find() being unable to\nfind the thread to deliver the signal due to the signal being blocked.\n\nFix: I am too unfamiliar with uthread code, so I am afraid the fix below a)\nslows down _thread_kern_scheduler(); and b) might break some things.\nNevertheless, here is my take:\nHow-To-Repeat: \nRun the following program compiled with -pthread.  The expected output\nis `:-)', any other output is wrong.\n\n#include \u003csys/types.h\u003e\n#include \u003cstring.h\u003e\n#include \u003csignal.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n\nchar sequence[64];\nint seqi = 0;\nint self;\n\nvoid hupper(int s)\n{\n   sequence[seqi++] = ':';\n   kill(self,SIGINT);\n   sleep(2);\n   sequence[seqi++] = '-';\n}\n\nvoid inter(int s)\n{\n   sequence[seqi++] = ')';\n}\n\nint main(void)\n{\n   struct sigaction sa;\n\n   self = getpid();\n   bzero(\u0026sa, sizeof(sa));\n   sa.sa_handler = hupper;\n   sigaddset(\u0026sa.sa_mask, SIGINT);\n   sigaction(SIGHUP, \u0026sa, NULL);\n   signal(SIGINT, inter);\n   kill(self,SIGHUP);\n   sleep(1);\n   sequence[seqi++] = '\\0';\n   printf(\"%s\\n\", sequence);\n   return 0;\n}"
+}

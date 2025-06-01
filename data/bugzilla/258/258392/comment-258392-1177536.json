@@ -1,0 +1,8 @@
+{
+ "id": 1177536,
+ "bug_id": 258392,
+ "attachment_id": 227791,
+ "creation_time": "2021-09-09T18:09:18Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 227791\nlang/tcl8[56]: apply upstream fix for unsafe buffer lifetime\n\nDuring an exp-run for llvm 13 (see bug 258209), it turned out that lang/tcl8[56] compiled with clang 13 result in problems when databases/sqlite3 attempts to generate its main sqlite3.c source with tclsh [1] [2]:\n\nsqlite3.c:17852:2: error: invalid preprocessing directive\n#defi 0, xStep,xFinal,xValue,xInverse,#zName, {0}}\n ^\nsqlite3.c:18129:2: error: invalid preprocessing directive\n#definly system table */\n ^\nsqlite3.c:18223:2: error: invalid preprocessing directive\n#defi     /* ON DELETE and ON UPDATE actions, respectively */\n ^\n\nAfter some searching in tcl history I found that the cause is upstream ticket https://core.tcl-lang.org/tcl/info/24b9181478 (\"Fix unsafe buffer lifetime\"). They patched the 8.5 and 8.6 branches, but this didn't appear in a release yet. 8.7 already has the fix.\n\nThe unsafe buffer gets optimized differently with clang 13, causing the sqlite3 build to break due to its tcl scripts outputting garbled generated code.\n\nHere is a patch for tcl 8.5 and tcl 8.6. I verified that all tcl versions in the ports tree can now be compiled with clang 13, and then succesfully generate the sqlite3.c main file.\n\n[1] http://gohan04.nyi.freebsd.org/data/mainamd64PR258209-default/2021-09-05_20h27m09s/logs/errors/sqlite3-3.35.5_3,1.log\n[2] http://gohan04.nyi.freebsd.org/data/mainamd64PR258209-default/2021-09-05_20h27m09s/logs/errors/sqlite3-tcl-3.35.5_3,1.log"
+}

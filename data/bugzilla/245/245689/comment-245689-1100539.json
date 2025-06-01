@@ -1,0 +1,8 @@
+{
+ "id": 1100539,
+ "bug_id": 245689,
+ "attachment_id": 0,
+ "creation_time": "2020-05-04T03:13:53Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I've reproduced the issue on FreeBSD head (Thanks for the great instructions!).  Here is what I found.\n\nIssue 1 is essentially a FUSE protocol bug.  The access mode the kernel wants is not W_OK, it's VADMIN.  But the FUSE protocol has no concept of that mode.  Instead, we ask the daemon for W_OK instead, assuming it's close enough.  It's not obvious what we should be doing instead.  Maybe we should always evaluate such requests in-kernel, as if default_permissions were set.\n\nIssue 2 has a simple solution on MooseFS's side.  If a FUSE daemon ever returns ENOSYS to FUSE_ACCESS, then the client will never send FUSE_ACCESS again.  Instead it will assume that access will always be granted.  That would be appropriate for MooseFS if it checks permissions during FUSE_WRITE, FUSE_SETATTR, etc.  Is that an option for you?"
+}

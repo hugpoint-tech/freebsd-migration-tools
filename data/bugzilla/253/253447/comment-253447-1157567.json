@@ -1,0 +1,8 @@
+{
+ "id": 1157567,
+ "bug_id": 253447,
+ "attachment_id": 0,
+ "creation_time": "2021-04-21T09:45:49Z",
+ "creator": "adridg@freebsd.org",
+ "text": "To add to what Tobias said: on Linux \"everything\" lives in `/usr/include`, which isn't explicitly added as an include path. It's implicitly a system-include path, just like on FreeBSD. But because we install all the non-system headers in `/usr/local/include`, that path needs to be added to the header search-path. That can be done with `-I` or `-isystem`, and as soon as that happens, it is both explicit, and somewhere specific in the search-order. So any package on FreeBSD that installs headers to `/usr/local/include` *and also* has any dependency with headers in `/usr/local/include` has a problem: the `-I` for `/usr/local/include` must come **after** any `-I` for the package's internal headers.\n\nSetting that up is something that very few package-build-system do (e.g. you need to be very very careful in handling include paths, whether you use autoconf, cmake or something else). Each individual package needs patching / massaging to get that right.\n\nAnd that's why \"build in a clean environment\" is the recommended and inexpensive workaround, and why patches for specific ports are welcome. libphonenumber is special, the build is also full of race-conditions, but that's because Google is awful."
+}

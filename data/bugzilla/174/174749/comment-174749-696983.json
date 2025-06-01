@@ -1,0 +1,8 @@
+{
+ "id": 696983,
+ "bug_id": 174749,
+ "attachment_id": 0,
+ "creation_time": "2013-04-24T19:30:39Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: rrs\nDate: Wed Apr 24 18:30:32 2013\nNew Revision: 249848\nURL: http://svnweb.freebsd.org/changeset/base/249848\n\nLog:\n  This fixes the issue with the \"randomly changing\" default\n  route. What it was is there are two places in ip_output.c\n  where we do a goto again. One place was fine, it\n  copies out the new address and then resets dst = ro-\u003ert_dst;\n  But the other place does *not* do that, which means earlier\n  when we found the gateway, we have dst pointing there\n  aka dst = ro-\u003ert_gateway is done.. then we do a\n  goto again.. bam now we clobber the default route.\n  \n  The fix is just to move the again so we are always\n  doing dst = \u0026ro-\u003ert_dst; in the again loop.\n  \n  PR:\t 174749,157796\n  MFC after:\t1 week\n\nModified:\n  head/sys/netinet/ip_output.c\n\nModified: head/sys/netinet/ip_output.c\n==============================================================================\n--- head/sys/netinet/ip_output.c\tWed Apr 24 18:00:28 2013\t(r249847)\n+++ head/sys/netinet/ip_output.c\tWed Apr 24 18:30:32 2013\t(r249848)\n@@ -196,8 +196,8 @@ ip_output(struct mbuf *m, struct mbuf *o\n \t\thlen = ip-\u003eip_hl \u003c\u003c 2;\n \t}\n \n-\tdst = (struct sockaddr_in *)\u0026ro-\u003ero_dst;\n again:\n+\tdst = (struct sockaddr_in *)\u0026ro-\u003ero_dst;\n \tia = NULL;\n \t/*\n \t * If there is a cached route,\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 673029,
+ "bug_id": 169526,
+ "attachment_id": 0,
+ "creation_time": "2012-06-28T18:20:08Z",
+ "creator": "mike@mwatters.net",
+ "text": "Related PR: 168928 (different bug in same revision)\n\nreal memory  = 8589934592 (8192 MB)\navail memory = 7983443968 (7613 MB)\n\nsym0: \u003c1010-66\u003e port 0xe000-0xe0ff mem 0xfbfffc00-0xfbffffff,0xfbffc000-0xfbffdfff irq 21 at device 7.0 on pci3\nsym0: failed to create DMA tag.\ndevice_attach: sym0 attach returned 6\n\n(followed by memory-related errors and boot failure)\n\n\nIn r236061 to sys/dev/sym/sym_hipd.c, the flags parameter to\nbus_dma_tag_create() was changed from 0 to BUS_DMA_ALLOCNOW, which\nbreaks the driver on my amd64 system with 8GB RAM.\n\nIf I follow the logic correctly, the BUS_DMA_ALLOCNOW flag combined\nwith the maxsize parameter being BUS_SPACE_MAXSIZE results in the\nsystem trying to allocate 4GB worth of bounce pages, which I assume\nexhausts kernel resources.\n\nFix: Change flags parameter from BUS_DMA_ALLOCNOW back to 0, or change\nmaxsize parameter to a more appropriate smaller value.  Changing flags to 0\n(BUS_DMA_WAITOK) fixes the problem on my system.\n\nPatch attached with submission follows:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1224851,
+ "bug_id": 266137,
+ "attachment_id": 0,
+ "creation_time": "2022-08-31T17:18:35Z",
+ "creator": "freebsd@gushi.org",
+ "text": "At the day job, we have taken to deploying our firewall rules as service related, which means we have an /etc/ipfw.d directory that has all our rules in it, which are run through rcorder.  (This way, when we deploy a service with puppet, we can drop in the corresponding rules as well).  This would bring ipfw into harmony with rc.d, syslog.d, newsyslog.d, etc.\n\nThis is a remarkably simple addition to the stock system:\n\n@@ -550,8 +532,21 @@\n [Uu][Nn][Kk][Nn][Oo][Ww][Nn])\n        ;;\n *)\n-       if [ -r \"${firewall_type}\" ]; then\n-               ${fwcmd} ${firewall_flags} ${firewall_type}\n-       fi\n+  if [ -r \"${firewall_type}\" ]; then\n+    if [ -f \"${firewall_type}\" ]; then\n+      ${fwcmd} ${firewall_flags} ${firewall_type}\n+    else\n+      if [ -d \"${firewall_type}\" ]; then\n+        for fwfile in `rcorder $firewall_type/*`\n+          do\n+            ipfw -q $fwfile;\n+        done\n+      fi\n+    fi\n+  fi\n\nWould there be interest in making this mainline?  (I can formally patch against -CURRENT if that's useful)."
+}

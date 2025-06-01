@@ -1,0 +1,8 @@
+{
+ "id": 812833,
+ "bug_id": 198151,
+ "attachment_id": 153658,
+ "creation_time": "2015-03-02T10:30:53Z",
+ "creator": "jphartmann@gmail.com",
+ "text": "Created attachment 153658\nTrivial test case\n\nhttps://svnweb.freebsd.org/base/head/sys/sys/elf64.h?revision=276539\u0026view=markup\n\nLine 160 in the current SVN:\n\n#define ELF64_R_INFO(sym, type) (((sym) \u003c\u003c 32) + ((type) \u0026 0xffffffffL))\n\nThis means that sym is not promoted to 64 bit and as a result it is truncated by the shift.  Gcc 4.2.1 issues a warning about this. \n\n cc1: warnings being treated as errors\nelf.c: In function 'elfrld':\nelf.c:513: warning: left shift count \u003e= width of type\n\nLinux defines the macro as\n\n#define ELF64_R_INFO(sym,type)          ((((Elf64_Xword) (sym)) \u003c\u003c 32) + (type))\n\n[john@fb91 ~/src/z/hlasm]$ gcc --version\ngcc (GCC) 4.2.1 20070831 patched [FreeBSD]\nCopyright (C) 2007 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n[john@fb91 ~/src/z/hlasm]$ uname -a\nFreeBSD fb91.jphartmann.net 9.1-RELEASE-p10 FreeBSD 9.1-RELEASE-p10 #0: Tue Apr  8 06:17:44 CEST 2014     root@fb91.jphartmann.net:/usr/obj/usr/src/sys/GENERIC  amd64\n\nTest case in FreeBSD 9.1:\n\n[john@fb91 ~/src/testing]$ gcc ebug.c -o ebug\nebug.c: In function 'main':\nebug.c:25: warning: left shift count \u003e= width of type\n[john@fb91 ~/src/testing]$ ./ebug\n000000 000000 020000 000000 000000 000000 \n\nSame on Linux:\n[/home/john/src/testing] ./ebug\n000000 000000 020000 010000 000000 000000"
+}

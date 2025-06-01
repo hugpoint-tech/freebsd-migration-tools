@@ -1,0 +1,8 @@
+{
+ "id": 33753,
+ "bug_id": 11141,
+ "attachment_id": 0,
+ "creation_time": "1999-04-15T02:40:00Z",
+ "creator": "dkelly@hiwaay.net",
+ "text": "\nToday I had a file, tape.tar.gz, that was 400M in size and curious as to\nhow much space it would take to extract. Was happy when the following\nindicated only 4G was needed:\n\n\t% gunzip -c tape.tar.gz | wc -c\n\nThen I proceeded to fill the remaining 6G of my fs attempting to extract.\nThinking about it, guessed a 32 bit counter overflowed and I really have\nabout 8G of data. Was also showing off FreeBSD and said, \"Oh, forgot to mention\n200M of stuff on your HD is the *complete* source to this system. Lets\ngo look at the source to wc.\" Their jaws hit the floor.\n\nFix: Notice I also changed some %ld's into %qu's.\n\nThought about changing the 7 in %7qu to something bigger but decided\nthat might break some scripts. If really big numbers are output it\nwill break those scripts anyhow. So I dunno. Leave the output spaced\nover with the %7qu for tradition's sake?\n\t\n% diff -c wc.c wc.c.orig\nHow-To-Repeat: \n% dd if=/dev/zero bs=1024k count=6000 | /usr/bin/wc -c\n6000+0 records in\n6000+0 records out\n6291456000 bytes transferred in 1390.680056 secs (4524014 bytes/sec)\n 1996488704\n%\n\nWith patches (enclosed) applied:\n\n% dd if=/dev/zero bs=1024k count=6000 | ./wc -c\n6000+0 records in\n6000+0 records out\n6291456000 bytes transferred in 1115.535951 secs (5639851 bytes/sec)\n 6291456000\n%\n\n% dc\n1024 1024 * 6000 * p\n6291456000\n6291456000 1024 1024 * 1024 * 4 * - p\n1996488704\nq\n%"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 682537,
+ "bug_id": 171402,
+ "attachment_id": 0,
+ "creation_time": "2012-09-09T08:15:48Z",
+ "creator": "markjdb@gmail.com",
+ "text": "I managed to figure out what the problem is, took a while though. =)\n\nlibfetch uses both libmd (for HTTP digest authentication) and libcrypto\n(through libssl for HTTPS). The problem is that some libcrypto's hash\nfunctions (e.g. SHA256) use the same prototypes as in libmd. For some\nreason, fetch(1) links with libmd, so libmd's functions end up getting\nused by libcrypto instead of libcrypto's hash functions. In princple\nI think this should be fine, but the problem is that libmd's prototypes\nare slightly different. Specifically, the _Init, _Update and _Final\nfunctions for the alorithms don't return anything, whereas libcrypto's\nimplementations return an int.\n\nlibcrypto actually checks the return values from these functions, so\nlibcrypto/libssl will behave differently depending on what the libmd\nfunctions leave behind in %rax as a return value. Compiling libmd with\nclang just result in a different outcome (segfault instead of auth\nerror); the problem is there regardless of which compiler is used.\n\nThis can be 'fixed' by simply removing the libmd dependency from\nfetch(1). It doesn't need it, and the libmd symbols used by libfetch\naren't in libcrypto. This way, libcrypto will come first in the library\npath and the expected hash function implementations will be used. It's a\nbit sketych, and I'll try to audit the rest of the base for similar\nissues, but this particular problem should be fixed quickly, as it means\nthat libfetch+https is quite broken.\n\nThanks,\n-Mark"
+}

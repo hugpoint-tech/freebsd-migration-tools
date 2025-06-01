@@ -1,0 +1,8 @@
+{
+ "id": 1182467,
+ "bug_id": 259187,
+ "attachment_id": 0,
+ "creation_time": "2021-10-15T14:57:22Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "The following program crashes with a SIGILL on armv7 FreeBSD 13.0-RELEASE.  It does not crash in an armv7 jail on arm64 FreeBSD and does not crash when compiled without -mthumb.\n\n#include \u003cpthread.h\u003e\n#include \u003cstddef.h\u003e\n\nvoid *a(void *x) {\n  (void)x;\n\n  struct {\n    int b[4];\n  } c = c;\n\n  return (NULL);\n}\n\nint main() {\n  pthread_t d;\n  pthread_create(\u0026d, NULL, a, NULL);\n  pthread_join(d, NULL);\n}\n\nSave the program in a file name min.c, then type\n\n    cc -mthumb min.c -lpthread \u0026\u0026 ./a.out\n\nto reproduce.  The assembly code for function a() looks as follows:\n\n00020754 \u003ca\u003e:\n   20754:       b086            sub     sp, #24\n   20756:       9005            str     r0, [sp, #20]\n   20758:       4668            mov     r0, sp\n   2075a:       f960 0a8f       vld1.32 {d16-d17}, [r0]\n   2075e:       f940 0acf       vst1.64 {d16-d17}, [r0]\n   20762:       2000            movs    r0, #0\n   20764:       b006            add     sp, #24\n   20766:       4770            bx      lr\n\nThe program crashes at address 2075a at the vld1.32 instruction.\n\nWhen compiled for ARM mode, the same instruction is used but no crash occurs.  I do not understand what causes this issue.\n\nIt also does not seem to happen when executing the function a() without using a separate thread.\n\nI've used a Raspberry Pi 3B (Cortex-A7) to find this issue."
+}

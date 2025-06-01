@@ -1,0 +1,8 @@
+{
+ "id": 1301431,
+ "bug_id": 277783,
+ "attachment_id": 0,
+ "creation_time": "2024-03-18T21:06:29Z",
+ "creator": "kargl@FreeBSD.org",
+ "text": "Ok, with the given input to fma, one arrives at line 271\n\n \t\treturn (xy.hi + vzs + ldexp(xy.lo, spread));\n\n(gdb) p vzs\n$12 = -0.5\n(gdb) p xy.hi\n$13 = 0.5\n(gdb) p xy.lo\n$14 = -3.944304526105059e-31\n(gdb) p spread\n$15 = -999\n\nTurns out that ldexp(3.944304526105059e-31, -999) = -0x0p+0.  So, you have\n\n0.5 - 0.5 - 0. = 0. - 0. = +0\n\nSo, a pessimestic patch is\n\nIndex: src/s_fma.c\n===================================================================\n--- src/s_fma.c\t(revision 2834)\n+++ src/s_fma.c\t(working copy)\n@@ -267,7 +267,9 @@\n \t\t */\n \t\tfesetround(oround);\n \t\tvolatile double vzs = zs; /* XXX gcc CSE bug workaround */\n-\t\treturn (xy.hi + vzs + ldexp(xy.lo, spread));\n+\t\txs = ldexp(xy.lo, spread);\n+\t\txy.hi += vzs;\n+\t\treturn (xy.hi == 0 ? xs : xy.hi + xs);\n \t}\n \n \tif (oround != FE_TONEAREST) {"
+}

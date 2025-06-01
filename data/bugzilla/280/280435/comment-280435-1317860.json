@@ -1,0 +1,8 @@
+{
+ "id": 1317860,
+ "bug_id": 280435,
+ "attachment_id": 252270,
+ "creation_time": "2024-07-25T09:05:32Z",
+ "creator": "kwf@nanoteq.com",
+ "text": "Created attachment 252270\npfkeyv2.h SADB_EXT_MAX  updated to cater for Apple and FreeBSD\n\nThe ENUM definition for the sadb_ext_type_names‘s last value (SADB_EXT_MAX) only caters for Linux (0..25).\n\nIn the case of FreeBSD and Apple, these values range from 0..28 and 0..35 respectively. Thus during compilation and error is thrown that the array size is initialized to a negative number (see below)\n\nkernel_pfkey_ipsec.c:721:1: error: array size is negative\n  721 | ENUM(sadb_ext_type_names, SADB_EXT_RESERVED, SADB_EXT_MAX,\n\n… \n\n../../../../src/libstrongswan/utils/enum.h:121:2: note: expanded from macro 'ENUM'\n  121 |         ENUM_BEGIN(name, first, last, __VA_ARGS__); ENUM_END(name, last)\n      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n../../../../src/libstrongswan/utils/enum.h:84:3: note: expanded from macro 'ENUM_BEGIN'\n   84 |                 BUILD_ASSERT(((last)-(first)+1) == countof(((char*[]){__VA_ARGS__}))), \\\n      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n../../../../src/libstrongswan/utils/utils.h:104:38: note: expanded from macro 'BUILD_ASSERT'\n  104 | #define BUILD_ASSERT(x) (sizeof(char[(x) ? 0 : -1]))\n\n\nI have included a patch that solves the bug by updating the SADB_EXT_MAX in pfkeyv2.h depending on which OS it is built on.\n\nI have also submitted the patch to strongSwan and wait feedback from them."
+}

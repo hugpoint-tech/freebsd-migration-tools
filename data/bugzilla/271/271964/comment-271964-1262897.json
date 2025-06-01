@@ -1,0 +1,8 @@
+{
+ "id": 1262897,
+ "bug_id": 271964,
+ "attachment_id": 0,
+ "creation_time": "2023-06-12T11:11:47Z",
+ "creator": "daniel@octaforge.org",
+ "text": "Currently running the following will get you incorrect results:\n\n$ seq 1 1050000|wc -l\n 1050001\n\nIt comes down to this:\n\n$ seq 1050000 1050000\n1.05e+06\n1.05e+06\n\nI've been able to track down the offending commit, which is https://github.com/freebsd/freebsd-src/commit/3049d4ccc031e5d4d0ff6b9a2445131f507778f2\n\nAs I see it, the logic of that commit is wrong and will result in false positives more often than not in practice. The %g format string which is used by default will truncate any value over 999999. The decimal precision of a double type is much larger than that, as double has 53-bit mantissa. While at it, the condition that 'cur != last_shown_value' will *always* be true, as the 'cur' will *always* need to increment past the end in order to break the loop at all.\n\nI don't see any reliable way to check this, actually. I don't think it is actually possible to check if a rounding error happened or not. Therefore, I think the above change should be reverted, unless somebody has a better idea.\n\nThis likely affects other BSDs as well, as it was found thanks to https://floss.social/@Gottox@chaos.social/110527807611326720 - but I'm reporting it here as I work primarily with FreeBSD sources and reverted it in my project (https://github.com/chimera-linux/chimerautils/commit/1ecc1e99d4a309631e846a868b5a422f996704ac)."
+}

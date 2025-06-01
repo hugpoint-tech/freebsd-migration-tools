@@ -1,0 +1,8 @@
+{
+ "id": 79504,
+ "bug_id": 25503,
+ "attachment_id": 0,
+ "creation_time": "2001-03-03T01:20:01Z",
+ "creator": "jbrowne@jbrowne.com",
+ "text": "I noticed that readudp() in libstand(3) returns the UDP packet length\nto the caller by taking the length of the packet from the netif device\nand subtracting the size of a UDP and IP header.  If the netif\ninterface is unable to strip link-level padding bytes, those extra\nbytes will be incorrectly passed on to the caller.\n\nI noticed this problem because my netif driver which works with LANCE\nstyle chips is unable to strip Ethernet padding bytes on short\nEthernet frames since it has no way to determine the true length of\nthe Ethernet frame and since the LANCE chip does not strip padding\nbytes on short Ethernet frames.  So, if the UDP packet was less than\n46 bytes long, up to 14 Ethernet padding bytes could be passed up by\nthe netif driver.  readudp() was happily passing those extra bytes on\nto TFTP which meant that TFTP files whose length satisfied:\n\n     ((length % 512) \u003c 14)\n\nwould have the incorrect length (up to 14 bytes longer) when TFTPd.\n\nAlso, the shortest valid TFTP packet is 4 bytes, not 8.\n\nA patch to fix the problem is included below.\n\nFix: bash-2.04$ grep \\$FreeBSD /usr/src/lib/libstand/tftp.c\n * $FreeBSD: src/lib/libstand/tftp.c,v 1.2.6.2 2000/05/04 13:47:52 ps Exp $\nbash-2.04$ grep \\$FreeBSD /usr/src/lib/libstand/udp.c\n * $FreeBSD: src/lib/libstand/udp.c,v 1.1.2.1 2000/04/15 03:09:29 ps Exp $\nbash-2.04$ diff -c2p /usr/src/lib/libstand/tftp.c /tmp/tftp.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 841400,
+ "bug_id": 202607,
+ "attachment_id": 0,
+ "creation_time": "2015-09-23T16:46:34Z",
+ "creator": "gibbs@FreeBSD.org",
+ "text": "Thinking about this some more, I think it may be possible for a dbuf for an older version of a dnode to be reused if it hasn't been evicted before the object id is reused. For most objects (e.g. files), there are no dangling references due to dbuf user eviction. But this can happen for datasets, and we can't know the future type of the object that will inherit this object id.\n\nMy preference would be some solution that doesn't cause TXG syncing to block. All we need to do is to mark all the dbufs as no longer cacheable in dnode_evict_dbufs() during the pass that we try to evict them. This would allow dbuf_rele_and_unlock() to determine whether eviction processing is necessary without taking the dnode lock. It looks like dmu_buf_impl_t has internal padding due to the order of its fields, so this state can probably be added without any space penalty.\n\nIf you do this, the code to forcibly evict the bonus buffer in dbuf_rele_and_unlock() should be simplified to use the same logic."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1261661,
+ "bug_id": 271759,
+ "attachment_id": 0,
+ "creation_time": "2023-05-31T22:36:54Z",
+ "creator": "freebsd@darkain.com",
+ "text": "https://github.com/freebsd/freebsd-src/blob/main/sys/dev/usb/net/if_ure.c#LL616C1-L617C24\n\nure_makembuf() has the following code:\n\n\t/* uether_newbuf does this. */\n\tm_adj(m, ETHER_ALIGN);\n\nbased on that comment, it looks like someone copied m_adj() over because the base usb ethernet driver has it, without really testing it or setting up the mbuf correctly.\n\nwhen m_adj is called here, m-\u003em_len is 0 at this point so the call to m_adj() does nothing.\n\nbecause of this, the data is never shifted by 2 bytes, causing an unaligned access to the IP headers when byte swapping later in the stack when converting from network-order to host-order, causing a panic on 32-bit ARM systems.\n\n\nNOTE: virtio-net has a similar unaligned access issue, however that driver isn't calling m_adj() at all it looks like. This is referenced over in: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=271288"
+}

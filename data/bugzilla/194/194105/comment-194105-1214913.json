@@ -1,0 +1,8 @@
+{
+ "id": 1214913,
+ "bug_id": 194105,
+ "attachment_id": 0,
+ "creation_time": "2022-06-08T05:00:39Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "Yup this is still relevant. A simple workaround for *startup* is to use\nexec.created. exec.poststart is too late if you want rc scripts depending on the zfs dataset. exec.start before /etc/rc might work but I didn't try.\nTo be clear the \"zfs jail\" needs to occur between jail(2) and jexec \"sh /etc/rc\".\n\n--- /tmp/jail   2022-06-07 21:56:17.886298000 -0700\n+++ /etc/rc.d/jail      2022-06-07 21:56:19.863706000 -0700\n@@ -213,6 +213,7 @@ parse_options()\n                echo \"  exec.system_user = \\\"root\\\";\"\n                echo \"  exec.jail_user = \\\"root\\\";\"\n                extract_var $_jv exec_prestart exec.prestart 0 \"\"\n+               extract_var $_jv exec_created exec.created - \"\"\n                extract_var $_jv exec_poststart exec.poststart 0 \"\"\n                extract_var $_jv exec_prestop exec.prestop 0 \"\"\n                extract_var $_jv exec_poststop exec.poststop 0 \"\"\n\nThen in the ezjail/jail.conf file something like this:\n# Must not set zfs_datasets or /usr/local/etc/rc.d/ezjail does the \"zfs jail\" too late (which is ignored but causes a warning)\nexport jail_backups_exec_created=\"zfs jail \\$name backup\"\n\nThere is no corresponding place in the jail stop to do \"zfs unjail\". It needs to occur after /etc/rc.shutdown but before jail_remove(2). jail.*stop* are all just wrong for this. In practice the \"zfs unjail\" piece does not seem important but I could be wrong.\n\niocage avoids all of this by not using /etc/rc.d/jail like ezjail does. It uses jail(8) and controls the ordering properly."
+}

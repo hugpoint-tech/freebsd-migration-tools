@@ -1,0 +1,8 @@
+{
+ "id": 1197725,
+ "bug_id": 261690,
+ "attachment_id": 0,
+ "creation_time": "2022-02-04T12:01:15Z",
+ "creator": "bf@cebitec.uni-bielefeld.de",
+ "text": "Ok, I found a way to trigger the problem with this silly perl script on the Linux client, so no need to pull off a complete GCC bootstrap:\n\n#!/usr/bin/perl\n\nuse strict;\nuse warnings;\n\nuse threads;\nuse IO::Handle;\nuse Fcntl qw(SEEK_SET SEEK_CUR SEEK_END);\n\nmy $testfile = 'testfile';\n\nmy $thread = {};\nmap { $thread-\u003e{$_} = threads-\u003ecreate(\n    sub {\n        open(my $fh, '+\u003e', $testfile) or die \"Can't open +\u003e $testfile: $!\";\n        my $id = $_;\n        map {\n            seek $fh, int(rand(1024*4096)), SEEK_SET;\n            print $fh 'foobar' x (500 + int(rand(4000)));\n            $fh-\u003eflush();\n        } (0..10000);\n        close $fh;\n    }\n) } (0..1000);\n\nmap {\n    $thread-\u003e{$_}-\u003ejoin();\n} (0..1000);"
+}

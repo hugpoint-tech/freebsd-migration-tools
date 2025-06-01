@@ -1,0 +1,8 @@
+{
+ "id": 1080146,
+ "bug_id": 242727,
+ "attachment_id": 210065,
+ "creation_time": "2019-12-19T15:31:41Z",
+ "creator": "ghuckriede@blackberry.com",
+ "text": "Created attachment 210065\npatch\n\nOverview:\nThe 'args' and 'ivars' malloc()s do not have associated free()s.  See lines 397 and 488 of https://svnweb.freebsd.org/base/head/sys/dev/mii/mii.c?annotate=326255.\n\nHere is a proposed fix for this.  \n\nThe 'ivars' leak is simple to fix.  Just adding a free in the miibus_detach() solved the issue.\n\nThe 'args' leak is a little more complicated.  This is malloc()ed for each phy on the bus \"child\".  There is currently no detach function for the child.  Added miibus_child_detached() to free the 'args'. \n\n\nSteps to Reproduce:\nAttach and detach a module with mii devices.  Observe leaks.\n# devinfo -v | grep re0\n            re0 pnpinfo vendor=0x10ec device=0x8168 subvendor=0x10ec subdevice=0x0123 class=0x020000 at slot=0 function=0 dbsf=pci0:3:0:0 handle=\\_SB_.PCI0.RP02.PXSX\n# \n# devctl detach pci0:3:0:0\n#\n# vmstat -m | grep devbuf\n       devbuf 34770 70136K       -    35686  16,32,64,128,256,512,1024,2048,4096,8192,65536\n# devctl attach pci0:3:0:0 \n# vmstat -m | grep devbuf\n       devbuf 35307 70188K       -    36223  16,32,64,128,256,512,1024,2048,4096,8192,65536\n# devctl detach pci0:3:0:0\n# vmstat -m | grep devbuf\n       devbuf 34779 70122K       -    36223  16,32,64,128,256,512,1024,2048,4096,8192,65536\n# \n\n\nActual Results: \n're' LEAKED 9 times of type 'devbuf' (M_DEVBUF).  2 of these leaks are from the 'mii' device.\n\n\nExpected Results:\nNot to leak (or in the 're' case leak less).\n\n\nBuild Date \u0026 Hardware:\nHEADr355854 on amd64 target with any hardware with mii device(s)"
+}

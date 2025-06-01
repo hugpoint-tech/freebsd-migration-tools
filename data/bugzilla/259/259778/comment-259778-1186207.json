@@ -1,0 +1,8 @@
+{
+ "id": 1186207,
+ "bug_id": 259778,
+ "attachment_id": 0,
+ "creation_time": "2021-11-11T13:57:00Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "@emaste added a debugging mechanism using `procctl` that allows Capsicum failures to raise SIGTRAP.  I am currently using this mechanism to provide a fallback mechanism that does an RPC to a privileged process, allowing me to run unmodified libraries in a sandbox.\n\nUnfortunately, SIGTRAP is caught by debuggers and not delivered to my process when it is being debugged.  The analogous Linux mechanism in seccomp-bpf delivers SIGSYS, which is a lot more useful in this context.\n\nI would like to extend this mechanism to be able to deliver SIGSYS but before I do I wanted to open this bug to provide a space for some discussion.  I see two possible implementation choices:\n\n - Allow the user to specify the signal that's raised.\n - Provide an option to raise SIGSYS instead of SIGTRAP.\n\nThe former requires adding an extra field to `struct prot`, the latter could just consume an extra one of `p2_flags`, which would be easier to MFC.  My leaning is towards the second (it requires less kernel state, is a smaller diff, and Linux doesn't give you any choice of signal), but if there's value in the more general mechanism then I can do that instead.\n\nIf I go with the first mechanism, there's a question of what to do if both states are set.  The simplest choice is to make them mutually exclusive (so setting `PROC_SIGCAP_CTL` [or whatever a more sensible name for it is] would clear `PROC_TRAPCAP_CTL` and vice versa).  I can see it possibly being useful to enable both, so the debugger gets a signal and then the process gets a usefully catchable signal, in which case they'd need to be delivered in that order."
+}

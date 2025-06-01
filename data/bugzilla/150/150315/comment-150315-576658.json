@@ -1,0 +1,8 @@
+{
+ "id": 576658,
+ "bug_id": 150315,
+ "attachment_id": 0,
+ "creation_time": "2010-09-06T05:20:04Z",
+ "creator": "wollman@FreeBSD.org",
+ "text": "\nsizeof(union ccb) changed when ATA support was added to the CAM\nframework in the 8.x branch.  However, the CAMIOCOMMAND ioctl request,\nused by many userland utilities that send direct SCSI commands, takes\na \"union ccb\" as its argument; this encodes sizeof(union ccb) into the\nioctl number and breaks binary compatibility between 7.x and 8.x for\nthese tools, even when COMPAT_FREEBSD7 is defined in the kernel\nconfiguration.\n\nThis may be the same problem was originally reported in misc/138622,\nwhich does not appear to have garnered any responses.\n\nFix: \n\nIt's not clear to me whether there's a good fix here.  The best fix\nwould be to define a (private) \"union occb\" and OCAMIOCOMMAND ioctl\nwhich is compatible with 7.x, but I'm not sure if that's actually safe\nto do when there are ATA devices actually in use.  Possibly just\nrecognizing the generic form of CAMIOCOMMAND and logging a\n\"CAMIOCOMMAND used with wrong size CCB\" to the console would be a\nstopgap if it's not practical to implement full compatability.\nHow-To-Repeat: \nTry to run any 7.x program which uses CAMIOCOMMAND to send SCSI\ncommands directly to devices (e.g., smartctl) and watch it fail\nmysteriously when ioctl returns [ENOTTY]."
+}

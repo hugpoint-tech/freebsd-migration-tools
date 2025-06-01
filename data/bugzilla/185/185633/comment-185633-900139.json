@@ -1,0 +1,8 @@
+{
+ "id": 900139,
+ "bug_id": 185633,
+ "attachment_id": 0,
+ "creation_time": "2016-10-02T21:07:33Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kp\nDate: Sun Oct  2 21:06:55 UTC 2016\nNew revision: 306593\nURL: https://svnweb.freebsd.org/changeset/base/306593\n\nLog:\n  MFC r306289:\n\n  bridge: Fix fragment handling and memory leak\n\n  Fragmented UDP and ICMP packets were corrupted if a firewall with reassembling\n  feature (like pf'scrub) is enabled on the bridge.  This patch fixes corrupted\n  packet problem and the panic (triggered easly with low RAM) as explain in PR\n  185633.\n\n  bridge_pfil and bridge_fragment relationship:\n\n  bridge_pfil() receive (IN direction) packets and sent it to the firewall The\n  firewall can be configured for reassembling fragmented packet (like pf'scrubing)\n  in one mbuf chain when bridge_pfil() need to send this reassembled packet to the\n  outgoing interface, it needs to re-fragment it by using bridge_fragment()\n  bridge_fragment() had to split this mbuf (using ip_fragment) first then\n  had to M_PREPEND each packet in the mbuf chain for adding Ethernet\n  header.\n\n  But M_PREPEND can sometime create a new mbuf on the begining of the mbuf chain,\n  then the \"main\" pointer of this mbuf chain should be updated and this case is\n  tottaly forgotten. The original bridge_fragment code (Revision 158140,\n  2006 April 29) came from OpenBSD, and the call to bridge_enqueue was\n  embedded.  But on FreeBSD, bridge_enqueue() is done after bridge_fragment(),\n  then the original OpenBSD code can't work as-it of FreeBSD.\n\n  PR:             185633\n  Submitted by:   Olivier Cochard-Labb?\n\nChanges:\n_U  stable/11/\n  stable/11/sys/net/if_bridge.c"
+}

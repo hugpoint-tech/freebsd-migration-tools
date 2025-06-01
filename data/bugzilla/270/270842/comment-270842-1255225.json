@@ -1,0 +1,8 @@
+{
+ "id": 1255225,
+ "bug_id": 270842,
+ "attachment_id": 0,
+ "creation_time": "2023-04-14T16:34:41Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Using the NFS 4.2 client, I sometimes see out-of-date metadata, but it always gets corrected by a stat(1) call.\n\nBACKGROUND:\nI do Rust development using three systems:\n* FreeBSD 13.1 file server\n* FreeBSD 13.1 editor client, mounting home dirs with NFS 4.2\n* FreeBSD 14.0 build client, mounting home dirs with NFS 4.2\n\nPROBLEM:\nFrequently when I save a file on the editor client, the \"cargo\" command on the build client thinks that the file is unchanged.  Occasionally \"git diff\" or \"git status\" also show the file is unchanged.  However if I do \"stat /path/to/file\" on the build client, then afterwards git and cargo behave correctly.\n\nANALYSIS:\nI don't know how cargo or git are checking the file's metadata and/or contents.  My best guess is that they're using READDIRPLUS, whereas stat(1) uses GETATTR.  Or maybe they both check attributes the same way, but stat(1) does something else that causes the client to refresh attributes from the server.\n\nThis problem happens frequently enough that I can try to debug it using dtrace or anything else, if somebody can suggest what to look at.  It usually happens a few times per day during heavy development."
+}

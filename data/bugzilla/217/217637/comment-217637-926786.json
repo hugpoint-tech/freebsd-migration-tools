@@ -1,0 +1,8 @@
+{
+ "id": 926786,
+ "bug_id": 217637,
+ "attachment_id": 0,
+ "creation_time": "2017-03-20T17:31:08Z",
+ "creator": "tuexen@freebsd.org",
+ "text": "(In reply to slw from comment #65)\n\u003e This is wrong behaviour. This is cause lost of server data.\nNo, the loss of data is caused by the application calling close() *before* incoming user data arrived. So the TCP stack on the server has to drop that user data.\n\n\u003e pwrite();\n\u003e close();\n\n\u003e This is graceful termination.\nSure. This is what the application triggers. However, when user data arrives after\nthe close call, this gets ungraceful, since this user data can't be delivered to\nthe user anymore. To avoid this, the application could call shutdown(..., SHUT_WR)\nto trigger the sending of the FIN, then process incoming data until a FIN from the\npeer arrives and then calling close(). But the application didn't. This would be\nmore in line of how RFC 793 describes a connection termination. Please note that\nthe CLOSE primitive in RFC 793 maps to a shutdown(..., SHUT_WR) system call, not\nto the close() system call. Bad naming... \n\nI don't see text in RFC 793, where it is required that you continue to process\na connection after you know that it failed. I think the RFC doesn't cover the case\nwhere the application says \"I don't want to receive anymore\"."
+}

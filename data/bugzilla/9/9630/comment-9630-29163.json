@@ -1,0 +1,8 @@
+{
+ "id": 29163,
+ "bug_id": 9630,
+ "attachment_id": 0,
+ "creation_time": "1999-01-23T07:50:01Z",
+ "creator": "dcs@newsguy.com",
+ "text": "\n\tFICL's TYPE copies the counted string to HERE, as abial has\nremarked. Answering to abial's question, this is NOT garanteed to have\nenough space.\n\nFix: \n\nWe have dynamic memory. Even before memory-alloc got in, we\nalready had dynamic memory. Use it, then! (ficlMalloc is sysdep, so I\nsuppose that's why it was not used for TYPE; ficl is probably designed\nto work without a working ficlFree).\n\n\tApply the following fix:\n\n\n--- src/sys/boot/ficl/words.c\t1999/01/23 07:27:34\t1.9\n+++ src/sys/boot/ficl/words.c\t1999/01/23 07:34:09\n@@ -2781,26 +2781,22 @@\n {\n     UNS32 count = stackPopUNS32(pVM-\u003epStack);\n     char *cp    = stackPopPtr(pVM-\u003epStack);\n+    char *pDest = (char *)ficlMalloc(count);\n \n     /* \n     ** Since we don't have an output primitive for a counted string\n     ** (oops), make sure the string is null terminated. If not, copy\n     ** and terminate it.\n     */\n-    /* XXX Uses free space on top of dictionary. Is it guaranteed\n-     * XXX to always fit? (abial)\n-     */\n-    if (cp[count] != '\\0')\n-    {\n-        char *pDest = (char *)ficlGetDict()-\u003ehere;\n-        if (cp != pDest)\n-            strncpy(pDest, cp, count);\n+    if (!pDest)\n+\tvmThrowErr(pVM, \"Error: out of memory\");\n \n-        pDest[count] = '\\0';\n-        cp = pDest;\n-    }\n+    strncpy(pDest, cp, count);\n+    pDest[count] = '\\0';\n \n     vmTextOut(pVM, cp, 0);\n+\n+    ficlFree(pDest);\n     return;\n }\nHow-To-Repeat: \n\tNot sure. Possibly \"here 50 chars - unused 50 + type\". :-)"
+}

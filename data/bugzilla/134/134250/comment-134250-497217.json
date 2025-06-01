@@ -1,0 +1,8 @@
+{
+ "id": 497217,
+ "bug_id": 134250,
+ "attachment_id": 0,
+ "creation_time": "2009-05-06T01:10:02Z",
+ "creator": "amdmi3@FreeBSD.org",
+ "text": "On some configs it's possible that bogus error from mount is displayed during boot.\n\nThe bug shows when there are nested late mounts, i.e.\n\n/dev/ad8d /mnt         ufs rw,late 0 0\n/dev/ad8e /mnt/somedir ufs rw,late 0 0\n\nHere's what mount -d -a -l shows in this case:\n\n# mount -d -a -l\nmount -t ufs -o rw -o noatime -o update /dev/ad8a /\nmount -t ufs -o rw /dev/ad8d /mnt\nmount: /mnt/somedir: No such file or directory\n\nTrue, as /mnt/somedir does not exists unless /dev/ad8d is mounted.\n\nThat mount -d -a -l is called from /etc/rc.d/mountlate:\n\n\tlatefs=\"`/sbin/mount -d -a -l | grep -v ' /$'`\"\n\nthus that error gets into boot output - it confused me badly, though it turned out to be harmless.\n\nFix: \n\nObvious fix is:\n\n-\tlatefs=\"`/sbin/mount -d -a -l | grep -v ' /$'`\"\n+\tlatefs=\"`/sbin/mount -d -a -l 2\u003e\u00261 | grep -v ' /$'`\""
+}

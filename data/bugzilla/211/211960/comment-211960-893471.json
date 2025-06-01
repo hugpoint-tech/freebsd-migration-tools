@@ -1,0 +1,8 @@
+{
+ "id": 893471,
+ "bug_id": 211960,
+ "attachment_id": 173816,
+ "creation_time": "2016-08-18T09:34:02Z",
+ "creator": "justin.mcomie@gmail.com",
+ "text": "Created attachment 173816\nPatch with variable type changes.\n\nRepro on FreeBSD-12.0-CURRENT-amd64-20160809-r303880:\n  Set the date to a value exceeding the number of seconds in a day multiplied\n  by the capacity of a signed a 32 bit integer.\n\n  Does not panic:\n    date -f \"%s\" `bc -l -e '24*60*60 * 2^31 -1' -e quit`\n  \n  Panics:\n    date -f \"%s\" `bc -l -e '24*60*60 * 2^31' -e quit`\n\nStack backtrace:\n  #0 0xffffffff80aa8cd0 at witness_debugger+0x70\n  #1 0xffffffff80aa9fb7 at witness_warn+0x3d7\n  #2 0xffffffff80ebc427 at trap_pfault+0x57\n  #3 0xffffffff80ebbab4 at trap+0x284\n  #4 0xffffffff80e9c941 at calltrap+0x8\n  #5 0xffffffff810030dc at atrtc_settime+0xc\n  #6 0xffffffff80a934a8 at resettodr+0xd8\n  #7 0xffffffff80a5d5f4 at settime+0x154\n  #8 0xffffffff80a5daa0 at sys_settimeofday+0x90\n  #9 0xffffffff80ebcb7b at amd64_syscall+0x2db\n  #10 0xffffffff80e9cc2b at Xfast_syscall+0xfb\n\n\nFor a fix I change container variable types from int to time_t in clock_ts_to_ct."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1202928,
+ "bug_id": 262512,
+ "attachment_id": 0,
+ "creation_time": "2022-03-15T19:32:12Z",
+ "creator": "ashish@FreeBSD.org",
+ "text": "(In reply to carlosalberto_filho from comment #2)\n\nThanks for providing the configuration OPTIONS. I'm able to reproduce it. It seems like we need two conditionals (PGTK, and GSETTINGS) for in pkg-plist for org.gnu.emacs.defaults.gschema.valid as per following excerpt from Makefile.in:\n\n===============================================================\nsettings_SCHEMAS = etc/org.gnu.emacs.defaults.gschema.xml\n\nall: ${SUBDIR} info $(gsettings_SCHEMAS:.xml=.valid)\n\n[....]\n\n$(gsettings_SCHEMAS:.xml=.valid): $(srcdir)/$(gsettings_SCHEMAS)\nifeq ($(HAVE_PGTK)$(HAVE_GSETTINGS),yesyes)\n        $(GLIB_COMPILE_SCHEMAS) --strict --dry-run --schema-file=$(srcdir)/$(gsettings_SCHEMAS)\n        $(MKDIR_P) $(@D)\n        touch $@\nendif\n===============================================================\n\nI'm working on an update, and will include a fix for this.\n\nThanks!"
+}

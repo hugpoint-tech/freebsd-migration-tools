@@ -1,0 +1,8 @@
+{
+ "id": 59242,
+ "bug_id": 19327,
+ "attachment_id": 0,
+ "creation_time": "2000-06-16T04:40:00Z",
+ "creator": "yakisoba@f2.dion.ne.jp",
+ "text": "  After the base compiler is upgraded to GCC 2.95.2, 'a.out' binary\ncould not build.\n  CURRENT and 4.0-STABLE GCC Target Macro still support both 'ELF'\nand 'a.out'. So this problem is bug ? Or switch to 'ELF' only soon ?\n\nIf fix now, correct '__main.o' in libgcc.a like below.\n     \n    a.out __main.o:                     ELF  __main.o:\n                   U ___CTOR_LIST__\n                   U ___DTOR_LIST__\n          00000028 T ___do_global_ctors\n          00000000 T ___do_global_dtors\n          0000007c T ___main\n                   U __exit_dummy_decl\n          000000a4 D __exit_dummy_ref\n                   U _atexit\n\nP.S. Now 'ELF' has garbege.\n\n    ELF   __main.o:\n                   U __do_global_ctors\n          00000000 T __main\n\nFix: 1. Delete define 'INVOKE__main' in GCC Target Macro 'i386/freebsd.h'.\n\n  2. Add the next line to GCC Target Macro 'i386/freebsd.h'.\n\n     #if defined (IN_LIBGCC2) \u0026\u0026 !defined (__ELF__)\n     #undef OBJECT_FORMAT_ELF\n     #undef INIT_SECTION_ASM_OP\n     #endif\n\n  3. Add CFLAGS to 'gnu/lib/libgcc/Makefile'.\n\n     CFLAGS+=   -DIN_LIBGCC2\n\n  4. Improve 'function.c' hack."
+}

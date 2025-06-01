@@ -1,0 +1,8 @@
+{
+ "id": 75117,
+ "bug_id": 24109,
+ "attachment_id": 0,
+ "creation_time": "2001-01-06T17:25:46Z",
+ "creator": "sos@freebsd.dk",
+ "text": "It seems alexandre12@mageos.com wrote:\n\u003e --- dev/ata/atapi-cd.c.orig\tSat Jan  6 16:41:54 2001\n\u003e +++ dev/ata/atapi-cd.c\tSat Jan  6 16:44:39 2001\n\u003e @@ -490,6 +490,12 @@\n\u003e      struct acd_softc *cdp;\n\u003e      int track = (dev-\u003esi_udev \u0026 0x00ff0000) \u003e\u003e 16;\n\u003e  \n\u003e +    /*\n\u003e +     * Close the CDROM door and waits for the media to be ready (patch by \u003calexandre12@mageos.com\u003e)\n\u003e +     */\n\u003e +\n\u003e +    acdioctl(dev, CDIOCCLOSE,0,flags, p);\n\u003e +\n\u003e      if (track) {\n\u003e  \tdev_t dev1 = makedev(major(dev), (dev-\u003esi_udev \u0026 0xff0000ff));\n\nThis will do the same, but is much cleaner:\n\n--- atapi-cd.c  2000/10/25 06:43:02     1.48.2.6\n+++ atapi-cd.c  2001/01/06 17:24:39\n@@ -490,6 +490,8 @@\n     struct acd_softc *cdp;\n     int track = (dev-\u003esi_udev \u0026 0x00ff0000) \u003e\u003e 16;\n \n+    acd_eject(cdp, 1);\n+\n     if (track) {\n        dev_t dev1 = makedev(major(dev), (dev-\u003esi_udev \u0026 0xff0000ff));\n \n\n\nBut I'm not sure I want this to happen....\n\n-Søren"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 561164,
+ "bug_id": 147290,
+ "attachment_id": 0,
+ "creation_time": "2010-12-02T22:42:31Z",
+ "creator": "anatoly.borodin@gmail.com",
+ "text": "Hi All!\n\nI've found a way to reproduce the bug:\n\n1) Install graphics/devil with NVTT support, so it will depend\ngraphics/nvidia-texture-tools -\u003e graphics/OpenEXR -\u003e graphics/ilmbase\n2) rm -f /usr/local/lib/graphviz/config* if exists;\n3) Build graphics/graphviz with DEVIL support;\n4) make install will crash (see 1.txt for make messages, 2.txt for a\ncall stack from the coredump);\n5) repeat 'make install', /usr/local/lib/graphviz/config6 should be\ncreated, so the install works this time.\n\nThe error is related to IlmThread::Mutex::lock () from\n/usr/local/lib/libIlmThread.so.6 (graphics/ilmbase) that is used by\n/usr/local/lib/graphviz/libgvplugin_devil.so.6\n\nMy version: dot works just fine, probing all the plugins and\nlibgvplugin_devil.so.6 among them. It writes the file config6 and\nexits. Then some static/singleton (wtf?) ilmbase-related object is\nbeing destroyed and throws an exception from its destructor(wtf???) -\nsome initialization steps are missing, I guess, or there are flaws in\nthe mutex-related part of libIlmThread.\n\nIt's 23:40 here, so I'll continue the debugging later. You guys are\nwelcome too :)\n\nPS http://www.freebsd.org/cgi/query-pr.cgi?pr=ports/144873 is the same bug."
+}

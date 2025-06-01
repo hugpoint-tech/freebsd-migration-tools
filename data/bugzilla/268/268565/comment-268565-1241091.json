@@ -1,0 +1,8 @@
+{
+ "id": 1241091,
+ "bug_id": 268565,
+ "attachment_id": 0,
+ "creation_time": "2022-12-29T06:44:28Z",
+ "creator": "misha@freebsd.org",
+ "text": "(In reply to Bjoern A. Zeeb from comment #2)\n\nMy initial report must have contained more details, fixing it:\n\nI'm connected to WPA2 SSID, ping is working, then I do \"killall wpa_supplicant\" followed by \"/etc/rc.d/netif start\" and get the panic.\n\nneeded part of rc.conf:\n\nwlans_rtw880=\"wlan0\"\nifconfig_wlan0=\"WPA DHCP\"\n\nwpa_supplicant.conf:\n\nnetwork={\n  ssid=\"\u003cSSID\u003e\"\n  psk=\"\u003cPSK\u003e\"\n}\n\nWhen I issue \"killall wpa_supplicant\" following series of actions happens:\n\nieee80211_newstate_cb\nlkpi_iv_newstate (nstate=IEEE80211_S_INIT)\nlkpi_sta_run_to_init\nlkpi_lsta_remove (this is where we ni-\u003eni_drv_data being set to NULL)\n\nAccording to comments near \"sta_state_fsm[]\" transition from IEEE80211_S_RUN to IEEE80211_S_INIT is done when DISASSOC frame is sent.\n\nWhen I do \"/etc/rc.d/netif start\" I get the backtrace from original message: 80211 stack is trying to issue active scan and send probe request, but ni_drv_data is NULL and therefor I get the panic.\n\nCurrently I'm not sure how to fix this except checking lsta in raw_xmit and manually allocating it if fails. If the patch looks fishy, can you point the direction where to dig this further?"
+}

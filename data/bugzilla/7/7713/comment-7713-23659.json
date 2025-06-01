@@ -1,0 +1,8 @@
+{
+ "id": 23659,
+ "bug_id": 7713,
+ "attachment_id": 0,
+ "creation_time": "1998-09-16T00:50:50Z",
+ "creator": "fenner@FreeBSD.org",
+ "text": "I think this patch is more complete, as it allows different users to\nbind INADDR_ANY as long as SO_REUSEPORT is set.  Unicast applications\ndon't set SO_REUSEPORT, so will still be protected, while multicast\napplications that bind to INADDR_ANY will still be allowed to be run\nby different uid's.\n\n  Bill\n\ncvs diff: Diffing .\nIndex: in_pcb.c\n===================================================================\nRCS file: /home/ncvs/src/sys/netinet/in_pcb.c,v\nretrieving revision 1.44\ndiff -u -r1.44 in_pcb.c\n--- in_pcb.c\t1998/05/15 20:11:32\t1.44\n+++ in_pcb.c\t1998/09/15 22:54:27\n@@ -197,10 +197,16 @@\n \t\t\tif (ntohs(lport) \u003c IPPORT_RESERVED \u0026\u0026 p \u0026\u0026\n \t\t\t    suser(p-\u003ep_ucred, \u0026p-\u003ep_acflag))\n \t\t\t\treturn (EACCES);\n-\t\t\tif (so-\u003eso_uid) {\n+\t\t\tif (so-\u003eso_uid \u0026\u0026\n+\t\t\t    !IN_MULTICAST(ntohl(sin-\u003esin_addr.s_addr))) {\n \t\t\t\tt = in_pcblookup_local(inp-\u003einp_pcbinfo,\n \t\t\t\t    sin-\u003esin_addr, lport, INPLOOKUP_WILDCARD);\n-\t\t\t\tif (t \u0026\u0026 (so-\u003eso_uid != t-\u003einp_socket-\u003eso_uid))\n+\t\t\t\tif (t \u0026\u0026\n+\t\t\t\t    (ntohl(sin-\u003esin_addr.s_addr) != INADDR_ANY ||\n+\t\t\t\t     ntohl(t-\u003einp_laddr.s_addr) != INADDR_ANY ||\n+\t\t\t\t     (t-\u003einp_socket-\u003eso_options \u0026\n+\t\t\t\t\t SO_REUSEPORT) == 0) \u0026\u0026\n+\t\t\t\t    (so-\u003eso_uid != t-\u003einp_socket-\u003eso_uid))\n \t\t\t\t\treturn (EADDRINUSE);\n \t\t\t}\n \t\t\tt = in_pcblookup_local(pcbinfo, sin-\u003esin_addr,"
+}

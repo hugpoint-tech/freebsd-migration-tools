@@ -1,0 +1,8 @@
+{
+ "id": 926926,
+ "bug_id": 216759,
+ "attachment_id": 0,
+ "creation_time": "2017-03-21T19:04:40Z",
+ "creator": "andrew@azar-a.net",
+ "text": "(In reply to deJong from comment #16)\nIt doesn't seem like the patchset is applied at all.\n\n\u003e kern.timecounter.choice: TSC-low(-100) i8254(0) ACPI-fast(900) HPET(950) dummy(-1000000)\n\nIt should add kvmclock to that list which is obviously not there.\n\nForcing TSC-low on KVM VM when the host trusts it more than HPET and ACPI-PM is foolproof imo.\n\nIt's obvious that the choice for this has been designed a long time ago and has been programmed this way because back then TSC really sucked and any hypervisor except for programmed by VMWare loophole is penalised (don't know though which because xen requires more workarounds in the kernel and I don't really know how bhyve runs it)..\n\nSo obviously this part of code should be reworked\nif ((!smp_tsc \u0026\u0026 !tsc_is_invariant) || vm_guest)\n\treturn (-100);\n\nX86_FEATURE_CONSTANT_TSC is not checked at all (this is from linux, but still BSD does not check that in any case in its TSC code (or I might be misreading the magic tsc_is_invariant variable)). And most of all the vm_guest check should go away. It's a terrible hack nowadays as this bug shows.\n\nI did not try this yet but maybe something like this will help\n\nif ((!smp_tsc \u0026\u0026 !tsc_is_invariant) || (vm_guest \u0026\u0026 vm_guest != VM_GUEST_KVM))\n\treturn (-100);"
+}

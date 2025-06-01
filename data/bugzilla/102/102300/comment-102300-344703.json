@@ -1,0 +1,8 @@
+{
+ "id": 344703,
+ "bug_id": 102300,
+ "attachment_id": 0,
+ "creation_time": "2006-08-20T01:40:14Z",
+ "creator": "matthias.andree@gmx.de",
+ "text": "The new DESTDIR scheme in ports/Mk/bsd.port.mk *silently* breaks CONFLICTS,\nports built with default (empty) DESTDIR have no CONFLICTS recorded.\n\nCause: DESTDIR isn't defined by default, hence this part in ports/Mk/bsd.port.mk\nlines 2304 ff.:\n\n# Does the pkg_create tool support conflict checking?\n# XXX Slow?\n.if !defined(PKGINSTALLVER)\nPKGINSTALLVER!= ${CHROOT} ${DESTDIR} ${PKG_INFO} -P 2\u003e/dev/null | ${SED} -e 's/.*: //'\n.endif\n\nexpands to:\n\nPKGINSTALLVER!= chroot  /usr/sbin/pkg_info -P | sed -e 's/.*: //'\n\nwhich causes chroot to complain \"chroot: /usr/sbin/pkg_info: Not a directory\"\n- however this message is usually discarded.\n\nYou can check this (DESTDIR must not be set) easily with:\n\n$ cd /usr/ports/security/openvpn # this isn't specific to OpenVPN\n                                 # but must happen in some port directory\n$ pkg_info -P\nPackage tools revision: 20040629\n$ make -V DESTDIR\n\n$ make -V PKGINSTALLVER\n\n$ make -V DISABLE_CONFLICTS\nYES\n\nFix: \n\nEither set a reasonable default for DESTDIR, or omit the CHROOT if DESTDIR is\nan empty string."
+}

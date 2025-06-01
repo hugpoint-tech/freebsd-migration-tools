@@ -1,0 +1,8 @@
+{
+ "id": 673796,
+ "bug_id": 169680,
+ "attachment_id": 0,
+ "creation_time": "2012-07-06T10:50:07Z",
+ "creator": "simon@comsys.ntu-kpi.kiev.ua",
+ "text": "\nNLM on a client system always uses AUTH_SYS even if a client\nspecified another security flavor in the mount_nfs's \"sec\" option.\n\nNLM on a server system does not verify that NLM client's security flavor\nis allowed by NFS exported file system, security flavors array from\nVFS_CHECKEXP() is ignored in nlm/nlm_prot_impl.c:nlm_get_vfs_state().\n\nI added log messages to the kernel to see security flavors used by NFSv3\nand NLM requests to verify such behaviour.  Both NFS client and server\nare on the same system, NFSv3 mounts are from unprivileged users.\n\nCurrent implementation of NLM will work only in cases when user credentials\non a client system correspond to user credentials on a server system.\n\nWhen a user kinit'ed, then corresponding user's credentials are setup\nby the server for all NFS RPC requests.  When a user opened a file,\nthen is trying to lock it, user's credentials are passed in RPC request\n(because of AUTH_SYS in NLM) and a server will use them to verify whether\na user is allowed to access a file that is being locked.  Simple check\nwhen local user credentials do not correspond to remote user credentials\nmapping shows that fcntl(F_SETLK) returns EACCES.\n\nAccording to [1] NLMv4 allows to use different security flavors.\n\n[1] http://pubs.opengroup.org/onlinepubs/9629799/chap14.htm"
+}

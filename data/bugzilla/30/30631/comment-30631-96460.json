@@ -1,0 +1,8 @@
+{
+ "id": 96460,
+ "bug_id": 30631,
+ "attachment_id": 0,
+ "creation_time": "2001-10-24T13:38:20Z",
+ "creator": "pan@cnpm.embrapa.br",
+ "text": "I traced the problem . The problem occurs only with -pthread library\n(not the normal\nlibc). The problem is to memcpy the structure\n memcpy(entry, dp, sizeof *entry);\nin the pthread library sometimes dp doen't have the correct size\n(I don't know why or where this is  happening). I know that if we change\nthis to\n memcpy(entry, dp, _GENERIC_DIRSIZ(dp));\nit begins to work (and we cut a lot of unnecessary copy in this ugly\nstruct that is dirent).\nThe patch to solve this is here (someone have to test and apply):\nin the /usr/src directory:\n------------\ndiff -c lib/libc/gen/readdir.c.old lib/libc/gen/readdir.c\n*** lib/libc/gen/readdir.c.old  Wed Oct 24 10:21:17 2001\n--- lib/libc/gen/readdir.c      Wed Oct 24 10:23:35 2001\n***************\n*** 111,117 ****\n                errno = saved_errno;\n\n        if (dp != NULL)\n!               memcpy(entry, dp, sizeof *entry);\n\n  #ifdef _THREAD_SAFE\n        _FD_UNLOCK(dirp-\u003edd_fd, FD_READ);\n--- 111,117 ----\n                errno = saved_errno;\n\n        if (dp != NULL)\n!               memcpy(entry, dp, _GENERIC_DIRSIZ(dp));\n\n  #ifdef _THREAD_SAFE\n        _FD_UNLOCK(dirp-\u003edd_fd, FD_READ);\n-------------\nThanks for fixing this:\n\n        Paniago"
+}

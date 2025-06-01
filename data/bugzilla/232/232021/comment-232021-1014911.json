@@ -1,0 +1,8 @@
+{
+ "id": 1014911,
+ "bug_id": 232021,
+ "attachment_id": 0,
+ "creation_time": "2018-10-08T01:07:16Z",
+ "creator": "allanjude@FreeBSD.org",
+ "text": "After investigating further, I am a bit torn on this one.\n\nRules that apply to mounting:\n\nif vfs.usermount == 1, user must own the directory they are attempting to mount to\n\nhttps://svnweb.freebsd.org/base/head/sys/kern/vfs_mount.c?view=markup#l855\n\nRules that apply to unmounting:\n\nif vfs.usermount == 1, user must be the one who mounted the filesystem\n\nUNLESS the filesystem has the VFCF_DELEGADMIN flag (which ZFS does), in which case the 'who did the mounting' check is bypassed. \n\nhttps://svnweb.freebsd.org/base/head/sys/kern/vfs_subr.c?view=markup#l718\n\n\nSo, ZFS has an exception to the vfs.usermount rule for unmounting. The kernel allows ZFS to implement its own checks (zfs allow mount) to determine if the umount operation should succeed.\n\nThis feels oddly asymmetrical to me, although I see the additional security considerations for mounting, vs umounting.\n\nMaking the vfs.usermount 'who did the mounting' check apply feels like a regression against the administrators expressed intent with 'zfs allow mount' on the target filesystem.\n\nSo it may be the case that we just need to document this as the intended behaviour."
+}

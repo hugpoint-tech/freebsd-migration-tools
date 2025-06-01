@@ -1,0 +1,8 @@
+{
+ "id": 1154836,
+ "bug_id": 254840,
+ "attachment_id": 223883,
+ "creation_time": "2021-04-06T23:20:44Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 223883\nfix NFSv4.1/4.2 client to do a BindConnectionToSession to maintain the backchannel\n\nWhen the FreeBSD NFS client does a 4.1/4.2 mount\nand the nfscbd(8) daemon is running, it binds the\nTCP connection to both the fore (client-\u003eserver RPCs)\nand back (server-\u003eclient callback RPCs) via CreateSession.\n\nWhen the client finds the NFS server unresponsive,\nit creates a new TCP connection. It then does an RPC\nwith a Sequence operation in it, binding the new\nconnection to the fore channel, but not the back\nchannel.\n--\u003e callback RPCs can no longer work.\n\nThe attachment patch modifies the client so that\nthe krpc does a BindConnectionToSession RPC as the\nfirst RPC on the new connection, so that both the\nfore and back channels are bound, as the were for\nthe original connection.\n\nLoss of a back channel/ability to do callback RPCs\nonly affects delegations and pNFS.\n--\u003e Until patched the workaround is to not run\n    the nfscbd(8) daemon on the client so that\n    callbacks are never enabled and the NFSv4.n\n    server should never issue delegations to the\n    client."
+}

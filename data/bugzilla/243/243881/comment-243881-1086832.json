@@ -1,0 +1,8 @@
+{
+ "id": 1086832,
+ "bug_id": 243881,
+ "attachment_id": 0,
+ "creation_time": "2020-02-04T18:53:12Z",
+ "creator": "mail@maxlor.com",
+ "text": "If a pattern in which a normal character is escaped (e.g.: \"a\\bc\"), the libc++ that ships with FreeBSD only appears to use the part of the pattern up to that character.\n\nTest program:\n\n===== regextest.cpp BEGIN =====\n#include \u003ciostream\u003e\n#include \u003cregex\u003e\n#include \u003cvector\u003e\n\nusing namespace std;\n\nint main() {\n\tvector\u003cstring\u003e patterns = {\n\t    R\"(abc)\",\n\t    R\"(a\\bc)\",\n\t    R\"(a\\bx)\",\n\t    R\"(a\\xc)\",\n\t    R\"(x\\bc)\",\n\t};\n\t\n\tfor (const string \u0026pattern : patterns) {\n\t\tcout \u003c\u003c pattern \u003c\u003c \": \";\n\t\ttry {\n\t\t\tregex r(pattern, regex::extended);\n\t\t\tbool match = regex_search(\"abc\", r);\n\t\t\tcout \u003c\u003c (match ? \"match\" : \"no match\") \u003c\u003c endl;\n\t\t} catch (const std::regex_error \u0026e) {\n\t\t\tcout \u003c\u003c \"regex error: \" \u003c\u003c e.what() \u003c\u003c endl;\n\t\t}\n\t}\n\t\n\treturn 0;\n}\n===== regextest.cpp END =====\n\nexpected output:\nabc: match\na\\bc: match\na\\bx: no match\na\\xc: no match\nx\\bc: no match\n\nIncorrect output on FreeBSD 12.1 with system c++ compiler (clang 8.0.1):\nabc: match\na\\bc: match\na\\bx: match\na\\xc: match\nx\\bc: no match\n\nOn FreeBSD, gcc9 works correctly, so does clang-8 on Ubuntu, which makes me think this is specific to the FreeBSD system compiler."
+}

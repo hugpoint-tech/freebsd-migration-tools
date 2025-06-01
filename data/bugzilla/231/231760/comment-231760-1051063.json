@@ -1,0 +1,8 @@
+{
+ "id": 1051063,
+ "bug_id": 231760,
+ "attachment_id": 0,
+ "creation_time": "2019-05-19T05:44:43Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I got access to two laptops at BSDCan tonight and figured out the bug.  I'll clean up the patch I came up with and post it soonish.  However, the short version is that the _PIC method in ACPI called a function that directly accessed PCI config registers via the MCFG mapping to clear a bit when enabling APIC mode.  However, since the BIOS didn't use PCI config space but directly accessed MCFG directly via SystemMemory, AcpiOsMapMemory was used to map MCFG.  This called pmap_mapbios() which remapped the MCFG window as Write-Back instead of UC and the laptops hung right after this.  The fix is to add yet another variant of pmap_mapdev() which leaves the existing PAT mode alone and doesn't change it and change AcpiOsMapMemory to use that instead of pmap_mapbios."
+}

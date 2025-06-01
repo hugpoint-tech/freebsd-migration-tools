@@ -1,0 +1,8 @@
+{
+ "id": 493324,
+ "bug_id": 133445,
+ "attachment_id": 0,
+ "creation_time": "2009-04-10T12:08:46Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bz\nDate: Fri Apr 10 11:08:27 2009\nNew Revision: 190890\nURL: http://svn.freebsd.org/changeset/base/190890\n\nLog:\n  Fix a locking bug introduced in r190369 -\n  add a missing unlock operation on the pcbinfo.\n  \n  Also porperly protect the inp before releasing the lock as in 6.x inps\n  can possibly become invalid at that point. [1]\n  \n  PR:\t\tkern/133415\n  PR:\t\tkern/133445\n  Tested by:\teugen kuzbass.ru (Eugene Grosbein)\n  Discussed with:\trwatson [1]\n  Pointy hat:\tobrien\n\nModified:\n  stable/6/sys/netinet/ip_output.c\n\nModified: stable/6/sys/netinet/ip_output.c\n==============================================================================\n--- stable/6/sys/netinet/ip_output.c\tFri Apr 10 10:59:48 2009\t(r190889)\n+++ stable/6/sys/netinet/ip_output.c\tFri Apr 10 11:08:27 2009\t(r190890)\n@@ -1376,7 +1376,10 @@ ip_ctloutput_pcbinfo(so, sopt, pcbinfo)\n \t\t\t\terror = EINVAL;\n \t\t\t\tbreak;\n \t\t\t}\n+\t\t\tINP_LOCK(inp);\n+\t\t\tINP_INFO_WUNLOCK(pcbinfo);\n \t\t\terror = ipsec4_set_policy(inp, optname, req, len, priv);\n+\t\t\tINP_UNLOCK(inp);\n \t\t\tm_freem(m);\n \t\t\tbreak;\n \t\t}\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

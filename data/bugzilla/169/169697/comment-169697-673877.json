@@ -1,0 +1,8 @@
+{
+ "id": 673877,
+ "bug_id": 169697,
+ "attachment_id": 0,
+ "creation_time": "2012-07-07T16:00:23Z",
+ "creator": "c.kworr@gmail.com",
+ "text": "Sending a UTF-8 formatted string starting with BOM to syslogd via /dev/log almost works:\n\n#!/usr/bin/evn python\n\nfrom __future__ import unicode_literals\n\nimport logging, logging.handlers\nlogger = logging.getLogger('test')\nhandler = logging.handlers.SysLogHandler('/dev/log')\nhandler.setFormatter(logging.Formatter('%(name)s[%(process)s]: %(message)s'))\nlogger.addHandler(handler)\nlogger.critical('test')\n\nThis results in following line in log:\n\nJul  7 17:31:19 limbo test[9154]: test\n\nBut hexdump of it shows:\n\n00000000  4a 75 6c 20 20 37 20 31  37 3a 32 37 3a 32 37 20  |Jul  7 17:27:27 |\n00000010  6c 69 6d 62 6f 20 ef bb  bf 74 65 73 74 5b 35 36  |limbo ...test[56|\n00000020  37 33 5d 3a 20 74 65 73  74 0a                    |73]: test.|\n0000002a\n\nNote the BOM before logger name. It account as part of name, and such messages can't be rerouted via /etc/syslogd.conf as they just doesn't match. Including BOM field into the logs is also not a good thing.\n\nFix: \n\nI think BOM can be safely dropped if:\n\n - line starts with BOM;\n - '-8' switch is given."
+}

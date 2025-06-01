@@ -1,0 +1,8 @@
+{
+ "id": 28629,
+ "bug_id": 9429,
+ "attachment_id": 0,
+ "creation_time": "1999-01-10T23:30:01Z",
+ "creator": "mwm@phone.net",
+ "text": "\nMy reading of the dump \u0026 fstab documentation is that if you put N in\nthe \"dump\" column of /etc/fstab, then 'dump -w' will recommend that\nyou dump that file system every N days. This is not the case.\n\nIf you're running automated dumps that start at the same time every\nday, the first dump is the only one that will behave as expected. If\nyou start the dump at 2am N days ago, then the dumps would have run at\n(say) 2am, then 2:10 and later. Dump writes out the time the dump was\nrun. dump -w then checks that time against the time it is running to\ngenerate a list of dumps that need to be done, to the nearest minute.\nOn the Nth day after the dumps were run, file systems after the first\nwon't be schedule to be dumped, as it's only been N-1 days and 50\nminutes (or less).\n\nFix: The attached patch to /usr/src/sbin/dump/optr.c changes the comparison\nso that dumps are treated by dump -w as having been done on midnight\nof the day they were actually run. This makes dump -w behave as\nexpected for regularly scheduled daily dumps - if they all run the\nsame day. It makes dump -w behave strangely if you dump late in the\nday and check again after midnight, but that is the lesser of two\nevils.\n\nHow-To-Repeat: \nTry changing a correct /etc/dumpdates to include file systems that\nshould be dumped today, but are tagged as having been dumped an hour\n(or a few minutes) later in the day, and then running dump -w."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 603791,
+ "bug_id": 155680,
+ "attachment_id": 0,
+ "creation_time": "2011-03-18T21:10:09Z",
+ "creator": "hwb@ucsd.edu",
+ "text": "I am having the samae multicast problems with 8.2 that I had with 8.1 in that (as confirmed by tcpdump) the group-join request does not get sent out. It started with 8.1, earlier releases did not have that problem. Upon further testing, this problem appears to be specific to the \"re0\" interface. It works with an \"fxp0\" interface, however, it seems to hang the fxp0 interface for sever seconds, alongside \"link state changed to DOWN/UP\" events. I do not see any problem with msk and ale interfaces, however, those are in laptops, not PCI cards. Can you recommend a PCI-based product that works?\n\nFix: \n\nOnly fix I know is not to use an re or fxp interface, but I am not sure what is a good PCI choice there.\nHow-To-Repeat: #!/usr/local/bin/perl\n\nuse Socket;\n\n$PORT=$ARGV[0];\n$PATTERN=$ARGV[1];\n$SERVER=$ARGV[2];\n\nif($PORT eq \"\"){\n printf\"Syntax: mcaststream.pl port {pattern} {multicastaddress}\\n\";\n exit;\n}\nif($SERVER eq \"\"){$SERVER=\"233.7.117.79\";}\n\n$|=1;\n\n$IP_ADD_MEMBERSHIP=12;\n\n($name, $aliases, $type, $len, $SERVERIP) = gethostbyname($SERVER);\n\n$sockaddr = 'S n a4 x8';\n\nsocket(S, PF_INET,SOCK_DGRAM,UDP_PROTO)||die(\"$!\");\nsetsockopt(S, SOL_SOCKET, SO_REUSEPORT, 1)||die(\"$!\");\n$us = pack($sockaddr, 2, $PORT, pack(\"C4\", 0,0,0,0));\nbind(S, $us)||die(\"$!\");\n\nsetsockopt(S, 0, $IP_ADD_MEMBERSHIP, $SERVERIP.\"\\0\\0\\0\\0\")||die(\"$!\");\n\nwhile($theiraddr=recv(S,$BUF,1024,0)){\n ($junk, $junk, $sourceaddr, $junk) = unpack($sockaddr, $theiraddr);\n $theirip=join('.',unpack('C4', $sourceaddr));\n if($BUF =~ $PATTERN){\n  printf\"$theirip\\t$BUF\";\n }\n}"
+}

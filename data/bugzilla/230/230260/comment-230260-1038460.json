@@ -1,0 +1,8 @@
+{
+ "id": 1038460,
+ "bug_id": 230260,
+ "attachment_id": 0,
+ "creation_time": "2019-02-20T14:25:35Z",
+ "creator": "ken@FreeBSD.org",
+ "text": "Yes, this is inside an LTFS mount.  Reading a just-written file does result in only 64K getting read and an unexpected EOF.  Here is a dd read of the same file I created in the previous step.\n\nThe only difference between this and the previous version is that I built the fuse.ko module with change 337165 reverted:\n\n{sm4u-12:/root:!:0} cd /mnt\n{sm4u-12:/mnt:!:0} ls -la\ntotal 1048578\ndrwxrwxrwx   2 root  wheel           0 Feb 19 22:20 .\ndrwxr-xr-x  30 root  wheel          35 Jan 30 18:45 ..\n-rwxrwxrwx   1 root  wheel  1073741824 Feb 19 22:20 foo\n{sm4u-12:/mnt:!:0} dd if=foo of=/dev/null bs=1m\n1024+0 records in\n1024+0 records out\n1073741824 bytes transferred in 11.281752 secs (95175096 bytes/sec)\n\nSo, normal result, no problems.  What this tells me is that somehow, changing f_iosize from 4K to DFLTPHYS (which is set to 512K on this particular system) messes up reads (but not writes) for LTFS.\n\nIn looking at the LTFS FUSE read code, I don't see any hardcoding of the I/O size:\n\nhttps://github.com/LinearTapeFileSystem/ltfs/blob/master/src/ltfs_fuse.c\n\nSo, perhaps there is a place in the FUSE libraries that is hard-coding the size to 4K?"
+}

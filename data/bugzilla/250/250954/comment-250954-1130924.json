@@ -1,0 +1,8 @@
+{
+ "id": 1130924,
+ "bug_id": 250954,
+ "attachment_id": 0,
+ "creation_time": "2020-11-09T12:59:05Z",
+ "creator": "mgorny@gentoo.org",
+ "text": "Watchpoints are global in LLDB.  If user sets a watchpoint, he expects it to apply to all threads, existing and new.  To achieve LLDB does the following:\n\n1. When watchpoint is being set, it sets debug registers on all threads it knows of.\n\n2. When a new thread is created, it assumes it inherited debug registers from the previous thread.\n\nThe problem is that there is a window when the new thread is created already but it is not reported to LLDB yet.  During this window, changes to debug registers do not apply to the new thread because LLDB does not know about it.\n\nFirstly, I'm asking whether this is better worked around by having LLDB recheck the thread list on every stop (i.e. assume that LWP events are unreliable) or by having it explicitly set dbregs on every new thread (i.e. assuming that dbreg inheritance is unreliable).\n\nSecondly, I believe this behavior is suboptimal.  If the kernel is 1) reporting new threads, and 2) making them inherit dbregs from parent, it would be reasonable to do it in a way that would permit programs to actually rely on that and not have to reimplement either of the two functions."
+}

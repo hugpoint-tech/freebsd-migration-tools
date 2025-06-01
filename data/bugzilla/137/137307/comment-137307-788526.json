@@ -1,0 +1,8 @@
+{
+ "id": 788526,
+ "bug_id": 137307,
+ "attachment_id": 0,
+ "creation_time": "2014-09-26T05:23:21Z",
+ "creator": "ache@FreeBSD.org",
+ "text": "+\tif (flags \u0026 (FLAG_YEAR | FLAG_MONTH)) {\n+\t\tif (!(flags \u0026 FLAG_YDAY) \u0026\u0026 (flags \u0026 FLAG_MDAY))\n+\t\t\ttm-\u003etm_yday = start_of_month[isleap(tm-\u003etm_year\n+\t\t\t\t+ TM_YEAR_BASE)][tm-\u003etm_mon] + (tm-\u003etm_mday - 1);\n+\t\tif (!(flags \u0026 FLAG_WDAY)) {\n+\t\t\ti = 0;\n+\t\t\twday_offset = first_wday_of(tm-\u003etm_year);\n+\t\t\twhile (i++ \u003c= tm-\u003etm_yday)\n+\t\t\t\tif (wday_offset++ \u003e= 6)\n+\t\t\t\t\twday_offset = 0;\n+\n+\t\t\ttm-\u003etm_wday = wday_offset;\n+\t\t}\n+\t}\n\n\nI just notice a lot of use without being initialize places. This code should be rewritten:\n\n\tif (!(flags \u0026 FLAG_YDAY) \u0026\u0026 \n\t    (flags \u0026 (FLAG_YEAR | FLAG_MONTH | FLAG_MDAY)) == \n\t    (FLAG_YEAR | FLAG_MONTH | FLAG_MDAY)) {\n\t\ttm-\u003etm_yday = start_of_month[isleap(tm-\u003etm_year\n\t\t\t+ TM_YEAR_BASE)][tm-\u003etm_mon] + (tm-\u003etm_mday - 1);\n\t\tflags |= FLAG_YDAY;\n\t}\n\n\tif (!(flags \u0026 FLAG_WDAY) \u0026\u0026 \n\t    (flags \u0026 (FLAG_YEAR | FLAG_YDAY)) == (FLAG_YEAR | FLAG_YDAY)) {\n\t\ti = 0;\n\t\twday_offset = first_wday_of(tm-\u003etm_year);\n\t\twhile (i++ \u003c= tm-\u003etm_yday) {\n\t\t\tif (wday_offset++ \u003e= 6)\n\t\t\t\twday_offset = 0;\n\t\t}\n\t\ttm-\u003etm_wday = wday_offset;\n\t\tflags |= FLAG_WDAY;\n\t}"
+}

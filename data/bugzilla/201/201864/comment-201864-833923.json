@@ -1,0 +1,8 @@
+{
+ "id": 833923,
+ "bug_id": 201864,
+ "attachment_id": 0,
+ "creation_time": "2015-07-27T01:48:41Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "Mk/Uses/ghostscript.mk r392952 is definitely a problem.  The change has broken how non-ghostscript ports select which variant (-nox11 or not) of the package to depend on.\n\nbefore:\n.if ${_GS_ARGS:Mnox11} || defined(WITHOUT_X11) \t \n_GS_NOX11_SUFFIX=       -nox11 \t \n.endif \t \n_GS_PORT=       ghostscript${_GS_SELECTED}${_GS_AGPL_SUFFIX}${_GS_NOX11_SUFFIX}\n\nafter:\n_GS_PORT=       ghostscript${_GS_SELECTED}${_GS_AGPL_SUFFIX}  \t \n.if ${_GS_ARGS:Mnox11}\nDEPENDS_ARGS+=  print_${_GS_PORT}_UNSET_FORCE+=X11\n.endif\n\nThis does something entirely different to what it's supposed to do.  For example, the \"graphics/peps\" port has an X11 option.  If enabled, it depends on print/ghostscript9.  If X11 in graphics/peps is disabled, it depends on print/ghostscript9-nox11.\n\nThe ghostscript.mk change in r392952 completely breaks this.  Code was removed that *other* ports used, and was replaced with build configurations for ghostscript itself."
+}

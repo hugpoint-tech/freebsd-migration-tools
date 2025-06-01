@@ -1,0 +1,8 @@
+{
+ "id": 872757,
+ "bug_id": 206761,
+ "attachment_id": 0,
+ "creation_time": "2016-04-01T11:36:49Z",
+ "creator": "ecturt@gmail.com",
+ "text": "I've taken another look at the code and found another potential bug. I'm not certain if this is a bug yet, but I'd also like to bring the following code from `imgact_binmisc_add_entry` to attention:\n\n\t/* Make sure we don't have any invalid #'s. */\n\tp = xbe-\u003exbe_interpreter;\n\twhile (1) {\n\t\tp = strchr(p, '#');\n\t\tif (!p)\n\t\t\tbreak;\n\n\t\tp++;\n\t\tswitch(*p) {\n\t\tcase ISM_POUND:\n\t\t\t/* \"##\" */\n\t\t\tp++;\n\t\t\tbreak;\n\n\t\tcase ISM_OLD_ARGV0:\n\t\t\t/* \"#a\" */\n\t\t\tp++;\n\t\t\tbreak;\n\n\t\tcase 0:\n\t\tdefault:\n\t\t\t/* Anything besides the above is invalid. */\n\t\t\treturn (EINVAL);\n\t\t}\n\t}\n\nFrom the comment, and usage of a loop, it seems like this code should be checking that every '#' character in the string follows either another '#' or an 'a' character, however there is no way that this loop will ever be executed more than once since all conditions lead to `break` or `return`. In its current form the code will only validate the first '#' character.\n\nTo instead check that _every_ '#' character follows a valid character (and not just the first '#' character), the `case`s should `continue` the loop as below:\n\n\t/* Make sure we don't have any invalid #'s. */\n\tp = xbe-\u003exbe_interpreter;\n\twhile (1) {\n\t\tp = strchr(p, '#');\n\t\tif (!p)\n\t\t\tbreak;\n\n\t\tp++;\n\t\tswitch(*p) {\n\t\tcase ISM_POUND:\n\t\t\t/* \"##\" */\n\t\t\tp++;\n\t\t\tcontinue;\n\n\t\tcase ISM_OLD_ARGV0:\n\t\t\t/* \"#a\" */\n\t\t\tp++;\n\t\t\tcontinue;\n\n\t\tcase 0:\n\t\tdefault:\n\t\t\t/* Anything besides the above is invalid. */\n\t\t\treturn (EINVAL);\n\t\t}\n\t}"
+}

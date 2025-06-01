@@ -1,0 +1,8 @@
+{
+ "id": 1269347,
+ "bug_id": 267654,
+ "attachment_id": 0,
+ "creation_time": "2023-08-07T19:57:00Z",
+ "creator": "Andrew@FreeBSD.org",
+ "text": "I think this is due to how the Hyper-V storvsc driver is using bus_dma.\n\nIt looks like it needs physically contiguous memory which may not be the case when bus_dma needs to create a bounce buffer. This can happen when the destination is not cache-line aligned.\n\nA workaround to pass the BUS_DMA_COHERENT flag bus_dma_tag_create, however this should only be done when we know the bus is cache-coherent. It would be better to move this to the vmbus driver and implement bus_get_dma_tag. Under ACPI we can check the _CCA value to set this flag, however due to how the vmbus driver attaches we don't have the acpi handle to get this."
+}

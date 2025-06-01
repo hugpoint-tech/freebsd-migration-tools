@@ -1,0 +1,8 @@
+{
+ "id": 1115226,
+ "bug_id": 248239,
+ "attachment_id": 0,
+ "creation_time": "2020-07-24T17:43:23Z",
+ "creator": "ietf-dane@dukhovni.org",
+ "text": "If ed25519 is not supported in a resolver, it should treat zones that are signed only with ed25519 as \"unsigned\".  If it instead ServFails, then that's a bug.  What exactly happens with lookup for the reported zone?\n\nIt's DS RRs list only ed25519:\n\n  europris.no. IN DS 25323 15 2 ...\n  europris.no. IN DS 25323 15 4 ...\n\nBut its DNSKEY RRset has both P256 and ED25519 keys and is signed by all:\n\n  europris.no. IN DNSKEY 257 3 15 ...\n  europris.no. IN DNSKEY 256 3 15 ...\n  europris.no. IN DNSKEY 257 3 13 ...\n  europris.no. IN DNSKEY 256 3 13 ...\n  europris.no. IN RRSIG DNSKEY 13 2 3600 \u003cvalidity\u003e 14997 ...\n  europris.no. IN RRSIG DNSKEY 13 2 3600 \u003cvalidity\u003e 46820 ...\n  europris.no. IN RRSIG DNSKEY 15 2 3600 \u003cvalidity\u003e 25323 ...\n  europris.no. IN RRSIG DNSKEY 15 2 3600 \u003cvalidity\u003e 39946 ...\n\nThe SOA is signed with both ZSKs:\n\n  europris.no. IN SOA ns1.hyp.net. hostmaster@domeneshop.no. ...\n  europris.no. IN RRSIG SOA 13 2 3600 \u003cvalidity\u003e 14997 ...\n  europris.no. IN RRSIG SOA 15 2 3600 \u003cvalidity\u003e 39946\n\nA resolver that does not support ed25519 should treat this zone as unsigned, since the DS RRs don't include any other algorithm.  Perhaps with P256 in the DNSKEY RRset, the resolver failed to reach that conclusion?  That would be a bug.\nOr does the resolver \"think\" it has ed25519 support, expecting it to work, and then reports errors when loading ed25519 keys fails?\n\nWhile not having ed25519 is not a bug, failing to resolve DNSSEC domains that require ed25519 is a bug.  So this looks prematurely closed."
+}

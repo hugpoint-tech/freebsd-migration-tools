@@ -1,0 +1,8 @@
+{
+ "id": 84842,
+ "bug_id": 27154,
+ "attachment_id": 0,
+ "creation_time": "2001-05-06T14:10:01Z",
+ "creator": "stolz@i2.informatik.rwth-aachen.de",
+ "text": "login(1) will call pam_end() before accessing the data obtained by\npam_getenvlist(), thus accessing stale data and free() will start complaining.\nOf course the area used for storing the data has been invalidated before, as\npam_close() cleans up after itself :/\n\nHowever, this seems to have gone unnoted as nobody was passing on any\nchanges in the environment.\n\nFix: \n\n*shrug* I´m currently wibbling around in login.c, patch might follow.\nObviously you have to copy the environment before pam_end()...\npam_misc_copy_env() and pam_misc_drop_env() should help, too.\nhttp://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/pam_modules-2.html#ss2.2\nHow-To-Repeat: Install /usr/ports/security/pam_ssh,\nmake corresponding adjustings to /etc/pam.conf, login:\nlogin will succeed, but you will get a warning:\nlogin in free(): warning: junk pointer, too high to make sense.\nSSH-variables will remain unset."
+}

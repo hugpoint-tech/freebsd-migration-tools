@@ -1,0 +1,8 @@
+{
+ "id": 959026,
+ "bug_id": 211973,
+ "attachment_id": 187886,
+ "creation_time": "2017-11-09T21:07:45Z",
+ "creator": "jkim@FreeBSD.org",
+ "text": "Created attachment 187886\nDo not let the configure script quietly enable curses support.\n\nWhen NCURSES option is enabled (default) and devel/ncurses is installed, we cannot build it any more.\n\nDependency error: this port wants the ncurses library from the FreeBSD\nbase system. You can't build against it, while a newer\nversion is installed by a port.\nPlease deinstall the port or undefine WITH_NCURSES_BASE.\n*** Error code 1\n\nBecause there are too many packages depending on devel/ncurses, I had no choice but to disable NCURSES option.  However, it still fails to build.\n\nui/egl-helpers.c:55:42: error: use of undeclared identifier 'O_CLOEXEC'\n        return open(rendernode, O_RDWR | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);\n                                         ^\nui/egl-helpers.c:75:30: error: use of undeclared identifier 'O_CLOEXEC'\n        r = open(p, O_RDWR | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);\n                             ^\n2 errors generated.\n\nThis happens because the following CFLAGS are added:\n\n-I/usr/local/include -I/usr/local/include/ncurses -D_BSD_TYPES -D__BSD_VISIBLE -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600\n\nSpecifically, \"-D_POSIX_C_SOURCE=200112L\" is the root cause of this problem.  Although devel/ncurses is to blame, emulators/qemu should not quietly enable curses support when the user explicitly turned it off."
+}

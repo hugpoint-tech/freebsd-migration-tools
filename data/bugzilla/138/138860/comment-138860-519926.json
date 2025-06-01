@@ -1,0 +1,8 @@
+{
+ "id": 519926,
+ "bug_id": 138860,
+ "attachment_id": 0,
+ "creation_time": "2010-01-22T19:30:25Z",
+ "creator": "mjguzik@gmail.com",
+ "text": "Hi,\n\nIt looks like the problem is caused by this:\n\nsys/compat/linux/linux_socket.c : do_sa_get() contains the following code:\n\tif (*osalen \u003c 2 || *osalen \u003e UCHAR_MAX || !osa)\n\t\treturn (EINVAL);\n[..]\n\talloclen = *osalen;\n[..]\n\tkosa = malloc(alloclen, mtype, M_WAITOK); // [1]\n\n\tif ((error = copyin(osa, kosa, *osalen)))\n\t\tgoto out;\n\n\tbdom = linux_to_bsd_domain(kosa-\u003esa_family);\n[..]\n\tif (bdom == AF_INET)\n\t\talloclen = sizeof(struct sockaddr_in); // [2]\n\n\tsa = (struct sockaddr *) kosa;\n\tsa-\u003esa_family = bdom;\n\tsa-\u003esa_len = alloclen; // [3]\n\n\t*sap = sa;\n\t*osalen = alloclen;\n[..]\n--------\n\n*osalen bytes is allocated in [1]. In [2] we override the old value of alloclen\nand use it in assignment ([3]).\n\nSo if *osalen is lower than sizeof(struct sockaddr_in), we return struct that is\ntoo small and contains faked length.\n\nThis defeats checks placed in sys/netinet/in_pcb.c : in_pcbbind_setup() and\nleads to overflow by this (line 348 as of r202295):\n[..]\nbzero(\u0026sin-\u003esin_zero, sizeof(sin-\u003esin_zero));\n[..]\n\n--------\n\nProposed patch:\n\nhttp://student.agh.edu.pl/~mjguzik/linux_socket.patch\n\nNote: patch also changes return value from EINVAL to EAFNOSUPPORT in case of\nlinux_to_bsd_domain's failure to match behaviour of other callers.\n\nBriefly tested with wget, Quake 3 and firefox.\n\n--\nMateusz Guzik"
+}

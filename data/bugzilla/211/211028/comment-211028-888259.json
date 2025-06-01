@@ -1,0 +1,8 @@
+{
+ "id": 888259,
+ "bug_id": 211028,
+ "attachment_id": 0,
+ "creation_time": "2016-07-15T13:36:30Z",
+ "creator": "decui@microsoft.com",
+ "text": "Hi all,\nI know why g_disk_resize() can't work here when I open da1 for reading after a disk capacity change:\n\nWhen /dev/da1 is opened for reading (or writing) every time, amd64_syscall() -\u003e kern_openat() -\u003e ... -\u003e g_dev_open() -\u003e g_access() -\u003e g_disk_access() -\u003e daopen() -\u003e dareprobe() sends the DA_STATE_PROBE_RC16 command; if the disk capacity was changed, in g_disk_access(), we update provide's mediasize ***immediately***: pp-\u003emediasize = dp-\u003ed_mediasize;\n\nLater, in disk_resize(), g_disk_resize() -\u003e g_resize_provider(): because of disk's size == pp-\u003emediasize, g_resize_provider() doesn't post the g_resize_provider_event event at all. This is why \"camcontrol reprobe da1\" can't help.\n\nBTW, opening da1 for writing can work because the provider is destroyed and re-created, as you mentioned.\n\nI'll be proposing a patch."
+}

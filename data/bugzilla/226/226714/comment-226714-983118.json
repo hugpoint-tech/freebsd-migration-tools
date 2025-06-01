@@ -1,0 +1,8 @@
+{
+ "id": 983118,
+ "bug_id": 226714,
+ "attachment_id": 0,
+ "creation_time": "2018-03-19T09:44:12Z",
+ "creator": "eugen@freebsd.org",
+ "text": "This is what happens inside: zfsboot normally reads zfsloader from active slice containing ZFS boot pool and starts it.\n\nzfsloader tastes all slices using zfs_probe_partition() function from sys/boot/zfs/zfs.c that calls open(devname, O_RDONLY).\n\nopen(devname, O_RDONLY) returns -1/ENOENT for a slice that has traces of BSD label, so zfsloader fails to find bootable ZFS pool. This is libstand's open() call in stable/11. It returns -1 if detects \"DISKMAGIC ((u_int32_t)0x82564557) /* The disk magic number */\" in the second sector of a slice.\n\nOne can use tools/tools/bootparttest to see if that is the case, for example:\n\ndisk0s2: FreeBSD                2047MB\nread 512 bytes from the block 0 [+16777720]\nread 512 bytes from the block 1 [+16777720]\nptable_bsdread: BSD detected\ndisk_close: disk0: closed =\u003e 0x801621000 [1]\n\nIn fact, disk0s2 contains ZFS boot pool and DISKMAGIC in the second sector.\n\nEasiest fix would be to replace \"dd if=/boot/zfsboot of=/dev/ada0s1 count=1\" with \"dd if=/boot/zfsboot of=/dev/ada0s1 count=2\" in the docs to make sure that second sector has no traces of BSD label."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 992765,
+ "bug_id": 228344,
+ "attachment_id": 0,
+ "creation_time": "2018-05-20T12:16:53Z",
+ "creator": "brnrd@freebsd.org",
+ "text": "The OPENSSL_STACK issue can be resolved with a simple addition at the top of the openssl11.h file\n\nAs taken from: https://github.com/openssl/openssl/blob/master/include/openssl/stack.h#L17\n\n\u003e # LibreSSL 2.7 has stack_st but not OPENSSL_STACK\n\u003e #ifndef OPENSSL_STACK\n\u003e typedef struct stack_st OPENSSL_STACK; /* Use STACK_OF(...) instead */\n\u003e #endif\n\nOPENSSL_INIT_SETTINGS is not defined in Libre but it is void in the signatures, so  this works\n\n\u003e #ifndef OPENSSL_INIT_SETTINGS\n\u003e #define OPENSSL_INIT_SETTINGS void\n\u003e #endif\n\nEnded up with \n\u003e 78 #if defined(LIBRESSL_VERSION_NUMBER) \u0026\u0026 LIBRESSL_VERSION_NUMBER \u003e= 0x20700000L\n\u003e 79 // LibreSSL 2.7 has stack_st but not OPENSSL_STACK\n\u003e 80 typedef struct stack_st OPENSSL_STACK; /* Use STACK_OF(...) instead */\n\u003e 81 // From the signature in LibreSSL\n\u003e 82 #define OPENSSL_INIT_SETTINGS void\n\u003e 83 // https://github.com/openssl/openssl/blob/master/include/openssl/x509_vfy.h#L63\n\u003e 84 typedef int (*X509_STORE_CTX_verify_cb)(int, X509_STORE_CTX *);\n\u003e 85 #endif\nin work/qtbase-everywhere-src-5.10.1/src/network/ssl/qsslsocket_openssl11_symbols_p.h\n\nThat leaves the BN_is_word and BN_abs_is_word to be solved."
+}

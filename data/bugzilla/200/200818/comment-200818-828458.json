@@ -1,0 +1,8 @@
+{
+ "id": 828458,
+ "bug_id": 200818,
+ "attachment_id": 0,
+ "creation_time": "2015-06-20T07:21:16Z",
+ "creator": "mva@FreeBSD.org",
+ "text": "(In reply to Marcus von Appen from comment #4)\n\u003e \n\u003e I'm getting a SSSE3 error on RELENG_10 with clang 3.4.1:\n\u003e \n\nOpenImageIO seems to require USE_SIMD to be set by the user or build infrastructure and does not do any auto-detection. This could be achieved with something like\n\n.if ${MACHINE_CPU}\n.if ${MACHINE_CPU:Msse2}\n_SIMD= sse2\n.endif\n.if ${MACHINE_CPU:Msse3}\n_SIMD= sse3\n.endif\n...\n.endif\n.if ${_SIMD} == \"\"\n_SIMD= 0\n.endif\nCMAKE_ARGS+= -DUSE_SIMD:STRING=\"${_SIMD}\"\n\nThe problem however is that clang will support features based on tests, which bsd.cpu.mk defines a set of fixed features (e.g. my CPU supports SSSE3 and SSE41, but bsd.cpu.mk only reports SSE2 and SSE3, since it's set to \"nocona\").\n\nI'd assume that the most safe approach is to disable SIMD (USE_SIMD=\"0\") until upstream implements a proper feature detection (blender's cmake build does a good job here)."
+}

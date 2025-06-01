@@ -1,0 +1,8 @@
+{
+ "id": 568185,
+ "bug_id": 148655,
+ "attachment_id": 0,
+ "creation_time": "2010-08-05T12:53:44Z",
+ "creator": "mm@FreeBSD.org",
+ "text": "So I have done more code reading and debugging with mfsBSD in virtualbox\nand I came to the following conclusion:\n\nsys/boot/zfs/zfsimpl.c reads vdev information from the pool but there is\nno check if these vdevs do exist on physical devices. In other words, if\nthe pool has last seen its vdevs as HEALTHY, gptzfsboot assumes all of\nthem are available.\n\nSo this way e.g. in case of a mirror, the vdev_mirror_read() tries to\nread from the first \"healthy\" vdev in its list. If the first vdev is the\nmissing vdev (e.g. a disconnected or failed drive), it just cannot read\nfrom it so you are unable to boot.\n\nIn my test setup, vdev_mirror_read() reported two healty kids and tried\nto read from the non-existing vdev.\n\nI think in the boot case, we should first scan for all physically\navailable vdevs, then scan for children from their configuration. All\nchild vdevs that cannot be physically opened (do not have a\nrepresentation from the previous scan) should be set to state\nVDEV_STATE_CANT_OPEN and not assumed as VDEV_STATE_HEALTHY."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1214257,
+ "bug_id": 264444,
+ "attachment_id": 0,
+ "creation_time": "2022-06-04T03:24:53Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "dtrace's ustack() function is supposed to unwind a user stack trace.  It usually can.  But it seems that it cannot decode stack frames from a shared library, if that shared library was loaded with dlopen and the program exits before dtrace does.\n\nSteps to Reproduce (admittedly, with difficulty)\n1) pkg install rust c-blosc isa-l llvm pkgconf git\n2) pkg install fio-3.30    # May not build with other fio versions\n3) git clone https://github.com/bfffs/bfffs.git\n4) cd bfffs\n5) git checkout 6e2c7b16b681d54d239b0f7518e612d5df36d096\n6) cargo build -p bfffs-fio\n7) truncate -s 1g /tmp/bfffs.img\n8) cargo run --bin bfffs -- pool create testpool /tmp/bfffs.img\n9) sudo dtrace -x ustackframes=100 -n 'profile-199 /pid == $target \u0026\u0026 arg1/ {@[ustack()] = count();}' -o fio.stacks -c \"fio bfffs-fio/data/ci.fio\"\n10) Examine fio.stacks.  It will contain frames from fio and libc.so, but none from libbfffs.so.  Where there should be some, it will instead contain hex numbers, like this:\n\n              libc.so.7`memcpy+0xb0\n              0xfcdfdc73c\n              fio`io_u_queued_complete+0x7a\n              fio`wait_for_completions+0x7b\n              fio`do_io+0x678\n              fio`thread_main+0xbe0\n              libthr.so.3`0x822130a7a"
+}

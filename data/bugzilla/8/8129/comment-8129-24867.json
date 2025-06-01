@@ -1,0 +1,8 @@
+{
+ "id": 24867,
+ "bug_id": 8129,
+ "attachment_id": 0,
+ "creation_time": "1998-10-02T15:00:00Z",
+ "creator": "dockes@cdkit.remcomp.fr",
+ "text": "\nWhen linking with libc_r and catching SIGPIPE, a write() call on a\npipe or socket with no reader doesn't return an error. The program\nseems to be looping sending/catching SIGPIPES.\n\nThis is a real problem for a network server that talks to the client\nbefore forking, or needs to cleanup when the client goes away.\n\nFix: \n\nNo idea.\nHow-To-Repeat: \nThe following trivial program can be used. Pipe it to 'more' and type 'q'.\nIf the program was linked normally, it prints the normal error \n(write: Broken pipe). \nIf linked with libc_r it loops forever, printing \"Got sig 13\".\n\n#include \u003cstdio.h\u003e\n#include \u003csignal.h\u003e\nvoid sigshow(int sig)\n{\n  fprintf(stderr, \"Got sig %d\\n\", sig);\n}\nmain()\n{\n  struct sigaction sa;\n  sa.sa_flags = 0;\n  sigemptyset(\u0026sa.sa_mask);\n  sa.sa_handler = sigshow;\n  sigaction(SIGPIPE, \u0026sa, NULL);\n  for (;;) {\n    if (write(1, \"THIS IS DATA\\n\", 13) != 13) {\n      perror(\"write\");\n      exit(1);\n    }\n  }\n}"
+}

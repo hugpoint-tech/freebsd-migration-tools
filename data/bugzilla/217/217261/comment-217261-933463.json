@@ -1,0 +1,8 @@
+{
+ "id": 933463,
+ "bug_id": 217261,
+ "attachment_id": 0,
+ "creation_time": "2017-05-09T21:21:15Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "(In reply to Ngie Cooper from comment #4)\nBlock devices don't exist in FreeBSD.  VSOCK would not show up here either as those would use a socket fileops which has a custom fo_aio_queue method.\n\nCharacter devices that are disks (like /dev/mdX) are handled in aio_qphysio().  If you hit a resource limit on the number of \"physio\" requests queued (the check against 'kaio_ballowed_count' e.g.) then request will fall through and trigger the unsafe check.  Arguably we should be failing with EAGAIN from aio_qphysio() and then flipping the '#if 0' in aio_queue_file() so that error gets returned directly rather than trying to re-queue the request via the helper kprocs.\n\nAll other VCHR are considered unsafe.  We could at some point provide a way for character devices to claim AIO requests via something like fo_aio_queue.  Note that ptys already have their own 'struct fileops' and could easily provide a custom f_aio_queue() along with custom AIO handling to make them \"safe\".\n\nI'm not sure why kib@ added the VDIR check as I'm not sure any of the current AIO operations (fsync, read, write) make any sense on directories.  However, this probably just means that they are allowed to fail with EISDIR rather than EOPNOTSUPP."
+}

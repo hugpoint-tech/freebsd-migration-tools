@@ -1,0 +1,8 @@
+{
+ "id": 946220,
+ "bug_id": 221271,
+ "attachment_id": 0,
+ "creation_time": "2017-08-06T09:49:35Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "Hi,\n\nThanks for the report.\n\nI've not been completely able to reproduce this. But I got some indication about what is happening.\n\n I've got this output:\n\n# service asterisk restart\nStopping asterisk\nNo such command 'core stop now' (type 'core show help core' for other possible commands)\nasterisk already running?  (pid=11267).\n\nThe stop rc command is implemented as connecting to asterisk via it's command line and sending it the command to shutdown \"core stop now\". There's a race condition because asterisk takes a perceptible time to start and load all it's modules, and it does accept control connections, but is not ready to process commands there.\n\nWhile stopping asterisk with a signal could be done it's unsafe in certain configurations (for example if using database backends).\n\nA possible workaround could be adding a short, maybe optional and configurable,  sleep in the stop and reload commands, before connecting to the asterisk daemon. This wouldn't fix it in every case, since we cannot know how long the asterisk startup will take.\n\nSuch sleep would be disabled by default though, since it is not necessary in most configurations.\n\nDo you think this could be acceptable?\n\nI'll work out a patch for you to test."
+}

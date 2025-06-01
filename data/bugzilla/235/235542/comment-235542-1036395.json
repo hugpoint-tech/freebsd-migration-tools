@@ -1,0 +1,8 @@
+{
+ "id": 1036395,
+ "bug_id": 235542,
+ "attachment_id": 0,
+ "creation_time": "2019-02-06T18:37:22Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "Just noticed this one on the mailing list this morning...\n\nIt looks like part of the problem is that the per-map bounce page list is initialized by allocate_bz_and_pages(), which is only called for maps created through bus_dmamap_create().  The map created in sdhci_dma_alloc() is allocated through bus_dmamem_alloc(), so the bpages list head will be left zero-filled.  That would explain the data abort with far==0.\n\nBut we also never expect bounce pages to be needed for maps created with bus_dmamem_alloc()  (maybe add a KASSERT on !(map-\u003eflags \u0026 DMAMAP_DMAMEM_ALLOC)).\nI'm gonna guess we're getting here because sdhci_dma_alloc() now passes  slot-\u003esdma_bbufsz as the alignment requirement.  I don't think the allocators used by bus_dmamem_alloc() can guarantee anything more than system page size alignment (4K), so if the SDHCI bounce buffer size is bigger than that then alignment_bounce() could cause busdma to allocate bounce pages."
+}

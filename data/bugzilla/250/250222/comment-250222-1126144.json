@@ -1,0 +1,8 @@
+{
+ "id": 1126144,
+ "bug_id": 250222,
+ "attachment_id": 0,
+ "creation_time": "2020-10-09T13:35:57Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Reported by: Christopher Krah of Fraunhofer FKIE\nReporter's ID: FS-15-UFS-4\n\n*Description of the vulnerability*: Mounting a specially crafted UFS filesystem may lead to a kernel Denial of Service that was already anticipated in the code.\nThis is due to the following code in function ufs_dirbad in line 762 in /usr/src/sys/ufs/ufs/ufs_lookup.c:\n\n\n{\nstruct mount *mp;\n\nmp = ITOV(ip)-\u003ev_mount;\nif ((mp-\u003emnt_flag \u0026 MNT_RDONLY) == 0)\n    panic(\"ufs_dirbad: %s: bad dir ino %ju at offset %ld: %s\", mp-\u003emnt_stat.f_mntonname, (uintmax_t)ip-\u003ei_number, (long)offset, how);\nelse\n    (void)printf(\"%s: bad dir ino %ju at offset %ld: %s\\n\", mp-\u003emnt_stat.f_mntonname, (uintmax_t)ip-\u003ei_number, (long)offset, how);\n}\n\n\nSo far we were able to trigger this panic via 5 different system calls and hence different/multiple unique back traces as of time of writing this email:\n\n* sys_mkdir\n* sys_openat\n* sys_fsstatat\n* sys_access\n* sys_mknodat\n\nThis shows that the UFS fs is especially vulnerable to this type of kernel DoS.\nIf additional different ways to trigger this behavior appear they will be added to the same shared folder referenced here at [1].\n\n\n*Affected versions*: tested with FreeBSD 12.0-RELEASE AMD64. \n\n*Workaround*: None\n\n---\nFS image to be attached."
+}

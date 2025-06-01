@@ -1,0 +1,8 @@
+{
+ "id": 474850,
+ "bug_id": 129639,
+ "attachment_id": 0,
+ "creation_time": "2008-12-14T20:20:11Z",
+ "creator": "sam@FreeBSD.org",
+ "text": "mergemaster (implicitly) uses /usr/share/mk for all make operations.  This fails when the source tree adds MK_* knobs not present on the host.  The problem is make is invoked without a -m option to specify the location of .mk files.\n\nNote the only way to deal with this is to pollute the host build environment by doing something like\n\ncp $SRC/share/mk/bsd.own.mk /usr/share/mk\n\nwhich is unacceptable.\n\nFix: See attached patch for a proof of concept change.  It changes the meaning of the -m option to the path to the top of the source tree (not include /etc) and then passes an explicit -m option to make for all work.  This is unlikely to be acceptable as people use mergemaster for directories/paths other than \"/usr/src\".  I suggest adding a different option with these semantics; e.g. -M.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Use a 7.0-RELEASE system to cross-build for a different architecture; e.g. setup an NFS root for arm:\n\nmake TARGET_ARCH=arm TARGET_CPUTYPE=xscale TARGET_BIG_ENDIAN=true buildworld\nROOT=/data/freebsd/roots/gateworks\nmake TARGET_ARCH=arm TARGET_CPUTYPE=xscale TARGET_BIG_ENDIAN=true \\\n       DESTDIR=$ROOT installworld\nmergemaster -m $SRC/etc -D $ROOT -i -A arm\n\nNote the make distrib-dirs done by mergemaster fails because MK_* knobs are undefined:\n\n*** Creating and populating directory structure in /var/tmp/temproot\n\n\"Makefile\", line 34: Malformed conditional (${MK_AMD} != \"no\")\n\"Makefile\", line 36: if-less endif\n\"Makefile\", line 38: Malformed conditional (${MK_APM} != \"no\")\n\"Makefile\", line 40: if-less endif\n  ..."
+}

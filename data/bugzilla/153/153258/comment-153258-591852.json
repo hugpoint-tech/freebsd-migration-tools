@@ -1,0 +1,8 @@
+{
+ "id": 591852,
+ "bug_id": 153258,
+ "attachment_id": 0,
+ "creation_time": "2010-12-17T21:40:08Z",
+ "creator": "swell.k@gmail.com",
+ "text": "Creating zfs volumes for ordinary users requires ability to modify\n`refreservation' property.\n\nIs this reproducable on opensolaris?\n\nHow-To-Repeat: root# zpool create blah gptid/A-B-C-E\nroot# zfs allow luser create,mount blah\nroot# sysctl vfs.usermount=1\n\nluser$ zfs create -V10m blah/test\ncannot create 'blah/test': permission denied\n\nluser$ truss zfs create -V10m blah/test 2\u003e\u00261 | fgrep ioctl | tail -1\nioctl(3,0xcc285a18 { IORW 0x5a('Z'), 24, 3112 },0xffffd110) ERR#1 'Operation not permitted'\n\nluser$ grep \"'Z'.*24\" /usr/src/sys/cddl/contrib/opensolaris/uts/common/sys/fs/zfs.h\n#define ZFS_IOC_CREATE                  _IOWR('Z', 24, struct zfs_cmd)\n\nroot# zfs allow luser refreservation\nluser$ zfs create -V10m blah/test\nluser$ find /dev/zvol -ls\n    86        1 dr-xr-xr-x    3 root             wheel                 512 Dec 17 21:24 /dev/zvol\n    87        1 dr-xr-xr-x    2 root             wheel                 512 Dec 17 21:24 /dev/zvol/blah\n    85        0 crw-r-----    1 root             operator           0,  85 Dec 17 21:23 /dev/zvol/blah/test"
+}

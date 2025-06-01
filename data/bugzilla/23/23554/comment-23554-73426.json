@@ -1,0 +1,8 @@
+{
+ "id": 73426,
+ "bug_id": 23554,
+ "attachment_id": 0,
+ "creation_time": "2000-12-14T20:10:01Z",
+ "creator": "rsimmons@wlcg.com",
+ "text": "The port, stunnel-3.8.4, creates its pid files in /var/run/stunnel.  This is not a big problem unless you reboot the machine, and the /var/run directory gets cleaned out.  When the rc script for stunnel runs at boot, it can't start because its looking for this directory which does not exist.\n\nFix: \n\nHere is a modified rc script for stunnel that works around the problem.  A better solution is to patch stunnel to create its pid files in /var/run not /var/run/stunnel:\n#!/bin/sh\nSTUNNEL=\"/usr/local/sbin/stunnel\"\n\ncase \"$1\" in\n    start)\n        mkdir /var/run/stunnel\n        ${STUNNEL} -D 0 -d 993 -r localhost:143 -p /usr/local/etc/stunnel.pem\n        ${STUNNEL} -D 0 -d 995 -r localhost:110 -p /usr/local/etc/stunnel.pem\n        ;;\n\n    stop)\n        killall `basename ${STUNNEL}`\n        ;;\n\n    *)\n        echo \"\"\n        echo \"Usage: `basename $0` { start | stop }\"\n        echo \"\"\n        ;;\nesac\nHow-To-Repeat: Install and configure stunnel to forward imapd and popd, then reboot the machine.  stunnel will not start."
+}

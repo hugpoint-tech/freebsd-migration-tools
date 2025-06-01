@@ -1,0 +1,8 @@
+{
+ "id": 1146504,
+ "bug_id": 253337,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T18:23:53Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "(In reply to Conrad Meyer from comment #8)\n\nI noticed neither Linux nor FreeBSD actually bothers with accurate\nstack mappings in /proc/self/map. About multiple threads Linux's\ndocumentation plainly states \"[stack:\u003ctid\u003e] (from Linux 3.4 to 4.4) …\nThis field was removed in Linux 4.5, since providing this information\nfor a process with large numbers of threads is expensive.\"\n\nHowever, this looks a bit fishy even with a basic single-threaded test:\n\nxubuntu@xubuntu:~$ cat address.c \n#define _GNU_SOURCE\n\n#include \u003cassert.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cunistd.h\u003e\n\nint main() {\n  int i = 1;\n  fprintf(stderr, \"[[%p]]\\n\", \u0026i);\n  system(\"cat /proc/self/maps | tail -n 5\");\n  return 0;\n}\nxubuntu@xubuntu:~$ gcc address.c -o test\nxubuntu@xubuntu:~$ ./test\n[[0x7ffe7a0cbca4]]\n7f4f3c7af000-7f4f3c7b0000 rw-p 00000000 00:00 0 \n7ffe37e2e000-7ffe37e4f000 rw-p 00000000 00:00 0                          [stack]\n7ffe37fd0000-7ffe37fd3000 r--p 00000000 00:00 0                          [vvar]\n7ffe37fd3000-7ffe37fd4000 r-xp 00000000 00:00 0                          [vdso]\nffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]\n\nI mean, 0x7ffe7a0cbca4 is right between [vdso] and [vsyscall].\n\nSince apparently we are already in the pure fantasy land,\nit's probably not a big deal to mess this a bit more."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 346140,
+ "bug_id": 102647,
+ "attachment_id": 0,
+ "creation_time": "2006-08-30T02:13:32Z",
+ "creator": "suz@FreeBSD.org",
+ "text": "Hi,\n\n\u003e\u003e\u003e\u003e\u003e On Tue, 29 Aug 2006 16:37:23 GMT\n\u003e\u003e\u003e\u003e\u003e steinex@nognu.de(Frank Steinborn)  said:\n\n\u003e Thanks to Max Laier for examining this, I'll just paste him:\n\u003e \n\u003e Using pf stateful rules for inet6 fails for connections originating from the firewall itself to a service running on the same box.  Culprit seems to be interface selection in inet6 (switching between the interface that has the address configured and lo0).\n\u003e \n\u003e tcpdump on pflog0 shows that the initial SYN is coming from bge0 (See below for ruleset used).  The reply then comes via lo0 and matches the state (if state-policy is floating).  The third packet (again via bge0) then does no longer match the state - however:\n\n\u003e \u003eHow-To-Repeat:\n\u003e Use this ruleset:\n\u003e \n\u003e pass quick on lo0 all\n\u003e pass quick on bge0 inet all\n\u003e block drop log all\n\u003e pass in log-all on bge0 inet6 proto tcp from any to 3000::1 port = ssh flags S/SA keep state\n\u003e\n\u003e Then try to open an inet6-connection to a service running on the\n\u003e firewall itself from the firewall itself.\n\nCould you please try the attached patch for kernel?\n\nUsing this patch, PF regards the initial SYN (and the third packet) is\ncoming from lo0, instead of bge0.  (There was a similar bug-report\nregarding PF for looped-back IPv6 packet, and this patch fixed the\nproblem)\n\nIf it seems okay from the PF's point of view, I'll commit it to -current.\n\nThanks,\n----\nSUZUKI, Shinsuke @ KAME Project\n\n"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 10229,
+ "bug_id": 3304,
+ "attachment_id": 0,
+ "creation_time": "1997-04-17T17:03:42Z",
+ "creator": "ponds!rivers@dg-rtp.dg.com",
+ "text": "\u003e \n\u003e Thomas David Rivers wrote in message ID\n\u003e \u003c199704160209.WAA01541@lakes.water.net\u003e:\n\u003e \u003e   Mount a V2 NFS server (I've tried both Sunos 4.1.3 and HP/UX 9.05),\n\u003e \u003e  go to a rather large directory and do \"ls -l\".  The ls -l will hang\n\u003e \u003e  in sbwait().  This apparently also needs a rather slow network\n\u003e \u003e  for a reliable reproduction - that is, it's somewhat timing dependent.\n\u003e \n\u003e I recently did something similar (ls -l on a 16,000 file directory)\n\u003e across NFS on a recent RELENG_2_2 box which was mounting /var/mail\n\u003e from a 2.1.x based mail server. Worked fine. This was probably 2 or 3\n\u003e weeks ago... I'll try again if you like.\n\n Some more information I've just deduced.\n\n It appears that nfs_receive() calls soreceive() which calls sbwait()\nwaiting on a UDP packet to be received..  That's fine.\n\n Then, another nfs_request() is issued; calling nfs_receive() which\nwinds down to sbwait() as well.\n\n The key here is that both of these are waiting on the *same* address.\n\n Then, the udp packet from the first call is received; we wake up the\n*second* caller and get everything out-of-sync.  With udp packets\nout-of-sync; we eventually get an error situation in nfs_reply()\nand indicate a \"stale\" server condition.\n\n I haven't yet determined how this is happening; but printf()s in \nmy kernel indicate that's what's going on.\n\n That also explains how timing is important for this problem...\n\n\t- Dave Rivers -"
+}

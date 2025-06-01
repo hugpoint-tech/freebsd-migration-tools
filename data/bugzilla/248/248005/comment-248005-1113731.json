@@ -1,0 +1,8 @@
+{
+ "id": 1113731,
+ "bug_id": 248005,
+ "attachment_id": 0,
+ "creation_time": "2020-07-16T13:37:36Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kevans\nDate: Thu Jul 16 13:37:32 UTC 2020\nNew revision: 363244\nURL: https://svnweb.freebsd.org/changeset/base/363244\n\nLog:\n  ether_ifattach: set mtu before calling if_attach()\n\n  if_attach() -\u003e if_attach_internal() will call if_attachdomain1(ifp) any time\n  an ethernet interface is setup *after*\n  SI_SUB_PROTO_IFATTACHDOMAIN/SI_ORDER_FIRST.  This eventually leads to\n  nd6_ifattach() -\u003e nd6_setmtu0() stashing off ifp-\u003eif_mtu in ndi-\u003emaxmtu\n  *before* ifp-\u003eif_mtu has been properly set in some scenarios, e.g., USB\n  ethernet adapter plugged in later on.\n\n  For interfaces that are created in early boot, we don't have this issue as\n  domains aren't constructed enough for them to attach and thus it gets\n  deferred to domainifattach at SI_SUB_PROTO_IFATTACHDOMAIN/SI_ORDER_SECOND\n  *after* the mtu has been set earlier in ether_ifattach().\n\n  PR:\t\t248005\n  Submitted by:\tMathew \u003cmjanelle blackberry com\u003e\n  MFC after:\t1 week\n\nChanges:\n  head/sys/net/if_ethersubr.c"
+}

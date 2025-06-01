@@ -1,0 +1,8 @@
+{
+ "id": 1098396,
+ "bug_id": 229741,
+ "attachment_id": 0,
+ "creation_time": "2020-04-22T03:46:41Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kevans\nDate: Wed Apr 22 03:45:52 UTC 2020\nNew revision: 360182\nURL: https://svnweb.freebsd.org/changeset/base/360182\n\nLog:\n  kqueue(2): add a note about EV_RECEIPT\n\n  In the below-referenced PR, a case is attached of a simple reproducer that\n  exhibits suboptimal behavior: EVFILT_READ and EVFILT_WRITE being set in the\n  same kevent(2) call will only honor the first one. This is, in-fact, how\n  it's supposed to work.\n\n  A read of the manpage leads me to believe we could be more clear about this;\n  right now there's a logical leap to make in the relevant statement: \"When\n  passed as input, it forces EV_ERROR to always be returned.\" -- the logical\n  leap being that this indicates the caller should have allocated space for\n  the change to be returned with EV_ERROR indicated in the events, or\n  subsequent filters will get dropped on the floor.\n\n  Another possible workaround that accomplishes similar effect without needing\n  space for all events is just setting EV_RECEIPT on the final change being\n  passed in; if any errored before it, the kqueue would not be drained. If we\n  made it to the final change with EV_RECEIPT set, then we would return that\n  one with EV_ERROR and still not drain the kqueue. This would seem to not be\n  all that advisable.\n\n  PR:\t\t229741\n  MFC after:\t1 week\n\nChanges:\n  head/lib/libc/sys/kqueue.2"
+}

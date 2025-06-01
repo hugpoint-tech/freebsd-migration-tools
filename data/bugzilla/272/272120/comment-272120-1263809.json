@@ -1,0 +1,8 @@
+{
+ "id": 1263809,
+ "bug_id": 272120,
+ "attachment_id": 0,
+ "creation_time": "2023-06-21T02:47:25Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "touch(1) goes beyond what would one expect and what is documented in the manpage:\n\n  -m      Change the modification time of the file.  The access time of\n          the file is not changed unless the -a flag is also specified.\n\n  -r      Use the access and modifications times from the specified file\n          instead of the current time of day.\n\nI'm seeing this on both UFS and ZFS:\n\n$ cp -ai /some/real/file somefile\n$ stat -x somefile | tail -4\nAccess: Sun Aug 11 22:06:44 2019\nModify: Sun Aug 11 22:06:48 2019\t\u003c-- created, written, closed\nChange: Wed Jun 21 10:30:56 2023\n Birth: Sun Aug 11 22:06:48 2019\t\u003c-- it's an old file\n\n$ echo blah \u003e\u003e somefile\n$ stat -x somefile | tail -4\nAccess: Sun Aug 11 22:06:44 2019\nModify: Wed Jun 21 10:31:21 2023\t\u003c-- we've just modified it\nChange: Wed Jun 21 10:31:21 2023\n Birth: Sun Aug 11 22:06:48 2019\t\u003c-- remains the same (correct)\n\n$ touch -m -r /.rnd somefile \t\t\u003c-- /.rnd is from 2014\n$ stat -x somefile | tail -4\nAccess: Sun Aug 11 22:06:44 2019\nModify: Mon Jan 13 17:19:43 2014\t\u003c-- this is fine (expected)\nChange: Wed Jun 21 10:31:42 2023\n Birth: Mon Jan 13 17:19:43 2014\t\u003c-- WTF?!"
+}

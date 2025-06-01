@@ -1,0 +1,8 @@
+{
+ "id": 1004906,
+ "bug_id": 226059,
+ "attachment_id": 0,
+ "creation_time": "2018-08-05T01:55:42Z",
+ "creator": "cem@freebsd.org",
+ "text": "\u0026the_gc_thread is cast to gc_thread *t.\n\nnew_gc_thread((gc_thread *)\u0026the_gc_thread) =\u003e\n  ws = \u0026t-\u003egens[...]\n\nws is gen_workspace, which is __aligned(64) (supposedly).  (This is why Clang is able to generate the aligned AVX op.)\n\nNeither gc_thread nor gc_thread::gens are tagged with any explicit alignment constraint.\n\nthe_gc_thread is declared as 'StgWord8 the_gc_thread[sizeof(gc_thread) + 64 * sizeof(gen_workspace)];', which has no alignment requirements.\n\nThat's the problem.  This is bogus code in GHC."
+}

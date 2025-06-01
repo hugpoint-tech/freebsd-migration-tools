@@ -1,0 +1,8 @@
+{
+ "id": 1031283,
+ "bug_id": 234296,
+ "attachment_id": 0,
+ "creation_time": "2019-01-11T00:53:36Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Hmm.  The allocation stats for M_LLTABLE are quite low in all three vmcores, i.e., we had freed fewer than 30 or so items before panicking.  That probably means it's not a race.  There's a couple of possibilities: there is some rarely executed code path that always triggers the bug, or struct llentry is a red herring.  I wrote a program to iterate over all types in the CTF graph looking for a struct callout at offset 0xb8; this catches cases like, struct A contains a struct B at offset 0x40 and struct B contains a struct callout at offset 0x78.  However, it didn't turn up any likely candidates aside from the lle_timer field.\n\nstruct llentry -\u003e lle_timer\nstruct in6_llentry -\u003e base -\u003e lle_timer\nstruct in_llentry -\u003e base -\u003e lle_timer\nstruct sdhci_slot -\u003e card_delayed_task -\u003e c\nstruct mpr_softc -\u003e periodic\nstruct ata_request -\u003e callout\n\nOf course, it's possible that I did something wrong and missed a candidate."
+}

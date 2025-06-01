@@ -1,0 +1,8 @@
+{
+ "id": 1327352,
+ "bug_id": 281768,
+ "attachment_id": 253899,
+ "creation_time": "2024-09-30T01:36:40Z",
+ "creator": "gperciva@tarsnap.com",
+ "text": "Created attachment 253899\nstdio.h: don't expose rsize_t unless __EXT1_VISIBLE\n\n\u003cstdio.h\u003e should not unconditionally declare rsize_t; this patch fixes that by wrapping the typedef inside an `#if __EXT1_VISIBLE`, which is how it's done in \u003cstddef.h\u003e, \u003cstdlib.h\u003e, and \u003cstring.h\u003e.\n\nIn C99, rsize_t is not a reserved identifier.  (POSIX reserves *_t, but in C99, there's no global *_t reservation; only int*_t and uint*_t in \u003cstdint.h\u003e.)\n\nAs such, technically speaking this should compile:\n\n```\n$ cat conflict.c \n#include \u003cstdio.h\u003e\ntypedef int rsize_t;\n$ c99 -c conflict.c \nconflict.c:2:13: error: typedef redefinition with different types ('int' vs 'size_t' (aka 'unsigned long'))\n    2 | typedef int rsize_t;\n      |             ^\n/usr/include/stdio.h:55:16: note: previous definition is here\n   55 | typedef size_t rsize_t;\n      |                ^\n1 error generated.\n```\n\nRelated history:\n- Problematic commit:\n  https://github.com/freebsd/freebsd-src/commit/c13559d31e90a8c405771be36ab9ccfa41d4ebd6\n  \n- Good example: adding `typedef size_t rsize_t;` to \u003cstddef.h\u003e and \u003cstdlib.h\u003e\n  as part of memset_s addition\n  https://reviews.freebsd.org/D9903"
+}

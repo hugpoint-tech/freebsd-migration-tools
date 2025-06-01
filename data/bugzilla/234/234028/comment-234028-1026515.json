@@ -1,0 +1,8 @@
+{
+ "id": 1026515,
+ "bug_id": 234028,
+ "attachment_id": 0,
+ "creation_time": "2018-12-15T05:27:08Z",
+ "creator": "cem@freebsd.org",
+ "text": "(In reply to bc979 from comment #5)\n\u003e However, I point out that the -md parameter is not documented in the man page for enc on 11.1 or earlier.\n\nYep.  It's mentioned, but usage and default are totally undocumented (and on 11.2 as well).\n\n$ openssl enc -h\nunknown option '-h'\n...\n-md            the next argument is the md to use to create a key\n                 from a passphrase.  One of md2, md5, sha or sha1\n\nHelpfully, none of the *listed* options in 1.0.2o enc are the 1.1.0 default (sha256). /s  However, '-md sha256' can be provided manually and seems to decode correctly on 12.\n\nNAME\n       openssl-enc, enc - symmetric cipher routines\n\nSYNOPSIS\n       openssl enc -ciphername [-in filename] [-out filename] [-pass arg] [-e]\n       [-d] [-a/-base64] [-A] [-k password] [-kfile filename] [-K key] [-iv\n       IV] [-S salt] [-salt] [-nosalt] [-z] [-md] [-p] [-P] [-bufsize number]\n                                             ^^^\n(-md not documented anywhere else in the page)\n\nGenerating gibberish makes sense, unfortunately — enc has no way of knowing that the wrong KDF function was used to turn password into key, and AES-256-CBC does not have any sort of integrity MAC to verify the correct key was used.  So you get gibberish.  I suspect the only reason a bad decrypt was noticed in my (short) input was that the final padding byte(s) didn't match up with PKCS expectations.  You might see the same message (but only at the very end of the \"decrypted\" contents)."
+}

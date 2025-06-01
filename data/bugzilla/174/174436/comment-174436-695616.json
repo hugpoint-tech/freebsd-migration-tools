@@ -1,0 +1,8 @@
+{
+ "id": 695616,
+ "bug_id": 174436,
+ "attachment_id": 0,
+ "creation_time": "2012-12-18T11:01:43Z",
+ "creator": "rs@bytecamp.net",
+ "text": "Hi,\n\nAm 18.12.2012 11:18, schrieb Mateusz Guzik:\n\u003e I was reading wrong version of rc.d script. Name is passed with -n switch.\n\u003e\n\u003e Looks like we can get to prison_deref before RACCT is initialized for\n\u003e given prison.\n\u003e\n\u003e Please test the following:\n\u003e diff --git a/sys/kern/kern_jail.c b/sys/kern/kern_jail.c\n\u003e index 1dc43ab..7ca1d72 100644\n\u003e --- a/sys/kern/kern_jail.c\n\u003e +++ b/sys/kern/kern_jail.c\n\u003e @@ -2604,7 +2604,8 @@ prison_deref(struct prison *pr, int flags)\n\u003e                          cpuset_rel(pr-\u003epr_cpuset);\n\u003e                  osd_jail_exit(pr);\n\u003e   #ifdef RACCT\n\u003e -               prison_racct_detach(pr);\n\u003e +               if (pr-\u003epr_prison_racct != NULL)\n\u003e +                       prison_racct_detach(pr);\n\u003e   #endif\n\u003e                  free(pr, M_PRISON);\n\u003e\n\nthis fixed the panic, but the jail can still not be started:\n\n# /etc/rc.d/jail onestart 0\nConfiguring jails:.\nStarting jails: cannot start jail \"0\":\n.\n\nwith kind regards,\nRobert Schulze"
+}

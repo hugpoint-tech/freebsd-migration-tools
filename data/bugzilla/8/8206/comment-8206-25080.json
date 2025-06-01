@@ -1,0 +1,8 @@
+{
+ "id": 25080,
+ "bug_id": 8206,
+ "attachment_id": 0,
+ "creation_time": "1998-10-08T16:00:00Z",
+ "creator": "leo@sai.msu.ru",
+ "text": "Hi,\n\nSymptom:\n  When TCP/IP overload (too enought free mbuf's) UDP service (syslog, \nDNS server, etc.) declined.\n\nDiagnose:\n  Unconnected UDP socket declined, because it don't disconetcted (from \ntemporarily conect) by M_PREPEND fail's.\n\nSystem:\n  Code with bug use in all versions FreeBSD 2.2.x \u0026 3.x (probably and \nother BSD 4.4Lite OS).\n\nSorry for my best English.\n\nFix: *** udp_usrreq.c.orig   1997/04/10 19:14:45\n--- udp_usrreq.c        1998/10/07 13:38:08     \n***************\n\n\n--- 407,417 ----\n        M_PREPEND(m, sizeof(struct udpiphdr), M_DONTWAIT);\n        if (m == 0) {\n                error = ENOBUFS;\n!               if (addr) {\n!                       in_pcbdisconnect(inp);\n!                       inp-\u003einp_laddr = laddr;\n                        splx(s);\n+               }\n                goto release;\n        }--2O8sklCpQpWFCzOOO0jSwYQWuNNtvrOeVK6oUIS0oRHSEmSL\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n*** 407,414 ****\n        M_PREPEND(m, sizeof(struct udpiphdr), M_DONTWAIT);\n        if (m == 0) {\n                error = ENOBUFS;\n!               if (addr)\n                        splx(s);\n                goto release;\n        }\nHow-To-Repeat: 1. Configure syslogd to forwarded messages on other host;\n2. Connect this host over slow line (PPP);\n3. Start `logger \"test message\"' in infinite loop;\n\nAfter error message about \"No buffer space available\". \nAny syslog's messages don't forwarded on other host."
+}

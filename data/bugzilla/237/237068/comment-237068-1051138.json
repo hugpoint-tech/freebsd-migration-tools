@@ -1,0 +1,8 @@
+{
+ "id": 1051138,
+ "bug_id": 237068,
+ "attachment_id": 0,
+ "creation_time": "2019-05-20T04:35:48Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #15)\n\nThe following small source code file and the few steps\nto build/link it produce the message:\n\n# more small_link_failure.cpp\nunsigned long fixed_seed_override= 0xdeadc0de;\n\ninline unsigned long get_execution_seed()\n{\n  const  unsigned long seed_prime = 0xff51afd7ed558ccdULL;\n  static unsigned long seed = fixed_seed_override ? fixed_seed_override\n                                           : (unsigned long)seed_prime;\n  return seed;\n}\n\nunsigned long f()\n{\n  return get_execution_seed();\n}\n\n# c++ -c small_link_failure.cpp\n\n# rm -f small_link_failure.a\n# /usr/bin/ar qc small_link_failure.a small_link_failure.o\n\n# \"/usr/bin/powerpc64-unknown-freebsd13.0-ld\" \\\n\"-Bshareable\" \\\n\"-o\" \"small_link_failure-1.0.so\" \\\n\"/usr/lib/crtbeginS.o\" \\\n\"--version-script\" \"/wrkdirs/usr/ports/devel/llvm60/work/.build/./lib/tools/llvm-shlib/simple_version_script.map\" \\\n\"--whole-archive\" \\\n\"small_link_failure.a\" \\\n\"--no-whole-archive\" \\\n\"-lm\"\n\n# /usr/bin/powerpc64-unknown-freebsd13.0-ld \\\n\"-Bshareable\" \\\n\"-o\" \"small_link_failure.so.1.0.1\" \\\n\"small_link_failure-1.0.so\"\n\nThe result is:\n\n/usr/bin/powerpc64-unknown-freebsd13.0-ld: BFD (GNU Binutils) 2.32 assertion fail elflink.c:2935\n/usr/bin/powerpc64-unknown-freebsd13.0-ld: BFD (GNU Binutils) 2.32 assertion fail elflink.c:2935"
+}

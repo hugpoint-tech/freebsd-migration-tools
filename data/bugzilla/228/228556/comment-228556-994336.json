@@ -1,0 +1,8 @@
+{
+ "id": 994336,
+ "bug_id": 228556,
+ "attachment_id": 193773,
+ "creation_time": "2018-05-28T05:53:59Z",
+ "creator": "gokuljnpr@gmail.com",
+ "text": "Created attachment 193773\npatch file to fix igb vf driver link issue\n\nWhen we use igb driver as Virtual function driver , link status is not updating once after link is up. Because of the same , if physical link went down , the status will not be updated at freebsd VF interface if its present state is link UP.  \n\n\nFollowing patch should resolve the issue .\n\ngokulcg@/$ cat igb_link.patch\nIndex: sys/dev/e1000/e1000_vf.c\n===================================================================\n--- sys/dev/e1000/e1000_vf.c\t(revision 334275)\n+++ sys/dev/e1000/e1000_vf.c\t(working copy)\n@@ -546,10 +546,11 @@\n \t * or a virtual function reset\n \t */\n\n-\t/* If we were hit with a reset or timeout drop the link */\n-\tif (!mbx-\u003eops.check_for_rst(hw, 0) || !mbx-\u003etimeout)\n+\t/* If we were hit with a reset or timeout or physical link is down drop the link */\n+\tif (!mbx-\u003eops.check_for_rst(hw, 0) || !mbx-\u003etimeout || \\\n+            !(E1000_READ_REG(hw, E1000_STATUS) \u0026 E1000_STATUS_LU)) {\n \t\tmac-\u003eget_link_status = TRUE;\n-\n+        }\n \tif (!mac-\u003eget_link_status)\n \t\tgoto out;"
+}

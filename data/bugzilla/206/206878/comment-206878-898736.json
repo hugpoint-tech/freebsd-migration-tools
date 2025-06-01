@@ -1,0 +1,8 @@
+{
+ "id": 898736,
+ "bug_id": 206878,
+ "attachment_id": 0,
+ "creation_time": "2016-09-21T09:21:48Z",
+ "creator": "riggs@FreeBSD.org",
+ "text": "I don't know if Oliver had the same root cause, but I have been able to reproduce this exact problem on 11.0 like this:\n\nIn 11 /usr/share/examples/etc/make.conf has been changed to contain this section for CPU types:\n\n# Additionally the following CPU types are recognized by clang:\n#   Intel x86 architecture (for both amd64 and i386):\n#       (AMD CPUs)      bdver4, bdver3, bdver2, bdver1, btver2, btver1\n#       (Intel CPUs)    skylake, knl, broadwell, haswell, ivybridge,\n#                       sandybridge, westmere, nehalem, silvermont, bonnell\n\nSo, if you create a make.conf from scratch on an 11.0 or later machine, you would probably be using something like CPUTYPE?=sandybridge which is then added to CFLAGS for ports.\n\nSubsequently, when building gcc-4.8, this happens:\n...\nconfigure:3374: /wrkdirs/usr/ports/lang/gcc/work/.build/./gcc/xgcc -B/wrkdirs/usr/ports/lang/gcc/work/.build/./gcc/ -B/usr/local/x86_64-portbld-freebsd11.0/bin/ -B/usr/local/x86_64-portbld-freebsd11.0/lib/ -isystem /usr/local/x86_64-portbld-freebsd11.0/include -isystem /usr/local/x86_64-portbld-freebsd11.0/sys-include    -o conftest -g -O2 -pipe -march=sandybridge  -DLIBICONV_PLUG -fno-strict-aliasing   conftest.c  \u003e\u00265\nconftest.c:1:0: error: bad value (sandybridge) for -march= switch\n...\nand the build fails.\n\nMore recent versions of gcc accept the same march switches as mentioned in the example make.conf for clang, don't they?"
+}

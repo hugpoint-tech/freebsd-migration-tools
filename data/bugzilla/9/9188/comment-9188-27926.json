@@ -1,0 +1,8 @@
+{
+ "id": 27926,
+ "bug_id": 9188,
+ "attachment_id": 0,
+ "creation_time": "1998-12-25T01:30:00Z",
+ "creator": "toasty@dragondata.com",
+ "text": "\nI found a telnet process sucking 100% cpu, after a user reported it.\n\nktracing it showed:\n\n\n 11573 telnet   CALL  write(0x1,0x8058c20,0x174)\n 11573 telnet   RET   write -1 errno 5 Input/output error\n 11573 telnet   CALL  ioctl(0,TIOCSETAW,0xefbfd8c8)\n 11573 telnet   RET   ioctl -1 errno 9 Bad file descriptor\n 11573 telnet   CALL  write(0x1,0x8058c20,0x174)\n 11573 telnet   RET   write -1 errno 5 Input/output error\n 11573 telnet   CALL  ioctl(0,TIOCSETAW,0xefbfd8c8)\n 11573 telnet   RET   ioctl -1 errno 9 Bad file descriptor\n 11573 telnet   CALL  write(0x1,0x8058c20,0x174)\n 11573 telnet   RET   write -1 errno 5 Input/output error\n 11573 telnet   CALL  ioctl(0,TIOCSETAW,0xefbfd8c8)\n 11573 telnet   RET   ioctl -1 errno 9 Bad file descriptor\n\nWhich appears to be in sys_bsd.c:ttydrain\n\nPerhaps that while loop should check for fatal errors rather than retrying\neverything? Or is this a case that it should never have gotten this far with\nthe FD being closed?\n\nThe user, without waiting for me, killed the process, so I wasn't able\nto get any more debugging."
+}

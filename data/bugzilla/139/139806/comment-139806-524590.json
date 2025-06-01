@@ -1,0 +1,8 @@
+{
+ "id": 524590,
+ "bug_id": 139806,
+ "attachment_id": 0,
+ "creation_time": "2009-10-22T20:50:56Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "Hi,\n\nOn 2009-10-21, Carl Chave wrote:\n\u003e Fixit# echo hello \u003e\u003e test.txt\n\u003e panic: dirtying snapshot!\n\nThe problem seems to be that in certain conditions zfs_freebsd_access()\nuses only vaccess(9) for access check. However vaccess(9) doesn't handle\nthe read-only file system case.\n\nCould you try this patch?\n\n--- patch begins here ---\nIndex: sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zfs_vnops.c\n===================================================================\n--- sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zfs_vnops.c\t(revision 198368)\n+++ sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zfs_vnops.c\t(working copy)\n@@ -3989,7 +3989,12 @@\n \t\tstruct thread *a_td;\n \t} */ *ap;\n {\n+\tint error;\n \n+\terror = zfs_access(ap-\u003ea_vp, ap-\u003ea_accmode, 0, ap-\u003ea_cred, NULL);\n+\tif (error != 0)\n+\t\treturn (error);\n+\n \t/*\n \t * ZFS itself only knowns about VREAD, VWRITE and VEXEC, the rest\n \t * we have to handle by calling vaccess().\n@@ -3999,11 +4004,11 @@\n \t\tznode_t *zp = VTOZ(vp);\n \t\tznode_phys_t *zphys = zp-\u003ez_phys;\n \n-\t\treturn (vaccess(vp-\u003ev_type, zphys-\u003ezp_mode, zphys-\u003ezp_uid,\n-\t\t    zphys-\u003ezp_gid, ap-\u003ea_accmode, ap-\u003ea_cred, NULL));\n+\t\terror = vaccess(vp-\u003ev_type, zphys-\u003ezp_mode, zphys-\u003ezp_uid,\n+\t\t    zphys-\u003ezp_gid, ap-\u003ea_accmode, ap-\u003ea_cred, NULL);\n \t}\n \n-\treturn (zfs_access(ap-\u003ea_vp, ap-\u003ea_accmode, 0, ap-\u003ea_cred, NULL));\n+\treturn (error);\n }\n \n static int\n--- patch ends here ---\n\n-- \nJaakko"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 578370,
+ "bug_id": 150618,
+ "attachment_id": 0,
+ "creation_time": "2010-09-16T10:40:02Z",
+ "creator": "olli@secnetix.de",
+ "text": "\nThere's an off-by-one error in the remote protocol handling.\nIt leads to spurious, random protocol errors, breaking the\nclient-server connection (see below).\n\nThe problem has been fixed in the DragonFly BSD repository:\n\nhttp://gitweb.dragonflybsd.org/dragonfly.git/commitdiff/704cef5251497a4f675f5554fa763c18fb622a5b\n\nThe same diff is appended below; it should be added to the\nFreeBSD port.  Suggested name:\n\nports/sysutils/cpdup/files/patch-hclink.c\n\nFix: \n\n--- hclink.c.orig\n+++ hclink.c\n@@ -388,7 +388,7 @@ int\n hcc_check_space(hctransaction_t trans, struct HCHead *head, int n, int size)\n {\n     size = HCC_ALIGN(size) + n * sizeof(struct HCLeaf);\n-    if (size \u003e HC_BUFSIZE - trans-\u003ewindex) {\n+    if (size \u003e= HC_BUFSIZE - trans-\u003ewindex) {\n \tstruct HCHead *whead = (void *)trans-\u003ewbuf;\n \n \twhead-\u003ecmd |= HCF_CONTINUE;\nHow-To-Repeat: \nUse cpdup to transfer large amounts of data, e.g. backups.\nSooner or later it'll fail with messages like these:\n\nAssertion failed: (tmp.bytes \u003e= (int)sizeof(tmp) \u0026\u0026 tmp.bytes \u003c HC_BUFSIZE), function hcc_read_command, file hclink.c, line 182.\nAbort trap (core dumped)\n \nmagic mismatch with host (2065)\nAssertion failed: (trans-\u003ewindex + sizeof(*item) + bytes \u003c HC_BUFSIZE), function hcc_leaf_data, file hclink.c, line 343."
+}

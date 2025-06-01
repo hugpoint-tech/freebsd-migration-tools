@@ -1,0 +1,8 @@
+{
+ "id": 961708,
+ "bug_id": 223564,
+ "attachment_id": 0,
+ "creation_time": "2017-12-02T00:07:25Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "So for 'make install' I am setting .MAKE.DEPENDFILE=/dev/null to avoid reading\nand parsing all of the large .depend.*.o files.\n\nThere's some problems with this.\n\nbmake's main.c:\n /* In particular suppress .depend for '-r -V .OBJDIR -f /dev/null' */\n if (!noBuiltins || !printVars) {\n     makeDependfile = Var_Subst(NULL, \"${.MAKE.DEPENDFILE:T}\",\n         VAR_CMD, VARF_WANTRES);\n     doing_depend = TRUE;\n     (void)ReadMakefile(makeDependfile, NULL);\n     doing_depend = FALSE;\n }\n\n\nIt is stripping away all path information for .MAKE.DEPENDFILE even\nthough ReadMakefile() has explicit support for absolute pathed\nfiles...\n\n/* if we've chdir'd, rebuild the path name */\nif (strcmp(curdir, objdir) \u0026\u0026 *fname != '/') {\n...\n} else {\n        fd = open(fname, O_RDONLY);\n        if (fd != -1)\n                goto found;\n}\n\n\nI'm not sure why :T is used on .MAKE.DEPENDFILE there.\n\nMore importantly though I would like some value to set .MAKE.DEPENDFILE\nto avoid attempting any open(2) at all.  Currently it is actually trying\nto open .CURDIR/null and .OBJDIR/null when no attempts are wanted.\n\n~/git/freebsd/bin/sh # truss env MK_TESTS=no make -n install 2\u003e\u00261|grep null\nopenat(AT_FDCWD,\"/root/git/freebsd/bin/sh/null\",O_RDONLY,00) ERR#2 'No such file or directory'\nopenat(AT_FDCWD,\"/scratch/obj/root/git/freebsd/amd64.amd64/bin/sh/null\",O_RDONLY,00) = 3 (0x3)"
+}

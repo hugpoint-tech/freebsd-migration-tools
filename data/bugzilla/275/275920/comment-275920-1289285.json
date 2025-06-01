@@ -1,0 +1,8 @@
+{
+ "id": 1289285,
+ "bug_id": 275920,
+ "attachment_id": 0,
+ "creation_time": "2023-12-25T09:44:27Z",
+ "creator": "kp@freebsd.org",
+ "text": "That's interesting. The cause is fairly obvious. e6000sw creates struct ifnets that don't have an ioctl handler, and that's triggering this crash.\n\nThe following is probably the best fix, assuming that the ioctl-less e6000sw ifnet is intentional:\n\ndiff --git a/sys/net/if.c b/sys/net/if.c\nindex 9f44223af0dd..c3c27fbf678f 100644\n--- a/sys/net/if.c\n+++ b/sys/net/if.c\n@@ -4871,6 +4871,9 @@ if_resolvemulti(if_t ifp, struct sockaddr **srcs, struct sockaddr *dst)\n int\n if_ioctl(if_t ifp, u_long cmd, void *data)\n {\n+       if (ifp-\u003eif_ioctl == NULL)\n+               return (EOPNOTSUPP);\n+\n        return (ifp-\u003eif_ioctl(ifp, cmd, data));\n }"
+}

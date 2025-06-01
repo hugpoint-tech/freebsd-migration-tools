@@ -1,0 +1,8 @@
+{
+ "id": 1163623,
+ "bug_id": 256217,
+ "attachment_id": 0,
+ "creation_time": "2021-05-29T09:52:34Z",
+ "creator": "chris@cretaforce.gr",
+ "text": "I was able to reproduce the issue with a \"test\" server \u0026\u0026 10 VPS running Linux. On each VPS I run wrk (benchmarking tool):\n\nwrk -c 1000 -d 3600s http://url\n\nThis creates 10000 concurrent connections to \"test\" server.\n\nAlso in my nginx.conf I replace \"keepalive_timeout 60;\" with \"keepalive_timeout 0;\" so connections are not reused which helps to show more interrupts faster.\n\nThen I kill all \"wrk\" and after 1 minute:\n\nsockstat -sSPtcp | grep rack | wc -l\n    7421\n\nAt that moment \"top\" shows 20% interrupts and \"netstat 1\" show 1-10 packets / sec which I believe is my ssh session, so no activity. Also at that moment tcp \"rack\" states were FIN_WAIT_1 and CLOSING.\n\nAfter few minutes most \"rack\" connections close and \"top\" shows ~ 0.7% interrupts. At that moment I had 4 stuck connections in LAST_ACK state which I drop using \"tcpdrop -s LAST_ACK\" and finally \"top\" shows ~ 0.0% interrupts.\n\nIf it helps I can give root access to the \"test\" server."
+}

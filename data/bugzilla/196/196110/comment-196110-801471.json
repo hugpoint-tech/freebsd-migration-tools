@@ -1,0 +1,8 @@
+{
+ "id": 801471,
+ "bug_id": 196110,
+ "attachment_id": 150736,
+ "creation_time": "2014-12-18T20:57:35Z",
+ "creator": "code.jpe@gmail.com",
+ "text": "Created attachment 150736\nPatch for procstat_auxv.c\n\nThe ELF auxiliary vector displayed by `procstat -x` contains\ninformation about whether or not the stack for that process is\nexecutable or not.\n\nThis information is currently reversed, showing executable\nwhen nxstack is enabled. It can be reproduced quite easily:\n\n# sysctl kern.elf64.nxstack\nkern.elf64.nxstack: 1\n# procstat -x $$ | grep AT_STACKPROT\n 1471 csh              AT_STACKPROT     EXECUTABLE\n\nAfter disabling nxstack, new processes show nonexecutable.\n\n# sysctl kern.elf64.nxstack=0\nkern.elf64.nxstack: 1 -\u003e 0\n# sh -c 'procstat -x $$ | grep AT_STACKPROT'\n 1477 sh               AT_STACKPROT     NONEXECUTABLE\n\n\nLooking at the procstat code, the displayed string labels are\nreversed for the check. The bitwise and will return !0 if the\nexecutable bit is set.\n\n      if ((auxv[i].a_un.a_val \u0026 VM_PROT_EXECUTE) != 0)\n        PRINT(AT_STACKPROT, %s, \"NONEXECUTABLE\");\n      else\n        PRINT(AT_STACKPROT, %s, \"EXECUTABLE\");\n      break;\n\nAttached is a simple patch to switch the labels."
+}

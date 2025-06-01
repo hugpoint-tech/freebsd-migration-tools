@@ -1,0 +1,8 @@
+{
+ "id": 826110,
+ "bug_id": 200555,
+ "attachment_id": 157314,
+ "creation_time": "2015-05-31T22:05:57Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "Created attachment 157314\npatch to improve OPENSSL vs. GSSAPI_BASE sanity check\n\nWhen doing a poudriere build of ftp/curl and WITH_OPENSSL_PORT=yes included in make.conf, bsd.openssl.mk will cause OPENSSL_PORT to be installed as a build dependency, but the resulting curl package gets linked to the base version of openssl if the GSSAPI_BASE options is set (default).\n\nThere is some sanity check logic in ftp/curl/Makefile that attempts to catch this, but it misses some cases:\n  * If the OPENSSL option is set and WITH_OPENSSL_PORT is defined, then we\n    always want to link to OPENSSL_PORT.\n\n  * If the OPENSSL option is set in a non-poudriere build and no WITH_OPENSSL_*\n    preferences are specified, bsd.openssl.mk will check to see whether\n    the openssl or libressl port is installed and if so it will expect to use\n    that for the build.  Note: poudriere builds will be in a clean environment,\n    so they will default to using openssl from base.\n\nSetting OPENSSL_PORT does not cause poudriere to install OPENSSL_PORT as a build dependency before building curl, so testing OPENSSL_PORT is not useful as part of the sanity check.\n\nIf base openssl is not installed, bsd.openssl.mk will add OPENSSL_PORT as a\nbuild dependency, but this case should not conflict with GSSAPI_BASE.\n\nThe attached patch attempts to match the GSSAPI_BASE sanity check logic to the logic in bsd.openssl.mk.  It also tweaks the message and removes some extraneous whitespace."
+}

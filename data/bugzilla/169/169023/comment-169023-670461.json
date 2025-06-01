@@ -1,0 +1,8 @@
+{
+ "id": 670461,
+ "bug_id": 169023,
+ "attachment_id": 0,
+ "creation_time": "2012-06-14T10:01:19Z",
+ "creator": "kostikbel@gmail.com",
+ "text": "I do not like the fcntl() use, it still leaves a window were other thread\r\nperforming exec() causes fd leak. Please see the patch below.\r\n\r\ndiff --git a/lib/libc/gen/fstab.c b/lib/libc/gen/fstab.c\r\nindex b2c28ad..882c57f 100644\r\n--- a/lib/libc/gen/fstab.c\r\n+++ b/lib/libc/gen/fstab.c\r\n@@ -39,6 +39,7 @@ __FBSDID(\"$FreeBSD$\");\r\n #include \u003csys/stat.h\u003e\r\n \r\n #include \u003cerrno.h\u003e\r\n+#include \u003cfcntl.h\u003e\r\n #include \u003cfstab.h\u003e\r\n #include \u003cpaths.h\u003e\r\n #include \u003cstdio.h\u003e\r\n@@ -246,6 +247,8 @@ getfsfile(name)\r\n int \r\n setfsent()\r\n {\r\n+\tint fd;\r\n+\r\n \tif (_fs_fp) {\r\n \t\trewind(_fs_fp);\r\n \t\tLineNo = 0;\r\n@@ -257,11 +260,18 @@ setfsent()\r\n \t\telse\r\n \t\t\tsetfstab(getenv(\"PATH_FSTAB\"));\r\n \t}\r\n-\tif ((_fs_fp = fopen(path_fstab, \"r\")) != NULL) {\r\n+\tfd = _open(path_fstab, O_RDONLY | O_CLOEXEC);\r\n+\tif (fd == -1) {\r\n+\t\terror(errno);\r\n+\t\treturn (0);\r\n+\t}\r\n+\t_fs_fp = fdopen(fd, \"r\");\r\n+\tif (_fs_fp  != NULL) {\r\n \t\tLineNo = 0;\r\n \t\treturn(1);\r\n \t}\r\n \terror(errno);\r\n+\t_close(fd);\r\n \treturn(0);\r\n }\r\n "
+}

@@ -1,0 +1,8 @@
+{
+ "id": 9629,
+ "bug_id": 3122,
+ "attachment_id": 0,
+ "creation_time": "1997-03-27T18:00:18Z",
+ "creator": "mark@seeware.DIALix.oz.au",
+ "text": "\nA week ago I reported a problem with Xinside's dtmail client not \nstarting under 2.2-RELEASE.  The same program had worked under\n2.1.[567] and 2.2-GAMMA.  The error message was \n\t\n\t\"Mailer has not been properly installed and cannot be run \n\tbecause the execution group is incorrectly set\"\n\t\t\t\t\ndtmail is sgid bin and the mail spool permissions are set to 775.\n\nAfter some hints from Joerg I managed to trace the execution on\nboth a 2.2 and 2.1.7 kernel (this required the removal of a check\nwhich dissallows ktrace in an suid/sgid process).\n\nUpon examination I saw that the failure point in 2.2 was in a failing\ncall to the setgid call.  The call failed with a permission error in\n2.2 but not in 2.1.7.\n\nFurther digging showed that /sys/sys/unistd.h has changed in 2.2 and \nsays:\n\n#ifdef\t_NOT_AVAILABLE\n#define\t_POSIX_SAVED_IDS\t/* saved set-user-ID and set-group-ID */\n#endif\n\nThe code in /sys/kern/kern_prot.c checks for _POSIX_SAVED_IDS before\nincluding the code to allow setgid. I could not find a #def _NOT_AVAILABLE\nin the include files.\n\nA recompile of a new kernel with the unistd.h file from 2.2-GAMMA has \nsolved my problems.\n\nFix: \n\nSee above\nHow-To-Repeat: \nTry to run dtmail (part of Xinside's CDE) under 2.2-RELEASE"
+}

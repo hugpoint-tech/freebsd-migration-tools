@@ -1,0 +1,8 @@
+{
+ "id": 943976,
+ "bug_id": 220965,
+ "attachment_id": 0,
+ "creation_time": "2017-07-24T11:48:17Z",
+ "creator": "fk@fabiankeil.de",
+ "text": "According to dtrace_io(4) and \"dtrace -lvn io:::\", the dtrace_io probes use\na struct bio * as arg[0] to represent the I/O request, however that is only\ntrue for the probes declared with a define with _BIO_ in its name.\n\nQuoting sys/kern/subr_devstat.c:\n    57\t#define\tDTRACE_DEVSTAT_START()\t\tSDT_PROBE2(io, , , start, NULL, ds)\n    58\t#define\tDTRACE_DEVSTAT_BIO_START()\tSDT_PROBE2(io, , , start, bp, ds)\n    59\t#define\tDTRACE_DEVSTAT_DONE()\t\tSDT_PROBE2(io, , , done, NULL, ds)\n    60\t#define\tDTRACE_DEVSTAT_BIO_DONE()\tSDT_PROBE2(io, , , done, bp, ds)\n\nAs a result, even simple scripts like the example in dtrace_io(4) result in errors like:\ndtrace: error on enabled probe ID 1 (ID 41752: io:kernel:none:start): invalid address (0x20) in action #6 at DIF offset 16\n\nOne can workaround this by skipping probes without bio reference by adding:\n/args[0] != NULL/\nbut it would be more convenient if probes with bio reference had a different name than\nthose that don't."
+}

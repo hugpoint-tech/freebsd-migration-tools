@@ -1,0 +1,8 @@
+{
+ "id": 921628,
+ "bug_id": 211746,
+ "attachment_id": 0,
+ "creation_time": "2017-02-13T13:36:29Z",
+ "creator": "decui@microsoft.com",
+ "text": "(In reply to Marcel Moolenaar from comment #3)\n\nHi Marcel,\nThank you for the quick help!\n\nYes, I checked all the AllocatePages() calls and they all succeeded, i.e. returning 0.\n\nI found the crash happened in \nelf64_exec() -\u003e trampoline() -\u003e efi_copy_finish -\u003e *dst++ = *src++;\n\nIn efi_copy_finish(), I added some printf's to dump the values of the varilables:\n\n/boot/kernel/kernel text=0xfe3048 data=0x128b68+0x207fa0 syms=[0x8+0x146f88+0x8+\nBooting...\nStart @ 0xffffffff802e2640 ...\nEFI framebuffer information:\naddr, size     0xf8000000, 0x800000\ndimensions     1024 x 768\nstride         1024\nmasks          0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000\nefi_copy_finish : staging=0xf37cb000\nefi_copy_finish : staging_end=0xf67cb000\nefi_copy_finish : staging_offset=0xf35cb000\nefi_copy_finish : src=0xf37cb000, dst=0x200000, last=0xf67cb000\n\nIf I change the line\nlast = (uint64_t *)staging_end;\nto \nlast = (uint64_t *)staging + (1024*1024*45);\n\nThe crash won't happen and the kernel can boot fine.\n\nI'm using the releng/10.3 branch, where EFI_STAGING_SIZE is 48MB.\nThis is to say, the kernel can boot fine if I use EFI_STAGING_SIZE=45MB.\n\nAny idea?\n\nWhy do you think is it a Hyper-V firmware bug in AllocatePages()? I'm not familar with UEFI Boot Services. :-)\n\nI'll check the memory map before/after the call to AllocatePages().\nI'm going to use sys/boot/efi/loader/main.c: command_memmap() as an example to call GetMemoryMap."
+}

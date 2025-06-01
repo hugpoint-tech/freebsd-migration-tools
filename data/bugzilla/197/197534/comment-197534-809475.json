@@ -1,0 +1,8 @@
+{
+ "id": 809475,
+ "bug_id": 197534,
+ "attachment_id": 0,
+ "creation_time": "2015-02-11T10:27:19Z",
+ "creator": "marcus@blazingdot.com",
+ "text": "Sometimes during normal operation (network interface change, etc.) and when unbound is manually sent a SIGHUP, it reloads its config. When it does that, and it is already chrooted (as per default config in FreeBSD) it crashes.\n\nThis is due to the following code in contrib/unbound/util/config_file.c:\n\n1200\t\t/* translate username into uid and gid */\n1201\t\tif(cfg-\u003eusername \u0026\u0026 cfg-\u003eusername[0]) {\n1202\t\t\tstruct passwd *pwd;\n1203\t\t\tif((pwd = getpwnam(cfg-\u003eusername)) == NULL)\n1204\t\t\t\tlog_err(\"user '%s' does not exist.\", cfg-\u003eusername);\n1205\t\t\tcfg-\u003euid = pwd-\u003epw_uid;\n1206\t\t\tcfg-\u003egid = pwd-\u003epw_gid;\n1207\t\t}\n\nThe crash occurs at line 1205.  As you can see, even though the call to getpwnam() returns NULL because of a missing /etc/pwd.db in the chroot, an error message is logged but it goes ahead and follows the null pointer pwd-\u003epw_uid anyway.\n\nFurthermore, if a copy of /etc/pwd.db is placed in /var/unbound/etc/, the crash does not happen on SIGHUP."
+}

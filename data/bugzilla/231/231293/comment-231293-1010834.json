@@ -1,0 +1,8 @@
+{
+ "id": 1010834,
+ "bug_id": 231293,
+ "attachment_id": 197016,
+ "creation_time": "2018-09-10T21:16:59Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 197016\nv0\n\nClang hides vcvt_f16_f32() and vcvt_f32_f16() behind (__ARM_FP \u0026 2) where 2 refers to -mfpu=fp-armv8. However, GCC would only build this code if -march=armv8.2-a+fp16 is passed as well.\n\n  $ clang60 -dM -E -\u003c/dev/null | fgrep __ARM_FP\n  #define __ARM_FP 0xc\n  #define __ARM_FP16_ARGS 1\n  #define __ARM_FP16_FORMAT_IEEE 1\n\n  $ clang60 -mfpu=fp-armv8 -dM -E -\u003c/dev/null | fgrep __ARM_FP\n  #define __ARM_FP 0xe\n  #define __ARM_FP16_ARGS 1\n  #define __ARM_FP16_FORMAT_IEEE 1\n  #define __ARM_FPV5__ 1\n\n  $ gcc7 -dM -E -\u003c/dev/null | fgrep __ARM_FP\n  #define __ARM_FP 12\n\n  $ gcc7 -mfpu=fp-armv8 -dM -E -\u003c/dev/null | fgrep __ARM_FP\n  #define __ARM_FP 14\n\n  $ gcc7 -march=armv8.2-a+fp16 -mfpu=fp-armv8 -dM -E -\u003c/dev/null | fgrep __ARM_FP\n  #define __ARM_FP 14\n  #define __ARM_FP16_FORMAT_IEEE 1\n  #define __ARM_FP16_ARGS 1\n\nbuild log: https://ptpb.pw/MxS9"
+}

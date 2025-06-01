@@ -1,0 +1,8 @@
+{
+ "id": 1012219,
+ "bug_id": 231441,
+ "attachment_id": 0,
+ "creation_time": "2018-09-21T03:47:34Z",
+ "creator": "yuripv@yuripv.net",
+ "text": "Apparently, I'm being stupid, and the use case here is NOT to load driver via loader.conf and rather rely on devd to load it and bring up wlan interface.  To make up for my mistake, I've taken a look at the source of problem here.\n\nLooks like devd::expand_one() treats \"$(var)\" as a subcommand to be passed down to shell -- this works correctly for the items in \"action\", but not so good for device matching.  In any case, removing parentheses from the wifi-driver-regex seems to work for me loading the if_run.ko, and creating wlan0:\n\ndiff --git a/sbin/devd/devd.conf b/sbin/devd/devd.conf\nindex 956a2970d436..c9deaf5dada9 100644\n--- a/sbin/devd/devd.conf\n+++ b/sbin/devd/devd.conf\n@@ -19,13 +19,13 @@ options {\n        # Setup some shorthand for regex that we use later in the file.\n        #XXX Yes, these are gross -- imp\n        set scsi-controller-regex\n-               \"(aac|adv|adw|aha|ahc|ahd|aic|amr|bt|ciss|dpt|\\\n+               \"aac|adv|adw|aha|ahc|ahd|aic|amr|bt|ciss|dpt|\\\n                esp|ida|iir|ips|isp|mlx|mly|mpr|mps|mpt|ncr|ncv|nsp|stg|sym|\\\n-               trm)\\\n+               trm\\\n                [0-9]+\";\n        set wifi-driver-regex\n-               \"(ath|bwi|bwn|ipw|iwi|iwm|iwn|malo|mwl|ral|rsu|rtwn|rum|run|\\\n-               uath|upgt|ural|urtw|wi|wpi|wtap|zyd)[0-9]+\";\n+               \"ath|bwi|bwn|ipw|iwi|iwm|iwn|malo|mwl|ral|rsu|rtwn|rum|run|\\\n+               uath|upgt|ural|urtw|wi|wpi|wtap|zyd[0-9]+\";\n };\n\n # Note that the attach/detach with the highest value wins, so that one can"
+}

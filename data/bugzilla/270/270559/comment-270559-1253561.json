@@ -1,0 +1,8 @@
+{
+ "id": 1253561,
+ "bug_id": 270559,
+ "attachment_id": 0,
+ "creation_time": "2023-04-02T15:44:29Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to Kristof Provost from comment #4)\n\n\u003e I'd expect this to work, because the bridge code does take vlan ID into account\n\u003e when it learns addresses.\n\nAfter looked into the code, I think the root cause is that if_bridge(4) treat untagged packets as from vlan 1 (the default VID for bridge as 802.1Q-2003 Table 9-2), and untagged packets and that from vlan 1 share the same forwarding lookup table. if_bridge(4) will then treat the two host from different broadcast domain as the same one.\n\nOne possible solution could be treat untagged packets as untagged (or vlan 0) and tagged as tagged. Although vlan 0 is not valid as per 802.1Q-2003 but it has no side effect if user treat if_bridge(4) as transparent bridge. Actually if_bridge(4) does not function as a full 802.1q aware bridge (I mean it misses policies such as adding tags for inbound and removing tags on outbound or dropping packets with unknown / un-configured tags).\n\n\u003e I translated your test into an automated test: https://reviews.freebsd.org/D39379 ,\n\u003e but that seems to pass. Did I miss something?\nI'll comment directly on D39379."
+}

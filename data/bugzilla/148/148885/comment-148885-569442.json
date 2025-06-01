@@ -1,0 +1,8 @@
+{
+ "id": 569442,
+ "bug_id": 148885,
+ "attachment_id": 0,
+ "creation_time": "2010-07-24T04:20:04Z",
+ "creator": "nnd@mail.nsk.ru",
+ "text": "man ipfw says:\n..\n     netgraph cookie\n             Divert packet into netgraph with given cookie.  The search termi-\n             nates.  If packet is later returned from netgraph it is either\n             accepted or continues with the next rule, depending on\n             net.inet.ip.fw.one_pass sysctl variable.\n..\n\nbut after last massive changes in ipfw realisation (Mart 23 2010)\npackets continues with the next rule independently of the  net.inet.ip.fw.one_pass value.\n\nThe same holds for 'netgraph ngtee' rules.\n\nIncluded patch correct the problem.\n\nThe problem stands in CURRENT, RELENG_8 and 8.1-RELEASE.\n\nFix: Applay the patch included.\n\nPatch attached with submission follows:\nHow-To-Repeat: On plain CURRENT or 8.1-RELEASE system with (say) em0 interface\ndo:\n================================================================\nkldload netgraph\nkldload ng_ipfw\nkldload ng_ip_input\n\nngctl \u003c\u003c EOF\nmkpeer ipfw: ip_input 100 in\nEOF\n\nipfw add 100 netgraph 100 all from any to any in recv em0\nipfw add 200 count log all from any to any in recv em0\n================================================================\n\nand you can see that all packets go through 100 and 200 rules\nindependently of the net.inet.ip.fw.one_pass value."
+}

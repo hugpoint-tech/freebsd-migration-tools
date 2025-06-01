@@ -1,0 +1,8 @@
+{
+ "id": 1258370,
+ "bug_id": 265962,
+ "attachment_id": 0,
+ "creation_time": "2023-05-04T20:42:47Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #38)\n\nTurns out it all traces back to one issue: __is_convertible\nalready being a builtin in g++13, much like Microsoft's\n__is_convertible_to .\n\nThe following local hack let me build the software in\nquestion:\n\n\n# diff -u /usr/include/c++/v1/__type_traits/is_convertible.h.orig /usr/include/c++/v1/__type_traits/is_convertible.h\n--- /usr/include/c++/v1/__type_traits/is_convertible.h.orig\t2023-05-04 13:37:14.535549000 -0700\n+++ /usr/include/c++/v1/__type_traits/is_convertible.h\t2023-05-04 13:33:12.656731000 -0700\n@@ -29,6 +29,11 @@\n template \u003cclass _T1, class _T2\u003e struct _LIBCPP_TEMPLATE_VIS is_convertible\n     : public integral_constant\u003cbool, __is_convertible_to(_T1, _T2)\u003e {};\n \n+#elif __has_builtin(__is_convertible) \u0026\u0026 !defined(_LIBCPP_USE_IS_CONVERTIBLE_FALLBACK)\n+\n+template \u003cclass _T1, class _T2\u003e struct _LIBCPP_TEMPLATE_VIS is_convertible\n+    : public integral_constant\u003cbool, __is_convertible(_T1, _T2)\u003e {};\n+\n #else  // __has_builtin(__is_convertible_to) \u0026\u0026 !defined(_LIBCPP_USE_IS_CONVERTIBLE_FALLBACK)\n \n namespace __is_convertible_imp\n\nI'll submit an llvm report and reference it on the toolchain list."
+}

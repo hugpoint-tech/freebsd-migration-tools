@@ -1,0 +1,8 @@
+{
+ "id": 736225,
+ "bug_id": 183336,
+ "attachment_id": 0,
+ "creation_time": "2013-10-26T15:40:00Z",
+ "creator": "bsd@gisladisker.se",
+ "text": "The client binary rsh(1) is reacting erroneously on SIGPIPE.\nThis is present since legacy time. The problem is that rsh(1)\nwill, except when called using the switch \"-n\", be using a\nforked child process. When the parent process receives a\nsignal SIGPIPE this parent process will immediately abort,\nand will never send a shutdown signal to the child process.\nThis situation typically arises when rsh(1) is part of a\ncommand line pipeline, where one member fails.\n\nFix: \n\nThe problem is that the legacy code never installs\na signal handler for SIGPIPE in the function talk(),\nbut only later kills the client process in main().\nFrom the fact that the default handler for SIGPIPE is\nprocess abortion, the whole problem arises.\n\nSince I personally resolved this issue in a GNU project\nbased on BSD legacy code for rsh(1), I regretfully cannot\nproduce a patch for the fear of poluting your code base\naway from its present license, but the above mechanism\nis the culprit of this annoying issue.\nHow-To-Repeat: The use cases\n\n $ rsh localhost cat /etc/motd | false\n\n $ rsh localhost date | true\n\nwill leave a child process still running, and will in\nturn keep the server process running indefinitely and\nwill also steal stdin from the login session."
+}

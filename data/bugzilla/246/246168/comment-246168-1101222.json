@@ -1,0 +1,8 @@
+{
+ "id": 1101222,
+ "bug_id": 246168,
+ "attachment_id": 0,
+ "creation_time": "2020-05-07T08:43:18Z",
+ "creator": "grehan@FreeBSD.org",
+ "text": "I was able to get this working fine, and the cause of the problem is clear looking back at the posted logs.\n\n\u003c\u003cSTART LAYER 2 GUEST START\u003e\u003e\n# ls\nFreeBSD-11.2-RELEASE-amd64-bootonly.iso\tFreeBSD-12.1-RELEASE-amd64-dvd1.iso\tbee-hd1-01.img\n# /usr/sbin/bhyve -c 2 -m 2048 -H -A -s 0:0,hostbridge -s 1:0,lpc -s 2:0,e1000,tap0 -s 3:0,ahci-hd,bee-hd1-01.img -l com1,stdio -s 5:0,ahci-cd,./FreeBSD-12.1-RELEASE-amd64-dvd1.iso bee\n\n bhyve has to be started with either a UEFI ROM image, or using a separate loader (bhyveload/grub-bhyve). This wasn't done in this case, which will result in registers partly set to power-on state, which will result in a triple-fault or some other error.\n\nThis can be seen in the register dump from KVM, where all the GP registers are zero including the RIP.\n\nThe fix to run a FreeBSD guest is to use bhyveload before running bhyve. For the example given, this would be\n\n# /usr/sbin/bhyveload -m 2048 -d ./FreeBSD-12.1-RELEASE-amd64-dvd1.iso bee\n\n...\n\nand then run the bhyve command."
+}

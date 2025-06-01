@@ -1,0 +1,8 @@
+{
+ "id": 419730,
+ "bug_id": 118360,
+ "attachment_id": 0,
+ "creation_time": "2007-11-30T19:10:03Z",
+ "creator": "mmoll@freebsd.org",
+ "text": "[Export some directories via NFS from marduk to emperor]\n\nroot@marduk:~# cat /etc/exports          \n/usr/local/music\n/usr/ports/distfiles\n\nroot@emperor:~# mount 192.168.200.11:/usr/ports/distfiles /mnt\nroot@emperor:~# df -h /mnt\nFilesystem                             Size    Used   Avail Capacity  Mounted on\n192.168.200.11:/usr/ports/distfiles    7.7G    3.8G    3.4G    53%    /mnt\n\n[everything ok... now take a snapshot]\n\nroot@marduk:~# mount -u -o snapshot /usr/.snap/snapshot.301120071938 /usr\n\nroot@marduk:~# ls -al /usr/.snap/\ntotal 408484\ndrwxrwxr-x   2 root  operator         512 Nov 30 19:39 .\ndrwxr-xr-x  18 root  wheel            512 Nov 30 15:42 ..\n-r--------   1 root  operator  8589935000 Nov 30 19:33 snapshot.191120071245\n-r--------   1 root  operator  8589935000 Nov 30 19:40 snapshot.301120071938\n\n[still everything ok, data is accessible]\n\nroot@emperor:~# head -n 4 /mnt/jpegexiforient.c\n/*\n * jpegexiforient.c\n *\n * This is a utility program to get and set the Exif Orientation Tag.\n\n[now try to mount it again...]\n\nroot@emperor:~# umount /mnt\nroot@emperor:~# mount 192.168.200.11:/usr/ports/distfiles /mnt\n[udp] 192.168.200.11:/usr/ports/distfiles: Permission denied\n\nroot@marduk:~# tail -n 1 /var/log/messages\nNov 30 19:42:25 marduk mountd[582]: mount request denied from 192.168.200.1 for /usr/ports/distfiles\n\nFix: \n\nRebooting the NFS-server-machine is the only way I found to make the\ndirectory NFS-accessable again.\nHow-To-Repeat: I can reproduce this with a FreeBSD-7 and a Linux-NFS-client, so the\nproblem is on the server-side"
+}

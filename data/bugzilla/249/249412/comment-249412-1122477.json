@@ -1,0 +1,8 @@
+{
+ "id": 1122477,
+ "bug_id": 249412,
+ "attachment_id": 0,
+ "creation_time": "2020-09-17T23:39:01Z",
+ "creator": "leres@freebsd.org",
+ "text": "Starting with github hash bf29aa0 and in between the 0.13.1 and 0.14 releases, json-c uses newlocale(3) which appears to cause increased memory usage on each call when base is supplied.\n\nWe have a persistent daemon that repeatedly parses some trivial json from a piece of network equipment. This software was developed while the FreeBSD devel/json-c port was at 0.13.1 (or older). The json-c port was updated to 0.14 in May 2020 and to 0.15 in mid August. After the 0.15 update the daemon was rebuilt/installed and after ~12 hours of operation would crash due to memory exhaustion. Eventually we determined that downgrading to 0.13.1 solved the memory growth.\n\nI wrote a test program that calls json_tokener_parse() followed by json_object_put() in a loop; rss slowly increases for every loop.\n\nI opened this upstream ticket:\n\n    https://github.com/json-c/json-c/issues/668\n\nEric Hawicz responded, suggesting that FreeBSD's implementation of newlocale() might be causing the issue. His helpful test program confirms this.\n\nLooking at the first version of json-c to has the issue:\n\n    https://github.com/json-c/json-c/commit/bf29aa0\n\nHAVE_USELOCALE is defined when locale.h is present. This results in a different codepath in json_tokener.c where newlocale() is used instead of setlocale().\n\nI'll submit a seperate PR for the newlocale() issue.\n\nThe attached patch comments out HAVE_USELOCALE in post-configure to avoid the use of newlocale(). Also attached is a json-c test program which uses sysctl() to automatically track and report changes to rss and vsz and clearly shows the issue."
+}

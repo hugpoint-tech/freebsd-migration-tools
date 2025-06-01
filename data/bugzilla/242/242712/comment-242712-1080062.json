@@ -1,0 +1,8 @@
+{
+ "id": 1080062,
+ "bug_id": 242712,
+ "attachment_id": 210040,
+ "creation_time": "2019-12-18T18:50:16Z",
+ "creator": "ghuckriede@blackberry.com",
+ "text": "Created attachment 210040\nbefore and after test results\n\nA free() appears to have been removed by mistake.\n\nline 1544 of https://svnweb.freebsd.org/base/head/sys/net/if.c?annotate=334117\nwas removed by the following submission:\t\nhttps://svnweb.freebsd.org/base/head/sys/net/if.c?revision=334118\u0026view=markup\n\nThis introduced a memory leak when calling if_delgroups(), as the malloc is still present in if_addgroup() on line 1458 of https://svnweb.freebsd.org/base/head/sys/net/if.c?annotate=355070\n\nFurthermore the free() is present for if_delgroup() on line 1551 of https://svnweb.freebsd.org/base/head/sys/net/if.c?annotate=355070\n\nHere is a fix along with a white space change.\n\nsvn diff sys/net/if.c\nIndex: sys/net/if.c\n===================================================================\n--- sys/net/if.c\t(revision 355854)\n+++ sys/net/if.c\t(working copy)\n@@ -1594,9 +1594,10 @@\n \t\tfree(ifgm, M_TEMP);\n \t\tif (ifglfree) {\n \t\t\tEVENTHANDLER_INVOKE(group_detach_event,\n-\t\t\t\t\t\t\t\tifgl-\u003eifgl_group);\n+\t\t\t                    ifgl-\u003eifgl_group);\n \t\t\tfree(ifgl-\u003eifgl_group, M_TEMP);\n \t\t}\n+\t\tfree(ifgl, M_TEMP);\n \t\tEVENTHANDLER_INVOKE(group_change_event, groupname);\n \n \t\tIFNET_WLOCK();"
+}

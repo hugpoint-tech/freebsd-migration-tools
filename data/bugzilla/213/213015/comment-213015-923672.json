@@ -1,0 +1,8 @@
+{
+ "id": 923672,
+ "bug_id": 213015,
+ "attachment_id": 0,
+ "creation_time": "2017-02-28T08:24:43Z",
+ "creator": "akoshibe@gmail.com",
+ "text": "I finally had the chance to dig around more, myself.\n\nOpen vSwitch seems to try to write something when a new switch is being created with ports. It would sometimes do so while the tap device is in the process of being renamed, and ifp-\u003eif_bpf is null.\n\nPreventing the departure handler from setting if_bpf to null during renames stopped the panic:\n\n\nIndex: net/bpf.c\n===================================================================\n--- net/bpf.c   (revision 313973)\n+++ net/bpf.c   (working copy)\n@@ -2678,6 +2678,9 @@\n        struct bpf_if *bp, *bp_temp;\n        int nmatched = 0;\n \n+       if (ifp-\u003eif_flags \u0026 IFF_RENAMING)\n+               return;\n+\n        BPF_LOCK();\n        /*\n         * Find matching entries in free list."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 97668,
+ "bug_id": 30985,
+ "attachment_id": 0,
+ "creation_time": "2001-10-07T19:15:36Z",
+ "creator": "netch@netch.kiev.ua",
+ "text": " Sun, Oct 07, 2001 at 08:50:41, dima wrote about \"Re: kern/30985: incorrect signal handling in snpread()\": \n\n\u003e \u003e -\t\t\ttsleep((caddr_t) snp, (PZERO + 1) | PCATCH, \"snoopread\"\n\u003e \u003e , 0);\n\u003e \u003e +\t\t\terror = tsleep((caddr_t) snp, (PZERO + 1) | PCATCH, \"snoopread\", 0);\n\u003e \u003e +\t\t\tif (error == EINTR || error == ERESTART) {\n\u003e \u003e +\t\t\t\tsplx(s);\n\u003e \u003e +\t\t\t\treturn EINTR;\n\u003e \u003e +\t\t\t}\n\u003e \n\u003e Why can't we just return whatever tsleep() returns, as most (all?)\n\u003e other drivers do?  Like so (untested):\n\nI am not experienced kernel hacker ;) The examples I saw in kernel code,\nmostly test for ERESTART and possibly EINTR and exit from routine\nin case of such codes. tsleep(9) man page (in RELENG_4_4) mentions the only\nanother return code allowed - EWOULDBLOCK in timeout case, but snpread()\ndoesn't suppose timeout. If you suppose that exit on any nonzero value\nis correct, you probably are right.\n\n\u003e  \t\t\tsnp-\u003esnp_flags |= SNOOP_RWAIT;\n\u003e -\t\t\ttsleep((caddr_t)snp, (PZERO + 1) | PCATCH, \"snprd\", 0);\n\u003e +\t\t\terror = tsleep((caddr_t)snp, (PZERO + 1) | PCATCH,\n\u003e +\t\t\t    \"snprd\", 0);\n\u003e +\t\t\tif (error != 0)\n\u003e +\t\t\t\treturn (error);\n\u003e  \t\t}\n\n\n/netch"
+}

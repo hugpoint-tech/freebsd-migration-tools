@@ -1,0 +1,8 @@
+{
+ "id": 854635,
+ "bug_id": 205453,
+ "attachment_id": 0,
+ "creation_time": "2015-12-20T16:29:47Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Hm, this _Static_assert has an interesting history.  The original review from Baptiste, https://reviews.freebsd.org/D1390, used static_assert(), but this required -std=c++11 to compile, otherwise you would get:\n\ncontrib/libcxxrt/guard.cc:104:1: error: C++ requires a type specifier for all declarations\nstatic_assert(sizeof(guard_t) == sizeof(uint64_t), \"\");\n^~~~~~~~~~~~~\n\nThis is the version upstream eventually also used, since they apparently assume C++11 there.  David suggested changing it to _Static_assert(): \"This should work if you change it to _Static_assert, which I think we support for all C/C++ versions.\"\n\nNow that I look at the code again, I am not entirely sure why the static assertion is only for the big endian #ifdef block.  It would seem more useful to put it a few lines lower, for the !_LP64 case.\n\nThat said, even when moving the _Static_assert() like that, it compiles fine for me, both with base gcc, and several versions of ports gcc (I tried gcc 4.8, 4.9 and 5.2).\n\nOn the other hand, your sample program indeed does not compile with the ports versions of gcc.  I'm not sure where those versions are getting their version of _Static_assert() from, though..."
+}

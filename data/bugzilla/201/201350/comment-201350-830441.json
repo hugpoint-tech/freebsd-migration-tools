@@ -1,0 +1,8 @@
+{
+ "id": 830441,
+ "bug_id": 201350,
+ "attachment_id": 0,
+ "creation_time": "2015-07-05T00:19:19Z",
+ "creator": "tsoome@me.com",
+ "text": "the include_nextboot_file word is using catch to intercept errors from file io, and leaves trash in stack; \n\nit happens because before ['] peek_file catch the get_nextboot_conf_file leaves stack as ( addr len ) and catch will restore stack pointer to the same state (but not values!). to clean up, following update will do:\n\n: include_nextboot_file\n-  get_nextboot_conf_file\n-  ['] peek_file catch\n+  get_nextboot_conf_file               ( addr len )\n+  ['] peek_file catch                  ( addr len code )\n+  dup EOPEN = if\n+    drop       ( drop exception code )\n+    2drop      ( drop file name restored by catch )\n+  else\n+    throw\n+  then\n\n\nthe throw/catch mechanism is described very nicely by www.complang.tuwien.ac.at/anton/euroforth/ef98/milendorf98.pdf\n\nbtw, also related to nextboot, yes that strdup is leak and not needed at all;)\n: get_nextboot_conf_file ( -- addr len )\n-  nextboot_conf_file strget strdup     \\ XXX is the strdup a leak ?\n+  nextboot_conf_file strget\n ;"
+}

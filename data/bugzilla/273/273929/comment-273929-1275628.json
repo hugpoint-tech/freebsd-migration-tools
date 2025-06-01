@@ -1,0 +1,8 @@
+{
+ "id": 1275628,
+ "bug_id": 273929,
+ "attachment_id": 0,
+ "creation_time": "2023-09-19T08:54:01Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "(In reply to Kyle Evans from comment #3)\n\n\u003e I can't imagine a situation where the error (be it ENOSYS, ECAPMODE) really matters that much, but if it did we could presumably also fence off x10 as flag indicating whether x0 has been set to the return value or not and preserve that in the mcontext.\n\nPart of the problem is that I haven't managed to merge the SIGCAP patches (help there from someone who understands the signal delivery mechanism would be welcome!) and so currently SIGTRAP is overloaded here to mean both:\n\n - Here is a signal that the program can catch and handle and use to emulate.\n - Here is something that the debugger can watch for and help when debugging Capsicum violations.\n\nFor the second case, x0 needs to contain ENOTCAPABLE / ECAPMODE so that code around it can work well with graceful fallback (e.g. we're failing because of cap mode, try an openat thing instead).  For the first case, we want the original x0 and *may* replace the return value with a success value if we emulate correctly but may also pass it on for the wrapped code to try its own emulation.\n\nThe nice thing is that anything in the first category is definitely writing architecture-specific (and os-specific) code and so can look in x9.  I'm not sure when the extra value in x10 is useful.  If x9 is set unconditionally for capsicum-triggered SIGTRAP in newer kernels, you still can't use a value in x10 to detect whether it's happened because, if it hasn't, x10 may still have whatever value you choose as a marker, left over from whatever the caller put in there."
+}

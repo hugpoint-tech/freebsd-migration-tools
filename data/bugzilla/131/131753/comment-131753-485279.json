@@ -1,0 +1,8 @@
+{
+ "id": 485279,
+ "bug_id": 131753,
+ "attachment_id": 0,
+ "creation_time": "2009-02-16T21:40:02Z",
+ "creator": "kirma.at.cs.hut.fi@FreeBSD.org",
+ "text": "System (four-core Intel Q6600 with SMP kernel) crashes under load\n(although relatively light load, thanks to only 2 Mbit outbound link) of\nroughty hundred TCP connections somewhat reproducibly when HFSC ALTQ\ntraffic scheduling is used.\n\nOnly information seen about this is the dmesg message:\n\nFatal trap 12: page fault while in kernel mode\ncpuid = 0; apic id = 00\nfault virtual address   = 0x4\nfault code              = supervisor read, page not present\ninstruction pointer     = 0x20:0xc04641e7\nstack pointer           = 0x28:0xe719ca68\nframe pointer           = 0x28:0xe719caac\ncode segment            = base 0x0, limit 0xfffff, type 0x1b\n                        = DPL 0, pres 1, def32 1, gran 1\nprocessor eflags        = interrupt enabled, resume, IOPL = 0\ncurrent process         = 15 (swi4: clock sio)\ntrap number             = 12\npanic: page fault\n\nWhere the instruction pointer points to inlined code inside hfsc_dequeue:\n\n(gdb) l *(0xc04641e7)\n0xc04641e7 is in hfsc_dequeue (altq_classq.h:113).\n108             struct mbuf  *m, *m0;\n109\n110             if ((m = qtail(q)) == NULL)\n111                     return (NULL);\n112             if ((m0 = m-\u003em_nextpkt) != m)\n113                     m-\u003em_nextpkt = m0-\u003em_nextpkt;\n114             else\n115                     qtail(q) = NULL;\n116             qlen(q)--;\n117             m0-\u003em_nextpkt = NULL;\n\nCould it be just a simple locking issue in the linked list?\n\nHow-To-Repeat: Exact conditions are not known, but running lots of outbound TCP traffic over HFSC connection on a SMP system might trigger it."
+}

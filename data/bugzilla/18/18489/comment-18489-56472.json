@@ -1,0 +1,8 @@
+{
+ "id": 56472,
+ "bug_id": 18489,
+ "attachment_id": 0,
+ "creation_time": "2000-05-10T17:30:01Z",
+ "creator": "k5@cheerful.com",
+ "text": "\n\tbrandelf brands binary with EI_OSABI but ld doesn't see it if\n\told brand exists on it. This is the case of current acroread4\n\tport.\n\n\tFirst, untouched binary in tarball is:\n\n$ ls -l acroread\n-rwxr-xr-x  1 k5  wheel  3379910 Jan 27 09:30 acroread*\n$ hd acroread|head -1\n00000000  7f 45 4c 46 01 01 01 00  00 00 00 00 00 00 00 00  |.ELF............|\n\n\tThis hasn't been branded but works on FreeBSD.\n\n\tNext, the binary was stripped during make install:\n\n$ ls -l acroread\n-rwxr-xr-x  1 k5  wheel  2549840 May 11 00:47 acroread*\n$ hd acroread|head -1\n00000000  7f 45 4c 46 01 01 01 09  46 72 65 65 42 53 44 00  |.ELF....FreeBSD.|\n\n\tstrip(1) brands it to FreeBSD with both new and old method.\n\tThis is not so good.\n\n\tThen, brandelf it to Linux at post-install target:\n\n$ hd acroread|head -1\n00000000  7f 45 4c 46 01 01 01 03  46 72 65 65 42 53 44 00  |.ELF....FreeBSD.|\n\n\tProperly branded to Linux with new method but old brand string\n\tis still there. The problem occurrs here; ld looks old method\n\tprior to new one for compatibility reason. So this acroread\n\tbinary would be treated as FreeBSD native and then bombed.\n\n\tTo avoid this confusion: use linux strip instead.\n\tOr wait for October when old brand method support would be\n\tremoved. :)\n\n\tAlso strip(1) should not use old method to brand binary I think.\n\n\tI don't know about Alpha.\n\nHow-To-Repeat: \n/usr/ports/print/acroread4# make install\n/usr/ports/print/acroread4# exit\n$ acroread4\nELF interpreter /lib/ld-linux.so.2 not found\nAbort trap"
+}

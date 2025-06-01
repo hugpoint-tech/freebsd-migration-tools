@@ -1,0 +1,8 @@
+{
+ "id": 1332970,
+ "bug_id": 282478,
+ "attachment_id": 0,
+ "creation_time": "2024-11-01T20:08:21Z",
+ "creator": "jlduran@FreeBSD.org",
+ "text": "When testing review D47392, I found the following:\n\n    # service ipfilter stop\n    calling _callout_stop_safe with the following non-sleepable locks held:\n    shared rw ipf filter load/unload mutex (ipf filter load/unload mutex) r = 0 (0xffff0000417c7530) locked @ /usr/src/sys/netpfil/ipfilter/netinet/fil.c:7926\n    stack backtrace:\n    #0 0xffff00000052d394 at witness_debugger+0x60\n    #1 0xffff00000052e620 at witness_warn+0x404\n    #2 0xffff0000004d4ffc at _callout_stop_safe+0x8c\n    #3 0xffff0000f7236674 at ipfdetach+0x3c\n    #4 0xffff0000f723fa4c at ipf_ipf_ioctl+0x788\n    #5 0xffff0000f72367e0 at ipfioctl+0x144\n    #6 0xffff00000034abd8 at devfs_ioctl+0x100\n    #7 0xffff0000005c66a0 at vn_ioctl+0xbc\n    #8 0xffff00000034b2cc at devfs_ioctl_f+0x24\n    #9 0xffff0000005331ec at kern_ioctl+0x2e0\n    #10 0xffff000000532eb4 at sys_ioctl+0x140\n    #11 0xffff000000880480 at do_el0_sync+0x604\n    #12 0xffff0000008579ac at handle_el0_sync+0x4c\n\nI realized that WRITE_ENTER/RWLOCK_EXIT is not needed for ipfdetach(). Not sure if it should be removed from fil.c and/or used only for ipfattach() in ip_fil_freebsd.c.\n\n    # uname -mnr\n    freebsd-15-0 15.0-CURRENT arm64"
+}

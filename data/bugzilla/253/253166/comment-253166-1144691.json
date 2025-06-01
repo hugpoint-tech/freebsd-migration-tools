@@ -1,0 +1,8 @@
+{
+ "id": 1144691,
+ "bug_id": 253166,
+ "attachment_id": 0,
+ "creation_time": "2021-02-02T13:38:55Z",
+ "creator": "roy@marples.name",
+ "text": "The route socket overflow has always been a problem, just fairly invisible unless you actually know what you're looking for.\n\nThe carrier issue has changed fairly recently since dhcpcd-9.3\n\nIn a nutshell, carrier is now *only* determined by ifnet-\u003eif_data-\u003eifi_link_state.\nIt used to use media valid state, but this is problematic for some interface types who have a separation between valid media vs carrier.\n\nOne good example of this is wireless monitor mode.\nThe interface media is valid, but there is no carrier.\n\nIn FreeBSD\u003c13 the only way of accessing ifi_link_state is via routing messages (which can be lost) or getifaddrs(2) which is an expensive libc call. FreeBSD-13 has added SIOCGIFDATA which is much more light weight.\nhttps://reviews.freebsd.org/D26538\n\nI *could* poll this ioctl every second at the expense of CPU to detect carrier state changes or FreeBSD *could* actually commit something to detect overflow.\nCurrently it's the only major BSD that doesn't report this for the routing socket.\ndhcpcd used to poll for carrier up only (via media state), but I got complaints that it used too much CPU or was too slow or just didn't work reliably so I removed it. I'm in a no-win situation right now :("
+}

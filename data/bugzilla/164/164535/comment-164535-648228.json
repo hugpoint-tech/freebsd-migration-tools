@@ -1,0 +1,8 @@
+{
+ "id": 648228,
+ "bug_id": 164535,
+ "attachment_id": 0,
+ "creation_time": "2012-01-27T09:50:09Z",
+ "creator": "marcus@blazingdot.com",
+ "text": "ps(1) truncates long commands to the size of the screen even when stdout is not a terminal.  This is counter-intuitive and differs from another implementation I looked at.  Output of ps | grep differs depending on how big your terminal window is for example.\n\nFix: Patch included.  Tested; behavior remains consistent with docs: COLUMNS variable retains effect, and -w limits to 132 characters still.\n\n\n--- bin/ps/ps.c.orig    2012-01-27 01:24:10.519024952 -0800\n+++ bin/ps/ps.c 2012-01-27 01:24:20.350023629 -0800\n@@ -187,6 +187,8 @@\n \n        if ((cols = getenv(\"COLUMNS\")) != NULL \u0026\u0026 *cols != '\\0')\n                termwidth = atoi(cols);\n+       else if (isatty(STDOUT_FILENO) == 0)\n+               termwidth = UNLIMITED;\n        else if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, (char *)\u0026ws) == -1 \u0026\u0026\n             ioctl(STDERR_FILENO, TIOCGWINSZ, (char *)\u0026ws) == -1 \u0026\u0026\n             ioctl(STDIN_FILENO,  TIOCGWINSZ, (char *)\u0026ws) == -1) ||\n\n\nPatch attached with submission follows:\nHow-To-Repeat: ps aux | grep\nps auxww | grep"
+}

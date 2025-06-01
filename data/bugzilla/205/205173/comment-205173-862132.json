@@ -1,0 +1,8 @@
+{
+ "id": 862132,
+ "bug_id": 205173,
+ "attachment_id": 0,
+ "creation_time": "2016-01-29T02:13:48Z",
+ "creator": "tedm@ipinc.net",
+ "text": "After looking at the code for passwd.c I am guessing the problem is that something was changed in pam_chauthtok() - the conversation callback is returning a \\0 instead of a \\n.  I have not looked into why it's doing this but clearly changing the behavior was done to fix something else - as /usr/bin/password is a command line user interface program I don't think the maintainers care how it looks to the users.  It might even be that this is caused by a stray \\0 in the conversation since one change in the struct passwd definition in main is to set it to nulls.\n\nMy suggestion would be to either adopt your fix in poppassd, or make this change in passwd.c - add \"fprintf(stderr, \"\\n\");\" after the pam_end() call and before the exit().  Currently I don't have a system built I can test this on, and it would result in an extra \\n in the output which might break other stuff although I would guess that few password changing programs out there spawn a shell for /usr/bin/passwd like poppassd does.\n\nThe poppassd program should be rewritten to use pam - and it's output should be encrypted with SSL - and the client programs out there that use the protocol should be rewritten to use SSL.  This might be one of those sleeping dogs that we let lie."
+}

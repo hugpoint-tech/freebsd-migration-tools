@@ -1,0 +1,8 @@
+{
+ "id": 1169156,
+ "bug_id": 252867,
+ "attachment_id": 0,
+ "creation_time": "2021-07-06T16:00:24Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "The problem on arm64 is that we don't disable single-stepping before executing a signal handler.  I suspect the problem is the same on powerpc.  This hack fixes the problem for me:\n\ndiff --git a/sys/arm64/arm64/machdep.c b/sys/arm64/arm64/machdep.c\nindex 25f0a108311e..7d7f78760381 100644\n--- a/sys/arm64/arm64/machdep.c\n+++ b/sys/arm64/arm64/machdep.c\n@@ -896,6 +896,8 @@ sendsig(sig_t catcher, ksiginfo_t *ksi, sigset_t *mask)\n \n        tf-\u003etf_elr = (register_t)catcher;\n        tf-\u003etf_sp = (register_t)fp;\n+       tf-\u003etf_spsr \u0026= ~PSR_SS;\n+       WRITE_SPECIALREG(mdscr_el1, READ_SPECIALREG(mdscr_el1) \u0026 ~DBG_MDSCR_SS);\n        sysent = p-\u003ep_sysent;\n        if (sysent-\u003esv_sigcode_base != 0)\n                tf-\u003etf_lr = (register_t)sysent-\u003esv_sigcode_base;"
+}

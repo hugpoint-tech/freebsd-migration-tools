@@ -1,0 +1,8 @@
+{
+ "id": 462894,
+ "bug_id": 127213,
+ "attachment_id": 0,
+ "creation_time": "2008-09-08T18:50:02Z",
+ "creator": "citrin@citrin.ru",
+ "text": "sendfile(2) currupts data for files on tmpfs\n\nFix: \n\nNot known.\nHow-To-Repeat: 1. Create tmpfs and write test file\n\n# mount -t tmpfs tmpfs /spool/tmpfs\n# echo 'this is test file' \u003e /spool/tmpfs/tt\n# cat /spool/tmpfs/tt\nthis is test file\n\n2. Transfer this file using sendfile. E. g. using web server from port\nwww/nginx\n\n# cat nginx.conf\nevents {\n    worker_connections  1024;\n}\n\nhttp {\n    default_type  application/octet-stream;\n    access_log off;\n    sendfile   on;\n\n    server {\n        listen       8081;\n        location / {\n            root   /spool/tmpfs;\n        }\n    }\n}\n\n# nginx -c nginx.conf\n\nContent of fetched file will be different garbage on each request:\n\n# fetch -qo - http://127.0.0.1:8081/tt | hd\n00000000  d4 98 7a 00 08 00 00 00  dc 98 7a 00 08 00 00 00  |Ôz.....Üz.....|\n00000010  e4 98                                             |ä|\n00000012\n\n# fetch -qo - http://127.0.0.1:8081/tt | md5\nff035bff2dcf972ee7dfd023455997ef\n# fetch -qo - http://127.0.0.1:8081/tt | md5\nbb07cd1a0ede3c7af24e4a86a14b0493\n# fetch -qo - http://127.0.0.1:8081/tt | md5\ne84539257c2650da866a186435acc93d\n\nWith sendfile disbled in nginx.conf file is not corrupted, but we need\nsendfile support for other application (where only sendfile supported)."
+}

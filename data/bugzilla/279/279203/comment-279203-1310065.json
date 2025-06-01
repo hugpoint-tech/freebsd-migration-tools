@@ -1,0 +1,8 @@
+{
+ "id": 1310065,
+ "bug_id": 279203,
+ "attachment_id": 0,
+ "creation_time": "2024-05-21T19:35:46Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Forking logger many times like this:\n\n    #!/bin/sh\n    for id in $(jot 100); do\n      logger -p local2.info -t pot \"wledkjweldjwldjkwedj\" \u0026\n    done\n\nsends the machine into some race condition, causing loads of 300-500. I can reproduce it on multicore machines (including within bhyve), not on single core. Load is mostly caused by system calls. When knowing pids, it's sometimes possible to recover the host by killing all logger processes (killall won't work though, as the machine is too loaded for that).\n\nI could not reproduce this on 13.2 (at least not as easily). When building logger without capsicum, this doesn't happen, but that could be a red herring.\n\nHappens on 13.3 as well as 13.3p2.\n\nThis is causing quite some headache.  We put logger under a lock to reduce concurrency, which made things better, but we still see the general situation (either other things call logger or, more likely, this is just a symptom of a bigger underlying issue)."
+}

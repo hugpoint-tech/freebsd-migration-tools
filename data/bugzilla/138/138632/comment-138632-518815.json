@@ -1,0 +1,8 @@
+{
+ "id": 518815,
+ "bug_id": 138632,
+ "attachment_id": 0,
+ "creation_time": "2009-09-22T13:37:06Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: cokane\nDate: Tue Sep 22 12:36:51 2009\nNew Revision: 197403\nURL: http://svn.freebsd.org/changeset/base/197403\n\nLog:\n  The ndis_scan function may be started after ndis vap have been destroyed\n  \n  PR:\t\tkern/138632\n  Submitted by:\tPaul B. Mahol \u003conemda at gmail.com\u003e\n  MFC after:\t3 days\n\nModified:\n  head/sys/dev/if_ndis/if_ndis.c\n\nModified: head/sys/dev/if_ndis/if_ndis.c\n==============================================================================\n--- head/sys/dev/if_ndis/if_ndis.c\tTue Sep 22 11:47:21 2009\t(r197402)\n+++ head/sys/dev/if_ndis/if_ndis.c\tTue Sep 22 12:36:51 2009\t(r197403)\n@@ -1012,7 +1012,12 @@ static void\n ndis_vap_delete(struct ieee80211vap *vap)\n {\n \tstruct ndis_vap *nvp = NDIS_VAP(vap);\n+\tstruct ieee80211com *ic = vap-\u003eiv_ic;\n+\tstruct ifnet *ifp = ic-\u003eic_ifp;\n+\tstruct ndis_softc *sc = ifp-\u003eif_softc;\n \n+\tndis_stop(sc);\n+\tcallout_drain(\u0026sc-\u003endis_scan_callout);\n \tieee80211_vap_detach(vap);\n \tfree(nvp, M_80211_VAP);\n }\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

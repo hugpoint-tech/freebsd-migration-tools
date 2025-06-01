@@ -1,0 +1,8 @@
+{
+ "id": 31847,
+ "bug_id": 10531,
+ "attachment_id": 0,
+ "creation_time": "1999-03-10T18:50:00Z",
+ "creator": "lopez@cisco.com",
+ "text": "/usr/src/lib/libutil/uucplock.c 8.1\n\nIf a lock file exists and the processes which created\nthe lock file does not exist then a process using\nuu_lock creates a lock file with the process id which\nis in the old lock file.  This prevents subsequent\ndetection of the fact that the program which created the\nlock file still has the lock file locked because the\nlock file has the processid of the previous creator\nof the lock file in it.\n\nFix: \n\nIn /usr/src/lib/libutil/uuplock.c\nstatic const char sccsid[] = \"@(#)uucplock.c    8.1 (Berkeley) 6/6/93\";\n\nChange:\n73c73\n\u003c       pid_t pid;\n---\n\u003e       pid_t pid, pid_old;\n98c98\n\u003c                       if ((pid = get_pid (fd, \u0026err)) == -1)\n---\n\u003e                       if ((pid_old = get_pid (fd, \u0026err)) == -1)\n103c103\n\u003c                       if (kill(pid, 0) == 0 || errno != ESRCH)\n---\n\u003e                       if (kill(pid_old, 0) == 0 || errno != ESRCH)\nHow-To-Repeat: 1)\tcompile the following program.\n2)\trun the following program.   Control C it.\n3)\trun the following program.   Control Z it.\n4)\trepeat step 3) until you are bored.\n\nAll of the processes in step 3) think they have the lock.\n/* cc -o uulock uulock.c -lutil */\n\nmain()\n{\n        char c;\n        int i = uu_lock(\"special\");\n        if (i == 0) {\n                printf(\"we have the lock\\n\");\n                for (;;) sleep(1);\n        }\n\n        printf(\"we do not have the lock\\n\");\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 702048,
+ "bug_id": 175872,
+ "attachment_id": 0,
+ "creation_time": "2013-02-06T05:40:00Z",
+ "creator": "mack@ifis.cs.tu-bs.de",
+ "text": "Trying to connect to a mysql database through C works fine, as long as the program is linked dynamically.\n\nLinking statically (gcc -static ...) results in the error:\n\nCharacter set 'latin1' is not a compiled character set and is not specified in the '/usr/local/share/mysql/charsets/Index.xml' file\nError 2: Can't initialize character set latin1 (path: /usr/local/share/mysql/charsets/)\n\neven though the charset is at least included in /usr/local/share/mysql/charsets/Index.xml:\n\n[mack@admin ~/sources]$ grep -w latin1 /usr/local/share/mysql/charsets/Index.xml\n\u003ccharset name=\"latin1\"\u003e\n  \u003calias\u003elatin1\u003c/alias\u003e\n[mack@admin ~/sources]$\n\nTested on mysql-client-5.5.29.\n\nHow-To-Repeat: Just try to connect to a MySQL database from C:\n=====================================================\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cmysql.h\u003e\n\nint main(int argc, char *argv[]) {\n MYSQL *mysql;\n\n if (mysql_library_init(0, NULL, NULL)) {\n        fprintf(stderr, \"Error 1: %s\\n\", mysql_error(mysql));\n        exit(-1);\n }\n mysql = mysql_init(NULL);\n if (!mysql_real_connect(mysql, \"db_server.host.name\",\"dbuser\",\"password\", \"db_name\", 0,NULL,0)) {\n        fprintf(stderr, \"Error 2: %s\\n\", mysql_error(mysql));\n        exit(-1);\n }\n}\n===================================================================\n\nand compile it statically:\n\ngcc -static -o mt -I/usr/local/include/mysql -L/usr/local/lib/mysql mt.c -lmysqlclient_r -lz -lm"
+}

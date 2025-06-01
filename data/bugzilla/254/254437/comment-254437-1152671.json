@@ -1,0 +1,8 @@
+{
+ "id": 1152671,
+ "bug_id": 254437,
+ "attachment_id": 0,
+ "creation_time": "2021-03-20T16:45:58Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I ran `sudo sesutil fault all off` on a 12.1-STABLE system with 18 SES expanders and lots of disks.  It hung.  Procstat shows the following:\n\n49857 103730 sesutil             -                   mi_switch+0xd4 sleepq_wait+0x2c _sleep+0x253 ses_set_elm_status+0x86 enc_ioctl+0x4f1 devfs_ioctl+0xb0 VOP_IOCTL_APV+0x7b vn_ioctl+0x16a devfs_ioctl_f+0x1e kern_ioctl+0x2b7 sys_ioctl+0xfa amd64_syscall+0x387 fast_syscall_common+0xf8\n\n   55 100353 enc_daemon8         -                   mi_switch+0xd4 sleepq_wait+0x2c _sx_xlock_hard+0x3ee ses_publish_cache+0x1d1 enc_daemon+0x37f fork_exit+0x7e fork_trampoline+0xe \n\nIt looks like sesutil acquired enc-\u003eenc_cache_lock in enc_ioctl, at line 438 (line numbers correspond to 13.0-RC2 sources), then went on to block on cam_periph_sleep(enc-\u003eperiph, \u0026req, PUSER, \"encstat\", 0); in ses_set_elm_status at line 2794.  Meanwhile, enc_daemon is blocked trying to acquire enc-\u003eenc_cache_lock in ses_publish_cache at line 1971.  But enc_daemon itself is responsible for waking up sesutil, via the wakeups in either ses_fill_control_request or ses_process_control_request."
+}

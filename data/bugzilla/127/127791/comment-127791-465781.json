@@ -1,0 +1,8 @@
+{
+ "id": 465781,
+ "bug_id": 127791,
+ "attachment_id": 0,
+ "creation_time": "2008-10-02T03:50:00Z",
+ "creator": "benjsc@FreeBSD.org",
+ "text": "There is a bug in synergy that causes delays under the current X windows version when using synergyc.\nBelow is a description of the report submitted to sourceforge. However since the synergy project hasn't been updated in close to 2 years I figured a local fix was also in order.\n\n--- \nBug description:\n\nThere is poor assumption in the synergy XWindowsEventQueue class. The assumption is \nthat all events will cause a change on the Xwindows file descriptor. This\nis not true. Some events are queued in the Xlib buffers. This is extremely\nnoticable with the new xcb version of Xorg.\n\nIt causes synergy to hang or delay for a period of time (timeout value in\nwaitForEvent) as there is no event on the fd to wake up the thread. This\ndelay is VERY annoying.\n\nThe fix is to check for events not only from the server itself but also in\nthe xlib event queue. We don't need to lock this test as it's a non\nblocking io call.\n\nWe change the XPending call in isEmpty to QueueLength to avoid the XFlush\ncall that XPending may cause.\n\nThis fix eliminates the delay at the cost of a little more cpu time - still\n\u003c 1% on my box.\n\nFix: The attached patch is a bump to port revision and also contains the required patch to fix the problem. Should just be able to apply.\n\nPlease note I don't have a ports commit bit so can't commit this.\n\nPatch attached with submission follows:\nHow-To-Repeat: Use synergyc on FBSD to connect to a synergy server."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 819767,
+ "bug_id": 199450,
+ "attachment_id": 0,
+ "creation_time": "2015-04-14T19:46:20Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Reduced to just a bit of inline asm:\n\n$ cat toint32.c\n// clang -cc1 -triple armv6--freebsd11.0-gnueabihf -emit-obj toint32.c\n\nint ToInt32(double d)\n{\n    int i;\n    unsigned tmp0;\n    unsigned tmp1;\n    unsigned tmp2;\n    asm (\n\"   mov     %1, %R4, LSR #20\\n\"\n\"   bic     %1, %1, #(1 \u003c\u003c 11)\\n\"\n\"   orr     %R4, %R4, #(1 \u003c\u003c 20)\\n\"\n\"   sub     %1, %1, #0xff\\n\"\n\"   subs    %1, %1, #0x300\\n\"\n\"   bmi     8f\\n\"\n\"   subs    %3, %1, #52\\n\"\n\"   bmi     1f\\n\"\n\"   bic     %2, %3, #0xff\\n\"\n\"   orr     %3, %3, %2, LSR #3\\n\"\n\"   mov     %Q4, %Q4, LSL %3\\n\"\n\"   b       2f\\n\"\n\"1:\\n\"\n\"   rsb     %3, %1, #52\\n\"\n\"   mov     %Q4, %Q4, LSR %3\\n\"\n\"2:\\n\"\n\"   subs    %3, %1, #31\\n\"\n\"   mov     %1, %R4, LSL #11\\n\"\n\"   bmi     3f\\n\"\n\"   bic     %2, %3, #0xff\\n\"\n\"   orr     %3, %3, %2, LSR #3\\n\"\n\"   mov     %2, %1, LSL %3\\n\"\n\"   b       4f\\n\"\n\"3:\\n\"\n\"   rsb     %3, %3, #0\\n\"\n\"   mov     %2, %1, LSR %3\\n\"\n\"4:\\n\"\n\"   orr     %Q4, %Q4, %2\\n\"\n\"   eor     %Q4, %Q4, %R4, ASR #31\\n\"\n\"   add     %0, %Q4, %R4, LSR #31\\n\"\n\"   b       9f\\n\"\n\"8:\\n\"\n\"   mov     %0, #0\\n\"\n\"9:\\n\"\n    : \"=r\" (i), \"=\u0026r\" (tmp0), \"=\u0026r\" (tmp1), \"=\u0026r\" (tmp2), \"=\u0026r\" (d)\n    : \"4\" (d)\n    : \"cc\"\n        );\n    return i;\n}"
+}

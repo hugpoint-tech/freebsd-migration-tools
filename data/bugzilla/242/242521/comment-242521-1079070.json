@@ -1,0 +1,8 @@
+{
+ "id": 1079070,
+ "bug_id": 242521,
+ "attachment_id": 209861,
+ "creation_time": "2019-12-11T12:43:49Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Comment on attachment 209861\npatch\n\n\u003e altivec-types.h:19:1: error: use of 'long long' in AltiVec types is invalid without '-mvsx'\n\nHmm, Clang 9.0.0 doesn't complain. Tested via -target powerpc64-unknown-freebsd13.0. Given \n\n\u003e +.if ${ARCH} == powerpc64\n\u003e +CFLAGS+=\t-mvsx\n\nAdding -mvsx globally (for all files) would defeat runtime detection and make the binary package unusable without VSX support (assuming auto-vectorization). Can you try adding -mvsx after -maltivec? If it works submit the fix upstream.\n\n# To build via GYP use build.sh in root directory\n$ rg -- -maltivec\nlib/freebl/freebl.gyp\n162:        '-maltivec'\n166:        '-maltivec'\n\nlib/freebl/Makefile\n793:$(OBJDIR)/$(PROG_PREFIX)gcm-ppc$(OBJ_SUFFIX): CFLAGS += -mcrypto -maltivec\n\n\u003e +    sysctlbyname(\"hw.cpu_features\", \u0026hwcaps, \u0026len, NULL, 0);\n\nhw.cpu_features (unlike hw.cpu_features2) will never return PPC_FEATURE2_*. Also, won't build on FreeBSD 11 due to incorrect includes. See upstream review comment."
+}

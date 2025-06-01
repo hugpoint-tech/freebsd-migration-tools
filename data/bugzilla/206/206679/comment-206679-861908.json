@@ -1,0 +1,8 @@
+{
+ "id": 861908,
+ "bug_id": 206679,
+ "attachment_id": 0,
+ "creation_time": "2016-01-27T22:30:57Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "6GBytes of RAM, 2 GByte of swap. 64GByte of disk. But ZFS (as an experiment) so the file system likely is more memory hungry than if I'd used UFS.\n\nI do not remember top showing it being nearly out of memory but I'll have to retry at some point if I want to be sure.\n\nI would have guessed that the file format has some 4GB limit that might have been reached, explaining why the terminology reads like a file truncation instead of out-of-memory.\n\nLooking around some I found one 2012 reference to code in ar that was reported to then look like:\n\n\t  /* Catch an attempt to grow an archive past its 4Gb limit.  */\n\t  if (archive_member_file_ptr != (file_ptr) offset)\n\t    {\n\t      bfd_set_error (bfd_error_file_truncated);\n\t      return FALSE;\n\t    }\n\nIf this was the issue it might imply needing the library to be split up in order to fit for  what is now qt's debug/libWebCore.a builds.\n\nLooks like you are right about WITH_DEBUG= : the WITH_DEBUG= is some stray text that should not be in my make.conf . share/mk/*'s (bsd.lib.mk and bsd.prog.mk) use the following sort logic to add -g:\n\n.if ${MK_DEBUG_FILES} != \"no\" \u0026\u0026 empty(DEBUG_FLAGS:M-g) \u0026\u0026 \\\n    empty(DEBUG_FLAGS:M-gdwarf-*)\nCFLAGS+= -g\nCTFFLAGS+= -g\n.endif\n\nAnd that is the only reason that I can think of for the WITH_DEBUG= existing. So I'll remove it but still use WITH_DEBUG_FILES= and see what happens."
+}

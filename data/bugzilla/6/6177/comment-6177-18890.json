@@ -1,0 +1,8 @@
+{
+ "id": 18890,
+ "bug_id": 6177,
+ "attachment_id": 0,
+ "creation_time": "1998-03-30T22:30:01Z",
+ "creator": "eric@ennovatenetworks.com",
+ "text": "\n\tAn oversized ping with record-route option fails the checksum test\n\tin ip_input and gets discarded.\n\n\tThe function ip_input in ip_input.c determines the IP header length\n\tfor each packet or fragment and save the length in the variable 'hlen'.\n\tLater on ip_input decides its a fragment and reassembles it and calls\n\ticmp_input with the header length.  Unfortunately, hlen is the length\n\tof the last fragments IP header, which may be different than the \n\theader length of the first fragment.  The 'record-route' option is \n\tan example of an option that is only present in the first fragment of \n\ta datagram.\n\nFix: \n\nIn the code scrap below, from ip_input, the comment and \n\tthe one line after the comment (hlen = ...) fix the problem.\n\n\t\n       if (((struct ipasfrag *)ip)-\u003eipf_mff \u0026 1 || ip-\u003eip_off) {\n            ipstat.ips_fragments++;\n            ip = ip_reass((struct ipasfrag *)ip, fp, \u0026ipq[sum]);\n            if (ip == 0)\n                 return;\n\n\t    /*\n\t     *  Get the reassembled packet's header length\n\t     */\n            hlen = IP_VHL_HL(ip-\u003eip_vhl) \u003c\u003c 2;\n\n            ipstat.ips_reassembled++;\n            m = dtom(ip);\nHow-To-Repeat: \n\tping -s 3000 -R remote-node"
+}

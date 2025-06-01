@@ -1,0 +1,8 @@
+{
+ "id": 886678,
+ "bug_id": 210829,
+ "attachment_id": 0,
+ "creation_time": "2016-07-06T08:46:45Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Matthias Andree from comment #1)\n\nI was not directly trying to build db5. It just showed up via dependencies. So I'm not familiar with it at all.\n\nSince bad pointers and freeing them tend to be security risks as well as just wrong so I'd hope for changes to avoid the bad (uninitialized) pointer use.\n\nLooking at db-5.3.28/src/os/os_alloc.c and its __os_free(. . .) implementation (found via grep) indicates that the such is an issue here:\n\nvoid\n__os_free(env, ptr)\n        ENV *env;\n        void *ptr;\n{\n. . .\n        if (DB_GLOBAL(j_free) != NULL)\n                DB_GLOBAL(j_free)(ptr);\n        else\n                free(ptr);\n}\n\nI will not show the whole routine here but all code paths require ptr to have a valid pointer value for testing and/or use.\n\nMy quick estimate would be that the specific \"goto err\" that I originally showed should instead be \"return ret;\" (or \"return (ret);\" in the style of the existing code).\n\nIf you have upstream contacts it would seem appropriate to propagate the information upstream (where ever that is)."
+}

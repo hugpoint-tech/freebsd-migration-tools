@@ -1,0 +1,8 @@
+{
+ "id": 818483,
+ "bug_id": 199169,
+ "attachment_id": 0,
+ "creation_time": "2015-04-06T03:35:07Z",
+ "creator": "luke.tw@gmail.com",
+ "text": "hi, Dmitry,\n\nThanks for your feedback.\nThat's right, but there is already one uma_cache in the struct uma_zone.\nLet me do an experiment on sleepq_zone. \nI have 4-core cpu and the mp_maxid is 3. \n(kgdb) p mp_maxid\n$1 = 3\n\nThe size of all per-cpu cache in sleepq_zone is 640 bytes.\n(kgdb) p sleepq_zone\n$2 = 0xfffff80002bb8000\n(kgdb) p sleepq_zone-\u003euz_cpu\n$3 = 0xfffff80002bb8200\n(kgdb) p masterzone_z-\u003euz_size - (0xfffff80002bb8200 - 0xfffff80002bb8000)\n$4 = 640\n\nSo, there are total 5 elements in the uz_cpu array\n(kgdb) p 640 / sizeof(struct uma_cache)\n$5 = 5\n\nOnly the first 4 elements are used. \n(kgdb) p sleepq_zone-\u003euz_cpu[0]\n$6 = {uc_freebucket = 0x0, uc_allocbucket = 0xfffff80002bb1c00, uc_allocs = 73, uc_frees = 0}\n(kgdb) p sleepq_zone-\u003euz_cpu[1]\n$7 = {uc_freebucket = 0x0, uc_allocbucket = 0xfffff8000516a800, uc_allocs = 18, uc_frees = 0}\n(kgdb) p sleepq_zone-\u003euz_cpu[2]\n$8 = {uc_freebucket = 0x0, uc_allocbucket = 0xfffff80004747c00, uc_allocs = 18, uc_frees = 0}\n(kgdb) p sleepq_zone-\u003euz_cpu[3]\n$9 = {uc_freebucket = 0x0, uc_allocbucket = 0xfffff800047a1c00, uc_allocs = 36, uc_frees = 0}\n(kgdb) p sleepq_zone-\u003euz_cpu[4]\n$10 = {uc_freebucket = 0x0, uc_allocbucket = 0x0, uc_allocs = 0, uc_frees = 0}"
+}

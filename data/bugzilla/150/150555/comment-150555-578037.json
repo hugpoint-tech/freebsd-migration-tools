@@ -1,0 +1,8 @@
+{
+ "id": 578037,
+ "bug_id": 150555,
+ "attachment_id": 0,
+ "creation_time": "2010-09-14T12:40:02Z",
+ "creator": "rs@bytecamp.net",
+ "text": "Enabling a gjournal on a GPT partitioned disk (da0 with da0p1) results in a journal not being able to disable. Without partitions (operating purely on da0), gjournal behaves correctly.\n\nFurthermore, one may disable gjournal continously with two different provider names, without coming to an end:\n\n# gjournal stop da0p1.journal\n# gjournal list\nID: 1247948886\nProviders:\n1. Name: gptid/30da8781-bff2-11df-bbf1-001b21153950.journal\n   Mediasize: 20401094144 (19G)\n   Sectorsize: 512\n   Mode: r0w0e0\nConsumers:\n1. Name: gptid/30da8781-bff2-11df-bbf1-001b21153950\n   Mediasize: 21474836480 (20G)\n   Sectorsize: 512\n   Mode: r1w1e1\n   Jend: 21474835968\n   Jstart: 20401094144\n   Role: Data,Journal\n\n# gjournal stop gptid/30da8781-bff2-11df-bbf1-001b21153950.journal\n# gjournal list\nGeom name: gjournal 1247948886\nID: 1247948886\nProviders:\n1. Name: da0p1.journal\n   Mediasize: 20401094144 (19G)\n   Sectorsize: 512\n   Mode: r0w0e0\nConsumers:\n1. Name: da0p1\n   Mediasize: 21474836480 (20G)\n   Sectorsize: 512\n   Mode: r1w1e1\n   Jend: 21474835968\n   Jstart: 20401094144\n   Role: Data,Journal\n\nand so on.\n\nHow-To-Repeat: # gpart create -s GPT da0\n# gpart add -t freebsd-ufs -s 20G da0\n# gjournal label da0p1\n# newfs -O 2 -J /dev/da0p1.journal\n# mount /dev/da0p1.journal /mnt\n# dd if=/dev/zero of=/mnt/file bs=1M count=1k\n# umount /mnt\n# gjournal sync\n# gjournal stop da0p1.journal\n# gjournal clear da0p1\nCannot clear metadata on da0p1: Operation not permitted.\ngjournal: Not fully done."
+}

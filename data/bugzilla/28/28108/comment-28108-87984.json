@@ -1,0 +1,8 @@
+{
+ "id": 87984,
+ "bug_id": 28108,
+ "attachment_id": 0,
+ "creation_time": "2001-06-12T21:50:01Z",
+ "creator": "mark@whistle.com",
+ "text": "Based on a cron.core image from my favorite, long running internet server\nappliance, I discovered (with help from gdb) that cron was leaking memory.\n\nBy code inspection, I discovered 2 leaks.\n\n1. Calls were made to login_getclass() without a cooresponding call to\nlogin_close(). This leaks 1 login_cap_t (plus associated data storage) for\nevery crontab entry. It appears this bug was introduced back in late 1997.\n\n2. There was a possibility of additional leakage (e-\u003eclass) due to the way\nstorage was freed in the error case for the call to entry.c:loadentry().\n\nFix: Apply the patch below.\nHow-To-Repeat: Fire up cron and keep touching crontab files to ensure it reloads the files\noften. Use ps to check on the memory usage or wait long enough for it to\nexhaust its memory limit. (While testing, I also put in a syslog() in to\nverify it is leaking the login_cap_t once per entry.)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 586102,
+ "bug_id": 152132,
+ "attachment_id": 0,
+ "creation_time": "2010-11-11T06:20:09Z",
+ "creator": "rfg@tristatelogic.com",
+ "text": "\tThere appears to be a bunch of utterly useless (and perhaps even\n\ttime wasting) code in script.c, and specifically within the\n\tfinish() function.\n\n\tIn that function there is a loop that reaps all child processes that\n\tare immediately available for reaping.  But this must be a leftover\n\tfrom an earlier time when script.c was implemented with -two- child\n\tprocesses.  Nowadays, it uses only one child process, i.e. the\n\tchild shell process.  So it makes no sense to loop while trying to\n\treap multiple child processes, because there is at most only one,\n\tthe child shell process (and so it isn't even necessary or useful\n\tto call wait3() because a simple call to wait() should do.)\n\n\tFurthermore, if the idea is to reap the one and only child process,\n\tthen before the reaping attempt even begins something positive\n\tshould be done to cause the child to understand that it should exit\n\tnow, i.e. calling close() on the \"master\" pty fd, i.e. just prior to\n\tall places in the code where the finish() function (or the done()\n\tfunction) is about to be called.  That should cause the child (shell)\n\tprocess to receive EOF on stdin/stdout/stderr, and that will probably\n\tcause it to figure out that it is time to go bye bye (if it hasn't\n\tdone so already).\n\nHow-To-Repeat: \tLook at the code."
+}

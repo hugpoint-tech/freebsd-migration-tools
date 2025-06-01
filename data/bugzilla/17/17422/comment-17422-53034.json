@@ -1,0 +1,8 @@
+{
+ "id": 53034,
+ "bug_id": 17422,
+ "attachment_id": 0,
+ "creation_time": "2001-09-21T03:26:56Z",
+ "creator": "bdluevel@heitec.net",
+ "text": "I found that the patch I've been using wouldn't work anymore\nbecause the source changed too much. I modified it; without\nactually knowing how it works, admittedly, so I can't be sure\nit's still good. The system appears to work just fine, however,\nso I can still do without /boot/loader.\n\nCould someone who knows machdep.c matters please review the thing and\nclose this very old PR? I've been using versions of this patch ever\nsince, and it always worked. Currently I'm using 4.4-Stable.\n\n\n--- sys/i386/i386/machdep.c.orig        Thu Sep 20 23:08:01 2001\n+++ sys/i386/i386/machdep.c     Thu Sep 20 23:11:12 2001\n@@ -1823,7 +1823,19 @@\n                preload_metadata = (caddr_t)bootinfo.bi_modulep + KERNBASE;\n                preload_bootstrap_relocate(KERNBASE);\n        } else {\n-               metadata_missing = 1;\n+              static u_int32_t oldmoduledata[] = {\n+                      1, sizeof(\"kernel\"), 0, 0,\n+                      2, sizeof(\"elf kernel\"), 0, 0, 0,\n+                      0x8004, 4, 0,\n+                      0x8003, 4, 0,\n+                      0, 0,\n+              };\n+\n+              preload_metadata = (caddr_t)\u0026oldmoduledata[0];\n+              strcpy((char *)\u0026oldmoduledata[2], \"kernel\");\n+              strcpy((char *)\u0026oldmoduledata[6], \"elf kernel\");\n+              oldmoduledata[11] = roundup2(bootinfo.bi_esymtab, 4);\n+              oldmoduledata[14] = bootinfo.bi_symtab;\n        }\n        if (bootinfo.bi_envp)\n                kern_envp = (caddr_t)bootinfo.bi_envp + KERNBASE;"
+}

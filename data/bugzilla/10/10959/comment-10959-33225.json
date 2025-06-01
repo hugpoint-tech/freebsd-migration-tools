@@ -1,0 +1,8 @@
+{
+ "id": 33225,
+ "bug_id": 10959,
+ "attachment_id": 0,
+ "creation_time": "1999-08-13T05:54:14Z",
+ "creator": "jkoshy@FreeBSD.org",
+ "text": "The following band-aid patch fixes the panic reported in PR kern/10959,\naffecting both 3-STABLE and 4-CURRENT.  It avoids the panic by behaving\nmore like the UFS code does.  Could you please review?\n\nI'm open to suggestions for a better fix for the panic.\n\nThanks,\nKoshy\n\u003cjkoshy@freebsd.org\u003e\n\nIndex: sys/msdosfs/msdosfs_vfsops.c\n===================================================================\nRCS file: /home/ncvs/src/sys/msdosfs/msdosfs_vfsops.c,v\nretrieving revision 1.46\ndiff -u -r1.46 msdosfs_vfsops.c\n--- msdosfs_vfsops.c\t1999/08/08 18:42:54\t1.46\n+++ msdosfs_vfsops.c\t1999/08/13 10:14:21\n@@ -779,7 +779,6 @@\n \tif (error)\n \t\treturn error;\n \tpmp = VFSTOMSDOSFS(mp);\n-\tpmp-\u003epm_devvp-\u003ev_specmountpoint = NULL;\n #ifdef MSDOSFS_DEBUG\n \t{\n \t\tstruct vnode *vp = pmp-\u003epm_devvp;\n@@ -805,6 +804,9 @@\n \terror = VOP_CLOSE(pmp-\u003epm_devvp,\n \t\t    (pmp-\u003epm_flags\u0026MSDOSFSMNT_RONLY) ? FREAD : FREAD | FWRITE,\n \t\t    NOCRED, p);\n+        if (error)\n+\t\treturn (error);\n+\tpmp-\u003epm_devvp-\u003ev_specmountpoint = NULL;\n \tvrele(pmp-\u003epm_devvp);\n \tfree(pmp-\u003epm_inusemap, M_MSDOSFSFAT);\n \tfree(pmp, M_MSDOSFSMNT);"
+}

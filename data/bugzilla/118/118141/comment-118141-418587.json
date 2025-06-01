@@ -1,0 +1,8 @@
+{
+ "id": 418587,
+ "bug_id": 118141,
+ "attachment_id": 0,
+ "creation_time": "2007-11-20T00:10:01Z",
+ "creator": "hsu@bbnetworks.net",
+ "text": "\nNokia modem connection generates this:\n\nNov 19 20:10:38 ranta kernel: ucom1: ucomreadcb: IOERROR\n\nand the serial port gets hung here.  Restarting pppd works, but the\nproblem repeats itself.\n\nWhen pppd restarts, chat gets a bufferfull of ppp data, so apparently\nthe data was received, it just was never passed to pppd reading the tty.\n\nucom seems to have a missing bit here, like it was not finished:\n\n\tif (status != USBD_NORMAL_COMPLETION) {\n\t\tif (!(sc-\u003esc_state \u0026 UCS_RXSTOP))\n\t\t\tprintf(\"%s: ucomreadcb: %s\\n\",\n\t\t\t       device_get_nameunit(sc-\u003esc_dev), usbd_errstr(status));\n\t\tsc-\u003esc_state |= UCS_RXSTOP;\n\t\tif (status == USBD_STALLED)\n\t\t\tusbd_clear_endpoint_stall_async(sc-\u003esc_bulkin_pipe);\n\t\t/* XXX we should restart after some delay. */\n\t\treturn;\n\t}\n\nCould this abnormal completion somehow be ignored?\n\nI have also seen writecb errors, but they do not seem to break the\nconnection.\n\nFix: \n\nCould the code do resubmit instead of error?\nHow-To-Repeat: \nNokia 6680 seems a good candidate, but I have seen the problem on 9300\nas well.  9300 is worse as it will not restart after one successful\nconnection without taking it off the usb for a moment."
+}

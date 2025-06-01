@@ -1,0 +1,8 @@
+{
+ "id": 543987,
+ "bug_id": 143807,
+ "attachment_id": 0,
+ "creation_time": "2010-02-11T17:00:01Z",
+ "creator": "pluknet@gmail.com",
+ "text": "I faced with incorrect return code checking in netrate's pthread_create(3) calls: pthread_create may return errcode \u003e 0, while in netrate/ code pthread_create() checked for \u003c 0 on error.\n\nfrom pthread_create(3):\nRETURN VALUES\n     If successful, the pthread_create() function will return zero.  Otherwise\n     an error number will be returned to indicate the error.\n\nWhat's in thr_create.c:\n\n                /*\n                 * Translate EPROCLIM into well-known POSIX code EAGAIN.\n                 */\n                if (ret == EPROCLIM)\n                        ret = EAGAIN;\n[...]\n        return (ret);\n\nSo.. Slightly modified code (let's call it tools/tools/netrate/juggle/juggle.c):\n$ make NTHR=3000\n$ ./juggle\n[...]\ncreate 2986\ncreate 2987\ncreate 2988\ncreate 2989\ncreate 2990\ncreate 2991\ncreate 2992\ncreate 2993\ncreate 2994\ncreate 2995\ncreate 2996\ncreate 2997\ncreate 2998\ncreate 2999\n^C^\n[something wrong here!]\n\nFixed slightly modified code version:\ncreate 1495\ncreate 1496\ncreate 1497\ncreate 1498\ncreate 1499\njuggle: main: pthread_create 35: Too many processes\n\nFix: Patch attached.\n\n\nPatch attached with submission follows:"
+}

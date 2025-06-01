@@ -1,0 +1,8 @@
+{
+ "id": 69095,
+ "bug_id": 22179,
+ "attachment_id": 0,
+ "creation_time": "2000-10-21T13:10:01Z",
+ "creator": "yar@comp.chem.msu.su",
+ "text": "\n\t1. Many network interface drivers' XX_start() routines don't\n\t   check if an interface is up and running because they rely\n\t   on upper layers doing that. The vlan_start() routine,\n\t   which calls XX_start() routines of underlying \"parent\" drivers,\n\t   fails to do that, causing system panic when a packet is\n           being sent via a vlan interface while its parnet interface\n\t   is down.\n\n\t2. The VLAN driver copies flags from a parent interface to\n\t   a vlan interface mindlessly. However, setting some flags\n\t   implies certain additional actions. In particular,\n\t   bringing an interface up involves setting up a link-layer\n\t   route to it. The VLAN driver fails to do that because it\n\t   just copies the bit.\n\n\t3. The if_up() and if_down() routines must be called at splnet()\n\t   or equivalent. They also shouldn't be called if an interface is\n\t   already up or down, correspondingly, because they do no\n\t   additional checks. The VLAN driver is not aware of the above.\n\n\t   I'd also suggest adding a couple of words on the properties\n\t   of if_up()/if_down() to the ifnet(9) man page.\n\nHow-To-Repeat: \n\t1. Try to assign an IP address to a VLAN interface which parent\n\t   is down and see the system panic due to sending a gratituous\n\t   ARP through the parent.\n\t2. Assign a parent and an IP address to a VLAN interface.\n\t   Then remove the parent with \"ifconfig vlanX -vlandev\".\n\t   Then add another (or the same) parent back. See that packets\n\t   don't go out, because there is no proper link-layer route\n\t   to the VLAN interface."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 53088,
+ "bug_id": 17437,
+ "attachment_id": 0,
+ "creation_time": "2000-03-18T09:36:51Z",
+ "creator": "mikko@rsasecurity.com",
+ "text": "(Following up on myself after further investigations):\n\nNope, the above patch is insufficient, it only serves to uncover\nother bugs.\n\nThe problem is that libc_r does not do complete cleanup of the other\nthreads after the fork.  All deleted threads must be quietly removed\nfrom any queues they happen to be waiting in, or they may later be\nsubject to \"revival\" after they have been freed.\n\nScenario (typical use of pthread_atfork()):\n\t - forking thread aquires a number of mutexes.\n\t - another thread waits on one of the mutexes\n\t - after forking, the mutexes are released,\n\t   which will make any waiting threads\n\t   runnable -- but they have been deallocated!\n\t - Bad Things(tm) happen...\n\nAll mutexes where this may happen can be conveniently located via the\n\"mutexq\" field of the running thread, so this particular scenario is\neasily fixed.\n\nThere is no similar way to handle threads queued on, for example,\ncondition variables, as there is no way to find the head of the \"qe\"\nand \"pqe\" queue entries.  The \"join_queue\" should be emptied too.\n\nBasically, right now libc_r does not work at all after a fork().\n\n      Regards,\n      /Mikko"
+}

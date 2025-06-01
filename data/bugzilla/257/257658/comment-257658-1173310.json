@@ -1,0 +1,8 @@
+{
+ "id": 1173310,
+ "bug_id": 257658,
+ "attachment_id": 226992,
+ "creation_time": "2021-08-06T15:38:51Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Comment on attachment 226992\ntail of poudriere failed log for net/avalanchemq\n\nNote that these symbols are the result of Crystal's lib_ssl/lib_crypto assuming an old OpenSSL API, because it's misdetecting the version.  These symbols have been gone and renamed or replaced by different APIs on OpenSSL 1.1.0, and Crystal uses old interfaces. For instance, EVP_MD_CTX_create() is EVP_MD_CTX_new() in newer OpenSSL versions, SSLv23_method is TLS_method, and SSL_library_init() is gone.\n\nCrystal basically and generally knows to handle these, and replacing the first few lines of lib_crypto.cr by these\n\n{% begin %}\n  lib LibCrypto\n      OPENSSL_VERSION = \"1.1.1\"\n  end\n{% end %}\n\nor the version detection macro set from line 7 to 24 in lib_ssl.cr (both .cr files in $PREFIX/lib/crystal/openssl/) by\n\n{% begin %}\n  lib LibSSL\n      LIBRESSL_VERSION = \"0.0.0\"\n      OPENSSL_VERSION = \"1.1.1\"\n  end\n{% end %}\n\nis good enough to compile something on FreeBSD 13.0."
+}

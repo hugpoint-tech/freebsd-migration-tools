@@ -1,0 +1,8 @@
+{
+ "id": 1333186,
+ "bug_id": 276793,
+ "attachment_id": 0,
+ "creation_time": "2024-11-03T04:18:14Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "The font is autoloaded only in the graphics loader, not the text loader. The load function is stubbed out for the text loader.\n\nvt gets its fonts (not font names) from the boot loader.\n\nSince the font stuff was intertwingled with the gfx stuff, it was trimmed for the text loader. The intertwingling and the unwillingness to heed my review feedback in the original reviews has been a great source of frustration as I have to unwind the needless interdependencies one at a time as needs present themselves.\n\nautoload_font() at the very least would need to move to a new file (it can't be co-located with the gfx stuff if you want the text loader to use it). And either we'd need to remove cons_update_mode from it and require the client loaders to call it after autoload_font, or we'd need to add a new stub for that in gfx_bios.c. I'm not sure which is more practical since the font_insert stuff has other gfx dependencies that at first glance likely could be made more formal APIs so that the gfx backend and the text backend could do sane things, but I've not looked at in enough depth to say for sure. I'd say a day or two of effort would be needed to come up with an acceptable refactoring (though maybe more).\n\nSo either we have the status quo where you get what you get, we refactor autoload_font and the other font stuff to have 0 dependencies on anything gfx, or we devise a new way for vt to get its fonts. Given history and my already having spend a lot of time unwinding dependencies, I opted for the easiest of these options initially."
+}

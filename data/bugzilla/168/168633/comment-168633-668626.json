@@ -1,0 +1,8 @@
+{
+ "id": 668626,
+ "bug_id": 168633,
+ "attachment_id": 0,
+ "creation_time": "2012-06-03T12:10:14Z",
+ "creator": "ports-xorg-server@oldach.net",
+ "text": "\nSince the new bsd.options.mk scheme, it is not possible to configure\nx11-servers/xorg-server without HAL. Even when the HAL option disabled,\nthe config calls for a sysutils/hal dependency:\n\n# make -C /usr/ports/x11-servers/xorg-server -V WITHOUT_HAL -V LIB_DEPENDS\ntrue\ndrm:/usr/ports/graphics/libdrm hal.1:/usr/ports/sysutils/hal GL.1:/usr/ports/graphics/libGL \n# \n\nThis is caused by the following x11-servers/xorg-server/Makefile\nsnippet:\n\n\u003e OPTIONS=        AIGLX   \"Compile with Accelerated Indirect GLX support\" on \\\n\u003e                 SUID    \"Install the Xorg server with setuid bit set\" on\n\u003e \n\u003e .include \u003cbsd.port.pre.mk\u003e\n\u003e \n\u003e .if ${ARCH} == sparc64\n\u003e OPTIONS+=       HAL     \"Compile with HAL config support\" off\n\u003e .else\n\u003e OPTIONS+=       HAL     \"Compile with HAL config support\" on\n\u003e .endif\n\nIt appears that we need bsd.port.pre.mk to have ARCH defined. On the\nother hand, including bsd.port.pre.mk already fiddles with an existing\nOPTIONS variable through inclusion of bsd.options.mk. Some tests\nrevealed that, after bsd.port.pre.mk is included, it is not possible\nto define further OPTIONS any more; they are recognized, but they all\nhandled as if they were enabled, regardless of whether they have been\nuser-disabled or no.\n\nFix: \n\nNo idea. I think the new bsd.options.mk scheme has a flaw."
+}

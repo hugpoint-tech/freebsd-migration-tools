@@ -1,0 +1,8 @@
+{
+ "id": 1360177,
+ "bug_id": 275848,
+ "attachment_id": 0,
+ "creation_time": "2025-04-20T19:39:28Z",
+ "creator": "yuri@freebsd.org",
+ "text": "This problem persists with latest Polars versions.\nMy attempt to update the misc/py-polars post is prevented by this problem.\n\nThe problem can be reproduced by applying the patch https://freebsd.org/~yuri/py-polars.patch, and building in the port directory /usr/ports/misc/py-polars\n\nIt builds the shared library binary that can't be loaded.\n\nProblematic binary: https://freebsd.org/~yuri/polars.abi3.so\n\n\nThis program:\n\u003e #include \u003cdlfcn.h\u003e\n\u003e #include \u003cstdio.h\u003e\n\u003e \n\u003e int main() {\n\u003e         void *rc = dlopen(\"/usr/local/lib/python3.11/site-packages/polars/polars.abi3.so\", RTLD_NOW);\n\u003e         printf(\"rc=%p: %s\\n\", rc, dlerror());\n\u003e }\n\nprints:\n\u003e $ ./a.out \n\u003e rc=0x0: /usr/local/lib/python3.11/site-packages/polars/polars.abi3.so: No space available for static Thread Local Storage\n\nBased on the ML discussion:\nOne possible reason is that wrong tls-model is used. It probably uses the tls-model initial-exec intended for non-PIC binaries instead of the tls-model global-dynamic intended for PIC binaries."
+}

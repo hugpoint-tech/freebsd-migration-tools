@@ -1,0 +1,8 @@
+{
+ "id": 887271,
+ "bug_id": 210884,
+ "attachment_id": 0,
+ "creation_time": "2016-07-09T17:28:24Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "Another set of problem from the same commit\nhttps://people.freebsd.org/~pho/stress/log/kostik917.txt\n\nkern_exit.c:exit1() does callout_stop(\u0026p-\u003ep_itcallout) == 0.\n\ndiff --git a/sys/kern/kern_exit.c b/sys/kern/kern_exit.c\nindex 7b73236..929c2c0 100644\n--- a/sys/kern/kern_exit.c\n+++ b/sys/kern/kern_exit.c\n@@ -344,7 +344,7 @@ exit1(struct thread *td, int rval, int signo)\n         * executing, prevent it from rearming itself and let it finish.\n         */\n        if (timevalisset(\u0026p-\u003ep_realtimer.it_value) \u0026\u0026\n-           callout_stop(\u0026p-\u003ep_itcallout) == 0) {\n+           _callout_stop_safe(\u0026p-\u003ep_itcallout, CS_EXECUTING, NULL) == 0) {\n                timevalclear(\u0026p-\u003ep_realtimer.it_interval);\n                msleep(\u0026p-\u003ep_itcallout, \u0026p-\u003ep_mtx, PWAIT, \"ritwait\", 0);\n                KASSERT(!timevalisset(\u0026p-\u003ep_realtimer.it_value),"
+}

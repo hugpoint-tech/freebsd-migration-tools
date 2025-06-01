@@ -1,0 +1,8 @@
+{
+ "id": 1312276,
+ "bug_id": 277060,
+ "attachment_id": 0,
+ "creation_time": "2024-06-07T17:00:19Z",
+ "creator": "martymac@FreeBSD.org",
+ "text": "Hello,\n\nI am facing the same bug too :\n\n$ mkdir -p /tmp/src/foo/bar\n$ rm -rf /tmp/dst ; mkdir -p /tmp/dst\n$ cd /tmp/src\n$ echo 'foo/bar/' | /bin/pax -r -w -d -pe \"/tmp/dst\"\n\u003clooping infinitely\u003e\n\nHere, pax(1) infinitely deletes and re-creates /tmp/dst/foo/bar/.\n\nThe problem is that chk_path() (bin/pax/file_subs.c), called from node_creat() also creates the leaf directory when a trailing '/' appears in the directory name to create. When the execution goes back from chk_path() to node_creat(), the function still cannot create the leaf directory (it has been created by chk_path()), so it unlinks it and calls node_creat() again. The function re-creates it, and so on...\n\nA possible fix is to make node_creat() detect trailing slashes so it does NOT create a leaf directory but only intermediate ones. I've added a simple check in that way in the attached patch.\n\nBest regards,\n\nGanael."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1337620,
+ "bug_id": 283102,
+ "attachment_id": 0,
+ "creation_time": "2024-12-03T16:31:33Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "This used to panic, which was fixed in #273715.\n\nThere's still an issue that the admin basically has to decide if dumpon should work when enabled on boot or when it's enabled on the running system, as dumpdev is set before interface renaming happens.\n\nExample: \n\n    ifconfig_vtnet0_name=\"uplink\"\n    ifconfig_uplink=\"inet 192.168.255.3/24\"\n    defaultrouter=\"192.168.255.1\"\n\n    vlans_uplink=\"vlanone vlantwo\"\n\n    create_args_vlanone=\"vlan 1001\"\n    ifconfig_vlanone=\"inet 10.1.1.1/24\"\n\n    create_args_vlantwo=\"vlan 1002\"\n    ifconfig_vlantwo=\"inet 10.1.2.1/24\"\n\n    dumpdev=\"uplink\"\n    dumpon_flags=\"-k /root/netdump_public.pem -i 0 -c 192.168.255.3 -s 192.168.255.1 -g 192.168.255.1\"\n\nThe example above will not work when started during boot (for which dumpdev=\"vtnet0\" would be required), but will after the system is running.\n\nNot sure if this is a \"kern\" issue or more of a userland rc script issue (depending on where it is fixed). It might be possible to track renamed devices well enough, so that dumpdev=vtnet0 would always work).\n\nI tested this last over a year ago, but I'm quite confident this is still the status quo."
+}

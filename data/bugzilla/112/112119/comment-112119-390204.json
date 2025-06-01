@@ -1,0 +1,8 @@
+{
+ "id": 390204,
+ "bug_id": 112119,
+ "attachment_id": 0,
+ "creation_time": "2007-04-27T20:31:19Z",
+ "creator": "thomas@FreeBSD.org",
+ "text": "* Scott Long, 2007-04-27 :\n\n\u003e Oh hell, I know exactly what the problem is!  The opcode for a\n\u003e TEST_UNIT_READY is 0x00.  This is probably the command that is\n\u003e generating the CHECK_CONDITION.  The test for saved_cmd is entirely\n\u003e bogus.\n\nHmmmm. Looks like a very plausible culprit. Good catch Scott!\n(I felt there had to be something wrong when I wrote that test,\nincidentally, precisely because of TEST_UNIT_READY).\n\nNikolay, Ganbold, (and others), here's another patch against 1.42.2.3,\nplease let me know if it works for you.\n\nThomas.\n\nIndex: atapi-cam.c\n===================================================================\nRCS file: /space/mirror/ncvs/src/sys/dev/ata/atapi-cam.c,v\nretrieving revision 1.50\ndiff -u -r1.50 atapi-cam.c\n--- atapi-cam.c\t14 Mar 2007 01:59:00 -0000\t1.50\n+++ atapi-cam.c\t27 Apr 2007 19:26:09 -0000\n@@ -729,7 +743,7 @@\n \t\t * issued a REQUEST SENSE automatically and that operation\n \t\t * returned without error.\n \t\t */\n-\t\tif (request-\u003eu.atapi.saved_cmd != 0 \u0026\u0026 request-\u003eerror == 0) {\n+\t\tif (request-\u003eu.atapi.sense.key != 0 \u0026\u0026 request-\u003eerror == 0) {\n \t\t    bcopy (\u0026request-\u003eu.atapi.sense, \u0026csio-\u003esense_data, sizeof(struct atapi_sense));\n \t\t    csio-\u003eccb_h.status |= CAM_AUTOSNS_VALID;\n \t\t}"
+}

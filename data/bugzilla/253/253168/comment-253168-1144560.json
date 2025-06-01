@@ -1,0 +1,8 @@
+{
+ "id": 1144560,
+ "bug_id": 253168,
+ "attachment_id": 0,
+ "creation_time": "2021-02-01T17:27:12Z",
+ "creator": "jamie.baxter@tutanota.com",
+ "text": "When processing periodic daily security scripts and 800.loginfail is enabled, the script fails to report any login failures when:\n1. It is the first day of a new logfile (so the previous day is turned over by newsyslog).\n2. The turned over logfile does NOT end in .gz or .bz2\n\nThis occurs within the catmsgs() function in 800.loginfail, specifically:\n---\ncase $f in\n  *.gz)       zcat -f $f;;\n  *.bz2)      bzcat -f $f;;\nesac\n---\n\nI understand that the default newsyslog.conf turns over auth.log with bzip2 (flag J), however I do not compress turned over text logfiles (am running root on ZFS and taking advantage of dataset-level compression at /var/log), and as such they get renamed auth.log.X instead of auth.log.X.bz2. While this is probably an overly simplistic solution, the following modification allows 800.loginfail to function properly on {gz,bz2}-lacking files if they are not compressed:\n---\ncase $f in\n  *.gz)       zcat -f $f;;\n  *.bz2)      bzcat -f $f;;\n  *)          cat $f;;\nesac\n---\nI understand I may be an edge case here, but thought I would bring it to the attention of the developers. I presume it also extends to weekly or monthly scheduling of 800.loginfail for any turned over logfiles that fail to have {gz,bz2} appended to the filenames. Similarly, I also expect that it also extends across most recent versions of FreeBSD (at least 8 through CURRENT) as it appears 800.loginfail has not been updated in almost 7 years."
+}

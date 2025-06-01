@@ -1,0 +1,8 @@
+{
+ "id": 99828,
+ "bug_id": 31629,
+ "attachment_id": 0,
+ "creation_time": "2001-10-30T09:10:00Z",
+ "creator": "alane@geeksrus.net",
+ "text": "If you use \"Save Image As...\" to save a graphic in Konqueror[1], if the saved file doesn't exist prior to this, a warning box is produced that tells you that \"can't set permissions on [file you just saved]\".\n\n[1]This is a general error, though. Any KIO::copy(), KIO::copyAs(), etc call will provoke this when creating a new file. It's just most obvious in Konq. Precondition is that the image you are saving is NOT in the cache, and the target file does not already exist.\tS\n\nFix: In job.cpp, the KIO::copy() results in a CopyJob object, which, in its copyNextFile() method, creates a FileCopyJob object. (still with me?)\n\nA permission value of -1 used throughout the KIO* code to indicate that we don't want any special perms.\n\nA mode_t (uint16_t) is used to hold the perms to pass to the FileCopyJob. This results in passing 0x0000ffff, *NOT* -1 (0xffffffff), as the perms. When, in kio/file/file.cc, in another process no less, we check for -1, it fails, so we try to chmod the newly created file to perms 17777777. chmod(2) doesn't like those bits for a file.\n\nFix: change mode_t to int, and change (mode_t)-1 to -1 when the FileCopyJob is being set up.\n\n[alane@wwweasel /usr/ports/x11/kdelibs2/files]$ cat patch-CopyJob\\:\\:copyNextFile-int_perms\nHow-To-Repeat: Go to any web site. Use \"save image as...\" from right-button menu.\nMake sure you're creating a new file."
+}

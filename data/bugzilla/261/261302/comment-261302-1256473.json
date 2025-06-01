@@ -1,0 +1,8 @@
+{
+ "id": 1256473,
+ "bug_id": 261302,
+ "attachment_id": 0,
+ "creation_time": "2023-04-23T09:09:57Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Daniel Engberg from comment #72)\n\u003e it doesn't necessarily mean that it'll pick up the legacy version first\n\noverride.mk was designed primarily for Meson which standardized pkg-config but should also work for autotools where pkg-config is common. Unfortunately, CMake prefers its own module system instead of pkg-config with standard modules being those shipped with CMake itself. To support USES=cmake in override.mk someone needs to catalogue third-party CMake modules used to find FFmpeg and figure out the common workaround.\n\n$ pkg info -l cmake-core | fgrep .cmake | xargs fgrep -Hi avcodec || echo Exit $?\nExit 1\n\nNote, USES=localbase in override.mk reorders -I/usr/local/include if added by another dependency to the end of the search order but it doesn't affect -L/usr/local/lib as there's no equivalent for -I vs. -isystem i.e., to enforce -L/path -lfoo one is supposed to pass /path/libfoo.so instead. \n\n\u003e Perhaps temporarily \"hide\" one version somehow?\n\nDepends on what is used to find ffmpeg. If pkg-config then PKG_CONFIG_LIBDIR can override the primary location for *.pc files. However, doing so will break search for other dependencies via pkg-config and not necessary because PKG_CONFIG_PATH *prepends* the location e.g.,\n\n$ pkg install ffmpeg ffmpeg4\n$ pkg-config --path libavcodec\n/usr/local/libdata/pkgconfig/libavcodec.pc\n$ PKG_CONFIG_PATH=/usr/local/ffmpeg4/libdata/pkgconfig pkg-config --path libavcodec\n/usr/local/ffmpeg4/libdata/pkgconfig/libavcodec.pc"
+}

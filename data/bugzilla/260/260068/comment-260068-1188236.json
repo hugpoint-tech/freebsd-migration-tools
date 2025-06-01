@@ -1,0 +1,8 @@
+{
+ "id": 1188236,
+ "bug_id": 260068,
+ "attachment_id": 0,
+ "creation_time": "2021-11-28T06:56:07Z",
+ "creator": "ozkan.kirik@gmail.com",
+ "text": "on HostB, still vlan headers are lost for incoming packets even with no if_vlans created.\n\nBut i hit a strange issue to test this. To receive packages without creating em1.110 interface, I removed the vlanhwfilter flag as:\n- ifconfig em1 -vlanhwfilter\n\ntcpdump can receive tagged frames without netmap app. After starting the netmap bridge, tcpdump couldnt receive tagged frames. I checked the ifconfig em1 flags for if the promisc exists and vlanhwfilter not exists. Flags are good: promisc enabled, and vlanhwfilter not enabled. After running the commands below while netmap bridge is running:\n- ifconfig em1.110 create; ifconfig em1.110 destroy\ntcpdump could recevie packages but, vlan tags stripped. \n\nIt's possible to reproduce this issue using jails with single host.\nCreate a virtual host which has at least 3 e1000 interfaces.\n- em0 for managing host\n- em1 and em2 should be connected same network\n\nuse this commands to reproduce:\n\nOpen two ssh terminal.\nFirst terminal:\n* ifconfig em1.110 create 10.10.10.1/24 up\n* ifconfig em1 promisc -tso -lro -rxcsum -txcsum -tso6 -rxcsum -txcsum\n-tso6 -rxcsum6 -txcsum6 -vlanhwtag -vlanhwcsum -vlanhwtso -vlanhwfilter up\n* ./bridge -i netmap:em1 -i netmap:em1^ 2\u003e/dev/null \u0026\n* tcpdump -eni em1\n\nSecond terminal:\n* jail -c -n host2 persist vnet vnet.interface=em2\n* jexec host2 ifconfig em2 up\n* jexec host2 ifconfig em2.110 create 10.10.10.2/24 up\n* jexec host2 ping 10.10.10.1"
+}

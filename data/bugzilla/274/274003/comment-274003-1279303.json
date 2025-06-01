@@ -1,0 +1,8 @@
+{
+ "id": 1279303,
+ "bug_id": 274003,
+ "attachment_id": 0,
+ "creation_time": "2023-10-11T05:26:21Z",
+ "creator": "bakul@iitbombay.org",
+ "text": "Using \"bhyve -G 1234\" I was able to glean some more details.\n\"service restart wlan0\" triggers a panic. The relevant backtrace part:\n\n#16 \u003csignal handler called\u003e\n#17 ieee80211_ratectl_node_deinit (ni=0xfffffe0075cb2000)\n    at /home/FreeBSD/current/sys/net80211/ieee80211_ratectl.h:127\n#18 node_free (ni=0xfffffe0075cb2000)\n    at /home/FreeBSD/current/sys/net80211/ieee80211_node.c:1301\n#19 0xffffffff80cf237b in ieee80211_node_vdetach (\n    vap=vap@entry=0xfffffe00757e9010)\n    at /home/FreeBSD/current/sys/net80211/ieee80211_node.c:206\n#20 0xffffffff80cc52d2 in ieee80211_vap_detach (\n    vap=vap@entry=0xfffffe00757e9010)\n\npoking around with gdb, notice the value of vap, which seems to be uninitialized! ni seems ok. Seems weird! Is this a race condition or some precondition not being checked or gdb lying? I will continue looking. Should this be reported on some other bug#?\n\n(gdb) f 17\n#17 ieee80211_ratectl_node_deinit (ni=0xfffffe0075cb2000)\n    at /home/FreeBSD/current/sys/net80211/ieee80211_ratectl.h:127\n127             vap-\u003eiv_rate-\u003eir_node_deinit(ni);\n(gdb) l\n122     static __inline void\n123     ieee80211_ratectl_node_deinit(struct ieee80211_node *ni)\n124     {\n125             const struct ieee80211vap *vap = ni-\u003eni_vap;\n126\n127             vap-\u003eiv_rate-\u003eir_node_deinit(ni);\n128     }\n129\n130     static int __inline\n131     ieee80211_ratectl_rate(struct ieee80211_node *ni, void *arg, uint32_t iarg)\n(gdb) p vap\n$6 = (const struct ieee80211vap *) 0xdeadc0dedeadc0de"
+}

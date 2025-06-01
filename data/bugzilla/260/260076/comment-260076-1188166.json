@@ -1,0 +1,8 @@
+{
+ "id": 1188166,
+ "bug_id": 260076,
+ "attachment_id": 229757,
+ "creation_time": "2021-11-27T12:11:46Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 229757\nAn NFS client that crashes the server with a bad slotid.\n\nnfsrvd_sequence() accepts the client's slotid without checking\nagainst 0..64:\n\n  nd-\u003end_slotid = fxdr_unsigned(uint32_t, *tl++);\n\nThis can cause a crash when nd_slotid is later used to index\ninto sess_slots.\n\nI've attached a demo:\n\n# uname -a\nFreeBSD  14.0-CURRENT FreeBSD 14.0-CURRENT #107 main-n250904-c4c468281fb6-dirty: Sat Nov 27 06:21:53 EST 2021     rtm@xxx:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM  riscv\n# cc fnfsd_6.c\n# ./a.out\n...\npanic: Fatal page fault at 0xffffffc000317a82: 0x4000000000000000\n--- exception 13, tval = 0x4000000000000000\nm_free() at m_free+0x10\nm_freem() at m_freem+0x22\nnfsv4_seqsess_cacherep() at nfsv4_seqsess_cacherep+0x56\nnfsrv_cache_session() at nfsrv_cache_session+0x114\nnfssvc_program() at nfssvc_program+0x624\nsvc_run_internal() at svc_run_internal+0x808\nsvc_thread_start() at svc_thread_start+0xe\nfork_exit() at fork_exit+0x68\nfork_trampoline() at fork_trampoline+0xa"
+}

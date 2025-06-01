@@ -1,0 +1,8 @@
+{
+ "id": 1022890,
+ "bug_id": 230498,
+ "attachment_id": 0,
+ "creation_time": "2018-11-22T00:22:50Z",
+ "creator": "ian@niw.com.au",
+ "text": "I did make a pretty naive fix for this shortly after reporting it as the system in question was crashing several times a day. Since applying this I have has no further issues with it. It does mean the application querying gets back some null pointers, but its likely better the application exits (if it does not check for NULL pointers) than the entire system crashing ?\n\nIndex: rtsock.c\n===================================================================\n--- rtsock.c    (revision 339318)\n+++ rtsock.c    (working copy)\n@@ -1556,8 +1556,10 @@\n            rt_mask(rt), \u0026ss);\n        info.rti_info[RTAX_GENMASK] = 0;\n        if (rt-\u003ert_ifp) {\n-               info.rti_info[RTAX_IFP] = rt-\u003ert_ifp-\u003eif_addr-\u003eifa_addr;\n-               info.rti_info[RTAX_IFA] = rt-\u003ert_ifa-\u003eifa_addr;\n+               if (rt-\u003ert_ifp-\u003eif_addr)\n+                       info.rti_info[RTAX_IFP] = rt-\u003ert_ifp-\u003eif_addr-\u003eifa_addr;\n+               if (rt-\u003ert_ifa)\n+                       info.rti_info[RTAX_IFA] = rt-\u003ert_ifa-\u003eifa_addr;\n                if (rt-\u003ert_ifp-\u003eif_flags \u0026 IFF_POINTOPOINT)\n                        info.rti_info[RTAX_BRD] = rt-\u003ert_ifa-\u003eifa_dstaddr;\n        }"
+}

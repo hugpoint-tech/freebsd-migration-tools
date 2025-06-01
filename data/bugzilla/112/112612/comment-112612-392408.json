@@ -1,0 +1,8 @@
+{
+ "id": 392408,
+ "bug_id": 112612,
+ "attachment_id": 0,
+ "creation_time": "2007-05-12T13:30:15Z",
+ "creator": "yar@comp.chem.msu.su",
+ "text": "\ttcpdump(1) on an additional loopback interface shows no\n\ttraffic at all.  The traffic can be seen if tcpdump(1) runs\n\ton the primary loopback interface instead, which is usually\n\tlo0.\n\n\tI believe that the bug was introduced in rev. 1.111 of\n\tif_loop.c.  Due to that change, if_simloop() explicitly\n\tpasses any loopback traffic to BPF on behalf of loif, i.e.,\n\tthe primary loopback interface.\n\nFix: \n\nNot know yet, but a promising approach is to test IFF_LOOPBACK\n\ton the actual interface, ifp, and not override it with loif in\n\tthe bpf_mtap2() call if the flag is set.\nHow-To-Repeat: \t1. Create an additional lo(4) interface:\n\t\tifconfig lo1 create\n\t\tifconfig lo1 127.0.0.2\n\t2. Create ipfw rules to see that traffic actually goes via lo1:\n\t\tipfw add 50 count icmp from any to any via lo0\n\t\tipfw add 50 count icmp from any to any via lo1\n\t3. Start tcpdump on lo1:\n\t\ttcpdump -vpn -i lo1 icmp\n\t4. Ping via lo1:\n\t\tping -c1 127.0.0.1\n\t5. See the counter increase on lo1, but no traffic in tcpdump.\n\t6. Repeat #3,4 running tcpdump on lo0 instead, see the missing\n\t   traffic showing up as though it flows via lo0."
+}

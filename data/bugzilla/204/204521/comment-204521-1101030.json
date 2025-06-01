@@ -1,0 +1,8 @@
+{
+ "id": 1101030,
+ "bug_id": 204521,
+ "attachment_id": 0,
+ "creation_time": "2020-05-06T05:24:32Z",
+ "creator": "jsm@FreeBSD.org",
+ "text": "Still does not work..\n\nI looked into the bus width thing though.. it sets 1 bit even though capability is 4 bit\nin mmc.c\nmmc_app_decode_scr(uint32_t *raw_scr, struct mmc_scr *scr)\n{\n\tunsigned int scr_struct;\n\n\tmemset(scr, 0, sizeof(*scr));\n\n\tscr_struct = mmc_get_bits(raw_scr, 64, 60, 4);\n\tif (scr_struct != 0) {\n\t\tprintf(\"Unrecognised SCR structure version %d\\n\",\n\t\t    scr_struct);\n\t\treturn;\n\t}\n\tscr-\u003esda_vsn = mmc_get_bits(raw_scr, 64, 56, 4);\n\tscr-\u003ebus_widths = mmc_get_bits(raw_scr, 64, 48, 4);\n}\nand in mmc_discover_cards function in mmc.c\nif ((host_caps \u0026 MMC_CAP_4_BIT_DATA) \u0026\u0026\n\t\t\t    (ivar-\u003escr.bus_widths \u0026 SD_SCR_BUS_WIDTH_4))\n\t\t\t\tivar-\u003ebus_width = bus_width_4;\n\nbut bus_width is 1 and iirc 4 on openbsd so ivar-\u003escr.bus_widths \u0026 SD_SCR_BUS_WIDTH_4 is false. Removing it sets the bus width to 4 bits, but still controller timeout.\n\nso perhaps mmc_app_decode_scr does not apply to Realteks way of doing things?"
+}

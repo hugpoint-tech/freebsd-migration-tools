@@ -1,0 +1,8 @@
+{
+ "id": 45336,
+ "bug_id": 14900,
+ "attachment_id": 0,
+ "creation_time": "1999-11-15T18:00:00Z",
+ "creator": "rivers@dignus.com",
+ "text": "\n I have seen, every-now-and-then, panics with 3.3-RELEASE.  \n \n After observing when these occur, I was able to put together\n a sequence of programs to run which will cause the panic.\n\n My debugging of the kernel indicates that pmap_pte_quick() \n is being passed a bad `pmap' parm.  Although, I'm unable\n to take it from there.\n\n Here's the traceback:\n\n\tpmap_pte_quick()+12\n\tpmap_ts_referenced()\n\tvm_pageout_page_stats()\n\tvm_pageout()\n\tkproc_start()\n\tfork_trampoline()\n\n The particular instruction which causes the panic is:\n\n\tmovl 0(%edx,%eax,4),%ecx\n\n which comes from the source line:\n\n\tif (pde = (unsigned) pmap-\u003epm_pdir[va \u003e\u003e PDRSHIFT]) {\n\n this is the instruction to reference the pm_pdir array. %edx\n should contain a correct value for pmap-\u003epm_pdir, but contains\n trash (or, at least an address outside of the kernel's address\n table.)  %edx is loaded from the in-coming `pmap' parm.\n\nHow-To-Repeat: \n\tI have the reproduction - unfortunately it involves running\n\ta purchase program, so I'm not at liberty to hand it out.\n\n\tI will be happy to test any potential fixes."
+}

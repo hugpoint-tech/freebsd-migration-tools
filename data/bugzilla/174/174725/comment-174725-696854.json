@@ -1,0 +1,8 @@
+{
+ "id": 696854,
+ "bug_id": 174725,
+ "attachment_id": 0,
+ "creation_time": "2012-12-26T23:00:00Z",
+ "creator": "draco@marino.st",
+ "text": "I believe there are three identical bugs in:\ngraphics/libGL\ngraphics/libGLU\ngraphics/libGLw\n\nLooking at the history, it looks like they were introduced as part of PR#169874 and later PR#171301\n\nSpecifically this code was added to all three:\n+.if ${ARCH} != \"amd64\" || ${ARCH} != \"i386\"\n+CONFIGURE_ARGS+=--disable-gallium-intel\n+.endif\n\nAs ${ARCH} can only be one value, this boolean logic evaluates to \"true\" in 100% of the cases.  For example, if ${ARCH} == \"amd64\", then it doesn't equal \"i386\" and evaluates true.\n\nSo ${ARCH} could be \"amd64\", \"i386\", or *any other value* and \"--disable-gallium-intel\" will be added to CONFIGURE_ARGS in every case.\n\nFix: \n\nI believe this is likely what the original author was going for:\n\n.if !(${ARCH} == \"amd64\" || ${ARCH} == \"i386\")\nCONFIGURE_ARGS+=--disable-gallium-intel\n.endif\n\n\n(I am assuming gallium-intel should only be disabled for non-x86)"
+}

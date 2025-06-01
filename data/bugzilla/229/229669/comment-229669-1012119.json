@@ -1,0 +1,8 @@
+{
+ "id": 1012119,
+ "bug_id": 229669,
+ "attachment_id": 0,
+ "creation_time": "2018-09-20T14:58:40Z",
+ "creator": "freebsd-doc@fjl.co.uk",
+ "text": "I've had a look around.\n\nWhat's happening?\n\nclang is using it's internal assembler instead of calling the system one. It chokes on the syntax.\n\nWhy is it happening?\n\nThere's a flag to stop it - \"-no-integrated-as\". This should be set in /usr/share/mk/bsd.sys.mk:\n\n----\n# We need this conditional because many places that use it\n# only enable it for some files with CLFAGS.$FILE+=${CLANG_NO_IAS}.\n# unconditionally, and can't easily use the CFLAGS.clang=\n# mechanism.\n.if ${COMPILER_TYPE} == \"clang\"\nCLANG_NO_IAS=    -no-integrated-as\n.endif\n----\n\nFor some reason, on the Azure version, it isn't. I have a nasty feeling that the make code that figures out which compiler it should be using isn't actually working, and COMPILER_TYPE may not be setting properly. I'll find out if it's worse after building the kernel, which takes AGES on Azure.\n\nWork around?\n\nYou can over-ride CC"
+}

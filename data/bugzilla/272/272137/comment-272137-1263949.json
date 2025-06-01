@@ -1,0 +1,8 @@
+{
+ "id": 1263949,
+ "bug_id": 272137,
+ "attachment_id": 0,
+ "creation_time": "2023-06-22T00:20:29Z",
+ "creator": "matt@tnpi.net",
+ "text": "Alternatively, improve the behavior of mysql_confdir and/or mysql_optfile settings.\n\nI expected that if I set mysql_confdir=/mnt/etc, then mysqld would get its configuration from /mnt/etc/my.cnf. Instead, what mysqld effectively starts with is '--defaults-file=/usr/local/etc/mysql/my.cnf --defaults-extra-file=/mnt/etc/my.cnf'.  The same goes for setting mysql_optfile.\n\nFrom reading the comments in rc.d/mysql-server, there is not even a suggestion that /usr/local/etc/mysql/my.cnf is ALWAYS read first (a POLA violation). Once I figured that out, it was straight forward to find the problematic settings in /usr/local/etc/mysql/my.cnf and override them in the extras file.\n\nAnother option: deprecate both of those config settings, especially mysql_confdir because it doesn't map to any notion that mysqld has, and make explicit rc.d settings that map directly to the mysql options. IE, something like this:\n\nsysrc mysql_defaults_file=/mnt/etc/my.cnf  (Default: /usr/local/etc/mysql/my.cnf\n\nsysrc mysql_defaults_extra_file=/mnt/etc/extra.cnf (Default: empty)\n\nProvide a shim to continue working for existing values in /etc/rc.conf. Add an explanation in UPGRADING to the effect: \"Previous versions of the mysql-server startup script provided no mechanism to choose a primary my.cnf file, only offering an 'extra' file that could contain overrides to the primary /usr/local/etc/mysql/my.cnf file. You can retain the old behavior by setting only mysql_defaults_extra_file to the same value as the legacy mysql_optfile setting.\""
+}

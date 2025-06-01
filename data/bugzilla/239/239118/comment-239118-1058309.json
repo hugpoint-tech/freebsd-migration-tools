@@ -1,0 +1,8 @@
+{
+ "id": 1058309,
+ "bug_id": 239118,
+ "attachment_id": 0,
+ "creation_time": "2019-07-18T22:41:28Z",
+ "creator": "pkelsey@freebsd.org",
+ "text": "(In reply to Mark Johnston from comment #3)\n\u003e Created attachment 205876 [details]\n\u003e proposed patch\n\u003e \n\u003e Based on the line numbers, vmxnet3_isc_txd_credits_update() is being\n\u003e reentered.  I think there is a window where vxcr_next is an invalid queue\n\u003e index; if we take an interrupt during that window, we may reference invalid\n\u003e memory.\n\u003e \n\u003e Please try the attached patch, which attempts to bandage the problem.\n\nThe problem isn't that vmxnet3_isc_txd_credits_update() needs to be re-enterable, the problem is that r347221 (merged to stable/12 in r349112) changed iflib_legacy_setup() in a way that assumes that all iflib drivers operate their interrupts in combined RXTX mode.  The vmx driver is one such driver that does not.  For vmx, this change results in access to the tx state from multiple contexts (interrupt and group task context) whereas the tx state management is designed to only be accessed from a single context (group task context).\n\niflib_legacy_setup() needs to be fixed."
+}

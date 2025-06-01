@@ -1,0 +1,8 @@
+{
+ "id": 904089,
+ "bug_id": 213845,
+ "attachment_id": 0,
+ "creation_time": "2016-10-28T08:13:58Z",
+ "creator": "pherman@frenchfries.net",
+ "text": "bxe cards boot with no hardware capabilities (i.e. RXCSUM,TXCSUM,VLAN_MTU,VLAN_HWTAGGING,JUMBO_MTU,VLAN_HWCSUM,TSO4...) enabled. \"ifconfig -m bxe0\" correctly displays what NIC is capable of, but no options are enabled.\n\nThis is a problem because, for example, \"ifconfig vlanmtu\" is not allowed to be changed by the driver and consequently all cloned vlan devices end up with an MTU of 1496 by default.  The bug was introduced when the driver was updated to use if_setcapabilities().\n\nCURRENT is also affected. 10 isn't. Suggested patch against 11.0-STABLE below.\n\nbxe0: \u003cQLogic NetXtreme II BCM57810 10GbE (B0) BXE v:1.78.89\n\nFreeBSD rt2-gerdc1.cgn.cleverbridge.com 11.0-STABLE FreeBSD 11.0-STABLE #1 r308000M: Thu Oct 27 17:29:07 CEST 2016     root@rt2-gerdc1.cgn.cleverbridge.com:/usr/obj/usr/src/sys/rt2-gerdc1  amd64\n\n\nIndex: sys/dev/bxe/bxe.c\n===================================================================\n--- sys/dev/bxe/bxe.c   (revision 308000)\n+++ sys/dev/bxe/bxe.c   (working copy)\n@@ -12691,6 +12691,7 @@\n          IFCAP_WOL_MAGIC);\n #endif\n     if_setcapabilitiesbit(ifp, capabilities, 0); /* XXX */\n+    if_setcapenable(ifp, if_getcapabilities(ifp));\n     if_setbaudrate(ifp, IF_Gbps(10));\n /* XXX */\n     if_setsendqlen(ifp, sc-\u003etx_ring_size);"
+}

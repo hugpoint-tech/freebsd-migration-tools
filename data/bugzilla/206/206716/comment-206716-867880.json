@@ -1,0 +1,8 @@
+{
+ "id": 867880,
+ "bug_id": 206716,
+ "attachment_id": 0,
+ "creation_time": "2016-03-02T18:43:09Z",
+ "creator": "timon@timon.net.nz",
+ "text": "Maybe I miss something, but looks like there is no bug in FreeBSD.\nYes, on FreeBSD getsockopt(..., SO_SNDBUF, ...) returns \"high watermark\", but\nsetsockopt(..., SO_SNDBUF, ...) attempts to resize the buffer and, on success, sets \"high watermark\" to the new buffer size. So getsockopt() returns the value set by getsockopt().\n\nI have written a simple test and run it on the 10.1-RELEASE and 10.2-RELEASE:\n-----8\u003c-----\n#include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetinet/in.h\u003e\n#include \u003cerr.h\u003e\n#include \u003cstdio.h\u003e\n\nint main () {\n        int s, size;\n        socklen_t sizelen;\n\n        s = socket(AF_INET6, SOCK_RAW, IPPROTO_IP);\n\n        sizelen = sizeof size;\n        getsockopt(s, SOL_SOCKET, SO_SNDBUF, \u0026size, \u0026sizelen);\n        printf(\"Current socket send buffer size: %i\\n\", size);\n        size /= 2;\n        setsockopt(s, SOL_SOCKET, SO_SNDBUF, \u0026size, sizelen);\n        getsockopt(s, SOL_SOCKET, SO_SNDBUF, \u0026size, \u0026sizelen);\n        printf(\"New socket send buffer size: %i\\n\", size);\n}\n-----8\u003c-----\n$ cc test.so_sndbuf.c\n$ sudo ./a.out \nCurrent socket send buffer size: 9216\nNew socket send buffer size: 4608"
+}

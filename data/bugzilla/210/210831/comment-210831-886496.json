@@ -1,0 +1,8 @@
+{
+ "id": 886496,
+ "bug_id": 210831,
+ "attachment_id": 0,
+ "creation_time": "2016-07-05T01:36:54Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "src/utils.c has the code:\n\n        bytes_change = labs(newsize - oldsize);\n\nwhere newsize and oldsize have type int64_t (or what it translates to) and bytes_changed has type size_t (or what it translates to). The compiler targeting armv6 (with -mcpu=cortex_a7 specified) that reported this suggested use of llabs (from C99).\n\nThe labs parameter and return type need not match size_t well for the purpose, even ignoring unsigned vs. signed issue for the same width if that occurs.\n\n        bytes_change = (size_t) llabs(newsize - oldsize);\n\nlikely would be more auto adjusting without compiler warnings for current contexts. [Depends on what set_pkg_jobs_summary_pkg(. . ., \u0026oldsize, \u0026newsize, . . .) is doing under the variations in types for various contexts. Likely oldsize and newsize values do track size_t or a signed variant with the same width to an extent.]\n\nIf prior to C99 is to be covered (where llabs might not exist even if the types involved here do exist) then an explicit expansion of an expression (or macros that expand to such) would be a way to get that more auto-adjusting nature:\n\n        bytes_change = (size_t) ((oldsize \u003c= newsize)\n                                 ?newsize - oldsize :oldsize-newsize);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1160537,
+ "bug_id": 207898,
+ "attachment_id": 0,
+ "creation_time": "2021-05-10T16:20:52Z",
+ "creator": "desk@justincady.com",
+ "text": "\u003e Why would the linker ignore the flag for local symbols?  That seems like it could be the source of difficult to debug problems.\n\nI have the same question, and I can confirm that such problems are very difficult to debug. :(\n\nIn my case, Module-A, which depends on Modules B and C, is intended to pick up a globally exported symbol from Module-B, but picks up a _local_ symbol of the same name from Module-C (which happens to be scanned by the linker first). I believe that is because of this bug.\n\nI verified this was causing my issue by editing link_elf_lookup_symbol() in sys/kern/link_elf_obj.c to populate the sym pointer and return success only if the symbol has global binding (STB_GLOBAL). With that change, the local symbol from Module-C is ignored, and the global symbol from Module-B is correctly selected.\n\n1. Am I correct that because of this bug, symbol names on amd64 are effectively required to be unique across all kernel module dependencies?\n\n2. Is there any risk to actually fixing this? I tried to understand all of the potential callers of link_elf_lookup_symbol(), but doing so is not straightforward through all the indirect calls (function pointers, macros). Stated differently: is there any expectation that link_elf_lookup_symbol() should return a local symbol?"
+}

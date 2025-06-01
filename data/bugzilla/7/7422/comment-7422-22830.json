@@ -1,0 +1,8 @@
+{
+ "id": 22830,
+ "bug_id": 7422,
+ "attachment_id": 0,
+ "creation_time": "1998-08-14T01:35:13Z",
+ "creator": "luoqi@chen.ml.org",
+ "text": "This is a one-line bug in vnode_pager_setsize() function. Below is\nthe fix, note that the higher end of page index range in function\nvm_object_page_remove() is not inclusive (I got rid of some auto\nvariables and unused calculation, so the fix is more than one line).\nThis bug should exist in -stable also, not sure why it behaved\ncorrectly (I don't have a -stable machine to test with).\n\n-lq\n\nIndex: sys/vm/vnode_pager.c\n===================================================================\nRCS file: /fun/cvs/src/sys/vm/vnode_pager.c,v\nretrieving revision 1.94\ndiff -u -r1.94 vnode_pager.c\n--- vnode_pager.c       1998/07/11 11:30:46     1.94\n+++ vnode_pager.c       1998/08/14 00:23:36\n@@ -271,12 +271,9 @@\n                vm_ooffset_t nsizerounded;\n                nsizerounded = IDX_TO_OFF(OFF_TO_IDX(nsize +\nPAGE_MASK));\n                if (nsizerounded \u003c object-\u003eun_pager.vnp.vnp_size) {\n-                       vm_pindex_t st, end;\n-                       st = OFF_TO_IDX(nsize + PAGE_MASK);\n-                       end = OFF_TO_IDX(object-\u003eun_pager.vnp.vnp_size);\n-\n                        vm_freeze_copyopts(object, OFF_TO_IDX(nsize),\nobject-\u003esize);\n-                       vm_object_page_remove(object, st, end, FALSE);\n+                       vm_object_page_remove(object, OFF_TO_IDX(nsize +\nPAGE_MASK),\n+                               object-\u003esize, FALSE);\n                }\n                /*\n                 * this gets rid of garbage at the end of a page that is\nnow"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 544096,
+ "bug_id": 143831,
+ "attachment_id": 0,
+ "creation_time": "2011-02-21T18:46:20Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Hi,\n\nI think the patch is too excessive, as is the following in bsd.own.mk:\n\n.if ${MK_NETGRAPH} == \"no\"\nMK_ATM:=        no\nMK_BLUETOOTH:=  no\n.endif\n\nTo my understanding disabling all of atm if we don't have netgraph\nseems wrong but probably was an easy path at some point.\n\nWithout testing I think the following patch should be enough:\n\nIndex: rescue/rescue/Makefile\n===================================================================\n--- rescue/rescue/Makefile      (revision 218757)\n+++ rescue/rescue/Makefile      (working copy)\n@@ -99,7 +99,7 @@ CRUNCH_PROGS_sbin= atacontrol badsect                         \\\n         restore rcorder route routed rtquery rtsol savecore     \\\n         spppcontrol swapon sysctl tunefs umount\n\n-.if ${MK_ATM} != \"no\"\n+.if ${MK_ATM} != \"no\" \u0026\u0026 ${MK_BSNMP} != \"no\"\n  CRUNCH_PROGS_sbin+= atmconfig\n  .endif\n\nIndex: sbin/Makefile\n===================================================================\n--- sbin/Makefile       (revision 218757)\n+++ sbin/Makefile       (working copy)\n@@ -73,7 +73,7 @@ SUBDIR=adjkerntz \\\n         tunefs \\\n         umount \\\n\n-.if ${MK_ATM} != \"no\"\n+.if ${MK_ATM} != \"no\" \u0026\u0026 ${MK_BSNMP} != \"no\"\n  SUBDIR+=       atm\n  .endif\n\n\nBTw, the test case of `make -C sbin/atm WITHOUT_BSNMP=yes depend`\nseems wrong as well as that actually ignores some checks in place.\n\n/bz\n\n-- \nBjoern A. Zeeb                                 You have to have visions!\n          Stop bit received. Insert coin for new address family."
+}

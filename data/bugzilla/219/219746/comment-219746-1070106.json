@@ -1,0 +1,8 @@
+{
+ "id": 1070106,
+ "bug_id": 219746,
+ "attachment_id": 0,
+ "creation_time": "2019-10-05T09:05:10Z",
+ "creator": "koobs@FreeBSD.org",
+ "text": "Author: kevans\nDate: Thu Oct  3 17:54:00 2019\nNew Revision: 353057\nURL: https://svnweb.freebsd.org/changeset/base/353057\n\nLog:\n  if_tuntap: create /dev aliases when a tuntap device gets renamed\n\n  Currently, if you do:\n\n  $ ifconfig tun0 create\n  $ ifconfig tun0 name wg0\n  $ ls -l /dev | egrep 'wg|tun'\n\n  You will see tun0, but no wg0. In fact, it's slightly more annoying to make\n  the association between the new name and the old name in order to open the\n  device (if it hadn't been opened during the rename).\n\n  Register an eventhandler for ifnet_arrival_events and catch interface\n  renames. We can determine if the ifnet is a tun easily enough from the\n  if_dname, which matches the cevsw.d_name from the associated tuntap_driver.\n\n  Some locking dance is required because renames don't require the device to\n  be opened, so it could go away in the middle of handling the ioctl, but as\n  soon as we've verified this isn't the case we can attempt to busy the tun\n  and either bail out if the tun device is dying, or we can proceed with the\n  rename.\n\n  We only create these aliases on a best-effort basis. Renaming a tun device\n  to \"usbctl\", which doesn't exist as an ifnet but does as a /dev, is clearly\n  not that disastrous, but we can't and won't create a /dev for that."
+}

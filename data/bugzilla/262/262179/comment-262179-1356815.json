@@ -1,0 +1,8 @@
+{
+ "id": 1356815,
+ "bug_id": 262179,
+ "attachment_id": 0,
+ "creation_time": "2025-03-27T23:43:51Z",
+ "creator": "crest@rlwinm.de",
+ "text": "My PoC exploit does *not* depend on the parent\u003c-\u003echild relationship between jails only that the receiving jailed process gains access to a directory file descriptor to a directory outside of it's path. The vfs_lookup() function only compares the currently traversed directory against the pr_root directory vnodes of all jails the process belongs to, but *not* against the jail roots of the credentials the directory was opened with.\n\nTake the following example jail configuration:\n```\nfoo {\n    path = \"/jails/foo\";\n    bar {\n        path = \"/jails/bar\";\n    }\n}\n```\n\nThe jail hierachy doesn't have to reflect the file system hierachy. Sending a descriptor to a directory opened inside the \"foo.bar\" jail to the \"foo\" jail would allow the receiving receiving process to fchdir() to the received directory then chdir(\"../../\") into the real host \"/\" directory followed by a chroot(\".\") to let it access the host file systems unrestricted.\n\nWithout the chroot(2) absolute paths would still be looked up in the jail which makes running dynamically linked executables a pain if the jail userland is too trimmed down or out of sync with the host. With it you can just use at(1) to have cron(8) run your next exploit stage."
+}

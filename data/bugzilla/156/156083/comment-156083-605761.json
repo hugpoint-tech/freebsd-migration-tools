@@ -1,0 +1,8 @@
+{
+ "id": 605761,
+ "bug_id": 156083,
+ "attachment_id": 0,
+ "creation_time": "2011-03-31T16:10:54Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: ae\nDate: Thu Mar 31 15:10:41 2011\nNew Revision: 220203\nURL: http://svn.freebsd.org/changeset/base/220203\n\nLog:\n  Fix a memory leak. Memory that is allocated for schedulers hash table\n  was not freed.\n  \n  PR:\t\tkern/156083\n  MFC after:\t1 week\n\nModified:\n  head/sys/netinet/ipfw/ip_dummynet.c\n\nModified: head/sys/netinet/ipfw/ip_dummynet.c\n==============================================================================\n--- head/sys/netinet/ipfw/ip_dummynet.c\tThu Mar 31 14:44:00 2011\t(r220202)\n+++ head/sys/netinet/ipfw/ip_dummynet.c\tThu Mar 31 15:10:41 2011\t(r220203)\n@@ -748,9 +748,10 @@ schk_delete_cb(void *obj, void *arg)\n #endif\n \tfsk_detach_list(\u0026s-\u003efsk_list, arg ? DN_DESTROY : 0);\n \t/* no more flowset pointing to us now */\n-\tif (s-\u003esch.flags \u0026 DN_HAVE_MASK)\n+\tif (s-\u003esch.flags \u0026 DN_HAVE_MASK) {\n \t\tdn_ht_scan(s-\u003esiht, si_destroy, NULL);\n-\telse if (s-\u003esiht)\n+\t\tdn_ht_free(s-\u003esiht, 0);\n+\t} else if (s-\u003esiht)\n \t\tsi_destroy(s-\u003esiht, NULL);\n \tif (s-\u003eprofile) {\n \t\tfree(s-\u003eprofile, M_DUMMYNET);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

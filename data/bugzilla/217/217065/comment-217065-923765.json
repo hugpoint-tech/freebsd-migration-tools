@@ -1,0 +1,8 @@
+{
+ "id": 923765,
+ "bug_id": 217065,
+ "attachment_id": 0,
+ "creation_time": "2017-02-28T19:49:51Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Alexandre martins from comment #8)\n\nIt is unfortunate that the netbsd update has an\nincorrect comment. Quoting from the linked\nmaterial (with . . . for some omitted text):\n\nPlease note that diffs are not public domain; they are subject to the\ncopyright notices on the relevant files.\n. . .\n  * Copyright (c) 1997 The NetBSD Foundation, Inc.\n@@ -53,10 +53,10 @@ ENTRY(bcopy)\n \t/* Do the buffers overlap? */\n \tcmp\tr0, r1\n \tRETc(eq)\t\t/* Bail now if src/dst are the same */\n-\tsubcc\tr3, r0, r1\t/* if (dst \u003e src) r3 = dst - src */\n-\tsubcs\tr3, r1, r0\t/* if (src \u003e dsr) r3 = src - dst */\n-\tcmp\tr3, r2\t\t/* if (r3 \u003c len) we have an overlap */\n-\tbcc\tPIC_SYM(_C_LABEL(memcpy), PLT)\n+\tsubhs\tr3, r0, r1\t/* if (dst \u003e src) r3 = dst - src */\n+\tsublo\tr3, r1, r0\t/* if (src \u003e dst) r3 = src - dst */\n+\tcmp\tr3, r2\t\t/* if (r3 \u003e= len) we have an overlap */\n+\tbhs\tPIC_SYM(_C_LABEL(memcpy), PLT)\n \n \t/* Determine copy direction */\n \tcmp\tr1, r0\n\n\nIn the netbsd \"+\" code: r3 at the \"cmp r3,r2\"\nis the distance (in absolute value)\nbetween dst and src (r0 and r1 values).\n\nSo in the comment:\n\n/* if (r3 \u003e= len) we have an overlap */\n\nthe comment is wrong as written. It should\nbe more like:\n\n/* if (r3 \u003e= len) we have no overlap */\n\nor even:\n\n/* (abs(dst-src) \u003e= len) is equivalent to\n   the status of \"there is no overlap\" */\n\nSo the bhs to memcpy is for the no-overlap case,\nas it should be for a classical definition of\nmemcpy's requirements --despite what the original\ncomment suggests."
+}

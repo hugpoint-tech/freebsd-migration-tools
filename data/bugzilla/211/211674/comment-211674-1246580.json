@@ -1,0 +1,8 @@
+{
+ "id": 1246580,
+ "bug_id": 211674,
+ "attachment_id": 0,
+ "creation_time": "2023-02-11T23:42:50Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Ok, here are the results of my investigations:\n1) It's not a problem that the vnode number keeps rising.  The kernel doesn't reclaim vnodes as soon as all their file descriptors get closed.  Rather, the vnodes remain allocated just in case the same file system decides it needs to use some more.  The kernel won't reclaim vnodes until unmount or until it starts to run low on vnodes, possibly due to activity on some other file system.\n\n2) It's mostly not a problem that the fuse_msgbuf value keeps rising (but see caveat below).  Similarly to the vnode situation, uma does not free items as soon as they are no longer needed.  But it will free them in response to memory pressure.  See uma(9).\n\n3) There are some actual resource leaks, which can be observed by the value of \"sysctl vfs.fusefs.stats.ticket_count\".  Those are probably responsible for some of the fuse_msgbuf memory consumption, but probably a minority.  I'll work on fixing these.  The first one I found is in an error path, triggerable by a malicious server.\n\n4) You probably aren't the only person to notice slow unmounts.  That's probably why the FUSE protocol describes a BATCH_FORGET operation.  It isn't implemented in FreeBSD, but probably could be.  I don't know if fuse-ntfs is able to take advantage."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1165339,
+ "bug_id": 256482,
+ "attachment_id": 225638,
+ "creation_time": "2021-06-08T14:48:32Z",
+ "creator": "ghuckriede@blackberry.com",
+ "text": "Created attachment 225638\nPotential Fix\n\nIn gen_encap() #n1053 it always calls bus_dmamap_load_mbuf_sg() into 'map' (which is the current tx_queue).  If the tx_queue is full, it will load with a 'map' that already has a currently active mapping.\n\nhttps://www.freebsd.org/cgi/man.cgi?query=busdma\u0026sektion=9\nbus_dmamap_load: \"map     A DMA map without a currently active mapping.\"\n\nAlso \"(if nsegs == 0)\" #n1077 shouldn't bus_dmamap_unload() be called as bus_dmamap_load_mbuf_sq() was successful?\n\nSee https://cgit.freebsd.org/src/tree/sys/arm64/broadcom/genet/if_genet.c?id=f66a1f40740c63741b6ebe48cb0cbce9e52ef34e for line number references.\n\nAttached is diff with a potential fix.\n\nChecking for a full queue and returning ENOMEM will allow gen_start_locked() to set the IFF_DRV_OACTIVE faster without having to needlessly check if the mbuf will fit (it won't)."
+}

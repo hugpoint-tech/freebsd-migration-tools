@@ -1,0 +1,8 @@
+{
+ "id": 1186297,
+ "bug_id": 259770,
+ "attachment_id": 0,
+ "creation_time": "2021-11-12T12:05:58Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "But does this really work with the pwd_chroot_chdir_check_open_directories hack?\n\nTo my reading the pidfile API keeps the dir fd open so that it can unlink the file down the road. As /var/run is 755 you need root permissions to do it.\n\nThe patchset includes setuid to an unprivileged user which to my understanding already prevents the functionality from working.\n\nSo let's say ggated stays running as a jailed root. If the /var/run dirfd is let inside even with rights limited to unlinking files in that directory, compromised ggated would be able to unlink evey file inside, not just its own pidfile.\n\nThis could be worked around with a syscall which takes a path and a matching file descriptor to prove you have the thing open and only then allows unlink.\n\nI think this sufficiently demonstrates that:\n1. passing dir fds inside is very error prone\n2. managing pidfiles from a daemon of the sort is a bad idea\n\nThat said, in my opinion the best long term solution is to move pidfile management out of any priv-dropping code.\n\nI do have to note that the rc system has to tolerate stale pidfiles already (e.g., what if the machine crashed and there was nobody to clean it up), so perhaps in the meantime the pidfile API can grow a flag that the caller is not going to do pidfile_remove and consequently dir fd is not needed."
+}

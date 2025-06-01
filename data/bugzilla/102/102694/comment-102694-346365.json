@@ -1,0 +1,8 @@
+{
+ "id": 346365,
+ "bug_id": 102694,
+ "attachment_id": 0,
+ "creation_time": "2006-10-07T03:36:34Z",
+ "creator": "rnsanchez@wait4.org",
+ "text": "\u003e Not sure if this is df(1) or libutil's humanize_number(3)\n\u003e to be honest.\n\nI was looking at it and was able to reproduce it and found what's going on.\n\nWhat happens is that, for numbers close to the next scale (1000\u003c= x \u003c1024),\nthe scaled number is big for the 6-char buffer, which in fact is told be be\n6-1 bytes.  From the source:\n\nhumanize_number(buf, sizeof(buf) - (bytes \u003c 0 ? 0 : 1),\n\t    bytes, \"\", HN_AUTOSCALE, flags);\n\nThat \"sizeof(buf) - (bytes \u003c 0 ? 0 : 1)\" causes humanize_number to think that\nthe buffer has only 5 chars, thus producing:\n\n\t[ ][1][0][0][0][\\0]\n\nIf one remove that restriction, the unit comes back:\n\n\t[1][0][0][0][M][\\0]\n\nThe drawback is that it no longer scales \"humanly\" for numbers \u003e= 1024, going\nup to 9999 (ugly).\n\nI spent a good time trying to figure out a clean and effective solution, but\nthe best I got was to not use humanize_number, and scale the number locally.\n\nIf that is good enough, I can clean up my code and send a patch.\n\nRegards.\n\n-- \nRicardo Nabinger Sanchez     \u003crnsanchez@{gmail.com,wait4.org}\u003e\nPowered by FreeBSD\n\n  \"Left to themselves, things tend to go from bad to worse.\""
+}

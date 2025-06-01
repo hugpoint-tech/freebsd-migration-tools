@@ -1,0 +1,8 @@
+{
+ "id": 1031006,
+ "bug_id": 176417,
+ "attachment_id": 0,
+ "creation_time": "2019-01-09T19:22:44Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "OK. So looking at the stack trace, we get a panic because we're trying to add 'pass16' as a device when there's already a pass16 device.\nThis appears to be because the CAM probe device thinks it needs to enumerate it, but the reporter said it was being removed.\n\nThe actual traceback, in case we lose the dropbox is:\n\nda12: xxx MB (xxx 512 byte sectors: \u003cmade up geom\u003e)\nugen3.2: \u003cWestern Digital\u003e at usbus3 (disconnected)\numass0: at ushub3 port 1, addr 1 (disconnected)\n(da12:umass-sim0:0:0:0): lost device - 1 outstanding\n(da12:umass-sim0:0:0:0): outstanding 0\n(da12:panic: make_dev_credv: bad si_name (error = 17, si_name=pass16)\numass-sim0:0: cpuid=1\n0:KDB: stack backtrace:\n0): removing device entry\nkdb_backtrace\npanic\nmake_dev_crdev+0x1dc\nmake_dev_0x6f\npassregister+0x1fe\ncam_periph_alloc+0x569\npassasysnc\n...\n\nso we have the intermixed output, strongly suggesting one thread removing while the other thread is adding.\n\nthere's been a fair amount of locking tightening that would prevent the refcount from falling to 0, I think, but I can't be sure.\n\nThis is purely a CAM problem. I wonder if the original poster can\nrecreate this issue still, or if we can provoke it somehow.\n\nBut, this CAM problem is because of a random failure during discovery where the drive also goes away and we start the teardown, so from that perspective it's also a USB issue maybe."
+}

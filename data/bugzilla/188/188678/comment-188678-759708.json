@@ -1,0 +1,8 @@
+{
+ "id": 759708,
+ "bug_id": 188678,
+ "attachment_id": 0,
+ "creation_time": "2014-04-16T02:50:01Z",
+ "creator": "rezny@freebsd.org",
+ "text": "bonnie++ currently has GCC=any in the Makefile. The history of the port indicates prior attempts to make it compatible with Clang, but problems with libc++ have prevented those efforts. I decided to dig in a little deeper.\n\nThe cause of the problem is the definition of min and max. They should come from the algorithm header instead of being defined directly. The configure script probes for algorithm, but the file port.h only checks for configure flags to indicate presence of algo or algo.h, falling back to defining min and max if neither of those are present. Worse, we had a patch that dropped all the checks in that file and just forced defining min and max. If we instead add recognition of the flag from configure for using the algorithm header to define min and max, then this port builds fine with Clang and libc++.\n\nFix: Use the HAVE_ALGORITHM result from configure script to #include \u003calgorithm\u003e in order to properly define min and max.\n\nWhile I'm at it, move instances of \"using namespace std;\" to come after header includes to eliminate all the warnings about implicitly defining namespace std, and fix the definition of PRINTF_OFF_T to quash a printf format warning.\n\nThis patch does all that.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Remove GCC=any from the Makefile"
+}

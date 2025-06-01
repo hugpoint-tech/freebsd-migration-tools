@@ -1,0 +1,8 @@
+{
+ "id": 367505,
+ "bug_id": 107229,
+ "attachment_id": 0,
+ "creation_time": "2007-03-23T09:42:02Z",
+ "creator": "hasi@cskk-sv.co.jp",
+ "text": "This problem is caused by the following conditions.\n\n   - preserve permissions. (-p)\n   - copy a directory. (-r)\n   - source directory have no default acl.\n\nat copy_acl in lib/acl.c\n    acl_get_file return a zero count acl if a source directory have no\n    default acl.(acl-\u003eats_acl.acl_cnt == 0)\n\n    acl_set_file return with error EINVAL, if acl is zero count.\n\nIn this case, /bin/cp is not copy default acl.\n\nat preserve_dir_acls in src/bin/cp/util.c\n        if (aclp-\u003eacl_cnt != 0 \u0026\u0026 aclsetf(dest_dir,\n            ACL_TYPE_DEFAULT, acl) \u003c 0) {\n\nfix patch following\n\n--- lib/acl.c~\tTue Sep 26 00:52:29 2006\n+++ lib/acl.c\tFri Mar 23 16:34:24 2007\n@@ -280,7 +280,7 @@\n \t  return -1;\n \t}\n \n-      if (acl_set_file (dst_name, ACL_TYPE_DEFAULT, acl))\n+      if (acl-\u003eats_acl.acl_cnt \u003e 0 \u0026\u0026 acl_set_file (dst_name, ACL_TYPE_DEFAULT, acl))\n \t{\n \t  error (0, errno, _(\"preserving permissions for %s\"),\n \t\t quote (dst_name));"
+}

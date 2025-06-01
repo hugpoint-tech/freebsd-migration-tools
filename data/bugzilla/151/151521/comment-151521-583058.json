@@ -1,0 +1,8 @@
+{
+ "id": 583058,
+ "bug_id": 151521,
+ "attachment_id": 0,
+ "creation_time": "2012-02-06T03:01:29Z",
+ "creator": "aspoon@gmail.com",
+ "text": "The problem resurfaces as 9-RELEASE is available:\n\n# pkg_upgrade -aC\nfetch: ftp://ftp.freebsd.org/pub/FreeBSD/ports/amd64/packages-9-release/INDEX:\nFile unavailable (e.g., file not found, no access)\n#\n\nIt appears to be a problem with the name \"packages-9-release\", as the\nfolder available on FTP is actually \"packages-9.0-release\".  (note the\n.0 in the version)  Once the system switches to stable releases such\nas \"packages-9-stable\" it should work fine. (as packages-9-stable is\navailable on FTP)\n\nThe problem is found in /usr/local/sbin/uma, line 76 onwards:\n\n     71 # Logic from src/usr.sbin/pkg_install/add/main.c, plus the\npossibility to\n     72 # override the architecture with ARCH.\n     73 : ${PACKAGEROOT=\"ftp://ftp.freebsd.org\"}\n     74 : ${ARCH=\"$(uname -m)\"}\n     75 branch=\"$(uname -r | tr '[:upper:]' '[:lower:]')\"\n     76 number=\"${branch%%.*}\"\n     77 branch=\"${branch##*-}\"\n     78 case \"$branch\" in\n     79         release)\n     80                 branch=$number-$branch\n     81         ;;\n     82         stable|current)\n     83                 branch=${number%%.*}-$branch\n     84         ;;\n     85         *)\n     86                 # Fallback to stable for prerelease and the like.\n     87                 branch=${number%%.*}-stable\n     88         ;;\n     89 esac\n\nIt arbitrarily removed the .x minor version from the number.  It\nshould have been \"number=${branch%%-*}\", since the minor version is\nfurther stripped off in the following case statements depending on the\nrelease."
+}

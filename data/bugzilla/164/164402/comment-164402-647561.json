@@ -1,0 +1,8 @@
+{
+ "id": 647561,
+ "bug_id": 164402,
+ "attachment_id": 0,
+ "creation_time": "2012-04-15T12:51:24Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "On Sun, Apr 15, 2012 at 11:10:03AM +0000, Gleb Smirnoff wrote:\nT\u003e    I have a vague suspicion on what is happening. Your description of\nT\u003e  the problem looks like if a packet processing in the kernel has entered\nT\u003e  an endless loop.\nT\u003e  \nT\u003e    Looking at pf_route() I see such possibility. From OpenBSD we have\nT\u003e  this protection against endless looping:\nT\u003e  \nT\u003e          if ((*m)-\u003em_pkthdr.pf.routed++ \u003e 3) {\nT\u003e                  m0 = *m;\nT\u003e                  *m = NULL;\nT\u003e                  goto bad;\nT\u003e          }\nT\u003e  \nT\u003e  In our code this transforms to:\nT\u003e  \nT\u003e          if (pd-\u003epf_mtag-\u003erouted++ \u003e 3) {\nT\u003e                  m0 = *m;\nT\u003e                  *m = NULL;\nT\u003e                  goto bad;\nT\u003e          }\nT\u003e  \nT\u003e  The root difference between storing the tag on mbuf and on pfdesc\nT\u003e  is that we lose pfdesc, and thus the tag, when we enter pf_test()\nT\u003e  recursively. And pf_route() does this recursion:\nT\u003e  \nT\u003e          if (oifp != ifp) {\nT\u003e                  if (pf_test(PF_OUT, ifp, \u0026m0, NULL) != PF_PASS) {\nT\u003e                          goto bad;\nT\u003e  \t....\n\nOn second look I see that my suspicion may not be true. In the\nbeginning of pf_test() we do pf_get_mtag() which preserves already\npresent tag if there is one.\n\n-- \nTotus tuus, Glebius."
+}

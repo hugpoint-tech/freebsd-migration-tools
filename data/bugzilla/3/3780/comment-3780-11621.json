@@ -1,0 +1,8 @@
+{
+ "id": 11621,
+ "bug_id": 3780,
+ "attachment_id": 0,
+ "creation_time": "1997-06-05T00:25:08Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003eBTW, should WEXITSTATUS() return unsigned value? (I don't know what POSIX says about this)\n\nWEXITSTATUS returns an 8-bit value, but is only valid on values return\nby wait().  sh corrupts these values by storing them in ps-\u003estatus\nwhich has type short.  This happens not to lose information under\nFreeBSD, but it causes some sign extension problems.  When a process\nexits with the bogus status of -1, -1 first gets corrupted to 0xff.\nThen on 32-bit little-endian 2's complement machines, wait(\u0026status) in\nthe parent process stores 0xff00 in the int `status'.  (short)0xff00 is\n(int)0xffffff00 and shifting this in WEXITSTATUS() gives (int)0xffffffff.\n\nPOSIX.1 requires the arg to WEXITSTATUS() to be `the integer value\npointed to by stat_loc'.  I interpret this as saying that the arg must\nhave integral type and the same value as the `int' that stat_loc once\npointed to.\n\nI tried WEXITSTATUS((short)status) to test this, but the macro failed at\ncompile time.  The wait macros seem to be non-POSIX conformant in the non-\n_POSIX_SOURCE case because of the crufty (*(int *)\u0026(w)) conversion doesn't\nwork unless `w' is an lvalue of type `int'.\n\nsh also stores pids in variables of type short.  This happens not to lose\ninformation under FreeBSD (because PID_MAX is 30000).\n\nBruce"
+}

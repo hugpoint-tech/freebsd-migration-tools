@@ -1,0 +1,8 @@
+{
+ "id": 77422,
+ "bug_id": 24845,
+ "attachment_id": 0,
+ "creation_time": "2001-02-04T10:10:01Z",
+ "creator": "jml@cubical.fi",
+ "text": "When a new thread is created by the manager thread calling __clone()\nand rfork() fails (eg. proc limit reached), the manager thread enters\nbusy loop.\n\nFix: \n\nIn clone.S, the execution seems to go to the error branch correctly,\nbut the subsequent return from __clone throws the manager thread back\nto its entry point.\n\nAdding \"call _exit\" before the .cerror jmp exits the manager thread\nin the error situation -- maybe the stack gets corrupted somehow to\ncause the ret from the .cerror macro to fail?\nHow-To-Repeat: A small program:\n\nvoid* func(void* arg) { sleep(100); return 0; }\n\nmain() {\nstruct rlimit rl = { 20, 0 };\npthread_t pt;\nsetrlimit(RLIMIT_NPROC, \u0026rl);\nfor (;;) pthread_create(\u0026pt, 0, func, 0);\n}\n\nObserve \"top\" or \"ps l\" output. Issue sysctl -w kern.corefile=\"%N-%P.core\"\nto get per-thread cores. Get a core dump with \"kill -TRAP\n\u003cmanager-pid\u003e; kill \u003cmain-pid\u003e\"; load the manager's core and say where."
+}

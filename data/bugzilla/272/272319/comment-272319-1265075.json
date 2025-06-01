@@ -1,0 +1,8 @@
+{
+ "id": 1265075,
+ "bug_id": 272319,
+ "attachment_id": 0,
+ "creation_time": "2023-07-02T11:59:29Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "I think fix should look like this:\n\ndiff --git a/sys/netgraph/ng_ksocket.c b/sys/netgraph/ng_ksocket.c\nindex ba9845410e42..7074549ae403 100644\n--- a/sys/netgraph/ng_ksocket.c\n+++ b/sys/netgraph/ng_ksocket.c\n@@ -936,12 +936,18 @@ ng_ksocket_shutdown(node_p node)\n \n        /* Close our socket (if any) */\n        if (priv-\u003eso != NULL) {\n-               SOCKBUF_LOCK(\u0026priv-\u003eso-\u003eso_rcv);\n-               soupcall_clear(priv-\u003eso, SO_RCV);\n-               SOCKBUF_UNLOCK(\u0026priv-\u003eso-\u003eso_rcv);\n-               SOCKBUF_LOCK(\u0026priv-\u003eso-\u003eso_snd);\n-               soupcall_clear(priv-\u003eso, SO_SND);\n-               SOCKBUF_UNLOCK(\u0026priv-\u003eso-\u003eso_snd);\n+               /*\n+                * SOLISTENNIG sockets doesn't have data upcalls.\n+                */\n+               if (!SOLISTENING(priv-\u003eso)) {\n+                       SOCKBUF_LOCK(\u0026priv-\u003eso-\u003eso_rcv);\n+                       soupcall_clear(priv-\u003eso, SO_RCV);\n+                       SOCKBUF_UNLOCK(\u0026priv-\u003eso-\u003eso_rcv);\n+                       SOCKBUF_LOCK(\u0026priv-\u003eso-\u003eso_snd);\n+                       soupcall_clear(priv-\u003eso, SO_SND);\n+                       SOCKBUF_UNLOCK(\u0026priv-\u003eso-\u003eso_snd);\n+               }\n+\n                soclose(priv-\u003eso);\n                priv-\u003eso = NULL;\n        }"
+}

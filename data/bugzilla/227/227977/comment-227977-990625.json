@@ -1,0 +1,8 @@
+{
+ "id": 990625,
+ "bug_id": 227977,
+ "attachment_id": 0,
+ "creation_time": "2018-05-07T16:30:34Z",
+ "creator": "adridg@freebsd.org",
+ "text": "Please provide the *actual* error messages, instead of paraphrases and re-wordings. That makes it much easier to actually find the problem.\n\nThe problem lies in ${kpackagetool_cmd}, which is producing that error message (about processor features). Well, not even in kpackagetool, but in QtCore. You could run the tool by hand with\n\n/usr/local/bin/kpackagetool5 --appstream-metainfo . --appstream-metainfo-output bogus\n\nTo see if that runs without producing the same error message. Basically, you've told your build of Qt to only work on processors with feature f16c. If it goes to check, apparently it's not finding that feature.\n\nYou should be able to trigger the same with QT_NO_CPU_FEATURE=f16c \u003cany qt application\u003e.\n\nYou might also try building and running this mini-Qt application:\n\n===\n#include \u003ccstdio\u003e\n#include \u003cQAtomicInteger\u003e\n \nextern void qDetectCpuFeatures();\n \nextern QBasicAtomicInteger\u003cquint64\u003e qt_cpu_features[];\n \nint main(int argc, char **argv)\n{\n    printf(\"CPU=%lld\\n\", qt_cpu_features[0].load());\n    qDetectCpuFeatures();\n    printf(\"CPU=%lld\\n\", qt_cpu_features[0].load());\n}\n===\n\n(here I'm assuming you did build Qt as 64 bit library).  It should print 0, then possibly crash on you because your Qt library needs features your CPU isn't showing, then a large integer with the features your CPU has."
+}

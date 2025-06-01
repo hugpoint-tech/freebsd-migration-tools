@@ -1,0 +1,8 @@
+{
+ "id": 722827,
+ "bug_id": 180328,
+ "attachment_id": 0,
+ "creation_time": "2013-07-05T18:20:01Z",
+ "creator": "sdaoden@gmail.com",
+ "text": "Note first that this problem also occurs for Mac OS X Snow Leopard and NetBSD current.  I have not yet tested GNU awk.\nI use awk(1) to generate test data from Unicode text files.\n. i think the best is i show it:\n\n## Input producers\n\nio_unicode_data() {\n   \u003c unicode/UnicodeData.txt ${TAWK} '\n      BEGIN {FS = \";\" ; OFS = \";\"}\n      # There are no comments in this, but..\n      /^[[:space:]]*[^#]+$/ {\n         i = $2\n         # Ranges must become unrolled, otherwise step on\n         if (i !~ /, First\u003e/) {\n            $2 = \"\"\n            print\n            next\n         }\n\n         r1 = sprintf(\"%d\", \"0x\" $1)\n         getline\n         r2 = sprintf(\"%d\", \"0x\" $1)\n         $2 = \"\"\n         # This gets around a bug in at least \"awk version 20070501\" as found\n         # on Slow Leopard: there the range F0000-FFFFD, and only that one,\n         # will *not* be evaluated unless we do this (once property test came)\n         # XXX presumably the type system is a bit weird; check other AWKs!\n         sprintf(\"%X %X\", r1, r2)\n[\nthis is it; UnicodeData.txt contains multiple ranges, but only this one will be \"omitted\" without sprintf(), the while() will simply not execute otherwise.\n]\n         while (r1 \u003c= r2) {\n            $1 = sprintf(\"%X\", r1)\n            printf \"%s\\n\", $0\n            ++r1\n         }\n      }\n   '\n}\n\nHow-To-Repeat: well..; git clone my S-CText and run `make ucd' with and without the line `sprintf(\"%X %X\", r1, r2)', compare the resulting `test/sa/t_props.dat' files."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1312300,
+ "bug_id": 279560,
+ "attachment_id": 0,
+ "creation_time": "2024-06-07T18:35:25Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "This is a bit of a false positive due to internal details of libc++ std::string.\n\nNormally the size of a std::string is 24 bytes on amd64, but only if it contains a 'short' string. When the contained string is too long to fit in the object itself, it's reallocated on the heap instead.\n\nIn this particular case some TCMalloc test string comes out as 25 bytes, and that is what libc++ eventually calls malloc() with. However due to internal administration issues, it calculates the wrong size for the corresponding delete.\n\nThis was also noticed by AddressSanitizer after \u003chttps://github.com/llvm/llvm-project/pull/83774\u003e (\"Enable sized deallocation by default in C++14 onwards\"), and fixed by Vitaly Buka in \u003chttps://github.com/llvm/llvm-project/commit/d129ea8d2fa3\u003e.\n\nI will merge that fix into -CURRENT, with one prerequisite fix added, so we can see if there's any fallout (but it's not likely). Then I will MFC it, and we can think about a 14.1 erratum."
+}

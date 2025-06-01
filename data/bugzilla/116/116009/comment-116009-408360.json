@@ -1,0 +1,8 @@
+{
+ "id": 408360,
+ "bug_id": 116009,
+ "attachment_id": 0,
+ "creation_time": "2007-09-02T11:00:06Z",
+ "creator": "alter@alter.org.ua",
+ "text": "Sometimes it is convenient to ignore errors when loading ruleset from a\nfile.  For example if standalone rules must be replaced (or added if not\nexist yet) in definite order.\n\nTo replace existing rules we must issue sequence of 'delete' and 'add'\ncommands.  If for some reason target rule doesn't exists (temporary or\nmistakenly removed, not generated due to bug in script on previous\nattempt, etc.), ruleset loading stops. Another case - when we need to\nre-apply subset of rules without 'flush' of entire ruleset.\n\nRunning 'ipfw' multiple times (one call for each rule) is not good for\nsystem performance.\n\nAlso, there is inconvenience inside 'ipfw.c': many functions calls\n'errx()' when find some error instead of reporting error status to\ncaller. This makes some difficulty in implementation of 'ignore errors' mode.\n\nFix: Attached patch adds '-i' switch to ipfw command, which turns ipfw into\n'ignore errors' mode. In this mode all syntax errors in rule cause\n'ipfw' to abort processing of current rule and start processing of the\nnext one.\n\n'-i' switch can be used both in command line and inside ruleset file\nfor particular rules.\n\nPatch replaces calls of 'errx()' to wrapping function. Normally, this\nfunction calls 'errx()'. But if 'ignore errors' mode is on, it calls\n'warnx()' and returns error code back to caller.  Implemented error\nhandling in such cases and returning error status necessary places.\n\nAlso, this patch adds 'replace' command. It can be used instead of pair\n-i delete NNN\nadd NNN \u003crule body\u003e\n\nPatch attached with submission follows:"
+}

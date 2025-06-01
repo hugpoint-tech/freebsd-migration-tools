@@ -1,0 +1,8 @@
+{
+ "id": 1101490,
+ "bug_id": 246289,
+ "attachment_id": 214277,
+ "creation_time": "2020-05-08T15:06:29Z",
+ "creator": "yds@Necessitu.de",
+ "text": "Created attachment 214277\nfull build log\n\nI have never installed any OpenSSL from ports on the 12.1-STABLE boxes where this failure happens. FWIW, nTopNG 3.8 built fine, this became an issue with the upgrade to 4.0\n\nif you look at `files/patch-configure.seed` where I'm adding `-lcrypto` -- it's already part of a FreeBSD specific hint to find the base system OpenSSL libs:\n```\n+  dnl Workaround for FreeBSD\n+  elif test -f \"/usr/lib/libssl.so\"; then\n+    AC_DEFINE_UNQUOTED(NO_SSL_DL, 1, [has openssl])\n+    SSL_INC=\"-I/usr/include\"\n+    SSL_LIB=\"-L/usr/lib -lssl\"\n   else\n```\n\nif you look at the start of the `pkg-config --exists libssl` block of code on line 168 of configure.seed, `-lcrypto` is specified there:\n```\npkg-config --exists libssl\nif test \"$?\" -ne 1; then\n  AC_DEFINE_UNQUOTED(NO_SSL_DL, 1, [has openssl])\n  SSL_INC=\"`pkg-config --cflags libssl` -I/usr/include/openssl\"\n  SSL_LIB=\"`pkg-config --libs libssl` -lssl -lcrypto\"\nelse\n```\n\nI do not see any ill effect from explicitly linking to both `-lssl -lcrypto` same as `pkg-config` does on line 172.\n\nit does cure the build failure on 5 of my 12.1-STABLE boxes where I tried this with and without `-lcrypto`"
+}

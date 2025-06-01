@@ -1,0 +1,8 @@
+{
+ "id": 1169555,
+ "bug_id": 257067,
+ "attachment_id": 0,
+ "creation_time": "2021-07-09T08:27:46Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "I think this is a bug in the ng_ppoe(4) code. Disconnecting hooks are called outside of NET_EPOCH, but ng_pppoe_disconnect() calls NG_SEND_DATA_ONLY() which should be called in NET_EPOCH.\n\nPlease try the following patch:\n\ndiff --git a/sys/netgraph/ng_pppoe.c b/sys/netgraph/ng_pppoe.c\nindex 295a136cc55..e07f77b9d54 100644\n--- a/sys/netgraph/ng_pppoe.c\n+++ b/sys/netgraph/ng_pppoe.c\n@@ -2037,6 +2037,7 @@ ng_pppoe_disconnect(hook_p hook)\n                                log(LOG_NOTICE, \"ng_pppoe[%x]: session out of \"\n                                    \"mbufs\\n\", node-\u003end_ID);\n                        else {\n+                               struct epoch_tracker et;\n                                struct pppoe_full_hdr *wh;\n                                struct pppoe_tag *tag;\n                                int     msglen = strlen(SIGNOFF);\n@@ -2067,8 +2068,11 @@ ng_pppoe_disconnect(hook_p hook)\n                                m-\u003em_pkthdr.len = m-\u003em_len = sizeof(*wh) + sizeof(*tag) +\n                                    msglen;\n                                wh-\u003eph.length = htons(sizeof(*tag) + msglen);\n+\n+                               NET_EPOCH_ENTER(et);\n                                NG_SEND_DATA_ONLY(error,\n                                        privp-\u003eethernet_hook, m);\n+                               NET_EPOCH_EXIT(et);\n                        }\n                }\n                if (sp-\u003estate == PPPOE_LISTENING)"
+}

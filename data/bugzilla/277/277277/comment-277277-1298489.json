@@ -1,0 +1,8 @@
+{
+ "id": 1298489,
+ "bug_id": 277277,
+ "attachment_id": 0,
+ "creation_time": "2024-02-24T09:37:57Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "Scenario:\n- FreeBSD stable/14\n- ports latest\n- using portmaster to upgrade ports\n- upgrading sysutils/coreutils to 9.4\n\nResult:\n- fails with\n\nconfigure: error: in '/usr/tmp/net/hal/z/SRC/FreeBSD/ports/MBi/main/sysutils/coreutils/work/coreutils-9.4':\nconfigure: error: could not enable timestamps after mid-January 2038.\nThis package recommends support for these later\ntimestamps. However, to proceed with signed 32-bit\ntime_t even though it will fail then, configure with\n'--disable-year2038'.\nSee 'config.log' for more details\n\nFix:\n- use the following patch:\n\ndiff --git a/sysutils/coreutils/Makefile b/sysutils/coreutils/Makefile\nindex a346bdc5e090..a5cc711f6911 100644\n--- a/sysutils/coreutils/Makefile\n+++ b/sysutils/coreutils/Makefile\n@@ -23,6 +23,9 @@ GNU_CONFIGURE_MANPREFIX=${PREFIX}/share\n # bugs.freebsd.org/160060\n CONFIGURE_ARGS=        --program-prefix=g      \\\n                --program-transform-name=s/stat/nustat/\n+.if ${ARCH} == i386\n+CONFIGURE_ARGS+=       --disable-year2038\n+.endif\n CONFIGURE_ENV= FORCE_UNSAFE_CONFIGURE=1\n \n CONFLICTS_INSTALL=     gdu geneweb gexpr rubygem-god # bin/gdu bin/gexpr bin/god bin/gwc\n\nNote: Other architectures are probably also affected and should be include in the .if statement\n\n-- Martin"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 902057,
+ "bug_id": 213527,
+ "attachment_id": 0,
+ "creation_time": "2016-10-16T13:27:51Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "Hi.\n\nThe added argument indeed completes part of the task, but the patch is buggy.\n\nYou consistently have:\n\nnewcred = crget(p-\u003ep_ucred-\u003ecr_agroups);\nPROC_LOCK(p);\n\nHowever, the stability of p_ucred is protected only with the proc lock held. That is, by the time you read the address stored in p-\u003ep_ucred, the object stored at that address can be freed. The crget cannot be moved inside because crget can sleep in an unbound manner, while the lock in question disallows that.\n\nWhen dealing with the current process, you can cheat a little and use td-\u003etd_ucred as a source for the number of groups.\n\nFinally, I would argue crget() interface should be left as it is. Instead, a new function (ncrget?) would be introduced and crget would become a wrapper which uses the current default number of groups as an argument."
+}

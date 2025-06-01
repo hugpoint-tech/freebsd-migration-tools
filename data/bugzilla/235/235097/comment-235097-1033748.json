@@ -1,0 +1,8 @@
+{
+ "id": 1033748,
+ "bug_id": 235097,
+ "attachment_id": 0,
+ "creation_time": "2019-01-24T23:14:09Z",
+ "creator": "kp@freebsd.org",
+ "text": "The following appears to fix the panic in comment #6:\n\ndiff --git a/sys/net/if.c b/sys/net/if.c\nindex a6552f80f37..7e3e662d342 100644\n--- a/sys/net/if.c\n+++ b/sys/net/if.c\n@@ -1194,6 +1195,11 @@ if_detach_internal(struct ifnet *ifp, int vmove, struct if_clone **ifcp)\n                if (!CK_STAILQ_EMPTY(\u0026ifp-\u003eif_addrhead)) {\n                        ifa = CK_STAILQ_FIRST(\u0026ifp-\u003eif_addrhead);\n                        CK_STAILQ_REMOVE(\u0026ifp-\u003eif_addrhead, ifa, ifaddr, ifa_link);\n+                       //KASSERT(ifa != ifp-\u003eif_addr, (\"\"));\n+                       if (ifa == ifp-\u003eif_addr) {\n+                               ifp-\u003eif_addr = NULL;\n+                               printf(\"KP: set ifp-\u003eif_addr to NULL\\n\");\n+                       }\n                        IF_ADDR_WUNLOCK(ifp);\n                        ifa_free(ifa);\n                } else\n\nWe free the ifaddr, but we can still have a pointer to it in ifp-\u003eif_addr. This check triggers, and in several test runs with this patch I've not managed to reproduce the panic any more. I'm doing more runs, because this problem comes and goes, but I hope this will be a useful pointer to someone who knows that code better than me."
+}

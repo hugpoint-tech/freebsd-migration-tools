@@ -1,0 +1,8 @@
+{
+ "id": 21747,
+ "bug_id": 7061,
+ "attachment_id": 0,
+ "creation_time": "1998-06-25T03:50:01Z",
+ "creator": "cjohnson@neunacht.netgsi.com",
+ "text": "\nWhen fspclient (fsp) is used to \"grab\" a file.  The local file is \nalways deleted.  \n\nThe fsp grab command is designed to do an atomic get/delete on a remote\nfile.  The client/util/util.c(util_grab_file) routine does a correct\nFSP protocol transaction and after verifying that the file has been\nsafely transfered, it send the \"grabdone\" command which tells the\nserver to delete the remote file.\n\nSince the transfer was done correctly, util_grab_file() returns 0.\n\nThe routine client/remote/rgrab.c(grab_file) expects util_grab_file()\nto return the number of bytes transferred correctly.  Since util_grab_file()\nis returning 0 (correct transfer) and grab_file() expects byte count, the\nresult is grab_file() sees an incorrect file transfer and unlink()s the\nbad local file.\n\nFix: \n\nWhile not a diff, the following shows corrected code:\n       int flag;\n\n        flag = util_grab_file(name, fd, 0, sbufp-\u003est_size);\n        (void)close(fd);\n\n        if (flag \u003c 0)\n        {\n            retval = 1;\n            (void)unlink(path);\n        }\n        else\n            dirty = 1;\n    }\nHow-To-Repeat: \nstart fsp server.\nstart fsp client\ngrab remote_file_name\n\nnote that the remote file is missing as is the local file"
+}

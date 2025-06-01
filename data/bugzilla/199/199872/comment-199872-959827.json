@@ -1,0 +1,8 @@
+{
+ "id": 959827,
+ "bug_id": 199872,
+ "attachment_id": 188059,
+ "creation_time": "2017-11-16T23:13:59Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "Created attachment 188059\nFurther update glib patch\n\nI have analysed another crash, in x11-wm/xfce4-desktop this time.\n\nI've discovered a code path in the kqueue helper  casing glib to exit due to a filed assertion.\n\nThis is triggered when a kqueue NOTE_RENAME is generated on a file. The code translates it in a G_FILE_MONITOR_EVENT_MOVED and passes it to g_file_monitor_source_handle_event(), where it ends in an assertion every time.\n\nI simply commented out the code causing this, so this event is actually ignored.\n\nIt does not look like a problem since this code path is bound to end in a failed assertion every time, while the same file move causing this event will also generate an event for the parent directory, which is handled through a slightly different code path.\n\nMy intuition is that while kqueue generates NOTE_RENAME events for single files, GIO semantics are that such events should be generated only for moves happening in watched directories, so ignoring a moved event for a file here is actually correct.\n\nPlease test this patch, I think it will fix a few more problems, but needs ample testing to make sure it's not causing problems in other areas."
+}

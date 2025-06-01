@@ -1,0 +1,8 @@
+{
+ "id": 388721,
+ "bug_id": 111810,
+ "attachment_id": 0,
+ "creation_time": "2007-04-18T09:30:01Z",
+ "creator": "henrik@brixandersen.dk",
+ "text": "Currently, changes to the dev.ath.0.ledpin sysctl are not recognized\nimmediately since changing the value of this sysctl doesn't trigger a\ncall to ath_hal_gpioCfgOutput() and ath_hal_gpioset().\n\nThis means that when changing the above mentioned sysctl, one has to\ndo something like the following to get ath(4) to start using the new\nGPIO pin for driving the LED:\n\n# sysctl dev.ath.0.ledpin\n0\n# sysctl dev.ath.0.softled\n1\n\n# sysctl dev.ath.0.ledpin=1\n# sysctl dev.ath.0.softled=0\n# sysctl dev.ath.0.softled=1\n\nThe above toggles dev.ath.0.softled after setting dev.ath.0.ledpin=1\nand thus triggers a call to ath_hal_gpioCfgOutput() and\nath_hal_gpioset(), configuring the newly selected GPIO pin.\n\nFix: The patch below implements a custom sysctl function for handling\nchanges to dev.ath.0.ledpin, eliminating the need to toggle\ndev.ath.0.softled after making changes to dev.ath.0.ledpin.\n\n\t\nHow-To-Repeat: \nYou need an Atheros card with a LED connected to a GPIO pin other than\n0, which is the \"default\".\n\nLoad the ath(4) driver and set the dev.ath.0.ledpin according to the\nhardware:\n\n# sysctl dev.ath.0.ledpin=1\n\nNotice that the LED doesn't light up.\n\nToggle the dev.ath.0.softled sysctl:\n\n# sysctl dev.ath.0.softled=0\n# sysctl dev.ath.0.softled=1\n\nNotice that the LED now lights up as expected."
+}

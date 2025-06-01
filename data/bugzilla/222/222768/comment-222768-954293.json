@@ -1,0 +1,8 @@
+{
+ "id": 954293,
+ "bug_id": 222768,
+ "attachment_id": 186898,
+ "creation_time": "2017-10-04T08:01:09Z",
+ "creator": "alex@zagrebin.ru",
+ "text": "Created attachment 186898\npatch\n\nBy default (when net.link.bridge.pfil_bridge=1), the packet, forwarded via if_bridge, has to be processed by ipfw 4 times. Suppose such configuration:\n\nem0 \u003c-\u003e bridge0 \u003c-\u003e em1\n\nipfw will process packet, forwarded from em0 to em1, in the following sequence:\nin[em0], in[bridge0], out[bridge0], out[em1].\n\nWe can expect, that inbound packets can be matched with the following ipfw rule options:\n\nin[em0]     - 'in recv em0' or 'in via em0'\nin[bridge0] - 'in via bridge0'\n\nFor example,\n\nipfw add 1 count ip from any to any in via em0\nipfw add 2 count ip from any to any in via bridge0\n\nbut this doesn't work as expected: each single packet matches 2 times to the rule 1 and not matches to the rule 2 at all.\n\nThe reason in the following: despite that if_bridge sends information about corresponding interface to the pfil_run_hooks(), the ipfw doesn't uses it while processing inbound packets.\n\nThe attached patch fixes issue:\nIf the interface on which ipfw processes packet does not match an 'received' interface, then this interface saved and used later in the processing of 'via' rule option."
+}

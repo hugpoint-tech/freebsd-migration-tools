@@ -1,0 +1,8 @@
+{
+ "id": 406294,
+ "bug_id": 115572,
+ "attachment_id": 0,
+ "creation_time": "2007-08-18T21:49:13Z",
+ "creator": "gbradley@rocketmail.com",
+ "text": "I have stripped this problem down to its simplest form, which is that a\nblock read or write where the block straddles the 137gb boundary fails.\n\nSimplest reproducible form:\n1. create a single partition on a large drive, so then the first\npartition starts at a sector offset of 1.  In my case this is\n/dev/ad4s1.\n\n2. attempt (say)....\nrabbit# dd if=/dev/zero of=/dev/ad4s1 oseek=2097151 count=1 bs=64k\nand the result is....\ndd: /dev/ad4s1: Input/output error\n1+0 records in\n0+0 records out\n0 bytes transferred in 0.000325 secs (0 bytes/sec)\n\n(If dd is performed on the raw drive, /dev/ad4 then block boundary is\nalways a power of 2, and blocksize a smaller power of 2.  That's always\nok.  But we can't assume we use drives that way.)\n\nSo a transfer which starts in the 28-bit zone, but extends over into\nthe 48-bit region, fails.  Such transfers happen in the superblock of\ncertain size drives, and that plays havoc.  The sector mapping of gbde\ncan do this, but soft-update gets screwed by this happening.  It's not\nactually to do with the crypto as I first suspected.\n\n\n       \n____________________________________________________________________________________Ready for the edge of your seat? \nCheck out tonight's top picks on Yahoo! TV. \nhttp://tv.yahoo.com/"
+}

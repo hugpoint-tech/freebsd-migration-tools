@@ -1,0 +1,8 @@
+{
+ "id": 1018943,
+ "bug_id": 232772,
+ "attachment_id": 0,
+ "creation_time": "2018-10-29T01:50:31Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "rename(2) is supposed to return EINVAL if it would create a directory loop.  This is the behavior of UFS and ZFS.  However, fusefs(4) doesn't detect it.  fusefs-exfat and fusefs-ext2 both hang when you try, and a closed-source fuse filesystem created the directory loop just fine.  Steps to reproduce, with exfat:\n\n# truncate -s 1g /tmp/da1\n# mkexfatfs /tmp/da1\nmkexfatfs 1.2.7\nCreating... done.\nFlushing... done.\nFile system created successfully.\n# sudo mount.exfat -d /tmp/da1 /mnt\n\nThen in another window:\n# cd /mnt\n# mkdir foo\n# mkdir foo/sub\n# mv foo foo/sub/sub\nmv: rename foo to foo/sub/sub: Operation timed out\n\n\nNote that renaming foo to foo/sub correctly fails; the error only happens with the additional level of indirection.\n\nTested on 12.0-ALPHA9 amd64 and TrueOS-Desktop-201803131015."
+}

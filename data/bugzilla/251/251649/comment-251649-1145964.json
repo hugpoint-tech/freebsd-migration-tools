@@ -1,0 +1,8 @@
+{
+ "id": 1145964,
+ "bug_id": 251649,
+ "attachment_id": 0,
+ "creation_time": "2021-02-10T15:29:27Z",
+ "creator": "martin@bxlr.sk",
+ "text": "I did a mistake above. The last working version of libvncserver is r556980. \nI tried to debug what's happening when using working and non-working version. \n\nCode that is being called seems to be the same:  libvncserver/rfbserver.c:2487 in r557730, libvncserver/rfbserver.c:2456 in r556980.\n\nProblem seems to be this call:\n\n2487                 cl-\u003escreen-\u003eptrAddEvent(msg.pe.buttonMask,\n2488                         ScaleX(cl-\u003escaledScreen, cl-\u003escreen, Swap16IfLE(msg.pe.x)),\n2489                         ScaleY(cl-\u003escaledScreen, cl-\u003escreen, Swap16IfLE(msg.pe.y)),\n2490                         cl);\n\nWhile I didn't trace what sets this function pointer (and how it is being updated), every time I trace it in working version it was always pointing to VNCServerImpl::vncMouseEvent(int, int, int, _rfbClientRec*), i.e. 4 argument function. \n\nIn updated version this function pointer was pointing to VNCServerImpl::vncKeyboardEvent(signed char, unsigned int, _rfbClientRec*)\n\n\nIn the crash version %rcx is pointing to proper cl structure as one would expect in 4 arg function. \n\nptrAddEvent() needs 4 args while vncKeyboardEvent() is 3."
+}

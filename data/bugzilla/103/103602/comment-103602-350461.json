@@ -1,0 +1,8 @@
+{
+ "id": 350461,
+ "bug_id": 103602,
+ "attachment_id": 0,
+ "creation_time": "2007-03-06T00:24:56Z",
+ "creator": "thomas@FreeBSD.org",
+ "text": "* Josh Carroll, 2007-03-05 :\n\n\u003e I enabled all the available CAMDEBUG options and included the ata\n\u003e patch. The verbose dmesg output is below. I had to increase the\n\u003e MSGBUF_SIZE in the kernel so it wouldn't get truncated. I do see some\n\u003e references to cd0 in this dmesg output.\n\nOK, good, now we see a little bit more what is happening. It appears\nthat some requests from the SCSI cd driver are timing out, and causing\nreinitializations of the ATA channel. This is not abnormal per se, and\nshould not cause the system to hang, though.\n\n\u003e (cd0:ata2:0:1:0): XPT_SCSI_IO\n\u003e atapi_action: hcb@0xc5589780: 43 2 0 0 0 0 0 0 14 0\n\u003e acd0: req=0xc5584780 READ_TOC queued\n\u003e acd0: req=0xc5584780 READ_TOC starting\n\u003e acd0: req=0xc5584780 READ_TOC begin transaction\n\u003e acd0: req=0xc5584780 READ_TOC timeout\n\u003e acd0: req=0xc5584780 READ_TOC finish taskqueue_swi\n\u003e acd0: req=0xc5584780 READ_TOC completed entered\n\u003e ata2: reiniting channel ..\n\u003e ata2: reset tp1 mask=03 ostat0=50 ostat1=51\n\nIs that the end of what you are seeing? No trace after that? (That's\nsuprising because if you get that far in ata_generic_reset you should at\nleast reach the line\n                device_printf(dev,\n                              \"stat0=0x%02x err=0x%02x lsb=0x%02x msb=0x%02x\\n\",\n                              stat0, err, lsb, msb);\n\nThomas."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 926603,
+ "bug_id": 217637,
+ "attachment_id": 0,
+ "creation_time": "2017-03-19T17:10:55Z",
+ "creator": "tuexen@freebsd.org",
+ "text": "(In reply to slw from comment #32)\nThe server does\nsocket()\nlisten()\naccept()\nread()\nwrite()\nclose()\nwhich means it reads the first part of the request, sends the response (en error message) and closes the socket. Then the state is FIN-WAIT-1. Then it receives the\nsecond part of the request. Since the socket is closed, it responds with a RST segment and moves the connection to CLOSED. This covers the first TCP connection of the two.\n\nAfter that that the client retransmits the complete request, which results in establishing the second TCP connection (via the syncookie processing). The server sends a response (the same error message) and closes the socket. So it is again in FIN-WAIT-1. The FIN gets acked by the client. So the server goes into FIN-WAIT-2. Then the client sends its fin. This is processed by the server and acked. Now the server is in TIME-WAIT. However, the ACK is not received by the client and the client retransmits the FIN-ACK.\n\nSo I don't see any end point moving into CLOSE-WAIT state..."
+}

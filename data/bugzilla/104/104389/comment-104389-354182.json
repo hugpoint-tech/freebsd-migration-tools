@@ -1,0 +1,8 @@
+{
+ "id": 354182,
+ "bug_id": 104389,
+ "attachment_id": 0,
+ "creation_time": "2006-10-15T21:20:41Z",
+ "creator": "dzs-pr@dzs.fx.org",
+ "text": "* Poul-Henning Kamp \u003cphk@phk.freebsd.dk\u003e [2006-10-15 18:12:56 +0000]:\n\u003e I'm not keep on the encoding, and would be inclined to say\n\u003e \"Don't use such names then\", but I can probably be convinced\n\u003e that this is actually a good idea if sensible examples are shown.\n\nI encountered this issue thanks to a CD from Sun Microsystems:\n\n# glabel status\n                      Name  Status  Components\niso9660/tools_\u0026_driver_1.0     N/A  acd0\n\nThe label on its ISO9660 filesystem has \"\u0026\", which must be encoded\nin XML.\n\n\u003e The other thing is that in the patch, the _encode_entities()\n\u003e function should not have a leading underscore and should\n\u003e take arguments:\n\u003e \n\u003e \tstatic void\n\u003e \tencode_entities(struct sbuf *sb, const char *fmt,\n\u003e \t    const char *str, int len);\n\nMy initial patch was just a quick hack to work around the problem.\nI didn't know how FreeBSD's developers wanted to address it. For\nexample, if XML will be used widely in the kernel, should a new\nformat code for kvprintf() do this XML encoding?\n\n\u003e So that usage would not need a randomsized local buffer and\n\u003e double enveloping of the call:\n\u003e \n\u003e \u003e-\tsbuf_printf(sb, \"\\t  \u003cname\u003e%s\u003c/name\u003e\\n\", pp-\u003ename);\n\u003e \n\u003e Should be:\n\u003e \n\u003e \tencode_entities(sb, \"\\t  \u003cname\u003e%s\u003c/name\u003e\\n\", pp-\u003ename, -1);\n\u003e \n\u003e (-1 for len means \"use strlen\")\n\nAttached is a new patch for geom_dump.c which follows your\nrecommendations.\n\nThanks,\n - doug"
+}

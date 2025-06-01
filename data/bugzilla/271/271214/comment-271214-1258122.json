@@ -1,0 +1,8 @@
+{
+ "id": 1258122,
+ "bug_id": 271214,
+ "attachment_id": 0,
+ "creation_time": "2023-05-02T22:46:37Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "As part of getting OpenSSL from ports and base to play well with one another, I moved OpenSSL from ports to /usr/local/lib/openssl . This has exposed the fact that LDFLAGS from USES+=ssl isn't honored/passed through to configure properly.\n\nMoreover, the port uses PKG_PREFIX, a non-existent variable, instead of PREFIX or LOCALBASE.\n\n```\n$ (cd ../freebsd-ports/net-mgmt/net-snmp; make -VPKG_PREFIX)\n\n$\n```\n\nThe patch below addresses both of those issues:\n```\ndiff --git a/net-mgmt/net-snmp/Makefile b/net-mgmt/net-snmp/Makefile\nindex 0af9bccd05ee..e2e91ff73eac 100644\n--- a/net-mgmt/net-snmp/Makefile\n+++ b/net-mgmt/net-snmp/Makefile\n@@ -50,7 +50,7 @@ CPE_PRODUCT=  net-snmp\n USE_PERL5=     build run\n USE_CSTD=      c99\n \n-CFLAGS+=       -I${LOCALBASE}/include -I${PKG_PREFIX}/include\n+CFLAGS+=       -I${LOCALBASE}/include -I${PREFIX}/include\n LDFLAGS+=      -L${LOCALBASE}/lib\n CONFIGURE_ENV+=        PERLPROG=\"${PERL}\" PSPROG=\"${PS_CMD}\" SED=\"${SED}\"\n CONFIGURE_ARGS+=--enable-shared --enable-internal-md5 \\\n@@ -60,7 +60,7 @@ CONFIGURE_ARGS+=--enable-shared --enable-internal-md5 \\\n                --with-logfile=\"${NET_SNMP_LOGFILE}\" \\\n                --with-persistent-directory=\"${NET_SNMP_PERSISTENTDIR}\" \\\n                --with-gnu-ld --without-libwrap \\\n-               --with-ldflags=\"-lm -lkvm -ldevstat -L${PKG_PREFIX}/lib -L${LOCALBASE}/lib ${LCRYPTO}\"\n+               --with-ldflags=\"-lm -lkvm -ldevstat -L${PREFIX}/lib ${LDFLAGS}\"\n SUB_FILES=     pkg-message\n \n .if !defined(WITHOUT_SSP)\n```"
+}

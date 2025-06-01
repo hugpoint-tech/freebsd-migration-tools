@@ -1,0 +1,8 @@
+{
+ "id": 948281,
+ "bug_id": 221337,
+ "attachment_id": 0,
+ "creation_time": "2017-08-18T01:42:41Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Some possibly useful references:\n\nThis (GetThreadStackAndTls) originally arrived in https://reviews.llvm.org/rL156542. FreeBSD support was added in https://reviews.llvm.org/rL203235.\n\nThread sanitizer algorithm description at https://github.com/google/sanitizers/wiki/ThreadSanitizerAlgorithm\n\nI think the use of dtv[2] is indeed strange - AFAICT the intent is that it should be returning the address and size of the entire TLS block -- at least, the contiguous block of \"initially available modules.\"\n\nI suppose there are a few fairly straightforward changes/hacks that could be tried:\n\n1. Change the FreeBSD GetTls in sanitizer_linux_libcdep.cc to set *addr = 0 and *size = 0. My guess is that this will just exclude all tls accesses from the sanitizer. If that works I'd be happy enough with it as an initial stopgap on FreeBSD/i386 (asan that does not detect errors with tls is better than asan that does not work at all).\n2. Make TLS_TCB_ALIGN 8 for i386 in libc tls.c\n3. Round addr down to be 8-byte aligned (increasing size as necessary)\n\nAll of this goop is to implement a function void GetThreadStackAndTls(bool main, uptr *stk_addr, uptr *stk_size, uptr *tls_addr, uptr *tls_size) to fetch the extent of the current thread's stack and tls regions; ideally we can replace this with a clean and consistent FreeBSD-specific interface."
+}

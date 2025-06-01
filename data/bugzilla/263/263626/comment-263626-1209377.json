@@ -1,0 +1,8 @@
+{
+ "id": 1209377,
+ "bug_id": 263626,
+ "attachment_id": 0,
+ "creation_time": "2022-05-01T20:32:58Z",
+ "creator": "vegeta@tuxpowered.net",
+ "text": "I've encountered the same issue. As far as I understand it's that table entries limiting finally works properly after https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=260406 has been fixed. Sure, there is \"set limit table-entries\" but that is applied only once pf.conf is successfully loaded. So if you have a system where you start with a small amount of table entries and increase it over weeks or months, and you occasionally raise the limit, all will seem fine until you reboot. After the reboot the system starts with the default limit (PFR_KENTRY_HIWAT defined in one of .h files) and if the pf.conf contains a bigger amount of entries, you won't be able to load it at all and it won't increase the limit.\n\nI see some possible workarounds:\n1. Create a pf-early service which starts before pf and loads a dummy file just with a higher limit.\n2. Configure PFR_KENTRY_HIWAT and build a custom kernel (that's how I did it).\n\nI would not call any of them a real solution. As for those I can can imagine maybe:\n1. Have the initial value unlimited, until configured in pf.conf\n2. Move it out of \"set limit\" clause into a sysctl, so that it can be applied on boot, just like hash sizes."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1077276,
+ "bug_id": 234209,
+ "attachment_id": 0,
+ "creation_time": "2019-11-28T00:47:06Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: cem\nDate: Thu Nov 28 00:46:03 UTC 2019\nNew revision: 355155\nURL: https://svnweb.freebsd.org/changeset/base/355155\n\nLog:\n  auditd(8): fix long-standing uninitialized memory use bug\n\n  The bogus use could lead to an infinite loop depending on how fast the\n  audit_warn script to execute.\n\n  By fixing read(2) interruptibility, d060887 (r335899) revealed another bug\n  in auditd_wait_for_events.  When read is interrupted by SIGCHLD,\n  auditd_reap_children will always return with errno set to ECHILD.  But\n  auditd_wait_for_events checks errno after that point, expecting it to be\n  unchanged since read.  As a result, it calls auditd_handle_trigger with bogus\n  stack garbage.  The result is the error message \"Got unknown trigger 48.\"  Fix\n  by simply ignoring errno at that point; there's only one value it could've\n  possibly had, thanks to the check up above.\n\n  The best part is we've had a fix for this for like 18 months and just never\n  merged it.  Merge it now.\n\n  PR:\t\t234209\n  Reported by:\tMarie Helene Kvello-Aune \u003cfreebsd AT mhka.no\u003e (2018-12)\n  Submitted by:\tasomers (2018-07)\n  Reviewed by:\tme (in OpenBSM)\n  Obtained from:\tOpenBSM\n  X-MFC-With:\tr335899\n  Security:\t?\\_(?)_/?\n  Differential Revision:\thttps://github.com/openbsm/openbsm/pull/45\n\nChanges:\n  head/contrib/openbsm/bin/auditd/auditd_fbsd.c"
+}

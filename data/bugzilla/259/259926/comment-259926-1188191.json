@@ -1,0 +1,8 @@
+{
+ "id": 1188191,
+ "bug_id": 259926,
+ "attachment_id": 0,
+ "creation_time": "2021-11-27T18:29:35Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "So, what we want is to add this line to wine, wine-devel and wine-proton (with appropriate revision bumps):\n\ndiff --git a/emulators/wine/files/wine-wow64.sh b/emulators/wine/files/wine-wow64.sh\nindex a7b1efba17cc..2ec4cc31703e 100644\n--- a/emulators/wine/files/wine-wow64.sh\n+++ b/emulators/wine/files/wine-wow64.sh\n@@ -33,6 +33,7 @@ do\n done\n export LD_32_LIBRARY_PATH_RPATH=y\n export LD_32_LIBMAP=\"\n+libgcc_s.so.1 /usr/lib32/libgcc_s.so.1\n $LOCALBASE/lib/libvulkan_intel.so  $I386_ROOT/$LOCALBASE/lib/libvulkan_intel.so\n $LOCALBASE/lib/libvulkan_radeon.so $I386_ROOT/$LOCALBASE/lib/libvulkan_radeon.so\n $LD_32_LIBMAP\"\n\nto counteract rpath=/usr/local/lib/gcc10 field in i386 executables (this a Mk/bsd.gcc.mk default, Wine itself doesn't set it), which makes the dynamic linker attempt to load a 64-bit version of the library which happens to be at that path on amd64. It's also possible to remove this flag at compilation time, but that would be comparatively more annoying.\n\nNow, should that be GCC's libgcc_s.so.1 rather than FreeBSD one? Not necessarily. For C code they are fully* compatible and C++ dependencies Wine loads (openal-soft and various Mesa userspace graphics drivers) are actually compiled with Clang, so that the version of the library they would normally load without rpath interference.\n\n* Well, kind of. Wine is a bit special and tends to reveal very subtle differences. I actually had some kind of crash related to exactly this library difference (base vs GCC) before, but I can't reproduce it right now. Go figure."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 54767,
+ "bug_id": 17939,
+ "attachment_id": 0,
+ "creation_time": "2000-04-12T02:40:00Z",
+ "creator": "msmith@netapp.com",
+ "text": "In sbin/routed/rdisc.c, parse_ad() is called as follows:\n\n          parse_ad(from.sin_addr.s_addr,\n                   wp[0], wp[1],\n                   ntohs(p-\u003ead.icmp_ad_life),\n                   ifp);\n\nThus, when we are in parse_ad() the 4th arg (life) is already in\nhost order.  Down at the bottom of parse_ad() we have this:\n\n     new_drp-\u003edr_life = ntohs(life);\n\nIt looks to me like this call to ntohs() ends up converting it\nback to network order.  This causes routed to use the wrong value\nwhen it uses dr_life elsewhere.\n\nFix: \n\nDon't call ntohs() in parse_ad().\nHow-To-Repeat: This was found by code inspection.  The default value for life is\n1800 which is 2055 when byte swapped so most people probably never\nnoticed."
+}

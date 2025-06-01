@@ -1,0 +1,8 @@
+{
+ "id": 56581,
+ "bug_id": 18521,
+ "attachment_id": 0,
+ "creation_time": "2000-05-13T03:40:01Z",
+ "creator": "larse@isi.edu",
+ "text": "I've finally tracked down a strange problem that I've also seen under\n3.X before. It seems that setting the NIS domain name in rc.network\nbefore ipfw is initialized causes ipfw rule adds later on in \nthe boot process to be extremely slow. (I see about a minute delay \nper rule).\n\nFix: Set the NIS domain name after ipfw is initialized.\n\nNote: I've no idea why this fixes it, or why setting the NIS\n      domain name would slow down ipfw to a crawl...\n\nFix: \n\n--- rc.network  2000/03/31 01:54:16     1.3\n+++ rc.network  2000/05/13 02:25:27\n@@ -20,17 +20,6 @@\n                echo -n ' hostname'\n        fi\n \n-       # Set the domainname if we're using NIS\n-       #\n-       case ${nisdomainname} in\n-       [Nn][Oo] | '')\n-               ;;\n-       *)\n-               domainname ${nisdomainname}\n-               echo -n ' domain'\n-               ;;\n-       esac\n-\n        echo '.'\n \n        # Initial ATM interface configuration\n@@ -404,6 +393,17 @@\n        case ${portmap_enable} in\n        [Yy][Ee][Ss])\n                echo -n ' portmap';     ${portmap_program:-/usr/sbin/portmap} ${portmap_flags}\n+               ;;\n+       esac\n+\n+       # Set the domainname if we're using NIS\n+       #\n+       case ${nisdomainname} in\n+       [Nn][Oo] | '')\n+               ;;\n+       *)\n+               domainname ${nisdomainname}\n+               echo -n ' domain'\n                ;;\n        esac\nHow-To-Repeat: Include these lines in /etc/rc.conf:\n\nfirewall_enable=\"client\"\nfirewall_type=\"/etc/rc.firewall.local\"\n\nnisdomainname=\"mydomain\"\nnis_client_enable=\"YES\"\n\nReboot."
+}

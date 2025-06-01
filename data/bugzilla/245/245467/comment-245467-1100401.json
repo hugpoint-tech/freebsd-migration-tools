@@ -1,0 +1,8 @@
+{
+ "id": 1100401,
+ "bug_id": 245467,
+ "attachment_id": 0,
+ "creation_time": "2020-05-03T08:01:35Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "openblas is one of the few ports that you have to fight, sometimes.  It appears to be sensitive to various compiler and linker flags, though by the time it gets to the fortran bits, its made up its own mind.\n\nYou should review your settings using:\nmake -C /usr/ports/math/openblas -DUSE_K8 -VCC -VCFLAGS -VLDFLAGS\n(there's a hint if you want more help, you'll need to provide more information, including which FreeBSD version you're on, and whether you're building within a jail etc.)  I'm having some run time problems with all ports built in a jail that run in the jail but not the i386 target??? point being that more information is helpful :) )\n\nThere are files in the top layer (under work/) that provide clues.  For me, I have the following in my make.conf, to ensure that it builds for my architecture (using FBSD 12.1S amd64 and gcc 9.3.0 with binutils 2.33.  I completed a rebuild of all ports on April 25, including openblas 3.7_3,1 - so its unlikely to be a problem with the compiler, as the hint of an \"illegal instruction\" points elsewhere; you might need to revisit your build environment?)\n\n.if (!empty(.CURDIR:M/usr/ports/math/openblas) || !empty(.CURDIR:M/var/ports/usr/ports/math/openblas) )\nmath_openblas_SET=AVX AVX2\nmath_openblas_UNSET=DYNAMIC_ARCH\nMAXTHREADS=16\nTARGET_CPU_ARCH=HASWELL  # please note I has a haswell cpu\n.endif\n\nwhile for i386 I have\nmath_openblas_SET=DYNAMIC_ARCH\nmath_openblas_UNSET=AVX AVX2\nMAXTHREADS=4\nTARGET_CPU_ARCH=PRESCOTT\n\nHope that helps."
+}

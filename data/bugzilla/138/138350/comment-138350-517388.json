@@ -1,0 +1,8 @@
+{
+ "id": 517388,
+ "bug_id": 138350,
+ "attachment_id": 0,
+ "creation_time": "2009-08-30T16:40:02Z",
+ "creator": "sysv@yahoo.com",
+ "text": "Using additional kernel option UFS_EXTATTR in 7.2-RELEASE causes a kernel build failure \n\ncc -c -O2 -frename-registers -pipe -fno-strict-aliasing  -std=c99 -g -Wall -Wredundant-decls -Wnested-externs -Wstrict-prototypes  -Wmissing-prototypes -Wpointer-arith -Winline -Wcast-qual  -Wundef -Wno-pointer-sign -fformat-extensions -nostdinc  -I. -I../../.. -I../../../contrib/altq -D_KERNEL -DHAVE_KERNEL_OPTION_HEADERS -include opt_global.h -fno-common -finline-limit=8000 --param inline-unit-growth=100 --param large-function-growth=1000  -mcmodel=kernel -mno-red-zone  -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow  -msoft-float -fno-asynchronous-unwind-tables -ffreestanding -Werror  ../../../ufs/ufs/ufs_extattr.c\ncc1: warnings being treated as errors\n./../../ufs/ufs/ufs_extattr.c:97: warning: 'ufs_extattr_autostart_locked' declared 'static' but never defined\n*** Error code 1\n\n\nThis is because the routine is getting optionally defined around line 215 with a #ifdef UFS_EXTATTR_AUTOSTART, but the prototype is missing the analoguous #ifdef, and the compiler seems to be picky.\n\nFix: Trivial solution. \n\nSimply the add the pre-process directives around the prototyping of the \nsubroutine at the head of the file. The routine lower down in ufs_extattr.c already has the #ifdefs around it.\n\n#ifdef UFS_EXTATTR_AUTOSTART\n#endif /* !UFS_EXTATTR_AUTOSTART */\n\nThat way BOTH the prototype and the subroutine have that #ifdef.\n\ne.g.\n-------------\nHow-To-Repeat: Add option UFS_EXTATTR to the 7.2-RELEASE kernel and do a build. The problem was NOT seen in 7.1-RELEASE."
+}

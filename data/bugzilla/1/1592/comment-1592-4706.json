@@ -1,0 +1,8 @@
+{
+ "id": 4706,
+ "bug_id": 1592,
+ "attachment_id": 0,
+ "creation_time": "1996-09-10T00:30:01Z",
+ "creator": "smp@csn.net",
+ "text": "\n\tThe kernel determines the 'number' of the current CPU by\n\treading the 'local APIC ID Register' and masking off the high\n\tbyte (ie 8 bits) of this 32 bit register.  In the 80489\n\tdiscrete APIC this is an 8-bit field, but in the P5\n\tintegrated APIC, it is only a 4-bit field.  Although the\n\tdata book shows the high nibble being zero-ed out on reset,\n\texperiments with the Intel XXPRESS motherboard suggests otherwise.\n\tThere are also other modes where this register becomes a bitfield\n\tas oppossed to a discrete number.  Since extra bits are sometime\n\tset in the high nibble the code fails to detect the proper CPU #.\n\nFix: \n\n1: in include/apic.h:\n\n\t#define APIC_ID_FIELD\t0x0f000000\n\n\t2: change all places that mask off this field, typically:\n\n \tandl\t$0xff000000,%e?x\n\n\tto:\n\n \tandl\t$APIC_ID_FIELD,%e?x\n\n\tthese places are:\n\n\ti386/i386/locore.s, line 268\n\ti386/i386/swtch.s, line 452\n\ti386/i386/mplock.s, lines 48, 59, 87, and 99\n\n\t3: fix cpunumber() in i386/include/smp.h:\n\n\tchange line 25:\n\n\treturn (apic_base[APIC_ID] \u003e\u003e 24);\n\n\tto:\n\n\treturn ((apic_base[APIC_ID] \u0026 APIC_ID_FIELD) \u003e\u003e 24);\n\n\t4: fix  macro in i386/include/smpasm.h:\n\n\tchange: lines 9-12\n\n\t#define GETCPUID(reg)\t\\\n\t\tmovl _apic_base, reg; \\\n\t\tmovl APIC_ID(reg), reg; \\\n\t\tshrl $24, reg \n\n\tto:\n\n\t#define GETCPUID(reg)\t\t\\\n\t \tmovl _apic_base, reg;\t\\\n \t\tmovl APIC_ID(reg), reg;\t\\\n\t \tshrl $24, reg;\t\t\\\n \t\tandl $0xf, reg\nHow-To-Repeat: \n\tnot relevant."
+}

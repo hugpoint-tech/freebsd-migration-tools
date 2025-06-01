@@ -1,0 +1,8 @@
+{
+ "id": 486996,
+ "bug_id": 132104,
+ "attachment_id": 0,
+ "creation_time": "2009-02-25T17:30:01Z",
+ "creator": "a134qaed@gmail.com",
+ "text": "The kenv syscall, when called with the KENV_GET action, first allocates a static size buffer, holds the kenv mutex, copies the data in the pointer to the buffer. It then releases the mutex, and runs strlen over the buffer, malloc's a return buffer the size of strlen's return value, and copies from the initial buffer to the return buffer. This usage case only works with environment variables defined by the KENV_SET action, which restricts the length of a value to 128 bytes.\n\nFix: Remove the statically allocated buffer, and move the mutex back to the point where the return buffer is allocated and the data moved. This prevents the panic condition, but also increases the amount of time the mutex is held. Comments?\n\nPatch attached with submission follows:\nHow-To-Repeat: loader has no such restriction, and attempting to KENV_GET a variable set by loader that is longer then 128bytes causes an immediate page fault. Add a long string value to /boot/loader.conf and then kenv the name of the variable."
+}

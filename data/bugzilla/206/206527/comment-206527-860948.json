@@ -1,0 +1,8 @@
+{
+ "id": 860948,
+ "bug_id": 206527,
+ "attachment_id": 166008,
+ "creation_time": "2016-01-23T15:47:15Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 166008\nFix emulators/wine and emulators/wine-devel build with clang 3.8.0\n\nDuring the exp-run in bug 206074, it was found that emulators/wine and emulators/wine-devel give errors with a recent clang 3.8.0 snapshot [1]:\n\neventlog.c:997:5: error: 'va_start' used in Win64 ABI function\n    __ms_va_start( valist, number );\n    ^\n../../include/windef.h:90:35: note: expanded from macro '__ms_va_start'\n#  define __ms_va_start(list,arg) __builtin_ms_va_start(list,arg)\n                                  ^\n\u003ccommand line\u003e:5:31: note: expanded from here\n#define __builtin_ms_va_start __builtin_va_start\n                              ^\nThis is because the port Makefile explicitly defines __builtin_ms_va_list as __builtin_va_list, __builtin_ms_va_start as __builtin_va_start, and so on, for clang.\n\nFor clang 3.8.0 and higher this is no longer needed, as it supports the 'native' MS varargs builtins now.  The attached patch adds a version check.\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR206074-default/2016-01-15_15h26m58s/logs/errors/wine-1.8,1.log\n[2] http://package18.nyi.freebsd.org/data/headamd64PR206074-default/2016-01-15_15h26m58s/logs/errors/wine-devel-1.9.1,1.log"
+}

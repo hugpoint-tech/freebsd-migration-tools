@@ -1,0 +1,8 @@
+{
+ "id": 10307,
+ "bug_id": 3327,
+ "attachment_id": 0,
+ "creation_time": "1997-04-19T03:05:00Z",
+ "creator": "Tor.Egge@idi.ntnu.no",
+ "text": "\u003e \tWhen debugging a process, gdb sometimes gives a message of\n\u003e \tthe form\n\u003e \t\n\u003e \t\tCannot insert breakpoint 2:\n\u003e \t\tError accessing memory address 0x25240: Bad address.\n\u003e \n\u003e \tAfter this, the process is stuck.\n\nA more complete fix:\n \t\n\tAllow fallback to backing objects when reading.\n \tUnlock the vm map if vm_page_lookup fails.\n \n\nIndex: procfs_mem.c\n===================================================================\nRCS file: /home/ncvs/src/sys/miscfs/procfs/procfs_mem.c,v\nretrieving revision 1.24\ndiff -c -r1.24 procfs_mem.c\n*** procfs_mem.c\t1997/04/06 02:29:31\t1.24\n--- procfs_mem.c\t1997/04/19 01:49:07\n***************\n*** 197,202 ****\n--- 197,213 ----\n  \t\t}\n  \n  \t\tm = vm_page_lookup(object, pindex);\n+ \n+ \t\t/* Allow fallback to backing objects if we are reading */\n+ \n+ \t\twhile (m == NULL \u0026\u0026 !writing \u0026\u0026 object-\u003ebacking_object) {\n+ \n+ \t\t  pindex += OFF_TO_IDX(object-\u003ebacking_object_offset);\n+ \t\t  object = object-\u003ebacking_object;\n+ \n+ \t\t  m = vm_page_lookup(object, pindex);\n+ \t\t}\n+ \n  \t\tif (m == NULL) {\n  \t\t\terror = EFAULT;\n  \n***************\n*** 205,210 ****\n--- 216,223 ----\n  \t\t\t * an error return on vm_map_lookup.\n  \t\t\t */\n  \t\t\tobject = NULL;\n+ \n+ \t\t\tvm_map_lookup_done(tmap, out_entry);\n  \n  \t\t\tbreak;\n  \t\t}"
+}

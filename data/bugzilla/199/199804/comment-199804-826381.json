@@ -1,0 +1,8 @@
+{
+ "id": 826381,
+ "bug_id": 199804,
+ "attachment_id": 0,
+ "creation_time": "2015-06-02T15:17:23Z",
+ "creator": "tsoome@me.com",
+ "text": "actually the fix itself is buggy:) the basic idea is correct, but the size of the zero filled buffer is wrong, the correct code is:\n\n                        if (BP_IS_HOLE(\u0026bp)) {\n                                memset(dnode_cache_buf, 0, \n                                    dnode-\u003edn_datablkszsec \u003c\u003c \n                                    SPA_MINBLOCKSHIFT);\n                                rc = 0;\n                        } else\n                                rc = zio_read(spa, \u0026bp, dnode_cache_buf);\n\nas the BP_PSIZE() or BP_LSIZE() is 512B at that point (for 512B sector size at least), and indicates the size of BP itself, not the size of the hole - so the original (bad) fix did zero out only first 512B and rest of the buffer did return garbage.\n\nThis fix is verified by hashing the whole file and checking against file on disk and file read to memory by this reader code."
+}

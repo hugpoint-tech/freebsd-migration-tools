@@ -1,0 +1,8 @@
+{
+ "id": 892059,
+ "bug_id": 211684,
+ "attachment_id": 173479,
+ "creation_time": "2016-08-09T23:14:50Z",
+ "creator": "lightside@gmx.com",
+ "text": "Created attachment 173479\nProposed patch (since 419133 revision) for v8.0\n\nHello Tobias Kortkamp.\n\nI investigated this issue and corrected the approach by PulseAudio's developer(s), which recognizes hw.snd.default_unit value, by parsing and comparing the last \"default\" string for /dev/sndstat output.\nI attached patch for current audio/pulseaudio 8.0 version. If it works for you, then I can propose it (with slight modifications) for 9.0 version update in bug 210548.\n\nThe other possible approach is to use SNDCTL_AUDIOINFO to get necessary values (e.g. mixer_dev):\n-8\u003c--\n// cc snd_default_unit.c -o snd_default_unit.o \u0026\u0026 ./snd_default_unit.o\n#include \u003csys/ioctl.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003csys/soundcard.h\u003e\n#include \u003cstdio.h\u003e\n\nint main() {\n\tint mixerfd = open(\"/dev/dsp\", O_RDWR, 0);\n\toss_audioinfo ainfo;\n\tainfo.dev = -1; // specify -1 to get default device\n\n\tint result = ioctl(mixerfd, SNDCTL_AUDIOINFO, \u0026ainfo);\n\tclose(mixerfd);\n\n\tif (result == -1 ) {\n\t\tprintf(\"error getting device (%s) info.\\n\", ainfo.name);\n\t\treturn 1;\n\t}\n\n\tprintf(\"default device name: %s\\ndefault device node name: %s\\n\\\ndefault device number: %d\\ndefault device mixer number: %d\\n\",\\\n\t\tainfo.name, ainfo.devnode, ainfo.dev, ainfo.mixer_dev);\n\n\treturn 0;\n}\n--\u003e8-\n\nThe idea about how to get default sound device for above approach is from changes in bug 209742, proposed by Shane Ambler."
+}

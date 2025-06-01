@@ -1,0 +1,8 @@
+{
+ "id": 767492,
+ "bug_id": 190735,
+ "attachment_id": 143473,
+ "creation_time": "2014-06-06T23:56:49Z",
+ "creator": "bugmeister@ba23.org",
+ "text": "Created attachment 143473\nDiff that fixes bug.  And adds new unit tests.\n\nWhen you use the FreeBSD 8.4 /usr/bin/truncate, things work as expected.\n\n- get the binary from Freebsd 8.4\n# tar xvf FreeBSD-8.4-RELEASE-amd64-livefs.iso usr/bin/truncate\nx usr/bin/truncate\n\n- fail gracefully if the size is too large for int64_t\n# ./usr/bin/truncate -s8388608t afile\ntruncate: invalid size argument `8388608t'\n\n- using a size suffix to shrink a file\n# ./usr/bin/truncate -s16t afile\n# ./usr/bin/truncate -s-15t afile\n# ls -lh afile \n-rw-r--r--  1 root  wheel   1.0T Jun  6 19:44 afile\n\n\nWith the FreeBSD 10.0 /usr/bin/truncate, we get unexpected behavior:\n\n- when the size is too large for int64_t, we expect an error, not a zero size file\n# /usr/bin/truncate -s8388608t afile\n# ls -l afile\n-rw-r--r--  1 root  wheel  0 Jun  6 19:47 afile\n\n- using a size suffix to shrink a file is no longer supported\n# /usr/bin/truncate -s16t afile\n# /usr/bin/truncate -s-15t afile\ntruncate: invalid size argument `-15t'\n\n\nI think this is the change that caused this regression:\nhttp://svnweb.freebsd.org/base?view=revision\u0026revision=204654\n\nI have attached a diff that attempts to fix this issue.  And also adds tests using the newer kyua format."
+}

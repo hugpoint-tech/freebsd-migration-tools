@@ -1,0 +1,8 @@
+{
+ "id": 723264,
+ "bug_id": 180430,
+ "attachment_id": 0,
+ "creation_time": "2013-07-19T16:13:44Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Oops, my previous reply didn't make it to the PR itself.\n\nIs the problem that the hardware checksum overwrites arbitrary data in the \npacket (at the location where the UDP header would be)?\n\nAlso, I've looked at other drivers, and they all look at the CSUM_*\nflags to determine the right settings.  IP fragments will not have\nCSUM_UDP or CSUM_TCP set, so I think the more correct fix is this:\n\nIndex: en_tx.c\n===================================================================\n--- en_tx.c\t(revision 253470)\n+++ en_tx.c\t(working copy)\n@@ -780,8 +780,12 @@ retry:\n \ttx_desc-\u003ectrl.srcrb_flags = cpu_to_be32(MLX4_WQE_CTRL_CQ_UPDATE |\n \t\t\t\t\t\tMLX4_WQE_CTRL_SOLICITED);\n \tif (mb-\u003em_pkthdr.csum_flags \u0026 (CSUM_IP|CSUM_TCP|CSUM_UDP)) {\n-\t\ttx_desc-\u003ectrl.srcrb_flags |= cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM |\n-\t\t\t\t\t\t\t MLX4_WQE_CTRL_TCP_UDP_CSUM);\n+\t\tif (mb-\u003em_pkthdr.csum_flags \u0026 CSUM_IP)\n+\t\t\ttx_desc-\u003ectrl.srcrb_flags |=\n+\t\t\t    cpu_to_be32(MLX4_WQE_CTRL_IP_CSUM);\n+\t\tif (mb-\u003em_pkthdr.csum_flags \u0026 (CSUM_TCP|CSUM_UDP))\n+\t\t\ttx_desc-\u003ectrl.srcrb_flags |=\n+\t\t\t    cpu_to_be32(MLX4_WQE_CTRL_TCP_UDP_CSUM);\n \t\tpriv-\u003eport_stats.tx_chksum_offload++;\n \t}\n \n\n-- \nJohn Baldwin"
+}

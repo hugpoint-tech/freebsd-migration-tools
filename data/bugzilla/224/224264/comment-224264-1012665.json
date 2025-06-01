@@ -1,0 +1,8 @@
+{
+ "id": 1012665,
+ "bug_id": 224264,
+ "attachment_id": 0,
+ "creation_time": "2018-09-23T16:11:29Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Gerald Pfeifer from comment #29)\nLook at what ?\n\nThe decision to provide default max LDT size 512 is backed by the fact that a segment descriptor size is 8 bytes, and LDT must be contiguous in the KVA.  The consequence is that if we allow more that 512 descriptors by default, we must allocate two or more contiguous page frames.  This can break in situation where KVA is highly fragmented due to the load.\n\nSo the default is on the upper safe limit, and if user is confident that she both needs it and that the machine load would not cause the fragmentation, there is the knob to adjust it.  That said, I do not believe that there are legitimate use cases when single process needs more that dozen or two segment descriptors, so 512 should be ample.\n\nIf the process does need so many descriptors, the limit is bumped, and you get some error, then it is almost certainly unrelated both to the limit and to the commit.  Start debugging it, perhaps look at the failing syscall arguments to see what is going on (ktrace/truss)."
+}

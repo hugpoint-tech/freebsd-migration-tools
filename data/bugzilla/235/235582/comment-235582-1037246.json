@@ -1,0 +1,8 @@
+{
+ "id": 1037246,
+ "bug_id": 235582,
+ "attachment_id": 0,
+ "creation_time": "2019-02-12T00:27:00Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Well, if you have NFS client(s) mounted with more than CLIENT_MAX different\nusers actively using the mount concurrently, that might tickle the\nrace?\n- Basically, this code (which handles a new credential creation) happens\n  when there is a miss on the cache of credentials (which is capped at\n  CLIENT_MAX), where each distinct user (as in uid) would need a credential.\n--\u003e Conversely, making CLIENT_MAX \u003e= the maximum # of different uids actively\n    using the file system might reduce the likelyhood of the crash, since this\n    code would be executed less frequently.\n\nRelated to Ben's comment (thanks for the nice description of the name):\n- It did tickle a rusty brain cell. I think I was confusing gss_export_name()\n  with gss_display_name(). Unfortunately, this isn't very useful, since\n  neither gss_display_name() nor gss_localname() are supported by the\n  KGSSAPI.\n  If you search for \"_svc\" in usr.sbin/gssd/gssd.c, you'll see the rather\n  small list of gssapi functions supported by the KGSSAPI (unless I've\n  misread this code).\n- I think the structure is called \"Principal\" (also called\n  \"krb5_principal_data\"). It seems to be defined in\n  krb5_asn1.h and that isn't in the kernel either.\n--\u003e I suspect this is why the logging code enabled via compiling it with\n    DEBUG defined just logs the output of gss_export_name() and doesn't\n    try and extract the components of it?\n\nGood luck with your testing, rick"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1155558,
+ "bug_id": 254964,
+ "attachment_id": 0,
+ "creation_time": "2021-04-10T22:05:22Z",
+ "creator": "cutesmilee.research@protonmail.com",
+ "text": "ffs_setextattr() is used to set a named attribute to an ffs vfs.\nthe problem is that it takes some user controlled data, the interesting ones are: ap-\u003ea_name (arbitrary user string, not checked), and ip-\u003ei_ea_len (unsigned int), which also isn't checked.\nthe function uses ip-\u003ei_ea_len + ealength (which is 7 + strlen(ap-\u003ea_name)) for allocating a buffer, after that user-controlled data are copied to the buffer using ip-\u003ei_ea_len.\nproviding an INT_MAX ip-\u003ei_ea_len + 2^32 + 2 long string will cause an integer overflow, and the buffer in the heap will be 1 byte, but the bcopy will copy 2^32 bytes to the buffer.\nthis should be reachable from an unprivileged user (since extattr_check_cred() doesn't require root if the attrnamespace is set to EXTATTR_NAMESPACE_USER), but seems to be difficult to exploit, since you'd need 4GBs of ram (for the long string) just to perform the 2^32 heap overflow, an exploitable overflow will probably take even more memory."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 970729,
+ "bug_id": 225054,
+ "attachment_id": 0,
+ "creation_time": "2018-01-10T19:48:50Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Jan Beich from comment #5)\n\u003e Dimitry, can you find Clang commit that changed integrated assembler in\n\u003e order for us to better understand the rationale?\n\nYes, this was caused by https://reviews.llvm.org/rL315899; the changes were for \"better\" rep/lock prefix support, but I filed several severe regression bugs, after noticing these during world and ports builds, see:\n* https://bugs.llvm.org/show_bug.cgi?id=35741 (comments after x86 prefixes cause errors )\n* https://bugs.llvm.org/show_bug.cgi?id=35749 (.byte directives after x86 prefixes cause errors)\n* https://bugs.llvm.org/show_bug.cgi?id=35831 (labels after x86 prefixes cause errors)\n\nThe first bug was fixed fairly quickly, but there has been no movement on the other two, and I think it is likely that more edge cases exist.\n\nI asked in PR35749 whether the release manager will consider reverting the upstream change in the 6.0.0 branch, since this regressed so much.  I will ask again.\n\n\n\u003e (In reply to Jung-uk Kim from comment #6)\n\u003e (In reply to Jan Beich from comment #4)\n\u003e \n\u003e That's bad. :-(\n\u003e \n\u003e Then, I guess we have no choice but to do something like this:\n\u003e \n\u003e +-#define LOCK_IF_MP(mp) \"cmp $0, \" #mp \"; je 1f; lock; 1: \"\n\u003e ++#define LOCK_IF_MP(mp) \"cmp $0, \" #mp \"; je 1f; .byte 0xf0; 1: \"\n\nYes, that is the workaround I put in my local ports tree too.  But I hate it :("
+}

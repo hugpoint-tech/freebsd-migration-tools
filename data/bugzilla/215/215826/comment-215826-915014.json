@@ -1,0 +1,8 @@
+{
+ "id": 915014,
+ "bug_id": 215826,
+ "attachment_id": 0,
+ "creation_time": "2017-01-06T12:58:12Z",
+ "creator": "kami@freebsd.org",
+ "text": "18 days ago I got a bug report for sysutils/powerdxx: https://github.com/lonkamikaze/powerdxx/issues/3\n\nThere is some distracting content in the report, e.g. the OP misidentified an unrelated ACPI problem as part of the problem he/she was reporting.\n\nThe issue to sum it up is, that (at least my) C++ programs don't get their signal handlers called (that includes default signal handlers that I never touched).\n\nAffected are the `loadrec` and `powerd++` binaries. The `loadrec` binary does not touch signal handlers, so the default handlers stay in place.\n\nI had a couple of people try to help me debug the issue and as far as we could tell using truss and dtrace signals got sent, but the signal handlers just don't get called. I don't know how to debug this further (how do you debug something that is not happening?). But we found a workaround: link with `-lpthread`. My assumption is that `pthread` replaces system functions with thread safe versions and as a side effect replaces whatever got recently broken on CURRENT.\n\nI documented this workaround in the Makefile of my project:\nhttps://github.com/lonkamikaze/powerdxx/commit/2d80d990121802b4402cf54bc9a328449ae8f326\n\nI don't know when exactly it broke, I tested on head/r310361, the OP was running head/r310173.\n\nThe problem occurs both if I include `signal(3)` via `\u003ccsignal\u003e` or `\u003csignal.h\u003e` or not at all (i.e. `loadrec`).\n\nTo reproduce get the last version without the workaround from the repo: https://github.com/lonkamikaze/powerdxx/tree/93a755fbc4d7ec36e5a9d4a35d5a33052cc0e678"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1339499,
+ "bug_id": 283359,
+ "attachment_id": 0,
+ "creation_time": "2024-12-16T22:02:59Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to shamaz.mazum from comment #2)\nThanks for the repro hints.\n\nThe \"problem\" is that there's no kernel in this jail, so dtrace has no access to the CTF info.  But /usr/lib/dtrace/ipfw.d (parsed only when ipfw.ko is loaded) relies on some definitions, e.g., for in_addr_t and struct ip6_addr.  If I install kernel.txz as well, \"dtrace -h\" works again.\n\nWe've had these kinds of problems before.  The workaround is generally to add \"-x nolibs\" to the \"dtrace -h\" invocation in various build scripts.  \"-x nolibs\" means that the definitions in /usr/lib/dtrace won't be processed (as they aren't needed for usdt probes in general).\n\nIn fact, it looks like the perl configure script knows about this and tries to add \"-x nolibs\" if dtrace(1) accepts that option.  Why doesn't that work?  Can you share the log where the perl build failed?\n\nIn any case, I think adding \"#pragma D depends_on module kernel\" to ipfw.d is sufficient to prevent \"dtrace -h\" from trying to process the file."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 354736,
+ "bug_id": 104505,
+ "attachment_id": 0,
+ "creation_time": "2006-10-17T21:20:18Z",
+ "creator": "toomas.aas@raad.tartu.ee",
+ "text": "I generally have LANG set to et_EE.ISO8859-15 in my environment. When I run 'portsnap update', it sometimes aborts with this message:\n\n# portsnap fetch\nLooking up portsnap.FreeBSD.org mirrors... 2 mirrors found.\nFetching snapshot tag from portsnap1.FreeBSD.org... done.\nFetching snapshot metadata... done.\n\nPortsnap metadata is correctly signed, but contains\nat least one line which appears bogus.\nCowardly refusing to proceed any further.\n\nIf I unsetenv LANG and immediately run 'portsnap fetch' again, it succeeds.\n\nI guess the problem has something to do with this check in fetch_metadata_sanity() function of /usr/sbin/portsnap:\n\nif grep -qvE \"^[0-9A-Z.]+\\|[0-9a-f]{64}$\" tINDEX.new; then\n\tfetch_metadata_freakout\n\treturn 1\nfi\n\nHere we see a grep for regex containing range A-Z. The problem is that in Estonian language Z is not at the end of the alphabet but in the middle, so A-Z doesn't cover the entire alphabet.\n\nMaybe something like :alpha: (or even :alnum:) could be used instead?\n\nHow-To-Repeat: setenv LANG et_EE.ISO8859-15\n/usr/sbin/portsnap fetch\n\n(results may vary depending of the actual portsnap metadata at the moment of testing)"
+}

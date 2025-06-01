@@ -1,0 +1,8 @@
+{
+ "id": 849959,
+ "bug_id": 204394,
+ "attachment_id": 0,
+ "creation_time": "2015-11-19T22:02:39Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Cutting down configure I've found\n\n  # NLS nuisances.\n  # Only set these to C if already set.  These must not be set unconditionally\n  # because not all systems understand e.g. LANG=C (notably SCO).\n  # Fixing LC_MESSAGES prevents Solaris sh from translating var values in `set'!\n  # Non-C LC_CTYPE values break the ctype check.\n  if test \"${LANG+set}\"   = set; then LANG=C;   export LANG;   fi\n  if test \"${LC_ALL+set}\" = set; then LC_ALL=C; export LC_ALL; fi\n  if test \"${LC_MESSAGES+set}\" = set; then LC_MESSAGES=C; export LC_MESSAGES; fi\n  if test \"${LC_CTYPE+set}\"    = set; then LC_CTYPE=C;    export LC_CTYPE;    fi\n\nwhich breaks tr(1) on a mixed locale (LANG unset)\n\n  $ env -i LC_COLLATE=en_US.UTF-8 LC_CTYPE=C sh\n  $ echo FooBar | tr A-Z a-z\n  aq\n  $ echo FooBar | tr '[:upper:]' '[:lower:]'\n  foobar\n\nGNU tr (coreutils) works fine but doesn't support UTF-8 at all."
+}

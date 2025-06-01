@@ -1,0 +1,8 @@
+{
+ "id": 1171261,
+ "bug_id": 257309,
+ "attachment_id": 0,
+ "creation_time": "2021-07-21T11:14:57Z",
+ "creator": "freebsd.org@neant.ro",
+ "text": "(In reply to Kubilay Kocak from comment #1)\n\nYes, I can add more details, but I can't yet confirm the workaround works. Pretty sure it does. Basically we downgraded to beats 7.10.\n\nThe error that shows up in logs is this:\n\nERROR   [publisher_pipeline_output]     pipeline/output.go:154  Failed to connect to backoff(elasticsearch(https://my.elasticsearch.url:443)): Connection marked as failed because the onConnect callback failed: could not connect to a compatible version of Elasticsearch: unauthorized access, could not connect to the xpack endpoint, verify your credentials\n\nThe pull request that broke it is: https://github.com/elastic/beats/pull/25351/files\n\nThis other pull request that would have restored functionality was rejected: https://github.com/elastic/beats/pull/26305\n\n(I don't know what the code does or if it works as intended)\n\nMy workaround is to downgrade to 7.10, which is thankfully still available in quarterly repo, then lock the package:\n\nsudo service filebeat stop\nsudo pkg remove beats7\nfetch https://pkg.freebsd.org/FreeBSD:12:amd/quarterly/All/beats7-7.10.1.txz\nsudo pkg install -y beats7-7.10.1.txz\nsudo pkg lock -y beats7-7.10.1\n\nI guess one way forward would be to provide a 'beats7-oss' package or similar which would only be upgraded after beats7 is (inevitably) forked to be patched to work with non-Elastic distributions of ES."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1165446,
+ "bug_id": 256497,
+ "attachment_id": 0,
+ "creation_time": "2021-06-09T09:14:28Z",
+ "creator": "titus@edc.ro",
+ "text": "databases/mysql-connector-odbc causes segmentaion fault in libmysql in mysql_get_character_set_info()\n\n\n#1  0x20eef454 in myodbc_do_connect(tagDBC*, DataSource*) () from /usr/local/lib/libmyodbc5a.so\n#2  0x20eefb3c in MySQLConnect(void*, unsigned short*, short, unsigned short*, short, unsigned short*, short) ()\n   from /usr/local/lib/libmyodbc5a.so\n#3  0x20f0cf7c in SQLConnect () from /usr/local/lib/libmyodbc5a.so\n#4  0x209e2830 in SQLConnect () from /usr/local/lib/libodbc.so.2\n#5  0x20871020 in TclDatabase::TclDatabase(TclObj, TclObj, TclObj) () from ./libtclodbc2.5.so\n#6  0x2087083c in tcl_database(void*, Tcl_Interp*, int, Tcl_Obj* const*) () from ./libtclodbc2.5.so\n#7  0x20110618 in Tcl_EvalObjv () from /usr/local/lib/libtcl86.so.1\n#8  0x20111c5c in ?? () from /usr/local/lib/libtcl86.so.1\n#9  0x201cf48c in Tcl_FSEvalFileEx () from /usr/local/lib/libtcl86.so.1\n#10 0x201d7b78 in Tcl_MainEx () from /usr/local/lib/libtcl86.so.1\n#11 0x0002087c in ?? ()\n#12 0x00020640 in ?? ()\n\ni think the problem is caused by my_thread_global_init which is present in libmysqlient.so and libmyodbc5a and causing a split brain init \nodbc drv call mysql_init which calls mysql_server_init which calls my_thread_global_init and the odbc ver is executed and the static my_thread_global_init_done in lmysqlclient is not set\nthis cause silent failures of mysql_init and in the end segv\n\nthe fix is to link libmysqlclient(_r).a with the odbc driver\nCMAKE_ARGS=     -DWITH_UNIXODBC=1 -DDISABLE_GUI=1 -DMYSQLCLIENT_STATIC_LINKING=1"
+}

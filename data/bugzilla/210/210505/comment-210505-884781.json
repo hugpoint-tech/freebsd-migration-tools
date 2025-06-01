@@ -1,0 +1,8 @@
+{
+ "id": 884781,
+ "bug_id": 210505,
+ "attachment_id": 0,
+ "creation_time": "2016-06-24T07:11:59Z",
+ "creator": "rhurlin@FreeBSD.org",
+ "text": "(In reply to rozhuk.im from comment #0)\nThanks for investigating in this update :)\n\nSome quick and dirty first tests on HEAD revealed some built problems for me:\n\n\ngraphics/opencv-core needs the following in pkg-plist\n\n#diff -urN pkg-plist.orig pkg-plist\n--- pkg-plist.orig\t2016-06-23 16:32:22.000000000 +0200\n+++ pkg-plist\t2016-06-24 07:20:41.589194000 +0200\n@@ -73,11 +73,14 @@\n include/opencv2/core/va_intel.hpp\n include/opencv2/core/version.hpp\n include/opencv2/core/wimage.hpp\n+include/opencv2/cvconfig.h\n include/opencv2/imgproc.hpp\n include/opencv2/imgproc/detail/distortion_model.hpp\n include/opencv2/imgproc/imgproc.hpp\n include/opencv2/imgproc/imgproc_c.h\n include/opencv2/imgproc/types_c.h\n+include/opencv2/opencv.hpp\n+include/opencv2/opencv_modules.hpp\n lib/libopencv_core.so\n lib/libopencv_core.so.3.1\n lib/libopencv_core.so.%%VERSION%%\n\n\ngraphics/opencv built breaks with OPTION QT4 enabled, especially opengl related ones. So I had to disable opencl in the ports Makefile:\n\n#diff -urN Makefile.orig Makefile\n--- Makefile.orig\t2016-06-24 01:01:31.000000000 +0200\n+++ Makefile\t2016-06-24 07:56:59.704854000 +0200\n@@ -24,6 +24,7 @@\n PLIST_SUB+=\tVERSION=${DISTVERSION}\n \n CMAKE_ARGS+=\t-DWITH_CUDA:BOOL=Off \\\n+\t\t-DWITH_OPENCL:BOOL=Off \\\n \t\t-DWITH_PVAPI:BOOL=Off \\\n \t\t-DWITH_UNICAP:BOOL=Off \\\n \t\t-DBUILD_CUDA_STUBS:BOOL=Off \\\n\n\nA first test with the successful built of graphics/opencv with math/saga seems to work fine."
+}

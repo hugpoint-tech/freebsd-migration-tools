@@ -1,0 +1,8 @@
+{
+ "id": 1171406,
+ "bug_id": 257302,
+ "attachment_id": 0,
+ "creation_time": "2021-07-22T12:18:59Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Alex Vasylenko from comment #0)\n\u003eJul 20 13:43:02 foam kernel: fault virtual address      = 0x28\n\u003eJul 20 13:43:02 foam kernel: fault code         = supervisor read data, page not present\n\u003e#9  0xffffffff80e04a0e in in6_getmulti (ifp=\u003coptimized out\u003e, group=0xfffffe005c3cf118, pinm=\u003coptimized out\u003e) at /usr/src/sys/netinet6/in6_mcast.c:451\n\nIt is NULL pointer dereference in the line:\ninm-\u003ein6m_mli = MLD_IFINFO(ifp);\n\nMLD_IFINFO() macro tries to dereference if_afdata[AF_INET6]-\u003emld_info. 0x28 corresponds to mld_ifinfo field:\n\n(kgdb) p/x offsetof(struct in6_ifextra, mld_ifinfo)\n$1 = 0x28\n\nipfw0 interface does not have properly initialized if_afdata since IFT_PFLOG interfaces do not support IPv6 (look at in6_domifattach()).\n\nThus I think we need to add somewhere the check that adapter doesn't support IPv6 multicasts."
+}

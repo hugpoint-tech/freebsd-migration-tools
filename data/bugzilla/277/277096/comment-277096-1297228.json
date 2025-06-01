@@ -1,0 +1,8 @@
+{
+ "id": 1297228,
+ "bug_id": 277096,
+ "attachment_id": 0,
+ "creation_time": "2024-02-16T19:03:24Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Hm, I don't see why only libclang_rt.asan-x86_64.so would be left? If you look at lib/Makefile, it descends into the lib/libclang_rt directory (which produces all the libclang_rt.* files, and the *_ignore_list.txt files), but it's only gated on the compiler type:\n\n# The libraries under libclang_rt can only be built by clang.\n.if ${COMPILER_TYPE} == \"clang\"\n_libclang_rt=   libclang_rt\n.elif (${MK_ASAN} != \"no\" || ${MK_UBSAN} != \"no\") \u0026\u0026 make(all)\n.error Requested build with sanitizers but cannot build runtime libraries!\n.endif\n\nEd, would we also need a test for MK_CLANG==no here?\n\n\nE.g.:\n\n.if ${COMPILER_TYPE} == \"clang\" \u0026\u0026 ${MK_CLANG} != \"no\"\n_libclang_rt=   libclang_rt\n.elif (${MK_ASAN} != \"no\" || ${MK_UBSAN} != \"no\") \u0026\u0026 make(all)\n.error Requested build with sanitizers but cannot build runtime libraries!\n.endif"
+}

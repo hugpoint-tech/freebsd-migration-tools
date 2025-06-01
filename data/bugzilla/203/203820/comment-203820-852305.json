@@ -1,0 +1,8 @@
+{
+ "id": 852305,
+ "bug_id": 203820,
+ "attachment_id": 0,
+ "creation_time": "2015-12-05T14:03:20Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "In general I think VM monitors assume that no other monitors are running.  I believe OS X has a kernel-level API for monitors to use to try to mitigate this, but FreeBSD does not.  For example, I fixed bhyve VMs to work across suspend and resume (of a host laptop), but that fix is specific to bhyve and does not support other VM monitors.\n\nIn general VM monitors like bhyve assume that they \"own\" all of the VT-x (or SVM) state.  They assume they are not sharing it.  Just loading vmm.ko will _set_ various CPU control registers (MSRs) related to VT-x (VT-x includes a host of optional features that can be enabled selectively) which might confuse some other VMM that had set these controls to different values.  (For bhyve see the sys/amd64/vmm/vmx/vmx.c vmx_init() routine run by vmm_init() in sys/amd64/vmm/vmm.c on module load.)\n\nIn summary, it is not safe to even load multiple VMMs at the same time, much less run VMs from different VMMs concurrently.  If FreeBSD does grow an API to support VM monitors the first iteration of it will probably fail attempts to load more than one VMM for this reason."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 18909,
+ "bug_id": 6183,
+ "attachment_id": 0,
+ "creation_time": "1998-03-31T10:50:01Z",
+ "creator": "lampa@fee.vutbr.cz",
+ "text": "The quota command hangs if\n1. NFS server is down\n2. Root nameservers are not accessible (Internet connection failure) and automounter is running\nIf quota is executed in /etc/profile, users cannot login (or have\nto wait for logn timeouts). Each execution of quota on system with\nautomounter generates unnecessary requests to root nameservers \n(to resolve address 'pid250@machine').\n\nFix: problem #1: use non blocking version of getmntinfo()\nproblem #2: don't try to call rquotad and resolve automounter pid(pid250@machine:/pub) in getnfsquota()\n       \nqup = quphead = (struct quotause *)0;\n\n!       nfst = getmntinfo(\u0026fst, MNT_WAIT);\n        if (nfst == 0)\n                errx(2, \"no filesystems mounted!\");\n        setfsent();\n--- 460,466 ----\n\n        qup = quphead = (struct quotause *)0;\n\n!       nfst = getmntinfo(\u0026fst, MNT_NOWAIT);\n        if (nfst == 0)\n                errx(2, \"no filesystems mounted!\");\n        setfsent();\n***************\n\n\ngq_args.gqa_pathp = cp + 1;\n        gq_args.gqa_uid = id;--e3qNT8JEbQEYtf6LPU3jmn8owmO3rBmoGIGecg1urLNTUeP0\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n*** quota.c.old Mon Sep 15 12:19:35 1997\n--- quota.c     Tue Mar 31 11:11:53 1998\n***************\n*** 460,466 ****"
+}

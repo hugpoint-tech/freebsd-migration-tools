@@ -1,0 +1,8 @@
+{
+ "id": 1050826,
+ "bug_id": 237924,
+ "attachment_id": 204401,
+ "creation_time": "2019-05-16T12:34:43Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "Created attachment 204401\nProposed patch\n\nThere is a possible infinite loop vulnerability in function empty_aux_buffer of \nsys/dev/atkbdc/atkbdc.c\n\nSome systems (Intel/IBM blades) do not have keyboard devices and will thus hang in the processure.\n\nvoid\nempty_aux_buffer(KBDC p, int wait)\n{\n    int t;\n    int b;\n    int f;\n#if KBDIO_DEBUG \u003e= 2\n    int c1 = 0;\n    int c2 = 0;\n#endif\n    int delta = 2;\n\n    for (t = wait; t \u003e 0; ) {\n        if ((f = read_status(kbdcp(p))) \u0026 KBDS_ANY_BUFFER_FULL) {\n            DELAY(KBDD_DELAYTIME);\n            b = read_data(kbdcp(p));\n            if ((f \u0026 KBDS_BUFFER_FULL) == KBDS_KBD_BUFFER_FULL) {\n                addq(\u0026kbdcp(p)-\u003ekbd, b);\n#if KBDIO_DEBUG \u003e= 2\n                ++c1;\n            } else {\n                ++c2;\n#endif\n            }\n            t = wait;\n        } else {\n            t -= delta;\n        }\n        DELAY(delta*1000);\n    }\n#if KBDIO_DEBUG \u003e= 2\n    if ((c1 \u003e 0) || (c2 \u003e 0))\n        log(LOG_DEBUG, \"kbdc: %d:%d char read (empty_aux_buffer)\\n\", c1, c2);\n#endif\n\n    emptyq(\u0026kbdcp(p)-\u003eaux);\n}\n\nThe attachment is the proposed patch that are copied from https://github.com/freebsd/freebsd/commit/3631541670c84a8731b46350daa30502edb0ca80"
+}

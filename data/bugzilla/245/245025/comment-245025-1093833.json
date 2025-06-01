@@ -1,0 +1,8 @@
+{
+ "id": 1093833,
+ "bug_id": 245025,
+ "attachment_id": 0,
+ "creation_time": "2020-03-25T02:18:31Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "(In reply to Baptiste Daroussin from comment #1)\nIf pkg links to archivers/libarchive then the problem is not reproducible; and this is my workaround ;)\n\nIn both the amd64 and i386 jails, there is no:\n-  /usr/local/lib/libarchive*\n-  base openssl (because we build with libressl).\nPrior to building packages, we remove all remnants of prior builds, inluding various \"pkg delete -y -a\".  From here we rebuild everything.  (And yes, we do reinstall a previously working /usr/local/sbin/pkg-static into our bare bones build jails)\n\n\n# make -C /usr/ports/ports-mgmt/pkg -VCFLAGS -Vspace -VLDFLAGS\n-O2 -pipe -Wl,-m,elf_x86_64_fbsd -Wl,--strip-debug -Wl,--build-id=md5 -Wl,--hash-style=sysv -DOPENSSL_NO_SSL2 -DOPENSSL_NO_SSL3 -g0 -ggdb0 -DSTRIP_FBSDID -UDEBUGGING -UDEBUG -fno-math-errno -fomit-frame-pointer -fno-asynchronous-unwind-tables -march=core2 -Wno-error -fno-strict-aliasing\n\n-Wl,--strip-debug -Wl,--build-id=md5 -Wl,--hash-style=sysv \n\n\nWhen I examine base's tar and pkg they are both linked to libmd, \n# ldd /usr/bin/tar /usr/sbin/pkg | grep -E \":|archiv|md\"\n/usr/bin/tar:\n        libarchive.so.7 =\u003e /usr/lib/libarchive.so.7 (0x178e5daf4000)\n        libmd.so.6 =\u003e /lib/libmd.so.6 (0x178e5dc4f000)\n/usr/sbin/pkg:\n        libarchive.so.7 =\u003e /usr/lib/libarchive.so.7 (0x801d1d000)\n        libmd.so.6 =\u003e /lib/libmd.so.6 (0x806a80000)\n(I selected tar because I know it also needs libarchive)\n\nThis is on a very recent FreeBSD12.1 r359159.  I don't know what else would be helpful to reproduce?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 428726,
+ "bug_id": 120256,
+ "attachment_id": 0,
+ "creation_time": "2008-02-04T15:20:03Z",
+ "creator": "minear@securecomputing.com",
+ "text": "Note the results of the thee supported uses of the 'ftp -u' command.\n\n    Transfer one file to a named place\n\n      ftp -u ftp://minear:pby-5-cat@freebe1.slap.org/TE.db TE.db\n      echo $?\n      255\n\n    Transfer one file to a directory\n      ftp -u ftp://minear:pby-5-cat@freebe1.slap.org/ TE.db\n      echo $?\n      0\n\n    Transfer two files to a direcgtory\n\n      ftp -u ftp://minear:pby-5-cat@freebe1.slap.org/ TE.db foo\n      echo $?\n      0\n\nAll three of these transfers completed successfully but the first is\ngiving a bad exit code.\n\nI believe the error is at the end of the auto_put function in\nsrc/contrib/lukemftp/src/fetch.c.\n\n\tif (uargc == 3) {\n\t\tuargv[1] = argv[0];\n\t\tput(uargc, uargv);\n\t\tgoto cleanup_auto_put;\n\t}\n\n\tfor(; argv[0] != NULL; argv++) {\n\t\tuargv[1] = argv[0];\n\t\tmput(uargc, uargv);\n\t}\n\trval = 0;\n\n cleanup_auto_put:\n\tFREEPTR(uargv[2]);\n\treturn (rval);\n\nThe first example above uses passes throught the uargc == 3 code and\nthus does not set the rval to 0.  The other two cases use the for loop\nand then do set the rval to 0.  The solution can be done by adding a\nrval = 0 following the call to put or to place the for loop in an else\nblock and remove teh goto cleanup.  I think I prefer the later solution.\n\nFix: \n\nSee the recommended code change in the full description.\nHow-To-Repeat: See examples in the full description."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 751917,
+ "bug_id": 186854,
+ "attachment_id": 0,
+ "creation_time": "2014-02-18T03:40:00Z",
+ "creator": "gnehzuil@gmail.com",
+ "text": "Currently ext2fs driver has ability to access a ext4 file system in\nread-only mode under some specific features.  But it couldn't mount a\next4 file system that is created from scratch because uninit_bg and\nflex_bg features will be enabled by default.  Hence the user would be\ntrouble with this if he/she wants to access a ext4 file system with\ndefault features in read-only mode.\n\nThis patch tries to fix this issue.  In the patch, all we need to do\nis to define a new flag set called 'EXT4F_RO_INCOMPAT_SUPP' in order\nto prevent the user from trying to mount a ext4 file system in read-\nwrite mode and do some sanity check.\n\nuninit_bg is a read-only compatible feature in ext4.  It is used to\nmark which block group is uninitialised.  This feature can save the\ntime when a user creates a ext4 file system because 'mkfs' doesn't try\nto zero out inode/block bitmap and inode table.  Meanwhile 'fsck' will\nskip uninitialised block group for the same purpose.\n\nflex_bg is an incompatible feature in ext4.  It tries to put multiple\nblock groups tie together as one logical block group [1].  After enabling\nthis feature we will get more continuous disk space.\n\n1. https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Flexible_Block_Groups\n\nFix: The attached patch tries to fix this problem.\n\nPatch attached with submission follows:\nHow-To-Repeat: mkfs.ext4 ${DEV}\nmount -t ext2fs -ro ${DEV} ${MNT}\n\nThe user will get an error message when he/she tries to mount a ext4 file system due to some unsupported features."
+}

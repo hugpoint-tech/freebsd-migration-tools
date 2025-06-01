@@ -1,0 +1,8 @@
+{
+ "id": 753538,
+ "bug_id": 187221,
+ "attachment_id": 0,
+ "creation_time": "2014-03-03T12:00:00Z",
+ "creator": "lampa@fit.vutbr.cz",
+ "text": "Some mismatch in SU+J journal was found during initial fsck -p \nand it ends with segmentaion fault. Full fsck -y run without problems.\n\n(gdb) where\n#0  0x0000000000404fb0 in ckfini (markclean=0)\n    at /usr/src/sbin/fsck_ffs/fsutil.c:418\n#1  0x000000000040548b in pfatal (fmt=\u003cvalue optimized out\u003e)\n    at /usr/src/sbin/fsck_ffs/fsutil.c:980\n#2  0x00000000004047e1 in reply (question=0x417d07 \"FALLBACK TO FULL FSCK\")\n    at /usr/src/sbin/fsck_ffs/fsutil.c:106\n#3  0x0000000000413462 in suj_check (filesys=0x41007928 \"/dev/mirror/root\")\n    at /usr/src/sbin/fsck_ffs/suj.c:2685\n#4  0x0000000000408ca8 in main (argc=8193, argv=0x7fffffffdc50)\n    at /usr/src/sbin/fsck_ffs/main.c:403\n(gdb) frame 0\n#0  0x0000000000404fb0 in ckfini (markclean=0)\n    at /usr/src/sbin/fsck_ffs/fsutil.c:418\n418                     if (cgbufs[cnt].b_un.b_cg == NULL)\n(gdb) l\n413                     free((char *)bp);\n414             }\n415             if (numbufs != cnt)\n416                     errx(EEXIT, \"panic: lost %d buffers\", numbufs - cnt);\n417             for (cnt = 0; cnt \u003c sblock.fs_ncg; cnt++) {\n418                     if (cgbufs[cnt].b_un.b_cg == NULL)\n419                             continue;\n420                     flush(fswritefd, \u0026cgbufs[cnt]);\n421                     free(cgbufs[cnt].b_un.b_cg);\n422             }\n p cgbufs\n$4 = (struct bufarea *) 0x0\n(gdb)\n\nIt seems that cgbufs were not allocated, but they are flushed in ckfini() in\nthis case. This look similar problem like \nhttp://docs.freebsd.org/cgi/getmsg.cgi?fetch=478954+0+current/svn-src-head"
+}

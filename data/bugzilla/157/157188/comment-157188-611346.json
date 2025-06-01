@@ -1,0 +1,8 @@
+{
+ "id": 611346,
+ "bug_id": 157188,
+ "attachment_id": 0,
+ "creation_time": "2011-05-19T23:00:27Z",
+ "creator": "plosher@isc.org",
+ "text": "One of our engineers @ISC discovered that there is a bug in the currently\nreleased version of libpcap (in base and in ports) that can be triggered\nwhen using an \"ip6 protochain\" filter.  It's due to the fairly complicated\nBPF bytecode that libpcap generates for IPv6 header chasing combined with\na sign extension bug when processing JA (jump absolute) opcodes.  (JA is\nused to go backwards and without sign extension on 64 bit platforms the\nBPF interpreter incorrectly jumps forward... a lot.)\n\nFix: \n\nThere is a fix in the libpcap repository:\n\nhttps://github.com/mcr/libpcap/commit/ecdc5c0a7f7591a7cd4aff696e42757c677fbbf7\n\nbut the tcpdump-workers have been pretty tardy about putting out newer\ncode, so it sits there stalled.\n\nWith the patch applied, it all works well and you should see something\nlike this:\n\n-=-\n$ tcpdump -nr ip6-hopbyhop-icmp.pcap 'ip6 protochain 58' \nreading from file ip6-hopbyhop-icmp.pcap, link-type EN10MB (Ethernet)\n18:43:07.098489 IP6 fe80::208:7dff:feb7:2cca \u003e ff02::1: HBH ICMP6, multicast listener queryv2  [gaddr ::], length 28\n-=-\nHow-To-Repeat: root@freebsd8:~# tcpdump -nr ip6-hopbyhop-icmp.pcap 'ip6 protochain 58'\nreading from file ip6-hopbyhop-icmp.pcap, link-type EN10MB (Ethernet)\nSegmentation fault: 11 (core dumped)"
+}

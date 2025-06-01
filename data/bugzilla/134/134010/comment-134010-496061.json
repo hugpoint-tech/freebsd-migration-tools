@@ -1,0 +1,8 @@
+{
+ "id": 496061,
+ "bug_id": 134010,
+ "attachment_id": 0,
+ "creation_time": "2009-04-26T00:20:01Z",
+ "creator": "mjguzik@gmail.com",
+ "text": "1) Buffer overflow\n\ngssd_syscall contains the following code:\n\nchar path[MAXPATHLEN];\n[..]\nerror = copyinstr(uap-\u003epath, path, sizeof(path), NULL);\n[..]\nstrcpy(sun.sun_path, path);\n\nsun_path's size is 104 while MAXPATHLEN expands to 1024, thus providing string large enough will cause buffer overflow.\n\n2) Use after free\n\nerror = priv_check(td, PRIV_NFS_DAEMON);\nif (error)\n    return (error);\n\nif (kgss_gssd_handle)\n    CLNT_DESTROY(kgss_gssd_handle);\n\nerror = copyinstr(uap-\u003epath, path, sizeof(path), NULL);\nif (error)\n    return (error);\n[..]\nkgss_gssd_handle = clnt_reconnect_create(nconf,[..]\n\nSo one \"correct\" call of gssd_syscall will set kgss_gssd_handle, the first call with incorrect path will invalidate it and the second call will cause panic.\n\nFix: Replace MAXPATHLEN with sizeof(sun.sun_path) and move CLNT_DESTROY(kgss_gssd_handle) after copyinstr.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Using the following code:\nint\nmain(int argc, char **argv)\n{\n\tgssd_syscall(argv[1]);\n\treturn (0);\n}\n\n\n1) Buffer overflow\n./a.out `perl -e 'print(\"A\"x1000)'`\n\n2) Use after free\n\n./a.out `perl -e 'print(\"A\"x100)'`; ./a.out `perl -e 'print(\"A\"x2000)'`; ./a.out `perl -e 'print(\"A\"x2000)'`"
+}

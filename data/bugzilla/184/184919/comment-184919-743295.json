@@ -1,0 +1,8 @@
+{
+ "id": 743295,
+ "bug_id": 184919,
+ "attachment_id": 0,
+ "creation_time": "2013-12-17T04:50:00Z",
+ "creator": "john@cybersashi.com",
+ "text": "In my spare time I'm working on bringing FreeBSD up on amlogic based\narm processors.  If I load the kernel into memory, remove the SD card,\nand then start the kernel it fails to mount root (as expected) so a\nmountroot prompt is displayed.  Typing anything at that prompt gives:\n\n  panic: bad stray interrupt\n\nWhat appears to happen is typing a character causes the uart to generate\nan interrupt.  In the meantime uart_cngetc has retrieved the character\n(meaning UART RX FIFO is now empty) so when uart_intr invokes UART_IPEND\nipend is set to zero causing uart_intr to return FILTER_STRAY.  Basically\nthere's a race between the console routines and the uart routines due to\ngrab / ungrab not being implemented.\n\nThe attached patch adds support for grab / ungrab hooks which I take\nadvantage of in the aml8726 uart driver ... the driver's grab routine\ntells the uart to not generate interrupts allowing the console routines\n(which poll) to work properly and the ungrab routine tells the uart (if\nthe driver was attached) to go ahead and generate interrupts.\n\nThis suffices to avoid the panic and allows the mountroot prompt to work.\n\nFix: Add support for grab / ungrab hooks and supply suitable implementations\nin the device specific driver.\n\nPatch to optionally support grab / ungrab hooks supplied below:\n\n\nPatch attached with submission follows:"
+}

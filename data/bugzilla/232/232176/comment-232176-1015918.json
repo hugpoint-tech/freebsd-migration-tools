@@ -1,0 +1,8 @@
+{
+ "id": 1015918,
+ "bug_id": 232176,
+ "attachment_id": 0,
+ "creation_time": "2018-10-13T21:26:29Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: emaste\nDate: Sat Oct 13 21:26:07 UTC 2018\nNew revision: 339350\nURL: https://svnweb.freebsd.org/changeset/base/339350\n\nLog:\n  elfcopy: delete filter_reloc, it is broken and unnecessary\n\n  elfcopy contained logic to filter individual relocations in STRIP_ALL\n  mode.  However, this is not valid; relocations emitted by the linker are\n  required, unless they apply to an entire section being removed (which is\n  handled by other logic in elfcopy).\n\n  Note that filter_reloc was also buggy: for RELA relocation sections it\n  operated on uninitialized rel.r_info resulting in invalid operation.\n\n  The logic most likely needs to be inverted: instead of removing\n  relocations because their associated symbols are being removed, we must\n  keep symbols referenced by relocations.  That said, in practice we do\n  not encounter this code path today: objects being stripped are either\n  dynamically linked binaries which retain .dynsym, or static binaries\n  with no relocations.\n\n  Just remove filter_reloc.  This fixes certain cases including statically\n  linked binaries containing ifuncs.  Stripping binaries with relocations\n  referencing removed symbols was already broken, and after this change\n  may still be broken in a different way.\n\n  PR:\t\t232176\n  Reviewed by:\tkaiw, kib, markj\n  Approved by:\tre (rgrimes)\n  MFC after:\t1 month\n  Sponsored by:\tThe FreeBSD Foundation\n  Differential Revision:\thttps://reviews.freebsd.org/D17519\n\nChanges:\n  head/contrib/elftoolchain/elfcopy/sections.c"
+}

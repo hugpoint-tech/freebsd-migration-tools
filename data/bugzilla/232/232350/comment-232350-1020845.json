@@ -1,0 +1,8 @@
+{
+ "id": 1020845,
+ "bug_id": 232350,
+ "attachment_id": 0,
+ "creation_time": "2018-11-08T20:31:53Z",
+ "creator": "ian@FreeBSD.org",
+ "text": "IMO, the fix for this should strive to reduce failures due to concurrent access by the nightly periodic jobs to nearly zero, then ensure that if there is a failure, it is in the periodic jobs, not in the ports build process.\n\nA way to accomplish that would be to change the behavior of the periodic jobs to be something like:\n\n  set a retry counter and retry limit\n  do\n    copy all files needed by the periodic job to a dir in /tmp\n    run the statistics/validation/whatever on the temp files\n  while validation is not-successful and retry count \u003c limit  \n  clean up temp files\n\nWith that logic it's possible for the validation to fail if the copy happened to grab a file that was being updated at the instant of the copy, but a retry loop will reduce the chances of that happening again to almost nothing. Even if it does fail, what fails is the lower-priorty periodic work, not the expensive and more-important ports building work."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 539885,
+ "bug_id": 142960,
+ "attachment_id": 0,
+ "creation_time": "2010-01-19T09:20:05Z",
+ "creator": "p-fbsd-bugs@ziemba.us",
+ "text": "setting CDROM_VERSION=any in cdrom.inf should silence sysinstall's complaints about mismatched versions, yet it doesn't. The problem is an incorrect use of variable_cmp() where strcmp should be:\n\n--- cdrom.c.orig        2009-08-03 01:13:06.000000000 -0700\n+++ cdrom.c     2010-01-19 01:05:33.000000000 -0800\n@@ -142,7 +142,7 @@\n        else {\n            if (variable_cmp(VAR_RELNAME, cp) \u0026\u0026\n                variable_cmp(VAR_RELNAME, \"any\") \u0026\u0026\n-               variable_cmp(cp, \"any\") \u0026\u0026\n+               strcmp(cp, \"any\") \u0026\u0026\n                !bogusCDOK) {\n                msgConfirm(\"Warning: The version of the FreeBSD disc currently in the drive\\n\"\n                           \"(%s) does not match the version of the boot floppy\\n\"\n\nFix: \n\nChange variable_cmp to strcmp in the line indicated in problem description.\nHow-To-Repeat: Make cdrom with install.cfg and cdrom.inf. Contents of cdrom.inf are:\n\nCD_VERSION=any\nCD_MACHINE_ARCH=any\n\nRun sysinstall and attempt to load configuration file from CD. Sysinstall complains about version mismatch."
+}

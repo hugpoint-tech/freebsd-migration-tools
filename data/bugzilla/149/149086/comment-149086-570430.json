@@ -1,0 +1,8 @@
+{
+ "id": 570430,
+ "bug_id": 149086,
+ "attachment_id": 0,
+ "creation_time": "2010-07-30T01:00:09Z",
+ "creator": "hwb@ucsd.edu",
+ "text": "A perl program that I used in previous FreeBSD releases does not work any\nmore. Specifically from tcpdump outputs it does not send the join request\nto the router. The program:\n\n#!/usr/local/bin/perl\n\nuse Socket;\n\n$PORT=$ARGV[0];\n$PATTERN=$ARGV[1];\n$SERVER=$ARGV[2];\n\nif($PORT eq \"\"){\n printf\"Syntax: mcaststream.pl port {pattern} {multicastaddress}\\n\";\n exit;\n}\nif($SERVER eq \"\"){$SERVER=\"233.7.117.79\";}\n\n$|=1;\n\n$IP_ADD_MEMBERSHIP=12;\n\n($name, $aliases, $type, $len, $SERVERIP) = gethostbyname($SERVER);\n\n$sockaddr = 'S n a4 x8';\n\nsocket(S, PF_INET,SOCK_DGRAM,UDP_PROTO)||die(\"$!\");\nsetsockopt(S, SOL_SOCKET, SO_REUSEPORT, 1)||die(\"$!\");\n$us = pack($sockaddr, 2, $PORT, pack(\"C4\", 0,0,0,0));\nbind(S, $us)||die(\"$!\");\n\nsetsockopt(S, 0, $IP_ADD_MEMBERSHIP, $SERVERIP.\"\\0\\0\\0\\0\")||die(\"$!\");\n\nwhile($theiraddr=recv(S,$BUF,1024,0)){\n ($junk, $junk, $sourceaddr, $junk) = unpack($sockaddr, $theiraddr);\n $theirip=join('.',unpack('C4', $sourceaddr));\n if($BUF =~ $PATTERN){\n  printf\"$theirip\\t$BUF\";\n }\n}\n\nHow-To-Repeat: The above program sends no traffic out of the Ethernet interface (specifically the join request)."
+}

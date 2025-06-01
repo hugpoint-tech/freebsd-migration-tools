@@ -1,0 +1,8 @@
+{
+ "id": 666321,
+ "bug_id": 168158,
+ "attachment_id": 0,
+ "creation_time": "2012-05-20T08:30:01Z",
+ "creator": "Martin.Birgmeier@aon.at",
+ "text": "The function translate_opts() in cddl/compat/opensolaris/misc/fsshare.c incorrectly transforms nfs export options. Specifically, it unconditionally separates the input string along hyphens, thereby making it impossible to have a hyphen in a host name (which is allowed, cf. http://tools.ietf.org/html/rfc952 and http://tools.ietf.org/html/rfc1123).\n\nI am not sure whether this parsing is needed at all, as the resultant string, which is parsed by mountd(8), in its unaltered form seems to be compatible with the syntax expected by the latter. In fact, one could simply require that the string used for the sharenfs option is mountd(8) compatible and do away with the translate_opts() function entirely.\n\nIn a related vein, it is absolutely necessary to be able to specify multiple export lines for a single mount point, thereby allowing to assign different permissions to different clients. This has already been proposed a long while ago in http://www.freebsd.org/cgi/query-pr.cgi?pr=147881 but never been implemented. May I use that PR to suggest that this feature be added at the same time as fixing the bug described here.\n\nFix: \n\nCorrect translate_opts() in cddl/compat/opensolaris/misc/fsshare.c (or get rid of it altogether).\n\nAs a workaround, I am currently using IP addresses in lieu of the affectd host names. I need to use both IPv4 and IPv6 addresses of the same host, as my network runs both IPv4 and IPv6.\nHow-To-Repeat: Try to execute\n\n    zfs set sharenfs=test-host \u003czfs volume\u003e\n\nand then do a\n\n    zfs list -o name,sharenfs \u003czfs colume\u003e"
+}

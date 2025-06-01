@@ -1,0 +1,8 @@
+{
+ "id": 479753,
+ "bug_id": 130632,
+ "attachment_id": 0,
+ "creation_time": "2009-01-16T22:10:01Z",
+ "creator": "dimitry@andric.com",
+ "text": "If you run gpart(8) from a recent FreeBSD -CURRENT Live CD, it will\ncrash with the following assertion failure:\n\nAssertion failed: (diff == regind * size), function arena_run_reg_dalloc, file /usr/src/lib/libc/stdlib/malloc.c, line 2536.\nAbort trap: 6 (core dumped)\n\nThis is due to incorrect usage of strsep(3) in the function\nload_library() in /usr/src/sbin/geom/core/geom.c, and caused by the\nLive CD having set GEOM_LIBRARY_PATH to \"/mnt2/lib/geom:/lib/geom\".\n\nIn load_library(), you see the following:\n\n\ttotalpath = strdup(libpath);\n\t...\n\tif (strchr(totalpath, ':') != NULL)\n\t\tcurpath = strsep(\u0026totalpath, \":\");\n\t...\n\tfree(totalpath);\n\nThe problem here is that strsep(3) modifies totalpath, to point at the\nnext token.  If you then attempt to free it later, the behaviour is\nundefined.  The newer malloc in -CURRENT apparently catches this.\n\nNote this ONLY occurs if GEOM_LIBRARY_PATH exists, contains more than\none directory, and the geom .so files are found in the first\ndirectory.\n\nFix: Here is a patch, following the strsep(3) manpage example.\nHow-To-Repeat: This is easily reproduced on -CURRENT, by running:\n\n$ GEOM_LIBRARY_PATH=/lib/geom:/foo /sbin/gpart\nAssertion failed: (diff == regind * size), function arena_run_reg_dalloc, file /usr/src/lib/libc/stdlib/malloc.c, line 2536.\nAbort trap: 6 (core dumped)"
+}

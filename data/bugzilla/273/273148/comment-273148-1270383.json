@@ -1,0 +1,8 @@
+{
+ "id": 1270383,
+ "bug_id": 273148,
+ "attachment_id": 244122,
+ "creation_time": "2023-08-15T15:53:20Z",
+ "creator": "lars@oddbit.com",
+ "text": "Created attachment 244122\nPatch to revert erroneous changes in 1f7746d81f53447ac15cc99395bb714d4dd0a4da.\n\nIn commit 1f7746d81f53447ac15cc99395bb714d4dd0a4da, a change was introduced that breaks scripted installs.  Given an installerconfig file like this:\n\n```\nexport PARTITIONS=DEFAULT\nexport DISTRIBUTIONS=\"kernel.txz base.txz\"\nexport HOSTNAME=freebsd\nexport BSDINSTALL_DISTSITE=\"https://download.freebsd.org/releases/amd64/13.2-RELEASE\"\n\nexport nonInteractive=\"YES\"\n\ndhclient $INTERFACES\n\n#!/bin/sh\nsysrc ifconfig_DEFAULT=DHCP\nsysrc sshd_enable=YES\n```\n\nThe installation will always fail with a checksum error. This happens because the remote dists are fetched like this:\n\n```\n(\n\texec 3\u003e\u00261\n\texport BSDINSTALL_DISTDIR=$(`dirname $0`/fetchmissingdists 2\u003e\u00261 1\u003e\u00263)\n\tFETCH_RESULT=$?\n\texec 3\u003e\u0026-\n\treturn $FETCH_RESULT\n) || error \"Could not fetch remote distributions\"\n```\n\nThere is an attempt there to change the value of $BSDINSTALL_DISTDIR to the location of the fetched files, but since this logic was placed in a subshell that change is now a no-op.\n\nAdditionally, this code attempts to \"return\" from a subshell, but \"return\" is only valid in functions.\n\nThe attached patch reverts this change so that both \"auto\" and \"script\" use the same logic for fetching remote dists, and scripted installs operate as intended."
+}

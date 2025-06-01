@@ -1,0 +1,8 @@
+{
+ "id": 723299,
+ "bug_id": 180438,
+ "attachment_id": 0,
+ "creation_time": "2013-07-10T16:40:00Z",
+ "creator": "rz-rpi03@h-ka.de",
+ "text": "When trying to mount an smb-share on arm with mount_smbfs I got the error message\n\"a bug somewhere in the nb_name* code\".\n\nAnalysing the cause showed that nb_name_encode() in contrib/smbfs/lib/smb/nb_name.c\nmake assumptions about the layout of data (endianess) by writing at a u_char *\nwith casts to ushort * which are not true at (my) arm.\n\nAs a result the length information in the first byte of the encoded name gets\noverwritten with a encoded nibble of the first character of the name.\nThis let nb_encname_len() calculate a different value as nb_name_len() and\nnb_sockaddr() print out the error message above.\n\nFix: The attached patch fixes nb_name_encode().\n\nWith the patch applied I have successfully mounted a smb share using the arm\nsystem. I also verified the patch using a i386 system to be shure not to\nintroduce a bug into the other architectures.\n\nPatch attached with submission follows:\nHow-To-Repeat: Crosscompile libiconv libmchain smbfs modules for a arm CPU (RaspberryPi here).\nDo not forget to compile mount_smbfs als well. The attached patch contains the\nneeded statements for arm as well. Then call\nmount_smbfs -I mybox. //USER@MYBOX/home /mnt"
+}

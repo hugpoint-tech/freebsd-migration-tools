@@ -1,0 +1,8 @@
+{
+ "id": 434373,
+ "bug_id": 121423,
+ "attachment_id": 0,
+ "creation_time": "2008-03-08T16:29:40Z",
+ "creator": "csjp@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003efeedback\n\nThe issue here is that our shmid_ds structure uses a signed integer \nto represent the segment size. \n\nstruct shmid_ds { \nstruct ipc_perm shm_perm;   /* operation permission structure */ \nint             shm_segsz;  /* size of segment in bytes */ \npid_t           shm_lpid;   /* process ID of last shared memory op */ \npid_t           shm_cpid;   /* process ID of creator */ \nshort           shm_nattch; /* number of current attaches */ \ntime_t          shm_atime;  /* time of last shmat() */ \ntime_t          shm_dtime;  /* time of last shmdt() */ \ntime_t          shm_ctime;  /* time of last change by shmctl() */ \nvoid           *shm_internal; /* sysv stupidity */ \n}; \n\nThis really should be size_t, so that systems can use the amount of memory \ntheir architecture supports.  The problem is, this change breaks the ABI, \nand unfortunately there are a couple of compat layers that need to be \nanalyzed to make sure nothing breaks with the change. \n\nWe have been discussing this problem for a while, and we have decided that \nwe are going to fix some other limitations in ipc_perm at the same time \nwe switch shmsegsz to a size_t and add all the compat shims at the same \ntime. I am currently analyzing the impact of doing this since ipc_perm \nis used by all system V IPC mechanisms, not just shared memory."
+}

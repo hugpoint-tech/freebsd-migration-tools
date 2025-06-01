@@ -1,0 +1,8 @@
+{
+ "id": 1300598,
+ "bug_id": 277649,
+ "attachment_id": 0,
+ "creation_time": "2024-03-12T10:22:32Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Unfortunately va_list is not a regular type, and you cannot just copy it by assignment, it requires va_copy(3). So assigning it in the way you are doing is not possible.\n\nNote that gcc also warns, in the same way:\n\n% gcc -c parsargu.c\nparsargu.c: In function 'build_arg_fmt_list':\nparsargu.c:19:32: warning: initialization of 'unsigned int' from '__va_list_tag *' makes integer from pointer without a cast [-Wint-conversion]\n   19 | struct a_build_ctrl_t   abc = {ap, 0};\n      |                                ^~\nparsargu.c:19:32: note: (near initialization for 'abc.ap[0].gp_offset')\n\nWhat can work is to initialize the struct as completely empty, then va_copy the incoming va_list into it, e.g.:\n\nvoid*\nbuild_arg_fmt_list(void* fmt, va_list ap)\n{\nint     tBE, na=1, Nv;\nregister int    n, ne;\n         char   *cp, *cpr, *fmtp;\n         struct a_build_ctrl_t   abc = {};\n         va_copy(abc.ap, ap);\n#define nv      ne\n// ...\n         va_end(abc.ap); // each va_copy() must be matched with a va_end()\n}"
+}

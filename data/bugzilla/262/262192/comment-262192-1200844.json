@@ -1,0 +1,8 @@
+{
+ "id": 1200844,
+ "bug_id": 262192,
+ "attachment_id": 0,
+ "creation_time": "2022-02-26T00:39:12Z",
+ "creator": "cem@freebsd.org",
+ "text": "I'm not really sure why tsleep() is panicing at that point.  Presumably that initialization happens later in mi_startup.\n\nYour virtual hardware plus operating system configuration is resulting in a system that is not seeded by the time mi_startup hits __stack_chk_init (SI_SUB_RANDOM:SI_ORDER_ANY).  This means that the system did not have any bootloader entropy (SI_SUB_RANDOM:SI_ORDER_FOURTH).\n\n__stack_chk_init happens very early, before random_kthread can run.  So the system hasn't polled any \"devices\" for entropy, including RDRAND.\n\nFirst order fix is to figure out why you don't have /boot/entropy (or whatever) and fix that.  (Most VMs don't have this problem.)  Second order workaround is to revert e199792d23341b0a887bf54c262147b213edd556 and set security.stack_protect.permit_nonrandom_cookies=1.  This is practically similar to not compiling in stackcookies at all.  Third option is to set kern.random.initial_seeding.bypass_before_seeding=1.\n\nCould this be better?  Sure.  Chacha20_randomstir and/or read_random could attempt to manually poll available random sources (assuming any are loaded and available!) during early boot if not yet seeded, or fetch jitter entropy (maybe not this early, though -- if tsleep is broken, jitter might be as well).  Kyle Evans has expressed some interest in working on the latter.  tsleep() could detect early boot and not panic instead of taking whatever uninitialized lock it's taking.  I don't plan to do any of that."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 768661,
+ "bug_id": 191017,
+ "attachment_id": 0,
+ "creation_time": "2014-06-13T21:17:27Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "In the 4.0 build it would default to using fifo:\n\n- your fifos are usable\nconfigure: checking for broken fifo implementation...\n- your implementation is ok\nconfigure: checking sockets...\n- your sockets are usable\nconfigure: checking socket implementation...\n- you are normal\n- both sockets and fifos usable. let's take fifos.\n\nIn 4.3 it now defaults to sockets:\n\n- your fifos are usable\nconfigure: checking for broken fifo implementation...\n- your implementation is ok\nconfigure: checking sockets...\n- your sockets are usable\nconfigure: checking socket implementation...\n- you are normal\n- both sockets and fifos usable. let's take sockets.\n\n\nThe impact of this is that NAMEDPIPE is *not* defined in the 4.3 config.h, so the SockFind function ignores any existing fifos in socket.c:\n\n#ifndef SOCK_NOT_IN_FS\n# ifdef NAMEDPIPE\n#  ifdef S_ISFIFO\n      debug(\"S_ISFIFO?\\n\");\n      if (!S_ISFIFO(st.st_mode))\n        continue;\n#  endif\n# else\n#  ifdef S_ISSOCK\n      debug(\"S_ISSOCK?\\n\");\n      if (!S_ISSOCK(st.st_mode))\n        continue;\n#  endif\n# endif\n#endif\n\nThis requires all sessions to be sockets and ignored older fifo. I would consider this to be an upstream bug.\n\nSomething such as this would fix it to work with older sessions and also stick to fifos in new sessions:\n\npost-configure:\n    echo \"#define NAMEDPIPE 1\" \u003e\u003e ${WRKSRC}/config.h"
+}

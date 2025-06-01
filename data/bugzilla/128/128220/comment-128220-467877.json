@@ -1,0 +1,8 @@
+{
+ "id": 467877,
+ "bug_id": 128220,
+ "attachment_id": 0,
+ "creation_time": "2008-10-19T14:30:02Z",
+ "creator": "ohauer@gmx.de",
+ "text": "routine CHECK_USEDDISKSPACE in check_nt.c do not handle correct unknown/missing drives.\n\n\n# /usr/local/libexec/nagios/check_nt -H HOSTNAME -p 12489 -v USEDDISKSPACE -l d\nSegmentation fault: 11 (core dumped)\n\n# /usr/local/libexec/nagios/check_nt -H HOSTNAME -p 12489 -v USEDDISKSPACE -l e\nSegmentation fault: 11 (core dumped)\n\n# echo \"None\u00264\u0026d\" | nc HOSTNAME 12489\nUNKNOWN: Drive is not a fixed drive: d: (it is a cdrom drive)\n\n# echo \"None\u00264\u0026e\" | nc HOSTNAME 12489\nUNKNOWN: Could not get free space for: e: e: reason: 3: The system cannot find the path specified.\n\n# echo \"None\u00264\u0026c\" | nc HOSTNAME 12489\n7506677760\u002612872527872\n\n\n#################################\nsnipped from the code:\n#################################\n        case CHECK_USEDDISKSPACE:\n                        fetch_data (server_address, server_port, send_buffer);\n/* --\u003e no further checks, blind trust and death (no exception handling) */\n                        free_disk_space=atof(strtok(recv_buffer,\"\u0026\"));\n                        total_disk_space=atof(strtok(NULL,\"\u0026\"));\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: query a window machine which has installed NSClient++ for not existing drives"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1013412,
+ "bug_id": 231058,
+ "attachment_id": 0,
+ "creation_time": "2018-09-28T23:33:36Z",
+ "creator": "wulf@freebsd.org",
+ "text": "(In reply to Michael Figiel from comment #7)\n\u003e I activate the multiplexing, but don't modify the write_command()\n\u003e to replace D4h with 90h or 93h, then the touchpad/trackpoint is\n\u003e recognized as IntelliMouse, with three buttons and 4 byte packets.\nLooks like you triggered undocumented? command sequence to switch # of interleaved bytes from 3 to 4 (it can be necessary to support wheel). According to docs, d4h can not be used in active multiplexing mode:\n\"D4h - This command always causes the KBC to revert to Legacy mode\"\n\n\u003e The place to deactivate active multiplexing after touchpad's\n\u003e initialization would be at the end of psmattach(), wouldn't it? \nI do not see any reason to detect all supported device types if active mode is not used after device has been run. In hidden mux mode we stick to 3-bytes packets and can not use other sizes. Fortunately, synaptics 6-bytes packets can be easily split and than joined back so we can treat them as two 3-bytes packets. Attached patch just enables active mode, probes 4 ports for synaptics touchpad presence and than returns back to legacy mode. It supports only generic mouses and synaptics touchpads that should cover 99% of cases.\n\nCould you test the patch and fix p.4. (Synaptics probe detects touchpad at any of 4 aux ports) if it is necessary to fix?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 717780,
+ "bug_id": 179263,
+ "attachment_id": 0,
+ "creation_time": "2013-06-23T20:04:56Z",
+ "creator": "ohauer@gmx.de",
+ "text": "OK,\n\nI've done some more test builds and shaped a new shar file.\nhttp://people.freebsd.org/~ohauer/diffs/mod_authnz_crowd.shar\n\nIt was a little more work ...\n- the port needs a pkg-plist else no cleanup of httpd.conf will be done.\n- added MANUAL_PACKAGE_BUILD since the build fails if subevrsion was build without mod_dav_svn\n  (mod_dav_svn is not enabled by default)\n- added USE_GCC=any else port fails on 10 current\n- removed some additional debian specific lines from src/Makefile.am\n\n\nI'm not sure about the CFLAGS (-O1 / -O2), from Makefile.am\n\n-AM_CFLAGS = `apr-1-config --cflags`\n+AM_CFLAGS = `apr-1-config --cflags | sed -e 's/O[[:digit:]]/O1/'`\n\nbut -O2 is still used, a snippet from the build log\n\n\u003e --cflags`  `apr-1-config --cflags | sed -e 's/O[[:digit:]]/O1/'` -O2 -pipe -fno-strict-aliasing \n\u003e -g -O1 -O2 -pipe -fno-strict-aliasing\n\n\nThe only way I have found to overwrite -O2 is to add the following line into the Makefile.\n( '-O2 -pipe -fno-strict-aliasing' is alway set from bsd.port.mk if no explicit declaration is found in the Makefile)\n\nCFLAGS:=       ${CFLAGS:C/-O[2-9]/-O1/}\n\nWith this entry it change to\n\u003e --cflags | sed -e 's/O[[:digit:]]/O1/'` -O1 -pipe\n\u003e -g -O1 -O1 -pipe\n\n\nLet me know if the port runs stable.\n\n--\nRegards,\nolli"
+}

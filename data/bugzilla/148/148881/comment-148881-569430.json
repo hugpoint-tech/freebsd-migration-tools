@@ -1,0 +1,8 @@
+{
+ "id": 569430,
+ "bug_id": 148881,
+ "attachment_id": 0,
+ "creation_time": "2010-07-23T23:20:06Z",
+ "creator": "freebsd@jdc.parodius.com",
+ "text": "\tlibdisk(3)'s Int_Open_Disk() function makes some bad assumptions\n\tabout the syntax of the lines come from sysctl kern.geom.conftxt\n\t(passed in via sysinstall).\n\n\tDisks, slices, or partitions which have spaces in their label\n\tnames -- such as FAT-formatted USB flash drives with spaces in\n\ttheir volume name, or anything glabel'd -- will cause libdisk\n\tto spit out an error similar to the below.  Use of dialog\n\tin sysinstall hides portions of the error string:\n\n\tInt_Open_Disk(da1): can't parse length 'V100W' in line 3 (r='V100W')\n\n\tIn this situation, the disk da1 was a FAT32-formatted USB flash\n\tdrive with a volume name of \"HP V100W\".  kern.geom.conftxt showed:\n\n0 DISK da1 4009754624 512 hd 255 sc 63\n1 PART da1s1 4009722368 512 i 1 o 32256 ty !12 xs MBR xt 12\n2 LABEL msdosfs/HP V100W 4009722368 512 i 0 o 0\n\nFix: I've spent the past 6-7 hours going over the libdisk(3) code's\n\tparser, and determined that (probably) the easiest way to deal\n\twith this is to ignore LABEL lines altogether.  There is probably\n\ta cleaner way to deal with this, such as using libgeom(3) (which I\n\tdid try but the API is severely lacking in documentation), but\n\tthis is what I came up with.  This should be thoroughly analysed\n\tbefore being considered for commit.\n\n\tAlso, I want to point out that the inline comment for \"t\"\n\tassignment doesn't appear to be correct (see above example, re: MBR).\n\tThis makes me wonder if we have further parser problems in this\n\tlibrary (maybe this could explain PR 140972)?\nHow-To-Repeat: \tglabel create \"some label\" /dev/da0s1a\n\tsysinstall"
+}

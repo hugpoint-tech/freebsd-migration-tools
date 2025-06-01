@@ -1,0 +1,8 @@
+{
+ "id": 426638,
+ "bug_id": 119839,
+ "attachment_id": 0,
+ "creation_time": "2008-01-20T21:10:01Z",
+ "creator": "louie@TransSys.COM",
+ "text": "Using the ng_netflow netgraph module to monitor interesting flows through\na FreeBSD based router using flowctl(8).  Notice after a while, the number\nof entries grow without apparent bound.  One on system, I observed more\nthan 55,000 entries.\n\nThe problem is that the code that periodically runs through the entries\nto expire them is never started unless the export hook is connected to\nsomething.  In my case, it was easy to simply connect it to the ng_hole\nnetgraph module to discard the flow export and have the expiration callout\nstarted.\n\nFix: \n\nDo this:\n\n  ngctl mkpeer catchall: hole export sink\n  ngctl name   catchall:export netflowSink\n\nThis is minimally a documentation bug.  Possibly, the ng_netflow module\nout to expire flows immediately, without waiting for an export hook to\nbe connected, but I suppose that might be a matter of taste/opinion.\nHow-To-Repeat: Configure netflow, don't connect anything to the export hook.\n\n  ngctl mkpeer ipfw: netflow 10 iface0\n  ngctl name   ipfw:10 catchall \n\n  ngctl msg catchall: setdlt { iface=0 dlt=12 } \n  ngctl msg catchall: settimeouts { inactive=3 active=300 }"
+}

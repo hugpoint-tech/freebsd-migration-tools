@@ -1,0 +1,8 @@
+{
+ "id": 1095282,
+ "bug_id": 245318,
+ "attachment_id": 0,
+ "creation_time": "2020-04-03T15:41:23Z",
+ "creator": "jwb@freebsd.org",
+ "text": "I think a process count of 0 in procstat_getprocs() is not necessarily an error and this should not trigger a message to stderr.\n\nThe code below demonstrates the issue, assuming 1000 is not part of a process group.  Tweak the value if necessary.\n\nIf procstat_getprocs() does not find any processes in the group, it returns 0 via the *count argument as expected, but also prints a warning to stderr using warnx():\n\nkinfo_proc structure size mismatch (len = 0)\n\nThe warnx() call can be found in /usr/src/lib/libprocstat/libprocstat.c.\n\nIt seems to be that the action to be taken when count == 0 should be left to the caller.\n\n#include \u003cstdio.h\u003e\n#include \u003csysexits.h\u003e\n#include \u003csys/param.h\u003e\n#include \u003csys/queue.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003csys/user.h\u003e\n#include \u003csys/sysctl.h\u003e\n#include \u003clibprocstat.h\u003e\n\nint     main(int argc,char *argv[])\n\n{\n    unsigned            pgid = 1000,\n\t\t\tpid_count;\n    struct procstat     *proc_info;\n    struct kinfo_proc   *proc_list;\n    // FILE                *procstat_err;\n    \n    proc_info = procstat_open_sysctl();\n    \n    // Silence warnx()\n    // procstat_err = fopen(\"/dev/null\", \"w+\");\n    // err_set_file(procstat_err);\n    \n    proc_list = procstat_getprocs(proc_info, KERN_PROC_PGRP, pgid,\n\t\t\t\t    (unsigned *)\u0026pid_count);\n    // fclose(procstat_err);\n    procstat_freeprocs(proc_info, proc_list);\n    procstat_close(proc_info);\n\n    return EX_OK;\n}"
+}

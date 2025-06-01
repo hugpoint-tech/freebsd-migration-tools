@@ -1,0 +1,8 @@
+{
+ "id": 978280,
+ "bug_id": 222671,
+ "attachment_id": 0,
+ "creation_time": "2018-02-19T08:15:36Z",
+ "creator": "pprocacci@gmail.com",
+ "text": "The problem is in usr.bin/tail/reverse.c line 258.\n\nThe variable `start` is only true when the pointer is at the beginning of the buffer.  *p is never checked to see if it is a newline while `start` is true.\n\nThis has the effect of the following being written:  '\\n1\\n'.\nIt does appear that the newline is randomly inserted, but this isn't the case.\nIt's essentially writing this:\n\nwrite(1, '2\\n', 2);\nwrite(1, '\\n1\\n', 3);\n\nExcuse the inline patch (too late in the morning to create an attachement).\nThe patch solves the problem by checking *p when start is true and fixes the problem.\n\n\n--- reverse.c.orig      2018-02-19 03:13:53.835943000 -0500\n+++ reverse.c   2018-02-19 03:14:34.665507000 -0500\n@@ -255,8 +255,12 @@\n                        if ((*p == '\\n') || start) {\n                                struct bfelem *tr;\n\n-                               if (start \u0026\u0026 llen)\n-                                       WR(p, llen + 1);\n+                               if (start \u0026\u0026 llen){\n+                                       if(*p == '\\n')\n+                                               WR(p + 1, llen);\n+                                       else\n+                                               WR(p, llen + 1);\n+                               }\n                                else if (llen)\n                                        WR(p + 1, llen);\n                                tr = TAILQ_NEXT(tl, entries);"
+}

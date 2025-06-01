@@ -1,0 +1,8 @@
+{
+ "id": 1260892,
+ "bug_id": 244181,
+ "attachment_id": 0,
+ "creation_time": "2023-05-25T17:28:16Z",
+ "creator": "arthur200126@gmail.com",
+ "text": "Just for completeness sake, I've re-considered the whole GLIBC matter. GLIBC actually is okay with `optind = 1` resetting, so all we do is shadow optreset away, which @somasis on github did.\n\nglibc or not, there is one tiny issue remaining: we can't deal with member filenames starting with a dash. This is easy to fix too: you just add a pass after the second getopt to pick up any remaining arguments.  You will need to double-dash after the archive name, which is weird, but it works.\n\nThere is a tiny complication with glibc, however. Consider `unzip a.zip -- -f.bmp`. On BSD this all makes sense. On glibc, because it rearranges by default, it becomes `unzip -- a.zip -f.bmp`, with nopts putting you on \"a.zip\". And then \"-f.bmp\" gets fed to getopts again without the protecting \"--\".  So what you do is disable the rearrangement via POSIXLY_CORRECT.\n\nIt's very possible that I've still not thought this through. Anyways, the diff is at https://github.com/AdrianVovk/libarchive/pull/1. It's written on top of an attempt at putting BSD unzip into the libarchive code base."
+}

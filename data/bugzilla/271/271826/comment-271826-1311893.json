@@ -1,0 +1,8 @@
+{
+ "id": 1311893,
+ "bug_id": 271826,
+ "attachment_id": 251202,
+ "creation_time": "2024-06-04T14:42:01Z",
+ "creator": "jhibbits@FreeBSD.org",
+ "text": "Comment on attachment 251202\ntbsync patch 1\n\nAll the atomic_set_*()s should really be atomic_store_*(), `atomic_set` is a bit-set (OR operation).  It's incorrect in the existing code, too.  It really doesn't make a significant difference, since the end result is the same (cpu_done should be 0 to start with, so setting nothing doesn't change that, tb_ready should be 0 to start with, so setting 1 bit does the same thing), except in the last instance to try to clear tb_ready.\n\nIn the tight loop checking if cpu_done is high enough, you don't need the acq barrier in there, because the thread fence occupying the loop does the same thing, and acq places the barrier after the operation, so in the same place anyway.\n\nGlad to see this patch overall works for you, though!  I'm really surprised those barriers are needed, since they're not needed in the mpc85xx case, which this is derived from."
+}

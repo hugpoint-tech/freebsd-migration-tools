@@ -1,0 +1,8 @@
+{
+ "id": 1236985,
+ "bug_id": 268002,
+ "attachment_id": 0,
+ "creation_time": "2022-11-27T00:22:31Z",
+ "creator": "cy@FreeBSD.org",
+ "text": "Have a patch that solves this:\n\nbob# /usr/libexec/kadmind --debug\n2022-11-26T16:16:51 root@EXAMPLE.ORG: CHPASS_WITH_KEY @\n2022-11-26T16:16:51 CHPASS_WITH_KEY: Operation requires `change-password' privilege\nSegmentation fault (core dumped)\nbob# \n\nUnfortunately there's a memory error, circumvented by,\n.\nbob# MALLOC_CONF=zero:true /usr/libexec/kadmind --debug\n2022-11-26T16:16:30 root@EXAMPLE.ORG: CHPASS_WITH_KEY @\n2022-11-26T16:16:30 CHPASS_WITH_KEY: Operation requires `change-password' privilege\nbob#\n\nIn other words fixing this bug has uncovered another error in which uninitialized memory is assumed to be zero. The error occurs in functions called by OPENSSL_cleanup(), an atexit() routine. I'm unsure at the moment if OpenSSL is the cause or simply a victim.\n\nThe error only occurs in debug mode, not when daemonized."
+}

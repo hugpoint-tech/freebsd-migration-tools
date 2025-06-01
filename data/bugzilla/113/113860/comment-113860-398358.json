@@ -1,0 +1,8 @@
+{
+ "id": 398358,
+ "bug_id": 113860,
+ "attachment_id": 0,
+ "creation_time": "2009-04-03T22:39:05Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "I think this can be improved.\n\nGiven that I've been digging in /bin/sh already...\n\nNote first that sh already has some of this functionality:\n\n% sh -c '{ echo a; sleep 10;}\u0026'; sleep 1; ps T\na\n  PID  TT  STAT      TIME COMMAND\n94682  p9  Ss     0:00.07 zsh\n94702  p9  S      0:00.00 sleep 10\n94704  p9  R+     0:00.00 ps T\n%\n\nThis is the EV_EXIT flag to evaltree() and friends, in eval.c.\n\nTo make this work for '-c', evalstring() needs some flag like EV_EXIT,\nand parsecmd() needs to tell evalstring() that the command it read is\nthe last (currently, parsecmd() only reports that there is no command\nanymore; due to the stack-like memory management it is not really\npossible to read ahead a command). Putting \"{\\n\" and \"\\n}\" around the\nstring could be an alternative for the latter, as any valid string would\nconsist of one (compound) command only.\n\nThe new mode for evalstring() would only be used for '-c' commands when\n'-s' is not given.\n\nApart from bash, ksh93 and Solaris /usr/xpg4/bin/sh (which is basically\nksh88) also treat simple commands in '-c' this way. So I think the idea\nis ok. I'm also slightly annoyed by seeing silly 'sh -c blah' processes\nhanging around, and it is not always possible or desirable to add\n'exec'.\n\nOn another note, the EV_EXIT mode is erroneously still used if a trap on\nEXIT has been set (or, maybe, any trap at all; particularly if -T is in\neffect). This means that such traps may not be executed. Most other\nshells seem to do this right.\n\n-- \nJilles Tjoelker"
+}

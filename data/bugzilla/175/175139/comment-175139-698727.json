@@ -1,0 +1,8 @@
+{
+ "id": 698727,
+ "bug_id": 175139,
+ "attachment_id": 0,
+ "creation_time": "2013-01-08T17:00:00Z",
+ "creator": "jb.1234abcd@gmail.com",
+ "text": "This applies to any installation env (VirtualBox, other hardware platforms).\n\nOn VirtualBox, I selected powerd service during install, but at boot time there\nwas an error msg:\nstarting powerd\npowerd lookup freq: No such file or directory\n/etc/rc: WARNING failed to start powerd\n\nDisabling powerd in /etc/rc.conf to get rid of the error message is a fix, but\nnot a solution to a problem.\nMaking a statement that in VirtualBox powerd doesn't work because the guest\nOS can not control the frequency of the host CPU is true, but is not a solution\nas well.\n\nThe solution is to NOT offer bugus/invalid services for installation env, real\nor virtual.\n\nBsdinstall can discover this condition with checking for lack of\nsysctl -a | grep dev.cpu.0.freq\nsysctl -a | grep dev.cpu.0.freq_levels\nin /usr/libexec/bsdinstall/services,\n\nexactly as it does (in powerd.c) with\n     if (sysctlnametomib(\"dev.cpu.0.freq\", freq_mib, \u0026len))\n       err(1, \"lookup freq\");\n       ...\n     if (sysctlnametomib(\"dev.cpu.0.freq_levels\", levels_mib, \u0026len))\n       err(1, \"lookup freq_levels\");\nin /usr/sbin/powerd (via /etc/rc.d/powerd).\n\nBsdinstall already does similar checks for other features, see:\n$ grep -ir sysctl /usr/libexec/bsdinstall/\n\nHow-To-Repeat: as above"
+}

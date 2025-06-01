@@ -1,0 +1,8 @@
+{
+ "id": 365131,
+ "bug_id": 106734,
+ "attachment_id": 0,
+ "creation_time": "2007-01-07T05:08:43Z",
+ "creator": "jseward@acm.org",
+ "text": "I believe this analysis is correct:\n\n\u003e         /* Load the bytes: */\n\u003e         n1 = (__m128i)_mm_loadu_pd((double *)(block + i1));\n\u003e         n2 = (__m128i)_mm_loadu_pd((double *)(block + i2));\n\u003e \n\u003e read beyond the end of the defined area of block.  block is\n\u003e defined for [0 .. nblock + BZ_N_OVERSHOOT - 1], but I think\n\u003e you are doing a SSE load at \u0026block[nblock + BZ_N_OVERSHOOT - 2],\n\u003e hence loading 15 bytes of garbage.\n\nValgrind doesn't complain about the out-of-range access, because you\nare still accessing inside a valid malloc-allocated block.  But it\ndoes know that the read data is uninitialised, hence it complains\nwhen you do a comparison with that data followed by a conditional\nbranch (or move) based on the result of the comparison.\n\n\u003e This is possible... You think, the loop should exit earlier and test\n\u003e the last (up to) 15 bytes one-by-one?\n\nCertainly the loop-end stuff needs to be fixed up somehow to reflect\nthe 16 byte loads, but without further investigation I'm not sure how."
+}

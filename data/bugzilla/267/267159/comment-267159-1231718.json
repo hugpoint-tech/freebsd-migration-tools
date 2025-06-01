@@ -1,0 +1,8 @@
+{
+ "id": 1231718,
+ "bug_id": 267159,
+ "attachment_id": 0,
+ "creation_time": "2022-10-17T19:40:05Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "net_epoch permits in_pcblookup_lbgroup() and in_pcbremlbgrouphash() to run concurrently, but they weren't written with this in mind.  The latter may remove entries in an LB group, after which it compacts the group.  If a new group structure is allocated, in_pcbremlbgrouphash() puts it at the head of the hash chain before copying the contents of the old group over, so there's a small window where we have a group of size 0, which can cause problems in the lookup path (kernel panics or inexplicable connection setup failures).\n\nI think there's a similar problem when growing a group structure.\n\nFinally, the group structures are not really protected by SMR, only by net_epoch.\n\nWe should probably never shrink the group structure, I don't think it's worth the complexity.  When growing the structure, we should populate the new one and issue a memory barrier before making it visible to other CPUs (i.e., before adding it to the hash chain)."
+}

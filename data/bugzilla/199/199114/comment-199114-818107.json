@@ -1,0 +1,8 @@
+{
+ "id": 818107,
+ "bug_id": 199114,
+ "attachment_id": 0,
+ "creation_time": "2015-04-02T14:46:44Z",
+ "creator": "hartmut.brandt@dlr.de",
+ "text": "\u003cstring\u003e forward declares a template for the output operator, but this template is nowhere defined. Instead \u003costream\u003e provides an inline definition for that template. This leads to the following program not linking:\n\nx.cc\n---\n#include \u003ciostream\u003e\n\nvoid foo(std::ostream \u0026);\n\nint main() {\n  foo(std::cout);\n}\n\ny.cc\n---\n#include \u003cstring\u003e\n#include \u003ciosfwd\u003e\n\nvoid foo(std::ostream \u0026os)\n{\n  os \u003c\u003c std::string(\"a\");\n}\n\nThe linker will give an undefined symbol for the operator \u003c\u003c. The reason is that \u003cstring\u003e forward declares the template which is not defined neither in \u003cstring\u003e nor in the librarie's string.cc. Because of the forward declaration y.cc happily compiles with an undefined reference in the obj-file.\n\nWhen including \u003costream\u003e in y.cc, the linker is successful since there is a inline template definition in \u003costream\u003e. According to my reading of the standard this is wrong - the defintion should be in \u003cstring\u003e or string.cc should have an instantiation of the template for char and wchar_t.\n\nThis is probably an upstream issue?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 897355,
+ "bug_id": 212592,
+ "attachment_id": 0,
+ "creation_time": "2016-09-11T23:52:15Z",
+ "creator": "cperciva@FreeBSD.org",
+ "text": "The default MAKE_JOBS_NUMBER comes from `sysctl -n kern.smp.cpus`.  This is fine in most cases, but if cpuset(1) has been used to limit the CPUs available, we will end up running too many parallel build steps -- one per CPU present, rather than one per CPU available.\n\nUnfortunately cpuset(1) doesn't seem to have an obvious \"tell me how many CPUs I have access to\" flag, but something like\n\n-_SMP_CPUS!=             ${SYSCTL} -n kern.smp.cpus\n+_SMP_CPUS!=             cpuset -g -p $$ | cut -f 2 -d : | tr , '\\n' | wc -l\n\nshould probably do the job.  (Or, we could just fix cpuset(1) and check OSVERSION to decide whether to query the sysctl or query cpuset.)"
+}

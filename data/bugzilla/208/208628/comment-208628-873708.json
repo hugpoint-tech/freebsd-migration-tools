@@ -1,0 +1,8 @@
+{
+ "id": 873708,
+ "bug_id": 208628,
+ "attachment_id": 0,
+ "creation_time": "2016-04-08T08:03:23Z",
+ "creator": "ucu8u1b-ol@avksrv.org",
+ "text": "Due FreeBSD port's executables installed to /usr/local by default, puppet's default path-es to executables have to be changed to /usr/local/bin/ instead of default /usr/bin\n(and default root dir for svcscan is /var/service, not /service)\n\n\nwithout changes puppet generate an error when we try to use service{ provider =\u003e daemontools;}\nDebug: Puppet::Type::Service::ProviderDaemontools: file /usr/bin/svc does not exist\n Provider daemontools is not functional on this host\n\n\nnext patch fix the problem\n\n--- ./puppet-3.8.4/lib/puppet/provider/service/daemontools.rb.orig\t2016-04-08 10:46:37.767082000 +0300\n+++ ./puppet-3.8.4/lib/puppet/provider/service/daemontools.rb\t2016-04-08 10:47:49.370475000 +0300\n@@ -39,7 +39,7 @@\n \n   EOT\n \n-  commands :svc  =\u003e \"/usr/bin/svc\", :svstat =\u003e \"/usr/bin/svstat\"\n+  commands :svc  =\u003e \"/usr/local/bin/svc\", :svstat =\u003e \"/usr/local/bin/svstat\"\n \n   class \u003c\u003c self\n     attr_writer :defpath\n@@ -88,7 +88,7 @@\n   # find the service dir on this node\n   def servicedir\n     unless @servicedir\n-      [\"/service\", \"/etc/service\",\"/var/lib/svscan\"].each do |path|\n+      [\"/var/service\", \"/etc/service\",\"/var/lib/svscan\"].each do |path|\n         if Puppet::FileSystem.exist?(path)\n           @servicedir = path\n           break\n\nAnd same have to be for puppet37 and 4 branches"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 643360,
+ "bug_id": 163567,
+ "attachment_id": 0,
+ "creation_time": "2011-12-23T16:10:10Z",
+ "creator": "darkuranium@gmail.com",
+ "text": "If the \"make\" utility finds an object dir, it changes to the path of the dir, but forgets to change back to the working directory.\n\nA consequence of this is that portable makefiles do not work with BSD's implementation simply because there exists an \"obj\" directory in the tree.\n\nThis means that, say, trying to compile src/main.c actually invokes the compiler on (non-existing) obj/src/main.c.\n\nFix: \n\nThe problem is that chdir_verify_path does not change the directory back on success.\n\nIn the file /usr/src/usr.bin/make/main.c, change the function chdir_verify_path() - right before \"return (obpath)\", add:\n\nchdir(curdir);\n\n(plus checks to see if this went fine).\nHow-To-Repeat: Run the following in a shell ('$' indicates a prompt):\n\n$ rm -rf obj\n$ echo -e \"all:\\n\\tpwd\" \u003e Makefile\n$ make\npwd\n/path/to/dir\n$ mkdir obj\n$ make\npwd\n/path/to/dir/obj\n\nThe effect is the same if \"pwd\" is replaced with \\$\\$PWD (which generates \"$$PWD\" instead of \"pwd\" in the makefile."
+}

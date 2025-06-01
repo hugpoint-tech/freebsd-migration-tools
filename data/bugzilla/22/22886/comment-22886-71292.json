@@ -1,0 +1,8 @@
+{
+ "id": 71292,
+ "bug_id": 22886,
+ "attachment_id": 0,
+ "creation_time": "2000-11-16T11:33:56Z",
+ "creator": "amorita@meadow.scphys.kyoto-u.ac.jp",
+ "text": "I found the reason of savecore's core dump problem(PR bin/22886).\n\n[Reason]\nSee compile log in src/sbin/savecore.\n`ld' reports the symbol conflict `dirname'.\nIn savecore.c, dirname symbol is local pointer of char.\nIn libc/gen/dirname.c, dirname symbol is function.\n--- Log\nmisao% make\ncc -O -pipe -I/usr/SRC/src/sbin/savecore/../../usr.bin/compress   -c /usr/SRC/src/sbin/savecore/savecore.c\ncc -O -pipe -I/usr/SRC/src/sbin/savecore/../../usr.bin/compress   -c /usr/SRC/src/sbin/savecore/../../usr.bin/compress/zopen.c\ncc -O -pipe -I/usr/SRC/src/sbin/savecore/../../usr.bin/compress    -static -o savecore savecore.o zopen.o  \n/usr/libexec/elf/ld: Warning: size of symbol `dirname' changed from 4 to 206 in dirname.o\n/usr/libexec/elf/ld: Warning: type of symbol `dirname' changed from 1 to 2 in dirname.o\ngzip -cn /usr/SRC/src/sbin/savecore/savecore.8 \u003e savecore.8.gz\n--- Log\n\n[Quick Hack]\nApply below patch to src/sbin/savecore/savecore.c.\n--- patch\ndiff -d -u -r1.28.2.3 savecore.c\n--- savecore.c\t2000/07/04 01:17:47\t1.28.2.3\n+++ savecore.c\t2000/11/16 11:12:25\n@@ -108,7 +108,7 @@\n int\tdumpsize;\t\t\t/* amount of memory dumped */\n \n char\t*kernel;\n-char\t*dirname;\t\t\t/* directory to save dumps in */\n+static char\t*dirname;\t\t\t/* directory to save dumps in */\n char\t*ddname;\t\t\t/* name of dump device */\n dev_t\tdumpdev;\t\t\t/* dump device */\n int\tdumpfd;\t\t\t\t/* read/write descriptor on char dev */\n--- patch\n\n--\nAkio Morita"
+}

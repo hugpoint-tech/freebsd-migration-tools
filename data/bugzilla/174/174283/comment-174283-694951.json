@@ -1,0 +1,8 @@
+{
+ "id": 694951,
+ "bug_id": 174283,
+ "attachment_id": 0,
+ "creation_time": "2012-12-09T00:50:00Z",
+ "creator": "adrian@freebsd.org",
+ "text": "There are panics in the net80211 fast-frame queue ageing and flushing code.\n\nIt looks like the staging queue ends up being empty and the net80211 FF routines have KASSERT()s to make sure the queue isn't empty.  I'm guessing its a sanity check - it shouldn't be called when the queues are empty.\n\nHowever, the check is done without the comlock being held, so it's entirely plausible that there'll be a race or preemption between the check and actually checking/emptying the queue; where another thread (CPU or preempted thread) will empty the FF AC queue for us; once this returns it panics.\n\nkgdb analysis of a crashdump shows:\n\n* ath_tx_processq()\n* ieee80211_ff_flush()\n* ieee80211_ff_age()\n\nieee80211_ff_flush() checks if the queue is empty and if not, it calls ieee80211_ff_flush().\n\nThere's a bunch of places the FF routines are called from and these can and do overlap.\n\nFix: \n\nThe solutions?\n\n* stick the ieee80211_ff_*() calls in a specific taskqueue and call them from there, rather than from both the TX, RX and TX completion context;\n* grab the comlock before checking, and make sure the function expects the comlock to be held and frees the comlock after;\n* Just accept (and document) the check is racy/opportunistic; and remove the \"is the queue empty?\" KASSERT()s in the FF code.\nHow-To-Repeat: * run 9-stable or -head with assert/witness enabled;\n* iperf TCP between FF capable stations - just wait a while, it'll eventually trigger!"
+}

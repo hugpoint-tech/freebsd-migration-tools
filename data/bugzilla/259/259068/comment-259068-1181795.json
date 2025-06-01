@@ -1,0 +1,8 @@
+{
+ "id": 1181795,
+ "bug_id": 259068,
+ "attachment_id": 228583,
+ "creation_time": "2021-10-11T12:04:02Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 228583\nA damaged ext3 disk image that causes INVARIANT failures.\n\nI've attached a damaged ext3 file system that trips\nover two INVARIANTS in CURRENT:\n\n  VNASSERT failed: vp-\u003ev_type != VNON not true at /usr/src/sys/kern/vfs_cache.c:2404 (cache_enter_time)\n\n  panic: Assertion dvp != *vpp failed at /usr/src/sys/kern/vfs_cache.c:2084\n\nThe first is caused by a directory entry that refers to an\nun-allocated inode; ext2_lookup_ino() calls cache_enter()\nregardless. The second is caused by a directory entry\nwith i-number 2 but which is named neither . nor ..; perhaps\next2_dirbadentry() or ext2_search_dirblock() should filter\nthese out.\n\nTo see a panic on a CURRENT system with INVARIANTS:\n# uname -a\nFreeBSD stock14 14.0-CURRENT FreeBSD 14.0-CURRENT #0 main-n248636-d20e9e02db3: Thu Aug 12 05:47:18 UTC 2021     root@releng1.nyi.freebsd.org:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\n# gunzip ext36.img.gz \n# mdconfig -f ext36.img \nmd0\n# mount -t ext2fs -o ro /dev/md0 /mnt\n# ls -l /mnt\nVNASSERT failed: vp-\u003ev_type != VNON not true at /usr/src/sys/kern/vfs_cache.c:2402 (cache_enter_time)"
+}

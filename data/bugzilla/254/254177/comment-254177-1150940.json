@@ -1,0 +1,8 @@
+{
+ "id": 1150940,
+ "bug_id": 254177,
+ "attachment_id": 0,
+ "creation_time": "2021-03-10T04:21:32Z",
+ "creator": "btrenchd@yahoo.co.jp",
+ "text": "When ZFS is recognized, An i386 machine with a lot of memory hangs on FreeBSD 13.0-RC1 (git 60e8939aa85b07f3271dcc01730727dda04c8bf6).\n\nIt  occurs on line 799th of /usr/src/sys/contrib/openzfs/module/zfs/dbuf.c \n\n        while (hsize * zfs_arc_average_blocksize \u003c physmem * PAGESIZE)\n                hsize \u003c\u003c= 1;\n\nMy machine has 24GB of memory,  so `physmem' is 0x59B9AD and `PAGESIZE' is 0x1000, but `physmem * PAGESIZE'  overflows to 0x9B9AD000.  Then the condition of the while statement may always be true, and this statement goes into an eternal loop.\n\n\n\nTo fix that immediately, that line will be changed to\n\n        while (hsize * zfs_arc_average_blocksize \u003c (uint64_t)physmem * PAGESIZE)\n\nor\n\n        while (hsize / PAGESIZE * zfs_arc_average_blocksize \u003c physmem)\n\nOn the other hand, that problem comes from the type of the variable `physmem' which is declared on line 65th of /usr/src/sys/sys/systm.h for kernel,\n\nextern long physmem;            /* physical memory */\n\nand on line 54th of  /usr/src/sys/contrib/openzfs/lib/libzpool/kernel.c for userland.\n\nuint64_t physmem;\n\nThat problem does not occur on amd64, because the sizeof(long) is different."
+}

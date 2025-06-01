@@ -1,0 +1,8 @@
+{
+ "id": 1191674,
+ "bug_id": 260406,
+ "attachment_id": 0,
+ "creation_time": "2021-12-24T10:24:15Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Andriy Gapon from comment #31)\nThis should prevent the table limit from being set, so it's a little narrower than just disabling the limit for everything:\n\ndiff --git a/sys/netpfil/pf/pf_table.c b/sys/netpfil/pf/pf_table.c\nindex 4cfe5d61e83e..859d5ad79775 100644\n--- a/sys/netpfil/pf/pf_table.c\n+++ b/sys/netpfil/pf/pf_table.c\n@@ -209,7 +209,6 @@ pfr_initialize(void)\n        V_pfr_kentry_z = uma_zcreate(\"pf table entries\",\n            sizeof(struct pfr_kentry), NULL, NULL, NULL, NULL, UMA_ALIGN_PTR,\n            0);\n-       V_pf_limits[PF_LIMIT_TABLE_ENTRIES].zone = V_pfr_kentry_z;\n        V_pf_limits[PF_LIMIT_TABLE_ENTRIES].limit = PFR_KENTRY_HIWAT;\n }\ndiff --git a/sbin/pfctl/pfctl.c b/sbin/pfctl/pfctl.c\nindex a0eec1b09289..22c689934c2d 100644\n--- a/sbin/pfctl/pfctl.c\n+++ b/sbin/pfctl/pfctl.c\n@@ -1918,6 +1918,9 @@ pfctl_load_limit(struct pfctl *pf, unsigned int index, unsigned int limit)\n {\n        struct pfioc_limit pl;\n\n+       if (index == PF_LIMIT_TABLE_ENTRIES)\n+               return (0);\n+\n        memset(\u0026pl, 0, sizeof(pl));\n        pl.index = index;\n        pl.limit = limit;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 993425,
+ "bug_id": 228409,
+ "attachment_id": 0,
+ "creation_time": "2018-05-22T00:43:00Z",
+ "creator": "freebsd@tim.thechases.com",
+ "text": "I replaced the non-functioning Broadcom wifi card in my Dell Mini10 netbook with an ath0 wireless card (https://www.amazon.com/gp/product/B00JESLUWQ/). The dmesg output showed that it was identified, but that it couldn't allocate an interrupt:\n\n# dmesg | grep ath0\nath0: \u003cAtheros 9280\u003e mem 0xd8000000-0xd800ffff irq 17 at device 0.0 on pci2\nath0: could not map interrupt\ndevice_attach: ath0 attach returned 6\n\nChecking on it, IRQ17 was in use by my pcib1:\n\n# dmesg | grep \"irq 17\"\npcib1: \u003cACPI PCI-PCI bridge\u003e irq 17 at device 28.0 on pci0\nath0: \u003cAtheros 9280\u003e mem 0xd8000000-0xd800ffff irq 17 at device 0.0 on pci2\n\nOleksandr Tymoshenko suggested a one-line diff (https://people.freebsd.org/~gonzo/patches/pci_pci-shareable-irq.diff) to make the PCI-PCI be RF_SHAREABLE.  Building with that diff resolved the issue and now both the re0 (which AFAIC is the only item on pci1 on that pcib1) and the ath0 are working fine.\n\nSo it *looks* like this solves the issue, but Adrian Chad informed me that \"warner says \"pcie interrupts aren't shared.\"\" and requested that I open a PR on the matter to get more eyeballs on it.  So I'm opening this as requested.\n\nFull conversation leading up to this can be found at\nhttps://lists.freebsd.org/pipermail/freebsd-wireless/2018-May/thread.html#7968\nincluding the initial dmesg output and the relevant new dmesg ath0 output after applying Oleksandr's patch."
+}

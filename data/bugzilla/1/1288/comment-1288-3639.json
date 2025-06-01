@@ -1,0 +1,8 @@
+{
+ "id": 3639,
+ "bug_id": 1288,
+ "attachment_id": 0,
+ "creation_time": "1996-06-03T05:20:01Z",
+ "creator": "dan@obluda.kolej.mff.cuni.cz",
+ "text": "\twdgetctlr function (part of wd.c) return incorrect number of cylinders\n\nafter obtaining drive parameters (via IDENTIFY DRIVE command), this\nfunction return dn-\u003edk_dd.dncylinders as wp-\u003ewpd_fixedcyl+wp-\u003ewpd_removcyl.\n\nThere are no reason to add these two values. Field wpd_remov is\ndeclared as reserved by all ATA-x specifications (only very old drafts\nof ATA-1 describe it as number of removable cylinders). \nATA compliant drives (either removable or non-removable) should report\nnumber of cylinders in wpd_fixedcyl field. Some removable drives report\nnumber of cylinders in wpd_removcyl also (for compatibility with\nold, pre-ATA drives) and wdgetctlr return number of cyls doubled.\n\nFix: \n\nChange wdgetctrl/wd.c line dn-\u003edk_dd.dncylinders=wp-\u003ewpd_fixedcyl+wp-\u003ewpd_removcyl\nto dn-\u003edk_dd.dncylinders=wp_wpd_fixedcyl;      (strict ATA compliant)\nor (more sophisticated and tolerant):\n#define WD0_ISREMOVABLE 0x0080  /* removable drive flag on word 0 of IDENTIFY DRIVE table */\ndn-\u003edk_dd.dncylinders=((WD0_ISREMOVABLE \u0026 wp-\u003ewpd_config) \u0026\u0026 !(wp-\u003ewpd_fixed)) ? wp-\u003ewpd_removcyl : wp-\u003ewpd_fixedcyl;\ne.g. only if drive is flagged as removable and apropriate ATA field is not filled use removable field else use field defined by ATA\nHow-To-Repeat: \tAttach any ATA compliant IDE disk with non-zero value on offset +2\n\t(word) of IDENTIFY DRIVE structure, boot FreeBSD and look for\n\tdetected drive geometry."
+}

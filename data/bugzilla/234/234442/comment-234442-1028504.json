@@ -1,0 +1,8 @@
+{
+ "id": 1028504,
+ "bug_id": 234442,
+ "attachment_id": 200557,
+ "creation_time": "2018-12-27T11:25:47Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Created attachment 200557\nfight race with mutex\n\nHi!\n\nlib/libnetgraph/msg.c defines static int gMsgId and public functions NgSendMsg() and NgSendAsciiMsg() that both increment gMsgId in racy way in attempt to produce unique id for a request sent over AF_NETGRAPH socket.\n\nFor long-lived multi-threaded application like net/mpd5 daemon: first thread can increase gMsgId upto INT_MAX and next moment another thread can increate gMsgId again to become -1. Then it is copied to unsigned msg.header.token and returned as signed integer. This means false error status returned with errno==0 and this breaks workflow of the daemon. I get this problem \"in wild\" from time to time.\n\nI have very straightforward and naive patch protecting the variable with simple mutex (attached) but it has its penalty for performance.\n\nUsage of atomic operations should be better approach but I'm not familiar with FreeBSD atomic operations. Any help will be appreciated."
+}

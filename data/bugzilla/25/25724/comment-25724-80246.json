@@ -1,0 +1,8 @@
+{
+ "id": 80246,
+ "bug_id": 25724,
+ "attachment_id": 0,
+ "creation_time": "2001-03-12T08:10:01Z",
+ "creator": "mori@tri.asanuma.co.jp",
+ "text": "\n\tquota(1) has int overflow problem in getnfsquota().\n\n\tI set soft/hard limits to 5GB on remote system (NetBSD),\n\tand view quota on FreeBSD.\n\tI got follow output.  Soft/hard limits is too small.\n\n     Filesystem  blocks   quota   limit   grace   files   quota   limit   grace\n           /.u0 1980574* 805696  805696    none    9983       0       0        \n\n\tI expected follow output.\n\n     Filesystem  blocks   quota   limit   grace   files   quota   limit   grace\n           /.u0 1980574 5000000 5000000            9983       0       0\n\nFix: \n\nThis patch is for src/usr.bin/quota/quota.c rev.1.11.2.1.\n\n--- quota.c\t2000/07/02 09:57:51\t1.11.2.1\n+++ quota.c\t2001/03/12 02:59:15\n@@ -641,13 +641,13 @@\n \tcase Q_OK:\n \t\tgettimeofday(\u0026tv, NULL);\n \t\t\t/* blocks*/\n-\t\tdqp-\u003edqb_bhardlimit =\n+\t\tdqp-\u003edqb_bhardlimit = (u_quad_t)\n \t\t    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bhardlimit *\n \t\t    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsize / DEV_BSIZE;\n-\t\tdqp-\u003edqb_bsoftlimit =\n+\t\tdqp-\u003edqb_bsoftlimit = (u_quad_t)\n \t\t    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsoftlimit *\n \t\t    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsize / DEV_BSIZE;\n-\t\tdqp-\u003edqb_curblocks =\n+\t\tdqp-\u003edqb_curblocks = (u_quad_t)\n \t\t    gq_rslt.getquota_rslt_u.gqr_rquota.rq_curblocks *\n \t\t    gq_rslt.getquota_rslt_u.gqr_rquota.rq_bsize / DEV_BSIZE;\n \t\t\t/* inodes */\nHow-To-Repeat: \n\tShow big quota (ex. 5GB) on NFS mounted file system with quota."
+}

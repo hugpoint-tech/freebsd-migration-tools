@@ -1,0 +1,8 @@
+{
+ "id": 1012303,
+ "bug_id": 231554,
+ "attachment_id": 0,
+ "creation_time": "2018-09-21T17:25:43Z",
+ "creator": "hostmaster@GTS.NET",
+ "text": "\nWhen sysutils/file is installed, Mk/Scripts/find-lib.sh ends up using it if $PATH puts /usr/local/bin first - the result is that it gives this:\n\n\u003e file -b -L --mime-type /usr/local/lib/liblzo2.so\napplication/x-pie-executable\n\nrather than what /usr/bin/file gives:\n\n\u003e /usr/bin/file -b -L --mime-type /usr/local/lib/liblzo2.so\napplication/x-sharedlib\n\nWhen /usr/local/bin/file is used, this test in Mk/Scripts/find-lib.sh fails:\n\n[ \"$(file -b -L --mime-type ${libfile})\" = \"application/x-sharedlib\" ]\n\n\nSo, when any port Makefile uses the \"LIB_DEPENDS= \" construct, the port incorrectly rebuilds the dependency because it is marked as non-existent\n\n\nSuggested fixes: \n\n1. use absolute path in Mk/Scripts/find-lib.sh:\n\n[ \"$(/usr/bin/file -b -L --mime-type ${libfile})\" = \"application/x-sharedlib\" ]\n\n2. change test to also recognise \"application/x-pie-executable\" as a valid shared library object\n\n3. change sysutils/file to return \"application/x-sharedlib\" when a FreeBSD lib*.so shared library object is encountered\n\n4. all of the above"
+}

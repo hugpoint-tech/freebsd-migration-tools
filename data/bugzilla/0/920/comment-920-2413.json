@@ -1,0 +1,8 @@
+{
+ "id": 2413,
+ "bug_id": 920,
+ "attachment_id": 0,
+ "creation_time": "1995-12-30T06:57:39Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\tThe sio driver disables the fifo (of 16550 class chips) in\n\u003e        sioclose() -\u003e comhardclose().  This appears to 'loose' characters\n\u003e        currently in the uart.  If the port is open by another process\n\u003e        ( as in \"cat \u003e /dev/ttyd4\" ) the problem doesn't occur.\n\nttywait() is supposed to have waited until output has completed (except\nin non-blocking mode).  However, it doesn't because TS_BUSY is cleared\ntoo early (when all output has been written to the fifo, not when output\nis complete).  This isn't easy to handle correctly since there is no\ninterrupt for output-complete.\n\nOutput would also be lost or garbled when the line state is changed,\nexcept comparam() waits for output to complete because some UARTs lock\nup if their speed is changed while they are active.  Some internal\nmodems are reported to loop endlessly in the wait in comparam().  This\nmay be because they don't [correctly] implement the LSR_TSRE\n(transmitter shift register empty) bit that must be polled to to decide\nwhen to clear TS_BUSY.\n\nBruce"
+}

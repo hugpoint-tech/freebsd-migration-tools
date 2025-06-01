@@ -1,0 +1,8 @@
+{
+ "id": 841241,
+ "bug_id": 201743,
+ "attachment_id": 0,
+ "creation_time": "2015-09-22T15:11:51Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "@Vikash: I was able to reproduce and fix the problem, thank you for providing access to your host, you may revoke it now.\n\nThe issue was that this unit test is resolving the local hostname to determine if a more in-depth test should be done. Most poudriere builders use something local, so it won't try to execute the tests. In your case your package builder has a fqdn configured in poudriere.conf that equals the server hostname and resolved to an IP address not available in the build jail.\n\nWhen it tried to access that IP address in the package build jail (in which server processes only bind to 127.0.0.1) the build failed due to connection refused. Ironically the IP address is available in the jail you get dropped into after the build (-i), that's why it took a while to figure out what's going on.\n\nThe fix was to add an extra check to see if the IP addresses determined by gethostbyname are actually configured on a local interface (by calling ifconfig), therefore it will still run as many tests as possible without breaking on setups like yours.\n\nThanks again for your help."
+}

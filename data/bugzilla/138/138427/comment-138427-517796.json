@@ -1,0 +1,8 @@
+{
+ "id": 517796,
+ "bug_id": 138427,
+ "attachment_id": 0,
+ "creation_time": "2010-12-19T10:36:11Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bschmidt\nDate: Sun Dec 19 10:36:06 2010\nNew Revision: 216557\nURL: http://svn.freebsd.org/changeset/base/216557\n\nLog:\n  Fix panic trying to use monitor mode. The iwn_cmd() calls issued by\n  iwn_config() want to msleep() on the mutex.\n  \n  PR:\t\tkern/138427\n  Submitted by:\tHenry Hu \u003chenry.hu.sh at gmail.com\u003e\n  MFC after:\t3 days\n\nModified:\n  head/sys/dev/wpi/if_wpi.c\n\nModified: head/sys/dev/wpi/if_wpi.c\n==============================================================================\n--- head/sys/dev/wpi/if_wpi.c\tSun Dec 19 09:18:14 2010\t(r216556)\n+++ head/sys/dev/wpi/if_wpi.c\tSun Dec 19 10:36:06 2010\t(r216557)\n@@ -3561,7 +3561,9 @@ wpi_set_channel(struct ieee80211com *ic)\n \t * are already taken care of by their respective firmware commands.\n \t */\n \tif (ic-\u003eic_opmode == IEEE80211_M_MONITOR) {\n+\t\tWPI_LOCK(sc);\n \t\terror = wpi_config(sc);\n+\t\tWPI_UNLOCK(sc);\n \t\tif (error != 0)\n \t\t\tdevice_printf(sc-\u003esc_dev,\n \t\t\t    \"error %d settting channel\\n\", error);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

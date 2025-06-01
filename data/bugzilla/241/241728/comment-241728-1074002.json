@@ -1,0 +1,8 @@
+{
+ "id": 1074002,
+ "bug_id": 241728,
+ "attachment_id": 0,
+ "creation_time": "2019-11-05T14:05:14Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "The piece of code you reference, line 118 in sys/compat/linuxkpi/common/src/linux_idr.c, should not be run during kldload. It is part of a SYSUNINIT():\n\n\nSYSUNINIT(idr_preload_uninit, SI_SUB_LOCK, SI_ORDER_FIRST, idr_preload_uninit, N\n\nIn this function, try to add a printf:\n\nstatic void\nidr_preload_init(void *arg)\n{\n        int cpu;\n\n        CPU_FOREACH(cpu) {\n                struct linux_idr_cache *lic =\n                    DPCPU_ID_PTR(cpu, linux_idr_cache);\n\nprintf(\"CPU=%d LIC=%p\\n\", cpu, lic);\n\n                spin_lock_init(\u0026lic-\u003elock);\n        }\n}\nSYSINIT(idr_preload_init, SI_SUB_CPU, SI_ORDER_ANY, idr_preload_init, NULL);\n \n--HPS"
+}

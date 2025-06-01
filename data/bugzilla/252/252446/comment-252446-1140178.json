@@ -1,0 +1,8 @@
+{
+ "id": 1140178,
+ "bug_id": 252446,
+ "attachment_id": 0,
+ "creation_time": "2021-01-05T20:30:53Z",
+ "creator": "kevans@freebsd.org",
+ "text": "(In reply to fernando.valle from comment #0)\n\nHi,\n\nThanks! I received a report just earlier today about this, too; what's going on here is that bsdgrep doesn't know that \\t means tab and neither does the underlying regex engine (this is correct by the spec). The underlying regex engine rejects it now because it doesn't have any special meaning.\n\nInterestingly enough, this only worked by coincidence with gnugrep. gnugrep *also* doesn't understand \\t =\u003e tab but instead opted to just silently interpret it as a 't'. The reason it appears to succeed is that the pattern argument breaks down like so (with \\t translated to t):\n\n\u003c\u003cEOF\n[0-9]+ttestdir/A/B\ntestdir/A\ntestdir/C\ntestdir\nEOF\n\nNote that this is four (4) distinct patterns; the first one never matches, while the latter three do. You can confirm this with gnugrep -o (I manually ran the test here):\n\n\u003c\u003cEOF\nroot@viper:/usr/tests/usr.bin/du# /usr/local/bin/grep -E \"[0-9]+\\t$(echo \"testdir/A/B testdir/A testdir/C testdir\" | tr ' ' \"\\n[0-9]+\\t\")\\n\" -o du.out\ntestdir/A\ntestdir/A\ntestdir/C\nEOF\n\nI will fix the test."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1245671,
+ "bug_id": 269347,
+ "attachment_id": 239928,
+ "creation_time": "2023-02-05T19:59:18Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 239928\ngenerate an 802.11 mesh packet that causes an overrun of b[] in mesh_decap()\n\nmesh_decap(..., int hdrlen, ...) says:\n\n        uint8_t b[sizeof(struct ieee80211_qosframe_addr4) +\n                  sizeof(struct ieee80211_meshcntl_ae10)];\n        ...;\n        memcpy(b, mtod(m, caddr_t), hdrlen);\n\nsizeof(b) is 50.\n\nHowever, the hdrlen that mesh_input() passes to mesh_decap() can be as\nlarge as 56, so memcpy() overruns b[]. This happens if the packet's\n\"ae\" here in mesh_input() is 3:\n\n                mc = (const struct ieee80211_meshcntl *)\n                    (mtod(m, const uint8_t *) + hdrspace);\n                ae = mc-\u003emc_flags \u0026 IEEE80211_MESH_AE_MASK;\n                meshdrlen = sizeof(struct ieee80211_meshcntl) +\n                    ae * IEEE80211_ADDR_LEN;\n                hdrspace += meshdrlen;\n\nI've attached a demo:\n\n# cc wtap18a.c\n# ./a.out\n...\npanic: stack overflow detected; backtrace may be corrupted\npanic() at panic+0x2a\n__stack_chk_fail() at __stack_chk_fail+0x14\nmesh_decap() at mesh_decap+0x354\nmesh_input() at mesh_input+0x770\n.LBB2_17() at .LBB2_17+0x34\ntaskqueue_run_locked() at taskqueue_run_locked+0x96\ntaskqueue_thread_loop() at taskqueue_thread_loop+0x62\nfork_exit() at fork_exit+0x80\nfork_trampoline() at fork_trampoline+0xa"
+}

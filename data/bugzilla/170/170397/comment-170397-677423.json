@@ -1,0 +1,8 @@
+{
+ "id": 677423,
+ "bug_id": 170397,
+ "attachment_id": 0,
+ "creation_time": "2012-08-05T21:20:02Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "I'm busy with importing a new clang snapshot into head.  This version\nhas a bunch of interesting new warnings, and I got the following one\nduring building of ath:\n\n  sys/dev/ath/ath_hal/ah_eeprom_9287.c:307:6: error: variable 'magic' is used uninitialized whenever 'if' condition is false [-Werror,-Wsometimes-uninitialized]\n          if (ah-\u003eah_eepromdata == NULL) {\n              ^~~~~~~~~~~~~~~~~~~~~~~~~\n  sys/dev/ath/ath_hal/ah_eeprom_9287.c:316:6: note: uninitialized use occurs here\n          if (magic != AR5416_EEPROM_MAGIC) {\n              ^~~~~\n  sys/dev/ath/ath_hal/ah_eeprom_9287.c:307:2: note: remove the 'if' if its condition is always true\n          if (ah-\u003eah_eepromdata == NULL) {\n          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  sys/dev/ath/ath_hal/ah_eeprom_9287.c:295:27: note: initialize the variable 'magic' to silence this warning\n          uint16_t *eep_data, magic;\n                                   ^\n                                    = 0\n\nIt's because if ah-\u003eah_eepromdata is non-null, magic just contains\ngarbage, and is then still checked against AR5416_EEPROM_MAGIC.  If the\ncomment above (\"Don't check magic if we're supplied with an EEPROM\nblock\") applies, then I suggest to move the checking block inside the\nprevious if, as in the attached patch.\n\nFix: Patch attached with submission follows:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 638183,
+ "bug_id": 162526,
+ "attachment_id": 0,
+ "creation_time": "2011-11-13T18:50:10Z",
+ "creator": "wes@bogon.net",
+ "text": "The patch for the net/minidlna port replaces read_random_bytes in uuid.c.  However, the while loop in the replaced function treats the size_t variable 'size' as signed, causing the while loop break condition to fail, which then causes a sigbus.\n\nFix: \n\nIn uuid.c, replace:\n\n\nread_random_bytes(unsigned char *buf, size_t size)\n{\n        long r;\n        srandomdev();\n\n        while (size \u003e 0) {\n                r = random();\n                memcpy(buf, \u0026r,\n                    size \u003e sizeof(r) ? sizeof(r) : size);\n                buf += sizeof(r);\n                size -= sizeof(r);\n        }\n}\n\nwith (note cast in while loop):\n\n\nread_random_bytes(unsigned char *buf, size_t size)\n{\n        long r;\n        srandomdev();\n\n        while ((ssize_t)size \u003e 0) {\n                r = random();\n                memcpy(buf, \u0026r,\n                    size \u003e sizeof(r) ? sizeof(r) : size);\n                buf += sizeof(r);\n                size -= sizeof(r);\n        }\n}\n\nOr, fix the buf and size arithmetic within the while loop to prevent 'size' from going below zero.\nHow-To-Repeat: Run minidlna port (possibly only happens on amd64 host)."
+}

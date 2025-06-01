@@ -1,0 +1,8 @@
+{
+ "id": 709304,
+ "bug_id": 177417,
+ "attachment_id": 0,
+ "creation_time": "2013-03-27T16:50:00Z",
+ "creator": "david.gueluy@netasq.com",
+ "text": "I use an IPv6 IPSEC tunnel and observe that in ipsec6_common_input_cb ( ip6_input.c), the protocol value is invalid.\n\nThe problem is that the \"prot\" variable is not initialized. \nIt's an integer and just 1 single byte is copied from the mbuf into this variable.\n\nProt value will never match  IPPROTO_IPIP or  IPPROTO_IPV6\n\nstatic int\nipsec6_common_input_cb(struct mbuf *m, struct secasvar *sav, int skip, int protoff,\n    struct m_tag *mt)\n{\n        int prot, af, sproto;\n\n        ip6 = mtod(m, struct ip6_hdr *);\n        ip6-\u003eip6_plen = htons(m-\u003em_pkthdr.len - sizeof(struct ip6_hdr));\n\n        /* Save protocol */\n        m_copydata(m, protoff, 1, (unsigned char *) \u0026prot);\n\n--\u003e prot = wrong value\n\nFix: \n\nint prot = 0;\nHow-To-Repeat: Mount an IPv6 IPSEC tunnel and check the value"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 970198,
+ "bug_id": 224961,
+ "attachment_id": 0,
+ "creation_time": "2018-01-08T18:47:43Z",
+ "creator": "eugen@freebsd.org",
+ "text": "(In reply to johnllyon from comment #2)\n\nIncoming ethernet frames tagged with zero vlan tag are not correct, so first operation should be conversion of such frames to standard untagged frames.\n\nng_vlan should perform this flawlessly if configured with command like \"ngctl msg vlan: addfilter '{ vlan=0 hook=\"untagged\" }' and hook \"untagged\" connected to ng_eiface node that creates ngeth0 interface.\n\nAlso, ng_vlan's \"downstream\" hook should be connected to ng_ether node corresponding \"real\" interface like em0 and its hook \"lower\". Then real interface passes incoming packets to ng_vlan instead of normal delivery. ng_vlan strips incorrect vlan tag and result is delivered normally as received from ngeth0.\n\nEthernet frames received without vlan tag will be dropped by this comple schema but it is possible to process them too by inserting ng_tee node into the graph. ng_tee is capable of combining two streams of data into single one and passing it to arbitrary next node."
+}

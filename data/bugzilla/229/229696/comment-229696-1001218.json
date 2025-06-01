@@ -1,0 +1,8 @@
+{
+ "id": 1001218,
+ "bug_id": 229696,
+ "attachment_id": 0,
+ "creation_time": "2018-07-11T11:56:19Z",
+ "creator": "aniketp@iitk.ac.in",
+ "text": "The system code for auditon(2)'s A_{GET/SET}POLICY command confirms whether user submitted only the allowed values for A_{SET/GET}POLICY by the following method:\n\nif (udata.au_policy \u0026 ~(AUDIT_CNT|AUDIT_AHLT|AUDIT_ARGV|AUDIT_ARGE))\n\treturn (EINVAL);\n\nThat is: If a bit other than the 4 mentioned above is submitted, we'll get EINVAL.\n\nHowever, The negation bit is misplaced for \"udata.au_policy64\" case:\n\nif (udata.au_policy \u0026 (~AUDIT_CNT|AUDIT_AHLT|AUDIT_ARGV|AUDIT_ARGE))\n\treturn (EINVAL);\n\nThis returns EINVAL almost everytime. The only occasion when I got a success was passing 0 as the flags, which is not recommended if the system already has some of the flags set.\n\nTEST PLAN: \n========\nTry this piece of code. If your system has any of the flags set, you'll probably get EINVAL too.\n\n#include \u003cbsm/audit.h\u003e\n#include \u003cstdio.h\u003e\n\nvoid main(){\n        int auditpolicy;\n        auditon(A_GETPOLICY, \u0026auditpolicy, sizeof(\u0026auditpolicy));\n        printf(\"retrieved policy = %d\\n\", auditpolicy);\n       \n        int retval = auditon(A_SETPOLICY, \u0026auditpolicy, sizeof(\u0026auditpolicy));\n        if (retval \u003c 0)\n                perror(\"setpolicy\");\n}\n\nFix: review D16222"
+}

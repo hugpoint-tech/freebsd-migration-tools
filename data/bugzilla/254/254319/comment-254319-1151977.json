@@ -1,0 +1,8 @@
+{
+ "id": 1151977,
+ "bug_id": 254319,
+ "attachment_id": 0,
+ "creation_time": "2021-03-16T03:58:35Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Glen Barber from comment #2)\n\nI would word it that Don is trying to allow build\ndistinctions (that are currently not supported)\nbetween (CHROOT_?MAKEFLAGS use):\n\n        if [ -z \"${CHROOTBUILD_SKIP}\" ]; then\n                cd ${CHROOTDIR}/usr/src\n                env ${CHROOT_MAKEENV} make ${CHROOT_WMAKEFLAGS} buildworld\n                env ${CHROOT_MAKEENV} make ${CHROOT_IMAKEFLAGS} installworld \\\n                        DESTDIR=${CHROOTDIR}\n                env ${CHROOT_MAKEENV} make ${CHROOT_DMAKEFLAGS} distribution \\\n                        DESTDIR=${CHROOTDIR}\n        fi\n\nand (RELEASE_?MAKEFLAGS use):\n\nchroot_build_target() {\n        load_target_env\n        if [ ! -z \"${EMBEDDEDBUILD}\" ]; then\n                RELEASE_WMAKEFLAGS=\"${RELEASE_WMAKEFLAGS} \\\n                        TARGET=${EMBEDDED_TARGET} \\\n                        TARGET_ARCH=${EMBEDDED_TARGET_ARCH}\"\n                RELEASE_KMAKEFLAGS=\"${RELEASE_KMAKEFLAGS} \\\n                        TARGET=${EMBEDDED_TARGET} \\\n                        TARGET_ARCH=${EMBEDDED_TARGET_ARCH}\"\n        fi\n        eval chroot ${CHROOTDIR} make -C /usr/src ${RELEASE_WMAKEFLAGS} buildworld\n        eval chroot ${CHROOTDIR} make -C /usr/src ${RELEASE_KMAKEFLAGS} buildkernel\n\n        return 0\n} # chroot_build_target\n\n(I'm not trying to advocate for a specific answer.)\n\nOne could even imagine using distinct make.conf and src.conf\nlike files for the two types of context, for example."
+}

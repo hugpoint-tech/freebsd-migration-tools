@@ -1,0 +1,8 @@
+{
+ "id": 435079,
+ "bug_id": 121559,
+ "attachment_id": 0,
+ "creation_time": "2008-03-10T13:10:03Z",
+ "creator": "jh@saunalahti.fi",
+ "text": "GEOM label class allows to create labels which are inaccessible through the label names and causes invalid entries to be created under /dev tree. Here are examples of such names:\n\n/ (slash)\n/foo (label starting with slash)\nfoo/ (label ending with slash)\n/..bar/.. (label ending with /..)\n(empty string)\n\nThere's supposedly a code in g_label_is_name_ok() (src/sys/geom/label/g_label.c) that prevents labels ending with \"/..\" to be created:\n\n       /* Check is the label ends at ../ */\n       if ((s = strstr(label, \"/..\")) != NULL \u0026\u0026 s[3] == '\\0')\n                return (0);\n\nHowever the code is incorrect and it allow for example a label named \"/..bar/..\" to be created.\n\nFollowing patch disallows these label names:\n- empty labels\n- labels starting or ending with '/'\n- labels ending with \"/..\"\n\nThe patch also corrects some typos in comments, adds a proper error reporting when invalid labels are tried to create with glabel(8) and corrects a typo in error message.\n\nHow-To-Repeat: (You need sysutils/e2fsprogs from ports.)\n\n# dd if=/dev/zero of=e2img bs=1M count=10\n10+0 records in\n10+0 records out\n10485760 bytes transferred in 0.334605 secs (31337729 bytes/sec)\n# mdconfig -a -t vnode -f e2img\nmd0\n# mke2fs /dev/md0"
+}

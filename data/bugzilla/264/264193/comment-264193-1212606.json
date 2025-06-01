@@ -1,0 +1,8 @@
+{
+ "id": 1212606,
+ "bug_id": 264193,
+ "attachment_id": 0,
+ "creation_time": "2022-05-23T21:47:21Z",
+ "creator": "oleg@mamontov.net",
+ "text": "I use pf scrub feature for adjusting TCP MSS on policy routed via wireguard tunnel SMTP traffic:\n\n# pfctl -sr | grep scrub\nscrub on wg-ep proto tcp all max-mss 1380 fragment reassemble\n\nThe rule suddenly stopped working after upgrading from 13.0-RELEASE-p11 to 13.1-RELEASE.\n\nBelow is the result on 13.0 (works as expected):\n\n12:10:48.016196 IP 212.109.198.23.465 \u003e 192.168.24.44.56695: Flags [S.], seq 687795294, ack 3030165102, win 65535, options [mss 1380,nop,wscale 6,sackOK,TS val\n4107107091 ecr 1376219825], length 0\n\nBut 13.1 shows that MSS remains intact (default for ethernet with mtu 1500):\n\n11:52:23.910283 IP 212.109.198.23.465 \u003e 192.168.24.44.55961: Flags [S.], seq 3877530257, ack 3326182804, win 65535, options [mss 1460,nop,wscale 6,sackOK,TS val\n2918817557 ecr 1485323373], length 0\n\nHowever, matching counter is still increasing:\n# pfctl -vvsr | grep -A1 scrub\n@0 scrub on wg-ep proto tcp all max-mss 1380 fragment reassemble\n  [ Evaluations: 1370      Packets: 38        Bytes: 1543        States: 0     ]\n\nDowngrading to 13.0 fixes the behaviour again."
+}

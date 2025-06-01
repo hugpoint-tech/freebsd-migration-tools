@@ -1,0 +1,8 @@
+{
+ "id": 1212836,
+ "bug_id": 264198,
+ "attachment_id": 0,
+ "creation_time": "2022-05-25T09:04:37Z",
+ "creator": "ol@dbconn.net",
+ "text": "I could reduce it even more. Seems that the vlan play no role here. I picked one VM on the hosts. Stopped IPFW on the hosts so network is fine. Then I crated a bridge and an epair like before:\n\nvtnet0---bridge0---epaira0---epairb0\n\n\nvm # ifconfig bridge create mtu 1400\nvm # ifconfig epair create mtu 1400\nvm #  ifconfig bridge0 addm epair0a\nvm # ifconfig bridge0 addm vtnet0\nvm # ifconfig epair0a up\nvm # ifconfig epair0b inet \u003cIP_ADDR\u003e/28 mtu 1400 up\nvm # ifconfig bridge0 up\nvm # nc -v -l 2222 \u003e /dev/null\n\nagain, the only rule is\nvm # ipfw list\n65535 allow ip from any to any\n\nfrom another host (in the same network) I send data with nc:\ndd if=/dev/zero bs=1024k count=6 | nc -v \u003cIP_ADDR\u003e 2222\n\nresult:\n6291456 bytes transferred in 70.693446 secs (88996 bytes/sec)\n\nafter 'service ipfw stop' on vm-a, it is about 700 times faster )-:\n6291456 bytes transferred in 0.100673 secs (62493675 bytes/sec)\n\n\nSo I think the problem is related to IPFW and bridges. Maybe the MTU plays a role here."
+}

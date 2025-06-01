@@ -1,0 +1,8 @@
+{
+ "id": 1340698,
+ "bug_id": 283559,
+ "attachment_id": 0,
+ "creation_time": "2024-12-24T16:50:22Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "A command like \"kgdb /path/to/kernel vmcore.0\" will use a an arbitrary kernel, not just the one that happens to be present in /boot.  That's useful when examining old core dumps, or core dumps from panics that happened after an upgrade but before the subsequent reboot.  If a kernel.debug file happens to be present in the same directory as the kernel, kgdb will use that too.  However, I cannot find any way to specify an alternate location for kernel modules and their symbols files.  If I copy the correct vmcore, kernel, kernel.debug, *.ko, and *.ko.debug files into a single directory, and then execute the above command, then kgdb will load the correct kernel but it will load the klds from /boot, wrongly.  Like this:\n\n$ kgdb kernel vmcore.7\n...\nReading symbols from kernel...\nReading symbols from /usr/home/asomers/17-dec-crash-ces-1092/kernel.debug...\n...\nReading symbols from /boot/kernel/fusefs.ko...\nReading symbols from /usr/lib/debug//boot/kernel/fusefs.ko.debug...\nReading symbols from /boot/kernel/geom_multipath.ko...\nReading symbols from /usr/lib/debug//boot/kernel/geom_multipath.ko.debug...\n...\n\nAs you can see in the above snippet, kgdb is loading the debug symbols for the running fusefs and geom_multipath modules.  Instead, I need it to load them from the PWD.  Alternatively, if there were an option to load both kernel and kld files from a BE or chroot, that would also solve the problem."
+}

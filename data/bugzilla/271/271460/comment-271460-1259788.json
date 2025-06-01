@@ -1,0 +1,8 @@
+{
+ "id": 1259788,
+ "bug_id": 271460,
+ "attachment_id": 242225,
+ "creation_time": "2023-05-16T23:06:51Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 242225\nExample ctl configuration file\n\nIf two separate processes do \"service ctld restart\", then they can race.  The result is ctl ports that are inaccessible (clients can't connect), and the ports don't get torn down after ctld exits.  Attempting to start ctld again fails to fix the stuck ports (though new ports can be added).  The only remedy is to restart.\n\nSteps to reproduce\n==================\n1) Create about 32 zvols (i've also observed this bug with file-backed LUNs)\n2) Configure /etc/ctl.conf as shown in the attached file\n3) Run the following in two separate terminals:\nfor ((i=0; i\u003c10000; i=$i+1)); do  service ctld onerestart|| break; done\n\nAfter some time, usually \u003c 1 second, one terminal will fail with an error like this:\nctld: LUN modification error: LUN 31 is not managed by the block backend\nctld: failed to modify lun \"disk31\", CTL lun 31\nctld: CTL_LUN_MAP ioctl failed: Device not configured\nctld: failed to apply configuration; exiting\n/etc/rc.d/ctld: WARNING: failed to start ctld\n\n\nThen, kill the loop in the other terminal.  Then ensure that no ctld process is running, and do \"ctladm portlist\".  All 32 ports will be shown.  Attempting to start ctld one more time will result in an error like this:\n\nctld: error returned from port creation request: target \"iqn.2018-10.myhost:disk0\" for portal group tag 257 already exists\nctld: failed to update port pg0-iqn.2018-10.myhost:disk0"
+}

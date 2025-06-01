@@ -1,0 +1,8 @@
+{
+ "id": 675925,
+ "bug_id": 170098,
+ "attachment_id": 0,
+ "creation_time": "2012-08-15T17:50:53Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Hi,\n\nI'm just testing out the patch(es) now. The basic spirit of them\nworks, but there are some improvements to be made.\n\n* The node generation count doesn't have to be checked. We know the\nnode table is locked; the reason the node generation is there is\nbecause in the older way of doing it, the node table lock is released\neach trip through the loop.\n* 'goto restart' on each successful addition to the node table turns\nan O(n) operation into an O(n^2) operation. That's just plain going to\nsuck.\n* It's always good practice to alloc and free memory in the same\nfunction or module and doing it consistently. The patch allocates it\nin iterate_nodes() but frees it in iterate_nt() if there's an error.\nThat kind of inconsistent handling could cause problems.\n* There's no need to decrement the node scan generation on error. It's\nfine the way it is.\n* .. which means if you don't decrement the scangen in each node, you\ncan release the node table / node iteration table locks earlier,\navoiding any LOR with ieee80211_node_free().\n\nI have a replacement patch which I'm currently testing out. I'll push\nit into -HEAD today.\n\nThanks again to Kim and PseudoCylon for finding and fixing the problem!\n\n\n\nAdrian"
+}

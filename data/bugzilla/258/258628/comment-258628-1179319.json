@@ -1,0 +1,8 @@
+{
+ "id": 1179319,
+ "bug_id": 258628,
+ "attachment_id": 0,
+ "creation_time": "2021-09-22T22:45:17Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #2)\n\nThis is also a problem with:\n\n/usr/ports/lang/ratfor/files/patch-rat4.c\n\nwhich has:\n\n-       while ((c=our_getopt(argc, argv, \"Chn:o:6:\")) != EOF)\n+       while ((c=getopt(argc, argv, \"Chl:n:o:6:\")) != EOF)\n\nFreeBSD has:\n\nint getopt(int argc, char * const argv[], const char *optstring);\n\nSo: not a char return value. Thus the above code involves a\nconversion from int to S_CHAR (trunaction) before the comparison\nto to EOF that involves the promotion of the (unsigned in the\nproblem contexts) char and the (signed) int for use in the != test.\n\nFor FreeBSD EOF is in turn:\n\n/usr/include/stdio.h:#define    EOF     (-1)\n\nso a negative int value (as C requires).\n\nThe result is that when getopt(. . .) returns EOF the value is\nnot preserved for use in the != test and the loop does not exit.\n\nAs direct handling of the int return value with a later assignment\nto c when the value is != EOF would likely be better and avoid the\nneed for a type ends up as a form of signed char char in this spot.\n(I've not checked for other presumptions in the code.)"
+}

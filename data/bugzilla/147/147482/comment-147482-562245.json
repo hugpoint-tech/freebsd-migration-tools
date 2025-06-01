@@ -1,0 +1,8 @@
+{
+ "id": 562245,
+ "bug_id": 147482,
+ "attachment_id": 0,
+ "creation_time": "2010-09-06T15:45:48Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "On 2010-06-04, Nicholas Mills wrote:\n\u003e Run \"mksnap_ffs /\" to get the error message \"mksnap_ffs: Cannot create snapshot /: \u003cgarbage\u003e: Is a directory\".\n\nThis patch should fix the problem:\n\n%%%\nIndex: sbin/mksnap_ffs/mksnap_ffs.c\n===================================================================\n--- sbin/mksnap_ffs/mksnap_ffs.c\t(revision 212248)\n+++ sbin/mksnap_ffs/mksnap_ffs.c\t(working copy)\n@@ -121,8 +121,10 @@ main(int argc, char **argv)\n \tbuild_iovec(\u0026iov, \u0026iovlen, \"update\", NULL, 0);\n \tbuild_iovec(\u0026iov, \u0026iovlen, \"snapshot\", NULL, 0);\n \n+\t*errmsg = '\\0';\n \tif (nmount(iov, iovlen, stfsbuf.f_flags) \u003c 0)\n-\t\terr(1, \"Cannot create snapshot %s: %s\", snapname, errmsg);\n+\t\terr(1, \"Cannot create snapshot %s%s%s\", snapname,\n+\t\t    *errmsg != '\\0' ? \": \" : \"\", errmsg);\n \tif ((fd = open(snapname, O_RDONLY)) \u003c 0)\n \t\terr(1, \"Cannot open %s\", snapname);\n \tif (fstat(fd, \u0026stbuf) != 0)\n%%%\n\n-- \nJaakko"
+}

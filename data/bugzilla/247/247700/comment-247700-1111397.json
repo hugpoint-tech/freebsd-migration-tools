@@ -1,0 +1,8 @@
+{
+ "id": 1111397,
+ "bug_id": 247700,
+ "attachment_id": 0,
+ "creation_time": "2020-07-02T00:18:03Z",
+ "creator": "john@saltant.com",
+ "text": "Scenario\n========\n\nrtadvd is configured on an interface that has a globally unique address (GUA) and does not have a link-local address (LLA).\n\nExpected behavior\n=================\n\nrtadvd emits an error and does not send Router Advertisement (RA) messages on the interface.\n\nObserved behavior\n=================\n\nrtadvd sends RAs that are invalid per the specification [0], using a GUA source with an LLA destination. The kernel on a receiving node correctly identifies these as invalid and ignores them.\n\n[0] https://tools.ietf.org/html/rfc4861#section-4.2\n\nAnalysis\n========\n\nrtadvd does not validate the configuration of each interface. It relies on the source address selection algorithm in the kernel. That is a reasonable design. The steps the algorithms performs to exclude source address candidates with scopes that are incompatible with the destination address appear to neglect this case. Therefore, this is probably not a bug in rtadvd, but in the source address selection algorithm.\n\nThat is, if an interface has a globally unique address (GUA) and no link-local address (LLA), and the destination is an LLA via that interface, then the kernel will erroneously select the GUA as the source address. However, I have not yet found a way to reproduce this behavior other than in the scenario above."
+}

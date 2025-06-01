@@ -1,0 +1,8 @@
+{
+ "id": 1299756,
+ "bug_id": 277499,
+ "attachment_id": 0,
+ "creation_time": "2024-03-05T18:47:27Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "This looks like an old bug that I killed 3 or 4 years ago.\n\nThe root cause is that we're leaking a reference, so the periph is torn down with outstanding devices.\n\n       if ((ccb_h-\u003efunc_code \u0026 XPT_FC_USER_CCB) == 0) {\n                struct cam_ed *dev = ccb_h-\u003epath-\u003edevice;\n\n                if (sim)\n                        devq = sim-\u003edevq;\n                KASSERT(devq, (\"Periph disappeared with CCB %p %s request pending.\",\n                        ccb_h, xpt_action_name(ccb_h-\u003efunc_code)));\n\n                mtx_lock(\u0026devq-\u003esend_mtx);\n\ndevq is NULL here, according to the traceback...\n\nThe hard part is figuring out how this came to be."
+}

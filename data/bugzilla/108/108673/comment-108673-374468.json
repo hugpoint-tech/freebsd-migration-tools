@@ -1,0 +1,8 @@
+{
+ "id": 374468,
+ "bug_id": 108673,
+ "attachment_id": 0,
+ "creation_time": "2007-02-02T01:30:14Z",
+ "creator": "ravi.murty@intel.com",
+ "text": "Here's what I think might be happening.\n\n1. At the loader prompt I enter \"boot -d\" to break into the debugger because I want to start running the debugger from mi_startup.\n2. Kgdb connects on the host and I can step, but it crashes or doesn't work very well. We started to look at things like gdb_txbuf and noticed that a strage 0x78787878 (0x78 is lower case 'x') appears where gdb_txbuf is supposed to be. \n3. We looked at the source code a bit and realized that gdb_txbuf is sized to be 500 bytes (defined by GDB_BUFSZ in amd64/include/gdb_machdep.h).\n\nSo here's the problem:\n1. When kgdb running on the host connects it runs a query to the target to request all the registers. In amd64's case, that's 56 total registers with 49 of size 8 bytes and 7 of size 4. Since we convert from hex nibbles to char's, we expect it to store 16 char's per 8 byte register and 8 char's for 4 byte registers. Simple math tells us that is (16 * 49 + 8 * 7 = 840). So we need atleast 840B in the buffer to return the result of the query.\n2. Indeed when we look at what's at gbd_txbuf on the target (via kgdb), we notice that 0x78787878 appears until location 839. It is 0x78787878 because that happens to be \"xxxx\" for registers that are undefined (see gdb_packet.c)\n\nTherefore, shouldn't GDB_BUFSZ be \u003e 840B ?\n\nThanks\nRavi\n\nFix: \n\nSee \"Full description\".\nHow-To-Repeat: Run kgdb and connect to a machine running 6.1-Release for amd64. Drop to the loader prompt on boot and type \"boot -d\" and connect to the debugger (gdb backend).\n\nTry and step through the code after this point."
+}

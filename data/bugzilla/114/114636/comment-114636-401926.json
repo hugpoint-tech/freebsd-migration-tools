@@ -1,0 +1,8 @@
+{
+ "id": 401926,
+ "bug_id": 114636,
+ "attachment_id": 0,
+ "creation_time": "2007-07-16T18:50:01Z",
+ "creator": "tijl@ulyssis.org",
+ "text": "An ioctl call on an empty scsi/atapicam cdrom drive causes\nthe system to semi-hang when the file descriptor is later\nclosed. Semi meaning the system is responsive to mouse and\nkeyboard, but (most) processes hang and no new processes can\nbe started. Pressing ctrl+alt+delete responds by disabling\nterminals but doesn't reset the system. A hard reset is\nneeded to recover.\n\nFix: The problem is caused by a forgotten cam_periph_unhold()\nwhen there's no media in the drive.\nHow-To-Repeat: The following program opens /dev/cd0 and does CDIOCSTART\nto spin up the drive. When the drive is empty the close(2)\ncall causes the entire system to (semi-)hang.\n\nBE WARNED because a hard reset is required to recover.\nSo don't try if you don't like fsck.\n\n--- cdrom.c begins here ---\n#include \u003csys/cdio.h\u003e\n#include \u003csys/ioctl.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n\nint main(void) {\n\tint fd;\n\tint ret;\n\n\tfd = open( \"/dev/cd0\", O_RDONLY );\n\tret = ioctl( fd, CDIOCSTART );\n\tprintf( \"ret = %d, errno = %d\\n\", ret, errno );\n\n\tclose( fd );\t\n\treturn 0;\n}\n--- cdrom.c ends here ---"
+}

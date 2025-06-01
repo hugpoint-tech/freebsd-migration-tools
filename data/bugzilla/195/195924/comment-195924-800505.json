@@ -1,0 +1,8 @@
+{
+ "id": 800505,
+ "bug_id": 195924,
+ "attachment_id": 0,
+ "creation_time": "2014-12-12T17:26:37Z",
+ "creator": "liangyi571@163.com",
+ "text": "When ixgbe driver reset hardware in timer function, it will crash sometime. In ixgbe.c ixgbe_local_timer function. The code before goto watchdog segment:\n\n\tfor (int i = 0; i \u003c adapter-\u003enum_queues; i++, que++, txr++) {\n\t\tif ((txr-\u003equeue_status == IXGBE_QUEUE_HUNG) \u0026\u0026\n\t\t    (paused == 0))\n\t\t\t++hung;\n\t\telse if (txr-\u003equeue_status == IXGBE_QUEUE_WORKING)\n\t\t\ttaskqueue_enqueue(que-\u003etq, \u0026txr-\u003etxq_task);\n        }\n\t/* Only truely watchdog if all queues show hung */\n        if (hung == adapter-\u003enum_queues)\n                goto watchdog;\n \nBefore goto watchdog, pointer tar is out of bounds, so any access to pointer txr will cause a buffer overflow problem. The bug exists in Release 9 and Release 10. To fix this problem, I suggest reset txr in watchdog segment.\n\nwatchdog:\n+\ttxr = adapter-\u003etx_rings;\n\nThe same bug maybe exists in if_igb.c."
+}

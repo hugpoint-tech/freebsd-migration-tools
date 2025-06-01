@@ -1,0 +1,8 @@
+{
+ "id": 755009,
+ "bug_id": 187551,
+ "attachment_id": 0,
+ "creation_time": "2014-03-13T19:40:01Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "When configuring an interface with a nondefault fib, ifconfig(8) should changes its process fib to match the interface fib.  If it does not, and the user does not think to, then the new interface's subnet route will appear in FIB 0.  Note that this only matters when net.add_addr_allfibs=0\n\nFix: \n\n==== //SpectraBSD/stable/sbin/ifconfig/iffib.c#2 (text) ====\n\n@@ -76,6 +76,8 @@\n \n        strncpy(ifr.ifr_name, name, sizeof (ifr.ifr_name));\n        ifr.ifr_fib = fib;\n+       if (setfib(fib) != 0) \n+               warn(\"setfib\");\n        if (ioctl(s, SIOCSIFFIB, (caddr_t)\u0026ifr) \u003c 0)\n                warn(\"ioctl (SIOCSIFFIB)\");\n }\nHow-To-Repeat: # ifconfig tap0 create\n# ifconfig tap0 192.0.2.2/24 fib 2\n# setfib 2 netstat -rn -f inet\nRouting tables (fib: 2)\n# setfib 0 netstat -rn -f inet\nRouting tables\n\nInternet:\nDestination        Gateway            Flags    Netif Expire\ndefault            10.1.0.1           UGS       em0\n10.1.0.0/20        link#1             U         em0\n10.1.3.220         link#1             UHS       lo0\n127.0.0.1          link#2             UH        lo0\n192.0.2.0/24       link#3             U        tap0\n192.0.2.2          link#3             UHS       lo0"
+}

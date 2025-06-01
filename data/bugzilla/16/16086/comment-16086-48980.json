@@ -1,0 +1,8 @@
+{
+ "id": 48980,
+ "bug_id": 16086,
+ "attachment_id": 0,
+ "creation_time": "2000-01-28T22:51:10Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "\u003e Additional problem: neither the original code nor the submitted patch\n\u003e handle EINTR properly.\n \nIs the interupt comming from the alarm() in the main inetd code?\nThis should probably be disabeled when the process forks just before\nthe signal handlers are reset? (Patch at bottom).\n\nI can confirm the problem with tcpwrappers not being able to use\nthe builtin version of ident too. I wonder if it is worth making\nlibwrap send one packet in the name of \"efficency\", once the inetd\nproblem is fixed. This seems to be the code in question:\n\n                /*\n                 * Send query to server. Neglect the risk that a 13-byte\n                 * write would have to be fragmented by the local system and\n                 * cause trouble with buggy System V stdio libraries.\n                 */\n\n                fprintf(fp, \"%u,%u\\r\\n\",\n                        ntohs(rmt_sin-\u003esin_port),\n                        ntohs(our_sin-\u003esin_port));\n                fflush(fp);\n\nIt would be pretty easy to replace this with an asprintf+write or\nsomething.\n\n        David.\n\n\n--- inetd.c.orig\tFri Jan 28 22:40:03 2000\n+++ inetd.c\tFri Jan 28 22:40:16 2000\n@@ -632,6 +632,7 @@\n \t\t\t\tfor (tmpint = maxsock; tmpint \u003e 2; tmpint--)\n \t\t\t\t\tif (tmpint != ctrl)\n \t\t\t\t\t\t(void) close(tmpint);\n+\t\t\t\talarm(0);\n \t\t\t\tsigaction(SIGALRM, \u0026saalrm, (struct sigaction *)0);\n \t\t\t\tsigaction(SIGCHLD, \u0026sachld, (struct sigaction *)0);\n \t\t\t\tsigaction(SIGHUP, \u0026sahup, (struct sigaction *)0);"
+}

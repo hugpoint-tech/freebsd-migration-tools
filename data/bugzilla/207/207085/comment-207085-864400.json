@@ -1,0 +1,8 @@
+{
+ "id": 864400,
+ "bug_id": 207085,
+ "attachment_id": 0,
+ "creation_time": "2016-02-10T17:00:09Z",
+ "creator": "joss.upton@yahoo.com",
+ "text": "I see these panics with INVARIANTS enabled on 10.2-R on an SMP machine running many processes using hwpmc in parallel.\n\n[core,2376] PHW pmc non-NULL\ncpuid = 1\n\npmc_process_exit() does the following:\n\tsx_xlock();\n\tcritical_enter();\n\tfree_attached_pmcs...\n\tcritical_exit();\n\tfree_owner_pmcs...\n\tsx_unlock();\n\nand the various drivers do *_release_pmc():\n\t... KASSERT(phw-\u003ephw_pmc == NULL) ...\n\nWhat I'm seeing is on an SMP machine, from time to time a process which\nowns PMCs races with a process that has attached PMCs.  free_owner_pmcs()\ncalls *_release_pmc() which checks to make sure the per-cpu counter\nisn't in use.  A process with attached pmcs will have freed them with\nboth the pmc_lock and scheduler lock held.  But, a process being scheduled\nonto the pmc can sneak in between the critical_exit() and the sx_unlock(),\nbut before the free_owner_pmcs() resulting in an assertion failure.\n\nfree_owner_pmcs can't be protected by the scheduler lock because it\nmay need to sleep waiting on sampling counters to come off the cpu.  I'm\nnot sure how to approach a fix other than disabling the KASSERT, and I'm not sure if that's safe."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1052747,
+ "bug_id": 238167,
+ "attachment_id": 0,
+ "creation_time": "2019-05-31T08:35:39Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "Thanks for the changes, I agree, there's no need for MFC.\n\n\u003e I left the third case, since I felt it was fine to initialize error to 0\n\u003e as a safety belt against future changes that might result in it being not\n\u003e properly initialized.\nInitialization of local variables actually can mask some real bugs (because if you accidentally omit the assignment, compiler won't be able to tell you that the variable is not properly initialized.  If I change the code to remove the assignment when calling nfsrpc_lookup(dvp, ...); the code would still compile fine.  But if I remove initization at declaration, the compiler will catch the error:\n\n/usr/src/sys/fs/nfsclient/nfs_clvnops.c:2502:14: error: variable 'error' is\n      uninitialized when used here [-Werror,-Wuninitialized]\n        if (npp \u0026\u0026 !error) {\n                    ^~~~~\n\nSo, actually, you're removing the safety belts, not adding them. :-)  There are several bugs like this (int error = 0) in this file.\n\nOur style(9) says: Be careful to not obfuscate the code by initializing variables in the declarations.  Use this feature only thoughtfully."
+}

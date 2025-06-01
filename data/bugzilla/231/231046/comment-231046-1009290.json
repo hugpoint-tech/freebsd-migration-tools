@@ -1,0 +1,8 @@
+{
+ "id": 1009290,
+ "bug_id": 231046,
+ "attachment_id": 0,
+ "creation_time": "2018-08-31T03:21:36Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "Unsure if this is an implementation issue or something around traffic flow.\n\nsituation:\nMultiple messages being sent with ssmtp.  When the server starts rejecting messages due to connection rate setting, there are pending LAST_ACKs; which ssmtp should ack before terminating.  Instead ssmtp just stops.\n\nResulting in sockstat -s revealing\nroot     sendmail   31777 5  tcp4   127.0.5.91:2525       127.0.5.91:41596      ESTABLISHED\nroot     sendmail   31777 11 tcp4   127.0.5.91:2525       127.0.5.91:41596      ESTABLISHED\nroot     ssmtp      31603 3  tcp4   127.0.5.91:36347      127.0.5.91:2525       ESTABLISHED\nroot     ssmtp      31381 3  tcp4   127.0.5.91:58319      127.0.5.91:2525       ESTABLISHED\nroot     ssmtp      31257 3  tcp4   127.0.5.91:41596      127.0.5.91:2525       ESTABLISHED\nroot     sendmail   39991 9  tcp4   127.0.5.91:2525       *:*                   LISTEN\n?        ?          ?     ?  tcp4   127.0.5.91:2525       127.0.5.91:31082      LAST_ACK\n?        ?          ?     ?  tcp4   127.0.5.91:2525       127.0.5.91:55470      LAST_ACK\n?        ?          ?     ?  tcp4   127.0.5.91:2525       127.0.5.91:28956      LAST_ACK\n\nThe problem is that sendmail wont respond to new connections until the LAST_ACK timeouts.  \n\nWorkaround - increase number of connections to that particular port 2525 which is only for administrative email.  Aside: there are multiple jails transmitting to the sendmail (latest version) jail via lo0.  It just appears to be coming over its \"localhost\" addr."
+}

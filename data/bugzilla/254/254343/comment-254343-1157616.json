@@ -1,0 +1,8 @@
+{
+ "id": 1157616,
+ "bug_id": 254343,
+ "attachment_id": 0,
+ "creation_time": "2021-04-21T15:21:48Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "I think this is regression in if_vtnet(4).\n\n12-STABLE https://github.com/freebsd/freebsd-src/blob/stable/12/sys/dev/virtio/network/if_vtnet.c#L1103 :\n\t\t\tif ((ifp-\u003eif_flags ^ sc-\u003evtnet_if_flags) \u0026\n\t\t\t    (IFF_PROMISC | IFF_ALLMULTI)) {\n\t\t\t\tif (sc-\u003evtnet_flags \u0026 VTNET_FLAG_CTRL_RX)\n\t\t\t\t\tvtnet_rx_filter(sc);\n\t\t\t\telse {\n\t\t\t\t\tifp-\u003eif_flags |= IFF_PROMISC;\n\t\t\t\t\tif ((ifp-\u003eif_flags ^ sc-\u003evtnet_if_flags)\n\t\t\t\t\t    \u0026 IFF_ALLMULTI)\n\t\t\t\t\t\terror = ENOTSUP;\n\t\t\t\t}\n\t\t\t}\n\n\nRELENG 13.0 https://github.com/freebsd/freebsd-src/blob/releng/13.0/sys/dev/virtio/network/if_vtnet.c#L1297 :\n\n\tif ((ifp-\u003eif_flags ^ sc-\u003evtnet_if_flags) \u0026\n\t    (IFF_PROMISC | IFF_ALLMULTI)) {\n\t\tif ((sc-\u003evtnet_flags \u0026 VTNET_FLAG_CTRL_RX) == 0)\n\t\t\treturn (ENOTSUP);\n\t\tvtnet_rx_filter(sc);\n\t}\n\nTherefore, if the hypervisor does not confirm support for VTNET_FLAG_CTRL_RX, the latest driver version cannot enable PROMISC mode.\n\nFor example, bhyve doesn't support VTNET_FLAG_CTRL_RX.\n\nTechnically, if the hypervisor doesn't support the VTNET_FLAG_CTRL_RX, then the interface is always in PROMISC mode.\nI see no reason to prohibit switching the interface to PROMISC mode if VTNET_FLAG_CTRL_RX is not supported by the hypervisor."
+}

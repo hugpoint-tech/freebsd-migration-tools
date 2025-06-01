@@ -1,0 +1,8 @@
+{
+ "id": 53032,
+ "bug_id": 17422,
+ "attachment_id": 0,
+ "creation_time": "2000-08-21T16:55:50Z",
+ "creator": "bernd.luevelsmeyer@heitec.net",
+ "text": "For recent versions of FreeBSD (specifically: 4.1-STABLE #1:\nSat Aug 19 22:37:56 CEST 2000), the patch doesn't work anymore\ndue to the line numbers having changed too much. The\nlocore.s-patch isn't necessary anymore; a machdep.c-patch that\nworks is:\n\n*** machdep.c.orig      Sat Aug  5 00:31:06 2000\n--- machdep.c   Fri Aug 11 17:36:05 2000\n***************\n*** 1802,1807 ****\n--- 1802,1821 ----\n        if (bootinfo.bi_modulep) {\n                preload_metadata = (caddr_t)bootinfo.bi_modulep + KERNBASE;\n                preload_bootstrap_relocate(KERNBASE);\n+       } else {\n+               static u_int32_t oldmoduledata[] = {\n+                       1, sizeof(\"kernel\"), 0, 0,\n+                       2, sizeof(\"elf kernel\"), 0, 0, 0,\n+                       0x8004, 4, 0,\n+                       0x8003, 4, 0,\n+                       0, 0,\n+               };\n+\n+               preload_metadata = (caddr_t)\u0026oldmoduledata[0];\n+               strcpy((char *)\u0026oldmoduledata[2], \"kernel\");\n+               strcpy((char *)\u0026oldmoduledata[6], \"elf kernel\");\n+               oldmoduledata[11] = roundup2(bootinfo.bi_esymtab, 4);\n+               oldmoduledata[14] = bootinfo.bi_symtab;\n        }\n        if (bootinfo.bi_envp)\n                kern_envp = (caddr_t)bootinfo.bi_envp + KERNBASE;"
+}

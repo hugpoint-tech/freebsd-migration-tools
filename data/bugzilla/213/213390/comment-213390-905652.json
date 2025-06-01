@@ -1,0 +1,8 @@
+{
+ "id": 905652,
+ "bug_id": 213390,
+ "attachment_id": 0,
+ "creation_time": "2016-11-03T16:04:50Z",
+ "creator": "wollman@FreeBSD.org",
+ "text": "I have figured out the cause of the problem.  unbound always attempts to chroot when starting, but normally succeeds.  When starting inside the environment of a package upgrade, however, it is erroneously running with a file descriptor open on a directory.  The check in `sys/kern/vfs_syscalls.c#chroot_refuse_vdir_fds` then refuses to allow the chroot to succeed, *if* either `kern.chroot_allow_open_directories` is set to 0, or it is set to 1 (which is the default) and is already running in a chroot (which includes jails).\n\nConclusion: this is a bug in pkg; the startup scripts should not be run with any descriptors open other than the standard 0/1/2."
+}

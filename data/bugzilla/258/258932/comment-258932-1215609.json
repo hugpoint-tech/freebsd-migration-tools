@@ -1,0 +1,8 @@
+{
+ "id": 1215609,
+ "bug_id": 258932,
+ "attachment_id": 0,
+ "creation_time": "2022-06-12T17:48:24Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "After staring at a vmcore from bdrewery for a long time, I think I see the bug.  It's a race which seems very hard to hit accidentally.\n\nWhen the kernel crashed, we were removing and freeing pages from a VM object in preparation for execve().  The OBJ_ONEMAPPING flag is set on the object, which means only the current process has mapped the object, which why it's (supposed to be) safe to free the object's pages.  The problem is that there are in fact two mappings of the object: the other is in the parent tmux process, a COW mapping.  So OBJ_ONEMAPPING should absolutely not be set!\n\nWhen vmspace_fork() copies vm map entries from the parent into the child, it's supposed to clear OBJ_ONEMAPPING.  For anonymous mappings, this happens in\n\n  vmspace_fork() -\u003e vm_map_copy_entry() -\u003e vm_map_copy_swap_object()\n\nvm_map_copy_entry() uses the following test to determine whether it's dealing with a swap object:\n\n  if (src_object-\u003etype == OBJT_DEFAULT || (src_object-\u003eflags \u0026 OBJ_SWAP) != 0)\n\nThis test is done racily, i.e., without the object lock, which isn't quite a problem in itself, but with commit 4b8365d752ef4 it can produce false negatives.  In particular, the first time a page in the object gets paged out, swap_pager_put_pages() converts the object to a OBJT_SWAP object:\n\n  object-\u003etype = OBJT_SWAP;\n  vm_object_set_flag(object, OBJ_SWAP);\n\nSo there's a small window where object-\u003etype == OBJT_SWAP and OBJ_SWAP is clear."
+}

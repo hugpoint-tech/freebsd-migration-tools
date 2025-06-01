@@ -1,0 +1,8 @@
+{
+ "id": 1009772,
+ "bug_id": 208566,
+ "attachment_id": 0,
+ "creation_time": "2018-09-03T06:11:29Z",
+ "creator": "cy@FreeBSD.org",
+ "text": "(In reply to frank from comment #89)\n\nIt counts the number of 0 and 1 bits in ipf nat table size then multiplies by two.\n\n        if (softn-\u003eipf_nat_maxbucket == 0) {\n                for (i = softn-\u003eipf_nat_table_sz; i \u003e 0; i \u003e\u003e= 1)\n                        softn-\u003eipf_nat_maxbucket++;\n                softn-\u003eipf_nat_maxbucket *= 2;\n        }\n\nI'm not sure how Darren arrived at this.\n\n2047 is 0x7ff, 11 bits * 2 is 22.\n\nYou can try rebuilding your kernel or ipl.ko with LARGE_NAT defined in ip_nat.h. However this alters a number of tables and changes the way NAT aging works. I've been toying with the idea of making this dynamic however these are set by ipf_nat_soft_create() when ipfilter is initialized. Therefore they need to be set prior to the ipfilter module loading or boot. This would require a kenv (static and module) and a sysctl (in the case that ipfilter is unloaded and reloaded). Documenting this would probably be quite confusing for the end-user."
+}

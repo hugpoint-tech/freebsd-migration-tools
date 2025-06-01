@@ -1,0 +1,8 @@
+{
+ "id": 869419,
+ "bug_id": 204643,
+ "attachment_id": 0,
+ "creation_time": "2016-03-12T02:29:47Z",
+ "creator": "kp@freebsd.org",
+ "text": "The cause is fairly obvious. In msdosfs_readdir() we use dos2unixfn() to translate the file name. The translation can increase the length of the filename, presumably this happened with the non-english name in this case.\n\nThe output is stored in a (stored on the stack) struct dirent, where the d_name has a maximum length of 255 bytes. dos2unixfn() has no length limit, so it can overflow the d_name. This triggers the stack corruption protection. Fortunately, or this might be an exploitable bug.\n\nFixing it is a little annoying, because it could conceivably lead to two directory names being translated into the same string."
+}

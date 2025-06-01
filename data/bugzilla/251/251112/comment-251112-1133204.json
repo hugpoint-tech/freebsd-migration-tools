@@ -1,0 +1,8 @@
+{
+ "id": 1133204,
+ "bug_id": 251112,
+ "attachment_id": 0,
+ "creation_time": "2020-11-24T04:57:31Z",
+ "creator": "astitcher@apache.org",
+ "text": "(In reply to Konstantin Belousov from comment #8)\nI think I understand the libpthread/libc interaction a bit better now: It seems that the only way to get pthread_create() is to actually link libpthread. So any executable that actually has multiple threads will necessarily have libpthread linked in. This is what I was missing before when you were talking about pthread stubs - that is no stub for pthread_create() in libc.\n\nIt looks like there are stubs (weak symbols) in libc for the other relevant pthread symbols used in libclang_rt.asan (even the ones that are documented to require linking with -lpthread) so I think it would make sense to have a stub for pthread_attr_get_np() which returns the ESRCH error (this is the documented return if it cannot find the thread id which I think is necessarily the case if there are no threads!). In the case of libclang_rt.asan I think if it did get called somehow - which looks to be impossible - the return value is checked and should abort the run."
+}

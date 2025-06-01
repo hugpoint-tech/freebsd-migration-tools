@@ -1,0 +1,8 @@
+{
+ "id": 917977,
+ "bug_id": 216229,
+ "attachment_id": 0,
+ "creation_time": "2017-01-22T12:46:32Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Mark Millard from comment #0)\n\u003e So the lines from /usr/src/lib/clang/llvm.build.mk for CFLAGS:\n\u003e \n\u003e CFLAGS+=        -I${SRCTOP}/lib/clang/include\n\u003e CFLAGS+=        -I${LLVM_SRCS}/include\n\u003e CFLAGS+=        -DLLVM_ON_UNIX\n\u003e CFLAGS+=        -DLLVM_ON_FREEBSD\n\u003e CFLAGS+=        -D__STDC_LIMIT_MACROS\n\u003e CFLAGS+=        -D__STDC_CONSTANT_MACROS\n\u003e #CFLAGS+=       -DNDEBUG\n\u003e . . .\n\u003e CFLAGS+=        -DLLVM_DEFAULT_TARGET_TRIPLE=\\\"${TARGET_TRIPLE}\\\"\n\u003e CFLAGS+=        -DLLVM_HOST_TRIPLE=\\\"${BUILD_TRIPLE}\\\"\n\u003e CFLAGS+=        -DDEFAULT_SYSROOT=\\\"${TOOLS_PREFIX}\\\"\n\u003e \n\u003e do not contribute to the C++ compiles for libllvmminimal.\n\nThis is incorrect: in share/mk/sys.mk, CXXFLAGS are derived from CFLAGS, with the following rule:\n\nCXXFLAGS        ?=      ${CFLAGS:N-std=*:N-Wnested-externs:N-W*-prototypes:N-Wno-pointer-sign:N-Wold-style-definition}\n\nE.g. -std flags and some others are filtered out.\n\n\n\u003e The lack of -I definitions for C++ ends up with build failures\n\u003e such as below (from a first-time kernel-toolchain example):\n\nI have seen such failures before, and they were almost always caused by setting CFLAGS or CXXFLAGS incorrectly in /etc/make.conf, e.g. doing:\n\nCFLAGS=   -DFOO\nCXXFLAGS= -DBAR\n\nwhile one should use the += operator instead, e.g.:\n\nCFLAGS+=   -DFOO\nCXXFLAGS+= -DBAR\n\nCan you please post your make.conf?"
+}

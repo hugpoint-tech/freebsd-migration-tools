@@ -1,0 +1,8 @@
+{
+ "id": 552981,
+ "bug_id": 145668,
+ "attachment_id": 0,
+ "creation_time": "2010-04-13T10:20:02Z",
+ "creator": "root@flappie.debank.tv",
+ "text": "\nWhen using nagios plugins with IPV6 enabled in a jail the check_ping command doesn't work to an IPV6 address, this is due to a failed test during the configure stage (I think it tries to ping6 ::1 which doesn't work in a jail)\nI tried the configure in a non jailed environment and there everything works as expected (the ping6 command syntax is validated as working during configure stage)\n\nHow-To-Repeat: \nWithin a jail execute:\n/usr/local/libexec/nagios/check_ping -H {IPV6 address} -w 100,10% -c 200,20% -6\n\nwhere the {IPV6 address} is replaced with a real address\nFix:\n\n\t\u003chow to correct or work around the problem, if known (multiple lines)\u003e\n\nPatch attached which hardcodes the ping6 command when nagios-plugins is installed inside a jail\n\n--- nagios-plugins.patch begins here ---\ndiff -ru nagios-plugins.org/Makefile nagios-plugins/Makefile\n--- nagios-plugins.org/Makefile 2009-12-26 11:18:11.000000000 +0100\n+++ nagios-plugins/Makefile     2010-04-13 10:40:45.000000000 +0200\n@@ -136,6 +136,10 @@\n PLIST_SUB+=    NLS=\"\"\n .endif\n \n+.if defined(WITH_JAIL)\n+CONFIGURE_ARGS+=        --with-ping6-command=\"/sbin/ping6 -n -c %d %s\"\n+.endif\n+\n post-patch:\n .for file in check_by_ssh.c check_disk.c check_http.c check_mrtgtraf.c \\\n        check_nagios.c check_pgsql.c check_snmp.c check_ssh.c check_swap.c \\\n--- nagios-plugins.patch ends here ---\n\n***deze e-mail is gescand door Onlinespamfilter.nl***"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1276281,
+ "bug_id": 273418,
+ "attachment_id": 0,
+ "creation_time": "2023-09-22T04:52:38Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "Or better, this one.  Previous patch would leak refcount on non-cloned cdevs.\n\ncommit 0da5656dd70cd5a41c7fb3f4f1c5b8d7f72b9801\nAuthor: Konstantin Belousov \u003ckib@FreeBSD.org\u003e\nDate:   Thu Sep 21 13:47:14 2023 +0300\n\n    tun/tap: correct ref count on cloned cdevs\n    \n    PR:     273418\n    \n    (cherry picked from commit 07fda41d2a2df0d0d422f30a8a2353de5f0d9c3e)\n\ndiff --git a/sys/net/if_tuntap.c b/sys/net/if_tuntap.c\nindex b81c2149a62f..723749c0dca9 100644\n--- a/sys/net/if_tuntap.c\n+++ b/sys/net/if_tuntap.c\n@@ -541,6 +541,8 @@ tun_clone_create(struct if_clone *ifc, char *name, size_t len, caddr_t params)\n \t/* find any existing device, or allocate new unit number */\n \tdev = NULL;\n \ti = clone_create(\u0026drv-\u003eclones, \u0026drv-\u003ecdevsw, \u0026unit, \u0026dev, 0);\n+\tif (i == 0)\n+\t\tdev_ref(dev);\n \t/* No preexisting struct cdev *, create one */\n \tif (i != 0)\n \t\ti = tun_create_device(drv, unit, NULL, \u0026dev, name);\n@@ -596,6 +598,8 @@ tunclone(void *arg, struct ucred *cred, char *name, int namelen,\n \n \t/* find any existing device, or allocate new unit number */\n \ti = clone_create(\u0026drv-\u003eclones, \u0026drv-\u003ecdevsw, \u0026u, dev, 0);\n+\tif (i == 0) {\n+\t\tdev_ref(*dev);\n \tif (i) {\n \t\tif (append_unit) {\n \t\t\tnamelen = snprintf(devname, sizeof(devname), \"%s%d\","
+}

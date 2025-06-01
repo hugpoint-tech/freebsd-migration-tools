@@ -1,0 +1,8 @@
+{
+ "id": 1293225,
+ "bug_id": 276251,
+ "attachment_id": 0,
+ "creation_time": "2024-01-20T18:52:31Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Looking at this for a bit with a fresh set of eyes...\n\nWe destroyed the periph twice.  Once, via the GEOM \"disk gone\" callback, cddiskgonecb(), which just releases a periph reference.  That reference is acquired when disk_create() is called, which happens when the periph enters the NORMAL state.\n\nThe second destruction happened when releasing a transient reference while handling the CD_CCB_MEDIA_ALLOW/PREVENT case in cddone().  So, we must have entered the NORMAL state and then entered one of the CD_STATE_MEDIA_PREVENT/ALLOW states.  Where do we enter these states?\n\nCD_STATE_MEDIA_ALLOW is entered after we successfully query the media size, while in state CD_STATE_MEDIA_SIZE.  We can only enter that state while in one of CD_STATE_MEDIA_PREVENT/ALLOW, so we must have been in CD_STATE_MEDIA_PREVENT.\n\nWe enter CD_STATE_MEDIA_PREVENT from cdcheckmedia(), which can operate synchronously or not.  The synchronous calls are protected by cam_periph_hold().  The asynchronous case comes from cdstrategy().  And, lo and behold, it does not acquire a periph reference, so nothing is preventing the periph from going away while executing this sub-portion of the cd state machine.  I think.\n\nThe async case was added here https://cgit.freebsd.org/src/commit/?id=dd78f43259efd551f76a6cb7744bce49c215863e"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 751640,
+ "bug_id": 186793,
+ "attachment_id": 0,
+ "creation_time": "2014-02-15T14:10:00Z",
+ "creator": "olevole@olevole.ru",
+ "text": "fsck have own signal handler for SIGINT for performing ckfini(0). In some cases (eg: interrupting fsck on reply(\"USE JOURNAL\") stage) it provokes segmentation violation.\n\nLook's like cgbufs[X].b_un.b_cg is not initialized here:\n\n-- in ckfini() from fsutil.c --\n for (cnt = 0; cnt \u003c sblock.fs_ncg; cnt++) {\n                if (cgbufs[cnt].b_un.b_cg == NULL)\n--\n\nFix: \n\nsorry\nHow-To-Repeat: Just send SIGINT (or hit Ctrl+C) for \"USE JOURNAL?\" question\n\n% truncate -s1g /tmp/test.img\n\n% mdconfig -a -t vnode -f /tmp/test.img\nmd0\n\n% newfs -j /dev/md0\n\n% fsck_ufs /dev/md0\n** /dev/md0\n\nUSE JOURNAL? [yn] ^CSegmentation fault (core dumped)"
+}

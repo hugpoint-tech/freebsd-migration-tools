@@ -1,0 +1,8 @@
+{
+ "id": 1164138,
+ "bug_id": 255678,
+ "attachment_id": 0,
+ "creation_time": "2021-06-01T09:54:44Z",
+ "creator": "tobias@strongswan.org",
+ "text": "\u003e The expected behaviour is that for this route, the system will consider 213.80.11.16 directly reachable via igb0, correct?\n\nNot exactly. The end goal is to install a route that causes the kernel to select the \"internal\" IP address (192.168.5.10 on igb0) as source when reaching the remote VPN subnet (10.11.12.0/24).  Because the IPsec policy is between 192.168.5.0/24 and 10.11.12.0/24, selecting the address on the external interface (213.80.111.176) would cause the traffic to get sent unprotected (unless there was a second IPsec policy that covered traffic between that IP and the remote subnet).\n\nBy default, strongSwan installs the route for the remote subnet via outbound interface (i.e. over which the IKE peer is reachable). However, like the default route, this would cause the IP on the \"external\" interface (213.80.111.176) to get selected as source. So we added an option (charon.plugins.kernel-pfkey.route_via_internal) that causes the installation of the route via \"internal\" interface (the next hop is still the one to reach the IKE peer, though, maybe we should remove that?). As Martin reported, this worked previously.\n\nFor comparison, on Linux, we install a route for the remote subnet via external interface but we set the RTA_PREFSRC attribute to the internal IP address, which causes it to get selected when traffic to the remote subnet is generated (we also install that route in a separate routing table that takes precedence over the main table and allows us to even override the default route without conflicts). AFAIK, there is nothing similar on FreeBSD."
+}

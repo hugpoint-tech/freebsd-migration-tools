@@ -1,0 +1,8 @@
+{
+ "id": 1222295,
+ "bug_id": 258056,
+ "attachment_id": 235792,
+ "creation_time": "2022-08-09T08:05:10Z",
+ "creator": "paulzhol@gmail.com",
+ "text": "Created attachment 235792\nbazil/fuse workaround\n\nHi,\n\nAs I mentioned in the upstream issue https://github.com/golang/go/issues/54100, there are a few issues here.\n\nThe Go runtime has a bug in which file descriptors in blocking mode can get added to the network poller. This is what the https://go-review.googlesource.com/c/go/+/420334 fix is about.\n\nHowever I think there's an additional bug in the /dev/fuse character device:\nThe call to fcntl(\u003cfd\u003e,F_SETFL,O_RDWR|O_NONBLOCK) is reporting an ENODEV (Operation not supported by device) error, but the device is still put into non-blocking mode. Causing reads to return EAGAIN.\nThese EAGAIN errors are unexpected by the bazil/fuse package rclone uses.\n \nbazil/fuse is doing blocking operations only anyway, so there's a simple workaround which avoids calling fcntl in the first place (attached)."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1020769,
+ "bug_id": 222079,
+ "attachment_id": 0,
+ "creation_time": "2018-11-08T06:47:55Z",
+ "creator": "t_uemura@macome.co.jp",
+ "text": "Andriy\n\nBy calling bus_set_resource() instantly panics my system. I think this\ndevice doesn't need bus_set_resource() because the target memory\nrange is mapped correctly in pci_add_map(), perhaps called within\npci_add_child() .\n\n\u003e map[10]: type Memory, range 64, base 0xfd000000, size 24, enabled\n\nI don't know why bus_alloc_resource() in my previous patch allocates\nnot only 0xfdc6000c ~ 0xfdc6000f but whole 0xfd000000 ~ 0xfdffffff.\n\nIn the modified patch, bus_alloc_resource() now try to allocate whole\n16 MiB range, and ichwd_read_p2sb_4 / ichwd_write_p2sb_4 is accessing\noffset 0xc6000c of that range.\n\nOn both Shuttle mini PC and ThinkPad, the initial readout value of\nichwd_read_p2sb_4 is 0x00000000. Now I can set/unset the NO_REBOOT\nbit, so at least the resource allocation issue is fixed.\n\nOn the other hand, with or without my new patch, ThinkPad now reboots\nsuccessfully upon watchdog timeout. However Shuttle mini PC doesn't.\nThis may be a BIOS or even a hardware issue."
+}

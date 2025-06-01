@@ -1,0 +1,8 @@
+{
+ "id": 908448,
+ "bug_id": 214718,
+ "attachment_id": 0,
+ "creation_time": "2016-11-21T20:07:36Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Due to an LLD issue (http://llvm.org/pr30891) my kernel was linked at 0x1000, not 0x200000, meaning that no \u003c 640K memory was available when the system started up. In this case x86bios panics on boot, because it does an M_WAITOK allocation when it is not permissible:\n\n\nACPI APIC Table: \u003cOVMF   OVMFEDK2\u003e\npanic: vm_wait in early boot\ncpuid = 0\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x2b/frame 0xffffffff81e0ca40\nvpanic() at vpanic+0x182/frame 0xffffffff81e0cac0\npanic() at panic+0x43/frame 0xffffffff81e0cb20\nvm_wait() at vm_wait+0xd6/frame 0xffffffff81e0cb40\nkmem_alloc_contig() at kmem_alloc_contig+0x1bd/frame 0xffffffff81e0cc00\ncontigmalloc() at contigmalloc+0x33/frame 0xffffffff81e0cc40\nx86bios_modevent() at x86bios_modevent+0x244/frame 0xffffffff81e0cc60\nmodule_register_init() at module_register_init+0xb0/frame 0xffffffff81e0cc90\nmi_startup() at mi_startip+0x118/frame 0xffffffff81e0ccb0\nbtext() at btext+0x2c\nKDB: enter: panic\n[ thread pid 0 tid 0 ]\nStopped at      kdb_enter+0x3b: movq    $0,kdb_why\n\nI was quite surprised to find that if I disable x86bios the system boots and runs successfully in this (linked at 0x1000) configuration."
+}

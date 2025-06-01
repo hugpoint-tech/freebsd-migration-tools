@@ -1,0 +1,8 @@
+{
+ "id": 387335,
+ "bug_id": 111513,
+ "attachment_id": 0,
+ "creation_time": "2007-04-12T16:00:04Z",
+ "creator": "thkarcher@gmx.de",
+ "text": "In netinet6/scope6.c is a function called \"in6_setscope()\" which sets the appropriate scope flag for an IPv6 (in my case multicast) address.\n\nI think line 475 is not correct, it looks like this:\n\n474         if (IN6_IS_SCOPE_LINKLOCAL(in6) || IN6_IS_ADDR_MC_INTFACELOCAL(in6))\n475                 in6-\u003es6_addr16[1] = htons(zoneid \u0026 0xffff);\n\nThe scope is usually just 8 bits after the 1111 1111 (FF) start of a multicast address. E. g. if I want to sent a multicast over a local link, the address should start with FF02 - the 2 is for link-local scope.\n\nUnfortunately, the code above sets 16 bits in the second 16-bit-part of the address, so it starts with FF00:0002 which is simply wrong.\n\nI didn't check other parts of the file for the same error.\n\nFix: \n\nTo my extent, it should be as follows:\n\n474         if (IN6_IS_SCOPE_LINKLOCAL(in6) || IN6_IS_ADDR_MC_INTFACELOCAL(in6))\n475                 in6-\u003es6_addr8[1] = htons(zoneid \u0026 0xff);"
+}

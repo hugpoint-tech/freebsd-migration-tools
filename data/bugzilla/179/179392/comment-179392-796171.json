@@ -1,0 +1,8 @@
+{
+ "id": 796171,
+ "bug_id": 179392,
+ "attachment_id": 0,
+ "creation_time": "2014-11-16T15:08:13Z",
+ "creator": "florian.ermisch@alumni.tu-berlin.de",
+ "text": "As this is the only PR with rdr and TCP checksum errors I guess I'm seeing the same problem with IPv4 on a pair of fresh 10.1-amd64 VMs (using KVM on Fedora 20).\n\nI make a request to VM1:$ext_if and can see the redirected SYNs arriving on VM2:$dmz_if in tcpdump. Redirects to a port on the same VM work, from one VMs the other VM's $dmz_if is reachable and I've changed the interface type from rtl8139 (showing up as re0) to e1000 (em0) to virtio (vtnet1) to make sure it's not a problem with the emulated NICs and the problem persists (I'm also NATing the redirected requests so the replys will be send to the redirecting VM instead of the default gateway but I see bad checksums with and without NAT).\n\nRelevant parts of my pf.conf:\n\n    [...]\n    table \u003cwebpool\u003e persist { 10.0.0.11, 10.0.0.12 }\n    [...]\n    nat on $dmz_if inet proto tcp from !$dmz_if to \u003cwebpool\u003e port $webports \\\n        -\u003e $dmz_if\n    rdr on $ext_if proto tcp from !$dmz_if:network to $webserver port $webports \\\n        -\u003e \u003cwebpool\u003e\n    \n    block all\n    pass in proto tcp to port ssh\n    # works for own and other \u003cwebpool\u003e IPs:\n    pass quick proto tcp to \u003cwebpool\u003e port $webports\n    [...]\n\n\nMaybe the same problem and more info required or a different problem and I should open a new PR?\n\nRegards, Florian"
+}

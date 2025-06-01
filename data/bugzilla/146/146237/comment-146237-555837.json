@@ -1,0 +1,8 @@
+{
+ "id": 555837,
+ "bug_id": 146237,
+ "attachment_id": 0,
+ "creation_time": "2010-05-02T15:30:09Z",
+ "creator": "marcos.gonzalez@bol.com.br",
+ "text": "Linux binaries can't read directories mounted with fusefs-sshfs. They can read regular files but not directories.\n\nNative FreeBSD binaries are ok and linux binaries with smbfs are doing well too. The only problem is the combination fusefs-sshfs+linux+directories.\n\nFix: \n\nNot a fix, but I inserted some debugging on /usr/src/sys/compat/linux/linux_file.c on linux_common_open (line 158)\n\nif (l_flags \u0026 LINUX_O_DIRECTORY) \n{\n  if (fp-\u003ef_type != DTYPE_VNODE ||\n  fp-\u003ef_vnode-\u003ev_type != VDIR) {\n    printf(LMSG(\"f_type: %d = %d, v_type: %d = %d\"), fp-\u003ef_type, DTYPE_VNODE,\n    fp-\u003ef_vnode-\u003ev_type,VDIR);    \n    error = ENOTDIR;\n  }\n}\n\n/var/log/messages gave me this output:\nMay  1 11:22:05 freebsd kernel: linux (1091): f_type: 0 = 1, v_type: 2 = 2\n\nThe file descriptor type (fp-\u003ef_type) is 0 (should be DTYPE_VNODE, I think).\nHow-To-Repeat: With the modules \"kldloaded\": linux, linprocfs, fuse, mount a remote folder with sshfs:\n\nsshfs user@server:/home/user /home/user/remote\nPassword: ******\n\nSupose inside server's /home/user there is one regular file, file.txt. This command prints the expected output:\n$ /usr/compat/linux/bin/ls /home/user/remote/file.txt\n$ /home/user/remote/file.txt\n\nThis one, does not:\n$ /usr/compat/linux/bin/ls /home/user/remote\n$ /usr/compat/linux/bin/ls: cannot open directory /mnt/smb/server/: Not a directory"
+}

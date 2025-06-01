@@ -1,0 +1,8 @@
+{
+ "id": 1170111,
+ "bug_id": 256453,
+ "attachment_id": 0,
+ "creation_time": "2021-07-13T05:52:23Z",
+ "creator": "ashish@FreeBSD.org",
+ "text": "(In reply to Marko Cupać from comment #8)\n\n\n1. Replace `ejabberd_start' function in `/usr/local/etc/rc.d/ejabberd' with following: \n\n\n===\n\nejabberd_start()\n{\n    echo \"Starting $name.\"\n    #su $EJABBERDUSER -c \"env ERL_EPMD_ADDRESS=\\\"${ejabberd_epmd_address}\\\" $EJABBERDCTL --node $ejabberd_node start\"\n    su $EJABBERDUSER -c \"env ERL_EPMD_ADDRESS=\\\"${ejabberd_epmd_address}\\\" truss -s 200 -f $EJABBERDCTL --node $ejabberd_node start 2\u003e/tmp/ejabberd.for-bug-256453.err\"\n}\n\n===\n\n2. Make sure that sysctl knob \"security.bsd.unprivileged_proc_debug\" is set to 1:\n\n   # sysctl security.bsd.unprivileged_proc_debug=1\n\n3. Restart the jail. Please note that jail command will not exit immediately, courtesy: truss. \n\n4. In the meantime, in another terminal session you can keep an eye on /var/log/ejabberd.log for the messages \"External eimp process (pid=XXXXX) has terminated unexpectedly, restarting in a few seconds\". Once this appeared for couple of times, you can stop the `ejabberd' from within the jail, and kill the `epmd' process. After you kill the `epmd' process, `truss' will exit, and so will the jail command.\n\n5. You can revert the changes made in step 1, and step 2.\n\n\nAfter this you can compress, and send over file \"/tmp/ejabberd.for-bug-256453.err\", or figure out yourself from the file, why \"eimp\" keeps dying (and share the findings).\n\nPlease note that the file may contain stuff related to your setup, so you may want to mask the secret/identifying information before sending it over.\n\nGood luck!\n\nHTH"
+}

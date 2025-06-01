@@ -1,0 +1,8 @@
+{
+ "id": 77052,
+ "bug_id": 24732,
+ "attachment_id": 0,
+ "creation_time": "2001-01-30T17:24:15Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Tue, 30 Jan 2001, Dmitry Kazarov wrote:\n\n\u003e Sorry, I do not understand why compare MAX(...) to SIZE_T_MAX.\n\u003e IMHO, mmap maps the file into process memory so both files together should\n\u003e fit into process accessible address space which is less then SIZE_T_MAX (my\n\u003e expirements with cmp showed that is about 2430MB, on Solaris 2.4 it was 2GB\n\u003e only).\n\nmmap()'s `len' arg has type size_t, so lengths larger than SIZE_T_MAX\ncan't be passed to mmap() for it to check (and fail on).\n\n\u003e So it's nessesary to compare (len1+skip1%pagesize + len2+skip2%pagesize) to\n\u003e 2430MB (for my system).\n\nmmap() will check this if the full lengths can be passed to it.  Since\ntheir are 2 mmap()s, there is a machine-dependent amount of space\nbetween them.  PAGE_SIZE is probably sufficient, but you have to look\nat the implementation to tell.  Your 2430MB must have some slop for this.\n\n\u003e Cause, reverting to c_special on mmap failure could be a better way but,\n\u003e IMHO, the best solution would be proposal of Poul-Henning Kamp\n\u003e \u003cphk@FreeBSD.org\u003e ( http://www.freebsd.org/cgi/query-pr.cgi?pr=18589 ):\n\u003e \"Add a loop around the mmap/compare operation which operates on some\n\u003e moderate amount of data each iteration.\"\n\nI agree.  cp uses 8MB for the moderate amount.  So does xinstall for\nits file comparison function.  xinstall also falls back to read()\nwhen mmap() fails, and has a -M flag to prevent use of mmap().\n\nBruce"
+}

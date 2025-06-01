@@ -1,0 +1,8 @@
+{
+ "id": 1033828,
+ "bug_id": 234576,
+ "attachment_id": 0,
+ "creation_time": "2019-01-25T10:38:30Z",
+ "creator": "freebsd-bugzilla@prt.org",
+ "text": "I have reproduced this problem in the simplest form I can with ZFS: A ZFS pool made up of one HAST device, with a disk as the underlying storage.\n\nIt appears (as is always the case when you make statements like this) that I was wrong earlier - this problem *is* directly related to the issues I had with 11.x and MAXPHYS being too small - my added debug to hastd/primary.c showed:\n\nhastd: disk2 (primary) hastd 3741 - - [disk2] (primary) G_GATE_CMD_START failed: Cannot allocate memory.  This is in the source as being 'impossible' and appears to have happened.  allocated=20200 length=100000 maxphys=20000\n\nI don't know enough about the internals of GEOM_GATE to know what/why/how this changed between 11.x and 12.0 but I've changed my patch to allow a length of 0x100000 which now makes it work - this is likely not the best fix for the problem, and someone with more knowledge may want to chime in with a better solution.  I've also not done extensive testing so there may be occasions where the problem recurs, but the extra log message remains in the patch so you can immediately see if this is/was a problem.\n\nI'm testing this with bonnie++ in case that makes a material difference (which is how we tested under 11.x)"
+}

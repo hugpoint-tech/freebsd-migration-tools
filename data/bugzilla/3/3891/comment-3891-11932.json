@@ -1,0 +1,8 @@
+{
+ "id": 11932,
+ "bug_id": 3891,
+ "attachment_id": 0,
+ "creation_time": "1997-06-17T17:30:01Z",
+ "creator": "jose@we.lc.ehu.es",
+ "text": "innetgr() fails when a NIS-only lookup is performed, i.e., when\n/etc/netgroup doesn't exist, is empty, or contains only \"+\".\nHowever, when /etc/netgroup contains a direct netgroup specification\nfollowed by a \"+\", then innetgr() works.\n\nFix: \n\nNone. I examined /usr/src/lib/libc/gen/getnetgrent.c, but it's\ndifficult to find the problem without debugging.\n\nThere is an obvious workaround: create /etc/netgroup containing\na dummy netgroup and a \"+\" entry. However, netgroup(5) says that\nthis is the least efficient configuration.\nHow-To-Repeat: An NIS server must exist in the LAN exporting one or more netgroups.\nIn my case, there is only one netgroup:\n\ttrusted (polaris,-,) (sirius,-,) (vega,-,) .... and so on\n\nThe system running FreeBSD must have NIS enabled, ypbind running, etc.\nCheck that NIS maps are readable using \"ypcat\". Check that /etc/netgroup\ndoesn't exist.\n\nThen a simple program like this shows the problem (substitute for your\nnetgroup, host and NIS domain).\n\n---------------------------------------\n#include \u003cstdio.h\u003e\n\nmain()\n{\n  printf(\"%d\\n\", innetgr(\"trusted\", \"polaris\", NULL, \"we.lc.ehu.es\"));\n}\n--------------------------------------\n\nThis program prints \"0\": innetgr() fails.\n\nNow, create a /etc/netgroup file containing something like this:\n\n\tnull (-,-,)\n\t+\n\nThen, if you run the same program, it will print \"1\", showing that\ninnetgr() finds the host in the netgroup."
+}

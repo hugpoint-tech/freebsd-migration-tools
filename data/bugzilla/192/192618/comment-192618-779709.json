@@ -1,0 +1,8 @@
+{
+ "id": 779709,
+ "bug_id": 192618,
+ "attachment_id": 0,
+ "creation_time": "2014-08-16T01:05:48Z",
+ "creator": "freebsd@pki2.com",
+ "text": "(In reply to Kurt Jaeger from comment #22)\n\u003e (In reply to Dennis Glatting from comment #21)\n\u003e \u003e The SQL database content looks similar to this from a production server. \n\u003e \u003e Changing the value entries is a simple matter.\n\u003e \n\u003e And what would it be ?\n\u003e \n\u003e update ... set ... ? Can you write it down explicitly for people like me\n\u003e that have no running cacti to dig into 8-) ?\n\nOkay. That took a little work...\n\nUpdating the log file location in the database is easy:\n\nUPDATE settings SET value='/var/log/cacti/cacti.log' WHERE name='path_cactilog';\n\nI do not see a location specification for the rrd path in the database. Inspection of poller.php and spine indicates they call script_server.php which includes global.php which itself includes config.php. Consequently, there's nothing to change for the path. However, the location of each rrd file is stored in the table poller_item. That's a bit more tricky. The SQL would be:\n\nUPDATE poller_item SET rrd_path = REPLACE(rrd_path,'/usr/local/share/cacti/rra','/var/db/cacti/rra') WHERE rrd_path REGEXP '^/usr/local/share/cacti/rra';\n\nI tried this on my test instance and it worked as expected, amazingly."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 474958,
+ "bug_id": 129663,
+ "attachment_id": 0,
+ "creation_time": "2011-05-26T18:03:08Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: marcel\nDate: Thu May 26 17:02:56 2011\nNew Revision: 222317\nURL: http://svn.freebsd.org/changeset/base/222317\n\nLog:\n  Ignore MCR[6] during the probe to fix a false negative. Bit 6 of the\n  MCR register on the Sunix Sun1699 chip tends to be set but doesn't\n  seem to have a function. That is, FreeBSD just works (provided the\n  correct RCLK is used) regardless.\n  \n  PR:\t\tkern/129663\n  Diagnostics:\tEygene Ryabinkin \u003crea-fbsd at codelabs.ru\u003e\n  MFC after:\t3 days\n\nModified:\n  head/sys/dev/uart/uart_dev_ns8250.c\n\nModified: head/sys/dev/uart/uart_dev_ns8250.c\n==============================================================================\n--- head/sys/dev/uart/uart_dev_ns8250.c\tThu May 26 16:59:42 2011\t(r222316)\n+++ head/sys/dev/uart/uart_dev_ns8250.c\tThu May 26 17:02:56 2011\t(r222317)\n@@ -242,8 +242,14 @@ ns8250_probe(struct uart_bas *bas)\n \tval = uart_getreg(bas, REG_IIR);\n \tif (val \u0026 0x30)\n \t\treturn (ENXIO);\n+\t/*\n+\t * Bit 6 of the MCR (= 0x40) appears to be 1 for the Sun1699\n+\t * chip, but otherwise doesn't seem to have a function. In\n+\t * other words, uart(4) works regardless. Ignore that bit so\n+\t * the probe succeeds.\n+\t */\n \tval = uart_getreg(bas, REG_MCR);\n-\tif (val \u0026 0xe0)\n+\tif (val \u0026 0xa0)\n \t\treturn (ENXIO);\n \n \treturn (0);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

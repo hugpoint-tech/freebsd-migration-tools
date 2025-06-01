@@ -1,0 +1,8 @@
+{
+ "id": 1296300,
+ "bug_id": 276962,
+ "attachment_id": 0,
+ "creation_time": "2024-02-11T02:48:46Z",
+ "creator": "dev@submerge.ch",
+ "text": "Seems like there's a mismatch with different privileges requested.\n\nsys/sys/priv.h defines:\n\n#define  PRIV_SCHED_DIFFCRED     200     /* Exempt scheduling other users. */\n#define  PRIV_SCHED_SETPRIORITY  201     /* Can set lower nice value for proc. */\n#define  PRIV_SCHED_RTPRIO       202     /* Can set real time scheduling. */\n#define  PRIV_SCHED_SETPOLICY    203     /* Can set scheduler policy. */\n#define  PRIV_SCHED_SET          204     /* Can set thread scheduler. */\n#define  PRIV_SCHED_SETPARAM     205     /* Can set thread scheduler params. */\n#define  PRIV_SCHED_CPUSET       206     /* Can manipulate cpusets. */\n#define  PRIV_SCHED_CPUSET_INTR  207     /* Can adjust IRQ to CPU binding. */\n#define  PRIV_SCHED_IDPRIO       208     /* Can set idle time scheduling. */\n\n\nThe call to sched_setscheduler() ends up in sys/kern/p1003_1b.c, checking for the PRIV_SCHED_SET privilege:\n\nkern_sched_setscheduler(struct thread *td, struct thread *targettd,\n      int policy, struct sched_param *param)\n{\n...\n          /* Don't allow non root user to set a scheduler policy. */\n          error = priv_check(td, PRIV_SCHED_SET);\n          if (error)\n                  return (error);\n...\n}\n\n\nWhile mac_priority only grants privileges for PRIV_SCHED_RTPRIO / PRIV_SCHED_SETPOLICY or PRIV_SCHED_IDPRIO.\n\nI think sched_setscheduler() does actually set the policy, not the scheduler, so maybe PRIV_SCHED_SETPOLICY would be more appropriate here. I can have a closer look tomorrow."
+}

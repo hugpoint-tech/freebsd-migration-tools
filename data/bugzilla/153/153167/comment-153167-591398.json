@@ -1,0 +1,8 @@
+{
+ "id": 591398,
+ "bug_id": 153167,
+ "attachment_id": 0,
+ "creation_time": "2010-12-15T06:00:22Z",
+ "creator": "duncan@duncf.ca",
+ "text": "The patch added to the python port intended to fix PR 131080 has the unintended consequence of blocking signals in any subprocess spawned from a thread. If you start a process in a Python thread, the process can not be killed. This is a serious issue for us as we frequently spawn sub-processes from within threads of our daemon applications, and we need to be able to kill them, if they run too long, or the daemon needs to shutdown, etc.\n\nPR 131080: http://www.freebsd.org/cgi/query-pr.cgi?pr=131080\nOriginal Python issue: http://bugs.python.org/issue1975\n\nHow-To-Repeat: This test case shows the problem:\n\nhttp://bugs.python.org/file20047/thread_test.py\n\nAlso:\n\nExample code (example.py):\n\nimport subprocess\nimport threading\n\ndef create():\n    sub = subprocess.Popen(\n        args=('sleep', '60'), cwd=None, env=None,\n        stdout=subprocess.PIPE, stderr=subprocess.PIPE,\n        close_fds=True)\n    print 'Started process %d' % (sub.pid,)\n\nif __name__ == '__main__':\n    thr = threading.Thread(target=create)\n    thr.start()\n    thr.join()\n\nExample output:\n\n$ python example.py\nStarted process 90813\n$ ps -p  90813\n  PID  TT  STAT      TIME COMMAND\n90813  p0  S      0:00.00 sleep 60\n$ kill 90813\n$ ps -p 90813\n  PID  TT  STAT      TIME COMMAND\n90813  p0  S      0:00.00 sleep 60"
+}

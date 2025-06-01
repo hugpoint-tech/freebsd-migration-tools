@@ -1,0 +1,8 @@
+{
+ "id": 780828,
+ "bug_id": 192863,
+ "attachment_id": 0,
+ "creation_time": "2014-08-20T18:42:02Z",
+ "creator": "pfonseca@mpi-sws.org",
+ "text": "I've found that there are two accesses to \"pq-\u003epq_cnt\" that are not synchronized and that can race in FreeBSD 10.0. One of the accesses increments the variable in function \"vm_pagequeue_cnt_add()\" while the other reads its value in function \"vm_pageout_scan()\"\n\nStrangely \"pq-\u003epq_cnt\" is currently incremented twice in the function \"vm_pagequeue_cnt_add()\" (in one instance this is done atomically, in the other it's not).\n\nRacing accesses:\n\n/usr/src/sys/vm/vm_page.h:246\n\n       240  vm_pagequeue_cnt_add(struct vm_pagequeue *pq, int addend)\n       241  {\n       242\n       243  #ifdef notyet\n       244      vm_pagequeue_assert_locked(pq);\n       245  #endif\n==\u003e    246      pq-\u003epq_cnt += addend;\n       247      atomic_add_int(pq-\u003epq_vcnt, addend);\n       248  }\n\n\n/usr/src/sys/vm/vm_pageout.c:962 (vm_pageout_scan)\n\n       961      pq = \u0026vmd-\u003evmd_pagequeues[PQ_INACTIVE];\n==\u003e    962      maxscan = pq-\u003epq_cnt;\n       963      vm_pagequeue_lock(pq);\n       964      queues_locked = TRUE;\n       965      for (m = TAILQ_FIRST(\u0026pq-\u003epq_pl);\n       966           m != NULL \u0026\u0026 maxscan-- \u003e 0 \u0026\u0026 page_shortage \u003e 0;"
+}

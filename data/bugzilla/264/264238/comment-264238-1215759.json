@@ -1,0 +1,8 @@
+{
+ "id": 1215759,
+ "bug_id": 264238,
+ "attachment_id": 0,
+ "creation_time": "2022-06-13T23:56:15Z",
+ "creator": "cy@FreeBSD.org",
+ "text": "wpa_driver_bsd_scan() calls set80211param() to set IEEE80211_IOC_ROAMING to IEEE80211_ROAMING_MANUAL immediately after setting mediaopt to STA. This is unconditional and if it fails it will issue a message to syslog. All this is passed to bsd_set80211() which calls ioctl at line 120:\n\n        if (ioctl(drv-\u003eglobal-\u003esock, SIOCS80211, \u0026ireq) \u003c 0) {\n                wpa_printf(MSG_ERROR, \"ioctl[SIOCS80211, op=%u, val=%u, \"\n                           \"arg_len=%u]: %s\", op, val, arg_len,\n                           strerror(errno));\n                return -1;\n        }\n\nIt is this error message we see in syslog, which may well be that it's failing to set IEEE80211_ROAMING_MANUAL. A backtrace would be able to confirm this.\n\nThe interesting thing we notice is that op contains various values. I've seen -1 and 20 so far. op is passed to bsd_set80211() via set80211var() and set80211param(), each of which is called by numerous other callers. strerrorr(errno) is \"invalid argument.\"\n\nThe question remains, which caller is responsible for this? Once the user can obtain a dump, the backtrace will tell us which calling path is used and we can discover where opt and val are set, because both of these are set many frames above this frame, thus will be on the stack.\n\nThe user will need to provide wpa_supplicant.core from the binary I sent her -- because I put an abort() in place of the return."
+}

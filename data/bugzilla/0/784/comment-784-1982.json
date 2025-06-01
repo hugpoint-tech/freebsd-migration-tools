@@ -1,0 +1,8 @@
+{
+ "id": 1982,
+ "bug_id": 784,
+ "attachment_id": 0,
+ "creation_time": "1995-10-17T19:00:01Z",
+ "creator": "aj@Ieunet.ie",
+ "text": "\tThe machine wedged earlier today, having running out of\n\tmbuf clusters (which I'll need to increase anyway).\n\n\tHaving a snoop around, it would seem that some WWW connections\n\twith data queued are not going away after a dialup user\n\thangs up.\n\n\tFor example:\nf072fc00 tcp        0   5270  192.111.39.241.80  138.220.76.189.130 CLOSING\nf075c300 tcp        0  16384  192.111.39.34.8000 193.120.254.57.165 LAST_ACK\n\n\tEventually this fills all the mbufs and everything stops.\n\nFix: \n\nI've had a look at the sources and it would seem that keep alives\n\thave no effect here, as they are ignored if\n\t\ttp-\u003et_state \u003c= TCPS_CLOSE_WAIT\n\n\tHowever, from looking at the 2.1.0-951005-SNAP I see some\n\tinteresting new code in tcp_timer.c.  Am I correct in\n\tthinking that the code that starts:\n\t       * Hack: if the peer is dead/unreachable, we do not\n\t       * time out if the window is closed.  After a full\n\tmight fix the problem if pulled into my tcp_timers.c???\nHow-To-Repeat: \n\tRun a popular web server :-)  I'm sure that www.FreeBSD.org has\n\thit similar problems."
+}

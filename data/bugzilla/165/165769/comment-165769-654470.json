@@ -1,0 +1,8 @@
+{
+ "id": 654470,
+ "bug_id": 165769,
+ "attachment_id": 0,
+ "creation_time": "2012-03-06T05:20:09Z",
+ "creator": "olevole@olevole.ru",
+ "text": "I have found that at start JAIL creating IPv6 the address on the interface,\ninet6  stack isn't ready, therefore programs in automatic loading usually\naren't capable to listen to a socket. It is reproduced on external interfaces\n(I tested on nfe and msk), but not for loopback.\n\nDelay in 1 seconds between setup ip and jail start is enough.\n\ngood for lo0:\n% ifconfig lo0 inet6 fd9c:8e81:4e64:a6e6::10/64 ; jail -c path=/ ip6.addr=fd9c:8e81:4e64:a6e6::10 command=nc -6 -l 1234\n^C\n% ifconfig lo0 inet6 fd9c:8e81:4e64:a6e6::10 -alias\n\ngood with delay:\n% ifconfig msk0 inet6 fd9c:8e81:4e64:a6e6::10/64 ; sleep 1; jail -c path=/ ip6.addr=fd9c:8e81:4e64:a6e6::10 command=nc -6 -l 1234\n^C\n% ifconfig msk0 inet6 fd9c:8e81:4e64:a6e6::10 -alias\n\ngood wihtout jail:\n% ifconfig msk0 ifdisabled\n% ifconfig msk0 inet6 fd9c:8e81:4e64:a6e6::10/64 ; nc -6 -l 1234\n^C\n% ifconfig msk0 inet6 fd9c:8e81:4e64:a6e6::10/64\n\nbind error:\n% ifconfig msk0 inet6 fd9c:8e81:4e64:a6e6::10/64  ; jail -c path=/ ip6.addr=fd9c:8e81:4e64:a6e6::10 command=nc -6 -l 1234\n% ifconfig msk0 inet6 fd9c:8e81:4e64:a6e6::10/64\n\nbind error (In a case when ipv6 it is not initialized, delays in 1\nsecond don't suffice):\n% ifconfig msk0 inet6 ifdisabled\n% ifconfig msk0 inet6 fd9c:8e81:4e64:a6e6::10/64 ; sleep 1 ; jail -c path=/ ip6.addr=fd9c:8e81:4e64:a6e6::10 command=nc -6 -l 1234\n\nFix: \n\nsorry\nHow-To-Repeat: ifconfig \u003cext_iface\u003e inet6 \u003cipv6\u003e \u0026\u0026 jail -c path=/ ip6.addr=\u003cipv6\u003e command=nc -6 -l 1234"
+}

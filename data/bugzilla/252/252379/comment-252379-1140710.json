@@ -1,0 +1,8 @@
+{
+ "id": 1140710,
+ "bug_id": 252379,
+ "attachment_id": 0,
+ "creation_time": "2021-01-08T23:31:19Z",
+ "creator": "jwb@freebsd.org",
+ "text": "(In reply to Jason W. Bacon from comment #4)\n\nAs I suspected, this will cause breakage on FreeBSD \u003c 13 ppc.\n\nPresently a lot of ports have the following hack for ppc because it still uses gcc 4.2:\n\n# Force newer GCC on platforms using GCC 4.2 as base\n.if ${CHOSEN_COMPILER_TYPE} == gcc\nUSE_GCC=        yes\n.endif\n\nCHOSEN_COMPILER_TYPE is only defined when the port has\n\nUSES=compiler:something\n\nSo simply removing compiler:openmp will break a lot of ports for ppc right now with the following error:\n\nmake: \"/usr/ports/wip/gcta/Makefile\" line 29: Malformed conditional (${CHOSEN_COMPILER_TYPE} == gcc \u0026\u0026 ${COMPILER_VERSION} \u003c= 42)\nmake: Fatal errors encountered -- cannot continue\n\nI think this should be easy to fix by defining CHOSEN_COMPILER_TYPE in the absence of USES=compiler:*.\n\nThen we just have to make sure that ports using gcc/gfortran and openmp use gcc for everything.  Some might try to use clang or clang++ along with gfortran which as someone mentioned is not tested when openmp is in play."
+}

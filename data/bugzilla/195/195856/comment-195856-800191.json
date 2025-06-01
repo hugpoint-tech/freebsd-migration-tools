@@ -1,0 +1,8 @@
+{
+ "id": 800191,
+ "bug_id": 195856,
+ "attachment_id": 150434,
+ "creation_time": "2014-12-10T17:01:23Z",
+ "creator": "seanc@FreeBSD.org",
+ "text": "Created attachment 150434\nbsd.database.mk patch against r374417\n\nWhen building ports via poudriere, it's possible to specify default versions of MySQL (or PostgreSQL), however when including default values, we see runtime dependencies still linking against the system default.  For example, if we specify 5.6, we have a runtime dependency on MySQL 5.5.\n\nDEFAULT_VERSIONS=       pgsql=9.4 mysql=56p\n\nThis happens because _MYSQL_VER is overridden unconditionally based on the version information found in `${LOCALBASE}/bin/mysql --version`.  Because we run with an internally modified version of MySQL, we have two options:\n\n1) Patch the MySQL version string\n2) Teach ports to honor the default version when specified\n\nWe think option #2 is the more correct approach.  The attached patch fixes our package environment so that runtime dependencies are correct.\n\n```\nIndex: Mk/bsd.database.mk\n===================================================================\n--- Mk/bsd.database.mk\t(revision 374417)\n+++ Mk/bsd.database.mk\t(working copy)\n@@ -116,6 +116,7 @@\n MYSQL100m_LIBVER=\t18\n\n # Setting/finding MySQL version we want.\n+.if !defined(DEFAULT_MYSQL_VER)\n .if exists(${LOCALBASE}/bin/mysql)\n _MYSQL!=\t${LOCALBASE}/bin/mysql --version | ${SED} -e 's/.*Distrib \\([0-9]\\{1,2\\}\\)\\.\\([0-9]*\\).*/\\1\\2/'\n _PERCONA!=\t${LOCALBASE}/bin/mysql --version | ${GREP} Percona | wc -l\n@@ -129,6 +130,7 @@\n _MYSQL_VER=\t${_MYSQL}\n .endif\n .endif\n+.endif\n\n .if defined(WANT_MYSQL_VER)\n .if defined(WITH_MYSQL_VER) \u0026\u0026 ${WITH_MYSQL_VER} != ${WANT_MYSQL_VER}\n```"
+}

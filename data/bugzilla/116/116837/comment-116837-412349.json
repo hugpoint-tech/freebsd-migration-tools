@@ -1,0 +1,8 @@
+{
+ "id": 412349,
+ "bug_id": 116837,
+ "attachment_id": 0,
+ "creation_time": "2010-04-11T19:48:02Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bz\nDate: Sun Apr 11 18:47:38 2010\nNew Revision: 206488\nURL: http://svn.freebsd.org/changeset/base/206488\n\nLog:\n  Take a reference to make sure that the interface cannot go away during\n  if_clone_destroy() in case parallel threads try to.\n  \n  PR:\t\tkern/116837\n  Submitted by:\tMikolaj Golub (to.my.trociny gmail.com)\n  MFC after:\t10 days\n\nModified:\n  head/sys/net/if_clone.c\n\nModified: head/sys/net/if_clone.c\n==============================================================================\n--- head/sys/net/if_clone.c\tSun Apr 11 18:44:42 2010\t(r206487)\n+++ head/sys/net/if_clone.c\tSun Apr 11 18:47:38 2010\t(r206488)\n@@ -196,10 +196,11 @@ if_clone_createif(struct if_clone *ifc, \n int\n if_clone_destroy(const char *name)\n {\n+\tint err;\n \tstruct if_clone *ifc;\n \tstruct ifnet *ifp;\n \n-\tifp = ifunit(name);\n+\tifp = ifunit_ref(name);\n \tif (ifp == NULL)\n \t\treturn (ENXIO);\n \n@@ -221,10 +222,14 @@ if_clone_destroy(const char *name)\n \t}\n #endif\n \tIF_CLONERS_UNLOCK();\n-\tif (ifc == NULL)\n+\tif (ifc == NULL) {\n+\t\tif_rele(ifp);\n \t\treturn (EINVAL);\n+\t}\n \n-\treturn (if_clone_destroyif(ifc, ifp));\n+\terr = if_clone_destroyif(ifc, ifp);\n+\tif_rele(ifp);\n+\treturn err;\n }\n \n /*\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

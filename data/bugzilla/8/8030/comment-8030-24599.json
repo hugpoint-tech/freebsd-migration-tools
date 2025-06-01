@@ -1,0 +1,8 @@
+{
+ "id": 24599,
+ "bug_id": 8030,
+ "attachment_id": 0,
+ "creation_time": "1998-09-23T02:20:00Z",
+ "creator": "Don.Lewis@tsc.tdk.com",
+ "text": "\nTwo patches were made to the linkup() function in fsck to cause it to\nreduce the reference count of a directory if an orphaned directory is\nreconnected under lost+found and the orphaned directory had a .. link\npointing to the first directory.  The first patch was made by Terry Lambert\nand the second patch was introduced by the Lite2 merge.\n\nThe combination of the two patches causes fsck to decrement the reference\ncount twice.  A situation where the reference count on a file or directory\nis *bad*.  What's worse is that the preen operation of fsck can take a\nslightly inconsistent filesystem, corrupt it in this manner, then set the\nclean flag so that fsck won't check the filesystem again in the future.\n\nI believe that Terry's patch is more desirable, since it only adjusts the\nreference count if the ophaned directory is actually reconnected and its\n.. link changed.\n\nFix: Back out patch from Lite2.\nHow-To-Repeat: \nStart with an ordinary formatted floppy and ...\n# newfs -t 2 -u 18 -l 1 fd0\n# mount /dev/fd0 /mnt\n# mount /dev/fd0 /mnt\n# umount /dev/fd0\n# fsck /dev/fd0\n# fsdb /dev/rfd0\nfsdb (inum: 256)\u003e cd /a\nfsdb (inum: 128)\u003e rm b\nfsdb (inum: 256)\u003e quit\nfsdb (inum: 256)\u003e quit\nfsdb (inum: 256)\u003e quit\n# fsck -p /dev/rfd0\t\t# corrupts filesystem and sets clean flag\n# fsck -p /dev/rfd0\t\t# ignores corrupted filesystem\n# fsck /dev/rfd0\t\t# repairs filesystem damage"
+}

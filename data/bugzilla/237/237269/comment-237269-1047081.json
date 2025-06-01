@@ -1,0 +1,8 @@
+{
+ "id": 1047081,
+ "bug_id": 237269,
+ "attachment_id": 0,
+ "creation_time": "2019-04-17T03:53:56Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "I think I have identified the sequence of events:\n\n1. When we resize the partition, it spoils the attached LABEL consumers (correctly, I think, since those might depend on the partition size);\n\n2. The spoiled LABELs are orphaned, orphaning the DEV geoms that are their sole consumers;\n\n3. the DEV geoms destruct, detaching from the LABELs and removing the /dev entries;\n\n4. BEFORE anything significant can happen, DEV re-tastes the now-orphaned LABEL geoms, getting an ENXIO from trying to open them, but for whatever reason attaches to them anyway, creating new /dev entries and attaching new consumers to the orphan LABELs;\n\n5. Since the old LABELs now have attached consumers that aren't going to die, the withering process never completes, and the /dev entries remain attached to the orphaned LABEL geoms that now have no partition under them;\n\n6. When DEV gets to taste the new providers for the new LABEL geoms for the resized partitions, it can't create the /dev entries for them because they already exist.\n\nYou'd think that step 4 wouldn't happen because a withering geom shouldn't be offered for tasting, but it turns out there's a code path where this happens: and strangely enough it's in g_resize_provider_event.\n\nSo there are several places here where questionable things are happening, even beyond the assumption that actually causes the crash (LABEL's assumption that it always has a consumer)."
+}

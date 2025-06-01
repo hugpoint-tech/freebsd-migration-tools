@@ -1,0 +1,8 @@
+{
+ "id": 497860,
+ "bug_id": 134389,
+ "attachment_id": 0,
+ "creation_time": "2009-05-09T14:30:02Z",
+ "creator": "tdamas@gmail.com",
+ "text": "  When using portsnap/freebsd-update with a proxy configured (via HTTP_PROXY env variable), phttpget opens a new connections for every file fetched, ignoring \"Connection: keep-alive\"\n\nFix: \n\nI made a patch for phttpget:\n\n--- /usr/src/usr.sbin/portsnap/phttpget/phttpget.c      2009-04-15\n00:14:26.000000000 -0300\n+++ /root/src/portsnap/phttpget/phttpget.c      2009-05-08\n11:03:36.000000000 -0300\n@@ -520,6 +520,17 @@\n                               continue;\n                       }\n\n+                       if(env_HTTP_PROXY \u0026\u0026 strncasecmp(hln,\n\"Proxy-Connection:\", 17) == 0) {\n+                               hln += 17;\n+                               if (strcasestr(hln, \"close\") != NULL)\n+                                       pipelined = 0;\n+                               if (strcasestr(hln, \"Keep-Alive\") != NULL)\n+                                       keepalive = 1;\n+\n+                               /* Next header... */\n+                               continue;\n+                       }\n+\n                       /* Check for \"Content-Length:\" header */\n                       if (strncasecmp(hln, \"Content-Length:\", 15) == 0) {\n                               hln += 15;\nHow-To-Repeat:   Using portsnap/freebsd-update and doing sockstat -4c | grep phttpget"
+}

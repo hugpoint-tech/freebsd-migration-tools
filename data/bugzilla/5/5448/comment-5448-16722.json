@@ -1,0 +1,8 @@
+{
+ "id": 16722,
+ "bug_id": 5448,
+ "attachment_id": 0,
+ "creation_time": "1998-02-05T10:44:40Z",
+ "creator": "danny@panda.hilink.com.au",
+ "text": "I'd like to propose the files below as new /etc/monthly and \n/etc/periodic/monthly/200.accounting, pending development of a logrotate \ncommand.  I don't think I'll get logrotate done in time for 2.2.6, but I \nthink that the current system of rotating wtmp in /etc/newsyslog.conf, \nand generating \"monthly\" reports of account activity leaves a lot to be \ndesired.  This will allow PRs 1708, 1941 and 5448 to be closed.\n\nPlease review.\n\nThanks,\n\nDanny\n-----------------------\n\n#!/bin/sh -\n#\n# $Id: 200.accounting,v 1.1.1.1 1997/08/16 17:04:01 pst Exp $\n#\n\nif [ -x /usr/sbin/ac ] ; then\n\techo \"\"\n\techo \"Doing login accounting:\"\n\n\tW=/var/log/wtmp\n\n\t# Work out what month it was yesterday\n\ts1=`date +%s`\n\ts2=`expr $s1 - 86400`\n\tM=`date -r $s2 +%h`\n\n\tmv $W $W.$M\n\ttouch $W\n\n\tac -p -w $W.$M | sort -nr +1\n\n\trm -f $W.$M.gz\n\tgzip $W.$M\nfi\n--------------------------------------------------------\n#!/bin/sh -\n#\n# /etc/monthly\n#\n\nPATH=/bin:/usr/bin:/sbin:/usr/sbin\nhost=`hostname -s`\necho \"Subject: $host monthly run output\"\n\necho \"\"\necho \"Doing login accounting:\"\nW=/var/log/wtmp\n\n# Work out what month it was yesterday\ns1=`date +%s`\ns2=`expr $s1 - 86400`\nM=`date -r $s2 +%h`\n\nmv $W $W.$M\ntouch $W\n\nac -p -w $W.$M | sort -nr +1\n\nrm -f $W.$M.gz\ngzip $W.$M\n\nif [ -f /etc/monthly.local ]; then\n    echo \"\"\n    echo \"Running monthly.local:\"\n    sh /etc/monthly.local\nfi"
+}

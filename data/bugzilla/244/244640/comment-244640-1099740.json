@@ -1,0 +1,8 @@
+{
+ "id": 1099740,
+ "bug_id": 244640,
+ "attachment_id": 213909,
+ "creation_time": "2020-04-29T12:28:21Z",
+ "creator": "olce@FreeBSD.org",
+ "text": "Created attachment 213909\nReplace \"readConfFiles\" by \"readConf\", simplifications, fix corner case\n\nThe corner case I spotted is that some \"read-conf\" issued after \"loader_conf_files\" has been set fails to reload these files if the initial file to read contains \"loader_conf_files\" with the same list.\n\nI first tried to solve it by temporarily removing \"loader_conf_files\" from the environment before loading any file and then checking if it was set in the meantime. This approach works but has two (arguably minor) problems: each processed file cannot itself on the previous value of \"loader_conf_files\", and this causes lots of calls to setenv/unsetenv/getenv (don't know if this is really a problem, but some comments made me think it could).\n\nSo I settled for another approach, which doesn't have any of these drawbacks. Instead, it depends on the use of \"env_changed\" (and the fact that parsing a configuration file sets environment variables through \"setEnv\").\n\nI've replaced readConfFiles by a simple readConf (which still can be passed the \"loaded_files\" map, but this is not used internally; the argument could be removed), which is used by \"config.load\" as well as \"read-conf\" straight.\n\nWhat do you think?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1216286,
+ "bug_id": 264730,
+ "attachment_id": 0,
+ "creation_time": "2022-06-18T15:09:41Z",
+ "creator": "mgorny@gentoo.org",
+ "text": "Well, it wasn't my choice, really ;-).  Apparently use of gmodules was enabled in LLDB's test suite on FreeBSD when the relevant tests were added — i.e. in 2016.  Unless I'm missing something, we've been doing some testing with them since then.  I'm guessing there were some recent changes to clang or libc++ that made them more strict.\n\nAh, sorry, I don't think the 'wchar.h' part is actually the problem — I think it just blames the wrong header.  The underlying problem is that the stdout/stderr/stdin macros aren't visible from \u003ccstdio\u003e.\n\nI know very little about modules myself but FWICS the purpose here is to avoid relying on indirect includes.  I think textual header breaks that, i.e. the following test program should fail:\n\n```\n#include \u003ccstdio\u003e\n\nint main() {\n  FILE *f;\n}\n```\n\nWith the original header variant, it fails as expected (just blames the wrong header):\n\n```\n$ clang++ -fmodules test.cxx \ntest.cxx:4:3: error: missing '#include \u003cwchar.h\u003e'; 'FILE' must be declared before it is used\n  FILE *f;\n  ^\n/usr/include/wchar.h:109:24: note: declaration here is not visible\ntypedef struct __sFILE FILE;\n                       ^\n1 error generated.\n```\n\nChanging `header` to `textual header` makes it build, so I think that goes against the intent.  I suppose there must be a better way of solving stdout/stderr/stdin problem."
+}

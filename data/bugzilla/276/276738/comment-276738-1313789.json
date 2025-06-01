@@ -1,0 +1,8 @@
+{
+ "id": 1313789,
+ "bug_id": 276738,
+ "attachment_id": 0,
+ "creation_time": "2024-06-20T05:40:14Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "\u003e For instance, why does the algorithm header uses the macro not provided by\nc++98 and not handshaked with the compiler core?\n\nBecause it has code to support C++ 03 and earlier that conflicts with sys/cdefs.h by defining static_assert like so\n\n#define static_assert(...) _Static_assert(...)\n\nwhich causes problems because we also define _Static_assert to be only a 2 argument version and it's used with templates where cpp thinks there's more than 2 arguments...\n\nI take back my earlier patch. I think the real fix is just to kill support for old gcc like so, maybe with the comment from my earlier patch.\n\n-#if !__has_extension(c_static_assert)\n #if (defined(__cplusplus) \u0026\u0026 __cplusplus \u003e= 201103L) || \\\n     __has_extension(cxx_static_assert)\n #define        _Static_assert(x, y)    static_assert(x, y)\n-#elif __GNUC_PREREQ__(4,6) \u0026\u0026 !defined(__cplusplus)\n-/* Nothing, gcc 4.6 and higher has _Static_assert built-in */\n-#elif defined(__COUNTER__)\n-#define    _Static_assert(x, y)    __Static_assert(x, __COUNTER__)\n-#define    __Static_assert(x, y)   ___Static_assert(x, y)\n-#define    ___Static_assert(x, y)  typedef char __assert_ ## y[(x) ? 1 : -1] \\\n-                           __unused\n-#else\n-#define    _Static_assert(x, y)    struct __hack\n-#endif\n #endif\n\nsince (a) has_extension(c_static_assert) seems to be never true in c++ and (b) we don't need support for really old C compilers here, which is what's causing the actual problem here."
+}

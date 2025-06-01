@@ -1,0 +1,8 @@
+{
+ "id": 1215513,
+ "bug_id": 264257,
+ "attachment_id": 0,
+ "creation_time": "2022-06-11T21:34:40Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "Can you provide the vmcore (and kernel.debug) files?\n\nOr check \nf 10\np *tp\np *tp-\u003esackhint.nexthole\np tp-\u003esnd_una +  tp-\u003et_inpcb-\u003einp_socket-\u003eso_snd.sb_ccc\np/x tp-\u003et_flags\np/x tp-\u003et_flags2\np *tp-\u003et_timers\n\nSo far, this seems to be the signature:\nt_state == 8 (LAST_ACK)\nsnd_max == snd_una + so_snd.sb_ccc + 2 (! should be one to account for the FIN)\nsnd_fack \u003c sackhole.end (rescue retransmission - this is new in fbsd13)\nt_rxtshift == 6..12 (many retransmission timeouts, indicating the client disappeared - temporarily)\nt_rtseq == snd_una + so_snd.sb_ccc\nsnd_recover == snd_max (indicating the double-accounting for FIN happend prior of entering loss recovery, or \"many\" packets prior of the actual panic)\n\nt_flags = 0x20100274 (TF_CONGRECOVERY, TF_FASTRECOVERY, TF_SACK_PERMIT, TF_SENTFIN, TF_REQ_SCALE, TF_RCVD_SCALE, TF_NODELAY, TF_ACKNOW)"
+}

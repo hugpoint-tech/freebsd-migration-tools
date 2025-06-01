@@ -1,0 +1,8 @@
+{
+ "id": 1146528,
+ "bug_id": 253428,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T19:45:14Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Rick Macklem from comment #8)\nI think these are different things.\n\nIn NFS nfsrpc_readdirplus(), there is special code just to fill the incoming\nbuffer with empty dirents (now I found it).  I mean the bloc near the end,\nunder the comment\n'Add extra empty records to any remaining DIRBLKSIZ chunks.'\n\nThere is nothing comparable to that in UFS.  As I understand, you are complaining\nabout UFS code which skips empty dirents (by checking d_ino == 0 and jumping to\nnextentry).  But there is no code to fabricate dummy dirents at the end to\nfill up to the end of uio.\n\nWhy this code is needed for NFS?  To fill the buffer, so that the situation\nyou described with 6K/8K skew cannot occur?\n\nAlso, I do not think that the code to skip empty dirents from UFS can be lifted\nto VFS layer.  Problem is that VOP_READDIR() has to do uiomove()s itself, so the\nskip must occur in VOP.\n\nWould it be useful if UFS know that ufs_readdir() is called by NFS server and\navoided skip?"
+}

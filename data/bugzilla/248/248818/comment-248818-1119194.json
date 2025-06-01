@@ -1,0 +1,8 @@
+{
+ "id": 1119194,
+ "bug_id": 248818,
+ "attachment_id": 0,
+ "creation_time": "2020-08-21T21:49:57Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Hi,\n\nthe clang11 import changed the #defines in Version.inc for lld; see:\n\nhttps://svnweb.freebsd.org/base/head/lib/clang/include/lld/Common/Version.inc?r1=361410\u0026r2=364284\n\n\nThis makes the Makefile.inc1 WANT_LINKER_VERSION check to fail (becomes empty).\n\nI don't know if changing the Version.inc back to have the other #defines is the right solution or to change the check in Makefile.inc1.  The latter done as follows does fix the later checks and we do not built cross-tools lib/clang/* anymore for LLD:\n\nIndex: Makefile.inc1\n===================================================================\n--- Makefile.inc1       (revision 364456)\n+++ Makefile.inc1       (working copy)\n@@ -264,7 +264,7 @@ _WANT_LINKER_FREEBSD_VERSION!= \\\n WANT_LINKER_FREEBSD_VERSION=${_WANT_LINKER_FREEBSD_VERSION:C/.*-(.*)/\\1/}\n WANT_LINKER_VERSION_FILE= lib/clang/include/lld/Common/Version.inc\n WANT_LINKER_VERSION!= \\\n-       awk '$$2 == \"LLD_VERSION\" {split($$3, a, \".\"); print a[1] * 10000 + a[2] * 100 + a[3]}' \\\n+       awk '$$2 == \"LLD_VERSION_STRING\" { gsub(\"\\\"\", \"\", $$3); split($$3, a, \".\"); print a[1] * 10000 + a[2] * 100 + a[3]}' \\\n        ${SRCDIR}/${WANT_LINKER_VERSION_FILE} || echo unknown\n .else\n WANT_LINKER_FREEBSD_VERSION_FILE="
+}

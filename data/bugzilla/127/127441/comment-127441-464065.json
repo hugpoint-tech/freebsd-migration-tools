@@ -1,0 +1,8 @@
+{
+ "id": 464065,
+ "bug_id": 127441,
+ "attachment_id": 0,
+ "creation_time": "2009-06-27T12:52:33Z",
+ "creator": "hlh@restart.be",
+ "text": "Andriy Gapon wrote:\n\u003e What do you think about the following patch?\n\u003e I am testing it here now and it looks OK so far.\n\u003e \n\u003e --- a/sys/cddl/dev/dtrace/amd64/dtrace_subr.c\n\u003e +++ b/sys/cddl/dev/dtrace/amd64/dtrace_subr.c\n\u003e @@ -439,7 +439,16 @@\n\u003e  uint64_t\n\u003e  dtrace_gethrtime()\n\u003e  {\n\u003e -\treturn ((rdtsc() + tsc_skew[curcpu]) * (int64_t) 1000000000 / tsc_freq);\n\u003e +\tstatic const uint64_t NSEC_FACTOR = 1000000000;\n\u003e +\tuint64_t t;\n\u003e +\tuint64_t s;\n\u003e +\tuint64_t r;\n\u003e +\n\u003e +\tt = rdtsc() + tsc_skew[curcpu];\n\u003e +\ts = t / tsc_freq;\n\u003e +\tr = t % tsc_freq;\n\u003e +\n\u003e +\treturn (s * NSEC_FACTOR + (r * NSEC_FACTOR) / tsc_freq);\n\u003e  }\n\u003e \n\u003e  uint64_t\n\u003e \nThis patch work also for i386 (7.2_STABLE) and correct the problem.\n\nThanks\nHenri"
+}

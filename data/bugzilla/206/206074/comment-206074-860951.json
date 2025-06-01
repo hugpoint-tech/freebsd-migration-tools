@@ -1,0 +1,8 @@
+{
+ "id": 860951,
+ "bug_id": 206074,
+ "attachment_id": 0,
+ "creation_time": "2016-01-23T15:53:31Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Dimitry Andric from comment #20)\n\u003e Strangely, I cannot reproduce the emulators/wine failure. It compiles fine\n\u003e for me on i386, but on amd64 it fails much earlier, when the dependency\n\u003e graphics/lcms2 is built, with:\n...\u003e libtool: link: cc -O2 -pipe -march=ivybridge -isystem /usr/local/include\n\u003e -fstack-protector -fno-strict-aliasing -D_THREAD_SAFE -pthread\n\u003e -fstack-protector -fstack-protector -o .libs/transicc transicc.o xgetopt.o\n\u003e vprf.o  -L/usr/local/lib ../../src/.libs/liblcms2.so -lpthread -pthread\n\u003e -Wl,-rpath -Wl,/usr/local/lib\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `log'\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `atan'\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `exp'\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `sin'\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `pow'\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `atan2'\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `cos'\n\u003e ../../src/.libs/liblcms2.so: undefined reference to `log10'\n\nThis turned out to be an assertion failure when certain math functions (e.g. sqrt()) were redefined [1], so the configure script for lcms2 never detected that -lm had to be used.  The fix for this assertion failure was merged with a recent update to llvm/clang r258549 in the clang380-import branch [2].\n\n[1] https://llvm.org/bugs/show_bug.cgi?id=26211\n[2] https://svnweb.freebsd.org/base?view=revision\u0026revision=294609"
+}

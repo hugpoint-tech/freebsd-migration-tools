@@ -1,0 +1,8 @@
+{
+ "id": 949323,
+ "bug_id": 221778,
+ "attachment_id": 185730,
+ "creation_time": "2017-08-24T21:36:32Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Created attachment 185730\ndisable lld for devel/libcfg\n\nIn general ${LDFLAGS} contains flags for the compiler driver and should be passed to the compiler driver, not directly to the linker.\n\nlibcfg tries to use it both ways, which is invalid -- in Rules.mk.in\n\n$(LIBDYNAMICV): $(OBJECTS)\n        $(LD) $(LDFLAGS) -shared -o $@ $(OBJECTS)\n..\nCCLD         = $(CC)\nLINK         = $(CCLD) $(CFLAGS) $(LDFLAGS) -o $@\n\nFound while trying to link with lld as /usr/bin/ld, because lld interpreted -fstack-protector as an invalid argument:\n\n===\u003e  Building for libcfg-0.6.2_3\n...\nar: warning: creating libcfg+.a\nld: error: unknown argument: -fstack-protector\n...\n\nEven though this appears to work with GNU ld (ld.bfd) it produces a shared object with a bogus entry:\n\nnuc% readelf -d work/stage/usr/local/lib/libcfg+.so\n\nDynamic section at offset 0x92c8 contains 15 entries:\n  Tag                Type                  Name/Value\n 0x000000007ffffffd AUXILIARY            Auxiliary library: [stack-protector]\n...\nnuc%"
+}

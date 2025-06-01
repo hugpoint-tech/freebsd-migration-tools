@@ -1,0 +1,8 @@
+{
+ "id": 670624,
+ "bug_id": 169056,
+ "attachment_id": 0,
+ "creation_time": "2012-06-14T10:40:01Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Based on code inspection in lib/libc/gen/sysctl.c, the requirement that states that EFAULT will be raised if name was an invalid memory address is bogus. Furthermore, it generates a segfault (or other random memory corruption issues) if the value passed in to name is invalid, due to the following line in sysctl.c:\n\n 49 int\n 50 sysctl(const int *name, u_int namelen, void *oldp, size_t *oldlenp,\n 51     const void *newp, size_t newlen)\n 52 {\n 53         if (name[0] != CTL_USER)\n 54                 return (__sysctl(name, namelen, oldp, oldlenp, newp, newlen)    );\n\nExample:\n\n$ cat ~/bad_sysctl.c \n#include \u003csys/param.h\u003e\n#include \u003csys/sysctl.h\u003e\n\nint\nmain(void)\n{\n\treturn sysctl((int*)-1, 2, NULL, NULL, NULL, 0) == 0 ? 0 : 1;\n}\n$ gcc -Wall -o ~/bad_sysctl ~/bad_sysctl.c\n$ ~/bad_sysctl\nSegmentation fault: 11 (core dumped)\n$\n\nThe attached patch removes bogus requirement in sysctl(3). Whether or not the segfault in libc should be `fixed` is another topic entirely.\n\nFix: Patch attached with submission follows:"
+}

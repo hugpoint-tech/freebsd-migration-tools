@@ -1,0 +1,8 @@
+{
+ "id": 861832,
+ "bug_id": 206678,
+ "attachment_id": 0,
+ "creation_time": "2016-01-27T15:05:42Z",
+ "creator": "ecturt@gmail.com",
+ "text": "`genkbd_commonioctl` function from `sys/dev/kbd/kbd.c` begins by calling `spltty()` to block hard interrupts from TTY:\n\nint\ngenkbd_commonioctl(keyboard_t *kbd, u_long cmd, caddr_t arg)\n{\n\tkeymap_t *mapp;\n\tokeymap_t *omapp;\n\tkeyarg_t *keyp;\n\tfkeyarg_t *fkeyp;splx\n\tint s;\n\tint i, j;\n\tint error;\n\n\ts = spltty();\n\tswitch (cmd) {\n\nIt should always restore the original priority level using the `splx` function before returning. For example at the end of the function:\n\n\tsplx(s);\n\treturn (0);\n}\n\nAnd for any commands which need to return early:\n\n\tcase GIO_KEYMAP:\t/* get keyboard translation table */\n\t\terror = copyout(kbd-\u003ekb_keymap, *(void **)arg,\n\t\t    sizeof(keymap_t));\n\t\tsplx(s);\n\t\treturn (error);\n\nThe problem is that for the `OGIO_KEYMAP` command, this does not happen:\n\n\tcase OGIO_KEYMAP:\t/* get keyboard translation table (compat) */\n\t\tmapp = kbd-\u003ekb_keymap;\n\t\tomapp = (okeymap_t *)arg;\n\t\tomapp-\u003en_keys = mapp-\u003en_keys;\n\t\tfor (i = 0; i \u003c NUM_KEYS; i++) {\n\t\t\tfor (j = 0; j \u003c NUM_STATES; j++)\n\t\t\t\tomapp-\u003ekey[i].map[j] =\n\t\t\t\t    mapp-\u003ekey[i].map[j];\n\t\t\tomapp-\u003ekey[i].spcl = mapp-\u003ekey[i].spcl;\n\t\t\tomapp-\u003ekey[i].flgs = mapp-\u003ekey[i].flgs;\n\t\t}\n\t\treturn (0);\n\nMy guess is that since this is a compatibility command, it was copied into here from somewhere else, which is why the call to `splx` is missing."
+}

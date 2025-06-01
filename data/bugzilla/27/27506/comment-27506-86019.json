@@ -1,0 +1,8 @@
+{
+ "id": 86019,
+ "bug_id": 27506,
+ "attachment_id": 0,
+ "creation_time": "2001-05-21T17:30:01Z",
+ "creator": "thierry@herbelot.com",
+ "text": "I'm using libfetch for automated file transfers from a program (via ftp).\n\nThe program is running for long periods of time, and seems to be \nleaking memory (at least it's SIZE in top(1) just grows and grows - \nthe swap is also increasingly used).\n\nAs there is no dynamically allocated memory in my program, one suspect \ncould be libfetch(3).\n\nIndeed, there are 5 calls to malloc(3) in the source code of the lib :\n- in common.c, line 263, which should not cause a leak as the pointer \nis stored in buf, which is later saved,\n- in common.c, line 362, in a function which is not used in my app \n(the file name is known)\n- in fetch.c, line 377, in a function which is used only for http/https\ntransfers, thus not in my app,\n- in http.c, line 517, in a function which is used only for http/https \ntransfers, thus not in my app,\n- finally in ftp.c, line 434, in a suspicious manner : the \"io\" \nvariable is located on the stack, thus visible only from this function,\ngets a pointer to a newly allocated ftpio struct and disappears after \n_ftp_setup() returns.\n\nThe comparison between usr.bin/compress/zopen.c:zclose() and \nlib/libfetch/ftp.c:_ftp_close() shows a missing free(cookie) at the \nend of the function.\n\nFix: the following patch seems to cure the memory leak :\n-----------------------------------------\nHow-To-Repeat: just having a constantly running program fetching repeated files\nusing libfetch (the fetch(1) program is a bad example, as it runs for\na very short period of time - my program runs for extended periods of\ntime, like one week, and fetches many files each second)"
+}

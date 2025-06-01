@@ -1,0 +1,8 @@
+{
+ "id": 1146467,
+ "bug_id": 253428,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T16:10:57Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "r283330, reverted by r291117\nI believe the caching story was roughly\n(assuming an 8K block size).\n- NFS VOP_READDIR() would read the first\n  block at logical offset 0\n  and then a read-ahead at logical offset 8K.\n--\u003e If the readdir reply only filled 6K,\n    it would set the b_bcount to 6K\n\nWhen getdents() or read() did the next read,\nit would ask for a block at 6K and the read-ahead\nblock in the cache would be missed.\n\nNow if someone (I'll not volunteering right\nnow) were to add code above the VOP_READDIR()\nin getdirentries()/getdents() that skipped\nover the dirents with d_fileno == 0 but still\nadvanced f_offset past them, then I think\nthat would be ok (no change in NFS behaviour).\n\nAlso, you could get rid of the similar code\nin ufs_readdir(), which would be nice for\nthe NFS server, since the behaviour of ufs_readdir()\nwould return to \"subsequent directory offsets\ndo not change when entrie(s) are deleted.\n--\u003e With this property, doing readdir(), unlink()\n    in a loop works over NFS."
+}

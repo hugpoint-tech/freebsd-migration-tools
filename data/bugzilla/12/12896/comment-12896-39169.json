@@ -1,0 +1,8 @@
+{
+ "id": 39169,
+ "bug_id": 12896,
+ "attachment_id": 0,
+ "creation_time": "1999-07-31T09:20:00Z",
+ "creator": "hubert.tournier@online.fr",
+ "text": "\nAt boot time, I've the following display :\n\nCPU: \\^E (400.91-MHz 586-class CPU)\n  Origin = \"AuthenticAMD\"  Id = 0x58c  Stepping=12\n  Features=0x8021bf\u003cFPU,VME,DE,PSE,TSC,MSR,MCE,CX8,PGE,MMX\u003e\n\ninstead of :\n\nCPU: AMD K6-2 (400.91-MHz 586-class CPU)\n  Origin = \"AuthenticAMD\"  Id = 0x58c  Stepping=12\n  Features=0x8021bf\u003cFPU,VME,DE,PSE,TSC,MSR,MCE,CX8,PGE,MMX\u003e\n\nFix: \n\nIn \"/sys/i386/i386/identcpu.c\", near line 313, the \"cpu_model\" variable\nis\noverwritten with the memcpy functions.\n\n[...]\nprintcpuinfo(void)\n{\n\t[...]\n\t\tdo_cpuid(0x80000000, regs);\n\t\tnreg = regs[0];\n\t\tif (nreg \u003e= 0x80000004) {\n\t\t\tdo_cpuid(0x80000002, regs);\n\t\t\tmemcpy(cpu_model, regs, sizeof regs);\n\t\t\tdo_cpuid(0x80000003, regs);\n\t\t\tmemcpy(cpu_model+16, regs, sizeof regs);\n\t\t\tdo_cpuid(0x80000004, regs);\n\t\t\tmemcpy(cpu_model+32, regs, sizeof regs);\n\t\t}\n\t[...]\n}\n[...]\n\nObviously, the cpu_model variable, a string, was not meant to receive\ninteger values.\n\nAs I don't understand the purpose of the do_cpuid function, I just wrap\nthis\npart of the code with the following lines :\n\n{\n\tchar cpu_model_backup[128];\n\t[...]\n\tstrcpy(cpu_model_backup, cpu_model);\n\t[block]\n\tstrcpy(cpu_model, cpu_model_backup);\n\t[...]\n\nIt's a kludge but it fixes the problem ;-)\nHow-To-Repeat: \nReboot. It's systematic."
+}

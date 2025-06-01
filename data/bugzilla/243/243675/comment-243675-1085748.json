@@ -1,0 +1,8 @@
+{
+ "id": 1085748,
+ "bug_id": 243675,
+ "attachment_id": 211135,
+ "creation_time": "2020-01-28T17:05:18Z",
+ "creator": "fdupont@isc.org",
+ "text": "Created attachment 211135\nfix\n\nsys/netinet6/ip6_output.c ip6_output() lines ~1000\n\n'sw_csum \u0026= ~CSUM_DELAY_DATA_IPV6;' does not make sense as the 'sw_csum' variable is not used after. Obviously it should be replaced by 'm-\u003em_pkthdr.csum_flags'.\n\n'in6_delayed_cksum(m, plen, sizeof(struct ip6_hdr));' plen includes the extension headers so it should be 'plen - option', the start point should be 'sizeof(struct ip6_hdr) + option' i.e. the in6_delayed_cksum() call should be:\n\n'in6_delayed_cksum(m, plen - optlen,\n    sizeof(struct ip6_hdr) + optlen);'\n\n\nI suspect a similar issue with SCTP code lines ~1018\n\nI left line 1029:\n\n`m-\u003em_pkthdr.csum_flags \u0026= ifp-\u003eif_hwassist;`\n\nwhich seems to have no effect (nor sense).\n\nThe in6_delayed_cksum() call line 1119 should be fixed the same way (and SCTP code just after too).\n\nI am attaching a diff and a small program triggering the bug (it makes checksum errors on the target and/or tcpdump on outgoing traffic)."
+}

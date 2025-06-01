@@ -1,0 +1,8 @@
+{
+ "id": 1265346,
+ "bug_id": 272367,
+ "attachment_id": 243203,
+ "creation_time": "2023-07-04T18:18:29Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 243203\nReproduction script\n\nIn a multithreaded program that involves forking, I sometimes see openat(..., O_NONBLOCK | O_EXLOCK) return EAGAIN for a file that should be unlocked.  ktrace clearly shows that only one thread access the file in question.  That thread opens the file, does some I/O, then closes it.  Immediately after closing it it tries to open again and that's when the openat fails.  ktrace shows that no other thread tries to access the file in question.  However, ktrace _also_ shows that another thread calls rfork while the first thread has the file locked.\n\nflock(2) says that locks are associated with files, not file descriptors.  So if a process forks, the file should be unlocked whenever either the parent calls close() or the child calls fdcloseexec().  I can't understand how in neither case the file would fail to get unlocked, so I suspect a bug.\n\nThe attached test case can reproduce the problem with either ZFS or tmpfs.\n\nSteps to Reproduce\n==================\n\ncc -O2 -Wall -g -l pthread -o o_exlock o_exlock.c\n./o_exlock \u003cN\u003e /tmp/testfile\n\nwhere N is greater than 1."
+}

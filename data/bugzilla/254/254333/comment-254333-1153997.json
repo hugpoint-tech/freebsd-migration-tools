@@ -1,0 +1,8 @@
+{
+ "id": 1153997,
+ "bug_id": 254333,
+ "attachment_id": 0,
+ "creation_time": "2021-03-30T13:36:49Z",
+ "creator": "maxim.shalomikhin@kaspersky.com",
+ "text": "I have one machine with hanging sysct:\n99750  -  D         22:33.32 /sbin/sysctl net.inet.tcp.hostcache.list\n\n# procstat -kk 99750\n  PID    TID COMM                TDNAME              KSTACK\n99750 101008 sysctl              -                   mi_switch+0xe1 sleepq_wait+0x2c _cv_wait+0x115 vmem_xalloc+0x44b vmem_alloc+0x31 kmem_malloc+0x33 uma_large_malloc+0x46 malloc+0x3d sbuf_new+0x105 sysctl_tcp_hc_list+0x6d sysctl_root_handler_locked+0x8a sysctl_root+0x1ee userland_sysctl+0x134 sys___sysctl+0x5f amd64_syscall+0xa4e fast_syscall_common+0x101\n\nAs for cachelimit: Yes, we have large number set, but I noticed, then sysctl hangs, the hostcache.count goes crazy big (and stops near 2^32 at 4294966447):\n# sysctl net.inet.tcp.hostcache\nnet.inet.tcp.hostcache.purgenow: 0\nnet.inet.tcp.hostcache.purge: 0\nnet.inet.tcp.hostcache.prune: 300\nnet.inet.tcp.hostcache.expire: 3600\nnet.inet.tcp.hostcache.count: 4294966447\nnet.inet.tcp.hostcache.bucketlimit: 30\nnet.inet.tcp.hostcache.hashsize: 65536\nnet.inet.tcp.hostcache.cachelimit: 1966080\nnet.inet.tcp.hostcache.enable: 1\n# vmstat -m | grep sbuf\n         sbuf     1     1K       -    68235  16,32,64,128,256,512,1024,2048,4096,8192,32768,65536\n     mrsasbuf   949  2860K       -      951  32,128,256,2048,8192\n\nUsually, hostcache.count is about ~500k.\nSo, Is it just my fault setting cachelimit to high or this is a bug in syncache with hostcache.count?"
+}

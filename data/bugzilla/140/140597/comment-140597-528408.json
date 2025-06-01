@@ -1,0 +1,8 @@
+{
+ "id": 528408,
+ "bug_id": 140597,
+ "attachment_id": 0,
+ "creation_time": "2009-11-16T07:20:00Z",
+ "creator": "rs@netapp.com",
+ "text": "SACK TCP in FreeBSD does not do Lost Retransmission Detection.\n\nUnlike linux, that functionality is not implemented, leading to a RTO when a single segment is lost twice. This reduces Goodput considerably during phases \nof higher congestion.\n\nSee http://ubinet.yonsei.ac.kr/v2/publication/hpmn_papaers/ij/29.pdf\nAnd http://projects.itri.aist.go.jp/gnet/pfldnet08kodama.ppt\n\nFix: \n\nSimple fix is rather easy (doesn't work perfectly under all circumstances,\nbut doesn't need new state variable and runs in constant time):\n\nWhen sending the last segment in a sackhole, store snd.max in rxmit.\nDuring SACK Ack processing, check the value of rxmit from the lowest \nhole against snd.fack; if snd.fack \u003c= rxmit of that hole, set rxmit to \nstart, and sackhint.nexthole == sackhole[0]. \n\nCare must be taken during hole-splitting (if rxmit \u003e end of lower hole, set\nrxmit to snd.max), and all checks of sackhole[].rxmit need to deal with\nthe signal rxmit \u003e end.\n\nSee http://www.ietf.org/mail-archive/web/tcpm/current/msg05003.html ff.\nHow-To-Repeat: Drop the same segment of a TCP Stram twice, when cwnd is open enough (3+ segments)."
+}

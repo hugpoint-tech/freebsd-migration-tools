@@ -1,0 +1,8 @@
+{
+ "id": 1044220,
+ "bug_id": 236841,
+ "attachment_id": 0,
+ "creation_time": "2019-03-28T01:52:54Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Ok, this partly boils down to a change introduced in r274631...\n\n$ git diff 2cfe78eed8ed3^..2cfe78eed8ed3\ndiff --git a/sbin/geom/core/geom.c b/sbin/geom/core/geom.c\nindex 8c15c2143e1e..5d23d933ec94 100644\n--- a/sbin/geom/core/geom.c\n+++ b/sbin/geom/core/geom.c\n@@ -640,6 +640,11 @@ get_class(int *argc, char ***argv)\n #endif /* !STATIC_GEOM_CLASSES */\n \n        set_class_name();\n+\n+       /* If we can't load or list, it's not a class. */\n+       if (!std_available(\"load\") \u0026\u0026 !std_available(\"list\"))\n+               errx(EXIT_FAILURE, \"Invalid class name.\");\n+\n        if (*argc \u003c 1)\n                usage();\n }\n\n... and this code:\n\n1318         if (sysctlbyname(\"kern.module_path\", paths, \u0026len, NULL, 0) \u003c 0)\n1319                 err(EXIT_FAILURE, \"sysctl(kern.module_path)\");\n1320         for (p = strtok(paths, \";\"); p != NULL; p = strtok(NULL, \";\")) {\n1321                 snprintf(name, sizeof(name), \"%s/geom_%s.ko\", p, class_name);\n1322                 /*\n1323                  * If geom_\u003cname\u003e.ko file exists, \"load\" command is available.\n1324                  */\n1325                 if (stat(name, \u0026sb) == 0)\n1326                         return (1);\n1327         }\n1328         return (0);\n\nIf the module doesn't exist, it will fail with `EXIT_FAILURE`.\n\nWhy doesn't the test get skipped though?\n\nIt looks like all of the load_gnop calls are kosher:\n\n$ grep -c load_gnop tests/sys/geom/class/nop/nop_test.sh\n8\n$ grep -c atf_add_test_case tests/sys/geom/class/nop/nop_test.sh\n7\n$"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1335264,
+ "bug_id": 282663,
+ "attachment_id": 0,
+ "creation_time": "2024-11-16T22:47:12Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #31)\n\nLooks like at least:\n\nhttps://cgit.freebsd.org/src/commit/?id=98fd69f0090da73d9d0451bd769d7752468284c6\n\nis part of the changes needed to have -ftls-model=initial-exec\nwork for armv7.\n\nFor reference, the diff it lists is:\n\ndiff --git a/libexec/rtld-elf/arm/reloc.c b/libexec/rtld-elf/arm/reloc.c\nindex c3e95940be74..6efc9f499761 100644\n--- a/libexec/rtld-elf/arm/reloc.c\n+++ b/libexec/rtld-elf/arm/reloc.c\n@@ -280,10 +280,13 @@ reloc_nonplt_object(Obj_Entry *obj, const Elf_Rel *rel, SymCache *cache,\n \t\t\t\treturn -1;\n \n \t\t\ttmp = (Elf_Addr)def-\u003est_value + defobj-\u003etlsoffset;\n-\t\t\tif (__predict_true(RELOC_ALIGNED_P(where)))\n+\t\t\tif (__predict_true(RELOC_ALIGNED_P(where))) {\n+\t\t\t\ttmp += *where;\n \t\t\t\t*where = tmp;\n-\t\t\telse\n+\t\t\t} else {\n+\t\t\t\ttmp += load_ptr(where);\n \t\t\t\tstore_ptr(where, tmp);\n+\t\t\t}\n \t\t\tdbg(\"TLS_TPOFF32 %s in %s --\u003e %p\",\n \t\t\t    obj-\u003estrtab + obj-\u003esymtab[symnum].st_name,\n \t\t\t    obj-\u003epath, (void *)tmp);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1115270,
+ "bug_id": 247542,
+ "attachment_id": 0,
+ "creation_time": "2020-07-24T22:30:54Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "(In reply to Thierry Thomas from comment #10)\nEvery line in attachment 216640 has a '\\r' (viewable with hd or vis -tl or sed -n l or basic vi (nvi); vim will \"hide\" them for you, but you will see \"[dos]\" at the bottom).  I downloaded the attachment with fetch(1) (wget gives the same result).  I just tested 'save link as' from firefox - that preserves the '\\r' endings that are in the file as well.\n\nSure, I can attach a build log of math/blas showing the ranlib error.  But if you inspect work/.build/BLAS/SRC/CMakeFiles/blas.dir/build.make - specifically the build-static target at the bottom - you will see the problem:\n\nbuild-static:\n    cd BLAS/SRC \u0026\u0026 $(AR) $(ARFLAGS) libblas.a $(blas_OBJECTS)\n    $(RANLIB) SRC/libblas.a\n\nThe cd \u0026\u0026 ar works fine, but ranlib is using the wrong path to the lib file.  This is because post-build in math/lapack/Makefile does a substitution for the path in math/lapack/files/static.mk that is specific to the slave port (which then is appended to the build.make file).  But it only looks for 'cd SRC' to replace.  This misses the ranlib line which has no 'cd ' before SRC, so sed does no substitution on that line."
+}

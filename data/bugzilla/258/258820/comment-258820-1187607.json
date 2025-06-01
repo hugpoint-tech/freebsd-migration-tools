@@ -1,0 +1,8 @@
+{
+ "id": 1187607,
+ "bug_id": 258820,
+ "attachment_id": 0,
+ "creation_time": "2021-11-22T15:58:07Z",
+ "creator": "emaste@freebsd.org",
+ "text": "(In reply to Kubilay Kocak from comment #8)\nYour assumption is correct, when built with -flto the object file is LLVM IR rather than ELF.\n\n$ cc -c -flto foo.o\n$ file foo.o\nfoo.o: LLVM IR bitcode\n\nA .a is just an archive of .o files (along with a symbol table), and isn't part of the strip issue per se.\n\nA few points here:\n\n- It usually doesn't make a lot of sense to strip .o or .a files.\n\n- Stripping LLVM IR also doesn't make a lot of sense IMO.\n\n- We could probably have ELF Tool Chain strip detect and ignore bitcode files - make no changes and exit with status 0.\n\n- ELF Tool Chain ar can create a .a archive of LLVM IR .o files, but cannot parse the symbol tables in the .o files to create the archive symbol table.\n\n- Longer term we will presumably migrate to LLVM's ar, nm, strip etc. (WITH_LLVM_BINUTILS) as it seems unlikely support will be added to ELF Tool Chain tools.\n\nGiven the above I suggest that in the short term we should just stop trying to strip libffi.a (and other .a archives in ports), and do nothing else until we have migrated to LLVM's tools. Having ELF Tool Chain strip ignore bitcode is probably straightforward, but it's not that useful if we don't also address ar."
+}

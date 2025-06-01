@@ -1,0 +1,8 @@
+{
+ "id": 1252745,
+ "bug_id": 267858,
+ "attachment_id": 0,
+ "creation_time": "2023-03-27T21:50:03Z",
+ "creator": "contact@evilham.com",
+ "text": "Hey, I still had been having this issue, but managed to solve it today.\n\nAdding the comment in case some poor soul comes across it:\n\nStarting with security/gnupg 2.3.8 communication between gpg-agent and certain YubiKeys broke as documented here.\n\nAfter much research, I came across this [1], which documents how to stop using scdaemon in favour of pcscd and decided to give it a go (it worked).\n[1]: https://support.yubico.com/hc/en-us/articles/4819584884124-Resolving-GPG-s-CCID-conflicts\n\nIn a nutshell and more FreeBSD-specific:\n\nadding \"disable-ccid\" to ~/.gnupg/scdaemon.conf (creating it if absent) instructs gpg-agent not to start scdaemon.\n\nWe install devel/pcsc-lite and devel/libccid (pkg install pcsc-lite ccid)\nCreate /usr/local/etc/devd/pcscd.conf with following contents:\n\nattach 100 {\n        device-name \"ugen[0-9]+\";\n        action \"/usr/local/sbin/pcscd -H\";\n};\n\ndetach 100 {\n        device-name \"ugen[0-9]+\";\n        action \"/usr/local/sbin/pcscd -H\";\n};\n\nAnd add pcscd_enable=YES to /etc/rc.conf.\n\nAfter a \"reboot\" (or service pcsd start + killall -9 scdaemon + gpgconf --kill gpg-agent) this issue stopped existing.\n\nPossibly something changed on gnupg's ccid implementation."
+}

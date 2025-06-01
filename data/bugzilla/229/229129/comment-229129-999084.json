@@ -1,0 +1,8 @@
+{
+ "id": 999084,
+ "bug_id": 229129,
+ "attachment_id": 0,
+ "creation_time": "2018-06-24T13:25:46Z",
+ "creator": "rhurlin@FreeBSD.org",
+ "text": "(In reply to Kurt Jaeger from comment #19)\n\nHi Kurt, Thanks for your effort.\n\nFirst, I can confirm, that this also happens on my Poudriere run with 10.4 i386:\n\nchecking whether the C++ compiler works... no\nconfigure: error: in `/wrkdirs/usr/ports/math/saga/work/saga-6.3.0':\nconfigure: error: C++ compiler cannot create executables\n\n\nIt tooks me some time to understand, what's going on here. After some trials it turns out, that the change for OpenMP is the culprit. When using \"OPENMP_LDFLAGS+=-L${LOCALBASE}/llvm50/lib -lomp\", 10.4i fails, with \"OPENMP_LIB_DEPENDS=libomp.so:devel/openmp\" it builds fine.\n\nSo, a new patch is needed, which asks for the FreeBSD version and platform before choosing the right option. And, these lines have to be relocated _after_ .include \u003cbsd.port.pre.mk\u003e :\n\n\n# if FreeBSD 10.x i386, use devel/openmp, otherwise from lang/llvm50\n.if ${OPSYS} == FreeBSD \u0026\u0026 ${OSVERSION} \u003c= 1100000 \u0026\u0026 ${ARCH} == i386\nOPENMP_LIB_DEPENDS=\tlibomp.so:devel/openmp\n.else\nOPENMP_LDFLAGS+=\t-L${LOCALBASE}/llvm50/lib -lomp\n.endif\n\n\nBefore preparing a new patch, I will try these changes with 10.4a and 11.1i."
+}

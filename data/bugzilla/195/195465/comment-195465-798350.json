@@ -1,0 +1,8 @@
+{
+ "id": 798350,
+ "bug_id": 195465,
+ "attachment_id": 149950,
+ "creation_time": "2014-11-28T10:19:29Z",
+ "creator": "natbsd@instinctive.eu",
+ "text": "Created attachment 149950\npatch on lang/gcc-aux to fix addr2line path\n\nI have been developing on AdaControl, which uses GNAT.Traceback.Symbolic.Symbolic_Traceback to report exceptions, and this is an invaluable tool because code paths are so complex.\n\nHowever, under FreeBSD, the output is less-than-useful, and looks like the following:\n\n\u003e BFD: Dwarf Error: found dwarf version '4', this reader only handles version 2 information.\n\u003e 0x7e7773 in asis.gela.contexts.open at ??:0\n\u003e 0x78cb43 in asis.ada_environments.open at ??:0\n\u003e 0x46a7da in adactl at ??:0\n\u003e 0x40690e in main at ??:0\n\u003e 0x4069df in \u003c_start\u003e at ??:0\n\u003e 0x800da3ffe in ?? at ??:0\n\nwith the first line being repeated hundreds of time.\n\nAs far as I can tell, the problems comes from the FreeBSD-specific version of `convert_addresses()`, provided in `files/diff-ada`, which resolves the traceback by spawning `/usr/bin/addr2line`. This is the addr2line that comes with binutils from base, and it is significantly older than `/usr/local/bin/addr2line` provided by `devel/binutils` on which `gcc-aux` depends.\n\nThe attached patch bumps port revision number and fixes the hardcoded `addr2line` path. With it, in the same situation as above, I get the following output:\n\n\u003e 0x69e403 in asis.ada_environments.open at asis-ada_environments.adb:241\n\u003e 0x46a58a in adactl at adactl.adb:90 (discriminator 1)\n\u003e 0x4065de in main at b~adactl.adb:1536\n\u003e 0x40677d in \u003c_start\u003e at ??:?\n\u003e 0x800da3ffe in ?? at ??:0\n\nwithout any dwarf-related error message."
+}

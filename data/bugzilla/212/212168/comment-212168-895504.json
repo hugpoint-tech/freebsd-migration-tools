@@ -1,0 +1,8 @@
+{
+ "id": 895504,
+ "bug_id": 212168,
+ "attachment_id": 0,
+ "creation_time": "2016-08-30T23:55:26Z",
+ "creator": "mckusick@FreeBSD.org",
+ "text": "It appears that there is an item on the worklist that has been prematurely freed. This freeing should be impossible as anything on a worklist has its ONWORKLIST flag set and the worklist freeing routine will panic if the ONWORKLIST flag is set. However I have written the following check to see if we are finding freed items on the worklist in softdep_disk_io_initiation():\n\nIndex: sys/ufs/ffs/ffs_softdep.c\n===================================================================\n--- sys/ufs/ffs/ffs_softdep.c   (revision 305057)\n+++ sys/ufs/ffs/ffs_softdep.c   (working copy)\n@@ -9949,6 +9949,13 @@\n \n        if ((wk = LIST_FIRST(\u0026bp-\u003eb_dep)) == NULL)\n                return;\n+       if (wk-\u003ewk_type \u003e D_LAST + 1) {\n+               printf(\"dead worklist: %p next %p prev %p type %s state 0x%X\\n\",\n+                   wk, wk-\u003ewk_list.le_next, wk-\u003ewk_list.le_prev,\n+                   TYPENAME(wk-\u003ewk_type), wk-\u003ewk_state);\n+               LIST_INIT(\u0026bp-\u003eb_dep);\n+               return;\n+       }\n        ump = VFSTOUFS(wk-\u003ewk_mp);\n \n        marker.wk_type = D_LAST + 1;    /* Not a normal workitem */\n\nI would appreciate your running with this patch and reporting if you get the \"dead worklist\" error message."
+}

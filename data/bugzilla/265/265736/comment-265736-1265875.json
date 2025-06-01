@@ -1,0 +1,8 @@
+{
+ "id": 1265875,
+ "bug_id": 265736,
+ "attachment_id": 243323,
+ "creation_time": "2023-07-09T20:23:02Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 243323\nStandalone test case\n\nThis is not FUSE-specific.  The bug is in kern_fcntl.  It sets fp-\u003ef_flag to the new flags, then calls the file descriptor's ioctl handler.  But if that fails, it doesn't return fp-\u003ef_flag to the original value.  The ioctl will fail for any character device that doesn't implement .d_ioctl .  /dev/fuse doesn't, and there are 32 others that don't either.  One example is everything under /dev/led/* (from sys/dev/led/led.c).\n\nSteps to Reproduce\n==================\n\ncc -O2 -Wall -g -o f_setfl_o_nonblock f_setfl_o_nonblock.c\n./f_setfl_o_nonblock /dev/led/ahci0.0.locate \nF_SETFL failed.  Flags changed from 0 to 0x4.\n./f_setfl_o_nonblock /dev/fuse \nF_SETFL failed.  Flags changed from 0 to 0x4.\n\nSince F_SETFL failed, the flags should be unchanged."
+}

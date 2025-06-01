@@ -1,0 +1,8 @@
+{
+ "id": 1189166,
+ "bug_id": 260257,
+ "attachment_id": 0,
+ "creation_time": "2021-12-06T18:55:17Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "The CAM_IO_STATS kernel config option adds some sysctls to every disk device that track the number of errors, timeouts, and pack invalidations it has had.  However, some slip through the cracks.  I consistently see dmesg report MEDIUM ERRORs such as the below, while the stats sysctls report nothing.  There are clearly errors, because gmultipath reports one path as DEGRADED and ZFS reports faults on the drive.  It seems that some error path isn't updating the stats like it should.\n\n(da424:mpr3:0:115:0): READ(10). CDB: 28 00 06 3c 3a 68 00 00 d7 00 \n(da424:mpr3:0:115:0): CAM status: SCSI Status Error\n(da424:mpr3:0:115:0): SCSI status: Check Condition\n(da424:mpr3:0:115:0): SCSI sense: MEDIUM ERROR asc:11,0 (Unrecovered read error)\n(da424:mpr3:0:115:0): Info: 0x63c3a7b\n(da424:mpr3:0:115:0): Field Replaceable Unit: 134\n(da424:mpr3:0:115:0): Command Specific Info: 0x81037000\n(da424:mpr3:0:115:0): Actual Retry Count: 206\n(da424:mpr3:0:115:0): Error 5, Unretryable error\nGEOM_MULTIPATH: Error 5, da424 in mp_JB2_S57 marked FAIL\nGEOM_MULTIPATH: all paths in mp_JB2_S57 were marked FAIL, restore da244\n\n$ sysctl kern.cam.da.424.stats\nkern.cam.da.424.stats.pack_invalidations: 0\nkern.cam.da.424.stats.timeouts: 0\nkern.cam.da.424.stats.errors: 0"
+}

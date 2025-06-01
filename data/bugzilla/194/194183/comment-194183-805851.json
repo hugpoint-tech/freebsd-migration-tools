@@ -1,0 +1,8 @@
+{
+ "id": 805851,
+ "bug_id": 194183,
+ "attachment_id": 151907,
+ "creation_time": "2015-01-20T16:13:10Z",
+ "creator": "mikael@FreeBSD.org",
+ "text": "Created attachment 151907\nfix signedness issue on armv6\n\nI think there is a signedness issue in the 'tre' regex library, correct me if I'm wrong:\n\nin R-3.0.2/src/extra/tre/tre-internal.h, we have\n(line 52): typedef wint_t tre_cint_t;\n(line 53): #define TRE_CHAR_MAX WCHAR_MAX\n\nfor arm: __WCHAR_MAX == __UINT_MAX == 0xffffffff (see include/_types.h and include/_limits.h)\n\nin R-3.0.2/src/extra/tre/tre-parse.c, we have\n(line 279): tre_cint_t min = 0, max = 0;\n(line 349): max = TRE_CHAR_MAX;\n\nso max is of type tre_cint_t == wint_t == __wint_t == __ct_rune_t == int (see /usr/include/wctype.h and /usr/include/sys/_types.h)\n\nat the end: max = -1;\n\nA pull request was issued upstream with no follow-up (https://github.com/andreas-schwab/tre/commit/182e1060dc3bfc175490f6e0e961d9330971299c)\n\nI don't know if the fix is correct but it allows to build math/R on arm.\n\nI think the attached patch can be applied for all arches because on x86, powerpc, sparc64 and powerpc __WCHAR_MAX = __INT_MAX = 0x7fffffff"
+}

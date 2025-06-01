@@ -1,0 +1,8 @@
+{
+ "id": 1266195,
+ "bug_id": 272354,
+ "attachment_id": 0,
+ "creation_time": "2023-07-12T20:05:23Z",
+ "creator": "gjb@FreeBSD.org",
+ "text": "What about the build environment thought?  The python symlinks do not exist there in the build chroot, which is the part I do not understand.\n\nSorry for the confusion here.\n\nIf you want to reproduce it in a pristine environment, you can create a chroot and mount the relevant trees within (where /usr/local/bin/python does not exist):\n\n # make -C /usr/src DESTDIR=/scratch installworld distribution\n # mkdir -p /scratch/usr/src /scratch/usr/ports\n # mount -t nullfs /usr/src /scratch/usr/src\n # mount -t nullfs /usr/ports /scratch/usr/ports\n # mount -t devfs devfs /scratch/dev\n # cp /etc/resolv.conf /scratch/etc/resolv.conf\n # chroot /scratch/usr/src/release obj\n # chroot /scratch/usr/src/release WITH_CLOUDWARE=1 CLOUDWARE=GCE gce-do-package\n\nThis is supposed to pull in lang/python and lang/python3 as part of the process for post-img building, where the gce.img itself is uploaded from the chroot (but gce-do-package does not invoke that target).\n\nMeaning, when the gce.img file is done being created, the chroot should contain /usr/local/bin/python{,3} symlinks."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 982927,
+ "bug_id": 226682,
+ "attachment_id": 0,
+ "creation_time": "2018-03-17T20:06:04Z",
+ "creator": "chris@mumac.de",
+ "text": "While testing I/O performance on a SolidRun Clearfog Pro (ARMADA A38x) with an SSD (PLEXTOR PX-128M6G-2242) encrypted by GELI AES-CBC, errors were reported on the console/dmesg about running out of TMDA descriptors.\n\nLooking at sys/dev/cesa/cesa.h, the comments seem to focus on network buffers with a maximum size of 1500 bytes while SSD disk I/O in my case would involve 4KB buffers. Without really diving into the rest of the code, I've increased the values in cesa.h and can now operate the SSD with sustained rates ~200MB/s without running out of TDMA descriptors.\n\nThere might be better ways to do this but the \"diff\" below most certainly fixed my issue.\n\nIndex: sys/dev/cesa/cesa.h\n===================================================================\n--- sys/dev/cesa/cesa.h (revision 329554)\n+++ sys/dev/cesa/cesa.h (working copy)\n@@ -63,8 +63,8 @@\n  */\n \n /* Values below are optimized for requests containing about 1.5 kB of data */\n-#define CESA_SA_DESC_PER_REQ           2\n-#define CESA_TDMA_DESC_PER_REQ         8\n+#define CESA_SA_DESC_PER_REQ           (2 * 3)   /* 4KB, not 1.5kB */\n+#define CESA_TDMA_DESC_PER_REQ         (8 * 3)   /* 4KB, not 1.5kB */\n \n #define CESA_SA_DESCRIPTORS            (CESA_SA_DESC_PER_REQ * CESA_REQUESTS)\n #define CESA_TDMA_DESCRIPTORS          (CESA_TDMA_DESC_PER_REQ * CESA_REQUESTS)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 978751,
+ "bug_id": 225321,
+ "attachment_id": 0,
+ "creation_time": "2018-02-21T15:56:31Z",
+ "creator": "breno.leitao@gmail.com",
+ "text": "Hi,\n\nI created a patch that I think it makes sense.\n\nI think that the problem we are not using the temporary stack properly, since it is defined on the bottom of the stack, as showed:\n\n  #define TMPSTKSZ        16384           /* 16K temporary stack */\n  GLOBAL(tmpstk)\n          .space  TMPSTKSZ\n\n  TOC_ENTRY(tmpstk)\n\nSo, the tmpstk is pointing to the bottom of the stack (higher address) in the TOC.\n\nLater, in the dbtrap: section, we get tmpstk and increase TMPSTKSZ, which is going to get in a different area.\n\nIf the above is correct, we have two solutions:\n\n1) Move the TOC_ENTRY to the TOP of the stack, something as (not validated):\n\n  #define TMPSTKSZ        16384           /* 16K temporary stack */\n  GLOBAL(tmpstk)\n  TOC_ENTRY(tmpstk)\n          .space  TMPSTKSZ\n\n\n2) Does not increment the tmpstk pointer, since we are on the bottom of the stack already:\n\n index 7ef41d90ffe..2307ec4307c 100644\n --- a/sys/powerpc/aim/trap_subr64.S\n +++ b/sys/powerpc/aim/trap_subr64.S\n @@ -805,9 +805,9 @@ dbtrap:\n         andi.   %r1,%r1,0xff00\n         mtsprg3 %r1\n \n         ld      %r1,TRAP_TOCBASE(0)             /* get new SP */\n         ld      %r1,TOC_REF(tmpstk)(%r1)\n -       addi    %r1,%r1,(TMPSTKSZ-48)\n +       addi    %r1,%r1,-48\n \n\nDoes it make any sense?"
+}

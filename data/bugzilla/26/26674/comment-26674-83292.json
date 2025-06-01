@@ -1,0 +1,8 @@
+{
+ "id": 83292,
+ "bug_id": 26674,
+ "attachment_id": 0,
+ "creation_time": "2001-04-18T16:50:01Z",
+ "creator": "dan@freebsddiary.org",
+ "text": "if you use rmuser to remove a user which does not exist, the message is:\n\n/usr/sbin/rmuser: Error: I'd rather not remove a user with a uid of 0.\n\nThe message should be:\n\n/usr/sbin/rmuser: Error: User xyz not in password database\n\nFix: \n\nThe problem appears to be with the return value from getpwnam.  Here's\nsome code from /usr/sbin/rmuser.  mux is hunting around for more info.\n\n($name, $password, $uid, $gid, $change, $class, $gecos, $home_dir, $shell) =\n    (getpwnam(\"$login_name\"));\n\nif ($?) {\n    print STDERR \"${whoami}: Error: User ${login_name} not in password database\\\n    \u0026unlockpw;\n    exit 1;\n}\n\nif ($uid == 0) {\n    print \"${whoami}: Error: I'd rather not remove a user with a uid of 0.\\n\";\n    \u0026unlockpw;\n    exit 1;\n}\nHow-To-Repeat: Remove a user which does not exist\n\n# grep xyz /etc/passwd\n# rmuser xyz\n/usr/sbin/rmuser: Error: I'd rather not remove a user with a uid of 0.\n#"
+}

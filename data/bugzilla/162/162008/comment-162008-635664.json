@@ -1,0 +1,8 @@
+{
+ "id": 635664,
+ "bug_id": 162008,
+ "attachment_id": 0,
+ "creation_time": "2011-11-05T16:29:14Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: pjd\nDate: Sat Nov  5 16:29:03 2011\nNew Revision: 227110\nURL: http://svn.freebsd.org/changeset/base/227110\n\nLog:\n  In zvol_open() if the spa_namespace_lock is already held, it means that\n  ZFS is trying to open and taste ZVOL as its VDEV. This is not supported,\n  so return an error instead of panicing on spa_namespace_lock recursion.\n  \n  Reported by:\tRobert Millan \u003crmh@debian.org\u003e\n  PR:\t\tkern/162008\n  MFC after:\t3 days\n\nModified:\n  head/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zvol.c\n\nModified: head/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zvol.c\n==============================================================================\n--- head/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zvol.c\tSat Nov  5 16:04:57 2011\t(r227109)\n+++ head/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zvol.c\tSat Nov  5 16:29:03 2011\t(r227110)\n@@ -875,6 +875,14 @@ zvol_open(struct g_provider *pp, int fla\n \tzvol_state_t *zv;\n \tint err = 0;\n \n+\tif (MUTEX_HELD(\u0026spa_namespace_lock)) {\n+\t\t/*\n+\t\t * If the spa_namespace_lock is being held, it means that ZFS\n+\t\t * is trying to open ZVOL as its VDEV. This i not supported.\n+\t\t */\n+\t\treturn (EOPNOTSUPP);\n+\t}\n+\n \tmutex_enter(\u0026spa_namespace_lock);\n \n \tzv = pp-\u003eprivate;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

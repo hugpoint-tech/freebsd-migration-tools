@@ -1,0 +1,8 @@
+{
+ "id": 1212799,
+ "bug_id": 264198,
+ "attachment_id": 0,
+ "creation_time": "2022-05-25T07:20:28Z",
+ "creator": "ol@dbconn.net",
+ "text": "Hello,\n\nI have done some further investigations. And I could reproduce it with fewer components.\n\n\nMy Host has one NIC. On this nic is a vlan. The vlan is bridged to an epair interface. If I turn on IPFW throughput gets slow.\n\nThe setup:\n\nigb0---igb0.4030---bridge4030---epair0a---epair0b\n\n\nhost-a # ifconfig epair create mtu 1400\nhost-a # ifconfig bridge4030 addm epair0a\nhost-a # ifconfig epair0a up\nhost-a # ifconfig epair0b inet \u003cIP_ADDR\u003e/28 mtu 1400 up\nhost-a # nc -v -l 2222 \u003e /dev/null\n\n\nI can now send from some other Host in the same Network via nc:\nhost-b # dd if=/dev/zero bs=1024k count=6 | nc -v host-a 2222\n\nIPFW started: 6291456 bytes transferred in 30.689174 secs (205006 bytes/sec)\nIPFW stopped: 6291456 bytes transferred in 0.070876 secs (88766689 bytes/sec)\n\nthis is more than 400 times faster without IPFW running on host-a. And again, the only rule is\n\nhost-a # ipfw list\n65535 allow ip from any to any"
+}

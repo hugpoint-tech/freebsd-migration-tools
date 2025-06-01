@@ -1,0 +1,8 @@
+{
+ "id": 2494,
+ "bug_id": 943,
+ "attachment_id": 0,
+ "creation_time": "1996-01-13T22:54:47Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\tdf seems to get confused when there is too many blocks, e.g.:\n\n\u003e\u003eHow-To-Repeat:\n\n\u003e\tGet yourself a disk array. :)\n\nI just happened to have a rack of 32GB ones handy :-).  Actually, I\nbuilt one using vnconfig.  It only took a bug fix for the vn driver\nand 190MB of metadata for `newfs -i 32768'.\n\n\u003e\u003e\u003e df -k -t local\n\u003eFilesystem  1K-blocks     Used    Avail Capacity  Mounted on\n\u003e...\n\u003e/dev/ccd0c   19801168   205004 -3462766    -6%    /mnt\n\u003e                               ^^^^^^^^^^^^^^\n\nThe freespace calculation is buggy.  ffs does a calculation involving\n(minfree * total_blocks) / 100, so with the standard minfree of 8%, ffs\nstops working at about 1TB/8 instead of at 1TB.  ffs_statfs() and df.c\nfor some reason don't use the standard freespace() macro (df.c uses a\nclone of ffs_statfs() to avoid having to mount ffs file systems to\nreport them).  They do a calculation involving\n((100 - minfree) * total_blocks) / 100.  Apart from apparently having a\nrounding bug, this overflows at 1TB/92 with the standard minfree.  This\nis only a reporting bug.  You get negative available blocks for empty\nfile systems of sizes between about 1GB and 22GB, and truncated block\nsizes between 22GB and 33GB...\n\nBruce"
+}

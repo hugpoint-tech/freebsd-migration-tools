@@ -1,0 +1,8 @@
+{
+ "id": 1199207,
+ "bug_id": 254178,
+ "attachment_id": 0,
+ "creation_time": "2022-02-14T10:53:01Z",
+ "creator": "zirias@freebsd.org",
+ "text": "(In reply to Charlie Li from comment #36)\n\u003e This suggests that PAM support in 5.44 was either accidental (by way of\n\u003e setuiding bin/xscreensaver itself) or it fell back to something else.\nThe latter seems to be the case. I found this code in driver/passwd.c that didn't exist in 5.x yet:\n\n\n|      /* Only try the first method that initialized properly.  That means that\n|         if PAM initialized correctly, we will never try pwent or Kerberos.\n|         If we did, then typing an incorrect password at PAM would result in a\n|         second password prompt that would only go to pwent.  There's no\n|         sensible way to re-use the password typed the first time, if there\n|         even was one.  With fingerprint readers or OTP fobs, there might have\n|         been 0, 2, or more passwords entered. */\n|      break;\n\nSo, that's most likely the reason for the problems, but it seems there are good reasons for that change as well...\n\nAnalyzing the code some more, I found the \"pwent\" method gets hold of the password hash(es) *before* dropping privileges, something that can't work with PAM. I agree with jwz that a PAM authentication dialog shouldn't require root privileges.\n\nNow, my suggestion would be:\n\n* Keep the PAM option, but add a prominent warning that it won't work with pam_unix.so\n* Remove PAM from default options, of course\n* Have a look at base to solve the underlying problem, there should indeed be a suid helper for PAM"
+}

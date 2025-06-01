@@ -1,0 +1,8 @@
+{
+ "id": 52850,
+ "bug_id": 17374,
+ "attachment_id": 0,
+ "creation_time": "2000-03-14T19:50:02Z",
+ "creator": "jan@vandenbosch.org",
+ "text": "\nThe wt QIC02 tapedriver in thwe FreeBSD 3.x has a nice bug (could be\nalso in NetBSD and other BSD's ???)\nThe wt driver sometimes comes in a deadlock state (waiting for an \nwake-up event that never occurs). It may happen when you are doing \nlonger backups on - I assume - some \"slow\" PC's like mine. \nThe backup does not finish correctly, it \"hangs\".\nThe code is in /sys/i386/isa/wt.c.\nThe solution is simple. After changing it,\nthe bug never occurred (to me) again. \n\nReason:\nIn the Interrupt routine wtintr() there is no provision for \nstopping the timeout() if all i/o (one block) is completed\n(state 'i/o finished'). If an interrupt is generated at this moment,\nit comes in an unexpected state ('continue i/o'). In this state,\nthere is of course no wakeup, so it keeps sleeping ... \n\nPatch:\n*Allways put the timer off* if i/o is finished.\nAdd this line in the function body of wtintr(sc):\n\tuntimeout(wtimer, (caddr_t)t, t-\u003eco_handler);\nSee context-diff below.\nRemark:\nIn NetBSD ther is no call-out handler, the patch is even\nmore simple.\n\nHow-To-Repeat: \nProblem shows up every time I was making a longer backup, \non my old 486 PC system.\n(May be on a fast system it does not occure, because it is a timing problem)"
+}

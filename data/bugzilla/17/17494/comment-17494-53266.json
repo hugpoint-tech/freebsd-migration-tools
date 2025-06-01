@@ -1,0 +1,8 @@
+{
+ "id": 53266,
+ "bug_id": 17494,
+ "attachment_id": 0,
+ "creation_time": "2000-03-19T23:20:01Z",
+ "creator": "scott_long@btc.adaptec.com",
+ "text": "In the course of writing a simple GUI network monitor/dialup front-end, I have\ncome across a couple of quirks in the tunnel driver that don't seem to exist \nin other network drivers (ppp, sl, lo, ether).\n\n1.  the ifnet structure for the tun device is not created at attach time like\nit is for other network drivers.  Instead, it is created when the device is\nopened, if it hasn't already been created in a previous open.  This behaviour\ncauses my program to not see the tun device unless a program like ppp(8) is\nrun first, which defeats one of the goals of this program: to control dialup\nnetworking.  Comparing code in if_[tun|ppp|sl|lo].c shows that all but tun\ncreate the ifnet structure from within their respective attach routine.  But\non the other hand, if_tun.c uses make_dev while the others do not.  Making\nif_tun.c resemble the others is a trivial task, but I am not sure what would\nbe lost by eliminating make_dev (which requires a dev_t argument that attach\ncannot supply, if I understand things correctly).\n\n2.  when the tun interface is put into promiscuous mode (via tcpdump)\nIFF_PROMISC is set as expected.  When tcpdump is exited and the bpf interface\nis closed, the IFF_PROMISC flag is not unset.  On other interfaces this works\ncorrectly.  I have not been able to figure this one out yet.\n\nFix: \n\nAs stated above, creating the ifnet struct in the attach vs open routine is\nfairly trivial, but at the cost of make_dev.  I can supply a patch if\nrequested."
+}

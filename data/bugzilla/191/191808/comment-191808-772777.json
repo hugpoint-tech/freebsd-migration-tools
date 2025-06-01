@@ -1,0 +1,8 @@
+{
+ "id": 772777,
+ "bug_id": 191808,
+ "attachment_id": 0,
+ "creation_time": "2014-07-11T16:14:18Z",
+ "creator": "michael@supermathie.net",
+ "text": "System: FreeBSD fearless2 10.0-RELEASE-p7 FreeBSD 10.0-RELEASE-p7 #0: Wed Jul 9 12:19:19 EDT 2014 root@fearless2:/usr/obj/usr/src/sys/CAMDEBUG amd64\n\nI have an IBM server configured with 400GB SAS SSDs on which I'm trying to create a ZFS pool.\n\n# zpool create tank da1 da2 da3 da4\n\nBy default, ZFS will trim/unmap the drive when configuring but the UNMAP command takes\n78s to complete, longer than kern.cam.da.default_timeout (60).\n\nI get timeouts and it tries to resubmit but will never finish:\nJul  9 12:40:06 fearless2 kernel: (da1:mps0:0:3:0): UNMAP. CDB: 42 00 00 00 00 00 00 00 18 00\nJul  9 12:41:06 fearless2 kernel: (da1:mps0:0:3:0): UNMAP. CDB: 42 00 00 00 00 00 00 00 18 00 length 24 SMID 623 command timeout cm 0xfffffe00010c11b0 ccb 0xfffff80028931000\nJul  9 12:41:06 fearless2 kernel: (noperiph:mps0:0:4294967295:0): SMID 1 Aborting command 0xfffffe00010c11b0\nJul  9 12:41:07 fearless2 kernel: (da1:mps0:0:3:0): UNMAP. CDB: 42 00 00 00 00 00 00 00 18 00\nJul  9 12:41:07 fearless2 kernel: (da1:mps0:0:3:0): CAM status: Command timeout\n\nIncreasing kern.cam.da.default_timeout to 90s allows the command to finish and the pool to be created.\n\nZFS should probably UNMAP smaller chunks at a time (4GB?) on initial creation so the\ncommand can complete in a timely manner. Or, can it submit the UNMAP request with a much higher than normal timeout?\n\nNote that vfs.zfs.vdev.trim_max_bytes doesn't apply here."
+}

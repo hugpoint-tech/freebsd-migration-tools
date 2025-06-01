@@ -1,0 +1,8 @@
+{
+ "id": 45321,
+ "bug_id": 14895,
+ "attachment_id": 0,
+ "creation_time": "1999-11-15T08:10:01Z",
+ "creator": "dlowe@pootpoot.com",
+ "text": "Under certain circumstances, portmap forks endlessly.  This was also\nreported in PR misc/12607, but mistakenly listed as a ypbind() bug.\n\nHere's the set of things that cause this problem:\n\nportmap actually fork()s before calling getrpcbynumber() and syslog(),\nto log.  Thus the main portmap process can answer requests while a\nchild writes log output.\n\nWhen portmap is run with the -v flag, it logs every incoming request.\n\nUnder certain circumstances, getrpcent(), called several times by\ngetrpcbynumber(), will call _yp_check(), which in turn may call\nypbind(), which in turn talks to portmap.\n\nDoh!\n\nportmap eventually fills up the process table with logging children.\n\nFix: This is a workaround patch to pmap_check.c, not very nice because it\nremoves one level of verbosity from the supposedly more verbose output\nof portmap -v.  However, it should prevent this from happening, and it\nillustrates the problem area.  As a simpler workaround, don't run\nportmap with the -v flag, or don't run NIS.  Neither solution is\nperfect.  This patch is against \"$Id: pmap_check.c,v 1.3 1997/10/09\n07:17:11 charnier Exp $\"\n\nHow-To-Repeat: /etc/rc.conf:\n\nnisdomainname=\"FOO\"\nnis_server_enable=\"YES\"\n\nportmap_enable=\"YES\"\nportmap_flags=\"-v\"\n\nYou'll need to go into single user mode in order to get the machine\nback, since rc can't seem to finish with a full process table."
+}

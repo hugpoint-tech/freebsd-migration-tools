@@ -1,0 +1,8 @@
+{
+ "id": 960014,
+ "bug_id": 223327,
+ "attachment_id": 0,
+ "creation_time": "2017-11-18T22:06:52Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "Although kern.chroot_allow_open_directories can be bypassed trivially via Unix domain socket file descriptor passing, it does serve a purpose in pointing out open chroots and jails like this one. The open directory allows full access to the / that dhclient was started from, defeating its chroot to /var/empty. In capability mode where \"..\" is disallowed, there is still full access to /var/run.\n\nIt looks like the status quo is that the pidfile will not be removed when dhclient aborts after chrooting. The pidfile_remove() call will always fail. Before r322369 this was the case because of the chroot, and after r322369 this was the case because dhclient limits the pidfile descriptor to no rights (so that pidfile_verify() will fail).\n\nIf this status quo is acceptable, the fix is to close the directory file descriptor using a newly added pidfile(3) function.\n\nIf the status quo is not acceptable, it could be fixed by adding a not chrooted non-capmode intermediate process to do the remove or by moving the dhclient pidfile into its own directory and fixing the rights on the pidfile and directory descriptors. The latter also requires an addition to the pidfile(3) API."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1334786,
+ "bug_id": 252165,
+ "attachment_id": 0,
+ "creation_time": "2024-11-13T21:26:53Z",
+ "creator": "ali.abdallah@suse.com",
+ "text": "(In reply to Ali Abdallah from comment #37)\nThe patch in comment 37 could be a bit optimized, yes! \n\nThe usb process/request code is completely broken when it comes to different threads sharing ue_lock (ioctl versus uether tick), the usb request code releases the acquired lock, making ioctl thread waiting for the same lock to be scheduled for execution, lovely!\n\nTo be more precise.\n\nioctly waiting for ue_lock, which is acquired by ue_tick, but then the tick code will call at some point usbd_do_request_flags, which will release the lock at the beginning (and then acquire it later), but in the meantime we have our \"cute\" ioctl thread waken-up only to report wrong media_status value!"
+}

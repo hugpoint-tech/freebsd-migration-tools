@@ -1,0 +1,8 @@
+{
+ "id": 671186,
+ "bug_id": 169165,
+ "attachment_id": 0,
+ "creation_time": "2012-06-16T21:50:10Z",
+ "creator": "dh@bsd.ee",
+ "text": "Calling fchown() function on a file descriptor opened from a filesystem mounted using sshfs causes FreeBSD 9.0 to panic. I didn't experience panics on FreeBSD 8.x versions. I discovered the issue when I tried to save a file using vim opened from sshfs filesystem. It doesn't matter if filesystem was mounted by regular user or root.\n\nI have following fusefs ports installed (which are latest versions available at the time of reporting):\n\nfusefs-kmod-0.3.9.p1.20080208_10\nfusefs-libs-2.7.4\nfusefs-sshfs-2.4\n\nKernel is GENERIC kernel configuration with to extra options:\noptions DDB\noptions GDB\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: 1) Install sysutils/fusefs-kmod, sysutils/fusefs-libs and fusefs-sshfs ports on a FreeBSD 9.0 system\n2) Load fusefs kernel module: /usr/local/etc/rc.d/fusefs onestart\n3) Mount a sshfs filesystem: sshfs user@example.com:. /mnt\n4) Compile crash.c program (code below): gcc ~/crash.c -o ~/crash\n5) Run compiled program on a sshfs filesystem: cd /mnt \u0026\u0026 ~/crash\n6) Panic\n\n--- crash.c code ---\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n\nint main(void)\n{\n    int fd;\n\n    if ((fd = open(\"crash.test\", O_RDWR|O_CREAT)) == -1)\n    {\n        perror(\"open\");\n        exit(1);\n    }\n\n\t/* This call will cause panic */\n    if (fchown(fd, 0, 0) == -1) \n    {\n        perror(\"fchown\");\n        exit(1);\n    }\n    \n    close(fd);\n\n    return 0;\n}\n--- end crash.c code ---"
+}

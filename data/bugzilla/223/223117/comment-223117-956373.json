@@ -1,0 +1,8 @@
+{
+ "id": 956373,
+ "bug_id": 223117,
+ "attachment_id": 187311,
+ "creation_time": "2017-10-19T15:28:33Z",
+ "creator": "lev@FreeBSD.org",
+ "text": "Created attachment 187311\nPatch to place into file/ directory.\n\nIt is well-known problem, mostly with blazer_usb drive, but not limited to it, that sometimes USB driver reports \"Permission error\" and exits without any visible reason (permissions are Ok or driver run as root). This problem was reported on mailing lists and forums for FreeBSD 9, 10 and 11, and not for other operating systems.\n\nI found reason for these problems: current (2.7.4) version of NUT uses libusb-0.1 API. All processing of USB errors in NUT sources assumes that \"return values less than zero\" of libusb-0.1 calls means \"negated errno codes\", and have special processing for some errors, like \"-EPERM\" (which is -1, as EPERM is 1). \n\nFreeBSD uses wrappers around libusb-1.0 API to provide libusb-0.1 API and uses libusb-1.0 error codes (which are negative!), and -1 is LIBUSB_ERROR_IO, whcih should not kill driver but must trigger reconnect.\n\nNUT has project to use libusb-1.0 API, and, I hope, they fix this problem in the course of this project (I've reported this problem to NUT developers), but for now I've hacked up quick-n-dirty patch to fix problem with nut 2.7.4.\n\nMain problem with this patch, is I copy'n'pasted error definitions from \"/usr/include/libusb.h\", as I found that it is hard to include system include together with project-local include.\n\nPatch is attached. Please note, that it is patch for \"files/\" directory, not patch for port directory, PORTREVISION must be tweaked as well."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1337115,
+ "bug_id": 282994,
+ "attachment_id": 0,
+ "creation_time": "2024-11-29T15:27:05Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "\u003e 5. They all use RCTL to control resources used by users.\n\nThe problem is that shm_alloc() assumes that object allocation won't fail, but this is false:\n- racct rules which restrict swap usage can cause swap_reserve_by_cred() to fail;\n- some overcommit modes limit swap reservations such that swap_reserve_by_cred() can fail.\n\nI suspect that changing your racct rules will work around the problem.  RACCT_SWAP works by limiting the maximum number and size of swap-backed objects, rather than swap device usage.  In particular, it treats swap object allocation as a \"reservation\" and that counts against the limit before swap space is actually used.  I'm a bit skeptical that this implementation is very useful.\n\nI wrote a patch which prevents the crash, but note that you'll get shm object allocation failures instead, which might cause all kinds of problems: https://reviews.freebsd.org/D47839\n\n(In reply to jSML4ThWwBID69YC from comment #1)\nChanging your racct rules might address these problems as well."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 740865,
+ "bug_id": 184381,
+ "attachment_id": 0,
+ "creation_time": "2013-11-30T01:40:39Z",
+ "creator": "leres@freebsd.org",
+ "text": "The patch I attached to this PR does not address pkg-fallout for FreeBSD\n8.3-RELEASE:\n\n    [REL - 83amd64-default][security/bro] Failed for bro-2.2 in configure\n    [REL - 83i386-default][security/bro] Failed for bro-2.2 in configure\n\nThe basic problem is that Bro's binpac requires libmagic 5.04 or newer\nbut FreeBSD 8 shipped with 5.03.\n\nThe Makefile already has:\n\n    .include \u003cbsd.port.options.mk\u003e\n\n    .if ${PORT_OPTIONS:MBROCCOLI}\n    LIB_DEPENDS+=   broccoli:${PORTSDIR}/security/broccoli\n    .endif\n\nWhich should be sufficient based on my read of the porters handbook:\n\n\nhttp://www.freebsd.org/doc/en/books/porters-handbook/makefile-depend.html\n\n    5.8.1. LIB_DEPENDS\n\n\tThis variable specifies the shared libraries this port\n\tdepends on. It is a list of lib:dir tuples where lib is the\n\tname of the shared library, dir is the directory in which\n\tto find it in case it is not available. For example,\n\n\t    LIB_DEPENDS=   libjpeg.so:${PORTSDIR}/graphics/jpeg\n\n\twill check for a shared jpeg library with any version, and\n\tdescend into the graphics/jpeg subdirectory of your ports\n\ttree to build and install it if it is not found.\n\n\t*The dependency is checked twice, once from within the build\n\ttarget and then from within the install target.* Also, the\n\tname of the dependency is put into the package so that\n\tpkg_add(1) will automatically install it if it is not on\n\tthe user's system.\n\nHowever it doesn't appear to actually work that way so the revised patch\n(attached) adds a BUILD_DEPENDS for sysutils/file. This was tested on\n8.2-RELEASE.\n\n\t\tCraig"
+}

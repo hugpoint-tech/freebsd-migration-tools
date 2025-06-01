@@ -1,0 +1,8 @@
+{
+ "id": 99831,
+ "bug_id": 31629,
+ "attachment_id": 0,
+ "creation_time": "2001-10-30T16:44:06Z",
+ "creator": "alane@geeksrus.net",
+ "text": "Some additional detail:\n\n1. This never presented in all the KDE 2.2 (alpha1 through cvs-20010910) \nbuilds that I did when on RH; most likely reason for that is that Bernard \nRosenkraenzer's patches fixed it, although I don't have them handy to verify \nthis.\n\n1A. I'm going to check this against CVS.\n\n1B. WIll file in KDE bugs if it is present in KDE CVS.\n\n2. Whether this is the *right* patch is debatable. There's a different \napproach I could take, as this same error could be present in other places in \nthe KIO::copy/file_copy/move/shipToMongolia/etc interfaces.\n\nBasically, the problem is that perms are a mode_t. Period. But the KIO::* \ninterfaces, and hence the DCOP/MOC interfaces, uses int. Developers could be \ntrying to Do The RIght Thing by using mode_t vars and or (mode_t) casts. This \nwill just break.\n\nI *could* patch it in kio/file/file.cc, by changing the checks of the form:\n\t_mode == -1\nto:\n\t(mode_t)_mode == (mode_t)-1.\n\nThis would protect callers who also made the same mistake. OTOH, it has the \neffect of masking what are, effectively, interface contract violations. The \ninterface contract says, \"you will give me an int, valued -1, if you want \ndefault permissions\"; it doesn't say anything about a \"mode_t valued -1\".\n\nThoughts?"
+}

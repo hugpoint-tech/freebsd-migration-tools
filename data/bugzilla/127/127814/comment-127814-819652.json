@@ -1,0 +1,8 @@
+{
+ "id": 819652,
+ "bug_id": 127814,
+ "attachment_id": 0,
+ "creation_time": "2015-04-13T22:51:27Z",
+ "creator": "longwitz@incore.de",
+ "text": "I like to revise my proposal to fix pf_reload: Correct is\n  pfctl -Fnat -Fqueue -Frules -FSources -Finfo -FTables -Fosfp\nworks like \n  pfctl -Fosfp.\nBut instead of fixing this in pfctl or the pf script, this call of pfctl should be deleted completely. Otherwise running connections could be broken by pf_reload. In continuation of the patch given in PR 119874 I prefer now\n\n--- pf.orig     2015-03-13 12:00:34.000000000 +0100\n+++ pf  2015-04-14 00:31:56.513032000 +0200\n@@ -46,16 +46,13 @@\n pf_check()\n {\n        echo \"Checking pf rules.\"\n-       $pf_program -n -f \"$pf_rules\"\n+       $pf_program -n -f \"$pf_rules\" $pf_flags\n }\n\n pf_reload()\n {\n        echo \"Reloading pf rules.\"\n-       $pf_program -n -f \"$pf_rules\" || return 1\n-       # Flush everything but existing state entries that way when\n-       # rules are read in, it doesn't break established connections.\n-       $pf_program -Fnat -Fqueue -Frules -FSources -Finfo -FTables -Fosfp \u003e /dev/null 2\u003e\u00261\n+       $pf_program -n -f \"$pf_rules\" $pf_flags || return 1\n        $pf_program -f \"$pf_rules\" $pf_flags\n }\n\nFurther we should avoid to break connections on skipped interfaces during reloading pf rules. The patch given in \n   http://lists.freebsd.org/pipermail/freebsd-pf/2013-April/006994.html\ndoes this job and works in FreeBSD 10 too."
+}

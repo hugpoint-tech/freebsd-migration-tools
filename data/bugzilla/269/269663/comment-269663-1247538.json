@@ -1,0 +1,8 @@
+{
+ "id": 1247538,
+ "bug_id": 269663,
+ "attachment_id": 0,
+ "creation_time": "2023-02-18T16:11:09Z",
+ "creator": "0mp@FreeBSD.org",
+ "text": "I have a target that is marked as phony. I also have a file with the same name as that phony target in my directory. When I interrupt the target, it removes the file. Here's the repro script:\n\n    set -eu\n\n    # Try to detect bmake.\n    make=\"$(which bmake || which make)\"\n\n    rm -rf work\n    mkdir work\n    cd work\n\n    # Create a file with the same name as the make target we are about to run.\n    touch aaa\n\n    # Mark target aaa as phony.\n    {\n        printf '%s\\n'   \".PHONY: aaa\"\n        printf '%s\\n'   \"aaa:\"\n        printf '\\t%s\\n' \"sleep 10\"\n    } \u003e Makefile\n\n    # Time out before the aaa target completes.\n    #\n    # NB: The return code of the timeout command is not 0,\n    # so temporarily turn of set -e.\n    set +e\n    timeout 2s make aaa\n    set -e\n\n    # Verify that the aaa file is still there.\n    if [ -f aaa ]; then\n            echo OK\n            exit 0\n    else\n            echo FAIL\n            exit 1\n    fi\n\n\nI've tested that on FreeBSD 13.1-RELEASE amd64.\n\nInterestingly, I cannot reproduce it on macOS with bmake 20230208."
+}

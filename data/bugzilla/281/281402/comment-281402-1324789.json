@@ -1,0 +1,8 @@
+{
+ "id": 1324789,
+ "bug_id": 281402,
+ "attachment_id": 0,
+ "creation_time": "2024-09-10T14:06:05Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Alan Somers from comment #1)\nSo, I'm not too familiar with zio_t.  Reading vdev_file_io_strategy(), I suspect we want a kmsan_check_abd(), akin to kmsan_check_bio() etc..  (Note that when KMSAN is configured, we try to disable unmapped I/O everywhere, including ZFS.  KMSAN does not shadow the direct map.  This is not ideal.)\n\nThat is, something like\n\nvoid\nkmsan_check_abd(abd_t abd, const char *descr)\n{\n    KASSERT(abd_is_linear(abd));\n    kmsan_shadow_check(abd_to_buf(abd), abd-\u003eabd_size, descr);\n}\n\nOr a kmsan_check_zio(), which applies the above to zio-\u003eio_abd when the type is ZIO_TYPE_WRITE.\n\nThen, various stages of the ZIO pipeline should check the abd/zio when writing.  I guess __zio_execute() should perform that check.  That said, I'm not certain it's true that the ZIO buffer is initialized at all stages in the pipeline (I'm just not that familiar with the I/O path), so we might get false positives.\n\nThis way, we can at least narrow it down to a particular stage, or prove that the data was uninitialized before entering the pipeline at all.  I guess putting a check in zio_write() would be a good idea too."
+}

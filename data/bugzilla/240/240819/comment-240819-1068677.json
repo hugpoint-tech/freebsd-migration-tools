@@ -1,0 +1,8 @@
+{
+ "id": 1068677,
+ "bug_id": 240819,
+ "attachment_id": 0,
+ "creation_time": "2019-09-25T15:24:38Z",
+ "creator": "fabrice.bruel@orange.com",
+ "text": "Hello,\n\nI've notice a problem with scrub and UDP packet on FreeBSD 12STABLE\n\nVersion :\n# uname -a\nFreeBSD R640-4 12.0-STABLE FreeBSD 12.0-STABLE #1 r348036M: Tue May 21 10:58:21 CEST 2019     root@PFWALL-GEN2:/usr/obj/PFWALL.amd64/usr/local/PFWall/FreeBSD/src/amd64.amd64/sys/PFWALL-AMD64  amd64\n\nDescribe :\n\nIf PF is activated with this scrub option :\n\nscrub out all random-id\nscrub all fragment reassemble\n\nUDP fragment doesn't cross PF. removing this 2 line solve the issue.\n\nIncoming packet seems to be \"bad\" in tcpdump :\n\n# tcpdump -n -i bxe3 udp\ntcpdump: verbose output suppressed, use -v or -vv for full protocol decode\nlistening on bxe3, link-type EN10MB (Ethernet), capture size 262144 bytes\n16:23:13.231094 IP 10.2.0.22.2798 \u003e 10.2.0.221.0: UDP, bad length 1420 \u003e 1392\n16:23:13.231116 IP 10.2.0.22 \u003e 10.2.0.221: ip-proto-17\n16:23:14.292550 IP 10.2.0.22.2799 \u003e 10.2.0.221.0: UDP, bad length 1420 \u003e 1392\n16:23:14.292572 IP 10.2.0.22 \u003e 10.2.0.221: ip-proto-17\n16:23:15.354955 IP 10.2.0.22.2800 \u003e 10.2.0.221.0: UDP, bad length 1420 \u003e 1392\n\nNote that's the MTU of the egress interface (bxe3 here) is 1500 :\n# ifconfig bxe3\nbxe3: flags=8843\u003cUP,BROADCAST,RUNNING,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n\toptions=522ba\u003cTXCSUM,VLAN_MTU,VLAN_HWTAGGING,JUMBO_MTU,VLAN_HWCSUM,TSO6,WOL_MAGIC,VLAN_HWFILTER,VLAN_HWTSO\u003e\n\nI've tried to remove tso, rxcsum,tso, with no result. Maybe it's more a IP issue ?\n\n\nHow to reproduce : \n\n# hping -2 -m 1400 -d 1420  ip_target"
+}

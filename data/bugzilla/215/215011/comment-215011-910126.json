@@ -1,0 +1,8 @@
+{
+ "id": 910126,
+ "bug_id": 215011,
+ "attachment_id": 0,
+ "creation_time": "2016-12-02T17:54:18Z",
+ "creator": "myron.walker@emc.com",
+ "text": "There is a race condition that must be worked around by everyone using kqueue(s) to monitor files for changes.  The race condition is.\n\n1. open file and get fd\n2. create kqueue to listen for events like (rename, delete, etc.)\n3. go to sleep and wait for changes\n\nThe problem is that if the file is deleted or renamed in between the call to open\nand before the kqueue is setup to monitor the file, you will not receive any notification\n\nIn order to work around this people do:\n\n1. create/open file\n2. check stat and path of file\n3. create kqueue to listen for events\n4. check stat and path of file again and make sure nothing changed\n5. go to sleep and wait for changes.\n\nIt would be useful if there was a kqueue API for opening a file that would eliminate the race condition between opening a file and setting up monitoring an API that combines the parameters of open and kqueue so that the file descriptor returned and the kqueue monitoring setup will be atomic.  Maybe a 'kopen' api or something like that.\n\nThis would raise awareness of the race condition and provide a standard way of navigating around it that can be stabalized and utilized throughout code to provide support for a much more robust platform."
+}

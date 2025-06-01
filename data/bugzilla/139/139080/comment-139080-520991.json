@@ -1,0 +1,8 @@
+{
+ "id": 520991,
+ "bug_id": 139080,
+ "attachment_id": 0,
+ "creation_time": "2012-06-20T07:38:57Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: eadler\nDate: Wed Jun 20 06:38:41 2012\nNew Revision: 237286\nURL: http://svn.freebsd.org/changeset/base/237286\n\nLog:\n  Don't close an uninitialized descriptor. [1]\n  Add a sanity check for the validity of the passed fd.\n  \n  PR:\t\tkern/139080 [1]\n  Submitted by:\tAndrey Simonenko \u003csimon@comsys.ntu-kpi.kiev.ua\u003e [1]\n  Reviewed by:\tpjd (briefly)\n  Approved by:\tcperciva\n  MFC after:\t1 week\n\nModified:\n  head/lib/libc/gen/syslog.c\n\nModified: head/lib/libc/gen/syslog.c\n==============================================================================\n--- head/lib/libc/gen/syslog.c\tWed Jun 20 04:11:34 2012\t(r237285)\n+++ head/lib/libc/gen/syslog.c\tWed Jun 20 06:38:41 2012\t(r237286)\n@@ -41,6 +41,7 @@ __FBSDID(\"$FreeBSD$\");\n #include \u003csys/un.h\u003e\n #include \u003cnetdb.h\u003e\n \n+#include \u003cassert.h\u003e\n #include \u003cerrno.h\u003e\n #include \u003cfcntl.h\u003e\n #include \u003cpaths.h\u003e\n@@ -413,8 +414,11 @@ void\n closelog(void)\n {\n \tTHREAD_LOCK();\n-\t(void)_close(LogFile);\n-\tLogFile = -1;\n+\tassert(LogFile \u003e= -1);\n+\tif (LogFile != -1) {\n+\t\t(void)_close(LogFile);\n+\t\tLogFile = -1;\n+\t}\n \tLogTag = NULL;\n \tstatus = NOCONN;\n \tTHREAD_UNLOCK();\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

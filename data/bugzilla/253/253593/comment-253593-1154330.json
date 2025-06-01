@@ -1,0 +1,8 @@
+{
+ "id": 1154330,
+ "bug_id": 253593,
+ "attachment_id": 0,
+ "creation_time": "2021-04-02T12:41:31Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch main references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=76b1b5ce6d81f66b09be8a20aecd064b65fd6b50\n\ncommit 76b1b5ce6d81f66b09be8a20aecd064b65fd6b50\nAuthor:     Konstantin Belousov \u003ckib@FreeBSD.org\u003e\nAuthorDate: 2021-04-01 17:42:14 +0000\nCommit:     Konstantin Belousov \u003ckib@FreeBSD.org\u003e\nCommitDate: 2021-04-02 12:40:25 +0000\n\n    nullfs: protect against user creating inconsistent state\n\n    The VFS conventions is that VOP_LOOKUP() methods do not need to handle\n    ISDOTDOT lookups for VV_ROOT vnodes (since they cannot, after all).  Nullfs\n    bypasses VOP_LOOKUP() to lower filesystem, and there, due to user actions,\n    it is possible to get into situation where\n    - upper vnode does not have VV_ROOT set\n    - lower vnode is root\n    - ISDOTDOT is requested\n    User just needs to nullfs-mount non-root of some filesystem, and then move\n    some directory under mount, out of mount, using lower filesystem.\n\n    In this case, nullfs cannot do much, but we still should and can ensure\n    internal kernel structures are consistent.  Avoid ISDOTDOT lookup forwarding\n    when VV_ROOT is set on lower dvp, return somewhat arbitrary ENOENT.\n\n    PR:     253593\n    Reported by:    Gregor Koscak \u003celogin41@gmail.com\u003e\n    Test by:        Patrick Sullivan \u003csulli00777@gmail.com\u003e\n    Tested by:      pho\n    Sponsored by:   The FreeBSD Foundation\n    MFC after:      1 week\n\n sys/fs/nullfs/null_vnops.c | 19 +++++++++++++++----\n 1 file changed, 15 insertions(+), 4 deletions(-)"
+}

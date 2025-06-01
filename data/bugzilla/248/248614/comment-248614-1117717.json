@@ -1,0 +1,8 @@
+{
+ "id": 1117717,
+ "bug_id": 248614,
+ "attachment_id": 217167,
+ "creation_time": "2020-08-12T09:06:54Z",
+ "creator": "gnachman@gmail.com",
+ "text": "Created attachment 217167\nClient and server that demonstrate the actual behavior of getpeereid\n\nThe manpage for `getpeereid` states:\n\n\u003e The argument s must be a UNIX-domain socket (unix(4)) of type SOCK_STREAM on which either connect(2) or listen(2) have been called.\n\nThis is surprising! Why would you be able to get the effective user ID of the peer on the socket for which *listen* has been called? There isn't a peer until you `accept`.\n\nUsing the attached server and client programs, it looks like my intuition is correct:\n\n$ ./server\nstatus=-1 eid=0 errno=57\nstatus=0 eid=1001 errno=57\n\n`getpeereid` requires s to be the socket that has been returned by `accept()`, not the one that was `listen()`ed on.\n\nI think the language should be changed to:\n\n\u003e The argument s must be a UNIX-domain socket (unix(4)) of type SOCK_STREAM on which connect(2) has been called or was returned by accept(2) or accept4(2)."
+}

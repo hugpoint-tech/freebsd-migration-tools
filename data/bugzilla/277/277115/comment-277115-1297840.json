@@ -1,0 +1,8 @@
+{
+ "id": 1297840,
+ "bug_id": 277115,
+ "attachment_id": 0,
+ "creation_time": "2024-02-19T23:41:02Z",
+ "creator": "freebsd@dev.thsi.be",
+ "text": "\u003e Besides the manpage fixes, and thank you very much for taking that into consideration, is the patch you put in comment #6 all that is needed to fix this for you then or do need some time to cook?\n\nYou are welcome, thank you for looking into this report. I came up with a better patch that works for me, so please use the patch inlined here:\n\npatch-dao_ScsiIf-freebsd-cam.cc\n--- dao/ScsiIf-freebsd-cam.cc.orig\t2023-01-25 14:30:35 UTC\n+++ dao/ScsiIf-freebsd-cam.cc\n@@ -112,8 +112,8 @@ int ScsiIf::sendCmd(const unsigned char *cmd, int cmdL\n {\n \tint\t\tretval;\n \tint\t\tflags = CAM_DIR_NONE;\n-\tu_int8_t *\tdata_ptr;\n-\tsize_t\t\tdata_len;\n+\tu_int8_t *\tdata_ptr = NULL;\n+\tsize_t\t\tdata_len = 0;\n \n \tbzero(impl_-\u003eccb, sizeof(union ccb));\n \tbcopy(cmd, \u0026impl_-\u003eccb-\u003ecsio.cdb_io.cdb_bytes, cmdLen);\n\n\nI think that underlying issue was caused by the compiler optimizing away the call to cam_fill_csio because data_ptr and data_len were left unitialized in the case of neither dataIn nor dataOut, and since cam_fill_csio didn't copy the flags=CAM_DIR_NONE into the CCB, its was implitly left to CAM_DIR_BOTH = 0x00000000 and that would trigger the issue in dev/ata/ata_dma.c.\n\nThe issue about odd-sized dma might still occur on ata(4), but that's a minor annoyance; read-cd and read-toc in the default slow scan mode work and that's enought for my use-case."
+}

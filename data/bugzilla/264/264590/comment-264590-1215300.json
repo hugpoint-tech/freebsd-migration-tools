@@ -1,0 +1,8 @@
+{
+ "id": 1215300,
+ "bug_id": 264590,
+ "attachment_id": 0,
+ "creation_time": "2022-06-10T09:52:31Z",
+ "creator": "var@schellong.biz",
+ "text": "FreeBSD 11.2-RELEASE FreeBSD 11.2-RELEASE #0 r335510: Fri Jun 22 04:32:14 UTC 2018     root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC  amd64\n\nCompiler:  clang6, gcc9, bcc32x.exe (Embarcadero, Windows)\n\nSample code:\n--------------------------------------------\nstatic long double sd(void)\n{\n   long double y;\n   __asm__ (\"\\n\\t\"\n            \"fldpi \\n\\t\"\n            \"fld1 \\n\\t\"\n            \"fdivp \\n\\t\"\n            : \"=t\"(y)\n            :\n            :\n            );        // st(1)=pi, st(0)=1\n   return y;\n}\n\n\n\nint main(void)\n{\n   printf(\"\\t%.18Lg\\n\", sd());\n   return 0;\n}\n-------------------------------------------- \n\nOutput:  0.318309886183790672 = 1/pi\nBut correct is:  pi = pi/1\n\nContent of file.o:\n0b+096  c4 10 5d c3 55 48 89 e5  \u003e\u003e d9 eb, d9 e8, de f1 \u003c\u003c 5d c3\n.                                   ^^^^^  ^^^^^  ^^^^^ \nOpcodes of 'fldpi', 'fld1' and /division/.\nThere is the wrong opcode 'de f1' for 'fdivrp'!\nNot 'de f9' for the written 'fdivp'.\nThese wrong translations appear on fdivxx and fsubxx."
+}

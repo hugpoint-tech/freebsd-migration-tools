@@ -1,0 +1,8 @@
+{
+ "id": 1169017,
+ "bug_id": 256936,
+ "attachment_id": 0,
+ "creation_time": "2021-07-05T11:45:18Z",
+ "creator": "chogata@moosefs.com",
+ "text": "First of all: MooseFS uses FUSE 3 whenever possible (it checks what is available on the system it's compiled on and uses that). And we do try to use all the new options and mechanisms available to us.\n\nBut there is no mechanism that would prevent a network file system that uses cache from overwriting some data if two processes on two machines write to the same cached block at the same time. I mean, once both kernels have modified the same frame of cache and want to push the dirty frame to the filesystem, there is no way to automagically update/correct one of them. The only solution is to not use cache at all (BTW, MooseFS client mounted with -o mfscachemode=DIRECT, which translates to each open always setting direct_io to 1 and keep_cache to 0, still triggers the \"buggy\" message). But not using cache at all is not a solution, because of performance. The commit you mentioned invalidates all cache, even the dirty frames. IMHO dirty frames should never be invalidated. It should be left to the users/programmers to make sure they don't modify the same area of the file (use locks etc.) Or we can say goodbye to any caching...\n\nThe script I posted as an example is not \"correct\", in that it doesn't use locks, but it's my (programmer's) \"fault\" that data gets written to a file without control, not the _network_ filesystem's."
+}

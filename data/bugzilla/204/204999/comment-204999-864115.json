@@ -1,0 +1,8 @@
+{
+ "id": 864115,
+ "bug_id": 204999,
+ "attachment_id": 0,
+ "creation_time": "2016-02-08T23:11:48Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: jhb\nDate: Mon Feb  8 23:11:23 UTC 2016\nNew revision: 295419\nURL: https://svnweb.freebsd.org/changeset/base/295419\n\nLog:\n  Call kthread_exit() rather than kproc_exit() for a premature kthread exit.\n\n  Kernel threads (and processes) are supposed to call kthread_exit() (or\n  kproc_exit()) to terminate.  However, the kernel includes a fallback in\n  fork_exit() to force a kthread exit if a kernel thread's \"main\" routine\n  returns.  This fallback was added back when the kernel only had processes\n  and was not updated to call kthread_exit() instead of kproc_exit() when\n  threads were added to the kernel.\n\n  This mistake was particular exciting when the errant thread belonged to\n  proc0.  Due to the missing P_KTHREAD flag the fallback did not kick in\n  and instead tried to return to userland via whatever garbage was in the\n  trapframe.  With P_KTHREAD set it tried to terminate proc0 resulting in\n  other amusements.\n\n  PR:\t\t204999\n  MFC after:\t1 week\n\nChanges:\n  head/sys/kern/kern_fork.c"
+}

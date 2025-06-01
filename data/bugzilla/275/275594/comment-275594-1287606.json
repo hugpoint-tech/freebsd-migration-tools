@@ -1,0 +1,8 @@
+{
+ "id": 1287606,
+ "bug_id": 275594,
+ "attachment_id": 0,
+ "creation_time": "2023-12-09T16:15:17Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "\u003e I thought you would say that; I almost thought of the same thing more than 20 years ago while implementing the initial version of vnlru along with Matt Dillon :)\n\u003e\n\u003e The per-mountpoint / per-filesystem vnode design has at least two challenges:\n\u003e\n\u003e A) Balancing the vnodes across the mountpoints / filesystems, and\n\u003e B) Splitting the name cache.\n\u003e\n\u003e I suspect B) is the more difficult one.  As of now, the global name cache allows the vnode lookup in a single place with just one pass.\n\nI'm not a VFS expert by any means, but I don't see what this has to do with the name cache.  vnodes live on a global list, chained by v_vnodelist, and this list appears to be used purely for reclamation.  Suppose we instead use a per-mountpoint LRU (and some strategy to select a mountpoint+num vnodes to reclaim) instead.  How would this affect the name cache?\n\n\u003e The interval between the ARC pruning executions is much more simple and yet effective, under my key findings out of the first test in the description:\n\nSorry, I don't understand.  The trigger for arc_prune is whether the ARC is holding \"too much\" metadata, or ZFS is holding \"too many\" dnodes in memory.  If arc_prune() is spending most of its time reclaiming tmpfs vnodes, then it does nothing to address its targets; it may as well do nothing.  Rate-limiting just gets us closer to doing nothing, or I am misunderstanding something about the patch.\n\nSuppose that arc_prune is disabled outright.  How does your test fare?"
+}

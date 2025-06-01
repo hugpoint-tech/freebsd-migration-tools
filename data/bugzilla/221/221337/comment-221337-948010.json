@@ -1,0 +1,8 @@
+{
+ "id": 948010,
+ "bug_id": 221337,
+ "attachment_id": 0,
+ "creation_time": "2017-08-16T17:47:02Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #6)\n\u003e (In reply to Dimitry Andric from comment #5)\n\u003e Still the question is up.  Why this code wants 8-byte alignment of the TLS\n\u003e segment for module with index 1 ?\n\u003e \n\u003e What would not work otherwise ?\n\nAh sorry, that is the way upstream compiler-rt has apparently hardcoded it, e.g. they use a define SHADOW_GRANULARITY for this, here:\n\nhttps://github.com/llvm-mirror/compiler-rt/blob/master/lib/asan/asan_mapping.h#L193\n\n   127  static const u64 kDefaultShadowScale = 3;\n...\n   145  #define SHADOW_SCALE kDefaultShadowScale\n...\n   193  #define SHADOW_GRANULARITY (1ULL \u003c\u003c SHADOW_SCALE)\n\nThe same granularity scale values is found in the llvm instrumentation libraries, here:\nhttps://github.com/llvm-mirror/llvm/blob/master/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L70\n\n    70  static const uint64_t kDefaultShadowScale = 3;\n\nIn the past I have attempted to lower this scale to 2, but ran into hundreds of test failures, so I abandoned that effort.  I think the assumption is working without issue for e.g. Linux, since they left the SysV ABI a long time ago there.  And apparently we have been lucky somehow, all this time; it has worked well since the first time we tried AddressSanitizer, up to 12.0 before jemalloc 5.0.0."
+}

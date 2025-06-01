@@ -1,0 +1,8 @@
+{
+ "id": 571458,
+ "bug_id": 149288,
+ "attachment_id": 0,
+ "creation_time": "2012-06-25T12:25:29Z",
+ "creator": "kristof@sigsegv.be",
+ "text": "The problem appears to be fixed in HEAD, by commit r237367 (Enable\ndeadlock avoidance code for NFS client.).\n\nAs near as I can tell this fixes the panic:\ndiff --git a/sys/fs/nfsclient/nfs_clvfsops.c b/sys/fs/nfsclient/nfs_clvfsops.c\nindex af0e33b..966688f 100644\n--- a/sys/fs/nfsclient/nfs_clvfsops.c\n+++ b/sys/fs/nfsclient/nfs_clvfsops.c\n@@ -1136,7 +1136,8 @@ nfs_mount(struct mount *mp)\n out:\n        if (!error) {\n                MNT_ILOCK(mp);\n-               mp-\u003emnt_kern_flag |= (MNTK_MPSAFE|MNTK_LOOKUP_SHARED);\n+               mp-\u003emnt_kern_flag |= MNTK_MPSAFE | MNTK_LOOKUP_SHARED |\n+                   MNTK_NO_IOPF;\n                MNT_IUNLOCK(mp);\n        }\n        return (error);\n\n\nI'm not quite sure why that is, but I can now run both the sample code above\nand the dovecot configure script without panics.\n\n-- \nKristof"
+}

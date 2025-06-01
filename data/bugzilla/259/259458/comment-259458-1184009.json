@@ -1,0 +1,8 @@
+{
+ "id": 1184009,
+ "bug_id": 259458,
+ "attachment_id": 0,
+ "creation_time": "2021-10-26T15:30:16Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "In the end, it looks like somehow index 327 was not re-filled earlier.\nOr it was somehow consumed twice in a row...\n\n\n(kgdb) p/x *$2.ifl_rx_bitmap@8\n$73 = {0xffffffffffffffff, 0xffffffffffffffff, 0x3fff, 0x0, 0x0, 0xffffffffffffff00, 0xffffffffffffffff, 0xffffffffffffffff}\n\n(kgdb) p $2.ifl_sds.ifsd_m[327]\n$74 = (struct mbuf *) 0x0\n(kgdb) p $2.ifl_sds.ifsd_m[328]\n$75 = (struct mbuf *) 0xfffff80123211b00\n(kgdb) p $2.ifl_sds.ifsd_cl[327]\n$76 = (caddr_t) 0x0\n(kgdb) p $2.ifl_sds.ifsd_cl[328]\n$77 = (caddr_t) 0xfffff8012322b800 \"\\377\\377\\377\\377\\377\\377\"\n\nifl_rx_bitmap has bits [0, 141] set, bits [142, 327] clear and bits [328, 511] set again.\nGiven ifl_fragidx = 142 the latest refill went up to 141 which was what we actually see.\nSo, it was not the latest refill."
+}

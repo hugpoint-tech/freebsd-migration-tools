@@ -1,0 +1,8 @@
+{
+ "id": 1365510,
+ "bug_id": 281938,
+ "attachment_id": 0,
+ "creation_time": "2025-05-23T15:54:06Z",
+ "creator": "tuexen@freebsd.org",
+ "text": "(In reply to nakayamakenjiro from comment #0)\nIf we are in the code path you mention, we are in the body of\n\n\tif (len + optlen + ipoptlen \u003e tp-\u003et_maxseg) {\n\t\tflags \u0026= ~TH_FIN;\n\n\t\tif (tso) {\n\t\t\t/* somewhere here */\n\t\t}\n\t}\n\ntso is set by\n\n\tif ((tp-\u003et_flags \u0026 TF_TSO) \u0026\u0026 V_tcp_do_tso \u0026\u0026 len \u003e tp-\u003et_maxseg \u0026\u0026\n\t    (tp-\u003et_port == 0) \u0026\u0026\n\t    ((tp-\u003et_flags \u0026 TF_SIGNATURE) == 0) \u0026\u0026\n\t    (!sack_rxmit || V_tcp_sack_tso) \u0026\u0026\n\t    (ipoptlen == 0 || (ipoptlen == ipsec_optlen \u0026\u0026\n\t     (tp-\u003et_flags2 \u0026 TF2_IPSEC_TSO) != 0)) \u0026\u0026\n\t    !(flags \u0026 TH_SYN))\n\t\ttso = 1;\n\nThis means that ipoptlen == ipsec_optlen in all cases (if ipoptlen == 0, then also ipsec_optlen == 0). Therefore tp-\u003et_maxseg \u003e= len + optlen + ipoptlen holds due to the check in the if condition and finally tp-\u003et_maxseg \u003e= len + optlen + ipsec_optlen holds, since ipoptlen == ipsec_optlen.\nTherefore max_len = tp-\u003et_maxseg - optlen - ipsec_optlen is positive."
+}

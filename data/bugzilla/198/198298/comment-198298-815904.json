@@ -1,0 +1,8 @@
+{
+ "id": 815904,
+ "bug_id": 198298,
+ "attachment_id": 0,
+ "creation_time": "2015-03-20T05:15:31Z",
+ "creator": "adrian@freebsd.org",
+ "text": "I don't know why it's locking up your system - maybe this condition is causing an interrupt storm from ath(4) and I'm not handling it right.\n\nThe EDMA NICs try to be smart, and I'm tempted to rip out the smart bits and replace it with not-smart bits:\n\n* the interrupt handler pulls out completed descriptors, pushes in fresh ones, and puts the completed descriptors into a pending queue\n* .. and then schedules a taskqueue.\n\n* Then when the RX taskqueue runs, it handles RX of each packet and returns now-free descriptors to the hardware.\n\nIt's possible that something is making that taskqueue not run and the RX path runs out of descriptors.\n\nNow, as to why .. hm. I'd like to figure that out."
+}

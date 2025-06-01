@@ -1,0 +1,8 @@
+{
+ "id": 674492,
+ "bug_id": 169814,
+ "attachment_id": 0,
+ "creation_time": "2012-07-13T08:30:02Z",
+ "creator": "ryao@gentoo.org",
+ "text": "ptrace is broken, which causes sys-libs/glibc to fail to build in a Gentoo Linux jail under Linux emulation:\n\nhttp://bpaste.net/show/34782/\n\nThis issue can also be demonstrated using strace:\n\n# strace echo Hello World\nstrace: test_ptrace_setoptions_for_all: PTRACE_TRACEME doesn't work: Function not implemented\nstrace: test_ptrace_setoptions_for_all: unexpected exit status 1\n\nFix: \n\nThere is no known fix or workaround.\nHow-To-Repeat: mkdir /mnt/linux\nwget ftp://gentoo.osuosl.org/pub/gentoo/releases/amd64/current-stage3/*.tar.bz2 -O - | tar -x -C /mnt/linux\ncp /etc/resolv.conf /mnt/linux/etc/resolv.conf\nmount -t linprocfs none /mnt/linux/proc\nmount -t linsysfs none /mnt/linux/sys\nmount -t devfs none /mnt/linux/dev\nmount -t fdescfs none /mnt/linux/dev/fd\nchroot /mnt/linux /bin/bash\nenv-update\nsource /etc/profile\nexport PS1=\"(chroot) $PS1\"\ncd\nemerge-webrsync\nln -sf /bin/busybox /bin/tar\nln -sf /bin/busybox /bin/rm\nln -sf /bin/busybox /usr/bin/touch\n\n# And finally:\nemerge strace\nstrace echo Hello World\n\n# Alternatively, rebuild glibc:\nemerge --oneshot sys-libs/glibc"
+}

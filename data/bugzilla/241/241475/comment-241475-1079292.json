@@ -1,0 +1,8 @@
+{
+ "id": 1079292,
+ "bug_id": 241475,
+ "attachment_id": 0,
+ "creation_time": "2019-12-13T02:01:26Z",
+ "creator": "jwb@freebsd.org",
+ "text": "\nI think hacking special_media is fragile as well as ugly, as the file could be clobbered by freebsd-update.\n\nI did the following to get msdosfs USB sticks writable by default:\n\n-\t\"ext2fs\" | \"msdosfs\")\n+\t\"ext2fs\")\n \t\techo \"-fstype=${_fstype},nosuid,async\t:/dev/${_p}\"\n+\t\t;;\n+\t\"msdosfs\")\n+\t\techo \"-fstype=${_fstype},nosuid,async,-m=770,-g=operator\t:\n\nAdding -m=770 to auto_master breaks mounting for other filesystems like UFS2, which don't accept the flag.\n\nI think a simple solution here would be sourcing an rc.conf-like script for default options, let's say /etc/autofs/defaults.msdosfs.  Or maybe one defaults file for all filesystems:\n\n# /etc/autofs/special_media_defaults\nmsdosfs_mount_flags=\"-m=770,-L=ru_RU.UTF-8,-D=CP866\"\n\nWe could maybe just use /etc/rc.conf for this as well.\n\nI develop and maintain sysutils/auto-admin and sysutils/desktop-installer and I would really like a simple, scriptable way to make automount work out-of-the-box for all common filesystems.  It's one of the few remaining issues for basic desktop functionality in desktop-installer."
+}

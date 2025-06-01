@@ -1,0 +1,8 @@
+{
+ "id": 499003,
+ "bug_id": 134604,
+ "attachment_id": 0,
+ "creation_time": "2009-05-17T09:00:07Z",
+ "creator": "to.my.trociny@gmail.com",
+ "text": "#include \u003comp.h\u003e\n\nint n = 4, m = 2;\n\nint main () {\n        for (;;) {\n                int i;\n\n#pragma omp parallel for num_threads(m)\n                for(i = 0; i \u003c 1; i++) {}\n\n#pragma omp parallel for num_threads(n)\n                for(i = 0; i \u003c 1; i++) {}\n\n        }\n\n        return 0;\n}\n\nWhen run on freebsd, this test shows constant growth of virtual memory usage.\nMemory growth is observed only when m != n.\n\nThere is some discussion of this problem on freebsd-hackers:\n\nhttp://lists.freebsd.org/pipermail/freebsd-hackers/2009-May/028552.html\n\nThe problem has also been reported to gcc mainstream:\n\nhttp://gcc.gnu.org/bugzilla/show_bug.cgi?id=40174\n\nFix: The problem is in libgomp/team.c.  gomp_thread_start() does sem_init()\nbut sem_destroy() is never called.\n\nAttached patch solves the problem for me.\n\nPatch attached with submission follows:\nHow-To-Repeat: Compile the test shown above with -fopenmp and run."
+}

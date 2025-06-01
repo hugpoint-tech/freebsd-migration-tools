@@ -1,0 +1,8 @@
+{
+ "id": 340155,
+ "bug_id": 101123,
+ "attachment_id": 0,
+ "creation_time": "2006-08-01T21:39:17Z",
+ "creator": "scheidell@secnap.net",
+ "text": "last entry: problem is twofold\n#1, freebsd base using old version of gzip (ports version is better)\n#2, design flaw in gzip won't record input file size \u003e 0xffffffff\n\nStructure of zip header only allows 4 bytes for isize\nhttp://www.gzip.org/zlib/rfc-gzip.html\n\nports version (gzip 1.3.5) attempts to correctly show size as\n\n./gzip -l /var/livefs/var/ht-850-5.5.gz\n         compressed        uncompressed  ratio uncompressed_name\n          393954905          2690588672  85.4% /var/livefs/var/ht-850-5.5\n\nin order to be able to record the 80000000000LLU size of the input file, \nI would need 5 bytes:\n12A05F2000.\nWhen gzip wrote the header, it dropped the 5th byte: 12, leaving A05F2000\nA05F2000 converted back to decimal is: 2690588672, so the ports version \nof gzip is doing the best it can.\nSuggestion: can we upgrade the base gzip to 1.3.5 or 5.6 or 6.2? or add \na GZIP_OVERWRITE_BASE option to the ports version?\nOther than that, I see no way to fix gzip, but at least it can process a \n4294967295 file in 1.3.5\n\n-- \nMichael Scheidell, CTO\nSECNAP Network Security / www.secnap.com\nscheidell@secnap.net  / 1+561-999-5000, x 1131"
+}

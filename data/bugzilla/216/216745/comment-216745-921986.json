@@ -1,0 +1,8 @@
+{
+ "id": 921986,
+ "bug_id": 216745,
+ "attachment_id": 180022,
+ "creation_time": "2017-02-15T18:30:29Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 180022\nDon't use implied zero displacements in boost's inline asm\n\nI would like to propose a two-pronged solution to this.\n\n1) Let clang default to i586 on 32-bit x86, supporting cmpxchg8b and __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8, since in reality we have been doing this for years already.  That is, since clang was introduced in the tree, it has always generated cmpxchg8b opcodes for 64-bit atomic operations, even though it didn't set __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8.  We have also never had __atomic_xxx_8() functions for 32-bit x86 in our libc, or in a libatomic support library, and that is the reason for the link error in comment 0.\n\n2) Apply the attached patch, so boost stops using the \"movl 4+(%%edx), %%eax\" inline assembly syntax, which does not work with clang.  The code path using this inline assembly is activated when __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 is defined.  (Note that this so-called \"implied zero displacement\" syntax also didn't work with GNU as from the binutils port, but when gcc processes the inline assembly, it might add some additional offset, making it valid).\n\nAlternatively, we can try to find some sort of other workaround in the boost headers themselves, since it appears to emit some sort of mutex locking when you compile it with gcc 4.2.1, or other very old compilers.  This is rather ugly, though, and pessimizes all post i486 processors for the sake of real i486's."
+}

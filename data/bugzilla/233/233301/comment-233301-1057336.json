@@ -1,0 +1,8 @@
+{
+ "id": 1057336,
+ "bug_id": 233301,
+ "attachment_id": 0,
+ "creation_time": "2019-07-10T10:52:29Z",
+ "creator": "swills@FreeBSD.org",
+ "text": "I am experiencing this too, so I found this page and turned on the audio debugging it mentions:\n\nhttps://www.virtualbox.org/wiki/AudioDebug\n\nand in the logs, everything seems to be working, until it shows this:\n\n00:00:18.694520 Audio: Stream '[OSSAudio] Output' could not be created in backend because of missing hardware / drivers\n\nwhich seems to be from line 3110 of src/VBox/Devices/Audio/DrvAudio.cpp. This is because VERR_AUDIO_STREAM_COULD_NOT_CREATE is getting returned by ossStreamOpen in src/VBox/Devices/Audio/DrvHostOSSAudio.cpp, which sets rc = VERR_AUDIO_STREAM_COULD_NOT_CREATE at the top. This looks like a logic error. Setting rc = VINF_SUCCESS at the top of ossStreamOpen allows further progress.\n\nBut still there's no sound, it looks like we're hitting this assert:\n\n    AssertMsgReturn(pCfgAcq-\u003eBackend.cfPreBuf \u003c= pCfgAcq-\u003eBackend.cfBufferSize,\n                    (\"Acquired pre-buffering size must be smaller or as big as the buffer size\\n\"),\n                    VERR_INVALID_PARAMETER);\n\nin src/VBox/Devices/Audio/DrvAudio.cpp. I think there's some sort of buffering issue which I don't fully understand. If you play around with the buffer sizes in s_OSSConf in src/VBox/Devices/Audio/DrvHostOSSAudio.cpp you can get sound, but it's choppy and stops working, reporting lots of buffering issues and eventually stops. And that's as far as I've gotten right now. Perhaps someone else can pick it up and find what's going on or perhaps I'll come back to it at another time. I'll post the patch for now."
+}

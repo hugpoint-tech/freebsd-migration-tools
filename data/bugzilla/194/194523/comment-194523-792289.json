@@ -1,0 +1,8 @@
+{
+ "id": 792289,
+ "bug_id": 194523,
+ "attachment_id": 148557,
+ "creation_time": "2014-10-22T03:38:16Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 148557\nfix\n\nLooks to be a fallout from base r273377. Dynamic sysctl macros (or any non-custom) already add correct CTLTYPE_*. The newly added CTASSERT chokes on overspecifying e.g.,\n\n  --- nvidia_sysctl.o ---\n  nvidia_sysctl.c:38:5: error: static_assert failed \"compile-time assertion failed\"\n      SYSCTL_ADD_STRING(\u0026sysctl_ctx,\n      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  @/sys/sysctl.h:303:2: note: expanded from macro 'SYSCTL_ADD_STRING'\n          CTASSERT(((access) \u0026 CTLTYPE) == 0);                            \\\n          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  @/sys/systm.h:102:21: note: expanded from macro 'CTASSERT'\n  #define CTASSERT(x)     _Static_assert(x, \"compile-time assertion failed\")\n                          ^              ~\n  nvidia_sysctl.c:259:5: error: static_assert failed \"compile-time assertion failed\"\n      SYSCTL_ADD_UINT(\u0026sc-\u003esysctl_ctx,\n      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  @/sys/sysctl.h:338:2: note: expanded from macro 'SYSCTL_ADD_UINT'\n          CTASSERT(((access) \u0026 CTLTYPE) == 0);                            \\\n          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n  @/sys/systm.h:102:21: note: expanded from macro 'CTASSERT'\n  #define CTASSERT(x)     _Static_assert(x, \"compile-time assertion failed\")\n                          ^              ~\n  2 errors generated.\n  *** [nvidia_sysctl.o] Error code 1\n\nTested only on nvidia-driver-343.22. The patch also contains OSVERSION check for imminent MFC to /stable/10."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 913625,
+ "bug_id": 215612,
+ "attachment_id": 0,
+ "creation_time": "2016-12-27T13:58:57Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "The shm_open(2) man page states the following about POSIX shared-memory objects:\n\n     The result of using open(2), read(2), or write(2) on a shared memory\n     object, or on the descriptor returned by shm_open(), is undefined.  It is\n     also undefined whether the shared memory object itself, or its contents,\n     persist across reboots.\n\n     In FreeBSD, read(2) and write(2) on a shared memory object will fail with\n     EOPNOTSUPP and neither shared memory objects nor their contents persist\n     across reboots.\n\nHowever, this is no longer up-to-date: the kernel implementation explicitly includes support for read(2)/write(2).  This documentation also does not mention the confusing property that ftruncate(2) must be called to extend a shared-memory object before it can be written to. I.e., the following does require a call to ftruncate(2):\n\n        uint8_t buffer[getpagesize()];\n        ssize_t len;\n        int fd;\n\n        fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, 0600);\n        if (fd \u003c 0)\n                err(EX_OSERR, \"%s: shm_open\", __func__);\n        if (ftruncate(fd, getpagesize()) \u003c 0)\n                err(EX_IOERR, \"%s: ftruncate\", __func__);\n        len = pwrite(fd, buffer, getpagesize(), 0);\n        if (len \u003c 0)\n                err(EX_IOERR, \"%s: pwrite\", __func__);\n        if (len != getpagesize())\n                errx(EX_IOERR, \"%s: pwrite length mismatch\", __func__);\n\nIf the truncate is missing, then pwrite(2) will return 0 bytes written (EOF). It is not clear that this is a bug, but it probably deserves mention."
+}

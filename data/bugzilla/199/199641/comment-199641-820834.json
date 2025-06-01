@@ -1,0 +1,8 @@
+{
+ "id": 820834,
+ "bug_id": 199641,
+ "attachment_id": 0,
+ "creation_time": "2015-04-23T11:12:41Z",
+ "creator": "wjw@digiware.nl",
+ "text": "cd /usr/src/sbin/growfs\nmake -DGFSDBG\nReturns errors while building.\n\nProbably because the debug code is normally execluded.\n\n2* int versus u_int_32\n2* char-pointer cast to uint-pointer\n\nFirst is fixed by changing type\nSecond is fixed by getting the compiler to ignore the warning.\nWhich IMHO is valid since compiling GFSDBG is only done if you sort of know what is going on.....\n\nPerhaps a suggestion on debugging on the manual page would be approriate as well.\n\nTested on 10.1, but probably valid on others as well.\n\nsvn diff:\nIndex: sbin/growfs/Makefile\n===================================================================\n--- sbin/growfs/Makefile        (revision 281869)\n+++ sbin/growfs/Makefile        (working copy)\n@@ -17,6 +17,8 @@\n\n .if defined(GFSDBG)\n SRCS+=  debug.c\n+CFLAGS+=-DFS_DEBUG\n+NO_WCAST_ALIGN= yes\n .endif\n\n DPADD= ${LIBUTIL}\nIndex: sbin/growfs/growfs.c\n===================================================================\n--- sbin/growfs/growfs.c        (revision 281869)\n+++ sbin/growfs/growfs.c        (working copy)\n@@ -161,7 +161,7 @@\n #ifdef FS_DEBUG\n        {\n                struct csum *dbg_csp;\n-               int dbg_csc;\n+               u_int32_t dbg_csc;\n                char dbg_line[80];\n\n                dbg_csp = fscs;\n@@ -242,7 +242,7 @@\n #ifdef FS_DEBUG\n        {\n                struct csum     *dbg_csp;\n-               int     dbg_csc;\n+               u_int32_t       dbg_csc;\n                char    dbg_line[80];\n\n                dbg_csp = fscs;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 861444,
+ "bug_id": 206585,
+ "attachment_id": 0,
+ "creation_time": "2016-01-25T16:22:16Z",
+ "creator": "ecturt@gmail.com",
+ "text": "Not sure what I was talking about earlier, but I've decompiled the module to produce more easily analysable code:\n\nif ( (unsigned int)(*((_DWORD *)\u0026hptproc_buffer + 4) + *((_DWORD *)\u0026hptproc_buffer + 7)) \u003c= 0x1000 )\n  {\n    ptr = malloc((unsigned int)(*((_DWORD *)\u0026hptproc_buffer + 4) + *((_DWORD *)\u0026hptproc_buffer + 7)));\n    if ( ptr )\n    {\n      if ( *((_DWORD *)\u0026hptproc_buffer + 4) )\n        copyin(*((_QWORD *)\u0026hptproc_buffer + 1), ptr, *((_DWORD *)\u0026hptproc_buffer + 4));\n\nNow it's clear that the comparison on the sum of the two sizes is treated as `unsigned int`.\n\nSo, theoretically:\n\n`nInBufferSize` of `0xffffffff`,\n\n`nOutBufferSize` of `1`,\n\nThe sum of these two sizes will overflow to `0`, so the check will pass:\n\nif ( (unsigned int)(*((_DWORD *)\u0026hptproc_buffer + 4) + *((_DWORD *)\u0026hptproc_buffer + 7)) \u003c= 0x1000 )\n\nThe size passed to `malloc` will also be `0`.\n\nHowever, `copyin` will copy from `nInBufferSize` of `0xffffffff`.\n\nTo exploit this, the size of the allocation could be controlled to manipulate the heap layout to reliably target the overflow."
+}

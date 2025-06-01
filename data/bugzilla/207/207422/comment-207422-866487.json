@@ -1,0 +1,8 @@
+{
+ "id": 866487,
+ "bug_id": 207422,
+ "attachment_id": 0,
+ "creation_time": "2016-02-22T20:48:54Z",
+ "creator": "novice@techie.com",
+ "text": "I've checked the i386 and arm paths, and they appear to return dest in memcpy. This is consistent with libc version of memcpy. For some reason, the amd64 version does not. Shouldn't we do something like:\n\nENTRY(memcpy)\n        PUSH_FRAME_POINTER\n        movq    %rdi,%rax                       /* return dst pointer */\n        movq    %rdx,%rcx\n        shrq    $3,%rcx                         /* copy by 64-bit words */\n        cld                                     /* copy forwards */\n        rep\n        movsq\n        movq    %rdx,%rcx\n        andq    $7,%rcx                         /* any bytes left? */\n        rep\n        movsb\n        POP_FRAME_POINTER\n        ret\nEND(memcpy)"
+}

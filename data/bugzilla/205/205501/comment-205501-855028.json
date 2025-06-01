@@ -1,0 +1,8 @@
+{
+ "id": 855028,
+ "bug_id": 205501,
+ "attachment_id": 0,
+ "creation_time": "2015-12-22T22:42:02Z",
+ "creator": "mason@blisses.org",
+ "text": "usbhidaction is problematic in this case.\n\nThe issue I had with using usbhidaction is that I needed to patch it, as it \nwas getting \"range\" values back from my multimedia keys by default.\n\nI'd want to test this, but my ugly hack to get readable values from the\nmultimedia keys was:\n\n$ diff -u usbhidaction.c*\n--- usbhidaction.c      2015-12-22 16:05:40.508177432 -0500\n+++ usbhidaction.c.patched      2015-12-22 16:06:45.804170602 -0500\n@@ -447,7 +447,7 @@\n                cmd-\u003eitem = h;\n                cmd-\u003ename = strdup(name);\n                cmd-\u003eaction = strdup(action);\n-               if (range) {\n+               if (range \u0026 0) {\n                        if (cmd-\u003evalue == 1)\n                                cmd-\u003evalue = u - lo;\n                        else\n\n\nAt least, that's my recollection. I went from there to thinking that we were\nmisclassifying the device in the kernel, but after that I noted Xorg.0.log on\nLinux where evdev is evidently also seeing a device that can present a range \nof values, but was doing the right thing with it.\n\nIs moving to evdev a possibility, or is it hopelessly tied to Linux? Do we instead want to make this work with FreeBSD's usbhidaction without modification? I remember starting to look for a quirk table or similar I could update to prevent this device from being detected as presenting ranged values, but I hadn't found the right thing by the time I gave up."
+}

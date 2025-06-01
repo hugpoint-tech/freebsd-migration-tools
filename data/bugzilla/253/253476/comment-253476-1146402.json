@@ -1,0 +1,8 @@
+{
+ "id": 1146402,
+ "bug_id": 253476,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T07:28:59Z",
+ "creator": "shoesoft@gmx.net",
+ "text": "After upgrading from 12.2 to 13.0-BETA1 TCP connections can no longer transfer data after being idle.\n\ngit bisect revealed the regression was introduced in\n283c76c7c3f2f634f19f303a771a3f81fe890cab\n\nThe problem is that the keepalive packets for keep-state rules are dropped. Dynamic rules are removed and the existing connections no longer work.\nAs a workaround net.inet.tcp.tolerate_missing_ts=1 can be used.\n\nHow to reproduce:\nThe test setup uses epair for network communication to rule out a faulty 3rd party TCP stack. I can also reproduce the problem with real network hosts.\nTested with 13.0-BETA1 amd64 VM-image in virtualbox.\n\nTerminal 1:\nkldload ipfw\nsysctl net.inet.tcp.log_debug=1\nsysctl net.inet.ip.fw.dyn_ack_lifetime=60 # optional, speeds up testing\nipfw add allow tcp from me to any setup keep-state\nifconfig epair0 create\nifconfig epair0a 10.0.0.101 up\nifconfig epair0b 10.0.0.102 up\nwhile true; do ipfw -Da list; sleep 1; done # list dynamic rules, sh syntax\n\nTerminal 2:\nnc -l 10.0.0.101 12345\n\nTerminal 3:\nnc -s 10.0.0.102 10.0.0.101 12345\n\nWith TCP debug enabled, I can see the following log entry:\nTCP: [10.0.0.102]:13140 to [10.0.0.101]:12345 tcpflags 0x10\u003cACK\u003e; tcp_do_segment: Timestamp missing, segment silently dropped\n\nThe timer of the dynamic rule expires and is removed."
+}

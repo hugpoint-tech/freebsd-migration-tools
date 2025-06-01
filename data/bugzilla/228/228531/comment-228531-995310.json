@@ -1,0 +1,8 @@
+{
+ "id": 995310,
+ "bug_id": 228531,
+ "attachment_id": 193808,
+ "creation_time": "2018-05-29T05:45:32Z",
+ "creator": "FreeBSD@ShaneWare.Biz",
+ "text": "Created attachment 193808\nbuild fix workaround for graphics/blender\n\nAdding LLD_UNSAFE=yes does not fix this. The quick workaround is to add WITH_CYCLES_LOGGING to CMAKE_OFF. When enabled this allows blender to be started with extra debugging output while rendering, unless gathering info for a bug report disabling this makes no difference to the user.\n\nFor a proper fix I'm not sure why this is happening. The conflict only happens if devel/gflags is installed when building blender, which includes its own copy of gflags source in extern/gflags.\n\ndevel/gflags is now being installed via graphics/opencv.\n\nBoth the port installed and blender included files have\nSetCommandLineOption(const char* name, const char* value)\n\nbut lld is giving an error looking for \ngflags::SetCommandLineOption(char const*, char const*)\n\nBoth sources use \"const char*\" but lld is looking for \"char const*\" - but only when gflags is installed from ports.\n\nMatching code to use SetCommandLineOption is also used in blenders intern/libmv which doesn't get this error - libmv logging is always enabled and builds if CYCLES_LOGGING is disabled per the patch.\n\nThe two blender sources using SetCommandLineOption are\nintern/libmv/intern/logging.cc  -- this builds\nintern/cycles/util/util_logging.cpp  -- this fails if gflags port is installed"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1227755,
+ "bug_id": 266627,
+ "attachment_id": 0,
+ "creation_time": "2022-09-26T12:21:10Z",
+ "creator": "se@FreeBSD.org",
+ "text": "Ths stty man-page describes the -f option to cause a non-blocking open of the passed file:\n\n     -f      Open and use the terminal named by file rather than using\n             standard input.  The file is opened using the O_NONBLOCK flag of\n             open(), making it possible to set or display settings on a\n             terminal that might otherwise block on the open.\n\nThis does work when TTY options are fetched and displayed, but not when attempting to set some parameter.\n\nI'd expect the following command to not block, but instead to fail with a non-zero exit status:\n\n$ stty -f /dev/tty sane \u0026\n\nBut the command blocks, waiting for a \"fg\" command, and only then executes the requested operation on the TTY.\n\nThe reason seems to be that the tcsetattr() function ignores the O_NONBLOCK flag of the passed file descriptor (or rather that the ioctl() it invokes ignores it).\n\nThis appears to be a deviation from documented behavior (and breaks a script I'm working on which wants to reset the TTY on exit, but now blocks exiting from the script when it has been put into the background by the user)."
+}

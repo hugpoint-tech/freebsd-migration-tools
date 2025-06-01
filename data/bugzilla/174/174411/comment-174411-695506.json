@@ -1,0 +1,8 @@
+{
+ "id": 695506,
+ "bug_id": 174411,
+ "attachment_id": 0,
+ "creation_time": "2012-12-13T10:50:00Z",
+ "creator": "phk@critter.freebsd.dk",
+ "text": "\n\tThe pw(8) program coredumps on bad memory management\n\nFix: \n\nRather than reallocf() a dedicated malloc() + memcopy() seems\n\tcalled for.\nHow-To-Repeat: \n\tOn a freshly installed -current, executing:\n\n\t/usr/sbin/pw useradd phk -u 488 -d /home/phk \\\n\t\t-c \"Poul-Henning Kamp\" -G \"wheel,operator,dialer\" \\\n\t\t-s /bin/csh -w none\n\n\tThis coredumps in jemalloc, from the call in line 761 in\n\tsrc/usr.sbin/pw/pw_user.c:\n\n\t\tif (j == 0)\n\t\t\tgrp-\u003egr_mem = NULL;\n\t\u003e\u003e\u003e\u003e\u003e\tgrp-\u003egr_mem = reallocf(grp-\u003egr_mem, sizeof(*grp-\u003egr_mem) *\n\t\t\t\t\t\t    (j + 2));\n\t\tgrp-\u003egr_mem[j] = pwd-\u003epw_name;\n\n\tReading the getgrent(3) manual page, it is far from clear to me\n\tthat there is any reason to assume that grp-\u003egr_mem is a malloced\n\tpointer.\n\n\tOn the other hand, it is not clear to me that getgrent() is what\n\tis being called in the first place.\n\n\tNotice also the missing error handling on reallocf() failure,\n\tsomething more helpful than a somewhat-NULL pointer deref\n\tcoredump could be called for."
+}

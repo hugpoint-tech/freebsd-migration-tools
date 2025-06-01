@@ -1,0 +1,8 @@
+{
+ "id": 1001989,
+ "bug_id": 229829,
+ "attachment_id": 0,
+ "creation_time": "2018-07-17T13:17:54Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "Scenario 1:\n- FreeBSD 11.2\n- UFS root fs\n- 6 x 1.5 TB SATA disks in RAIDZ2 pool\n- The pool is being scrubbed\n- Issue \"shutdown -p now\"\n\nActual result 1:\n- The system shuts down, shows that UFS fs has been synced\n- The system continues scrubbing (in what appears to be right after all \"usual\" kernel log messages) and does not power off\n\nExpected result 1:\n- The system stops scrubbing and powers off\n\nScenario 2:\n- Continued from scenario 1\n- Press hard reset button\n- The system starts booting into multi-user\n\nActual result 2:\n- As soon as the pool is imported, scrubbing continues\n- As a result, system startup is extremely slow, the UFS fs check does not finish in a reasonable time\n\nExpected result 2:\n- Scrubbing should not continue right with pool import\n- System startup should be normal speed\n\nScenario 3:\n- Continued from scenario 2\n- Press hard reset button\n- Boot system single user\n- Run \"fsck -p\" in an effort to fix the UFS fs first; is successful\n- Run \"zpool list status\"\n\nActual result 3:\n- The system starts scrubbing the pool immediately\n- As a result, \"zpool list status\" does not finish for a long time (actual duration can be given later)\n\nExpected result 3:\n- Scrubbing should not continue right with the pool import\n- zpool import and zpool list status should continue with normal speed\n\nIn summary, I believe that the solution is that before shutdown, all scrubbing activities should be paused. Similarly, on boot any pool marked for scrubbing should be treated as if scrubbing were paused on it."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1016661,
+ "bug_id": 231965,
+ "attachment_id": 0,
+ "creation_time": "2018-10-17T20:10:05Z",
+ "creator": "yuripv@FreeBSD.org",
+ "text": "Looking at this, I wonder if powerpc ISOs (at least, 12-ALPHA10 snapshot) cross-compiled on amd64 as the locale data files are matching the ones on my amd64 system.\n\nIn any case, it looks like the check in lib/libc/locale/endian.h needs to include __powerpc__ as well, or just check for big endian.  I've cross-compiled libc with the following change on amd64, and was able to run simple test program just doing setlocale(), and even run tmux preloading the resulting libc.so.7:\n\ndiff --git a/lib/libc/locale/endian.h b/lib/libc/locale/endian.h\nindex d3b822788688..ade03bdc8997 100644\n--- a/lib/libc/locale/endian.h\n+++ b/lib/libc/locale/endian.h\n@@ -45,7 +45,7 @@\n  * correct macros here.\n  */\n\n-#if BYTE_ORDER == BIG_ENDIAN \u0026\u0026 defined(__mips__)\n+#if BYTE_ORDER == BIG_ENDIAN\n #define        BSWAP(x)        le32toh(x)\n #else\n #define        BSWAP(x)        x\n\nI'm NOT sure if this is correct for all cases, and if it will not break native powerpc builds, need to investigate a bit more."
+}

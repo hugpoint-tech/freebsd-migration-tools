@@ -1,0 +1,8 @@
+{
+ "id": 1203934,
+ "bug_id": 262378,
+ "attachment_id": 0,
+ "creation_time": "2022-03-23T17:26:52Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "err:virtual:virtual_alloc_first_teb wine: failed to map the shared user data: c0000017\n\nc0000017 == STATUS_NO_MEMORY\n\nvirtual_alloc_first_teb() in dlls/ntdll/unix/virtual.c gives that error when this fails:\n\n---snip---\n    /* reserve space for shared user data */\n    status = NtAllocateVirtualMemory( NtCurrentProcess(),\n        (void **)\u0026user_shared_data, 0, \u0026data_size,\n        MEM_RESERVE | MEM_COMMIT, PAGE_READONLY );\n---snip---\n\nwhere, importantly:\n\nstruct _KUSER_SHARED_DATA *user_shared_data = (void *)0x7ffe0000;\n\nThat NtAllocateVirtualMemory() calls map_view() which calls map_fixed_area(), where mmap_is_in_reserved_area() returns 0 (\"not in a reserved area, do a normal allocation\"), leading to a call to anon_mmap_tryfixed(), which attempts to:\n\nmmap((void *)0x7ffe0000, 4096, PROT_READ,\n     MAP_PRIVATE|MAP_FIXED|MAP_ANON|MAP_EXCL, -1, 0);\n\nThis fails, setting off the error message and exit.\n\nWhy does it fail? Dumping /proc/curproc/map just before or after the mmap failure, shows this enormous mapping already occupying the required memory range (0x7ffe0000 - 0x7ffe1000):\n\n0x62bd6000 0x82bb6000 0 0 0 --- 0 0 0x0 NCOW NNC none - NCH -1\n\nIt's 536,739,840 bytes (or 0x1ffe0000) long!\n\nWhen I make a standalone binary that calls mmap() with those arguments, it succeeds, so that large mapping is not a standard feature of FreeBSD 14-CURRENT with ASLR. Where did it come from?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 44624,
+ "bug_id": 14660,
+ "attachment_id": 0,
+ "creation_time": "1999-11-02T10:40:00Z",
+ "creator": "Higashi.Hiroyuki@ss.anritsu.co.jp",
+ "text": "I set \"limit coredumpsize 0\".\nBut kernel dumps \"Zero Size Core File\".\n\nFix: \n\nat kern_sig.c of coredump()\nbefore call \"p-\u003ep_sysent-\u003esv_coredump(p, vp, limit)\"\ncheck \"limit\" size\nEx.\n-----\n1393         error = (limit \u0026 p-\u003ep_sysent-\u003esv_coredump) ?\n1394           p-\u003ep_sysent-\u003esv_coredump(p, vp, limit) :\n1395           ENOSYS;\n-----\nHow-To-Repeat: Test Program source is below.(This file name is \"foo.c\".)\n-----\nmain(void)\n{\n    int   a;\n     a  = 1/0;\n}\n-----\nCompile this source program.\nAnd execute it.\n-----\n% limit coredumpsize 0\n% cc foo.c\n% a.out\nFloating point exception\n% ls -l a.out*\n-rwxrwxr-x  1 higashi  TR  3093 Nov  2 19:13 a.out\n-rw-------  1 higashi  TR     0 Nov  2 19:13 a.out.core\n-----\nOther version of FreeBSD DOSE NOT DUMP core file."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 892795,
+ "bug_id": 211837,
+ "attachment_id": 0,
+ "creation_time": "2016-08-14T13:18:14Z",
+ "creator": "kenji@kens.fm",
+ "text": "In 10.2-RELEASE_amd64(BASE+KERNEL+LIB32+compat4x-i386) the environment\nThe binaries name=\"old_program\" was operating normally.\n\n# brandelf ./old_program\nFile './old_program' is of brand 'SVR4' (0)\n\nIt is an error in the 10.3-RELEASE after freebsd-update.\n\n# ./old_program\nELF interpreter /usr/libexec/ld-elf.so.1 not found, error 8\nAbort\n\nAs a result of verifying the update of STABLE/10 to 10.3R from 10.2R\nhttps://svnweb.freebsd.org/base/stable/10/sys/kern/imgact_elf.c?r1=293318\u0026r2=293449\nThat can be repaired by removing r293499 was found .\n\n\ncd /usr/src/\npatch -p2 -R -i  r293499.diff\nmake buildkernel\nmake installkernel\nreboot\n\n\n######### r293449.diff ########################################\n--- stable/10/sys/kern/imgact_elf.c\t2016/01/07 15:37:17\t293318\n+++ stable/10/sys/kern/imgact_elf.c\t2016/01/09 00:34:48\t293449\n@@ -986,7 +986,9 @@\n \t\t\tif (error == 0)\n \t\t\t\thave_interp = TRUE;\n \t\t}\n-\t\tif (!have_interp \u0026\u0026 newinterp != NULL) {\n+\t\tif (!have_interp \u0026\u0026 newinterp != NULL \u0026\u0026\n+\t\t    (brand_info-\u003einterp_path == NULL ||\n+\t\t    strcmp(interp, brand_info-\u003einterp_path) == 0)) {\n \t\t\terror = __elfN(load_file)(imgp-\u003eproc, newinterp, \u0026addr,\n \t\t\t    \u0026imgp-\u003eentry_addr, sv-\u003esv_pagesize);\n \t\t\tif (error == 0)"
+}

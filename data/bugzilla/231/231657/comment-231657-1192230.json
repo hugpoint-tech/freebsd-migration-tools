@@ -1,0 +1,8 @@
+{
+ "id": 1192230,
+ "bug_id": 231657,
+ "attachment_id": 0,
+ "creation_time": "2021-12-28T12:25:19Z",
+ "creator": "j+freebsd@klasek.at",
+ "text": "I think this could be reproduced.\nThis error is raised only if Sendmail is configured with shared memory, e.g. with\nsomething like\ndefine(`confSHARED_MEMORY_KEY',`2012')dnl\nin .mc. Otherwise this message won't appear. This seems the default case.\nThe shared memory configuration in rare use.\n\nThe fix is to correct the error code handling (in the shared memory branch):\n\n--- sendmail-8.15.2/sendmail/tls.c.orig.2       2019-12-18 00:30:12.000000000 +0100\n+++ sendmail-8.15.2/sendmail/tls.c      2021-12-28 04:34:05.314847659 +0100\n@@ -752,7 +752,7 @@\n        RSA *rsa = NULL;\n\n        bne = BN_new();\n-       if (bne \u0026\u0026 BN_set_word(bne, e) != 1)\n+       if (bne \u0026\u0026 BN_set_word(bne, e) == 1)\n                rsa = RSA_new();\n        if (rsa \u0026\u0026 RSA_generate_key_ex(rsa, bits, bne, NULL) != 1)\n        {\n\nBN_set_word() returns 1 if it succeeds and in this case a new RSA key should be created. Otherwise rsa remains NULL which leads to the mentioned error message, even BN_set_word() signals no error."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 400339,
+ "bug_id": 114294,
+ "attachment_id": 0,
+ "creation_time": "2007-07-04T17:00:08Z",
+ "creator": "alson@flutnet.org",
+ "text": "The fetchmail rc script contains the following dependency information:\n# PROVIDE: fetchmail\n# REQUIRE: mail\n# BEFORE: LOGIN\n# KEYWORD: shutdown\n\nMost (all?) MTA's require LOGIN, so the BEFORE LOGIN in combination with\nREQUIRE mail creates a circular dependency:\nrcorder: Circular dependency on provision `LOGIN' in file `/usr/local/etc/rc.d/amavisd'.\nrcorder: Circular dependency on provision `LOGIN' in file `/usr/local/etc/rc.d/clamav-clamd'.\nrcorder: Circular dependency on provision `LOGIN' in file `/usr/local/etc/rc.d/clamav-freshclam'.\nrcorder: Circular dependency on provision `LOGIN' in file `/usr/local/etc/rc.d/mysql-server'.\nrcorder: Circular dependency on provision `LOGIN' in file `/usr/local/etc/rc.d/dcc-start'.\nrcorder: Circular dependency on provision `LOGIN' in file `/usr/local/etc/rc.d/sa-spamd'.\nrcorder: Circular dependency on provision `LOGIN' in file `/usr/local/etc/rc.d/postfix'.\nrcorder: Circular dependency on provision `LOGIN' in file `/etc/rc.d/sendmail'.\nrcorder: Circular dependency on provision `LOGIN' in file `/etc/rc.d/othermta'.\n\nThis results in all mail-related scripts running before LOGIN (and\nslapd/lookupd in my case).\n\nFix: I don't see any reason why fetchmail should be started before LOGIN: it runs\nas $fetchmail_user or $fetchmail_users, so it should require LOGIN. Changing\nthe dependencies to REQUIRE: mail LOGIN fixes the circular dependency. The\nLOGIN dependency might be considered redundant, since mail depends on LOGIN.\n\nPatch:\nHow-To-Repeat: rcorder /etc/rc.d/* /usr/local/etc/rc.d/*\nwith the fetchmail port installed"
+}

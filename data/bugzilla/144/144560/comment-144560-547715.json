@@ -1,0 +1,8 @@
+{
+ "id": 547715,
+ "bug_id": 144560,
+ "attachment_id": 0,
+ "creation_time": "2010-04-10T13:24:30Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bms\nDate: Sat Apr 10 12:24:21 2010\nNew Revision: 206454\nURL: http://svn.freebsd.org/changeset/base/206454\n\nLog:\n  When embedding the scope ID in MLDv1 output, check if the scope of the address\n  being embedded is in fact link-local, before attempting to embed it.\n  \n  Note that this operation is a side-effect of trying to avoid recursion on\n  the IN6 scope lock.\n  \n  PR:\t\t144560\n  Submitted by:\tPetr Lampa\n  MFC after:\t3 days\n\nModified:\n  head/sys/netinet6/mld6.c\n\nModified: head/sys/netinet6/mld6.c\n==============================================================================\n--- head/sys/netinet6/mld6.c\tSat Apr 10 12:10:11 2010\t(r206453)\n+++ head/sys/netinet6/mld6.c\tSat Apr 10 12:24:21 2010\t(r206454)\n@@ -195,8 +195,10 @@ static int\tsysctl_mld_ifinfo(SYSCTL_HAND\n static struct mtx\t\t mld_mtx;\n MALLOC_DEFINE(M_MLD, \"mld\", \"mld state\");\n \n-#define\tMLD_EMBEDSCOPE(pin6, zoneid) \\\n-\t(pin6)-\u003es6_addr16[1] = htons((zoneid) \u0026 0xFFFF)\n+#define\tMLD_EMBEDSCOPE(pin6, zoneid)\t\t\t\t\t\\\n+\tif (IN6_IS_SCOPE_LINKLOCAL(pin6) ||\t\t\t\t\\\n+\t    IN6_IS_ADDR_MC_INTFACELOCAL(pin6))\t\t\t\t\\\n+\t\t(pin6)-\u003es6_addr16[1] = htons((zoneid) \u0026 0xFFFF)\t\t\\\n \n /*\n  * VIMAGE-wide globals.\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

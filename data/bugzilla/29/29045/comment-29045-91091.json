@@ -1,0 +1,8 @@
+{
+ "id": 91091,
+ "bug_id": 29045,
+ "attachment_id": 0,
+ "creation_time": "2001-07-17T21:51:30Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "In message \u003c200107171753.f6HHrPd52978@freefall.freebsd.org\u003e, Bill Moran writes:\n\u003e\n\u003eUnder heavy load, panics occur in the filesystem code. The panics apparently r\n\u003eesult in some sort of subtle corruption to the filesystem that then results in\n\u003e an increased chance of further panics.\n\nIt's always difficult to tell if these panics are caused by a\nhardware/driver fault, or by filesystem bugs. Could you try printing\nout some more information including the contents of the free block\nbitmap from frame 2 on the stack - i.e. something like\n\n\tframe 2\n\tp fs\n\tp *fs\n\tp fs-\u003efs_fpg\n\tp bp-\u003eb_data\n\tp cg\n\tp cgp\n\tp *cgp\n\tp bno\n\tp blksfree\n\tp blksfree[0]@(fs-\u003efs_fpg/8)\n\nA good test for hardware/driver faults is to take some large\ndirectory tree that does not change, especially one with lots of\nhuge files, and run\n\n\tfind /whatever -type f -print0 |xargs -0 md5 \u003e /tmp/md5.1\n\tfind /whatever -type f -print0 |xargs -0 md5 \u003e /tmp/md5.2\n\tfind /whatever -type f -print0 |xargs -0 md5 \u003e /tmp/md5.3\n\netc while the system is under heavy load. Then diff the /tmp/md5.X\nfiles to see if anything has changed. You should try this with\ntrees on different disks in case there is a driver/disk dependent\ncorruption problem. Also try leaving quite a long gap between\nrunning the finds; data could be getting corrupted as it sits in\nthe buffer cache.\n\nIan"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1047196,
+ "bug_id": 236607,
+ "attachment_id": 0,
+ "creation_time": "2019-04-17T20:09:20Z",
+ "creator": "dmgk@freebsd.org",
+ "text": "Hi,\n\nThank you for your submission, there are a few issues with the port:\n\n- It doesn't currently build in poudriere because neither $HOME nor $GOCACHE is set by default:\n\n=======================\u003cphase: build          \u003e============================\n===\u003e  Building for yggdrasil-0.3.5\nmkdir /wrkdirs/usr/ports/net/yggdrasil/work/.gocache\ncd /wrkdirs/usr/ports/net/yggdrasil/work/yggdrasil-go-0.3.5 \u0026\u0026 PKGNAME=yggdrasil PKGVER=0.3.5 ./build\nBuilding: yggdrasil\nfailed to initialize build cache at /nonexistent/.cache/go-build: mkdir /nonexistent: permission denied\nBuilding: yggdrasilctl\nfailed to initialize build cache at /nonexistent/.cache/go-build: mkdir /nonexistent: permission denied\n\nThe easiest fix would be to update the build target to ${SETENV} ${MAKE_ENV} before calling build:\n\ncd ${WRKSRC} \u0026\u0026 ${SETENV} ${MAKE_ENV} PKGNAME=${PORTNAME} PKGVER=${PORTVERSION} ./build\n\n- All dependencies will need to be vendored by the upstream or added to GH_TUPLE (same commit ids/tags as specified in go.mod, devel/modules2tuple can help with GH_TUPLE generation)\n\n- ${INSTALL_PROGRAM} already does the stripping, no need to do this again in post-install\n\n- Config files should go to ${PREFIX}/etc, not /etc"
+}

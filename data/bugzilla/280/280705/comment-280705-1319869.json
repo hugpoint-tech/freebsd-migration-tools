@@ -1,0 +1,8 @@
+{
+ "id": 1319869,
+ "bug_id": 280705,
+ "attachment_id": 0,
+ "creation_time": "2024-08-09T19:45:05Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "The change appears to have originated in BSD here: \nhttps://github.com/csrg/csrg/commit/86fd50f180107b5998a451da64dd08668499e9f9\n\nThe context of these changes is that at the time, the broadcast address appeared to be all zeroes, and this series of commits was creating separate INADDR_ANY and INADDR_BROADCAST.  Curiously, INADDR_ANY was previously blocked by the old code in in_pcbconnect:\n\nhttps://github.com/csrg/csrg/commit/86fd50f180107b5998a451da64dd08668499e9f9#diff-947bd731f5c96a4641a584beac83dfcab5bac246a65cdba49fcf041bbb0ad5aeL111-R121\n\nIt does seem to be intentional, and the comment documenting it was added a month later in commit 125629be4b7de3a379dee96a625a272271c0bb87.  Given that it was an error before makes me wonder if this might have been intended as some sort of compatibility hack?\n\nOne of the other commits in this series is https://github.com/csrg/csrg/commit/b7aed1f9e438540acd1a66e07dd809fe8af34021 which added some similar logic in icmp_reflect().  That logic was later cleaned up a few months later in commit 36dd422b2b80fd43eb60c920c2494858cded07b8 to not depend on INADDR_ANY, and I believe that commit 02eb20c4604d7dad81aaa8cf7a96ef9f712f410d effectively blocked ICMP replies back to 0.0.0.0.\n\nmacOS Sonoma seems to also still support this behavior.\n\nI do think just removing the block of code in question is sensible."
+}

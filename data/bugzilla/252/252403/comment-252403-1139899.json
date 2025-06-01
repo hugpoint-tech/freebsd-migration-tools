@@ -1,0 +1,8 @@
+{
+ "id": 1139899,
+ "bug_id": 252403,
+ "attachment_id": 221266,
+ "creation_time": "2021-01-04T07:57:01Z",
+ "creator": "miod@online.fr",
+ "text": "Created attachment 221266\nsuggested patch to fix the issue\n\nregcomp.c uses the \"start + count \u003c end\" idiom to check that there are \"count\" bytes available in an array of char \"start\" and \"end\" both point to.\n\nThis is fine, unless \"start + count\" goes beyond the last element of the array. In this case, pedantic interpretation of the C standard makes the comparison of such a pointer against \"end\" undefined, and optimizers from hell will happily remove as much code as possible because of this.\n\nAn example of this occurs in regcomp.c's bothcases(), which defines bracket[3], sets \"next\" to \"bracket\" and \"end\" to \"bracket + 2\". Then it invokes p_bracket(), which starts with \"if (p-\u003enext + 5 \u003c p-\u003eend)\"...\n\nBecause bothcases() and p_bracket() are static functions in regcomp.c, there is a real risk of miscompilation if aggressive inlining happens.\n\nThe following diff rewrites the \"start + count \u003c end\" constructs into \"end - start \u003e count\". Assuming \"end\" and \"start\" are always pointing in the array (such as \"bracket[3]\" above), \"end - start\" is well-defined and can be compared without trouble.\n\nAs a bonus, MORE2() implies MORE() therefore SEETWO() can be simplified a bit."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 945312,
+ "bug_id": 221137,
+ "attachment_id": 184886,
+ "creation_time": "2017-08-01T08:04:09Z",
+ "creator": "igorr@speechpro.com",
+ "text": "Created attachment 184886\nVery naive patch to support ICMP redirects.\n\nOn default gateway \"internal\" interface has IP 192.168.2.4/21\nAlso there is dedicated router for 192.168.8.0/23 network. \nSo part of routing table on default gateway looks like:\n192.168.0.0/21     link#5             U           em0\n192.168.8.0/23     192.168.5.116      UGS         em0\n\nRouter 192.168.5.116 is accessible from our internal network (of course).\n\nWhen we had FreeBSD 9.2 on 192.168.2.4 and tried to access some host in 192.168.8.0/23 network it would send ICMP redirect message with new route:\n\nPING 192.168.8.118 (192.168.8.118): 56 data bytes\n36 bytes from gw.stc (192.168.2.4): Redirect Host(New addr: 192.168.5.116)\nVr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst\n 4  5  00 0054 4442   0 0000  3f  01 ab86 192.168.2.26  192.168.8.118 \n\n\nI have upgraded FreeBSD version on our default gateway from 9.2 to 11.0. And now it does not send ICMP redirects.\n\nI assume that this is caused by removing net.inet.ip.fastforwarding sysctl:\nhttps://svnweb.freebsd.org/base?view=revision\u0026revision=r290383\n\nUnfortunattely we need ICMP redirects, because not all equipment support getting routes via DHCP options, also some of our workstations and servers have static IP addresses and don't use DHCP.\n\nI have created very naive patch against FreeBSD 11-STABLE (revision 321782). And now ICMP redirects work. Patch is attached. It just checks if packet should be routed to same interface it was received from and in this case just pass control from ip_tryforward() to ip_input() by returning not NULL."
+}

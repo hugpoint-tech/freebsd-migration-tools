@@ -1,0 +1,8 @@
+{
+ "id": 874768,
+ "bug_id": 208807,
+ "attachment_id": 0,
+ "creation_time": "2016-04-14T21:01:50Z",
+ "creator": "ecturt@gmail.com",
+ "text": "`gsstest` function from `sys/kgssapi/gsstest.c` performs `malloc` with an unlimited, user controlled, `size_t` value, and the `M_WAITOK` flag. Passing large values of `input_token.length` through the userland `args` would result in panic on systems where the `gsstest` kernel module is running.\n\nsys/kgssapi/gsstest.c:\n\nstatic int\ngsstest(struct thread *td, struct gsstest_args *uap)\n{\n\tint error;\n\n\tswitch (uap-\u003ea_op) {\n\tcase 1:\n                return (gsstest_1(td));\n\n\tcase 2: {\n\t\tstruct gsstest_2_args args;\n\t\tstruct gsstest_2_res res;\n\t\tgss_buffer_desc input_token, output_token;\n\t\tOM_uint32 junk;\n\n\t\terror = copyin(uap-\u003ea_args, \u0026args, sizeof(args));\n\t\tif (error)\n\t\t\treturn (error);\n\t\tinput_token.length = args.input_token.length;\n\t\tinput_token.value = malloc(input_token.length, M_GSSAPI,\n\t\t    M_WAITOK);\n\t\t...\n\nsys/kgssapi/gssapi.h:\n\ntypedef struct gss_buffer_desc_struct {\n  size_t length;\n  void *value;\n} gss_buffer_desc, *gss_buffer_t;\n\nAfter copying the arguments from userland, the length should be checked against an upper limit."
+}

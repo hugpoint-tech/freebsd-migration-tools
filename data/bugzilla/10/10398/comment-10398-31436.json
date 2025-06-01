@@ -1,0 +1,8 @@
+{
+ "id": 31436,
+ "bug_id": 10398,
+ "attachment_id": 0,
+ "creation_time": "1999-03-05T11:00:01Z",
+ "creator": "hokada@isl.melco.co.jp",
+ "text": "My IBM DCAS-34330 hard drive is connected to Adaptec AHA-2940 adapter,\nand I found write performance is low.\nSimple throughput measurement like 'dd if=/dev/zero of=test bs=64k count=1000'\nshows ahout 3MB/s even though it should be 7-8MB/s .\nHowever, there is no trouble on read performance.\nHere is bonnie's results:\n\n               -------Sequential Output-------- ---Sequential Input-- --Random--\n               -Per Char- --Block--- -Rewrite-- -Per Char- --Block--- --Seeks---\nMachine    MB K/sec %CPU K/sec %CPU K/sec %CPU K/sec %CPU K/sec %CPU  /sec %CPU\n2.2.8R    100  6677 83.1  7542 22.8  3313 11.3  8519 93.4  7813 14.0 250.0  4.9\n3.1R      100  7269 90.7  3199 10.5  2283  8.7  7450 95.7  7548 15.0 262.5  5.4\n3.1R(*)   100  7376 91.3  6823 21.5  2628  9.3  6931 88.7  7469 14.3 240.6  4.7\n\n(*) tagged queuing is turned off by modifying cam_xpt.c\n\nFix: \n\nI put initializer of xpt_quirk_table at cam_xpt.c, and I got bonnie's result as reported above.\n\n             {\n                     /*\n                      * Slow when tagged queueing is enabled. (3MB/sec versus\n                      * 8MB/sec.)\n                      */\n                     { T_DIRECT, SIP_MEDIA_FIXED, \"IBM\", \"DCAS-34330\", \"S65A\" },\n                     /*quirks*/0, /*mintags*/0, /*maxtags*/0\n             },\nHow-To-Repeat: I reported this on FreeBSD-users-jp@jp.freebsd.org mailing list,\nand the other report on this problem is posted.\nIts configuration is:\n    IBM DCAS-34330W connected to AHA-2940UW"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 634165,
+ "bug_id": 161721,
+ "attachment_id": 0,
+ "creation_time": "2011-12-10T18:42:14Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: alc\nDate: Sat Dec 10 18:42:00 2011\nNew Revision: 228398\nURL: http://svn.freebsd.org/changeset/base/228398\n\nLog:\n  Avoid the possibility of integer overflow in the calculation of\n  VM_KMEM_SIZE_MAX.  Specifically, if the user/kernel address space split\n  was changed such that the kernel address space was greater than or equal\n  to 2 GB, then overflow would occur.\n  \n  PR:\t\t161721\n  MFC after:\t3 weeks\n\nModified:\n  head/sys/i386/include/vmparam.h\n\nModified: head/sys/i386/include/vmparam.h\n==============================================================================\n--- head/sys/i386/include/vmparam.h\tSat Dec 10 18:35:26 2011\t(r228397)\n+++ head/sys/i386/include/vmparam.h\tSat Dec 10 18:42:00 2011\t(r228398)\n@@ -186,11 +186,12 @@\n #endif\n \n /*\n- * Ceiling on amount of kmem_map kva space.\n+ * Ceiling on the amount of kmem_map KVA space: 40% of the entire KVA space\n+ * rounded to the nearest multiple of the superpage size.\n  */\n #ifndef VM_KMEM_SIZE_MAX\n-#define\tVM_KMEM_SIZE_MAX\t((VM_MAX_KERNEL_ADDRESS - \\\n-    VM_MIN_KERNEL_ADDRESS) * 2 / 5)\n+#define\tVM_KMEM_SIZE_MAX\t(((((VM_MAX_KERNEL_ADDRESS - \\\n+    VM_MIN_KERNEL_ADDRESS) \u003e\u003e (PDRSHIFT - 2)) + 5) / 10) \u003c\u003c PDRSHIFT)\n #endif\n \n /* initial pagein size of beginning of executable file */\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

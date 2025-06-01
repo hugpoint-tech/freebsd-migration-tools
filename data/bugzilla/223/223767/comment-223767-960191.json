@@ -1,0 +1,8 @@
+{
+ "id": 960191,
+ "bug_id": 223767,
+ "attachment_id": 188137,
+ "creation_time": "2017-11-20T13:50:49Z",
+ "creator": "jau@iki.fi",
+ "text": "Created attachment 188137\nA patch to check that if_type will be set only to a supported value. For the time being there is only one such value IFT_PPP.\n\nThe tun device allows setting if_type to any random value, though, it does\nnot reserve appropriate memory structures for anything else but IFT_PPP.\nWhen the it_type field gets modified the system later on reasonably assumes\nthe appropriate data structures must be there as well. The lack of suitable\ndata structures will result in pretty much any operation on the device causing\na certain panic() with a complaint about \"a page fault in kernel mode\".\n\nIn case root allows others to open /dev/tun# (chmod g+rw /dev/tun#)\nthis might become a locally triggered DoS allowing some local users to\npanic the system at will. They only need to set if_type to e.g. IFT_ETHER\nand let the program exit. During the post exit cleanup the system will\ntry to close the file descriptor bound to the device which will trip the\nkernel to accessing on-existent Ethernet related data structures causing\n\"a page fault in kernel mode\".\n\nApply the attached patch to add a check that the if_type field will be set\nonly to a supported value. For the time being there is only one such value\nIFT_PPP.\n\nIn addition to adding a check for the new if_type value the attached patch\nalso simplifies the check for readable data in the tunpoll() function."
+}

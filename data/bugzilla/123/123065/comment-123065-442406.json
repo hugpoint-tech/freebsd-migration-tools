@@ -1,0 +1,8 @@
+{
+ "id": 442406,
+ "bug_id": 123065,
+ "attachment_id": 0,
+ "creation_time": "2008-10-03T21:58:58Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "OK - I've reproduced this and I think I understand what is happening.\nI think the problem is that because of the unusual way that you are\nrunning inetd from init, inetd is run with stdin, stdout and stderr\nclosed. This usually shouldn't be a problem for inetd 'cos it calls\ndaemon(), which will open stdin, stdout and stderr with a copy of\n/dev/null. However, if you give inetd the -d flag, then it doesn't\ncall daemon().\n\nSubsequently, some of inetd's internal file discriptors get confused\nwith the standard discriptors and chaos ensues.\n\nI'm not sure what the best way to fix this is - it might be easiest\nto use sh to open /dev/null - something like making a shell script\ncalled inetd_devnull.sh that does:\n\n\t#!/bin/sh\n\t/usr/sbin/inetd -d -p /tmp/foo2.pid /etc/inetd.single.conf \u003e /dev/null \u003c/dev/null 2\u003e\u00261'\n\nand then call that from /etc.ttys:\n\n\tnone \"/usr/bin/inetd_devnull.sh\" unknown on secure\n\nMight work!\n\n\tDavid."
+}

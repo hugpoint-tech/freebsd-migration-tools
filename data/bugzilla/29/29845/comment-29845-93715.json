@@ -1,0 +1,8 @@
+{
+ "id": 93715,
+ "bug_id": 29845,
+ "attachment_id": 0,
+ "creation_time": "2001-08-21T17:13:26Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "In message \u003c200108211539.f7LFdoW65851@harmony.village.org\u003e, Warner Losh writes:\n\u003eHere's a simple fix you can try.  I don't see how this would help, but \n\u003eif it does, we know what the problem is.  Ian suggested this a while\n\u003eago, and I'm still not sure how this could be a problem, but if it is\n\u003eIan's suggestions are right.\n\nNo, I was confused when I suggested this to you :-) It is too late\nwhen pcic_pci_intr() is called, because at that point a critical\nsection of some network code has already been interrupted. Once a\nNIC has registered a net interrupt on IRQ X, splimp() should mask\nIRQ X, but here the pcic code never changes the interrupt mask when\na NIC registers its interrupt.\n\ne.g. consider some network code that does splimp():\n\n\ts = splimp();\n\n\t(critical stuff where no net interrupts should occur)\n\n\t\u003cpcic interrupt occurs\u003e\n\t\tpcic_pci_intr() called\n\t\t\ts = splhigh();\n\t\t\t(this blocks further interrupts)\n\n\t\t\tNIC ISR called\n\t\t\t\t(messes with splimp-protected state)\n\n\t\t\tsplx(x);\n\t\tpcic_pci_intr() returns\n\t\u003cpcic interrupt end\u003e\n\n\t(network code finds its state messed up)\n\n\tsplx(s);\n\nWhen the pccard NIC sets up its interrupt, it needs to go through\nall the mask adjustment behind bus_generic_setup_intr() to ensure\nthat the first splimp() call above actually blocks the pcic interrupts\ntoo. That's why I'm suggesting using bus_generic_setup_intr() either\nwithin or instead of pcic_pci_setup_intr().\n\nIan"
+}

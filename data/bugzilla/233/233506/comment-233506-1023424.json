@@ -1,0 +1,8 @@
+{
+ "id": 1023424,
+ "bug_id": 233506,
+ "attachment_id": 0,
+ "creation_time": "2018-11-25T15:43:36Z",
+ "creator": "val@packett.cool",
+ "text": "LLVM's CMake build only enables assertions in Debug builds of LLVM.\n\nThe FreeBSD Ports do not set the LLVM_ENABLE_ASSERTIONS CMake variable.\n\nLLVM relies on CMake to automatically add -DNDEBUG in non-Debug builds.\n\nHowever, something — looks like our *FLAGS environment variables — overrides CMake's flags and -DNDEBUG is lost.\n\nCompare: (in CMakeCache)\n\nCMAKE_CXX_FLAGS_RELEASE:STRING=-O2 -pipe -fstack-protector -isystem /usr/local/include -fno-strict-aliasing  -isystem /usr/local/include\n\nCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG\n\nSo we're shipping debug assertions in production, and looks like not intentionally!!\n\nThis has exposed a few easily fixable bugs in some tools (e.g. Mull), but it looks like there are some clang assertions (e.g. https://github.com/Andersbakken/rtags/issues/586 — I'm seeing the same one in devel/ccls) that no one wants to fix. (And they are deep in clang, not in the user of libclang.)\n\n\n// As a workaround, we can add something like:\n\nCFLAGS+=-DNDEBUG\nCXXFLAGS+=-DNDEBUG"
+}

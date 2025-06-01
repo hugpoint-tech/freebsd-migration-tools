@@ -1,0 +1,8 @@
+{
+ "id": 3849,
+ "bug_id": 1351,
+ "attachment_id": 0,
+ "creation_time": "1996-06-26T02:50:02Z",
+ "creator": "mark@linus.demon.co.uk",
+ "text": "\n\tThere appear to be several bugs in mv(1) which might result in\n\ta file being readable and/or writeable by unauthorised users during\n\tand after a cross-device 'move' - see function fastcopy().\n\n\tOne example is a file with mode 660, group 'bin', created in\n\t/tmp.  If I move this to my home directory (I'm not in group\n\t'bin'), mv warns me about `set owner/group: Operation not\n\tpermitted', yet leaves the file writeable by anyone in the\n\tgroup to which my home directory belongs.\n\n\tEven in cases where the final fchown() will succeed, there's a\n\twindow during the move (which may be significant for a large\n\tmove across file systems) in which the same problem exists\n\t(at least for read permissions).\n\n\tI'm sure it's possible to imagine more serious real world\n\texamples - I only contrived this example because I spotted\n\tit while trying to figure out whether it's valid to shut up\n\tmv about the failed fchown() - I note that SunOS 5.5 mv\n\tdoesn't give the warning, but has part of the bug (in an\n\texample similar to the one above, it left the target file\n\treadable but not writeable to the wrong group).\n\n\t(Another bug involves failing to remove the target when\n\thit by a signal during the copy, but I think I remember\n\tsome discussion on that one already.)\n\nFix: \n\nThe second problem might be fixed by moving the fchown/fchmod\n\tto between the open and read/write loop.\nHow-To-Repeat: \n\t$ touch /tmp/foo\n\t$ chmod 660 /tmp/foo\n\t$ mv /tmp/foo $HOME\n\n\t(For the last part, I used a small file and added a sleep to\n\tfastcopy()...)"
+}

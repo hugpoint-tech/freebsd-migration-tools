@@ -1,0 +1,8 @@
+{
+ "id": 678849,
+ "bug_id": 170692,
+ "attachment_id": 0,
+ "creation_time": "2012-08-17T07:30:09Z",
+ "creator": "logan@afrinic.net",
+ "text": "Daniel Shaw (daniel@afrinic.net) discovered that usermin couldn't find a dependency to change the password, in change password menu. The dependancy is p5-IO-Tty which is called by changepasswd.cgi.\n\nsub pty_process_exec\n{\nlocal ($cmd, $uid, $gid) = @_;\nif (\u0026is_readonly_mode()) {\n        # When in readonly mode, don't run the command\n        $cmd = \"/bin/true\";\n        }\n\u0026webmin_debug_log('CMD', \"cmd=$cmd uid=$uid gid=$gid\")\n        if ($gconfig{'debug_what_cmd'});\n\neval \"use IO::Pty\";\nif (!$@) {\n        # Use the IO::Pty perl module if installed\n        local $ptyfh = new IO::Pty;\n        if (!$ptyfh) {\n\n\npty_process_exec is later called in changepasswd.cgi:\n\n                ($fh, $fpid) = \u0026proc::pty_process_exec(\n                                        $passwd_cmd, $uinfo[2], $uinfo[3]);\n\nFix: A workaround is to install p5-IO-Tty manually, and then the password is changed correctly and the webpage confirms the change.\n\nPatch attached with submission follows:\nHow-To-Repeat: Go to change password, and change an existing user password. Nothing is displayed on the web page \u0026 the password isn't updated silently either."
+}

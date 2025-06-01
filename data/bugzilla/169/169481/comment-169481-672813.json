@@ -1,0 +1,8 @@
+{
+ "id": 672813,
+ "bug_id": 169481,
+ "attachment_id": 0,
+ "creation_time": "2012-07-25T05:58:49Z",
+ "creator": "romain@FreeBSD.org",
+ "text": "A quick look at open-uri.rb and searching for StringIO leads to this\nportion of code:\n\n366   class Buffer # :nodoc:\n367     def initialize\n368       @io = StringIO.new\n369       @size = 0\n370     end\n371     attr_reader :size\n372 \n373     StringMax = 10240\n        ^^^^^^^^^^^^^^^^^\n374     def \u003c\u003c(str)\n375       @io \u003c\u003c str\n376       @size += str.length\n377       if StringIO === @io \u0026\u0026 StringMax \u003c @size\n                                 ^^^^^^^^^^^^^^^^^\n378         require 'tempfile'\n379         io = Tempfile.new('open-uri')\n                 ^^^^^^^^^^^^^^^^^^^^^^^^\n380         io.binmode\n381         Meta.init io, @io if Meta === @io\n382         io \u003c\u003c @io.string\n383         @io = io\n384       end\n385     end\n\nAccording to the preceding messages, the working URI file size is 20603,\nthe failing one is 3364.  The examples in the documentation of open-uri\nnever use the #path of the object returned by #open.  We can't assume\nthat open will return a (temporary) File and not a simple StringIO.\n\nI can't tell if it some kind of bug that should be fixed in Ruby (I\nguess that this code logic is here for some reason, so I would tell it's\nnot), but as-it, the usage of open-uri here is ``non-safe'' and should\nbe changed to cope with files smaller than 10k.\n\nRegards,\nRomain"
+}

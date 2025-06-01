@@ -1,0 +1,8 @@
+{
+ "id": 1044390,
+ "bug_id": 236513,
+ "attachment_id": 0,
+ "creation_time": "2019-03-29T10:37:53Z",
+ "creator": "stockhausen@collogia.de",
+ "text": "Sorry not quite yet... The only call to acpi_set_resource() during _CST port setup has the following input:\n\nclass of dev: \"acpi\"\nclass of child: \"cpu\"\n\nA slight modification gives:\n\n    if (device_get_devclass(child) == devclass_find(\"cpu\")) {\n            flags = RF_SHAREABLE;\n    }\n    else {\n            flags = 0;\n    }\n\nPorts are now registered per CPU (which is fine), but devinfo gives different output:\n\nnexus0\n      I/O ports:\n        \u003c no port 0x1771 here ...\u003e\n\n    cpu0 pnpinfo _HID=none _UID=0 at handle=\\_PR_.P000\n        I/O ports:  \u003c---- Port without ACPI flag\n            0x1771\n      acpi_perf0\n      acpi_throttle0\n      hwpstate0\n      cpufreq0\n    cpu1 pnpinfo _HID=none _UID=0 at handle=\\_PR_.P001\n        I/O ports:\n            0x1771\n\nNevertheless CPU C states seem to register correctly:\n\nroot@freebsd:~ # sysctl -a | grep cx_supp\ndev.cpu.3.cx_supported: C1/1/0 C2/2/400\ndev.cpu.2.cx_supported: C1/1/0 C2/2/400\ndev.cpu.1.cx_supported: C1/1/0 C2/2/400\ndev.cpu.0.cx_supported: C1/1/0 C2/2/400"
+}

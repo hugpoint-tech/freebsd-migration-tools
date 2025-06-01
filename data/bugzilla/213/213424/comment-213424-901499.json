@@ -1,0 +1,8 @@
+{
+ "id": 901499,
+ "bug_id": 213424,
+ "attachment_id": 0,
+ "creation_time": "2016-10-12T21:29:05Z",
+ "creator": "pkelsey@freebsd.org",
+ "text": "The bug is that syncache_add() is not properly handling the listen socket's TFO pending counter in all of the cases where a received TFO SYN does not result in a new socket.\n\nThere are two circumstances when this occurs.\n\nThe first is when all of the following conditions are met:\n\n1. TFO is enabled in the system\n2. A TFO SYN with an invalid TFO cookie matches a listen socket that has TFO enabled\n3. The current t_tfo_pending count on that socket is \u003c= so_qlimit / 2\n\nThe second is when all of the following conditions are met:\n\n1. TFO is enabled in the system\n2. A TFO SYN matches a listen socket that has TFO enabled\n3. The current t_tfo_pending count on that socket is \u003c= so_qlimit / 2\n4. A matching entry from a prior non-TFO SYN is in the syncache\n\nThe consequences are:\n\n1. If either of the above circumstances occurs at least once on a given listen socket, four bytes can be considered leaked when that listen socket and every socket passively created from it is destroyed.\n2. If the above circumstances occur a total of (so_qlimit / 2 + 1) times on a given listen socket, TFO will become disabled for that socket."
+}

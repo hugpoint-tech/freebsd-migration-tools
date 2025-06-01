@@ -1,0 +1,8 @@
+{
+ "id": 1048763,
+ "bug_id": 237588,
+ "attachment_id": 0,
+ "creation_time": "2019-04-26T20:47:59Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "fusefs supports three cache modes: uncached, write-through, and writeback.  Write-through is the default.  However, as currently implemented it's more like \"write-around\" than true \"write-through\".  That is, writes go directly to the fuse daemon and invalidate the cache, rather than fill it.\n\nThis is merely a performance bug when using normal writes (write(2), pwrite(2), aio_write(2), etc).  But when mixing normal writes with mmap()'ed writes, it causes data corruption.  The sequence goes like this:\n1) A process mmaps a fusefs file\n2) That process writes some data, but does not msync() it.\n3) A process writes directly, such as with write(2) to a region of the file that overlaps what was written in step 2.  fusefs invalidates all cached pages that were part of the write.\n4) If any bytes were written by step 2 and invalidated but not written by step 3, then they will be lost.\n\nSteps to reproduce:\n==================\n1) Build the passthrough example from sysutils/libfuse and fsx from tools/regression/fsx\n2) mkdir -p /tmp/mnt\n3) /path/to/libfuse/build/example/passthrough -d /tmp/mnt\n4) /path/to/fsx/fsx -P /tmp -S1333 -b5 -N 15 -U fsx.bin"
+}

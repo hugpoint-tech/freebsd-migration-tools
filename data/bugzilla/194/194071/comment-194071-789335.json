@@ -1,0 +1,8 @@
+{
+ "id": 789335,
+ "bug_id": 194071,
+ "attachment_id": 0,
+ "creation_time": "2014-10-01T14:14:25Z",
+ "creator": "lidl@FreeBSD.org",
+ "text": "It took a while to track this down, but the zfsloader on sparc64 machines\nhas been broken since r268649.  That's when the lz4 compression was added\nto ZFS.\n\nThis affects 10.1-BETA2 and 10.1-BETA3, where I did my diagnostic work.\nI'm sure that it also affects head.\n\nIn a nutshell, the lz4 code is missing a couple of portability fixes that\nallow for unaligned access to some of the data structures in a compressed\nlz4 data stream.\n\nWhen attempting to boot off a zfsloader with this problem, one will see errors\nsimilar to this:\n\n\u003e\u003e FreeBSD/sparc64 ZFS boot block\n   Boot path:   /pci@1f,0/pci@1/scsi@8/disk@0,0:a\nConsoles: Open Firmware console  ^M\nMemory Address not Aligned\n\nAfter bisecting the stable/10 tree over the last couple of nights, I figured out the exact revision where it failed. (r268649)\n\nLooking at the lz4 project's sources, it appears there was a portability fix introduced  in this patchset: https://code.google.com/p/lz4/source/detail?r=95\n\nIn particular, the patch that is needed for sparc64 is addition of a __attribute__((packed)) to some of the data structures for the lz4 implementation.\n\nI've reduced this to use the FreeBSD __packed definition that is in \u003csys/cdefs.h\u003e.\n\nWith the attached patch, recompiling stable/10 on a sparc64, I get a useable zfsloader, so I can once again boot a zfs-only sparc64 machine.\n\nPlease include this patch (or equivalent) in HEAD and in the 10.1 release.  This will avoid a major regression in ZFS booting between 10.0 and 10.1 releases.\n\nThanks.\n\n-Kurt"
+}

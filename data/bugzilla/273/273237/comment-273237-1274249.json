@@ -1,0 +1,8 @@
+{
+ "id": 1274249,
+ "bug_id": 273237,
+ "attachment_id": 0,
+ "creation_time": "2023-09-12T01:08:06Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Because this is a duplicate of bug 257977 (port desync with upstream) that accidentally got reverted. I didn't notice when testing inside jail due to passing through X11/Wayland/DBus/etc sockets.\n\nDBus launches 2 daemons one as root for \"system bus\" (e.g., used for battery status) and one as regular/current user for \"session bus\" (e.g., used for desktop notifications). The former is handled by rc.d and the latter is auto-launched by client library (glib in this case). However, auto-launch support is fragile and not used on Linux which supports user services managed by systemd-logind or dinit+turnstile. Until FreeBSD improves rc.d or login(1) one can start session bus via shell startup e.g.,\n\n  $ cat /etc/profile.d/dbus.sh\n  # WARNING: zsh only reads /etc/zprofile, so make sure to \"source\"\n  # XDG_RUNTIME_DIR is preferred but usually requires pam_xdg or consolekit2 (pam_ck_connector or ck_launch_session)\n  if [ -n \"$XDG_RUNTIME_DIR\" ]; then\n\tif ! pgrep -qf -U ${USER:-$(id -u)} dbus.\\*--session; then\n\t    dbus-daemon --session --fork --address=unix:runtime=yes 2\u003e/dev/null\n\tfi\n\t# Only necessary for some apps that fail to find default session bus (e.g., Emacs, Chrome)\n\t# https://gitlab.freedesktop.org/dbus/dbus/-/commit/e3f117e7610b\n\texport DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus\n  else\n\teval $(dbus-launch --sh-syntax --exit-with-session 2\u003e/dev/null)\n  fi"
+}

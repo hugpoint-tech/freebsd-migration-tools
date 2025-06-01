@@ -1,0 +1,8 @@
+{
+ "id": 1284723,
+ "bug_id": 275030,
+ "attachment_id": 0,
+ "creation_time": "2023-11-19T17:17:45Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "The -p change was to fix meta mode. Now that I've had a chance to sleep on it\nI remember: it was for metamode. filemon catches EVERYTHING that's used to build a target, including the binaries that are used. So, if the date changes on them, anything built by them gets regenerated.\n\nI don't think it's an opt_global.h thing. that was an actual failure.\n\nI think cp -N is the way to go. But a case might be made for using cpio -p to copy them as well, since that will be more portable (at least it will work without needing to bootstrap cp) and won't preserve flags either. The current code is a bit \"sophisticated\" to make that be an easy drop in replacement (there's cases like awk where we need to link it to nawk, and the list of things to use is source directories, and we need to transform each element into a destination, plus we assume only one destination, which is a poor fit for cpio, though it could be manageable with symlinks).\n\ncp replaced the ln -sf because mid-way through installworld we'd run new binaries with old libraries where the new binaries expected something new that wasn't in the old libraries.  We replaced the even older cp with ln for the macos build anyway (though it's not quite as straight forward as that, and maybe the real bug here is that we're copying too many things too early since the bootstrap phase shouldn't need much of anything on a real FreeBSD system).\n\nSo the quick hack may be cp -N, but the a more nuanced analysis is likely needed for this to be solved."
+}

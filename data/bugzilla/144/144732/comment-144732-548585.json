@@ -1,0 +1,8 @@
+{
+ "id": 548585,
+ "bug_id": 144732,
+ "attachment_id": 0,
+ "creation_time": "2010-03-14T11:30:05Z",
+ "creator": "ports@grosbein.net",
+ "text": "\n\tLet's take a look at struct g_cache_metadata definition in\n\t/usr/src/sys/geom/cache/g_cache.h:\n\nstruct g_cache_metadata {\n        char            md_magic[16];           /* Magic value. */\n        uint32_t        md_version;             /* Version number. */\n        char            md_name[16];            /* Cache value. */\n        uint32_t        md_bsize;               /* Cache block size. */\n        uint32_t        md_size;                /* Cache size. */\n        uint64_t        md_provsize;            /* Provider's size. */\n};\n\n\tNote that md_size is 32-bit unsigned value. Next lines present\n\tcache_metadata_encode() funtion that uses le32enc() to encode\n\tthis value, that's right.\n\n\tNow look at cache_metadata_decode() below: it uses le16dec()\n\tfunction to decode stored label. This error effectively limits\n\tcache size to 16-bit quantity (and limits stripe/block size too).\n\nHow-To-Repeat: \n\tkldload geom_cache\n\tgcache label -v -b 32768 -s 65536\n\n\tLabel is written successfully but gem_cache compains to kernel log:\n\nGEOM_CACHE: Invalid size for device ca0.\n\n\tThat's because le16dec() decodes 65536 as zero cache size."
+}

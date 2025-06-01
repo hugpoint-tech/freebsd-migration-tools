@@ -1,0 +1,8 @@
+{
+ "id": 1121957,
+ "bug_id": 249308,
+ "attachment_id": 0,
+ "creation_time": "2020-09-14T12:37:26Z",
+ "creator": "rajeev_v_pillai@yahoo.com",
+ "text": "col(1) segfaults with this simple test case:\n\n$ printf 'hello\\vworld\\n' | col\n     world\nSegmentation fault\n$ sudo lldb col\n(lldb) target create \"col\"\nCurrent executable set to 'col' (x86_64).\n(lldb) run\nProcess 73895 launching\nProcess 73895 launched: '/usr/home/rvp/work/col' (x86_64)\nhello^Kworld\n     world\nProcess 73895 stopped\n* thread #1, name = 'col', stop reason = signal SIGSEGV: invalid address (fault address: 0x10)\n    frame #0: 0x0000000000202f4d col`flush_lines(nflush=58) at col.c:371:14\n   368  \n   369          while (--nflush \u003e= 0) {\n   370                  l = lines;\n-\u003e 371                  lines = l-\u003el_next;\n   372                  if (l-\u003el_line) {\n   373                          flush_blanks();\n   374                          flush_line(l);\n(lldb) quit\nQuitting LLDB will kill one or more processes. Do you really want to proceed: [Y/n] y\n$ uname -a\nFreeBSD X202E.localdomain 12.1-RELEASE-p9 FreeBSD 12.1-RELEASE-p9 GENERIC  amd64\n$\n\nPatch to fix this:\n--- START PATCH ---\ndiff -urN a/col.c b/col.c\n--- a/col.c     2019-11-01 00:02:51.000000000 +0000\n+++ b/col.c     2020-09-14 11:34:11.054313000 +0000\n@@ -366,7 +366,7 @@\n {\n        LINE *l;\n \n-       while (--nflush \u003e= 0) {\n+       while (--nflush \u003e= 0 \u0026\u0026 lines) {\n                l = lines;\n                lines = l-\u003el_next;\n                if (l-\u003el_line) {\n--- END PATCH ---\n\n\n-RVP"
+}

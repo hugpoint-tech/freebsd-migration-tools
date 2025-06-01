@@ -1,0 +1,8 @@
+{
+ "id": 849886,
+ "bug_id": 204633,
+ "attachment_id": 0,
+ "creation_time": "2015-11-19T14:05:20Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: jtl\nDate: Thu Nov 19 14:04:54 UTC 2015\nNew revision: 291074\nURL: https://svnweb.freebsd.org/changeset/base/291074\n\nLog:\n  Consistently enforce the restriction against calling malloc/free when in a\n  critical section.\n\n  uma_zalloc_arg()/uma_zalloc_free() may acquire a sleepable lock on the\n  zone. The malloc() family of functions may call uma_zalloc_arg() or\n  uma_zalloc_free().\n\n  The malloc(9) man page currently claims that free() will never sleep.\n  It also implies that the malloc() family of functions will not sleep\n  when called with M_NOWAIT. However, it is more correct to say that\n  these functions will not sleep indefinitely. Indeed, they may acquire\n  a sleepable lock. However, a developer may overlook this restriction\n  because the WITNESS check that catches attempts to call the malloc()\n  family of functions within a critical section is inconsistenly\n  applied.\n\n  This change clarifies the language of the malloc(9) man page to clarify\n  the restriction against calling the malloc() family of functions\n  while in a critical section or holding a spin lock. It also adds\n  KASSERTs at appropriate points to make the enforcement of this\n  restriction more consistent.\n\n  PR:\t\t204633\n  Differential Revision:\thttps://reviews.freebsd.org/D4197\n  Reviewed by:\tmarkj\n  Approved by:\tgnn (mentor)\n  Sponsored by:\tJuniper Networks\n\nChanges:\n  head/share/man/man9/malloc.9\n  head/sys/kern/kern_malloc.c\n  head/sys/vm/uma_core.c"
+}

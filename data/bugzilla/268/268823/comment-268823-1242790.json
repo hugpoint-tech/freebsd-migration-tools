@@ -1,0 +1,8 @@
+{
+ "id": 1242790,
+ "bug_id": 268823,
+ "attachment_id": 239406,
+ "creation_time": "2023-01-11T16:31:14Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 239406\nIncrease timeout for upcalls to the gssd(8) daemon\n\nIt turns out that the underlying problem that\nbroke Kerberized NFS mounts using gssname was\na 25sec timeout on the kernerl GSSAPI upcall.\n\nFor some reason, gss_acuqire_cred() with a\nprinicpal name argument now takes about 28sec\nto complete. The upcall would time out. The\nkernel code would assume the gssd had died\nand, as such, would close the socket. Ironically,\nthis does cause the gssd daemon to terminate\nvia a SIGPIPE signal.\n\nThis patch increases the timeout. With this patch,\nbut not the patch in attachment #239339, the mount\nworks, but takes almost 30sec to complete, so I think\napplying both patches is appropriate.\n\nNB: The timeout increase is needed when a user's TGT\n    has expired, since gss_init_sec_context() takes\n    over 25sec in that case, as well."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1128299,
+ "bug_id": 250584,
+ "attachment_id": 0,
+ "creation_time": "2020-10-24T19:10:49Z",
+ "creator": "thomas@gibfest.dk",
+ "text": "Hello Tor friends,\n\nI am using the multi instance support introduced in https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=207129 to run more than one Tor instance. I want to run some instances with a different routing table, so:\n\n\ntor_instances=\"foo bar\"\ntor_foo_fib=1\ntor_bar_fib=2\n\n\nThis currently doesn't work because tor_fib is not set for the so-called \"slave\" instances (that wording should be changed btw).\n\nThe following 1-line patch makes it work, although you may wish to implement it in another way  :)\n\n\n# git diff tor /usr/local/etc/rc.d/tor \ndiff --git a/tor b/usr/local/etc/rc.d/tor\nindex 57eb6c8..1ca4a70 100755\n--- a/tor\n+++ b/usr/local/etc/rc.d/tor\n@@ -78,6 +78,7 @@ if [ -n \"${instance}\" ]; then\n     tor_conf=${tor_conf}@${inst_name}\n     tor_pidfile=${tor_pidfile}@${inst_name}\n     tor_datadir=${tor_datadir}/instance@${inst_name}\n+    tor_fib=$(eval echo \\$tor_${inst_name}_fib)\n   fi\n   if ! [ -r ${tor_conf} ]; then\n     warn \"tor instance ${inst_name} config file ${tor_conf} doesn't exist or isn't readable\"\n\n\nI hope we can get this into the port so I don't have to run with a local patch. Thank you!"
+}

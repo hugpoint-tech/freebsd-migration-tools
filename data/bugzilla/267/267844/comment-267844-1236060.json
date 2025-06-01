@@ -1,0 +1,8 @@
+{
+ "id": 1236060,
+ "bug_id": 267844,
+ "attachment_id": 0,
+ "creation_time": "2022-11-18T09:04:10Z",
+ "creator": "ohartmann@walstatt.org",
+ "text": "Running security/clamav on recent CURRENT (14.0-CURRENT #108 main-n259290-f556a05c4926: Thu Nov 17 19:44:14 CET 2022 amd64). After the last update, a couple of day ago from today (performing daily updates), clamd won't startup again, see the error below.\n\nThis issue is well known if /var/run is on tmpfs or any other memory backed filesystem vanishing after a reboot (this is a very common procedure in environments of elevated security):\n\n[...]\n#:/usr/src # service clamav-clamd restart\nclamav_clamd not running? (check /var/run/clamav/clamd.pid).\nStarting clamav_clamd.\nERROR: Can't save PID to file /var/run/clamav/clamd.pid: No such file or directory\n/usr/local/etc/rc.d/clamav-clamd: WARNING: failed to start clamav_clamd\n\nIn /etc/rc.conf the tag \n\nvar_run_enable=\"YES\"\n\nis set (all other var_run_ options are left untouched so far). The issue shown below has been discussed recently, I provided an alteration to the rc script checking for the existence of /var/run at startup of clamav. According to man rc.conf(5) setting this variable/tag to YES should provide saving the folder tree layout of /var/run and saving this to /var/db/mtree. Obvously, this isn't correctly done, /var/db/mtree is empty on those hosts (var/db is on a non-volatile device).\n\nWhen I did the update of security/clamav, clamav-clamd was already running, var/run/clamav existed. Shutting down/rebooting the system then left var/run untouched after recreating, so I suppose this method is either flawed or it doesn't work properly with clamav-clamd."
+}

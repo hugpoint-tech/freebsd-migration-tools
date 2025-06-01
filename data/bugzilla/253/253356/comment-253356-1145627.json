@@ -1,0 +1,8 @@
+{
+ "id": 1145627,
+ "bug_id": 253356,
+ "attachment_id": 0,
+ "creation_time": "2021-02-08T21:55:40Z",
+ "creator": "adridg@freebsd.org",
+ "text": "Let's take a look at what is in the package itself:\n\n```\nsqlite\u003e select * from packages where origin = 'print/qt5-printsupport';\n2048|print/qt5-printsupport|qt5-printsupport|5.15.2_1|Qt print support\nsqlite\u003e select * from pkg_script where package_id=2048;\n2048|1|327\n2048|7|317\nsqlite\u003e select * from script where script_id=327;\n327|echo '#include \u003cQtCore/modules/qconfig-printsupport.h\u003e' \u003e\u003e /usr/local/include/qt5/QtCore/qconfig-modules.h\n```\n\nThere we go, that's the install script. The type 7 script is deinstall, which removes the qconfig-printsupport.h line from qconfig-modules.\n\n\nSo if we install, deinstall the package, then the include line is removed.\n\nDoes pkg upgrade run deinstall / reinstall? No it does not. Doing an upgrade, or a reinstall, or an `install -f`, all run the **install** script again, but not the deinstall script (the right order would be deinstall, install, but even that is flaky). That is where the duplications come from.\n\nIf the install script was smarter -- e.g. doing `sort -u` or something on the `qconfig-modules.h` file -- then it would not produce duplicates. The install script is generated in `Mk/Uses/qt-dist.mk` as part of the *qt-post-install* target. We could add an extra line in there to do the `sort -u` in-place."
+}

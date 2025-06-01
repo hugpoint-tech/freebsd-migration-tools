@@ -1,0 +1,8 @@
+{
+ "id": 1271981,
+ "bug_id": 273402,
+ "attachment_id": 0,
+ "creation_time": "2023-08-28T15:36:59Z",
+ "creator": "nelson@msu.edu",
+ "text": "Verified as failing under 13.2-RELEASE; verified as working under 11.2-RELEASE\n\nAs of FreeBSD 13.2, the openlog() call is applying semantics to the \"ident\" argument. This action is not documented - the \"man\" page states that \"ident\" is a string prepended to the syslog text; in earlier versions, this was exactly the treatment.  In 13.2, if the \"ident\" text contains two words, it is reformatted into \"word1[word2]; if it contains more than two space-separated words, all subsequent \"syslog\" messages are silently dropped.\n\nI was able to reproduce this from the command line, using the \"logger\" utility:\n\nlogger 'My test message'                                               \nlogger -t testing 'My test message'                                            \nlogger -t 'testing 123' 'My test message'                                               \nlogger -t 'testing 123 456' 'My test message'                                               \n \nResults under FreeBSD 11.2:\n \nAug 28 11:21:22 netman1-old Rden: My test message\nAug 28 11:21:35 netman1-old testing: My test message\nAug 28 11:21:39 netman1-old testing 123: My test message\nAug 28 11:21:45 netman1-old testing 123 456: My test message\n\nResults under FreeBSD 13.2:\n \nAug 28 11:19:53 netman1-dev Rden[63807]: My test message\nAug 28 11:20:02 netman1-dev testing[63813]: My test message\nAug 28 11:20:12 netman1-dev testing[123]: - My test message\n(4th \"logger\" call is silently dropped)"
+}

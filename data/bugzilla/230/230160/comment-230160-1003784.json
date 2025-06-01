@@ -1,0 +1,8 @@
+{
+ "id": 1003784,
+ "bug_id": 230160,
+ "attachment_id": 0,
+ "creation_time": "2018-07-29T18:47:25Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Our emulation of Linux's madvise(2) appears to just call sys_madvise() directly:\n\n{ AS(madvise_args), (sy_call_t *)sys_madvise, AUE_MADVISE, NULL, 0, 0, 0, SY_THR_STATIC },\n\nThis sort of works for the \"standard\" MADV_* constants since their values are the same on FreeBSD and Linux.  However, Linux has a somewhat surprising behaviour for MADV_DONTNEED: if applied to a mapping of anonymous memory, the next access will return a zero-filled page.  That is, applying MADV_DONTNEED causes eager reclamation of pages in the range.  In contrast, our MADV_DONTNEED implementation just causes affected pages to skip LRU, and our MADV_FREE allows lazy reclamation of affected pages.  Some popular software, e.g., jemalloc, expects Linux's behaviour and won't work as expected under the Linuxulator because it just passes the parameters straight through to the native madvise(2) implementation.\n\nSome of Linux's other advice parameters are implemented on FreeBSD using minherit(2) (e.g., MADV_WIPEONFORK, MADV_DONTFORK)."
+}

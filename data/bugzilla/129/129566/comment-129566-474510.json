@@ -1,0 +1,8 @@
+{
+ "id": 474510,
+ "bug_id": 129566,
+ "attachment_id": 0,
+ "creation_time": "2009-03-08T19:10:07Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: ed\nDate: Sun Mar  8 19:09:55 2009\nNew Revision: 189542\nURL: http://svn.freebsd.org/changeset/base/189542\n\nLog:\n  Don't disable CR-to-NL translation when waiting for data to arrive.\n  \n  A difference between the old and the new TTY layer is that the new\n  implementation does not perform any post-processing before returning\n  data back to userspace when calling read().\n  \n  sh(1)'s read turns the TTY into a raw mode before calling select(). This\n  means that the first character will not receive any ICRNL processing.\n  Inherit this flag from the original terminal attributes.\n  \n  Even though this issue is not present on RELENG_*, I'm MFCing it to make\n  sh(1) in jails behave better.\n  \n  PR:\t\tbin/129566\n  MFC after:\t2 weeks\n\nModified:\n  head/bin/sh/miscbltin.c\n\nModified: head/bin/sh/miscbltin.c\n==============================================================================\n--- head/bin/sh/miscbltin.c\tSun Mar  8 19:07:44 2009\t(r189541)\n+++ head/bin/sh/miscbltin.c\tSun Mar  8 19:09:55 2009\t(r189542)\n@@ -147,6 +147,7 @@ readcmd(int argc __unused, char **argv _\n \t\tif (tcgetattr(0, \u0026told) == 0) {\n \t\t\tmemcpy(\u0026tnew, \u0026told, sizeof(told));\n \t\t\tcfmakeraw(\u0026tnew);\n+\t\t\ttnew.c_iflag |= told.c_iflag \u0026 ICRNL;\n \t\t\ttcsetattr(0, TCSANOW, \u0026tnew);\n \t\t\ttsaved = 1;\n \t\t}\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

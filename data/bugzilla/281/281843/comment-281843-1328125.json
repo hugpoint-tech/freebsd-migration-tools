@@ -1,0 +1,8 @@
+{
+ "id": 1328125,
+ "bug_id": 281843,
+ "attachment_id": 0,
+ "creation_time": "2024-10-04T03:26:19Z",
+ "creator": "mhjacobson@me.com",
+ "text": "sys/dev/usb/usb_device.c:846 (in usb_config_parse()):\n\n```\n\t\t/* check for in-use endpoints */\n\n\t\tif (cmd == USB_CFG_INIT) {\n\t\t\tep = udev-\u003eendpoints;\n\t\t\tep_max = udev-\u003eendpoints_max;\n\t\t\twhile (ep_max--) {\n\t\t\t\t/* look for matching endpoints */\n\t\t\t\tif (iface_index == USB_IFACE_INDEX_ANY ||\n\t\t\t\t    iface_index == ep-\u003eiface_index) {\n\t\t\t\t\tif (ep-\u003erefcount_alloc != 0)\n\t\t\t\t\t\treturn (USB_ERR_IN_USE);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n```\n\nThis code is missing an `ep++`.  See the similar loop below, which does have the increment.\n\nI'm hitting a panic that seems to be caused by changing alternate interface index while transfers are outstanding, which this code is supposed to prevent.  I suspect (but don't know for sure) that this is at least part of the problem."
+}

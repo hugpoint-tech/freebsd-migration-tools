@@ -1,0 +1,8 @@
+{
+ "id": 19857,
+ "bug_id": 6472,
+ "attachment_id": 0,
+ "creation_time": "1998-05-01T07:10:01Z",
+ "creator": "jkf@outreach.wolfnet.org",
+ "text": "\nIf _thread_flockfile() is passed a NULL file pointer, it enters fileno(), and\nhangs, grabbing all idle CPU time. The only way to terminate the process is\nwith a 'kill -9' from another tty. By placing the call to block signals\nbefore the first use of the pointer, the process never received sig 11 for\ndereferencing a NULL pointer. As a side benefit of the patch below, the\nplacement of the signal block/unblock calls match with the placement in the\nrest of the file, making things more consistent.\n\nFix: This patch will fix the problem.\nHow-To-Repeat: \nAny function that calls _thread_flockfile() and is passed a NULL file\npointer with hang the process. I.E, this code.\n\n-- Cut Here --\n\n#include \u003cpthread.h\u003e\n#include \u003cstdio.h\u003e\n\nmain\n{\n\tFILE*\tfp = NULL;\n\n\tfprintf(fp, \"Hello.\\n\");\n}\n\n-- Cut Here --\n\nSave that to a file, eg, hello.c.\nCompile like this and then execute.\n\tgcc -D_THREAD_SAFE -lc_r -o hello hello.c\nThis will hang.\n\nCompile so and then execute.\n\tgcc -o hello hello.c\nThis will die with a seg fault and core dump."
+}

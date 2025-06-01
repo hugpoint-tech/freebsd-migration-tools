@@ -1,0 +1,8 @@
+{
+ "id": 1143909,
+ "bug_id": 253060,
+ "attachment_id": 0,
+ "creation_time": "2021-01-28T12:47:08Z",
+ "creator": "bicknell@ufp.org",
+ "text": "If the user has configured SSL certificates for sendmail then when the sendmail submit service connects to localhost and receives the certificate it will be unable to verify that certificate.  Specifically the user will find a log message like this in their logs for every submitted e-mail:\n\nSTARTTLS=client, relay=[127.0.0.1], version=TLSv1.3, verify=FAIL, cipher=TLS_AES_256_GCM_SHA384, bits=256/256\n\nThe fix is to add the following two lines to /etc/mail/freebsd.submit.mc:\n\ndefine(`confCACERT_PATH',   `/etc/ssl/certs')dnl\ndefine(`confCACERT',        `/etc/ssl/cert.pem')dnl\n\nThen, assuming the user has a real certificate configured, they will get a message like this:\n\nSTARTTLS=client, relay=[127.0.0.1], version=TLSv1.3, verify=OK, cipher=TLS_AES_256_GCM_SHA384, bits=256/256\n\nThis does not change any mail delivery behavior, sendmail does not care if the certificate is valid or not and does not alter behavior if it is or not.   This only changes logging, and would reduce admin confusion when an admin has configured a server cert.  \n\nI believe this is safe to add to /etc/mail/freebsd.submit.mc for all users in the base distribution."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 824737,
+ "bug_id": 200288,
+ "attachment_id": 0,
+ "creation_time": "2015-05-20T02:32:08Z",
+ "creator": "kan@FreeBSD.org",
+ "text": "So, by looking at the zfs range code, I see these constructs:\n\n\t\tif (rl-\u003er_write_wanted) {\n\t\t\tcv_broadcast(\u0026rl-\u003er_wr_cv);\n\t\t\tcv_destroy(\u0026rl-\u003er_wr_cv);\n\t\t}\n\t\tif (rl-\u003er_read_wanted) {\n\t\t\tcv_broadcast(\u0026rl-\u003er_rd_cv);\n\t\t\tcv_destroy(\u0026rl-\u003er_rd_cv);\n\t\t}\n\t\tkmem_free(rl, sizeof (rl_t));\n\nThe code appears to wakeup waiters running on cv and then immediately proceeds to destroy the container structure. Looking at the recent change in kern_condvar.c, it does appear that thread that awakens does attempt to decrement the cv_waiters counter in what other thread has already freed. Hilarity ensures.\n\nPlease try to back out the revision 282971 by jhb and see it that brings your stability back. FWIW, I think code in zfs is hilarious."
+}

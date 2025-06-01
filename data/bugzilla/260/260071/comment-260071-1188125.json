@@ -1,0 +1,8 @@
+{
+ "id": 1188125,
+ "bug_id": 260071,
+ "attachment_id": 229750,
+ "creation_time": "2021-11-26T20:26:59Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 229750\nA demo of an nfs v4 server crashing the client with a negative slotid.\n\nThis code in newnfs_request() uses a slot number sent by the server\nto index into an array without bounds-checking:\n\n                                        slot = fxdr_unsigned(int, *tl++);\n                                        freeslot = slot;\n                                        if (retseq != sep-\u003enfsess_slotseq[slot])\n                                                printf(\"retseq diff 0x%x\\n\",\n                                                    retseq);\n\nI've attached a demo:\n\n# uname -a\nFreeBSD  14.0-CURRENT FreeBSD 14.0-CURRENT #103 main-n250903-2a29c1558e82-dirty: Fri Nov 26 13:54:28 EST 2021     rtm@xxx:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM  riscv\n# cc fnfs_3.c\n# ./a.out\n...\npanic: Fatal page fault at 0xffffffc000207f4c: 0xffffffce02bf4cc0\n--- exception 13, tval = 0xffffffce02bf4cc0\nnewnfs_request() at newnfs_request+0x1002\nnfsrpc_reclaimcomplete() at nfsrpc_reclaimcomplete+0x92\nnfsrpc_setclient() at nfsrpc_setclient+0x630\nnfscl_getcl() at nfscl_getcl+0x53e\nmountnfs() at mountnfs+0x722\nnfs_mount() at nfs_mount+0x161e\nvfs_mount_sigdefer() at vfs_mount_sigdefer+0x20\nvfs_domount_first() at vfs_domount_first+0x1d4\nvfs_domount() at vfs_domount+0x21c\nvfs_donmount() at vfs_donmount+0x79c\nsys_nmount() at sys_nmount+0x66\ndo_trap_user() at do_trap_user+0x206\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72"
+}

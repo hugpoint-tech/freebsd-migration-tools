@@ -1,0 +1,8 @@
+{
+ "id": 1316335,
+ "bug_id": 280081,
+ "attachment_id": 0,
+ "creation_time": "2024-07-12T21:43:30Z",
+ "creator": "demik+freebsd@lostwave.net",
+ "text": "We worked somewhat on this on #freebsd-fr (thanks to olivier who found the root cause, at least we think so)\n\nThe issue lies in libgcrypt build system. That build system has a -O flag Munging option which is enabled on FreeBSD\n\nShould have something like this in the build logs:\nchecking whether a -O flag munging is requested... yes\n\nThis is supposed to sanitise -O3s except that doesn't work:\nThe build stack is leading with optimisations such as -O2 and -O0 where needed. However it adds CFLAGS or CXXFLAGS after that, which gives stuff like:\n\nlibtool: compile:  cc -DHAVE_CONFIG_H -I. -I.. -I../src -I../src -I/usr/local/include -O0 -pipe -O3\nlibtool: compile:  cc -DHAVE_CONFIG_H -I. -I.. -I../src -I../src -I/usr/local/include -O2 -pipe -O3\n\nIn two Makefile.am files, the munging thing is trying to remove -O3s:\no_flag_munging = sed -e 's/[[:blank:]]-O\\([2-9sgz][2-9sgz]*\\)/ -O1 /' -e 's/[[:blank:]]-Ofast/ -O1 /g'\n\nExcept it doesn't, because it's only looking for the first -O flag… (missing /g on the first regexp)\n\nThe good news is that nobody else noticed that as well and fixed it upstream:\nhttps://github.com/gpg/libgcrypt/commit/e96df0c82e086bf348753d2d0fa37fa6191b4b14\n\nSo we will just have to wait for the next release I guess…"
+}

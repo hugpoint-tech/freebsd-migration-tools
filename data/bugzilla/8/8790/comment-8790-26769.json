@@ -1,0 +1,8 @@
+{
+ "id": 26769,
+ "bug_id": 8790,
+ "attachment_id": 0,
+ "creation_time": "1999-07-24T16:08:43Z",
+ "creator": "viro@math.psu.edu",
+ "text": "On Sat, 24 Jul 1999, Nick Hibma wrote:\n\n\u003e p-\u003eg-\u003ecategories is NC*sizeof(cat_t) big, which is 256 bytes. With\n\u003e BACKSL being 1\u003c\u003c8 you end up beyond that limit. Me thinks. Possible\n\u003e patch (to src/lib/libc/regex/regcomp.c, rev.1.12):\n\u003e \n\u003e --- regcomp.c   Wed Sep 16 10:13:00 1998\n\u003e +++ /tmp/regcomp.c      Sat Jul 24 14:02:42 1999\n\u003e @@ -1043,8 +1043,8 @@\n\u003e                 bothcases(p, ch);\n\u003e         else {\n\u003e                 EMIT(OCHAR, (unsigned char)ch);\n\u003e -               if (cap[ch] == 0)\n\u003e -                       cap[ch] = p-\u003eg-\u003encategories++;\n\u003e +               if (cap[(unsigned char) ch] == 0)\n\u003e +                       cap[(unsigned char) ch] = p-\u003eg-\u003encategories++;\n\u003e         }\n\u003e  }\n\u003e  \n\u003e \n\u003e Nick\n\tNope. Note where the cap points to. Your fix will break\neverything for characters with 7th bit set. Look: g-\u003ecategories is\ninitialized in line 241:\n\tg-\u003ecategories = \u0026g-\u003ecatspace[-(CHAR_MIN)];\nYou need casting to char, not unsigned char here. With that modification\nyour patch will work, but if you will look at the places where we call\nordinary() you'll see that ch may fall out of the char range only in one\nplace. Cheaper to cast it there... That's exactly what the patch I've\nproposed does.\n\tBTW, last time I checked this bug was in libc too ;-\u003c The same\npatch applies - they simply share the code.\n\t\t\t\t\t\t\t\tAl"
+}

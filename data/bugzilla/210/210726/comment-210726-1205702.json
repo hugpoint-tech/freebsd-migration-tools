@@ -1,0 +1,8 @@
+{
+ "id": 1205702,
+ "bug_id": 210726,
+ "attachment_id": 232948,
+ "creation_time": "2022-04-05T02:17:31Z",
+ "creator": "firk@cantconnect.ru",
+ "text": "Created attachment 232948\npatch for 12.x 13.x 14-CURRENT\n\n\u003e connecting from an IPv6 address to an IPv4 one.\n\nHow do you connect from IPv6 to IPv4?\nIt giving me EINVAL (12.3) or EAFNOSUPPORT (14) when I try to call bind() or connect() with IPv4 address on IPv6 socket.\n\nAnd that's check at the very beginning of tcp6_usr_connect():\n\n\u003e        if (nam-\u003esa_family != AF_INET6)\n\u003e                return (EAFNOSUPPORT);\n\u003e        if (nam-\u003esa_len != sizeof (*sin6))\n\u003e                return (EINVAL);\n\ngiving no chance to handle IPv4 address with it.\n\nDo you using jails? I found a way to still trigger EADDRINUSE from connect() from a jail in 12.3 and 14-CURRENT, may be that's your case: bind(fd,{0.0.0.0:0}) and then do connect (that's all for a pure IPv4 socket).\n\nSince the issue you linked contains \"connect from wildcard IPv6\", most likely it was really wildcard-bound IPv4 (because connecting from IPv6 to IPv4 is not possible at all).\n\nAdding a patch to fix that (that's the same patch that was posted 6 years ago but very slightly modified for freebsd 12+)."
+}

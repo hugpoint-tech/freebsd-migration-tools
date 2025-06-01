@@ -1,0 +1,8 @@
+{
+ "id": 1308671,
+ "bug_id": 278939,
+ "attachment_id": 0,
+ "creation_time": "2024-05-12T17:13:53Z",
+ "creator": "jeffpc@josefsipek.net",
+ "text": "I freshly installed FreeBSD 14.0 and updated it to 14.0-RELEASE-p6.  After a `pkg install wsjtx`, wsjtx (2.5.4_10) starts up fine but the jt9 helper process (used to decode FT4 \u0026 FT8 among other modes) terminates because of a SIGBUS.  (That is, wsjtx runs fine collecting the rx audio, but at the end of the interval (e.g., 15s for FT8) it spawns jt9 to process it.)\n\nI rebuilt the wsjtx port which didn't help.  However, using the unstripped binary led me to the following stack trace:\n\n(lldb) bt\n* thread #1, name = 'jt9', stop reason = signal SIGBUS\n  * frame #0: 0x0000000820c4a2e8\n    frame #1: 0x0000000000249e03 jt9`__ft8_decode_MOD_decode + 4931\n    frame #2: 0x00000000002412e2 jt9`multimode_decoder_ + 4546\n    frame #3: 0x0000000000238c4e jt9`jt9a_ + 814\n    frame #4: 0x00000000002381ce jt9`MAIN__ + 7038\n    frame #5: 0x000000000023890f jt9`main + 31\n    frame #6: 0x000000082a852afa libc.so.7`__libc_start1 + 298\n    frame #7: 0x00000000002365e0 jt9`_start at crt1_s.S:83\n\nOn a hunch, I started disabling security related sysctls which \"fixed\" the SIGBUS crash.  Specifically, I mucked with kern.elf64.aslr.enable. \u0026 kern.elf64.nxstack.\n\naslr=1 \u0026 nxstack=1 --\u003e crash (this is the default on the system)\naslr=0 \u0026 nxstack=1 --\u003e crash\naslr=0 \u0026 nxstack=0 --\u003e wsjtx works as expected\n\nI didn't try aslr=1 \u0026 nxstack=0 because I was too busy trying to use wsjtx to make contacts (to see if there were any other issues - I haven't found any)."
+}

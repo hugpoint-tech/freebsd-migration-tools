@@ -1,0 +1,8 @@
+{
+ "id": 1287941,
+ "bug_id": 272835,
+ "attachment_id": 0,
+ "creation_time": "2023-12-12T10:03:03Z",
+ "creator": "netchild@FreeBSD.org",
+ "text": "(In reply to Cy Schubert from comment #39)\n\nI believe you that it works. :)\nThe question for me is why it doesn't work for me.\n\nI rebuild inside src/kerberos5 everything with your latest patch. And I've rebuild sshd and ssh in the same way. All involved systems have the same binaries.\n\nWhile I have the GSS setting for ssh, I also tried with -K. No success.\n\nThe sshd debug log shows this (\"unknown mech-code 0\"):\nDec 12 10:12:31 commit sshd[37533]: debug1: userauth-request for user netchild service ssh-connection method gssapi-with-mic [preauth]\nDec 12 10:12:31 commit sshd[37533]: debug1:  No credentials were supplied, or the credentials were unavailable or inaccessible.\\nunknown mech-code 0 for mech { 1 2 840 113554 1 2 2 }\\n\\n\n\nAfter a bit of debugging and searching, adding this to the sshd_config makes it work:\nGSSAPIStrictAcceptorCheck no\n\nThe reason seems to be that my hostnames in DNS are differently cased as in the kerberos realm and libgssapi seems to be not case insensitive for the hostname. Attention: the setting does more than case insensitivity, it doesn't check the hostname at all but takes any kredential in the keytab as OK (at least to my reading).\n\nIt comes down to gss_import_name() from libgssapi in the end. A theoretical solution would be to lowercase all kerberos principals by default (and automatically on creation and/or on any lookup) and do the same in gss_import_name(). No idea if this is a feasible solution."
+}

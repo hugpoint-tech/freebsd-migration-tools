@@ -1,0 +1,8 @@
+{
+ "id": 1166733,
+ "bug_id": 256677,
+ "attachment_id": 0,
+ "creation_time": "2021-06-17T19:51:30Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "Running on: stable/12:4e2ae05c3\n\nConsider the following:\n\u003e # curl https://deblndw011x.ad001.siemens.net/repos/websvn/ -I\n\u003e HTTP/1.1 401 Unauthorized\n\u003e Date: Thu, 17 Jun 2021 19:37:35 GMT\n\u003e Server: Apache\n\u003e X-Frame-Options: SAMEORIGIN\n\u003e WWW-Authenticate: Negotiate\n\u003e Content-Type: text/html; charset=iso-8859-1\n\nfetch nags me:\n\u003e # fetch  https://deblndw011x.ad001.siemens.net/repos/websvn/\n\u003e Authentication required for \u003chttps://deblndw011x.ad001.siemens.net:443/\u003e!\n\u003e Login:\n\nlibfetch does not support SPNEGO authentication through the Heimdal library in base, yet it still nags me giving a false sense of support.\n\nThe reason is here: https://github.com/freebsd/freebsd-src/blob/68d3790ba0bce162f9fcaed09cfecd9adeab3943/lib/libfetch/http.c#L768-L796\n\nIt unconditionally sets cs.valid = 1 without even knowing whether it supports the scheme or not.\n\nThis needs to be changed to something: if at least one AS is supported set valid to 1 otherwise remain on 0.\n\nMay this would do the trick:\ncs-\u003evalid = 0;\n\n\t\tif (strcasecmp(key, \"basic\") == 0) {\n\t\t\tcs-\u003echallenges[cs-\u003ecount]-\u003escheme = HTTPAS_BASIC;\n                        cs-\u003evalid = 1;\n\t\t} else if (strcasecmp(key, \"digest\") == 0) {\n\t\t\tcs-\u003echallenges[cs-\u003ecount]-\u003escheme = HTTPAS_DIGEST;\n                        cs-\u003evalid = 1;"
+}

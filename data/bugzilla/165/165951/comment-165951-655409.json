@@ -1,0 +1,8 @@
+{
+ "id": 655409,
+ "bug_id": 165951,
+ "attachment_id": 0,
+ "creation_time": "2012-03-11T22:20:09Z",
+ "creator": "adrian@freebsd.org",
+ "text": "The AR913x WMAC sits off the Atheros Host Bus (AHB), along with the usb, gmac, etc. The APB (peripheral bus) contains the UART, etc and is a part of the AHB.\n\nTrouble is, the AHB code in -HEAD includes the USB because the USB IRQ sits inside the APB MISC interrupt status word. The other peripherals (GMAC0, GMAC1, WMAC/PCI, etc) are primary MIPS IRQs.\n\nSo the AHB devices (besides USB) sit off the nexus, rather than off the AHB. There's no AHB glue, per se, and thus there's no convenient place to put the WMAC DDR flush. For the AR713x/AR71xx there's a PCIe/PCI bus nexus and the IP2 flush is done there.\n\nFix: \n\nI'm not sure yet. I think the right thing to do is:\n\n* create the AHB bus;\n* have the IRQ handling done inside AHB - mapping the MISC interrupts to say IRQ 15 - 31;\n* Create APB;\n* Have the APB peripherals now use the MISC interrupts that are between AHB IRQs 15-\u003e31;\n* Have USB also use the relevant MISC interrupt that's between 15 and 31;\n* The APB interrupt code would just punt to the AHB."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 96105,
+ "bug_id": 30536,
+ "attachment_id": 0,
+ "creation_time": "2001-09-12T22:00:02Z",
+ "creator": "fmela0@sm.socccd.cc.ca.us",
+ "text": "While burning a CD-R at a 10x or 12x, burncd(8) does not wait long\nenough for the CD to spin down as soon as the burn is completed before\nissuing a fixate command. For example:\n\n# burncd -f /dev/acd1c -s 12 data file.iso fixate\n\nwill burn the ISO image to the CD just fine, but for whatever reason\n(I believe it is because the CD is still spinning because this problem\nnever occurs while burning at lower speeds - however I'm no expert in\nthis matter), the CD-R is not yet ready to fixate the cd when burncd\nissues the fixate command, and then burncd errors out and exits without\nfixating the cd.\n\nFix: \n\nTo fix the problem, I made a simple change to /usr/src/usr.bin/burncd.c\nso that it tries 5 times to fixate the CD-R, with pauses in between.\nThis fixes the problem on my system, however there may be different\npause lengths or number of retries that are better for everybody else.\n\nThe patch is available at:\nhttp://home.earthlink.net/~smela1/burncd.patch\nHow-To-Repeat: dmesg reports this for my Pacific Digital 12x CD-R\n\nacd1: CD-RW \u003cLITE-ON LTR-12102C\u003e at ata1-slave using PIO4\n\nIssue the following command:\n\n# burncd -f /dev/acd1c -s 12 data file.iso fixate\n\nwhere acd1c is your CD-R and file.iso is an ISO image. On my system it\nusually happens that burncd will fail when trying to do an\nioctl(cd_fd, CDRIOCCLOSEDISK) with errno=EBUSY."
+}

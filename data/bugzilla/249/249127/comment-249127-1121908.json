@@ -1,0 +1,8 @@
+{
+ "id": 1121908,
+ "bug_id": 249127,
+ "attachment_id": 0,
+ "creation_time": "2020-09-14T00:45:31Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: rmacklem\nDate: Mon Sep 14 00:44:50 UTC 2020\nNew revision: 365703\nURL: https://svnweb.freebsd.org/changeset/base/365703\n\nLog:\n  Fix a case where the NFSv4.0 server might crash if delegations are enabled.\n\n  asomers@ reported a crash on an NFSv4.0 server with a backtrace of:\n  kdb_backtrace\n  vpanic\n  panic\n  nfsrv_docallback\n  nfsrv_checkgetattr\n  nfsrvd_getattr\n  nfsrvd_dorpc\n  nfssvc_program\n  svc_run_internal\n  svc_thread_start\n  fork_exit\n  fork_trampoline\n  where the panic message was \"docallb\", which indicates that a callback\n  was attempted when the ClientID is unconfirmed.\n  This would not normally occur, but it is possible to have an unconfirmed\n  ClientID structure with delegation structure(s) chained off it if the\n  client were to issue a SetClientID with the same \"id\" but different\n  \"verifier\" after acquiring delegations on the previously confirmed ClientID.\n\n  The bug appears to be that nfsrv_checkgetattr() failed to check for\n  this uncommon case of an unconfirmed ClientID with a delegation structure\n  that no longer refers to a delegation the client knows about.\n\n  This patch adds a check for this case, handling it as if no delegation\n  exists, which is the case when the above occurs.\n  Although difficult to reproduce, this change should avoid the panic().\n\n  PR:\t\t249127\n  Reported by:\tasomers\n  Reviewed by:\tasomers\n  MFC after:\t1 week\n  Differential Revision:\thttps://reviews.freebbsd.org/D26342\n\nChanges:\n  head/sys/fs/nfsserver/nfs_nfsdstate.c"
+}

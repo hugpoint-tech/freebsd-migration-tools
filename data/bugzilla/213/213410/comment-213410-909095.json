@@ -1,0 +1,8 @@
+{
+ "id": 909095,
+ "bug_id": 213410,
+ "attachment_id": 0,
+ "creation_time": "2016-11-25T16:04:59Z",
+ "creator": "kp@freebsd.org",
+ "text": "I’ve had a very quick look, and at first glance it seems like an overly strict KASSERT() more than anything else.\nBasically, during service netif restart the scripts try to set up carp on an address that’s already got it configured. That runs into the assert and panics the box (or actually panics later on if INVARIANTS is not set).\n\nSimply replacing the KASSERT with a check (and returning errors) prevents the panic.\nI don’t have a carp test setup, but this should make things a lot better already.\n\nCan you check if this works for you?\n\ndiff --git a/sys/netinet/ip_carp.c b/sys/netinet/ip_carp.c index 7855af2..ea27f0a 100644\n--- a/sys/netinet/ip_carp.c\n+++ b/sys/netinet/ip_carp.c\n@@ -1804,7 +1804,8 @@ carp_attach(struct ifaddr *ifa, int vhid)\n        struct carp_softc *sc;\n        int index, error;\n\n-       KASSERT(ifa-\u003eifa_carp == NULL, (\"%s: ifa %p attached\", __func__, ifa));\n+       if (ifa-\u003eifa_carp != NULL)\n+               return (EBUSY);\n\n        switch (ifa-\u003eifa_addr-\u003esa_family) {\n #ifdef INET"
+}

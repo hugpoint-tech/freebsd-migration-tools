@@ -1,0 +1,8 @@
+{
+ "id": 1258285,
+ "bug_id": 271240,
+ "attachment_id": 0,
+ "creation_time": "2023-05-04T11:19:09Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "This is basically a re-report of https://github.com/freebsd/pkg/issues/2126 for the base system.\n\nHere is the diff from the setuid script (/var/log/setuid.today):\n+    865 -r-sr-xr-x  1 root  wheel       6600 30 Nov. 07:24:56 2022 /usr/local/bastille/jails/deblndw013x10j/root/usr/libexec/ulog-helper\n+ 231654 -rwsr-xr-x  1 root  wheel      54096 28 MÃ¤rz 14:17:14 2023 /usr/local/bastille/jails/deblndw013x10j/root/usr/local/bin/ksu\n+  15861 -r-sr-sr-x  2 root  authpf     39608 30 Nov. 07:29:24 2022 /usr/local/bastille/jails/deblndw013x10j/root/usr/sbin/authpf\n\nMärz is mangled because the sender (periodic(8)) cannot set the content encoding on the e-mail. So, basically dependending on the locale the output can be mangled completely or readable if plain ASCII is used.\n\nThe source of error comes from:\nroot@deblndw011x2j:/etc/periodic\n# grep -r \"exec ls \" .\n./security/100.chksetuid:           \\( -perm -u+s -or -perm -g+s \\) -exec ls -liTd \\{\\} \\+ |\n./security/110.neggrpperm:          -exec ls -liTd \\{\\} \\+ | tee /dev/stderr | wc -l)\n\nAfter a patch it looks decent and neutral:\n# ./security/110.neggrpperm\n\nChecking negative group permissions:\n525974 -------rw-  1 root  wheel  0 2023-05-04T13:02:50 /tmp/you\n\nOne needs to switch '-T' with:\n 57         -exec ls -lid -D \"%FT%T\" \\{\\} \\+ | tee /dev/stderr | wc -l)\n\nThus with '-D \"%FT%T\"'.\n\nWilling to provide a Git-formatted patch for both scripts."
+}

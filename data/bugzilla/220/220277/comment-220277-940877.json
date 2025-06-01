@@ -1,0 +1,8 @@
+{
+ "id": 940877,
+ "bug_id": 220277,
+ "attachment_id": 0,
+ "creation_time": "2017-07-05T14:48:51Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #16)\nWe could defer handling ACPI tasks until timers are working.  That is probably the simplest / shortest solution.  More complicated would be to fix pause() to always use sched_yield + spinning for all threads (not just thread0 as I suggested in my previous comment).  The first approach can be tried by changing the SYSINIT for acpi_taskq_init in sys/dev/acpica/Osd/OsdSchedule.c:\n\nIndex: sys/dev/acpica/Osd/OsdSchedule.c\n===================================================================\n--- sys/dev/acpica/Osd/OsdSchedule.c\t(revision 320674)\n+++ sys/dev/acpica/Osd/OsdSchedule.c\t(working copy)\n@@ -128,7 +128,8 @@\n     acpi_taskq_started = 1;\n }\n \n-SYSINIT(acpi_taskq, SI_SUB_CONFIGURE, SI_ORDER_SECOND, acpi_taskq_init, NULL);\n+SYSINIT(acpi_taskq, SI_SUB_KICK_SCHEDULER, SI_ORDER_SECOND, acpi_taskq_init,\n+    NULL);\n \n /*\n  * Bounce through this wrapper function since ACPI-CA doesn't understand"
+}

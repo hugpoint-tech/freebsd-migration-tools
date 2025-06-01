@@ -1,0 +1,8 @@
+{
+ "id": 1146575,
+ "bug_id": 253494,
+ "attachment_id": 0,
+ "creation_time": "2021-02-14T05:42:36Z",
+ "creator": "bsd@bobdbob.com",
+ "text": "Overview:\n\nA Fitlet2 computer has an onboard serial port which is a PCI attached HSUART.  The uart driver does not recognize the port, no /dev/cua* is created.  \n\nTo Reproduce:\n\nAttempt to use a serial port on a fitlet2 computer, or perhaps more generally, a Celeron N3350/Pentium N4200/Atom E3900.  Note that there is no /dev/cua* for the serial port.\n\nThe hardware appears in pciconf as:\n\nnone2@pci0:0:24:2:      class=0x118000 card=0x72708086 chip=0x5ac08086 rev=0x0b hdr=0x00\n    vendor     = 'Intel Corporation'\n    device     = 'Celeron N3350/Pentium N4200/Atom E3900 Series HSUART Controller'\n    class      = dasp\n\nI cargo-culted the fix in PR 207910, and added the PCI id to the list in src/sys/dev/uart/uart_bus_pci.c.\n\nAdding the following at line 168:\n\n{ 0x8086, 0x5abc, 0xffff, 0, \"Celeron N3350/Pentium N4200/Atom E3900 Series HSUART#0\", 0x10,\n        24 * DEFAULT_RCLK, 2 },\n{ 0x8086, 0x5abe, 0xffff, 0, \"Celeron N3350/Pentium N4200/Atom E3900 Series HSUART#1\", 0x10,\n        24 * DEFAULT_RCLK, 2 },\n{ 0x8086, 0x5ac0, 0xffff, 0, \"Celeron N3350/Pentium N4200/Atom E3900 Series HSUART#2\", 0x10,\n        24 * DEFAULT_RCLK, 2 },\n{ 0x8086, 0x5aee, 0xffff, 0, \"Celeron N3350/Pentium N4200/Atom E3900 Series HSUART#3\", 0x10,\n        24 * DEFAULT_RCLK, 2 },\n\nI can only verify that HSUART#2 works correctly, since the Fitlet hardware has only a single exposed RS-232 port (tested by connecting TX to RX, and observing the echo using kermit.).  There is a second physical port on an internal connector which is more difficult to get to."
+}

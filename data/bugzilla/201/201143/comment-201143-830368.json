@@ -1,0 +1,8 @@
+{
+ "id": 830368,
+ "bug_id": 201143,
+ "attachment_id": 0,
+ "creation_time": "2015-07-04T13:04:28Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Thanks for testing, it really helps to make this port better.\n\nI found the problem and your suspicion was right, it is indeed similar to the Java problem in that it evolves around handling POSIX compliant synchronous calls to connect(2) incorrectly. The difference here is that it only applies to the NetworkProxy code and is only a bug and not a design error.\n\nWhen a connection is done synchronously, the code detects this correctly and sets the status to StateConnected. In case of proxies this is not correct, as they should go to StateProxyWrite, StateProxyConnected and then to StateConnected.\n\nTracking it down was a bit nasty, fixing it quite easy.\n\nI also refined the patch for the static deinitialization problem (basically an incarnation of [1]), as it turns on custom load balancing plugins depend on static initialization of the facade by design [2] and breaking a documented API isn't a good idea. The unit test for this is only run when the port is not built by root, that's why I missed that one at first. I patched unit tests which can't be run by root, so they drop to uid 65534 when run as root to make sure they provide maximum coverage.\n\nA new version of the patch is available on phabricator:\nhttps://reviews.freebsd.org/D2930?download=true\n\n[1] https://isocpp.org/wiki/faq/ctors#construct-on-first-use-v2\n[2] https://doc.zeroc.com/display/Ice36/Load+Balancing#LoadBalancing-custom"
+}

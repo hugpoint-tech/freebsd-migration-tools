@@ -1,0 +1,8 @@
+{
+ "id": 486933,
+ "bug_id": 132092,
+ "attachment_id": 0,
+ "creation_time": "2009-02-25T09:10:04Z",
+ "creator": "alex@braske.net",
+ "text": "I've noticed that apache in jail is listening on *:80.\nAfter debugging for some time, i found out it's because of jail_socket_unixiproute_only set to NO.\n\nThe problem is, that it is really listening on *:80, and not on the ip the jail was given.\nI.e. \n\nHost system ip: 111.111.128.50\nJail system ip: 111.111.128.51\n\nHost system only has sshd runing, no other network services.\nJail system has apache installed. Apache is listening on *:80\nBy telneting to 111.111.128.50:80 (the host ip) i will connect to the jail system.\nIt's kind of jail escape IMHO.\n\nOther jails, which don't have anything listening on port 80, can be connected to via port 80. But the destination server will be the jail which listens on *:80.\n\nFix: \n\nI don't know if that's a wanted behavior.\nI can see two solutions:\n1. if it should work that way, then add a note/warning to the docs so users know that by setting jail_socket_unixiproute_only to NO will lower the security of the jail by letting it bind to wildcard IP.\n2. if it shouldn't work that way - then fix it so it can't listen on wildcard ip, and that way fix the jail/privilege escape\nHow-To-Repeat: Set jail_socket_unixiproute_only=NO in rc.conf, start a jail, and create a socket listening on *:port\nCan't reproduce with software like netcat, but software like apache/jabberd can listen on *:port."
+}

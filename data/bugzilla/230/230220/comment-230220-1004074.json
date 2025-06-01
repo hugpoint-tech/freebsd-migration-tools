@@ -1,0 +1,8 @@
+{
+ "id": 1004074,
+ "bug_id": 230220,
+ "attachment_id": 0,
+ "creation_time": "2018-07-31T02:11:16Z",
+ "creator": "decui@microsoft.com",
+ "text": "(In reply to Dexuan Cui from comment #0)\n\nIf there is only one mount point (i.e. /), I can't reproduce the panic.\nThe panic only happens after I mount /dev/da2p1 on /mnt.\n\nThe panic is caused by the failure of the KASSERT ffs_susp_ioctl():\n\ncase UFSSUSPEND:\n        fsidp = (fsid_t *)addr;\n        mp = vfs_getvfs(fsidp);\n        if (mp == NULL) {\n                error = ENOENT;\n                break;\n        }\n        error = vfs_busy(mp, 0);\n        vfs_rel(mp);\n        if (error != 0)\n                break;\n        error = ffs_susp_suspend(mp);\n        if (error != 0) {\n                vfs_unbusy(mp);\n                break;\n        }\n        error = devfs_set_cdevpriv(mp, ffs_susp_dtor);\n        KASSERT(error == 0, (\"devfs_set_cdevpriv failed\"));\n        break;\n\nWhen the UFSSUSPEND ioctl is called for the second time, devfs_set_cdevpriv() returns EBUSY."
+}

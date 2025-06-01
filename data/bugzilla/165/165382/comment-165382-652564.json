@@ -1,0 +1,8 @@
+{
+ "id": 652564,
+ "bug_id": 165382,
+ "attachment_id": 0,
+ "creation_time": "2012-02-22T02:00:24Z",
+ "creator": "adrian@freebsd.org",
+ "text": "This is more a note than a bug.\n\ntaskqueue_block() only marks newly queued items as PENDING. If a task\nis queued to the taskqueue to be run, taskqueue_block() doesn't stop\nthat from occuring.\n\nFor example, take a single-thread taskqueue:\n\n* task A is queued - wakeup_one() is called\n* task B is queued - wakeup_one() is called\n* task A starts to run\n* taskqueue_block() is called from another thread\n* task C is queued - but instead is marked as PENDING\n* task A completes\n* task B completes\n* task C waits for taskqueue_unblock() to occur.\n\nThis means that code which calls taskqueue_block() can't assume that\nonce currently running tasks are completed, nothing further will be\ndone. It can only assume that once currently QUEUED tasks are completed,\nnothing further will be queued.\n\nThese two are subtly different.\n\nFix: \n\nN/A\nHow-To-Repeat: N/A"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 63341,
+ "bug_id": 20514,
+ "attachment_id": 0,
+ "creation_time": "2000-08-10T11:29:58Z",
+ "creator": "sheldonh@uunet.co.za",
+ "text": "On Thu, 10 Aug 2000 06:49:28 +0200, Andre Albsmeier wrote:\n\n\u003e If you have more than 9 /var/log/maillog.*.gz files, 460.status-mail-rejects\n\u003e complains:\n\u003e \n\u003e Checking for rejected mail hosts:\n\u003e [: /var/log/maillog.10.gz: unexpected operator\n\nThat's because this test is broken:\n\n\t[ -f /var/log/maillog.$n* ]\n\nOne possible solution is as follows:\n\nIndex: 460.status-mail-rejects\n===================================================================\nRCS file: /home/ncvs/src/etc/periodic/daily/460.status-mail-rejects,v\nretrieving revision 1.10\ndiff -u -d -r1.10 460.status-mail-rejects\n--- 460.status-mail-rejects\t2000/06/30 09:41:15\t1.10\n+++ 460.status-mail-rejects\t2000/08/10 10:27:40\n@@ -24,7 +24,13 @@\n \t    {\n \t\twhile [ $n -ge 0 ]\n \t\tdo\n-\t\t    [ -f /var/log/maillog.$n* ] \u0026\u0026 zcat -fc /var/log/maillog.$n*\n+\t\t    if [ -f /var/log/maillog.$n ]\n+\t\t    then\n+\t\t\tcat -c /var/log/maillog.$n\n+\t\t    elif [ -f /var/log/maillog.$n.gz ]\n+\t\t    then\n+\t\t\tzcat -c /var/log/maillog.$n.gz\n+\t\t    fi\n \t\t    n=$(($n - 1))\n \t\tdone\n \t\tcat /var/log/maillog\n\nThis'll work fine until periodic(8) supports alternative compression\nmechanisms.\n\nCiao,\nSheldon."
+}

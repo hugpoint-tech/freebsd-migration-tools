@@ -1,0 +1,8 @@
+{
+ "id": 1238606,
+ "bug_id": 252596,
+ "attachment_id": 0,
+ "creation_time": "2022-12-09T09:17:32Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to Yuichiro NAITO from comment #11)\n\n\u003e For example, I have 'em0' interface for IPv4.\n\u003e Set a route entry as 'route add 255.255.255.255 -iface em0'.\n\u003e Then 'ping 255.255.255.255' works as I expected.\n\nFound an interesting bug, the ICMP request is duplicated (and hence the duplicated ICMP reply).\n\n```\n# route add 255.255.255.255 -iface em0\n# ping -c1 255.255.255.255 \n```\n\nThe tcpdump session:\n```\n# tcpdump -nvei em0 'icmp'\n\n11:16:47.097435 00:0c:29:73:4f:98 \u003e ff:ff:ff:ff:ff:ff, ethertype IPv4 (0x0800), length 98: (tos 0x0, ttl 64, id 8264, offset 0, flags [none], proto ICMP (1), length 84)\n    192.168.117.154 \u003e 255.255.255.255: ICMP echo request, id 50203, seq 0, length 64\n11:16:47.097476 00:0c:29:73:4f:98 \u003e ff:ff:ff:ff:ff:ff, ethertype IPv4 (0x0800), length 98: (tos 0x0, ttl 64, id 8264, offset 0, flags [none], proto ICMP (1), length 84)\n    192.168.117.154 \u003e 255.255.255.255: ICMP echo request, id 50203, seq 0, length 64\n11:16:47.097688 00:50:56:c0:00:08 \u003e 00:0c:29:73:4f:98, ethertype IPv4 (0x0800), length 98: (tos 0x0, ttl 64, id 61857, offset 0, flags [none], proto ICMP (1), length 84)\n    192.168.117.1 \u003e 192.168.117.154: ICMP echo reply, id 50203, seq 0, length 64\n11:16:47.097692 00:50:56:f2:7d:1e \u003e 00:0c:29:73:4f:98, ethertype IPv4 (0x0800), length 98: (tos 0x0, ttl 128, id 2139, offset 0, flags [none], proto ICMP (1), length 84)\n    192.168.117.2 \u003e 192.168.117.154: ICMP echo reply, id 50203, seq 0, length 64\n\n```"
+}

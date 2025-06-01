@@ -1,0 +1,8 @@
+{
+ "id": 1181361,
+ "bug_id": 258986,
+ "attachment_id": 0,
+ "creation_time": "2021-10-07T15:48:28Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "The ixgbe driver publishes a bunch of stats via the sysctl interface.  Among them are a histogram of the sent and received frame sizes.  However, this histogram ends at 1522 bytes.  For example:\n\n# sysctl dev.ix.0 | grep x_frame\ndev.ix.0.mac_stats.tx_frames_1024_1522: 102041616251\ndev.ix.0.mac_stats.tx_frames_512_1023: 918277489\ndev.ix.0.mac_stats.tx_frames_256_511: 1797068858\ndev.ix.0.mac_stats.tx_frames_128_255: 1826567947\ndev.ix.0.mac_stats.tx_frames_65_127: 10586619068\ndev.ix.0.mac_stats.tx_frames_64: 1407126\ndev.ix.0.mac_stats.rx_frames_1024_1522: 114257985091\ndev.ix.0.mac_stats.rx_frames_512_1023: 1442145561\ndev.ix.0.mac_stats.rx_frames_256_511: 2456033440\ndev.ix.0.mac_stats.rx_frames_128_255: 624033055\ndev.ix.0.mac_stats.rx_frames_65_127: 24790890291\ndev.ix.0.mac_stats.rx_frames_64: 12574573\n\nOn this particular system, I am sending and receiving jumbo frames, as confirmed by netstat:\n\n# netstat -I ix0 1 | awk '$1 ~ /[1-9]/ {print (\"bytes/packet tx:\", $4 / $1, \"bytes/packet rx:\", $7 /  $5)}'\nbytes/packet tx: 1270.04 bytes/packet rx: 1229.77\nbytes/packet tx: 1322.84 bytes/packet rx: 874.726\nbytes/packet tx: 2240 bytes/packet rx: 1062.68\nbytes/packet tx: 2128.77 bytes/packet rx: 1106.72\nbytes/packet tx: 1174.64 bytes/packet rx: 1346.54\n\nIdeally the sysctl stats would have at least one more bin for \u003e 1522 bytes."
+}

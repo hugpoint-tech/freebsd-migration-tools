@@ -1,0 +1,8 @@
+{
+ "id": 396203,
+ "bug_id": 113398,
+ "attachment_id": 0,
+ "creation_time": "2008-02-27T20:06:54Z",
+ "creator": "dindin@yandex-team.ru",
+ "text": "number of groups \u003e NGROUPS_MAX meaning the user can no longer login\nMessage-ID: \u003c20080227170342.GE1139@sepulca.yandex.ru\u003e\nMIME-Version: 1.0\nContent-Type: text/plain; charset=koi8-r\nContent-Disposition: inline\nX-Operating-System: FreeBSD sepulca.yandex.ru 6.3-STABLE FreeBSD 6.3-STABLE\nUser-Agent: mutt-ng/devel-r804 (FreeBSD)\nStatus: RO\n\nI'm sorry, previous patch just  increases number of groups to 64, and this\none fixes problem.\n\n-- \nCheers\nDenis Barov\n\ndiff -urN src/lib/libc/gen/initgroups.c.orig src/lib/libc/gen/initgroups.c\n--- src/lib/libc/gen/initgroups.c.orig  2003-11-19 18:51:26.000000000 +0300\n+++ src/lib/libc/gen/initgroups.c   2008-02-27 22:59:13.000000000 +0300\n@@ -42,6 +42,7 @@\n #include \u003cstdio.h\u003e\n #include \"namespace.h\"\n #include \u003cerr.h\u003e\n+#include \u003cerrno.h\u003e\n #include \"un-namespace.h\"\n #include \u003cunistd.h\u003e\n\n@@ -51,6 +52,7 @@\n    gid_t agroup;\n {\n    int ngroups;\n+    int result;\n    /*\n     * Provide space for one group more than NGROUPS to allow\n     * setgroups to fail and set errno.\n@@ -59,5 +61,10 @@\n\n    ngroups = NGROUPS + 1;\n    getgrouplist(uname, agroup, groups, \u0026ngroups);\n-   return (setgroups(ngroups, groups));\n+\n+    do\n+      result = setgroups (ngroups, groups);\n+    while (result == -1 \u0026\u0026 errno == EINVAL \u0026\u0026 --ngroups \u003e 0);\n+\n+   return result;\n }"
+}

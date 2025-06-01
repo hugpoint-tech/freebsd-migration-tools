@@ -1,0 +1,8 @@
+{
+ "id": 1013359,
+ "bug_id": 231459,
+ "attachment_id": 0,
+ "creation_time": "2018-09-28T15:17:41Z",
+ "creator": "emaste@freebsd.org",
+ "text": "(In reply to Bernard Spil from comment #11)\nThis fixes the main problem but an additional issue remains when linking with lld:\n\n--- crypto/cryptlib.o ---\ncc  -I. -Icrypto/include -Iinclude -fPIC -pthread -Wa,--noexecstack -Qunused-arguments -O2 -pipe  -fstack-protector -fno-strict-aliasing -DL_ENDIAN -DOPENSSL_PIC -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_GF2m -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DRC4_ASM -DMD5_ASM -DRMD160_ASM -DAES_ASM -DGHASH_ASM -DECP_NISTZ256_ASM -DPADLOCK_ASM -DPOLY1305_ASM -DOPENSSLDIR=\"\\\"/usr/local/openssl\\\"\" -DENGINESDIR=\"\\\"/usr/local/lib/engines-1.1\\\"\" -D_THREAD_SAFE -D_REENTRANT -DNDEBUG  -MMD -MF crypto/cryptlib.d.tmp -MT crypto/cryptlib.o -c -o crypto/cryptlib.o crypto/cryptlib.c\n\n...\n\n--- libcrypto.so ---\n/usr/bin/ld: error: can't create dynamic relocation R_386_PC32 against symbol: OPENSSL_ia32cap_P in readonly segment; recompile object files with -fPIC\n\u003e\u003e\u003e defined in crypto/cryptlib.o\n\u003e\u003e\u003e referenced by crypto/rc4/rc4-586.o:(RC4_set_key)\n\n/usr/bin/ld: error: can't create dynamic relocation R_386_PC32 against symbol: OPENSSL_ia32cap_P in readonly segment; recompile object files with -fPIC\n\u003e\u003e\u003e defined in crypto/cryptlib.o\n\u003e\u003e\u003e referenced by crypto/rc4/rc4-586.o:(RC4_options)\ncc: error: linker command failed with exit code 1 (use -v to see invocation)\n*** [libcrypto.so] Error code 1\n\nThis is a much trickier issue and will take more work. That said, it wouldn't hurt to apply the config change to all four."
+}

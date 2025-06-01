@@ -1,0 +1,8 @@
+{
+ "id": 1322673,
+ "bug_id": 280701,
+ "attachment_id": 0,
+ "creation_time": "2024-08-27T11:42:26Z",
+ "creator": "franco@opnsense.org",
+ "text": "I found these inconsistencies in the ported patches from OpenBSD:\n\ndiff --git a/sys/netpfil/pf/pf.c b/sys/netpfil/pf/pf.c\nindex ef488bad26d..c9180e877d5 100644\n--- a/sys/netpfil/pf/pf.c\n+++ b/sys/netpfil/pf/pf.c\n@@ -1878,7 +1878,7 @@ pf_icmp_mapping(struct pf_pdesc *pd, u_int8_t type,\n \t\t\t */\n \t\t\t*icmp_dir = PF_IN;\n \t\t\t*virtual_type = MLD_LISTENER_QUERY;\n-\t\t\t*virtual_id = 0;\n+\t\t\t*virtual_id = 0; /* XXX missing fake id */\n \t\t\tbreak;\n \t\t}\n \t\tcase MLD_MTRACE:\n@@ -1892,7 +1892,8 @@ pf_icmp_mapping(struct pf_pdesc *pd, u_int8_t type,\n \t\t\t*icmp_dir = PF_IN;\n \t\tcase ND_NEIGHBOR_ADVERT: {\n \t\t\t*virtual_type = ND_NEIGHBOR_SOLICIT;\n-\t\t\t*virtual_id = 0;\n+\t\t\t*multi = PF_ICMP_MULTI_SOLICITED;\n+\t\t\t*virtual_id = 0; /* XXX missing fake id */\n \t\t\tbreak;\n \t\t}\n \nFrom early testing, however, it's not working any better with plugging back PF_ICMP_MULTI_SOLICITED only.  I'm unsure about the mock id effect.  But what I can say is that it's better to skip dealing with PF_ICMP_MULTI_SOLICITED as OpenBSD did in 2012 too:\n\nhttps://github.com/openbsd/src/commit/2633ae8c4c8a64\n\nAnother patch from 2023 is relevant as well as it disables half the state tracking for unsolicited advertise cases:\n\nhttps://github.com/openbsd/src/commit/49f39043a02d6"
+}

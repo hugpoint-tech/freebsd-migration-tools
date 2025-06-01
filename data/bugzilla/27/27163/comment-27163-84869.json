@@ -1,0 +1,8 @@
+{
+ "id": 84869,
+ "bug_id": 27163,
+ "attachment_id": 0,
+ "creation_time": "2003-12-28T03:03:51Z",
+ "creator": "cracauer@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eclosed\n\nClosing, correct behaviour. \n\nIn this script... \n\ntrap    \"echo do not try this; exit\"    TSTP \nwhile [ 1 ] ;   do \ndate \nsleep 2 \ndone \n\n... the trap handler for the SIGTSTP is correctly never invoked.  The \nreason is that the sleep(1) or date(1) are stopped and hence never \nreturn.  Trap handlers are excuted after the child exits - which never \nhappens here. \n\nIf the program being called is catching SIGTSTP, and is hence not \nstopped and then exits later, the handler is correctly excuted: \n\nCompile this to ./obscure \n\n#include \u003cstdio.h\u003e \n#include \u003csignal.h\u003e \n\nvoid onsig(int signo) \n{ \nfprintf(stderr, \"foobarn\"); /* yes I know, not allowed */ \nexit(1); \n} \n\nint main(void) \n{ \nsignal(SIGTSTP, onsig); \nfor (;;) \n; \nreturn 0; \n} \n\nAnd run this: \n\ntrap    \"echo do not try this; exit\"    TSTP \nwhile [ 1 ] ;   do \n./obscure \ndone \n\nThe above trap will be executed at the correct time. \n\n\nI love this stuff, how could I live without it for no many moons :-)))"
+}

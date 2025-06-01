@@ -1,0 +1,8 @@
+{
+ "id": 1354447,
+ "bug_id": 240874,
+ "attachment_id": 0,
+ "creation_time": "2025-03-13T03:40:47Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "FWIW I have been working on a native inotify implementation.  It works well enough to run test programs, there is still a fair bit of integration left to do, and there are some compatibility issues involving the name cache which will be hard to fully fix.\n\nThere are some fundamental race conditions in EVFILT_VNODE which make it unusable for some purposes, so building inotify on top of kevent(EVFILT_VNODE) doesn't really help me, hence the native implementation.  For example, suppose some service creates files in a directory, and I want a notification when that service is done with a file.  With inotify, I can track the directory with IN_CLOSE.  With EVFILT_VNODE, I need to 1) watch the directory for writes, 2) when a write occurs, scan the directory to find new files, 3) open new files and wait for NOTE_CLOSE.  But if the service closes the file before step 3, I miss the notification.  I do not see how this can be solved without a new notification interface.\n\nOriginally I implemented a new kqueue filter, EVFILT_FSWATCH, which gives notifications for all filesystem, kind of like MacOS' fsevents.  But I think it is probably more useful to have a Linux-compatible inotify instead, so I will go ahead with that.\n\nI would like to integrate this into the linuxulator, if only so that I can run the LTP inotify test programs.  If anyone has done this recently and can describe the steps, I'd greatly appreciate it; I've found devel/linux-ltp, but it fails to fetch."
+}

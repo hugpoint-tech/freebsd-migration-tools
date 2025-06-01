@@ -1,0 +1,8 @@
+{
+ "id": 1302749,
+ "bug_id": 277967,
+ "attachment_id": 0,
+ "creation_time": "2024-03-28T13:41:11Z",
+ "creator": "junchoon@dec.sakura.ne.jp",
+ "text": "This needs considerations for modules which depends on other modules.\n\nPossibly, the first module could be loaded fine, but exceeds the limit when attempting to load its dependencies, and at worse, the first module cannot be unloaded safely.\nSo multiple (at least 2) passes would be needed to actually load modules.\n\nFor example, nvidia-drm.ko depends on nvidia-modeset.ko, nvidia.ko and drm.ko (possibly more implicit).\n\nPossible option would be to include module sizes in linker.hints files.\nAnd looking output of kldstat, dependencies seems to be loaded after at least one of its consumers.\n\nTo avoid this,\n 1. read /boot/loader.conf[.local] thoroughly to determine\n    all modules specified to load,\n\n 2. read linker.hints in all module directories to determine\n    dependencies,\n\n 3. at the same time of 2., fetch sizes of modules to be loaded,\n\n 4. decide the loading order, basically the order appears\n    in /boot/loader.conf[.local], but dependencies should be\n    loaded before their first consumers,\n\n 5. finally decide to which to be loaded (which to ignore) and\n    actually load modules.\n\nBut at the same time, considerations would be needed for the cases linker.hints are somehow not up-to-date or nonexistent.\nThis could happen when admins just copies pre-built modules but fotgot to run kldxref, or kldxref somehow failed to run (crash?).\n\nAnyway, would be complicated."
+}

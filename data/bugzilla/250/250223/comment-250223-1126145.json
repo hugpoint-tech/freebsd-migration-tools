@@ -1,0 +1,8 @@
+{
+ "id": 1126145,
+ "bug_id": 250223,
+ "attachment_id": 0,
+ "creation_time": "2020-10-09T13:40:47Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Reported by: Christopher Krah of Fraunhofer FKIE\n\n*Description of the vulnerability*: Mounting a specially crafted ext3 (and potentially any ext fs) may lead to an out-of-bounds read. The file system of [1] yields a page fault (supervisor read data). \nThis happens in line 276  in /usr/src/sys/fs/fifofs/fifo_vnops.c:\n\n/*\n* Device close routine\n*/\n/* ARGSUSED */\nstatic int\nfifo_close(ap)\nstruct vop_close_args /* {\nstruct vnode *a_vp;\nint  a_fflag;\nstruct ucred *a_cred;\nstruct thread *a_td;\n} */ *ap;\n{\n    struct vnode *vp;\n    struct fifoinfo *fip;\n    struct pipe *cpipe;\n    vp = ap-\u003ea_vp;\n    fip = vp-\u003ev_fifoinfo;    # crash occurs here\n    [...]\n\nIn this snippet when setting the value of fip by accessing the v_fifoinfo field fip is set to zero.\n(kgdb) p *vp\n$1 = {[...], {v_mountedhere = 0x0, v_unpcb = 0x0, v_rdev = 0x0, v_fifoinfo = 0x0} [...] }\n\nThe corresponding assembly instruction is:\n\n0xffffffff80a36b36 \u003cfifo_close+22\u003e:\tmov    r14,QWORD PTR [r12]\n\nAnd confirms the above. At the time of the crash r12 = 0x0 and hence accessing the value at memory address 0x0 is causing the kernel DoS.\nThat said, If an attacker would have access to r12 this may lead to an information leak.\n\n\n*Affected versions*: tested with FreeBSD 12.0-RELEASE AMD64. \n\n*Workaround*: Do not load ext2fs \n\n---\n\nfsu reports Cannot be reproduced on CURRENT r349333, reproduced on 12 at r341666"
+}

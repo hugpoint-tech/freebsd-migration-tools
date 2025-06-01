@@ -1,0 +1,8 @@
+{
+ "id": 853056,
+ "bug_id": 187594,
+ "attachment_id": 164051,
+ "creation_time": "2015-12-10T15:48:51Z",
+ "creator": "karl@denninger.net",
+ "text": "Created attachment 164051\nUpdate of patch related to other bug report (see comment for details)\n\nIdentical to 161943 but adds defense against inversion of the dirty/dirty_max_internal relationship resulting in a potential sign extension or divide-by-zero.\n\nIn response to https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=205163; the stack backtrace and examination of variables shows inversion of that relationship but the claimed panic cause (integer divide by zero) is not evident in the kernel state, which appears to imply a crashed stack.\n\nThe code added should in theory never execute and inversion of those values should be impossible because at line ~1325 in dmu_tx.c once dirty_data_max_internal is (potentially) resized dmu_tx_try_assign executes and, if the dirty data level is at or near the (now possibly resized) dirty_data_max amount dmu_tx_wait is called to suspend allocation until that buffer drains.  That is, changes in this value are at least theoretically protected against the dirty value meeting or exceeding the resized amount and thus division by zero or an inversion should not be able to happen.\n\nNonetheless it cannot do harm to defend against this (other than the couple of additional instructions and time to execute them) and if it resolves the panic that implies there is a missing mutex somewhere in the base code that needs to be run down and found since it will likely cause trouble elsewhere as well."
+}

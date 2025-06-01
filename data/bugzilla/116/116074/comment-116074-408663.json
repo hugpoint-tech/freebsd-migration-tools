@@ -1,0 +1,8 @@
+{
+ "id": 408663,
+ "bug_id": 116074,
+ "attachment_id": 0,
+ "creation_time": "2007-09-04T10:20:02Z",
+ "creator": "cejkar@fit.vutbr.cz",
+ "text": "\n\tThe example in How-To-Repeat does incorrectly return\n\t\"Match: Yes (should be No)\". The problem in fnmatch() is that\n\tthe implementation finds first \"*\" character after \"a\" match,\n\tand then recursively tries to call itself, but now with\n\tFNM_PERIOD disabled:\n\n\t...\n\tif (!fnmatch1(pattern, string,\n\t    flags \u0026 ~FNM_PERIOD, patmbs, strmbs))\n\t        return (0);\n\t...\n\n\tTried patterns are\n\tfnmatch(\"b/*\", \"bbb/.x\", ...)\n\tfnmatch(\"b/*\", \"bb/.x\", ...)\n\tfnmatch(\"b/*\", \"b/.x\", ...)\n\twhere the third try is successfull, because the FNM_PERIOD\n\tis disabled. I tried to find a solution, but I'm afraid, that\n\tit is not so easy, because simply removing code disabling\n\tFNM_PERIOD could cause another problems (if there is a dot in\n\tasterisk matching pattern - maybe mangling stringstart inside\n\trecursive call with FNM_PERIOD allowed could do the job).\n\nHow-To-Repeat: \n\t#include \u003cstdio.h\u003e\n\t#include \u003cfnmatch.h\u003e\n\n\tint main(void)\n\t{\n\t    int r = fnmatch(\"a*b/*\", \"abbb/.x\", FNM_PATHNAME | FNM_PERIOD);\n\t    printf(\"Match: %s\\n\", (r == 0) ? \"Yes (should be No)\" : \"No\");\n\t    return 0;\n\t}"
+}

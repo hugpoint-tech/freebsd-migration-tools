@@ -1,0 +1,8 @@
+{
+ "id": 839412,
+ "bug_id": 202932,
+ "attachment_id": 160781,
+ "creation_time": "2015-09-06T16:51:40Z",
+ "creator": "fbsd.bugzilla@fenyo.net",
+ "text": "Created attachment 160781\ncorrecting the endless loop bug\n\nHi,\n\nBug ID 200429 (endless loop when started at boot time), that had been corrected on FreeBSD 10.1, came back with FreeBSD 10.2, due to kernel behaviour changes.\n\nWhen the /dev/console device is revoked, writing to the device sets errno to:\n- ENXIO with FreeBSD 10.1 kernel\n- EIO with FreeBSD 10.2 kernel\n\nThe following program can be used to see this behaviour change:\n------------------------------------------------------------------\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\nextern int errno;\nint main() {\n  int id = open(\"/dev/console\", O_RDWR);\n  revoke(\"/dev/console\");\n  int ret = write(id, \"X\", 1);\n  if (ret \u003c 0) printf(\"errno=%d\\n\", errno);\n  return 0;\n}\n------------------------------------------------------------------\nIt returns 6 (ENXIO) on FreeBSD 10.1 and 5 (EIO) on FreeBSD 10.2.\n\nTo make rsyslog8 work correctly, here is a new version of sysutils/rsyslog8/files/patch-runtime_stream.c, in which I've added modifications to correct the bug.\n\nNote that the bug had been previously corrected in the main stream, in the rsyslog8 original sources, not by a FreeBSD patch. But I've not sent a patch proposal to the main stream this time because I suspect that the new behaviour of the kernel is unwanted. So, I will open a bug report for this new behaviour, and depending on the result, I may, or not, send back a bug report to the main stream.\n\nSincerely,"
+}

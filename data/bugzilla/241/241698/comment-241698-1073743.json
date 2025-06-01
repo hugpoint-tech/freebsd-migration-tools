@@ -1,0 +1,8 @@
+{
+ "id": 1073743,
+ "bug_id": 241698,
+ "attachment_id": 0,
+ "creation_time": "2019-11-04T03:57:29Z",
+ "creator": "darksoul@darkbsd.org",
+ "text": "I was running pf with the following line :\n\nset skip on lo\n\nReplacing it to :\n\nset skip on lo0\n\nAnd then reloading configuration with the following command ends up causing a segmentation fault and a core dump :\n\n# pfctl -f /etc/pf.conf\n\nThe core dump reveals it occured in strncmp() but pfctl did not provide the base symbols so I can't be sure yet of what is going on.\n\n#0  0x000000080048c1d5 in strncmp () from /lib/libc.so.7\n(gdb) bt\n#0  0x000000080048c1d5 in strncmp () from /lib/libc.so.7\n#1  0x000000000021d7f0 in ?? ()\n#2  0x0000000000220c6a in ?? ()\n#3  0x0000000000222cbb in ?? ()\n#4  0x000000000021d11b in ?? ()\n#5  0x000000080026d000 in ?? ()\n#6  0x0000000000000000 in ?? ()\n\nIt should also be noted that re-trying the command right after this works, this time. Also, for some reason, I had to run pfctl twice to have traffic on the loopback interface processed properly. (This would prove to be nasty because DNS queries and traffic between jails would end up blocked...)\n\nAs a workaround, I have now removed \"set skip on lo\" and gone for \"pass quick on lo0 no state\". This has mitigated both issues (the pf segfault when rewriting pf.conf between lo and lo0, and traffic to lo0 being blocked)"
+}

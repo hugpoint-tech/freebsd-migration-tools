@@ -1,0 +1,8 @@
+{
+ "id": 779973,
+ "bug_id": 192734,
+ "attachment_id": 0,
+ "creation_time": "2014-08-17T06:57:24Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "As reported by bde, the clang portion of the build system uses DPADD to specify source files, which makes \"make checkdpadd\" whine like so:\n\n===\u003e lib/clang/libclanganalysis (checkdpadd)\n/usr/src/lib/clang/libclanganalysis\nDPADD -\u003e AttrList.inc.h Attrs.inc.h CommentCommandList.inc.h CommentNodes.inc.h DeclNodes.inc.h DiagnosticAnalysisKinds.inc.h DiagnosticCommonKinds.inc.h StmtNodes.inc.h\nLDADD -\u003e\n\nDPADD should only be used by libraries.\n\nIf I change DPADD to DPSRCS, make checkdpadd passes. I verified that the dependency information was correct and it compiles, but I haven't verified that everything works yet.\n\nHere's the patch:\n\n% git diff clang.build.mk \ndiff --git a/lib/clang/clang.build.mk b/lib/clang/clang.build.mk\nindex 5465272..3b30fe7 100644\n--- a/lib/clang/clang.build.mk\n+++ b/lib/clang/clang.build.mk\n@@ -237,5 +237,5 @@ Checkers.inc.h: ${CLANG_SRCS}/lib/StaticAnalyzer/Checkers/Checkers.td\n .endfor\n \n SRCS+=         ${TGHDRS:C/$/.inc.h/}\n-DPADD+=                ${TGHDRS:C/$/.inc.h/}\n+DPSRCS+=       ${TGHDRS:C/$/.inc.h/}\n CLEANFILES+=   ${TGHDRS:C/$/.inc.h/} ${TGHDRS:C/$/.inc.d/}"
+}

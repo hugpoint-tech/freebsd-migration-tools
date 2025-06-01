@@ -1,0 +1,8 @@
+{
+ "id": 1167543,
+ "bug_id": 256422,
+ "attachment_id": 0,
+ "creation_time": "2021-06-24T00:49:23Z",
+ "creator": "chuck@FreeBSD.org",
+ "text": "To document this a bit more, the error in pci_nvme.c is:\n...\nnvme doorbell 1, SQ, val 0x1\nnvme_handle_io qid 1 head 0 tail 1 cmdlist 0x8c1885000\npci_nvme_io_done error 14 Bad address\npci_nvme_set_completion sqid 1 cqid 1 cid 116 status: 0x0 0x4\npci_nvme_set_completion: CQ1 interrupt disabled\nnvme doorbell 1, CQ, val 0x1\n\nblockif_write() asynchronously returns EFAULT (a.k.a. \"Bad address\"). Adding some debugging to pci_nvme_io_done() shows the following:\n\nFault on SQ[1] opc=0x2 cid=0x74 bytes=2097152\n[  0] 0x8c097a018 : 2097128\n[  1] 0x0 : 24\n\nThe debug statement displays the contents of the pci_nvme_ioreq structure for the failing IO, including valid iovec entries. This is from an I/O Submission Queue (i.e. queue ID != 0) for a Read (opcode 0x2) of 2097152 bytes.\n\nMy suspicion is the second iovec with the NULL iov_base value causes the EFAULT."
+}

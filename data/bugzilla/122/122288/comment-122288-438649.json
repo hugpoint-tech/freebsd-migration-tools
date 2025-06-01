@@ -1,0 +1,8 @@
+{
+ "id": 438649,
+ "bug_id": 122288,
+ "attachment_id": 0,
+ "creation_time": "2008-07-04T10:04:25Z",
+ "creator": "gavin@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003efeedback\n\nTo submitter: could you please try the following patch?  It fixes \nthings for me.  It should apply cleanly to 7.0-RELEASE and -STABLE. \n\nIndex: src/sys/dev/md/md.c \n=================================================================== \nRCS file: /home/ncvs/src/sys/dev/md/md.c,v \nretrieving revision 1.174 \ndiff -u -r1.174 md.c \n--- src/sys/dev/md/md.c\t28 Feb 2008 18:31:54 -0000\t1.174 \n+++ src/sys/dev/md/md.c\t4 Jul 2008 09:03:30 -0000 \n@@ -64,6 +64,7 @@ \n#include \u003csys/fcntl.h\u003e \n#include \u003csys/kernel.h\u003e \n#include \u003csys/kthread.h\u003e \n+#include \u003csys/limits.h\u003e \n#include \u003csys/linker.h\u003e \n#include \u003csys/lock.h\u003e \n#include \u003csys/malloc.h\u003e \n@@ -762,8 +763,13 @@ \nif (unit == -1 \u0026\u0026 sc2-\u003eunit \u003e max)  \nmax = sc2-\u003eunit; \n} \n-\tif (unit == -1) \n+\tif (unit == -1) { \n+\t\tif (max \u003e= INT_MAX) { \n+\t\t\t*errp = EINVAL; \n+\t\t\treturn (NULL); \n+\t\t} \nunit = max + 1; \n+\t} \nsc = (struct md_s *)malloc(sizeof *sc, M_MD, M_WAITOK | M_ZERO); \nsc-\u003etype = type; \nbioq_init(\u0026sc-\u003ebio_queue); \n@@ -1065,6 +1071,8 @@ \nmdio = (struct md_ioctl *)addr; \nif (mdio-\u003emd_version != MDIOVERSION) \nreturn (EINVAL); \n+\tif (mdio-\u003emd_unit \u003e INT_MAX) \n+\t\treturn (EINVAL); \n\n/* \n* We assert the version number in the individual ioctl \n\n\nThanks! \n\nGavin"
+}

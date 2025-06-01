@@ -1,0 +1,8 @@
+{
+ "id": 1302569,
+ "bug_id": 277856,
+ "attachment_id": 249504,
+ "creation_time": "2024-03-27T07:12:17Z",
+ "creator": "yasu@freebsd.org",
+ "text": "Created attachment 249504\nUpdated patch file\n\nAdjust range to use llvm from ports\n\nThe reason to use llvm from ports is that there is bug in clang of base system that causes assertion failure while building devel/boost-libs. The bug is already fixed with main, stable/14 and stable/13 branches of src repository. So we need to use llvm from ports only with following conditions.\n\n1. 1500000 \u003c= OSVERSION \u003c 1500017\n2. 1400000 \u003c= OSVERSION \u003c 1400509\n3. 1300000 \u003c= OSVERSION \u003c 1303502\n\nAnd commit 3b8c51bd37b0 adjusts the range as above.\n\nBut there is a pitfall about it. The assertion failure happens only if base system is built with WITH_LLVM_ASSERTIONS enabled. By default the option is enabled with main branch but is disabled with stable/* and releng/* ones. So the failure happens with -CURRENT even if it is built with default options settings but doesn't with -STABLE and -RELEASE unless it is built with WITH_LLVM_ASSERTIONS enabled. IMHO majority of FreeBSD users use -RELEASE, and seldom -STABLE user enables WITH_LLVM_ASSERTIONS. As a result adjustment with commit 3b8c51bd37b0 forces -RELEASE and -STABLE users to build llvm port that\nis unnecessary to build devel/boost-libs.\n\nSo adjust the range so llvm from ports is used by default only if base system is -CURRENT with the assertion failure unfixed. And as a last resort for -STABLE and -RELEASE users who enable WITH_LLVM_ASSERTIONS add LLVM_FROM_PORTS option to devel/boost-libs that forces to use llvm from ports."
+}

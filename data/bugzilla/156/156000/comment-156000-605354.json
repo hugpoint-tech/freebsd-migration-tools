@@ -1,0 +1,8 @@
+{
+ "id": 605354,
+ "bug_id": 156000,
+ "attachment_id": 0,
+ "creation_time": "2011-03-29T11:09:33Z",
+ "creator": "moonlightakkiy@yahoo.ca",
+ "text": "\u003e sudo arping -i wlan0 -b -S 192.168.77.100 -s 00:21:fe:3e:0a:6b -t \n\u003e00:1d:0f:07:9b:28 192.168.77.1\n\u003e \n\u003e * 00:1d:0f:07:9b:28 is the rum0/wlan0 's MAC\n\nLooks like\n1) rum0 was asked to Tx a packet with it's own mac addr as dst addr\n2) find_tx_node() picked Tx node with ni_associd == 0 (node with own mac addr)\n    because rum0 runs in HOSTAP mode, IEEE80211_NODE_ASSOCID flag hasn't been \nset\n3) the packet slip though this test\n   http://fxr.watson.org/fxr/source/net80211/ieee80211_output.c#L231\n4) picked up a bogus value at\n   http://fxr.watson.org/fxr/source/dev/usb/wlan/if_rum.c#L1221\n5) probably divided by 0 at\n   http://fxr.watson.org/fxr/source/dev/usb/wlan/if_rum.c#L1019\n\n[RFC] could add a simple test to the driver, like if (rate != 0), but isn't it \nnicer to patch in ieee80211_output.c?\n\nworkaround\nAlso addm em0, and set dhcpd_iface in /etc/re.conf\nhttp://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/network-dhcp.html\nThen, it should work without issuing tricky arping\n\n\nAK"
+}

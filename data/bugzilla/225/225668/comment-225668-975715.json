@@ -1,0 +1,8 @@
+{
+ "id": 975715,
+ "bug_id": 225668,
+ "attachment_id": 0,
+ "creation_time": "2018-02-04T22:28:56Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "Using ktrace -i on a su command, I found that it is not su, but csh that does these strange DNS requests. The code tries to set the REMOTEHOST environment variable and is in contrib/tcsh/tc.func.c getremotehost().\n\nThis exact problem is called out in a comment:\n\n\t    /*\n\t     * There is conflict with IPv6 address and X DISPLAY.  So,\n\t     * we assume there is no IPv6 address in utmp and don't\n\t     * touch here.\n\t     */\n\nHowever, the assumption is wrong. There can be IPv6 addresses in utmp(x).\n\nA simple fix would be to use inet_pton() or getaddrinfo() with AI_NUMERICHOST to check for an IPv6 (or also IPv4) address, and to skip the X DISPLAY handling in that case.\n\nThis fix should be submitted to the upstream tcsh project first.\n\nHowever, perhaps we want to eliminate more obsolete code here. The name of the remote host is rather less important now for shell startup files than it used to be when the code was written (such as to deal with terminal settings). It may be sufficient to extract a hostname from the utmp host without touching DNS at all.\n\nFortunately, there is a 2 second timeout on finding the remote hostname, so it will not prevent you from logging in.\n\nThe \"leaked\" information is just the top 16 bits of the IPv6 address together with the local DNS domain; perhaps the most important part is that you su'ed at that time."
+}

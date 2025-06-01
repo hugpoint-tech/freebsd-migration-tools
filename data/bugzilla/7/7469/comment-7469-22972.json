@@ -1,0 +1,8 @@
+{
+ "id": 22972,
+ "bug_id": 7469,
+ "attachment_id": 0,
+ "creation_time": "1998-08-02T12:20:00Z",
+ "creator": "seggers@semyam.dinoco.de",
+ "text": "\n\tI start ppp with \"ppp xnc\" where xnc is the label I gave my\nprovider's entry in /etc/ppp/ppp.conf.  Not doing anything else at the\nprompt I quit it.  Core dump.\n\n\tThis is with /etc/malloc.conf set to AJ.  A very useful\nsetting I turned on just a few minutes ago.  ;-)\n\nFix: I looked around for a cause and after some reading of the\nsource I found out that on a \"quit\" command the promptlist entry which\nis associated with the command line gets unregistered and deallocated.\nThis causes the promptlist in log.c to change.\n\n\tThe problem is that the loop you see below gets from one entry\non the list to the next.  When it gets to the one for the command line\nthe call to descriptor_Read() will process the \"quit\" command.  This\nin turn will deallocate the entry p is pointing to.  Now trying to get\nto the next entry is an illegal operation which just works because no\nother function overwrote the already free memory.\n\n\tThe most general solution would be to restart the whole loop\nafter calling descriptor_Read(), i.e. do a \"p = log_PromptList();\ncontinue;\" at that point.  This will prevent similar problems with\nother callbacks which might changewith promptlist.\n\n\tI didn't fix it this way because I don't know what implica-\ntions this might have on other parts of the program.\n\n\tThus I fixed it this way which works for me:\nHow-To-Repeat: \n\tSet /etc/malloc.conf to AJ (which means make a soft link named\n/etc/malloc.conf pointing to AJ; see malloc(3)) and then try the above\nmentioned sequence with ppp."
+}

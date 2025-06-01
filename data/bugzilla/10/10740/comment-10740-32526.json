@@ -1,0 +1,8 @@
+{
+ "id": 32526,
+ "bug_id": 10740,
+ "attachment_id": 0,
+ "creation_time": "1999-03-23T04:00:01Z",
+ "creator": "eischen@vigrid.com",
+ "text": "I found something that causes a fatal GCC bug with both the stock\nGCC, and gcc-2.8.1 built from ports.  Here's how it aborts:\n\n  cc -c -O -pipe -DFREEBSD_ELF     -I. -I. -I./config -DHAVE_CONFIG_H \\\n   -I./../include/opcode -I./../readline  -I../bfd -I./../bfd  -I./../include \\\n   ada-lang.c\n  ada-lang.c: In function `ada_evaluate_subexp':\n  ada-lang.c:5951: internal error--insn does not satisfy its constraints:\n  (insn 2997 2996 4542 (parallel[ \n              (set (reg:DI 1 %edx)\n                  (minus:DI (reg:DI 0 %eax)\n                      (reg/v:DI 3 %ebx)))\n              (clobber (scratch:SI))\n          ] ) 135 {subdi3} (insn_list 2982 (insn_list 2994 (nil)))\n      (expr_list:REG_DEAD (mem:DI (plus:SI (reg:SI 6 %ebp)\n                  (const_int -64)))\n          (expr_list:REG_DEAD (reg/v:DI 3 %ebx)\n              (expr_list:REG_UNUSED (scratch:SI)\n                  (nil)))))\n  cc: Internal compiler error: program cc1 got fatal signal 6\n  *** Error code 1\n\nFix: \n\nI don't know how to fix GCC, but a work-around to the bug can\nbe made by changing 2 ocurrences of the following line:\n\n      (*pos) += 3 + BYTES_TO_EXP_ELEM (tem + 1);\n\nin ada-lang.c to\n\n      (*pos) = (*pos) + 3 + BYTES_TO_EXP_ELEM (tem + 1);\nHow-To-Repeat: This can be reproduced by building the Ada-aware GDB port found at:\n\n  ftp://ftp.pcnet.com/users/eischen/FreeBSD/adagdb-4.17-port.tar.gz\n\nand building with 'make EXPOSE_FATAL_GCC_ERROR=yes'.  If you\ndon't define EXPOSE_FATAL_GCC_ERROR, a work-around patch is\napplied and the port successfully builds."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 826659,
+ "bug_id": 200585,
+ "attachment_id": 0,
+ "creation_time": "2015-06-05T12:17:37Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Although adding a ref count to the cred struct may\nhelp avoid some crashes, the code that prints out\nthe message uses both the mount structure and the\nNFS specific one hanging off of mnt_data.\n\nUnfortunately adding a ref count to the mount structure\nvia vfs_ref(mp) only delays freeing of *mp and not *mnt_data.\nAlso, vfs_destroy_mount() waits for the ref count on the mount\nstructure to go to 0 and, as such, \"umount -f\" won't complete\nuntil the lock RPC completes.\n\nIf the ref count on the mount structure only free'd the structure\nand substructure hanging off of mnt_data, then adding a ref count\nto the mount structure before the VOP_UNLOCK() could avoid the\ncrashes.\nMaybe this VFS change should be considered?\n\nAlso, doing \"umount -f\" on a file system using locking could\nleave \"dangling locks\" on files. In theory, rpc.statd should\neventually notice that the host isn't responding and get rid\nof these file locks, but I wouldn't bet on it.\n\nI suppose the dangers of using \"umount -f\" while running\nrpc.lockd should be documented. I'll come up with a man page\npatch for that."
+}

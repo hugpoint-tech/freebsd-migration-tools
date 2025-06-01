@@ -1,0 +1,8 @@
+{
+ "id": 791077,
+ "bug_id": 194292,
+ "attachment_id": 0,
+ "creation_time": "2014-10-13T17:08:11Z",
+ "creator": "swhetzel@gmail.com",
+ "text": "Instead of defining two new variables, we could expand firewall_myservices to:\n\nfirewall_myservices=\"20 80 443:tcp 3128:udp\"\n\nThen the code in rc.firewall would become:\n\nfor j in ${firewall_myservices}\n\tport=${j%:*}\n\tprotocol=${j#*:}\n\n\t# Compatibility for when no protocol is specified, default to TCP \n\tif [ \"x${protocol}\" = \"x\" ] {\n\t\tprotocol=\"tcp\"\n\t\techo \"Consider using ${port}:tcp in firewall_myservices\"\n\tfi\n\n\tcase ${protocol} in\n\t\t[Tt][Cc][Pp])\n\t\t\t;;\n\t\t[Uu][Dd][Pp])\n\t\t\t;;\n\t\t*)\n\t\t\techo \"Protocol ${port}:${protocol} not supported in firewall_myservices\"\n\t\t\tprotocol=\"unsupported\"\n\t\t\t;;\n\tesac\n\tif [ \"${protocol}\" != \"unsupported\" ] {\n\t\t${fwcmd} add pass ${protocol} from $i to me ${port}\n\t}\ndone"
+}

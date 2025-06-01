@@ -1,0 +1,8 @@
+{
+ "id": 737042,
+ "bug_id": 183512,
+ "attachment_id": 0,
+ "creation_time": "2013-10-31T06:00:03Z",
+ "creator": "bhughes@freebsd.org",
+ "text": "The mdnsd daemon from net/mDNSResponder, once started, works correctly, but never idles. This can be seen as constant load on the machine, with constant wake ups. After examining and tracing the code, in particular mDNSPosix/mDNSPosix.c and mDNSPosix/PosixDaemon.c, I noticed that most of the load comes from very load timeout values passed to select(), but once select() returned and mDNS_Execute(), from mDNSCore/mDNS.c, never actually did any work. Using the ShowTaskSchedulingError() method from mDNSCore/DNSCommon.c, I noticed that the m-\u003eclearIgnoreNA flag was never cleared. After finding the relevant code in mDNS_Execute(), I noticed that the flag is cleared inside an #ifdef APPLE_OSX_mDNSResponder/#endif block. A small oversight, I think. I've attached a patch that moves the #ifdef to just around the OSX specific function, allowing the clearIgnoreNA flag to be properly set, and mdnsd now idles when there is nothing more to do.\n\nFix: See the attached patch. FYI, I have not reported this upstream. I am unsure if my patch is the correct fix or not. An alternative would be to only set the clearIgnoreNA flag inside a similar #ifdef APPLE_OSX_mDNSResponder block.\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. Install net/mDNSResponder\n2. # echo 'mdnsd_enable=\"YES\"' \u003e\u003e /etc/rc.conf\n3. # service mdnsd start\n4. Observe system activity, CPU and load rises,"
+}

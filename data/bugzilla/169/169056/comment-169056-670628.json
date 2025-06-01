@@ -1,0 +1,8 @@
+{
+ "id": 670628,
+ "bug_id": 169056,
+ "attachment_id": 0,
+ "creation_time": "2012-09-07T12:35:22Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "\u003e [sysctl() crashes if passes an invalid 'name' pointer]\n\nI don't really agree with r240176. If an application passes an invalid\npointer to a function, the behaviour is undefined per POSIX and both\n[EFAULT] and a segfault are valid.\n\nA segfault seems the best response here, given that it has always been\nthat way. It also makes things slightly faster for well-behaved\napplications because a system call is not done for CTL_USER names.\n\nFurthermore, this situation occurs more frequently and it may not always\nbe possible to avoid a segfault efficiently. For example, while the\nsigaction() system call will fail with [EFAULT] if passed an invalid\npointer, libthr's wrapper will read and write from userland and\ntherefore segfault if passed an invalid pointer.\n\nI don't really like [EFAULT] in general because it is easily ignored and\nbecause the system call often commits anyway (leaving the application\nwithout important information that would have been written to the bad\npointer).\n\n-- \nJilles Tjoelker"
+}

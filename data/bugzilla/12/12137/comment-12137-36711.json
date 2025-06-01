@@ -1,0 +1,8 @@
+{
+ "id": 36711,
+ "bug_id": 12137,
+ "attachment_id": 0,
+ "creation_time": "1999-08-01T18:51:38Z",
+ "creator": "dzerkel@columbus.rr.com",
+ "text": "Mikhail,\n\nWell the addition is not required, nor does it have to be a function.\nThis problem occurs when taking the length of an numbered argument value\ninside an algorithmic expression.\n\nSo this displays the same error:\n\n\tset -- \"abc (def [xyz])\"\n\techo $((${#1}))\n\nThe problem appears to be that the argument variable is being parsed for\nspecial characters, which result in an extra character for every\ncharacter\nin the set:\n\n\t!*?[=~:/-\n\nThis parsing should not occur if we are going to take the length of the\nresulting string.  Try this to see it:\n\n\tset -- \"!*?[=~:/-\"\n\techo $((${#1}))\n\n18!\n\nThis patch should fix only this problem, without any side effects:\n\n--- /usr/src/bin/sh/parser.c.orig       Sun Sep 13 15:24:57 1998\n+++ /usr/src/bin/sh/parser.c    Sun Aug  1 13:37:33 1999\n@@ -1239,7 +1239,7 @@\n                } else {\n                        pungetc();\n                }\n-               if (dblquote || arinest)\n+               if (subtype != VSLENGTH \u0026\u0026 (dblquote || arinest))\n                        flags |= VSQUOTE;\n                *(stackblock() + typeloc) = subtype | flags;\n                if (subtype != VSNORMAL)\n\n\n-- Danny J. Zerkel\ndzerkel@columbus.rr.com"
+}

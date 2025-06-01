@@ -1,0 +1,8 @@
+{
+ "id": 32755,
+ "bug_id": 10820,
+ "attachment_id": 0,
+ "creation_time": "1999-03-27T18:50:00Z",
+ "creator": "des@ee.follo.net",
+ "text": "\nThe NIS code in src/lib/libc/gen/getpwent.c attempts to determine whether\nor not it has access to the master.passwd maps. This test will succeed if\nit can connect to the NIS server from a privileged port, i.e. if the\neffective UID is 0. However, it is possible for the process to lose that\naccess without getpwent.c noticing, for instance by dropping privileges\nand closing the NIS socket (which is what happens in e.g. an HTTP daemon\nwhich forks). The NIS code will try to reconnect to master.passwd, but\nsince it is connecting from a non-privileged port, the request will be\ndeniedand the getpwent() call will fail.\n\nFix: \n\nThe NIS code needs to detect a change in privileges, and reinitialize if\nthe connection was lost after privileges were dropped.\nHow-To-Repeat: \nRun Apache httpd on the NIS client. Using an HTTP client, request\nhttp://www.nisclient.net/~joe/ where joe is listed in the NIS password but\n*not* in the NIS client's own password database, and has a public_html\ndirectory (or whatever you've set UserDir to). getpwent() will fail,\nresulting in a 404 Not Found. Running the NIS server in debug mode reveals\nthat the client attempted to access the master.passwd.byname map from an\nunprivileged port.\n\nOther daemons which close file descriptors when they fork will also be\naffected by this."
+}

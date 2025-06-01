@@ -1,0 +1,8 @@
+{
+ "id": 1179849,
+ "bug_id": 258751,
+ "attachment_id": 0,
+ "creation_time": "2021-09-27T19:32:08Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "We have the following syzbot report:\nhttps://syzkaller.appspot.com/bug?id=6698f3333928ca407039fd0bbe9238983681936f\n\nThe crash happened right after the fuzzer started, at a point where it would have been creating a number of tun interfaces for packet injection.  I suspect the following race is possible:\n\n- Thread 1 creates a tun interface, which is automatically added to an interface group.  if_addgroup() creates the new interface group and adds the new interface to it.  Then it drops locks before generating the group_attach_event event, and is preempted.\n- Thread 2 creates a second tun interface.  The group is already created so the group_attach_event event handlers do not run.\n- Thread 2 assigns an interface address.  This runs ifaddr_event event handlers, including pfi_ifaddr_event(), which calls pfi_kkif_update().  pfi_kkif_update() recurses and is called on the new interface's containing groups, including the one that thread 1 is still constructing.\n- Thread 2 panics: thread 1 has created the group but the ifg_pf_kif field is uninitialized.\n\nWe could modify if_addgroup() to initialize the ifg_pf_kif field to NULL, and modify pfi_kkif_update() to handle a NULL ifg_pf_kif, but I'm not sure that this is correct."
+}

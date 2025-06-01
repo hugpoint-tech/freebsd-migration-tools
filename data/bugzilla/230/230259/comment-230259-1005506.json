@@ -1,0 +1,8 @@
+{
+ "id": 1005506,
+ "bug_id": 230259,
+ "attachment_id": 0,
+ "creation_time": "2018-08-08T16:28:52Z",
+ "creator": "cem@freebsd.org",
+ "text": "(In reply to Jakub Kruszona-Zawadzki from comment #3)\nHm.  I'm not sure if there is a great way to do this.\n\nAnd what's the point?  If we have sent RELEASE, the read is not going to be used anyway.\n\nIt seems like userspace can relatively easily force strict ordering of operations on the same filehandle (fixed number of worker threads + hash based dispatch), or at least serialize releases with other IO (ref count solution you have now).\n\nIn contrast a kernel approach has to sort of bend over backwards to fix libfuse's naive threading.\n\nWe could refcount FUSE filehandles in the kernel and instead of immediate RELEASE / RELEASEDIR / FORGET, tag the internal inode with a deferred release/forget flag.  When outstanding IOs are completed, the handler decrements the reference count and checks for these flags when it drops to zero.  Sounds like a pain :-)."
+}

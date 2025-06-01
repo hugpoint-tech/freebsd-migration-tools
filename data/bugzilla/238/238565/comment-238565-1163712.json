@@ -1,0 +1,8 @@
+{
+ "id": 1163712,
+ "bug_id": 238565,
+ "attachment_id": 0,
+ "creation_time": "2021-05-29T23:29:51Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Kirk McKusick from comment #8)\n\u003e I am confused as to why the EIO error is not being returned. Presumably in bufobj_invalbuf() we attempt to do the write in the call to BO_SYNC(). If BO_SYNC() returns EIO, we should return it rather than falling through to the panic. So how is it that the EIO is not returned?\n\nBO_SYNC() does not see any error.  Default implementation of BO_SYNC() is bufsync()\nwhich is just redirection to VOP_FSYNC().  And default implementation of vop_fsync\nfor filesystems using buffer cache is vn_fsync_buf(), which does bawrite()\n(non-clustered) or vfs_bio_awrite() (clustered).  In either case, the real\naction occurs in bufdone()-\u003ebrelse() occuring on write completion.  Look at\nthe conditional with the inner comment 'Failed write, redirty.'  It does exactly\nthat: if the async write failed, the buffer is redirtied and re-inserted into the\ndirty list.\n\nAfter several loops where the dirty buffer is found/awritten/redirtied, fsync\neventually gives up, and vinvalbuf() gets the control back to find the dirty\nbuffer on the list and panic."
+}

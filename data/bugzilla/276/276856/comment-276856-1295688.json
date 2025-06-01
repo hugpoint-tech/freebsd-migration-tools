@@ -1,0 +1,8 @@
+{
+ "id": 1295688,
+ "bug_id": 276856,
+ "attachment_id": 0,
+ "creation_time": "2024-02-07T08:55:54Z",
+ "creator": "michal.os@hotmail.com",
+ "text": "I've been able to reproduce this issue. It happens in 14.0-RELEASE and 14.0-STABLE. It may be that pf is not processing (possibly dropping) fragmented packets by default. But I haven't checked beyond my ICMP example. This does appear fixed in 15.0-CURRENT, but you would need to check 15.0, mgrooms, and confirm.\n\nTo reproduce, enable and start pf and pflog, use this pf.conf:\n\nblock log proto icmp\n\nThen send a ping large enough to be fragmented to the pf host from an external host: ping -c 1 -s 2000 pfhost\n\nBy default, in 13.2-RELEASE and 15.0-CURRENT, pf will log the blocked icmp request as two fragments. In 14.0-RELEASE and 14.0-STABLE, nothing gets logged. A regular small ping that doesn't get fragmented, ping -c 1 pfhost, will be logged.\n\nTo log the fragmented packets in 14.0, you need to use \"scrub fragment no reassemble\" in pf.conf. You can log the reassembled packet in 14.0 with either the \"set reassemble yes\" option, or \"scrub\" or the equivalent \"scrub fragment reassemble\".\n\nRegarding documentation, the 14.0 pf.conf man page is missing the \"set reassemble yes | no [no-df]\" option description, however it is mentioned in the 14.0-RELEASE release notes: https://www.freebsd.org/releases/14.0R/relnotes/#network-general . The 15.0 man page has the new description.\n\nAlso the pf.conf man page on both 14.0 and 15.0 for the pre-FreeBSD 14 scrub ruleset directive specifies using \"no fragment reassemble\", which does not work, \"pfctl -n -f pf.conf\" will throw a syntax error. The working syntax is \"fragment no reassemble\"."
+}

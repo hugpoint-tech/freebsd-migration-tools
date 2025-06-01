@@ -1,0 +1,8 @@
+{
+ "id": 82387,
+ "bug_id": 26376,
+ "attachment_id": 0,
+ "creation_time": "2001-04-06T10:50:00Z",
+ "creator": "adrian@freebsd.org",
+ "text": "\nrsync freezes during execution if it is run over ssh.\nIf it runs over the tcp rsync protocol everything works ok.\nI haven't tested rsh.\n\nWhen the great s/rsh/ssh/ was done, someone overlooked a bit of\nmain.c which sets blocking_io if the remote shell command matched\nRSYNC_RSH. RSYNC_RSH is either \"rsh\" or \"remsh\" depending upon\nthe target OS (remsh I believe is a HP/UX thing.)\n\nThe thing is, ssh doesn't work if blockingio is used. From util.c :\n\n/* this is derived from CVS code\n   \n   note that in the child STDIN is set to blocking and STDOUT\n   is set to non-blocking. This is necessary as rsh relies on stdin being blocki\nng\n   and ssh relies on stdout being non-blocking\n  \n   if blocking_io is set then use blocking io on both fds. That can be\n   used to cope with badly broken rsh implementations like the one on\n   solaris.\n */\n\n.. if blocking_io is set then ssh breaks since stdout is now blocking.\n\nFix: Apply the following patch to the port to make this rsh check map to\nrsh (I forced it here since under FreeBSD we shouldn't have remsh :-)\nand everything works happily again.\n\nHow-To-Repeat: \nRun rsync over ssh rather than the rsync protocol.\nWatch it hang during a large update. :-)"
+}

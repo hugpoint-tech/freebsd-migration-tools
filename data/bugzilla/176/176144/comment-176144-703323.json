@@ -1,0 +1,8 @@
+{
+ "id": 703323,
+ "bug_id": 176144,
+ "attachment_id": 0,
+ "creation_time": "2013-02-14T13:00:00Z",
+ "creator": "jacques.fourie@gmail.com",
+ "text": "The following text is copied from my original mail to -hackers:\n\nCould someone please verify if m_split as in svn rev 245286 is doing the\nright thing in the scenario where a mbuf chain is split with len0 falling\non a mbuf boundary and the mbuf in question being a M_EXT mbuf? Consider\nthe following example where m0 is a mbuf chain consisting of 2 M_EXT mbufs,\nboth 1448 bytes in length. Let len0 be 1448. The 'len0 \u003e m-\u003em_len' check\nwill be false so the for loop will not be entered in this case. We now have\nlen = 1448 and remain = 0 and m still points to the first mbuf in the\nchain. Also assume that m0 is a pkthdr mbuf. A new pkthdr mbuf n will be\nallocated and initialized before the following piece of code is executed :\n\nextpacket:\n         if (m-\u003em_flags \u0026 M_EXT) {\n                n-\u003em_data = m-\u003em_data + len;\n                mb_dupcl(n, m);\n         } else {\n                bcopy(mtod(m, caddr_t) + len, mtod(n, caddr_t), remain);\n         } \n         n-\u003em_len = remain;\n         m-\u003em_len = len;\n         n-\u003em_next = m-\u003em_next;\n         m-\u003em_next = NULL;\n\nAs m is a M_EXT mbuf the code in the if() clause will be executed. The\nproblem is that m still points to the first mbuf so effectively the data\npointer for n is assigned to the end of m's data pointer. It should\nactually point to the start of the data pointer of the next mbuf in the\noriginal m0 chain, right?\n\nFix: Attached patch fixes the issue for me\n\nPatch attached with submission follows:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1294907,
+ "bug_id": 276738,
+ "attachment_id": 0,
+ "creation_time": "2024-01-31T09:41:01Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "For C, there's certain features that we try to make available in a compatible way to old standards (eg __restrict to compile it away). I think the logic here's not right for old C++ standards.\n\nSo the trouble is that llvm's\n/usr/include/c++/v1/__config\n#    define static_assert(...) _Static_assert(__VA_ARGS__)\nwhen compiling for \u003c C++11 (at least that's my reading of it, it's a twisty maze so it may be in a branch not taken. That's the only place I could see any redirection that would be affected by the #undef in the example.\n\nsys/cdefs.h defines _Static_assert in an old-school C way for C++ \u003c C++11, so this feature is visible, but badly implemented for C++.\n\nI suspect that both from reading this code and the #undef in the example means we should simply not define _Static_assert for C++ at all. The compiler will either implement it or not, depending on its wishes and give an error if not. assert.h already tries to do the right thing by not defining it for C++ at all."
+}

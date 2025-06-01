@@ -1,0 +1,8 @@
+{
+ "id": 881845,
+ "bug_id": 179721,
+ "attachment_id": 0,
+ "creation_time": "2016-06-04T16:02:23Z",
+ "creator": "ache@FreeBSD.org",
+ "text": "(In reply to Pedro F. Giffuni from comment #19)\nOh no, __collate_range_cmp should use char and strcoll_l(), __wcollate_range_cmp should use wchar_t and wcscoll_l():\n\nint __collate_range_cmp(struct xlocale_collate *table, char c1, char c2)\n{\n        char s1[2], s2[2];\n\n        s1[0] = c1;\n        s1[1] = '\\0';\n        s2[0] = c2;\n        s2[1] = '\\0';\n        struct _xlocale l = {{0}};\n        l.components[XLC_COLLATE] = (struct xlocale_component *)table;\n        return (strcoll_l(s1, s2, \u0026l));\n}\nint __wcollate_range_cmp(struct xlocale_collate *table, wchar_t c1, wchar_t c2)\n{\n        wchar_t s1[2], s2[2];\n\n        s1[0] = c1;\n        s1[1] = L'\\0';\n        s2[0] = c2;\n        s2[1] = L'\\0';\n        struct _xlocale l = {{0}};\n        l.components[XLC_COLLATE] = (struct xlocale_component *)table;\n        return (wcscoll_l(s1, s2, \u0026l));\n}\nAnd everywhere when wchar_t used as arg, __wcollate_range_cmp() should be used."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1100777,
+ "bug_id": 246207,
+ "attachment_id": 0,
+ "creation_time": "2020-05-05T01:44:39Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Some geli-using machines I administer occasionally panic.  When they do, they sometimes dump core but often don't.  When they don't, they simply hang after printing the stack trace, but before printing the uptime.\n\nI've traced the problem to geli's shutdown_pre_sync event handler.  It tries to destroy each geli device.  We can't simply skip that step if a panic is underway; erasing the keys is necessary to prevent warm-boot attacks.  The problem lies in the following lines.  \n\ng_eli_destroy:\n\tsc-\u003esc_flags |= G_ELI_FLAG_DESTROY;\n\twakeup(sc);\n\t/*\n\t * Wait for kernel threads self destruction.\n\t */\n\twhile (!LIST_EMPTY(\u0026sc-\u003esc_workers)) {\n\t\tmsleep(\u0026sc-\u003esc_workers, \u0026sc-\u003esc_queue_mtx, PRIBIO,\n\t\t    \"geli:destroy\", 0);\n\t}\n\n_sleep:\n\tif (SCHEDULER_STOPPED_TD(td)) {\n\t\tif (lock != NULL \u0026\u0026 priority \u0026 PDROP)\n\t\t\tclass-\u003elc_unlock(lock);\n\t\treturn (0);\n\t}\n\nAs you can see, if the scheduler is stopped for the current thread (which it will be during a panic), then msleep does nothing, cause g_eli_destroy to loop indefinitely.  The obvious solution, which I haven't yet tested, would be to skip that section in g_eli_destroy when the scheduler is stopped.  What I don't understand is why g_eli_destroy _ever_ works during a panic.  Perhaps it has something to do with the allocation of worker threads among cores?  Perhaps it only succeeds when all worker threads happen to be on different cores?  I find that unlikely though, because these servers have thousands of worker threads."
+}

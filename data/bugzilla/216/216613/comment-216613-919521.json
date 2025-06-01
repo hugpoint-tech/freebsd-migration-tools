@@ -1,0 +1,8 @@
+{
+ "id": 919521,
+ "bug_id": 216613,
+ "attachment_id": 0,
+ "creation_time": "2017-01-31T11:19:29Z",
+ "creator": "alex.deiter@gmail.com",
+ "text": "\u003e\u003e It appears that at the very least, the problem is \n\u003e\u003e that the autokey context vnet is never initialized.\n\nYes, my quick (and dirty :-) patch is:\n\nIndex: sys/netinet/tcp_fastopen.c\n===================================================================\n--- sys/netinet/tcp_fastopen.c\t(revision 312971)\n+++ sys/netinet/tcp_fastopen.c\t(working copy)\n@@ -104,6 +104,7 @@\n #include \"opt_inet.h\"\n \n #include \u003csys/param.h\u003e\n+#include \u003csys/jail.h\u003e\n #include \u003csys/kernel.h\u003e\n #include \u003csys/limits.h\u003e\n #include \u003csys/lock.h\u003e\n@@ -266,7 +267,7 @@\n {\n \tstruct tcp_fastopen_callout *ctx = arg;\n \n-\tCURVNET_SET(ctx-\u003ev);\n+\tCURVNET_SET(TD_TO_VNET(curthread));\n \ttcp_fastopen_autokey_locked();\n \tcallout_reset(\u0026ctx-\u003ec, V_tcp_fastopen_autokey * hz,\n \t\t      tcp_fastopen_autokey_callout, ctx);\n\n\n\u003e\u003e Alex, while I am getting things set up here for a test cycle, \n\u003e\u003e you can try the patch below if you have a chance:\n\nThank you for provided patch! Works fine for me and successfully tested for CURRENT r312971:\n\n* default GENERIC + VIMAGE + TCP_RFC7413 + jails\n* IPv4-only custom kernel with enabled VIMAGE and TCP_RFC7413 + jails\n\nPlease commit this patch :-)"
+}

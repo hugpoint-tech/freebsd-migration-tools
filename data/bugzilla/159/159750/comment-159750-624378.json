@@ -1,0 +1,8 @@
+{
+ "id": 624378,
+ "bug_id": 159750,
+ "attachment_id": 0,
+ "creation_time": "2011-08-21T22:00:05Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: jilles\nDate: Sun Aug 21 20:59:51 2011\nNew Revision: 225067\nURL: http://svn.freebsd.org/changeset/base/225067\n\nLog:\n  MFC r224865: tail: Fix crash if -F'ed file's filesystem disappears.\n  \n  If tail notices that a file it is following no longer exists (because stat()\n  fails), it will output any final lines and then close the file. If the read\n  operation also causes an error, such as when the filesystem is forcefully\n  unmounted, it closes the file as well, leading to fclose(NULL) and a\n  segmentation fault.\n  \n  PR:\t\tbin/159750\n\nModified:\n  stable/8/usr.bin/tail/forward.c\nDirectory Properties:\n  stable/8/usr.bin/tail/   (props changed)\n\nModified: stable/8/usr.bin/tail/forward.c\n==============================================================================\n--- stable/8/usr.bin/tail/forward.c\tSun Aug 21 18:50:30 2011\t(r225066)\n+++ stable/8/usr.bin/tail/forward.c\tSun Aug 21 20:59:51 2011\t(r225067)\n@@ -365,8 +365,10 @@ follow(file_info_t *files, enum STYLE st\n \t\t\t\t\tif (errno != ENOENT)\n \t\t\t\t\t\tierr(file-\u003efile_name);\n \t\t\t\t\tshow(file);\n-\t\t\t\t\tfclose(file-\u003efp);\n-\t\t\t\t\tfile-\u003efp = NULL;\n+\t\t\t\t\tif (file-\u003efp != NULL) {\n+\t\t\t\t\t\tfclose(file-\u003efp);\n+\t\t\t\t\t\tfile-\u003efp = NULL;\n+\t\t\t\t\t}\n \t\t\t\t\tev_change++;\n \t\t\t\t\tcontinue;\n \t\t\t\t}\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

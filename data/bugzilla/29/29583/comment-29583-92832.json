@@ -1,0 +1,8 @@
+{
+ "id": 92832,
+ "bug_id": 29583,
+ "attachment_id": 0,
+ "creation_time": "2002-01-22T22:43:51Z",
+ "creator": "thomas@cuivre.fr.eu.org",
+ "text": "Guido van Rooij provided the following explanation for the cause\nof the crashes:\n\n----- Forwarded message from Guido van Rooij \u003cguido@gvr.org\u003e -----\n\nDate: Wed, 16 Jan 2002 16:18:14 +0100\nFrom: Guido van Rooij \u003cguido@gvr.org\u003e\nCc: ipfilter@coombs.anu.edu.au\nSubject: Re: Routing based on source address problem (with request to Darren)\n\nOn Wed, Jan 16, 2002 at 03:40:35PM +0100, Thomas Quinot wrote:\n\u003e All the details are in PR kern/29583, with the exact ipf rules involved\n\u003e and a few debug traces:\n\u003e   http://www.freebsd.org/cgi/query-pr.cgi?pr=kern/29583\n\u003e \n\nThe most important part of PR is the following rule:\n\nblock out log quick on tun0 to tun1:10.3.0.1\n  from VPN.IP.ADDR.ESS/32 to any group 11\n\nDarren: I think IPfilter should forbid blocking of a packet using\nthe 'to' directive.\n\nExplanation:\n\n\"to\" will ensure that the packet gets fastrouted. This means the mbuf will\nbe queued at the specific interface queue to be sent out.\nIf you block the packet, it will be freed (not sure if that is\nin ipfilter or in ip_input or whatever).\nThis means we have a race: the freeing versus the use in the tun1\ninterface queue.\n\nI guess that is the problem here.\n\n[...]\n\n----- End forwarded message -----\n\nA work-around was to rewrite the aforementioned rule as:\n  pass out log quick on tun0 to tun1:10.3.0.1\n    from VPN.IP.ADDR.ESS/32 to any group 11\nwhich, contrary to what is written in the IPF-HOWTO,\nwon't panic the machine.\n\nThomas.\n\n-- \n    Thomas.Quinot@Cuivre.FR.EU.ORG"
+}

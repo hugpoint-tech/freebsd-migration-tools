@@ -1,0 +1,8 @@
+{
+ "id": 1073632,
+ "bug_id": 240788,
+ "attachment_id": 0,
+ "creation_time": "2019-11-03T14:02:41Z",
+ "creator": "lcook@freebsd.org",
+ "text": "(In reply to Raphael Kubo da Costa from comment #16)\n\nThanks for your report.\n\nThat's odd. I don't think the problem stems from the port itself, but rather the value of 'DEFAULT_LOCAL_TMP' as it doesn't seem to have permission to write to the directory, referring to the error below:\n\nUnable to create local directories(/nonexistent/.ansible/tmp): [Errno 13] Permission denied: b'/nonexistent'.\n\nI'm unable to reproduce this error within Poudriere or on my local machine too. When running stage-qa I was prompted to add the shebang fix:\n\n====\u003e Running Q/A tests (stage-qa)\nError: '/usr/bin/python' is an invalid shebang you need USES=shebangfix for 'share/py36-ansible/plugins/modules/sysrc'.\n\nWhich I have now reflected in the Makefile, now it doesn't use a hard-coded path to Python in the sysrc Ansible module, instead patched with the Python version used to build the port. Upon making this change I no longer am prompted with changes to be made.\n\n'USES_PYTHON=autoplist' I believe isn't _needed_ either in this particular case as PLIST_FILES will resolve the 'sysrc' module. Which is more than likely causing the stage-qa error.\n\nFrom what I've extrapolated from the errors posted it's more of a permission issue and the inability to write to the value of 'DEFAULT_LOCAL_TMP' in the Ansible configuration. Cheers.\n\n* On another note, replaced ${EGREP} with ${GREP} as extended regex isn't necessary. Also have formatted the Makefile with portfmt."
+}

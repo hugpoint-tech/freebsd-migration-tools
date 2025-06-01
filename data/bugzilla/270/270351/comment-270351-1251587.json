@@ -1,0 +1,8 @@
+{
+ "id": 1251587,
+ "bug_id": 270351,
+ "attachment_id": 0,
+ "creation_time": "2023-03-19T20:56:51Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Let's show small example.\n\n# route add 192.168.0.0/16 -iface lo0 -reject\nadd net 192.168.0.0: gateway lo0\n\n# route add 192.168.0.0/24 1.1.1.1 # over bge1\nadd net 192.168.0.0: gateway 1.1.1.1\n\n# route add -host 192.168.0.0 -iface tun0 # or ng0\nadd host 192.168.0.0: gateway tun0\n\n# route -n get -host 192.168.0.0\n   route to: 192.168.0.0\ndestination: 192.168.0.0\n        fib: 0\n  interface: tun0\n      flags: \u003cUP,HOST,DONE,STATIC\u003e\n recvpipe  sendpipe  ssthresh  rtt,msec    mtu        weight    expire\n       0         0         0         0      1500         1         0\n\nSo far, so good. And now:\n# route -n get -net 192.168.0.0\n   route to: 192.168.0.0\ndestination: 192.168.0.0\n        fib: 0\n  interface: tun0\n      flags: \u003cUP,HOST,DONE,STATIC\u003e\n recvpipe  sendpipe  ssthresh  rtt,msec    mtu        weight    expire\n       0         0         0         0      1500         1         0\n\nWrong. This is HOST route, it should skip it while looking up.\n\nThis works just fine in 12.x and earlier showing another (non-host) route:\n# route -n get -net 192.168.0.0\n   route to: 192.168.0.0\ndestination: 192.168.0.0\n       mask: 255.255.0.0\n        fib: 0\n  interface: lo0\n      flags: \u003cUP,REJECT,DONE,STATIC\u003e\n recvpipe  sendpipe  ssthresh  rtt,msec    mtu        weight    expire\n       0         0         0         0     16384         1         0"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 17282,
+ "bug_id": 5636,
+ "attachment_id": 0,
+ "creation_time": "1998-02-03T21:20:01Z",
+ "creator": "archie@whistle.com",
+ "text": "\n\tI have written a line discipline module. I have a test program\n\tthat shows it successfully loads using ioctl(fd, TIOCSETD, \u0026ldisc).\n\n\tThe \"open\" method gets called upon installation, and if the\n\tline discipline is changed back to TTYDISC, the \"close\" method\n\tgets called.\n\n\tThe problem is that if the device is closed after installing the\n\tnew line discipline, but before reinstalling TTYDISC, the \"close\"\n\tmethod does NOT get called. This can cause memory leaks, dangling\n\tpointers, etc.\n\nFrom /sys/sys/conf.h:\n\n\t/*\n\t * Line discipline switch table\n\t */\n\tstruct linesw {\n\t\tl_open_t        *l_open;\t\u003c-- open method\n\t\tl_close_t       *l_close;\t\u003c-- close method\n\t\tl_read_t        *l_read;\n\t\tl_write_t       *l_write;\n\t\tl_ioctl_t       *l_ioctl;\n\t\tl_rint_t        *l_rint;\n\t\tl_start_t       *l_start;\n\t\tl_modem_t       *l_modem;\n\t};\n\nFix: \n\nKernel should insure that when a tty device is closed, the\n\t\"close\" method of the corresponding line discipline is called.\nHow-To-Repeat: \n\t1. Register your own line discipline as #7\n\n\t2. Install it with a program containing these lines:\n\n\t  ldisc = 7;\n\t  if ((fd = open(file, O_RDWR, 0)) \u003c 0) {\n\t    err(1, \"%s\", file);\n\t  }\n\t  if (ioctl(fd, TIOCSETD, \u0026ldisc) \u003c 0) {\n\t    err(1, \"ioctl(TIOCSETD)\"); \n\t  }\n\t  sleep(10000);\n\n\t3. Hit control-C during the sleep() statement\n\n\t4. Notice that the \"close\" method of your line discipline\n\t   never gets called."
+}

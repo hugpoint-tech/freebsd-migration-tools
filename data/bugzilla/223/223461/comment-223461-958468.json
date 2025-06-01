@@ -1,0 +1,8 @@
+{
+ "id": 958468,
+ "bug_id": 223461,
+ "attachment_id": 0,
+ "creation_time": "2017-11-06T05:28:58Z",
+ "creator": "mail@fbsd2.e4m.org",
+ "text": "If /etc/periodic/daily/200.backup-passwd finds difference in master.passwd.bak and master.passwd.bak2, it tries to filter out encrypted passwords so they don't get sent by mail. However, this does not work for lines without the +/- prefix from diff. Here, toor changed but root was left alone:\n\nBackup passwd and group files:\n... passwd diffs:\n--- /var/backups/master.passwd.bak      2017-11-04 12:31:02.788214000 +0100\n+++ /etc/master.passwd  2017-11-05 13:23:53.606509000 +0100\n@@ -1,7 +1,7 @@\n # $FreeBSD: stable/11/etc/master.passwd 299365 2016-05-10 12:47:36Z bcr $\n #\n root:$6$4wTiD2ItHpuB....:0:0:std:0:0:Charlie \u0026:/root:/bin/zsh\n-toor:(password):0:0:std:0:0:Bourne-again Superuser:/root:/bin/sh\n+toor:(password):0:0:std:0:0:Bourne-again Superuser:/root:/bin/sh\n daemon:*:1:1::0:0:Owner of many system processes:/root:/usr/sbin/nologin\n operator:*:2:5::0:0:System \u0026:/:/usr/sbin/nologin\n bin:*:3:7::0:0:Binaries Commands and Source:/:/usr/sbin/nologin\n\nFix:\nmake the leading +/- optional by using\n\nsed 's/^\\([-+]\\{0,1\\}[^-+:]*\\):[^:]*:/\\1:(password):/'\n\nor use a modern RE:\n\nsed -E 's/^([-+]?[^-+:]*):[^:]*:/\\1:(password):/'\n\nPossibly, it can even be changed to:\n\nsed -E 's/^([-+]?[^:]*):[^:]*:/\\1:(password):/'\n\nbut I am not sure about that (maybe that would give bad interaction with NIS\nor whatever)..."
+}

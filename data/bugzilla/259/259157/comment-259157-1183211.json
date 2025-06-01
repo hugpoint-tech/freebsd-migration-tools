@@ -1,0 +1,8 @@
+{
+ "id": 1183211,
+ "bug_id": 259157,
+ "attachment_id": 0,
+ "creation_time": "2021-10-20T15:28:39Z",
+ "creator": "mhorne@freebsd.org",
+ "text": "(In reply to Lutz Donnerhacke from comment #4)\n\nThe expected behaviour for a page fault in the kernel is to panic, with a couple exceptions. Certainly, anything that overflows the thread's kernel stack in this way will cause this.\n\nI managed to identify why this panics riscv, and not amd64. Turns out, the recursion is avoided when the architecture defines GET_STACK_USAGE(), as it allows for an early return from ng_snd_item(). The test also causes panics on 32-bit arm, but we did not notice because the armv7 CI is broken :(\n\nI created a patch which implements the missing macro for remaining archs, and it 'fixes' the panics in this test. See:\nhttps://reviews.freebsd.org/D32580\n\nStill, I wonder if the test is flawed? If it is expected that the test might overflow the kernel stack then it is not really safe for CI. Maybe the test needs rethinking, or additional safeguards."
+}

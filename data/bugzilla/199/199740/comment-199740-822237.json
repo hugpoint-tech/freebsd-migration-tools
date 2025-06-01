@@ -1,0 +1,8 @@
+{
+ "id": 822237,
+ "bug_id": 199740,
+ "attachment_id": 0,
+ "creation_time": "2015-05-03T21:49:38Z",
+ "creator": "weiss@uni-mainz.de",
+ "text": "sorry, my bug report was a bit brief.\n\nassume a cache line size of 32 bytes and a call with offset 16 and length 24.\nIt should sync 2 cache lines but does actually sync only one. The last\n8 bytes would not be synced.\n\nSo one does not have to round the va to a boundary, but one has to adjust\nthe length.\n\nSo the following change would probably be sufficient (untested)\n\nENTRY_NP(armv7_icache_sync_range)\n        ldr     ip, .Larmv7_icache_line_size\n        ldr     ip, [ip]\n+       sub     r3, ip, #1\n+       and     r2, r0, r3\n+       add     r1, r1, r2\n .Larmv7_sync_next:\n        mcr     CP15_DCCMVAC(r0)\n        mcr     CP15_ICIMVAU(r0)"
+}

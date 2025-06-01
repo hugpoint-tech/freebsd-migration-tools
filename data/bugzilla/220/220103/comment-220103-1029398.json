@@ -1,0 +1,8 @@
+{
+ "id": 1029398,
+ "bug_id": 220103,
+ "attachment_id": 0,
+ "creation_time": "2019-01-02T16:53:00Z",
+ "creator": "mmel@FreeBSD.org",
+ "text": "(In reply to Dimitry Andric from comment #7)\nYes, linker scripts are culprits (at least for mplayer and chromium). And I think that this issue is related to glib-20 at all, it is only first visible victim.\n\n'environ' (and several other symbols) is exported from crt1.o as global symbol. crt1.o (and other startup object files) should be linked to every single dynamically linked program (but not to shared libraries). So, every program should export 'environ' as global symbol. But linker scrips used for \nlinking mplayer or chromium lowers visibility of all not enumerated symbols to local, including 'environ' symbol. Thus because 'environ' is referenced at least from libc (or glib-20), runtime linker complains about undefined symbol.\n\nSimply, linker version scrips used for linking target binary are not compatible with FreeBSD (just because startup objects linked with target binary emits global symbols). \n\nLinker scrips like this\n\nfoo {\n...\nlocal: *;                                                                                                                                                                                                          };\n\ncannot be applied to symbols originated from startup object (ctr*.o)"
+}

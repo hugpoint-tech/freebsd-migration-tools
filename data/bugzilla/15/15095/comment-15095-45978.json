@@ -1,0 +1,8 @@
+{
+ "id": 45978,
+ "bug_id": 15095,
+ "attachment_id": 0,
+ "creation_time": "1999-11-26T03:20:00Z",
+ "creator": "aron@cs.rice.edu",
+ "text": "The FreeBSD implementation does not scale the advertised window\nimmediately when it discovers that window scaling is being used. The result\nis that irrespective of advertised window, in the first round-trip after\nconnection establishment, a FreeBSD TCP sender cannot send more data than\nthe unscaled value of advertised window.\n\nOne can argue that this is not important given that TCP does slow-start in\nthe first round-trip. Well, people are looking at rate-based pacing where\nyou don't have to do slow-start. Also the above is important in LANs where\nFreeBSD doesn't use slow-start. In my case, I'm emulating a WAN to see\nthe benefits of rate-based pacing and so is extremely important.\n\nFix: The following patch applied to /sys/netinet/tcp_input.c fixes the problem:\nHow-To-Repeat: Try running a TCP transfer over an emulated (or an actual) WAN. Make\nsure that slow-start is turned off (it is if FreeBSD thinks its operating \non a LAN - i.e the other host has the same subnet address). Also ensure\nthat RFC1323 is being used (i.e. Window scaling is in effect) and the\nflow control window is big enough on the TCP receiver. Use tcpdump to\ncheck the number of packets sent in the first round-trip - these will\ncorrespond to the unscaled value of the advertised window.\n\nA simpler method to repeat the problem is to instrument the kernel\nto print out the value of the variable tp-\u003esnd_wnd when TCP starts\nsending data. You'll see that it corresponds to the unscaled value of\nthe flow control (or advertised) window."
+}

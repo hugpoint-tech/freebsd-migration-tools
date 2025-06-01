@@ -1,0 +1,8 @@
+{
+ "id": 546539,
+ "bug_id": 144330,
+ "attachment_id": 0,
+ "creation_time": "2010-03-23T08:34:33Z",
+ "creator": "danny@cs.huji.ac.il",
+ "text": "\u003e \n\u003e \n\u003e On Mon, 22 Mar 2010, Daniel Braniss wrote:\n\u003e \n\u003e [good stuff snipped]\n\u003e I only have a FreeBSD client at this point, and it doesn't cause the\n\u003e leak for nfsv3,udp for me here.\nmy client is also FreeBSD 8.0, strange\n\n\u003e \n\u003e Doug Rabson pointed out that there would be a leak for the \"default:\"\n\u003e case too, although didn't know if that would occur in practice.\nit does! :-)\n\n\u003e \n\u003e So, maybe you could test this variant of the patch (just in case that\n\u003e was the slow leak...):\n\u003e --- rpc/svc.c.sav\t2010-03-21 18:46:20.000000000 -0400\n\u003e +++ rpc/svc.c\t2010-03-22 19:00:17.000000000 -0400\n\u003e @@ -819,9 +819,11 @@\n\u003e   \t\t\t\t\tfree(r-\u003erq_addr, M_SONAME);\n\u003e   \t\t\t\t\tr-\u003erq_addr = NULL;\n\u003e   \t\t\t\t}\n\u003e +\t\t\t\tm_freem(args);\n\u003e   \t\t\t\tgoto call_done;\n\u003e \n\u003e   \t\t\tdefault:\n\u003e +\t\t\t\tm_freem(args);\n\u003e   \t\t\t\tgoto call_done;\n\u003e   \t\t\t}\n\u003e   \t\t}\nthat plugged it!\nsee\n\tftp://ftp.cs.huji.ac.il/users/danny/freebsd/mbuf-leak/store-02+++.ps\n\n[...]\n\u003e Thanks for the good testing. At least we're down to a slow leak..rick\nthanks to you for taking time off of your retirement :-)\n\ndanny"
+}

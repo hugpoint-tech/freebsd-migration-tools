@@ -1,0 +1,8 @@
+{
+ "id": 1248493,
+ "bug_id": 269584,
+ "attachment_id": 0,
+ "creation_time": "2023-02-24T17:04:34Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "(In reply to Felix Palmen from comment #16)\nThe extra REINPLACE_CMD invocations trigger warnings about unnecessary subs in DEVELOPER=yes mode.\n\nI now have the following to make remove the warnings and gain some efficiency:\n\npost-patch:\n        # Workaround for bin/255525\n        @${REINPLACE_CMD} 's,grep,${LOCALBASE}/bin/grep,g' ${WRKSRC}/functions\n        @${REINPLACE_CMD} -e 's,%%PREFIX%%,${PREFIX},g' \\\n                -e 's,%%DATADIR%%,${DATADIR},g' \\\n                -e 's,%%LOCALBASE%%,${LOCALBASE},g' \\\n                -e 's,gpgv ,gpgv2 ,g' \\\n                ${WRKSRC}/debootstrap \\\n                ${WRKSRC}/functions\n        @${FIND} ${WRKSRC}/scripts -type f | xargs grep -l /usr/share/keyrings | \\\n                ${XARGS} ${REINPLACE_CMD} -e 's,/usr/share/keyrings,${LOCALBASE}/share/keyrings,g'\n\n\nAnd with the static patch for gpgv2, the \"-e 's,gpgv ,gpgv2 ,g'\" can be removed, too.\nPassing ${WRKSRC}/Makefile to REINPLACE_CMD is no longer necessary after your commit to remove %% patterns from the Makefile patch."
+}

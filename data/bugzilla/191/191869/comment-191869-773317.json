@@ -1,0 +1,8 @@
+{
+ "id": 773317,
+ "bug_id": 191869,
+ "attachment_id": 0,
+ "creation_time": "2014-07-14T20:17:36Z",
+ "creator": "dteske@FreeBSD.org",
+ "text": "If building an rc script (either old-style or new) that utilizes tmux, said rc-script functions as-desired if executed directly (e.g., typing \"/etc/rc.d/foo start\") but does not function as-desired -- producing the following error -- if instead executed via service(8) (/usr/sbin/service):\n\nopen terminal failed: terminal does not support clear\n\nThe issue is with line 142 of usr.sbin/service/service.sh (revision 267493) which reads as follows:\n\nexec env -i HOME=/ PATH=/sbin:/bin:/usr/sbin:/usr/bin $dir/$script $*\n\nThe issue here is the purposeful use of the \"-i\" flag to env(1) which tells /usr/bin/env to (quote) \"execute the utility with only those environment variables specified by name=value options. The environment inherited by env is ignored completely.\"\n\nSpecifically, it is the absence of the TERM environment variable that causes tmux to produce the above error (\"open terminal failed: terminal does not support clear\").\n\nThe solution is to add TERM to the list of variables provided to (in this case) the child tmux. Globally adding TERM to the list of variables that are passed to service(8) child-scripts seems harmless enough (warranted even; for pedantic properness)."
+}

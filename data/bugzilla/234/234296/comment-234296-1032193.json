@@ -1,0 +1,8 @@
+{
+ "id": 1032193,
+ "bug_id": 234296,
+ "attachment_id": 0,
+ "creation_time": "2019-01-15T22:36:57Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Looking at the llentry code, I think there's a race between llentry destruction and lookup introduced by the conversion of the afdata read lock to epoch.\n\nWhen an ARP entry expires, arptimer() acquires the lle write lock and afdata write lock, and unlinks the lle from the lookup table.  There is no mutual exclusion with a concurrent lookup anymore; previously, the ifdata read lock was required for a lookup.  So, if the hash table lookup succeeds before arptimer() removes the entry, the thread performing the lookup will block on the lle lock, holding a de facto reference without having bumped lle_refcount.  arptimer() may release the last reference on the llentry and schedule it for a deferred free after releasing the lle write lock.  The deferred free is probably enough to ensure that the lookup thread won't access freed memory in most cases, though it doesn't work in general.  Worse, though, the thread performing the lookup may acquire a long-lived reference after the lle is scheduled for destruction, and may schedule a callout for the lle, which would cause this panic.\n\nSeems the ND6 code would be vulnerable to the same problem, though I haven't yet looked closely."
+}

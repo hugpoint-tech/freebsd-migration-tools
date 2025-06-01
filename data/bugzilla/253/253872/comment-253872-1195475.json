@@ -1,0 +1,8 @@
+{
+ "id": 1195475,
+ "bug_id": 253872,
+ "attachment_id": 0,
+ "creation_time": "2022-01-19T10:39:34Z",
+ "creator": "kp@freebsd.org",
+ "text": "That patch looks a lot like its missing something. It changes the prototype for pf_scrub_ip6() but not the implementation.\nIt's also slightly stale, because pf_scrub_ip6() has been extended to implement set-tos (and we explicitly test this already).\n\nHowever, it does appear to be the case that we should also scrub reassembled IPv6 packets. I'd expect your example to already work on main (but not stable/13). It will likely not work on fragmented (but reassembled) packets. The following patch should help, but I want to build a test case for it before I commit:\n\ndiff --git a/sys/netpfil/pf/pf_norm.c b/sys/netpfil/pf/pf_norm.c\nindex 5827fb0b093b..31dcbe9c83a0 100644\n--- a/sys/netpfil/pf/pf_norm.c\n+++ b/sys/netpfil/pf/pf_norm.c\n@@ -1302,6 +1302,8 @@ pf_normalize_ip6(struct mbuf **m0, int dir, struct pfi_kkif *kif,\n        if (m == NULL)\n                return (PF_DROP);\n\n+       pf_scrub_ip6(\u0026m, r-\u003erule_flag, r-\u003emin_ttl, r-\u003eset_tos);\n+\n        pd-\u003eflags |= PFDESC_IP_REAS;\n        return (PF_PASS);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 677447,
+ "bug_id": 170403,
+ "attachment_id": 0,
+ "creation_time": "2012-08-06T06:50:01Z",
+ "creator": "william@25thandclement.com",
+ "text": "I reported this bug to Apple a couple of years ago. Maybe it was inherited from FreeBSD.\n\nThe source of the problem is ntohs/htons optimization. ntohs expands to\n\n(__builtin_constant_p(_x) ?  __bswap16_const((__uint16_t)(_x)) : __bswap16_var(_x))\n\nin /usr/include/machine/endian.h.\n\nThe problem is that the promoted type of that ternary expression is int. But ntohs and htons are defined to have a return type of uint16_t.\n\nNormally, this is a case of no harm no foul because basically every value gets promoted to int eventually, when used as an operand or argument. Nonetheless, the clang printf analyzer complains when using the %hu format specifier. GCC keeps silent, which is probably why this issue never came to anybody's attention.\n\n$ make CC=clang foo\nclang -O2 -pipe   foo.c  -o foo\nfoo.c:8:12: warning: conversion specifies type 'unsigned short' but the argument\n      has type 'int' [-Wformat]\n        printf(\"%hu\\n\", ntohs(i));\n                ~~^     ~~~~~~~~\n                %d\n1 warning generated.\n\nFix: \n\nCast the result of the __bswap16  expression to __uint16_t, either in the __ntohs/__htons macros, or in the __bswap16 macro directly like with __bswap16_const.\nHow-To-Repeat: // make CC=clang foo\n#include \u003cstdio.h\u003e\n#include \u003carpa/inet.h\u003e\n\nint main(void) {\n\tuint16_t i = 1234;\n\n\tprintf(\"%hu\\n\", ntohs(i));\n\n\treturn 0;\n}"
+}

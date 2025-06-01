@@ -1,0 +1,8 @@
+{
+ "id": 434120,
+ "bug_id": 121373,
+ "attachment_id": 0,
+ "creation_time": "2008-03-05T00:20:02Z",
+ "creator": "crahman@gmail.com",
+ "text": "One can't run ipsec with both esp + ah on 7.0-RELEASE with ipv6.  Trying to will\nproduce the kernel printf:\n\n kernel: ip6_output (ipsec): error code 22\n\nand no output from the interface.\n\nThe problem looks to be here, in ipsec_output.c, ipsec_process_done():\n\n       /*\n         * If there's another (bundled) SA to apply, do so.\n         * Note that this puts a burden on the kernel stack size.\n         * If this is a problem we'll need to introduce a queue\n         * to set the packet on so we can unwind the stack before\n         * doing further processing.\n         */\n        if (isr-\u003enext) {\n                ipsec4stat.ips_out_bundlesa++;\n                return ipsec4_process_packet(m, isr-\u003enext, 0, 0);\n        }\n\nSo for the second SA we try to apply it with ipsec4_process_packet(), which fails when handed an ipv6 packet.  By the way, things work fine with ipv4.\n\nHow-To-Repeat: Set up an association between two ipv6 hosts that calls for esp+ah."
+}

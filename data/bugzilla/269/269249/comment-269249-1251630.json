@@ -1,0 +1,8 @@
+{
+ "id": 1251630,
+ "bug_id": 269249,
+ "attachment_id": 0,
+ "creation_time": "2023-03-20T00:43:08Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "I'm on a flight, so I'm not able to do full research.\n\nendian.h is *NOT* in posix today. It's not in issue 7. It does look like it's in the issue 8 draft, which is currently being finalized.\n\nThe problem is two fold. First, sys/_endian.h is not include sys/ctype.h to pick up the visibility macros.\n\nSecond\n\n#if BYTE_ENDIAN == LITTLE_ENDIAN\n\nworks even if you don't include this file because undefined macros are 0 and 0 == 0. Some of the tests I did thus work accidentally.\n\nSorry for the cut and past, but this should fix it:\ndiff --git a/sys/sys/_endian.h b/sys/sys/_endian.h\nindex 7ac39386e2e1..9c0af610e4a4 100644\n--- a/sys/sys/_endian.h\n+++ b/sys/sys/_endian.h\n@@ -36,6 +36,9 @@\n #error \"sys/_endian.h should not be included directly\"\n #endif\n\n+/* Pick up visibility macros -- and likely too much name space pollution */\n+#include \u003csys/cdefs.h\u003e\n+\n /* BSD Compatiblity */\n #define        _BYTE_ORDER     __BYTE_ORDER__\n\n@@ -66,10 +69,10 @@\n #endif\n\n /*\n- * Deprecated variants that don't have enough underscores to be useful in more\n- * strict namespaces.\n+ * These variants are only well defined for BSD namespace, or for\n+ * newer posix versions (issue 8, forthcoming...\n  */\n-#if __BSD_VISIBLE\n+#if __BSD_VISIBLE || _POSIX_C_SOURCE \u003e 200809\n #define        LITTLE_ENDIAN   _LITTLE_ENDIAN\n #define        BIG_ENDIAN      _BIG_ENDIAN\n #define        PDP_ENDIAN      _PDP_ENDIAN"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 52915,
+ "bug_id": 17391,
+ "attachment_id": 0,
+ "creation_time": "2002-10-15T20:19:23Z",
+ "creator": "kmjones@blueyonder.co.uk",
+ "text": "Hi,\n\nAs it doesn't look like much has happened with this PR I thought I'd \nresurrect it, so I took a look at the boot code. The commentary around \ndelay1ms() in /usr/src/sys/boot/i386/libi386/vidconsole.c has this to say:\n\n/*\n  * This routine uses an inb to an unused port, the time to execute that\n  * inb is approximately 1.25uS.  This value is pretty constant across\n  * all CPU's and all buses, with the exception of some PCI implentations\n  * that do not forward this I/O address to the ISA bus as they know it\n  * is not a valid ISA bus address, those machines execute this inb in\n  * 60 nS :-(.\n  *\n  */\n\nThe unused port in question is port 0x84. (Incidentally, this is \n#define'd in the code; the macro is used in delay7() but not in \ndelay1ms(). This should probably be corrected for neatness' sake.)\n\nI suspect the MSI 6195 is one of those boards which breaks the delay \nroutine. ;) (Strangely enough, MSI chipset works just fine with it.)\n\nThere are two workarounds for this; either, as suggested, whack up \nPROBE_MAXWAIT to about 20 times its current value, or come up with a \nbetter delay routine. The only problem I can see with increasing \nPROBE_MAXWAIT is that it may slow things down marginally when you boot \nup a machine that doesn't have a keyboard and don't put the '-P' option \ninto 'boot.conf'. A better delay routine might be neater but is beyond \nmy capabilities, I'm afraid ;)\n\nKeith"
+}

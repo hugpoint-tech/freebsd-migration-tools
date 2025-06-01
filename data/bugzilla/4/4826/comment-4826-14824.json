@@ -1,0 +1,8 @@
+{
+ "id": 14824,
+ "bug_id": 4826,
+ "attachment_id": 0,
+ "creation_time": "1997-10-22T22:00:01Z",
+ "creator": "tadhunt@bell-labs.com",
+ "text": " \n    I was looking at the libc_r implementation of setjmp\n(lib/libc_r/uthread/uthread_setjmp.c) from (FreeBSD-2.2.5-101897)\n\nfrom lib/libc_r/uthread/uthread_setjmp.c:\nint\nsetjmp(jmp_buf env)\n{\n\treturn (_thread_sys_setjmp(env));\n}\n\nwhere _thread_sys_setjmp is implemented in lib/libc/i386/gen/setjmp.S\nas something like the following:\n\n#ifdef _THREAD_SAFE\nENTRY(_thread_sys_setjmp)\n#else\n        ENTRY(setjmp)\n        #endif\n        [... essentially the same implementation for both cases, except\n         for some signal stuff]\n \nIn the case of threaded programs calling setjmp() (instead of calling\n_thread_sys_setjmp()) the wrong environment gets saved in the jmp_buf.\nWhen longjmp does it's work, it returns into setjmp() (instead of returning\ninto the caller of setjmp().  Essentially the following is happening:\n \n        jmp_buf foo;\n        main()\n        {\n            bar();\n            longjmp(foo, 1);\n        }\n \n        bar()\n        {\n            setjmp(foo);\n        }\n \n-Tad\n\nFix: \n\ndiff lib/libc/i386/gen/setjmp.orig.S lib/libc/i386/gen/setjmp.S\n59,30d58\n\u003c #else\n\u003c ENTRY(setjmp)\n61a60\n\u003e ENTRY(setjmp)\nHow-To-Repeat: \n% gcc -static foo.c -lc_r\n% ./a.out\nMemory Fault (core dumped)\n%\n\nfoo.c:\n\n#include \u003cpthread.h\u003e\n#include \u003csetjmp.h\u003e\n\njmp_buf j;\n\nvoid\nmain(void)\n{\n\tif(setjmp(j)) {\n\t\tprintf(\"setjmp returned the second time\\n\");\n\t\texit(1);\n\t}\n\tlongjmp(j, 69);\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1213212,
+ "bug_id": 264282,
+ "attachment_id": 0,
+ "creation_time": "2022-05-27T12:04:42Z",
+ "creator": "yamagi@yamagi.org",
+ "text": "Hello,\nin 13.1-RELEASE and -CURRENT as of 18054d0220cf it's impossible to boot from an GELI encrypted root volume, because the 'currdev' loader variable is set to a wrong string. Thus the loader is unable to load the boot data from the disk. I've bisect this in 13.1-RELEASE. It was broken in commit bc9154a208248, which was cherry picked from b4cb3fe0e39a.\n\nSetup\n-----\nI've tested BIOS boot from GPT with / on GELI. / is decrypted by gptboot. The bootchain is BIOS -\u003e pmbr (read from the MBR) -\u003e gptboot (read from a freebsd-boot partition) -\u003e /boot/loader.\n\ngeli show:\n=\u003e      40  41942960  vtbd0  GPT  (20G)\n        40       256      1  freebsd-boot  (128K)\n       296   4194304      2  freebsd-swap  (2.0G)\n   4194600  37748400      3  freebsd-ufs  (18G)\n\nIt doesn't matter if it's real hardware or - like in this example - an VM. It happens regardless how many devices are attached.\n\nProblem\n-------\nTry to boot the system. /boot/loader errors out with \"ERROR: cannot open /boot/lua/loader.lua: no such file or directory.\" This is caused by the currdev variable get set to the wrong string:\n\n# show currdev\ngelidisk0p3:\n\nThe 'geli' at the beginning of the string is wrong. lsdev lists the device with its correct name, disk0p3. loaders build before bc9154a208248 are working fine, currdev is set to disk0p3.\n\nImpact\n------\nThis makes it impossible to boot from an encrypted /. At least not without manual interactions, like typing the correct path into the loader prompt.  I've testes only BIOS with GPT and UFS. I don't know if other combinations are also impacted."
+}

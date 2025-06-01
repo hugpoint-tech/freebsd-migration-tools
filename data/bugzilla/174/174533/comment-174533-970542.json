@@ -1,0 +1,8 @@
+{
+ "id": 970542,
+ "bug_id": 174533,
+ "attachment_id": 0,
+ "creation_time": "2018-01-10T07:22:37Z",
+ "creator": "w.schwarzenfeld@utanet.at",
+ "text": "patch-bgpd_bgpd.c shows:\n  267 @@ -452,27 +414,33 @@ send_filterset(struct imsgbuf *i, struct\n    268  \n    269  int\n    270  reconfigure(char *conffile, struct bgpd_config *conf, struct mrt_head *mrt_l,\n    271 -    struct peer **peer_l, struct filter_head *rules_l)\n    272 +    struct peer **peer_l)\n    273  {\n    272 +    struct peer **peer_l)\n    273  {\n    274         struct network_head      net_l;\n    275 -       struct network          *n;\n    276 +       struct rdomain_head      rdom_l;\n    277 +       struct filter_head       rules_l;\n    278         struct peer             *p;\n    279         struct filter_rule      *r;\n    280         struct listen_addr      *la;\n    281         struct rde_rib          *rr;\n    282 +       struct rdomain          *rd;\n    283  \n    284 -       if (parse_config(conffile, conf, mrt_l, peer_l, \u0026net_l, rules_l)) {\n    285 +       if (reconfpending) {\n    286 +               log_info(\"previous reload still running\");\n    287 +               return (2);\n    288 +       }\n    289 +       reconfpending = 2;      /* one per child */\n    290 +\n    291 +       log_info(\"rereading config\");\n    292 +       if (parse_config(conffile, conf, mrt_l, peer_l, \u0026net_l, \u0026rules_l,\n    293 +           \u0026rdom_l)) {\n    294                 log_warnx(\"config file %s has errors, not reloading\",\n    295                     conffile);\n    296 +               reconfpending = 0;\n    297                 return (1);\n    298         }\n    299  \n\n\nIf I interpret this right, it is done and the PR could closed."
+}

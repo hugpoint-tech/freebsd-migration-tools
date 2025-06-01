@@ -1,0 +1,8 @@
+{
+ "id": 824978,
+ "bug_id": 200382,
+ "attachment_id": 0,
+ "creation_time": "2015-05-22T04:17:19Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "We have a bug open at $work where we loaded netgraph modules after boot and it consistently prints out the warning shown here: https://svnweb.freebsd.org/base/head/sys/kern/uipc_domain.c?annotate=275329#l236\n\n230 #ifdef notyet\n231         KASSERT(domain_init_status \u003c 2,\n232             (\"attempt to domain_add(%s) after domainfinalize()\",\n233             dp-\u003edom_name));\n234 #else\n235         if (domain_init_status \u003e= 2)\n236                 printf(\"WARNING: attempt to domain_add(%s) after \"\n237                     \"domainfinalize()\\n\", dp-\u003edom_name);\n238 #endif\n\nThis may or may not have been made worse with the commit done in r195837 to make the domains register more lazily, depending on whether or not the VNET was initialized.\n\nThis should repro the issue seen here:\n\n- Build/install bsnmpd with WITH_NETGRAPH=yes (I think this is the default).\n- Disable bsnmpd.\n- Build netgraph as modules; don't load them at boot.\n- Start bsnmpd after boot with forcestart."
+}

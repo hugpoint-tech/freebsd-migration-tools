@@ -1,0 +1,8 @@
+{
+ "id": 10666,
+ "bug_id": 3452,
+ "attachment_id": 0,
+ "creation_time": "1997-05-01T08:54:31Z",
+ "creator": "nsayer@quack.kfu.com",
+ "text": "\nWhen IPFIREWALL rejects a packet, it sends an ICMP port unreachable.\nWhile this is correct in theory, the more correct thing to do is\nto send _host_ unreachable. Sending port unreachable causes many\nsystems (notably SunOS 4.x) to close _all_ sockets to your host,\nnot just the one that was rejected. Sending host unreachable\ndoes the right thing.\n\nYes, this is rediculous, but until _everyone_ runs with a 4.4BSD IP stack...\n\nFix: \n\nSend host unreachable instead of port.\nHow-To-Repeat: \nSet up IPFW to reject port 113. Telnet to quack.kfu.com. You will\nconnect, then disconnect a second later. Why? The auth daemon\ntried to log your auth data, got a port unreachable, and SunOS\nin its wisdom cut all of the sockets loose.\n\nIf you _deny_ port 113 instead, then web servers out there that\nwant to collect your auth data will hang for the TCP connect timeout\ninterval because their SYN packets are being dropped.\n\nYes, you can just pass port 113, and that fixes auth, but that's\nnot really the point here."
+}

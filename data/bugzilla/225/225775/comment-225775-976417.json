@@ -1,0 +1,8 @@
+{
+ "id": 976417,
+ "bug_id": 225775,
+ "attachment_id": 0,
+ "creation_time": "2018-02-09T00:05:51Z",
+ "creator": "emaste@freebsd.org",
+ "text": "It is because lld collects read-only contents into a separate segment, for example:\n\n% readelf -l zfsloader.sym\n\nElf file type is EXEC (Executable file)\nEntry point 0x0\nThere are 5 program headers, starting at offset 52\n\nProgram Headers:\n  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align\n  LOAD           0x001000 0x00000000 0x00000000 0x58694 0x58694 R E 0x1000\n  LOAD           0x05a000 0x00059000 0x00059000 0x0afcc 0x0afcc R   0x1000\n  LOAD           0x065000 0x00064000 0x00064000 0x07854 0x14c9c RW  0x1000\n  GNU_RELRO      0x06c000 0x0006b000 0x0006b000 0x00854 0x01000 R   0x1\n  GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RW  0\n\n Section to Segment mapping:\n  Segment Sections...\n   00     .text .gnu_debuglink .comment .debug_str .debug_loc .debug_abbrev .debug_info .debug_ranges .debug_macinfo .debug_pubnames .debug_pubtypes .debug_frame .debug_line .debug_aranges .symtab .shstrtab .strtab \n   01     .rodata set_Xcommand_set \n   02     .data set_Xficl_compile_set .data.rel.ro .got .bss \n   03     .data.rel.ro .got \n   04     \n\nLinking with -z norelro leaves the three PT_LOADs, just the PT_GNU_RELRO is not emitted. From the output above btxld should coalesce two PT_LOADs, and discarding a PT_LOAD should be an error not a warning."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1198084,
+ "bug_id": 261781,
+ "attachment_id": 0,
+ "creation_time": "2022-02-07T18:04:22Z",
+ "creator": "jarek@jpelczar.com",
+ "text": "I have been tinkering with clock subsystem for more or less tickless based approach. I am not sure whether calculation in \"lib/libc/sys/__vdso_gettimeofday.c\" for \"binuptime\" function is correct. Currently the code looks like this:\n\n\n\n\t\tscale = th-\u003eth_scale;\n#ifdef _LP64\n\t\tscale_bits = ffsl(scale);\n#else\n\t\tscale_bits = ffsll(scale);\n#endif\n\t\tif (__predict_false(scale_bits + fls(delta) \u003e 63)) {\n\t\t\tx = (scale \u003e\u003e 32) * delta;\n\t\t\tscale \u0026= 0xffffffff;\n\t\t\tbt-\u003esec += x \u003e\u003e 32;\n\t\t\tbintime_addx(bt, x \u003c\u003c 32);\n\t\t}\n\n\nExample outputs from two time points (time is measured by ARM Generic Timer, but that's just 64bit counter masked to 32bits):\n\n\nth-\u003eth_boottime = 1640852968.ff886104742783f9 \ntimecounter delta = 29015463 \nth-\u003eth_scale = 295147905178 \nth-\u003eth_offset_count = 539967626 \nbintime_addx(bt, scale * delta = 0x76D8EB0A9A877676) =\u003e 9.4522dbb32c111955\n\n\nth-\u003eth_boottime = 1640852968.ff886104742783f9 \ntimecounter delta = 64100295 \nth-\u003eth_scale = 295147905178 \nth-\u003eth_offset_count = 539967626 \nbintime_addx(bt, scale * delta) =\u003e 8.d4d7f89392515095\n\n\nMultiplication of scale and delta will overflow 64 bits. \n\nI am not sure whether the scale_bits should rather be calculated by flsl/flsll to detect the overflow."
+}

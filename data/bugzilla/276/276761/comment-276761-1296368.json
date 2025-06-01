@@ -1,0 +1,8 @@
+{
+ "id": 1296368,
+ "bug_id": 276761,
+ "attachment_id": 0,
+ "creation_time": "2024-02-11T13:30:59Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "Yes, I suspect that TT_2MSL is allowed to be active.\n\nWould you be willing to test these checks instead of a catch-all if any timer is active:\n\n\ndiff --git a/sys/netinet/tcp_subr.c b/sys/netinet/tcp_subr.c\nindex 90e1496a822c..8acb03d8e3d1 100644\n--- a/sys/netinet/tcp_subr.c\n+++ b/sys/netinet/tcp_subr.c\n@@ -2383,7 +2383,11 @@ tcp_discardcb(struct tcpcb *tp)\n #endif\n\n        INP_WLOCK_ASSERT(inp);\n-       MPASS(!callout_active(\u0026tp-\u003et_callout));\n+       /* only allow TT_2MSL for TIMEWAIT */\n+       MPASS(!tcp_timer_active(tp, TT_REXMT));\n+       MPASS(!tcp_timer_active(tp, TT_PERSIST));\n+       MPASS(!tcp_timer_active(tp, TT_KEEP));\n+       MPASS(!tcp_timer_active(tp, TT_DELACK));\n        MPASS(TAILQ_EMPTY(\u0026tp-\u003esnd_holes));\n\n        /* free the reassembly queue, if any */\n\nSyzcaller found this, but without a reproducer (or core). The above, if it's another timer than TT_2MSL, which would be expected for TIME-WAIT, would yield a dedicated panic line..."
+}

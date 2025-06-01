@@ -1,0 +1,8 @@
+{
+ "id": 996448,
+ "bug_id": 228753,
+ "attachment_id": 0,
+ "creation_time": "2018-06-06T15:33:48Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "The problem has to do with lld's implementation of partial linking (-r).  crt1.o is created with \"ld -r -o crt1.o crt1_s.o crt1_c.o\".  Both input object files contain debug info and relocations against that debug info.  Some of the relocations are against section symbols (STT_SECTION), so they must be processed before identical sections are merged.  However, lld doesn't do any of that:\n\n 542     // This section contains relocation information.                                                      \n 543     // If -r is given, we do not interpret or apply relocation                                            \n 544     // but just copy relocation sections to output.                                                       \n 545     if (Config-\u003eRelocatable)                                                                              \n 546       return make\u003cInputSection\u003e(*this, Sec, Name);\n\nAs a result, one of the DIEs in the output object file contains a DW_AT_stmt_list with a bogus value.  That attribute is supposed to be an offset into .debug_line, and isn't getting adjusted properly when the two input .debug_line sections are concatenated.\n\nWe can potentially work around this by combining crt1_c.c and crt1_s.S into one file, but that would be rather unsatisfying.  I suspect that the next step would be to post to the LLVM ML and try to get a sense of how difficult this would be to fix."
+}

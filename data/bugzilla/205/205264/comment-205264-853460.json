@@ -1,0 +1,8 @@
+{
+ "id": 853460,
+ "bug_id": 205264,
+ "attachment_id": 0,
+ "creation_time": "2015-12-12T21:35:24Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "IFCAP_HWCSUM is defined as (IFCAP_RXCSUM | IFCAP_TXCSUM), so this code:\n\n\tcase SIOCSIFCAP:\n\t\tIOCTL_DEBUGOUT(\"ioctl rcv'd: SIOCSIFCAP (Set Capabilities)\");\n\t\tmask = ifr-\u003eifr_reqcap ^ ifp-\u003eif_capenable;\n\t\t[snip]\n\t\tif (mask \u0026 IFCAP_HWCSUM) {\n\t\t\tif (IFCAP_HWCSUM \u0026 ifp-\u003eif_capenable)\n\t\t\t\tifp-\u003eif_capenable \u0026= ~IFCAP_HWCSUM;\n\t\t\telse\n\t\t\t\tifp-\u003eif_capenable |= IFCAP_HWCSUM;\n\t\t\tif (ifp-\u003eif_drv_flags \u0026 IFF_DRV_RUNNING)\n\t\t\t\tixgb_init(adapter);\n\t\t}\n\nwill set both bits even if the request only specifies one bit, and it\nwill clear both bits even if the request only wants to clear one bit.\n\nReplacing the inner if/else block with this should fix the problem:\n\n\t\t\tifp-\u003eif_capenable ^= (mask \u0026 IFCAP_HWCSUM);\n\nor alternatively:\n\n\t\t\tifp-\u003eif_capenable = (ifr-\u003eifr_reqcap \u0026 IFCAP_HWCSUM) |\n\t\t\t\t(ifp-\u003eif_capenable \u0026 ~IFCAP_HWCSUM);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1299674,
+ "bug_id": 272120,
+ "attachment_id": 0,
+ "creation_time": "2024-03-05T00:16:25Z",
+ "creator": "mp@FreeBSD.org",
+ "text": "I looked into this a little bit and here is what I discovered. Running \"touch -m\" uses utimensat(2) and passes in just the modification date. This system call then calls an internal setutimes() https://github.com/freebsd/freebsd-src/blob/main/sys/kern/vfs_syscalls.c#L3211.\n\nIn 2002 this change was added:\n\n    https://github.com/freebsd/freebsd-src/commit/fb36a3d8472e3b7c446b5501635ec34eb1ebaa00\n\n    Change utimes to set the file creation time (for filesystems that\n    support creation times such as UFS2) to the value of the\n    modification time if the value of the modification time is older\n    than the current creation time. See utimes(2) for further details.\n\nIf a birthtime is not passed into setutimes() and the birthtime is younger than the modification time, then the birthtime is set to the modification time. The utimensat(2) man page documents this behavior.\n\nThis makes a little bit of sense given a modification time usually should not be older than the birthtime of the file. But the utimes man page does talk about the need for a new system call allowing for setting access, modification, *and* birthtime so that might be an alternative.\n\nOptions:\n1. Document this behavior in the touch(1) man page.\n2. Add a new system call to allow setting all three times and modify touch(1) to use it."
+}

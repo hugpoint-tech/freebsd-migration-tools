@@ -1,0 +1,8 @@
+{
+ "id": 451996,
+ "bug_id": 125024,
+ "attachment_id": 0,
+ "creation_time": "2008-06-26T21:30:05Z",
+ "creator": "20080111.FreeBSD.org@ab.ote.we.lv",
+ "text": "vr(4) does not see incoming Ethernet multicast (non-broadcast) packets,\nexcept when the interface is put into promiscuous mode, e.g. by running\ntcpdump without the -p option.\n\nThis breaks IPv6, whose router solicitation and neighbor discovery rely\nupon multicast.\n\nFix: \n\nNo fix is known; it seems that the only workaround is to keep the\ninterface in promiscuous mode, e.g. by running a background tcpdump.\nHow-To-Repeat: \n1. Hook vr0 onto an IPv6 network with a router that responds to ICMPv6\n   router solicitation (most IPv6 routers do).\n\n2. Tell the IPv6 stack to accept incoming router advertisements:\n\n    sysctl net.inet6.ip6.accept_rtadv=1\n\n3. Run tcpdump in non-promiscuous mode in one terminal:\n\n        tcpdump -ivr0 -nvvvv -es0 -p 'multicast and not broadcast'\n\n4. Run rtsol in another terminal:\n\n        time rtsol vr0\n\n5. The tcpdump shows only outgoing router solicitations, but not\n   incoming router advertisements (sent by the router to Ethernet\n   multicast address 33:33:00:00:00:01, for IPv6 link-local multicast\n   address ff02::1).  rtsol times out in about 10 seconds.\n\n6. Interrupt the tcpdump, and run another in promiscuous mode:\n\n        tcpdump -ivr0 -nvvvv -es0 'multicast and not broadcast'\n\n7. Run rtsol again:\n\n        time rtsol vr0\n\n8. This time, tcpdump shows both outgoing router solicitations and\n   incoming router advertisements.  rtsol completes successfully,\n   typically in 1 to 3 seconds."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 825000,
+ "bug_id": 148807,
+ "attachment_id": 0,
+ "creation_time": "2015-05-22T09:48:36Z",
+ "creator": "sebastian.huber@embedded-brains.de",
+ "text": "(In reply to sebastian.huber from comment #18)\nI found one problem with the driver.  In the RTEMS port of the network stack I don't use the BUS_DMA(9) support and instead directly use cache invalidate/flush routines (the Altera Cyclone V has no automatic cache coherency between the Ethernet module and the processors).  In the receive path it was done like this:\n\ninvalidate buffer (mcluster)\nregister buffer in receive DMA descriptor\n...\nDMA done\nhand over buffer to interface input\n\nIt seems that due to a cache line prefetch sometimes cache lines of the buffer are loaded to the cache after the invalidate, but before the receive DMA completed its transfers.\n\nI changed the sequence like this:\n\ninvalidate buffer (mcluster)\nregister buffer in receive DMA descriptor\n...\nDMA done\ninvalidate buffer\nhand over buffer to interface input\n\nNow it works very stable and I didn't observe a mbuf or socketbuf corruption any more.\n\nSo as an off hand guess it seems in case the network stack is presented with partially invalid data (previously received IP and TCP headers mixed with new data most likely), then this could lead to a crash in the TCP input processing."
+}

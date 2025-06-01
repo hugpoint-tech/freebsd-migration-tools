@@ -1,0 +1,8 @@
+{
+ "id": 1171048,
+ "bug_id": 257286,
+ "attachment_id": 226555,
+ "creation_time": "2021-07-19T20:55:37Z",
+ "creator": "jcaplan@blackberry.com",
+ "text": "Created attachment 226555\nproposed patch\n\nOverview\n--------\n\nSpecifying a gateway with `ping -6 -e` is ignored.\n\n\nSteps to Reproduce\n------------------\nTwo devices D1 and D2\n\nD1:\nifconfig vmx0 inet6 3ffe::1\nifconfig vmx1 inet6 2001::1\n\nD2:\nifconfig vmx0 inet6 3ffe::2\nifconfig vmx1 inet6 2001::2\n\nThen on D1:\nping -6 -e 3ffe::2 -c3 2001::2\n\n\nActual Results:\n---------------\n\nThe icmp6 message goes out from D1 on vmx1\n\nExpected Results\n----------------\n\nThe icmp6 message goes out from D1 on vmx0\n\n\nBuild Date \u0026 Hardware\n---------------------\n\nFreeBSD freebsd 13.0-RELEASE FreeBSD 13.0-RELEASE #6 releng/13.0-n244733-ea31abc261f: Sat Jun 19 06:23:53 UTC 2021\n\nAdditional Information\n----------------------\n\nSee attached patch.\n\nControl flow has changed quite a bit in ip6_output() since 12.2.\n\nIn this scenario, we have ro == NULL and hit the else block to determine the outgoing interface based on the destination ip. When ping6 uses the IPV6_NEXTHOP option, then opt-\u003eip6po_nextroute.ro_nh is defined. However, when we hit the old check later on, nh == NULL so it is ignored and we never get a chance to check for a hard coded next hop.\n\n\nInstead, when ro == NULL, need to check the option and hard code the destination prior to calling fib6_lookup() which will assign the interface."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1072161,
+ "bug_id": 241439,
+ "attachment_id": 0,
+ "creation_time": "2019-10-23T16:44:43Z",
+ "creator": "kevans@freebsd.org",
+ "text": "We currently hit the following failure:\n\ndynamiclib/init_test:jcr_test  -\u003e  failed: \n /usr/src/lib/csu/tests/init_test.c:82: Incorrect pointer passed to _Jv_RegisterClasses  [0.029s]\n\nThis test is comparing jcr_ptr to jcr_func_ptr; the former being what's passed to _Jv_RegisterClasses. If I dump them in the ATF_REQUIRE_MSG, jcr_ptr == 12000 and jcr_func_ptr == 20057000; jcr_ptr == 12000 corresponds to this:\n\n$ readelf -a init_test | grep '\\.jcr'\n...\n  [17] .jcr              PROGBITS        00012000 002000 000000 00  WA  0   0  4\n\nThe value of jcr_func_ptr is consistent here:\n\n(gdb) print jcr_func_ptr\n$3 = (const void *) 0x20057000\n(gdb) print \u0026jcr_func\n$4 = (func_ptr *) 0x20057000\n\nFor completeness:\n\n$ readelf -a libh_csu.so | grep '\\.jcr'\n...\n  [16] .jcr              PROGBITS        00002000 002000 000004 00  WA  0   0  4"
+}

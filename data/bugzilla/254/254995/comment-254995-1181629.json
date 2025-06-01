@@ -1,0 +1,8 @@
+{
+ "id": 1181629,
+ "bug_id": 254995,
+ "attachment_id": 0,
+ "creation_time": "2021-10-09T19:52:04Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to nkoch from comment #9)\nPerhaps try this.  Still, since you are claiming that there is no stop signals,\nit should not matter.\n\n\ncommit 98a2fa4a342983bee7f1700530fd721652ce27b5\nAuthor: Konstantin Belousov \u003ckib@FreeBSD.org\u003e\nDate:   Sat Oct 9 22:46:08 2021 +0300\n\n    umtx: Do not return spurious failures on unlock after suspend for normal or PI mutexes\n\ndiff --git a/sys/kern/kern_umtx.c b/sys/kern/kern_umtx.c\nindex ea87259161c8..359318b3849e 100644\n--- a/sys/kern/kern_umtx.c\n+++ b/sys/kern/kern_umtx.c\n@@ -1486,7 +1486,7 @@ do_unlock_normal(struct thread *td, struct umutex *m, uint32_t flags, bool rb)\n \t\tif (error == -1)\n \t\t\treturn (EFAULT);\n \t\tif (error == 1) {\n-\t\t\terror = thread_check_susp(td, false);\n+\t\t\terror = thread_check_susp(td, true);\n \t\t\tif (error != 0)\n \t\t\t\treturn (error);\n \t\t\tgoto again;\n@@ -1523,7 +1523,7 @@ do_unlock_normal(struct thread *td, struct umutex *m, uint32_t flags, bool rb)\n \tif (error == 1) {\n \t\tif (old != owner)\n \t\t\treturn (EINVAL);\n-\t\terror = thread_check_susp(td, false);\n+\t\terror = thread_check_susp(td, true);\n \t\tif (error != 0)\n \t\t\treturn (error);\n \t\tgoto again;\n@@ -2428,7 +2428,7 @@ do_unlock_pi(struct thread *td, struct umutex *m, uint32_t flags, bool rb)\n again:\n \terror = casueword32(\u0026m-\u003em_owner, owner, \u0026old, new_owner);\n \tif (error == 1) {\n-\t\terror = thread_check_susp(td, false);\n+\t\terror = thread_check_susp(td, true);\n \t\tif (error == 0)\n \t\t\tgoto again;\n \t}"
+}

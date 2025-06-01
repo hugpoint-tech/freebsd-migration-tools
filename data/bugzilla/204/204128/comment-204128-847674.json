@@ -1,0 +1,8 @@
+{
+ "id": 847674,
+ "bug_id": 204128,
+ "attachment_id": 0,
+ "creation_time": "2015-11-07T11:38:05Z",
+ "creator": "riggs@FreeBSD.org",
+ "text": "(In reply to Thomas Zander from comment #16)\n\nHave a look at attachment 162875 . I made a diff of the %%APP_HOME%% dirs and subdirs before and after starting artifactory using the default config for the first time.\nIt creates lots of files in data, logs and tomcat/webapps and changes etc. All those files would be leftovers in LOCALBASE. This should not happen.\n\nI would split this into two parts:\n1) The 'static' part of artifactory (i.e. files that we only need to read and execute, but never touch or write) should go to what is currently APP_HOME in your port. Nothing there should change after installation, such that it can be cleared perfectly by pkg delete.\n2) The 'dynamic part' (i.e. logs, pidfiles, tomcat webapps and so on, everything that changes at runtime) should go to /var. pidfile into /var/run, the rest into an artifactory-owned subdir in /var. Those dirs must be registered with the @dir macro in plist. Since this changes at runtime, there will be leftover files after deinstall. There must be a pkg uninstall message informing the user which dirs may need manual cleanup.\n\nCould you take a look?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 663209,
+ "bug_id": 167516,
+ "attachment_id": 0,
+ "creation_time": "2012-05-02T07:20:10Z",
+ "creator": "FreeBSD@ShaneWare.Biz",
+ "text": "If ffmpeg is compiled WITH_RTMP it links with multiple versions of openssl causing problems. I have only seen this issue since upgrading to openssl 1.0.1 recently.\n\nWhen building multimedia/rtmpdump it warns about finding multiple openssl versions to link against.\n\nFrom the rtmpdump build --\n/usr/bin/ld: warning: libssl.so.6, needed by /usr/local/lib/librtmp.so, may conflict with libssl.so.8\n/usr/bin/ld: warning: libcrypto.so.6, needed by /usr/local/lib/librtmp.so, may conflict with libcrypto.so.8\n\nWhen ffmpeg is compiled it brings in both versions -- \ncd /usr/ports/multimedia/ffmpeg\nmake WITH_RTMP=yes\nfind work -name libavformat.so | xargs ldd | grep ssl\n\tlibssl.so.8 =\u003e /usr/local/lib/libssl.so.8 (0x8025f4000)\n\tlibssl.so.6 =\u003e /usr/lib/libssl.so.6 (0x805f8f000)\nfind work -name libavformat.so | xargs ldd | grep crypto\n\tlibcrypto.so.6 =\u003e /lib/libcrypto.so.6 (0x8061e0000)\n\tlibcrypto.so.8 =\u003e /usr/local/lib/libcrypto.so.8 (0x80657c000)\n\nWhen this build of ffmpeg is then used to build graphics/blender it causes blender to crash when a python script tries to use ssl.\n\nHow-To-Repeat: cd /usr/ports/multimedia/ffmpeg\nmake WITH_RTMP=yes\nfind work/ -name libavformat.so | xargs ldd | grep ssl\nfind work/ -name libavformat.so | xargs ldd | grep crypto\n\nThe only way I know to prove it causes problems is build graphics/blender with ffmpeg enabled and when run enable an addon that uses ssl such as network render or renderfarm.fi"
+}

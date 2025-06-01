@@ -1,0 +1,8 @@
+{
+ "id": 1094236,
+ "bug_id": 219717,
+ "attachment_id": 0,
+ "creation_time": "2020-03-28T05:11:46Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "What's actually happening here is an lld bug, either in the logic or in the error message, combined with what may be a bug in either the upstream code or in the assembler.\n\nlld is checking that size is a multiple of sh_entsize BEFORE checking whether the section has SHF_MERGE set at all. Either this is the wrong logic (if size is only supposed to be a multiple of sh_entsize for merge sections, in which case the order of checks is backwards), or the wrong error message (if size is always supposed to be a multiple of sh_entsize, then the error message should not mention SHF_MERGE).\n\nSee function ObjFile\u003cELFT\u003e::shouldMerge in lld/ELF/InputFiles.cpp\n\nNow, the next question is why is `as` generating files with a .stab section in which the section size is not a multiple of sh_entsize. I guess that should not be happening either, but I don't know enough about ELF to be sure.\n\nThe specific files the linker fails on are all handcrafted assembler with various .stab directives. BFD seems to always set the sh_entsize of .stab sections to 4 + 2*sizeof(void*), i.e. 20 on 64-bit, but whatever `as` is putting in these sections does not conform to this size in all cases. Looking at dumps of the object files, the stride of the data they contain appears to be 12, not 20?"
+}

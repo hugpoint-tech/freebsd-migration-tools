@@ -1,0 +1,8 @@
+{
+ "id": 82486,
+ "bug_id": 26415,
+ "attachment_id": 0,
+ "creation_time": "2001-04-08T00:30:04Z",
+ "creator": "jose@we.lc.ehu.es",
+ "text": "\nAfter installing 4.3-RC1 on a new system based on the Gigabyte GA-7ZX\nmotherboard, which includes an ES1371 audio chip, the pcm driver\nfails to detect the AC97 codec properly:\n\npcm0: \u003cAudioPCI ES1371\u003e port 0xd000-0xd03f irq 10 at device 14.0 on pci0\nes_init\nes_init pre ac97 2.1\nwrcodec addr 0x26 data 0x0\nwrcodec addr 0x0 data 0x0\nrdcodec addr 0x0 ... loop 1 t 0x1000 x 0x40000000 loop 2 t 0x5000 x 0x70000 loop 3 t 0x1000 0x40000000\nret 0x0\nrdcodec addr 0x7c ... loop 1 t 0x1000 x 0x40000000 loop 2 t 0x5000 x 0x70000 loop 3 t 0x1000\n0x40000000 ret 0x0\nrdcodec addr 0x7e ... loop 1 t 0x1000 x 0x40000000 loop 2 t 0x5000 x 0x70000 loop 3 t 0x1000\n0x40000000 ret 0x0\npcm0: ac97 codec invalid or not present (id == 0)\ndevice_probe_and_attach: pcm0 attach returned 6\n\nAnd this is the relevant line from \"pciconf -l\":\n\nnone0@pci0:14:0:        class=0x040100 card=0xa0001458 chip=0x58801274 rev=0x03 hdr=0x00\n\nFix: \n\nI modified es137x.c, changing the test\n\n  revid == 7 || revid \u003e= 9 || (devid == ES1371_PCI_ID3 \u0026\u0026 revid == 2)\n\nto (yes, I know it is ugly ;-) ):\n\n  revid == 7 || revid \u003e= 9 || (devid == ES1371_PCI_ID3 \u0026\u0026 (revid == 2 || revid == 3))\n\n\n(Ugly, but it works)\nHow-To-Repeat: \tN/A"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 587935,
+ "bug_id": 152485,
+ "attachment_id": 0,
+ "creation_time": "2010-11-22T16:10:13Z",
+ "creator": "antirez@gmail.com",
+ "text": "The bug was discovered as a result of a bug in Redis data base Virtual Memory implementation when running on FreeBSD.  Opening /dev/null using the libc standard I/O functions and writing against it more than 4096 bytes (one memory page) will result in the seek reported by ftell() to be modulo 4096 (that is, an incorrect value).\n\nEven if /dev/null is not a standard file it should behave correctly and should be able to retain the current seek for the open file in a reliable way. I can't cite standard but I've the feeling the current behavior is not ok, and it's worth fixing even just because other *BSD kernels and Linux will instead behave in the obvious least-surprising way.\n\nFix: \n\nThe /dev/null implementation in FreeBSD appears to be optimized for speed, it allocates a single page of memory and reads from it, writes are completely discarded. Apparently there is no handling of the offset. But since I've almost zero clues about the FreeBSD char device API I don't know how a correct implementation should look like.\nHow-To-Repeat: #include \u003cstdio.h\u003e\n\nint main(argc, argv) {\n\n    FILE *fp = fopen(\"/dev/null\",\"w+\");\n    rewind(fp);\n    \n    int i, len;\n    for (i=1;i\u003c80000;i++) {\n        fwrite(\"t\", 1, 1, fp);\n        len = ftello(fp);\n        if (len != i) {\n            printf(\"Fail on pos: %d, expected to be %d\\n\", len, i);\n            return 1;\n        }\n    }\n    printf(\"Pos is: %d\\n\", len);\n    fclose(fp);\n    return 0;\n}"
+}

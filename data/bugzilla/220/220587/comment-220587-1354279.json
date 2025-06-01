@@ -1,0 +1,8 @@
+{
+ "id": 1354279,
+ "bug_id": 220587,
+ "attachment_id": 0,
+ "creation_time": "2025-03-11T18:21:45Z",
+ "creator": "steffen@sdaoden.eu",
+ "text": "(as an outsider comment,)\n\nFor the MUA i maintain INSTALL now says\n\n  - All systems:\n    * \"$SHELL -c -- 'echo du'\" is required to print \"du\".\n      POSIX issue #1440, FreeBSD /bin/sh fails (#264319, #220587).\n      The test suite works around, but consider VAL_SHELL=/better/one.\n\nand the test of my MUA now has to redirect the entire machinery ($MAILX is ourselves) via (works fine in practice).\n\nThe port (mail/s-nail) does not set VAL_SHELL when building.  Well, it does not seem to hurt too many people, or they set the $SHELL variable as such...\n\nHere the test workaround:\n\n# \"sh -c -- 'echo yes'\" must echo \"yes\"; FreeBSD #264319, #220587: work around\nif [ $(\"${VAL_SHELL}\" -c -- 'echo yes' 2\u003e/dev/null) = yes ]; then\n        T_MAILX= T_SH=\nelse\n        echo '! '\"${VAL_SHELL}\"' cannot deal with \"-c -- ARG\", using workaround'\n        T_MAILX=./t.mailx.sh T_SH=./t.sh.sh\n        ${rm} -f ${T_MAILX} ${T_SH}\n        ${cat} \u003e ${T_MAILX} \u003c\u003c_EOT\n#!${VAL_SHELL}\nSHELL=${TMPDIR}/${T_SH}\nexport SHELL\nexec ${MAILX} \"\\$@\"\n_EOT\n        ${cat} \u003e ${T_SH} \u003c\u003c_EOT\n#!${VAL_SHELL}\nshift 2\nexec ${VAL_SHELL} -c \"\\${@}\"\n_EOT\n        ${chmod} 0755 ${T_MAILX} ${T_SH}\n        MAILX=${TMPDIR}/${T_MAILX}\nfi"
+}

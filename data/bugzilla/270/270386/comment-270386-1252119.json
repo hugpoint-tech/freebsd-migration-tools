@@ -1,0 +1,8 @@
+{
+ "id": 1252119,
+ "bug_id": 270386,
+ "attachment_id": 0,
+ "creation_time": "2023-03-22T23:05:27Z",
+ "creator": "romain@FreeBSD.org",
+ "text": "Hey!\n\nI updated without issue my infra with Puppet and PuppetDB (some issues with Bolt but it is another story). So let's start with the low hanging fruits:\n\n1. After upgrading, have you restarted PuppetServer / PuppetDB / Puppet?\n\n2. If you have customization in config files, you may need to sync it with updated samples (e.g. my PuppetServer config has some TLS tuning, so I had to adjust the puppetserver configuration and change some \"3.0\" to \"3.1\" in path)?\n\n3. Some gems will prevent puppetserver from starting when they are missing, for example I had to reinstall hiera-eyaml-rsa in the context of the puppetserver before it would start, so in my case:\n\n# puppetserver gem install ...\n\n4. Regarding:\n\u003e Unable to find archive module in modulepath /usr/local/etc/puppet/modules:/usr/local/etc/puppet/modules\nThis seems odd, unless you are not using a control-repo maybe?\n\n5. If the above did not help, let's try to gather some info:\n\n# cat /usr/local/etc/puppet/puppet.conf\n[main]\nserver = REDACTED\nsplay = true\n[master]\nstoreconfigs = true\nstoreconfigs_backend = puppetdb\nreports = puppetdb\ndns_alt_names = puppet.blogreen.org\n[agent]\nusecacheonfailure = false\n\n# puppet config print codedir     \n/usr/local/etc/puppet\n\n# cat /usr/local/etc/puppet/code/environments/production/environment.conf \nmodulepath = modules:site-modules\n\n# puppet config print modulepath\n/usr/local/etc/puppet/environments/production/modules:/usr/local/etc/puppet/environments/production/site-modules"
+}

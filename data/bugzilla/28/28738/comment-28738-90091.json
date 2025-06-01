@@ -1,0 +1,8 @@
+{
+ "id": 90091,
+ "bug_id": 28738,
+ "attachment_id": 0,
+ "creation_time": "2001-07-06T19:15:21Z",
+ "creator": "pkern@utcs.utoronto.ca",
+ "text": "\u003eFrom unixfreak.org!dima Thu Jul  5 21:13:29 2001\n\u003e\n\u003e pkern@utcs.utoronto.ca writes:\n\u003e \u003e \u003eDescription:\n\u003e \u003e \t\n\u003e \u003e \tsyslogd is set to fsync after each klog message.\n\u003e \u003e \tThis results in a lot of disk activity if IPFW is being used\n\u003e \u003e \twith verbose logging enabled -- an fsync for each IPFW syslog\n\u003e \u003e \t(and there could be more than one IPFW log message per packet).\n\u003e \u003e \tBut IPFW syslogs use the LOG_SECURITY facility so it's possible\n\u003e \u003e \tto exempt those messages from being fsync'ed each time.\n\u003e\n\u003e But it may not be the only one using LOG_SECURITY.\n\nHi.  I made sure to check the kernel sources before trying this change.\nIn 4.3-RELEASE, IPFW messages are the only ones using LOG_SECURITY.\nSo this change would only affect how syslogd behaves when it receives\nIPFW messages from the kernel.\n\n\u003e And if it is now, can you say that for N months in the future?\n\nHmmm, I'm guessing this implies that new code should include comments.\nSorry about that.  Here's an updated patch.  Hope this helps.  pk.\n\n\t--- syslogd.c\t2001/06/12 08:25:31\t1.1\n\t+++ syslogd.c\t2001/07/06 22:01:36\n\t@@ -712,6 +712,11 @@\n\t\t\t\t++p;\n\t\t\tif ((pri \u0026 LOG_FACMASK) == LOG_CONSOLE)\n\t\t\t\tflags |= IGN_CONS;\n\t+\n\t+\t\t/* don't fsync for IPFW messages. */\n\t+\t\tif ((pri \u0026 LOG_FACMASK) == LOG_SECURITY)\n\t+\t\t\tflags \u0026= ~SYNC_FILE;\n\t+\n\t\t} else {\n\t\t\t/* kernel printf's come out on console */\n\t\t\tflags |= IGN_CONS;"
+}

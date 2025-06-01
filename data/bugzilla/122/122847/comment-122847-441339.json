@@ -1,0 +1,8 @@
+{
+ "id": 441339,
+ "bug_id": 122847,
+ "attachment_id": 0,
+ "creation_time": "2008-05-09T12:35:49Z",
+ "creator": "Benjamin.Close@clearchain.com",
+ "text": "This bug occurs when there is missing controllers in the 0..n range. Ie, \nif the box has controllers:\n    ata2\n    ata3\n\nvia a atapci but no native controllers (ie ata0, ata1)\n\natacontrol list\n\nWill fail to list any controllers.\nThis is due to atacontrol requesting information about a non existent \nchannel (ata0) as it sequentially goes from 0..n (where n is obtained \nfrom IOATAGMAXCHANNEL). ata(4) notices the invalid controller request \nand returns EXIO. Hence atacontrol thinks it's an error and exits.\n\nA potential fix is at:\n\nhttp://lists.freebsd.org/pipermail/freebsd-stable/2008-April/041991.html\n\nHowever this simply avoids the real problem, that is, there needs to be \na way to ask the kernel what channels exist.\nOne potential solution is to introduce a IOATAGCHANNELS ioctl which \nreturns a list of valid channels taking a struct like:\n\nstruct ata_ioc_channels {\n    int max;\n    int channels[n];\n}\n\n\nand replace the MAXCHANNELS request.\nTill then the patch will ignore the error state."
+}

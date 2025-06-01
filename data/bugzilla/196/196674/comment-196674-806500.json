@@ -1,0 +1,8 @@
+{
+ "id": 806500,
+ "bug_id": 196674,
+ "attachment_id": 0,
+ "creation_time": "2015-01-23T23:33:19Z",
+ "creator": "ivan@brawley.id.au",
+ "text": "(In reply to Eric Camachat from comment #15)\n\nI think I've reproduced what you are seeing. And after syncing up my 11-CURRENT VM to the most recent.\n\nYou are setting CFLAGS somewhere else? (environment variable or /etc/make.conf?)\n\nI can see in your cc_is_clang log there are some extra options to cc. And in your cc_is_clang-O1 log, I can't see it actually using that.\n\nIf I set $CFLAGS env variable with \"-pipe -march=corei7 -g\" (-m and -g are the extra options), configure doesn't add any -O options and I get the crash. But if I also add -O2 to the list, all is good.\n\nIn fact, setting $CFLAGS to just \"-pipe\" so that the cc commands are the same as the defaults with the -O option removed, it still crashes. And the same thing for -O0. Which is odd as I tested that before (perhaps that testing produced incorrect results).\n\nDoing some more debugging, there is a bug in the libgcrypt's cipher/Makefile when turning down the optimisations for cipher/tiger.o (and with my patch, for cipher/salsa20.c). It echos a libtool commandline through sed to change the -Oblah to -O1, but the first s// sed command will only change the first instance of -Oblah found, not all of them. So you could end up with multiple different -Oblah options to cc, which will further complicate debugging, etc.\n\nEric, try having a look around your Makefile, env variables and /etc/make.conf, etc to see if you are also trying to set CFLAGS and remove it so that it will compile libgcrypt with a clean environment. You should see in the build log the rest of the modules compiling with -O2 for instance.\n\nivan."
+}

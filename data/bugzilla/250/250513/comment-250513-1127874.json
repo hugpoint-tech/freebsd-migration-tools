@@ -1,0 +1,8 @@
+{
+ "id": 1127874,
+ "bug_id": 250513,
+ "attachment_id": 0,
+ "creation_time": "2020-10-21T18:39:38Z",
+ "creator": "uqs@FreeBSD.org",
+ "text": "So there I was installing telegraf, influxdb, grafana and the like and noticed my uptime measured in about 1 year (which itself is bogus, but not the problem).\n\nThe problem is that the gopsutil as used by telegraf has a bug in how it returns uptime on FreeBSD. This is fixed in head, but broken in the 2.19.7 version used by the port.\n\nSee this:\n% sudo telegraf -config /usr/local/etc/telegraf.conf -test|grep uptime; date +%s\n2020-10-21T18:31:37Z I! Starting Telegraf 1.15.3\n\u003e system,host=coyote.spoerlein.net uptime=1603305097i 1603305097000000000\n\u003e system,host=coyote.spoerlein.net uptime_format=\"18556 days, 18:31\" 1603305097000000000\n1603305097\n\nAnd indeed, checking out 2.19.7 and running a simple print uptime command I get:\n\n% go run gopsutil_uptime.go\n1603305234 \u003cnil\u003e\n\nBisecting shows that v2.20.7 is the first version that fixes it:\n\n% go run gopsutil_uptime.go\n1152659 \u003cnil\u003e\n\n\nMuch better. Interestingly, the only commit for that month was a major refactor, that doesn't even state that it fixes this _significant_ problem on FreeBSD.\n\nhttps://github.com/shirou/gopsutil/commit/28890b0482feb66e057d2e2763d851f020f8dd65\n\nPlease approve that I bump the dependency to v2.20.7, thanks."
+}

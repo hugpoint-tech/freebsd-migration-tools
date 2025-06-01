@@ -1,0 +1,8 @@
+{
+ "id": 813037,
+ "bug_id": 197286,
+ "attachment_id": 0,
+ "creation_time": "2015-03-03T11:59:56Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "r274300 is very dangerous for merging to stable/10. Can you try this patch instead? It disables LLE operations for tunneling interfaces, and therefore ip6_input() will go through another code path for such packets.\n\nIndex: in6.c\n===================================================================\n--- in6.c\t(revision 279514)\n+++ in6.c\t(working copy)\n@@ -155,6 +155,8 @@ in6_ifaddloop(struct ifaddr *ifa)\n \n \tia = ifa2ia6(ifa);\n \tifp = ifa-\u003eifa_ifp;\n+\tif (nd6_need_cache(ifp) == 0)\n+\t\treturn;\n \tIF_AFDATA_LOCK(ifp);\n \tifa-\u003eifa_rtrequest = nd6_rtrequest;\n \tln = lla_lookup(LLTABLE6(ifp), (LLE_CREATE | LLE_IFADDR |\nIndex: nd6.c\n===================================================================\n--- nd6.c\t(revision 279514)\n+++ nd6.c\t(working copy)\n@@ -2185,9 +2185,6 @@ nd6_need_cache(struct ifnet *ifp)\n \tcase IFT_IEEE80211:\n #endif\n \tcase IFT_INFINIBAND:\n-\tcase IFT_GIF:\t\t/* XXX need more cases? */\n-\tcase IFT_PPP:\n-\tcase IFT_TUNNEL:\n \tcase IFT_BRIDGE:\n \tcase IFT_PROPVIRTUAL:\n \t\treturn (1);"
+}

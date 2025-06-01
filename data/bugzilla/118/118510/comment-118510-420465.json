@@ -1,0 +1,8 @@
+{
+ "id": 420465,
+ "bug_id": 118510,
+ "attachment_id": 0,
+ "creation_time": "2008-01-10T21:48:46Z",
+ "creator": "kris@FreeBSD.org",
+ "text": "Tijl Coosemans wrote:\n\n\u003e\u003e Description:\n\u003e When a memory region has been partially munmap()ed, subsequent\n\u003e calls to munmap() on this region have no effect.\n\u003e\u003e How-To-Repeat:\n\u003e The following program should segfault, but doesn't.\n\u003e \n\u003e It mmap()s 2 pages and munmap()s them again but the second page\n\u003e is still accessible.\n\u003e \n\u003e --- test.c begins here ---\n\u003e #include \u003csys/mman.h\u003e\n\u003e #include \u003cstdio.h\u003e\n\u003e #include \u003cunistd.h\u003e\n\u003e \n\u003e int main( int argc, char **argv ) {\n\u003e \n\u003e     unsigned int const page_size = getpagesize();\n\u003e     void *map;\n\u003e     char volatile *cmap;\n\u003e \n\u003e     map = mmap( NULL, 2 * page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0 );\n\u003e     munmap( map, page_size );\n\u003e     munmap( map, 2 * page_size );\n\u003e \n\u003e     cmap = map;\n\u003e     cmap[ page_size ] = 'a';\n\u003e     printf( \"%c\\n\", cmap[ page_size ] );\n\u003e \n\u003e     return 0;\n\u003e }\n\u003e --- test.c ends here ---\n\nI believe this is an incorrect use of munmap.  After the first call to \nmunmap, you have removed the first page of the mapping, leaving a \nmapping at offset map + page_size of size page_size.  The second munmap \nis being called with an offset that is no longer mapped, and indeed it \nreturns an EINVAL that your sample code is not testing for.\n\nKris"
+}

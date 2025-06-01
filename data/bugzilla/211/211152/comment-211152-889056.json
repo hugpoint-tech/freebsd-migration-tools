@@ -1,0 +1,8 @@
+{
+ "id": 889056,
+ "bug_id": 211152,
+ "attachment_id": 0,
+ "creation_time": "2016-07-19T21:03:39Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Kubilay Kocak from comment #32)\n\nI believe that the following part of the overall changes are all that was required to deal with the original build failure reported (iozone 434 or 444 vintages):\n\n typedef off_t off64_t;\n #endif\n \n+#if defined(__FreeBSD__)\n+#define __off64_t_defined\n+typedef off_t off64_t;\n+#endif\n \n #ifndef solaris\n #ifndef off64_t\n\nand optionally (__off64_t_defined was sufficient to avoid the typedef):\n\n #ifndef SCO_Unixware_gcc\n #ifndef UWIN\n #ifndef __DragonFly__\n+#ifndef __FreeBSD__\n typedef long long off64_t;\n #endif\n #endif\n\nwith its matching:\n\n #endif\n #endif\n #endif\n+#endif\n\nBut the __DragonFly__ in the original code base was also optional because of\n__off64_t_defined already being defined for that context.\nSo the above optional part-pair maintains the style of handling in the original.\n\nOne possibility for the CACHE_LINE_SIZE issue for FreeBSD is:\n\n+#if !defined(CACHE_LINE_SIZE)\n #define CACHE_LINE_SIZE 32\n+#endif\n\n\n\nHas anyone contacted the upstream author ( capps@iozone.org ) to see what their criteria are for changes to go upstream? For example: what range of vintages of C are to be supported?"
+}

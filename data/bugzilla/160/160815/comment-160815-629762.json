@@ -1,0 +1,8 @@
+{
+ "id": 629762,
+ "bug_id": 160815,
+ "attachment_id": 0,
+ "creation_time": "2011-09-19T01:10:08Z",
+ "creator": "nox@FreeBSD.org",
+ "text": "\tAs mentioned earler on -current,\n\n\t\thttp://lists.freebsd.org/pipermail/freebsd-current/2011-September/027418.html\n\n\tI have a \"Centrino Advanced-N 6230\" half-size mini-pcie\n\tcard and found channel switching didn't work in monitor\n\tmode, the patch below seems to fix it.\n\nFix: \n\n--- src/sys/dev/iwn/if_iwn.c.orig\n+++ src/sys/dev/iwn/if_iwn.c\n@@ -6984,12 +6984,24 @@ iwn_set_channel(struct ieee80211com *ic)\n \tconst struct ieee80211_channel *c = ic-\u003eic_curchan;\n \tstruct ifnet *ifp = ic-\u003eic_ifp;\n \tstruct iwn_softc *sc = ifp-\u003eif_softc;\n+\tint error;\n \n \tIWN_LOCK(sc);\n \tsc-\u003esc_rxtap.wr_chan_freq = htole16(c-\u003eic_freq);\n \tsc-\u003esc_rxtap.wr_chan_flags = htole16(c-\u003eic_flags);\n \tsc-\u003esc_txtap.wt_chan_freq = htole16(c-\u003eic_freq);\n \tsc-\u003esc_txtap.wt_chan_flags = htole16(c-\u003eic_flags);\n+\n+\t/*\n+\t * Only need to set the channel in Monitor mode. AP scanning and auth\n+\t * are already taken care of by their respective firmware commands.\n+\t */\n+\tif (ic-\u003eic_opmode == IEEE80211_M_MONITOR) {\n+\t\terror = iwn_config(sc);\n+\t\tif (error != 0)\n+\t\t\tdevice_printf(sc-\u003esc_dev,\n+\t\t\t    \"error %d settting channel\\n\", error);\n+\t}\n \tIWN_UNLOCK(sc);\n }\nHow-To-Repeat: \t# ifconfig wlan0 create wlandev iwn0 wlanmode monitor ..."
+}

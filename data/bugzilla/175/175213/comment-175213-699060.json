@@ -1,0 +1,8 @@
+{
+ "id": 699060,
+ "bug_id": 175213,
+ "attachment_id": 0,
+ "creation_time": "2013-01-11T16:20:00Z",
+ "creator": "deeptech71@gmail.com",
+ "text": "There is a test case in which bsdgrep segfaults.\n\nThe segfaulty code is in tre_match_fast(), in the \"SHIFT;\" statement, which contains (via CPP expansion):\n\n  bc = fg-\u003eqsBc[((const unsigned char *)str_byte)\n                [!fg-\u003ereversed ? (size_t)j + fg-\u003elen\n                               : (size_t)j - 1]];\n\nWhen the segfault occurs, str_byte points to \"\" (the empty string), fg-\u003ereversed is true, and j is 0. Thus, \"\" is indexed with UINT_MAX (on this machine).\n\nThe triggering input is\n- a regular expression of \"stderr.txt\" as the pattern, and\n- a somewhat reduced version of my \"libgcj.a\" file (uploaded as \"hax.dat\", actually, compressed as \"hax.dat.xz\") as the data.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: $ xz --decompress hax.dat.xz\n$ bsdgrep stderr.txt hax.dat\nSegmentation fault (core dumped)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 800984,
+ "bug_id": 195759,
+ "attachment_id": 0,
+ "creation_time": "2014-12-16T03:21:31Z",
+ "creator": "henry.hu.sh@gmail.com",
+ "text": "(In reply to Jonathan Chen from comment #3)\n\u003e I had a quick look, and I believe that patch-switchuser.cpp should make use\n\u003e of setusercontext() in login_class(3); instead of just setlogin(2).\n\nNice catch. It seems like that we can replace multiple calls with a single setusercontext():\nsetlogin -\u003e LOGIN_SETLOGIN\ninitgroups, setgid -\u003e LOGIN_SETGROUP\nsetuid -\u003e LOGIN_SETUSER\n\nand other problems are solved as well:\npath -\u003e LOGIN_SETPATH\nlang -\u003e LOGIN_SETENV\n\nseems like that we should just use LOGIN_SETALL.\n\nTo get the login_cap_t, currently I'm using login_getpwclass(). I should use login_getuserclass() at the same time, and query the later one first, and turn to the first one if something is not present in the later one. However, setusercontext() does not support this, so just use login_getpwclass() for now.\n\nI've created a patch for this. Please test it. I'm not sure if all these APIs are present on older systems."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 5891,
+ "bug_id": 1943,
+ "attachment_id": 0,
+ "creation_time": "1999-09-18T21:21:01Z",
+ "creator": "adrian@freebsd.org",
+ "text": "It doesn't seem to segfault now - the checks are stringer,\nhowever the atoi() isn't too nice. Here's a patch to fix\nthat.\n\nApply it, see if it works, and get back to me as to whether\nwe can close this PR or not.\n\n\n\nAdrian\n\n\n\n\nIndex: route.c\n===================================================================\nRCS file: /home/ncvs/src/sbin/route/route.c,v\nretrieving revision 1.32\ndiff -u -r1.32 route.c\n--- route.c\t1999/08/28 00:14:13\t1.32\n+++ route.c\t1999/09/18 20:22:18\n@@ -479,6 +479,7 @@\n {\n \tint flag = 0;\n \tu_long noval, *valp = \u0026noval;\n+\tchar *endp;\n \n \tswitch (key) {\n #define caseof(x, y, z)\tcase x: valp = \u0026rt_metrics.z; flag = y; break\n@@ -496,7 +497,10 @@\n \t\trt_metrics.rmx_locks |= flag;\n \tif (locking)\n \t\tlocking = 0;\n-\t*valp = atoi(value);\n+\t/* check to make sure its a number */\n+\t*valp = strtoul(value, \u0026endp, 10);\n+\tif (*endp != NULL)\n+\t\terrx(EX_DATAERR, \"Invalid non-numerical value '%s'\", value);\n }\n \n void"
+}

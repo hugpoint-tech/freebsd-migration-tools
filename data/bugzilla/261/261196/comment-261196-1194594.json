@@ -1,0 +1,8 @@
+{
+ "id": 1194594,
+ "bug_id": 261196,
+ "attachment_id": 0,
+ "creation_time": "2022-01-14T13:19:49Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "A build of mail/bogofilter (databases/db5 consumer) fails during the test suite with failure cause:\n\nFAIL: t.probe\n=============\n\nBDB2023 pthread lock failed: Invalid argument\nBDB0061 PANIC: Invalid argument\nBDB0060 PANIC: fatal region error detected; run recovery\nbogofilter[5027]: DB_ENV-\u003eopen, err: -30973, BDB0087 DB_RUNRECOVERY: Fatal error, run database recovery\nTo recover, run: bogoutil -v --db-recover \"./checks.4991.20220114T122654\"\nFAIL t.probe (exit status: 3)\n\nThis error seems to be produced by function __db_pthread_mutex_lock in db-5.3.28/src/mutex/mut_pthread.c.  It appears that it only occurs when building on armv7 (and possibly armv6 which I cannot test).\n\nUnfortunately the db5 code is quite convoluted and I have not been able to figure out what specific function has been called with an invalid argument.  Given that databases/db5 is subject to special treatment on armv6/armv7 (see bug #197227), this latent issue might have been hidden on other architectures.\n\nIf desired, I also volunteer to develop a patch to replace the SWP instruction with modern exclusive loads/stores to avoid having to go through the pthreads code path."
+}

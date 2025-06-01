@@ -1,0 +1,8 @@
+{
+ "id": 1343668,
+ "bug_id": 284038,
+ "attachment_id": 0,
+ "creation_time": "2025-01-13T17:29:38Z",
+ "creator": "konstantin.t.i@ya.ru",
+ "text": "Hello.\nI suggest adding a check for the existence of the image when copying it to the user's target directory via \"make install\".\n\nFor what?\nIf I build only memstick + ftp, without cdrom\nmake memstick ftp\n\nThen after executing the command\nmake install DESTDIR=/opt/iso/FreeBSD/RELEASE/14/14.2/\nAn error message will be issued stating that it is impossible to copy the non-existent disc1.iso file and other files.\n\nSolution\nIn the file /usr/src/release/Makefile in the release-install section:\nadd a check for the existence of the copied image\n.if exists(${I})\n\n\nMy fully working code is like this:\nrelease-install:\n.if defined(DESTDIR) \u0026\u0026 !empty(DESTDIR)\n\tmkdir -p ${DESTDIR}\n.endif\n\tcp -a ftp ${DESTDIR}/\n.if !empty(IMAGES)\n.for I in ${IMAGES}\n.if exists(${I})\n\tcp -p ${I} ${DESTDIR}/${OSRELEASE}-${I}\n. if defined(WITH_COMPRESSED_IMAGES) \u0026\u0026 !empty(WITH_COMPRESSED_IMAGES)\n\t${XZ_CMD} -k ${DESTDIR}/${OSRELEASE}-${I}\n. endif\n. endif\n.endfor\n\t( cd ${DESTDIR} \u0026\u0026 sha512 ${OSRELEASE}* \u003e ${DESTDIR}/CHECKSUM.SHA512 )\n\t( cd ${DESTDIR} \u0026\u0026 sha256 ${OSRELEASE}* \u003e ${DESTDIR}/CHECKSUM.SHA256 )\n.endif\n\n\nIf there is already some solution that allows me to copy only the collected images I need, then please tell me how.\nThank you."
+}

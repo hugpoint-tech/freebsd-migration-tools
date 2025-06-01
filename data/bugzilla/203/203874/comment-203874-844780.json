@@ -1,0 +1,8 @@
+{
+ "id": 844780,
+ "bug_id": 203874,
+ "attachment_id": 0,
+ "creation_time": "2015-10-19T16:32:06Z",
+ "creator": "bhavesh@vmware.com",
+ "text": "Any PCI* device/driver that relies on MSI or MSI-X interrupts doesn't work in a VMware (ESXi hypervisor) virtual machine.\n\nThis is because of a quirk workaround that exists in the FreeBSD kernel that fails requests for MSI or MSI-X interrupt vectors when it detects that the PCIe Root Port or PCI bridge device is a VMware device (PCI Vendor ID 15adh, Device ID 0790h or 07a0h)\n\nThe comment in the code suggests MSI/MSI-X didn't work in older versions of ESXi:\n\nsys/dev/pci/pci.c:\n        /*\n         * MSI-X allocation doesn't work properly for devices passed through\n         * by VMware up to at least ESXi 5.1.\n         */\n\nI don't think this is true any more. Verified this by booting with:\n\nhw.pci.honor_msi_blacklist=0\n\nin /boot/loader.conf\n\nEverything seems to be working fine with various devices and drivers (passthrough ixgbe/ixgbevf, vmxnet3, etc.) with this boot workaround in a FreeBSD 10.2 VM on ESXi 6.0.\n\nI'll propose a trivial patch to remove this quirk workaround."
+}

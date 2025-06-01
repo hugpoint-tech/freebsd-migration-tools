@@ -1,0 +1,8 @@
+{
+ "id": 346176,
+ "bug_id": 102653,
+ "attachment_id": 0,
+ "creation_time": "2006-09-06T20:04:40Z",
+ "creator": "andre@freebsd.org",
+ "text": "Andre Oppermann wrote:\n\u003e Radim,\n\u003e \n\u003e do you have a firewall running on this machine with stateful inspection?\n\nConfirmed in private email that he indeed has.\n\nPlease try the following patch and report if the problem is fixed or still\nthere (it may apply with some fuzz as I've got some other changes in that\nfile).\n\n-- \nAndre\n\nIndex: tcp_output.c\n===================================================================\nRCS file: /home/ncvs/src/sys/netinet/tcp_output.c,v\nretrieving revision 1.115\ndiff -u -p -r1.115 tcp_output.c\n--- tcp_output.c\t23 Feb 2006 21:14:34 -0000\t1.115\n+++ tcp_output.c\t6 Sep 2006 18:49:59 -0000\n@@ -1089,8 +1089,9 @@ timer:\n  \t\t * We know that the packet was lost, so back out the\n  \t\t * sequence number advance, if any.\n  \t\t */\n-\t\tif ((tp-\u003et_flags \u0026 TF_FORCEDATA) == 0 ||\n-\t\t    !callout_active(tp-\u003ett_persist)) {\n+\t\tif (error != EACCES \u0026\u0026\n+\t\t    ((tp-\u003et_flags \u0026 TF_FORCEDATA) == 0 ||\n+\t\t    !tcp_timer_active(tp, TT_PERSIST)) ) {\n  \t\t\t/*\n  \t\t\t * No need to check for TH_FIN here because\n  \t\t\t * the TF_SENTFIN flag handles that case.\n@@ -1127,7 +1127,7 @@ out:\n  \t\t\ttcp_mtudisc(tp-\u003et_inpcb, 0);\n  \t\t\treturn 0;\n  \t\t}\n-\t\tif ((error == EHOSTUNREACH || error == ENETDOWN)\n+\t\tif ((error == EHOSTUNREACH || error == ENETDOWN || error == EACCES)\n  \t\t    \u0026\u0026 TCPS_HAVERCVDSYN(tp-\u003et_state)) {\n  \t\t\ttp-\u003et_softerror = error;\n  \t\t\treturn (0);"
+}

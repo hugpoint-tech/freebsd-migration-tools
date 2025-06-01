@@ -1,0 +1,8 @@
+{
+ "id": 1304594,
+ "bug_id": 277559,
+ "attachment_id": 0,
+ "creation_time": "2024-04-10T13:58:55Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "vmmops_modinit() is using smp_rendezvous to execute code (arm_setup_vectors()) on each CPU.  Presumably one or more of the CPUs is hanging in the vmm_call_hyp() call which initializes per-CPU state (various control registers) in EL2.  This is done in handle_hyp_init in vmm_hyp_exception.S.\n\nThe first thing that routine does is initialize the vector table; I wonder if that should be done last instead.  Perhaps there is a stray EL2 exception occurring for some reason?\n\nIt would be useful to add printf(\"%d\", curcpu)s around the vmm_call_hyp() calls in arm_setup_vectors() to see if there is a pattern to the hangs.  We can also try modifying vmm_call_hyp() to return early after various points, so as to try and narrow down exactly where the hang is happening."
+}

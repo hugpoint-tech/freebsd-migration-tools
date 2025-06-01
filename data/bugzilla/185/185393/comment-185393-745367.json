@@ -1,0 +1,8 @@
+{
+ "id": 745367,
+ "bug_id": 185393,
+ "attachment_id": 0,
+ "creation_time": "2014-01-05T21:44:20Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: jilles\nDate: Sun Jan  5 21:44:04 2014\nNew Revision: 260336\nURL: http://svnweb.freebsd.org/changeset/base/260336\n\nLog:\n  find: Fix -lname and -ilname.\n  \n  The code did not take into account that readlink() does not add a\n  terminating '\\0', and therefore did not work reliably.\n  \n  As before, symlinks of length PATH_MAX or more are not handled correctly.\n  (These can only be created on other operating systems.)\n  \n  PR:\t\tbin/185393\n  Submitted by:\tBen Reser (original version)\n  MFC after:\t1 week\n\nModified:\n  head/usr.bin/find/function.c\n\nModified: head/usr.bin/find/function.c\n==============================================================================\n--- head/usr.bin/find/function.c\tSun Jan  5 21:35:07 2014\t(r260335)\n+++ head/usr.bin/find/function.c\tSun Jan  5 21:44:04 2014\t(r260336)\n@@ -1122,11 +1122,14 @@ f_name(PLAN *plan, FTSENT *entry)\n {\n \tchar fn[PATH_MAX];\n \tconst char *name;\n+\tssize_t len;\n \n \tif (plan-\u003eflags \u0026 F_LINK) {\n-\t\tname = fn;\n-\t\tif (readlink(entry-\u003efts_path, fn, sizeof(fn)) == -1)\n+\t\tlen = readlink(entry-\u003efts_path, fn, sizeof(fn) - 1);\n+\t\tif (len == -1)\n \t\t\treturn 0;\n+\t\tfn[len] = '\\0';\n+\t\tname = fn;\n \t} else\n \t\tname = entry-\u003efts_name;\n \treturn !fnmatch(plan-\u003ec_data, name,\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1052758,
+ "bug_id": 238258,
+ "attachment_id": 0,
+ "creation_time": "2019-05-31T09:41:31Z",
+ "creator": "cs@soi.spb.ru",
+ "text": "Sorry for the incomplete description.\n\nNew loader (unified with zfsloader) can't find zfs pool on an unpartitioned disk.\n\nHow to repeat:\n1. Connect fresh zeroed-out disk to a freebsd machine.\n2. Create zfs pool right over the whole disk: zpool create testpool da0.\n3. zpool set bootfs=testpool testpool\n4. mkdir -p /testpool/usr/src\n5. cd /testpool/usr/src\n6. svnlite co svn://svn.freebsd.org/base/stable/11 .\n7. export MAKEOBJDIRPREFIX=/testpool/usr/obj\n8. make buildworld\n9. make buildkernel\n10. make DESTDIR=/testpool installworld\n11. make DESTDIR=/testpool distribution\n12. make DESTDIR=/testpool installkernel\n13. echo 'zfs_load=\"YES\"' \u003e\u003e /testpool/boot/loader.conf\n14. echo 'devfs /dev devfs rw,multilabel 0 0' \u003e\u003e /testpool/etc/fstab\n15. cp -p /testpool/boot/zfsboot /tmp\n16. zpool export testpool\n17. dd if=/tmp/zfsboot of=/dev/da0 bs=512 count=1\n18. dd if=/tmp/zfsboot of=/dev/da0 bs=512 skip=1 seek=1k\n19. Reboot from the newly created pool and observe on the console:\n\nFreeBSD/x86 bootstrap loader, Revision 1.1\n(Thu May 30 18:55:21 MSK 2019 root@white)\nZFS: can't find pool by guid\nZFS: can't find pool by guid\nZFS: can't find pool by guid\n.....\n\nWorkaround: copy old (e.g. from 10.2-RELEASE) zfsloader over /boot/loader (or wherever boot block expect to find it). Then it will boot correctly."
+}

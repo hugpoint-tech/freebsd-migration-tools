@@ -1,0 +1,8 @@
+{
+ "id": 1303476,
+ "bug_id": 278135,
+ "attachment_id": 0,
+ "creation_time": "2024-04-02T16:27:40Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "When a program calls pathconf(path, _PC_MIN_HOLE_SIZE) on a fusefs file system, if the kernel doesn't already know whether the file system supports FUSE_LSEEK, it must issue a FUSE_LSEEK operation to find out.  It sends that operation to the provided path.  BUT, the current implementation neglects to ensure that a fuse file handle is open.  That's a bug.  We never noticed it before because the test suite only uses fpathconf, not pathconf.\n\nSteps to Reproduce\n==================\n1) Mount a file system that is known to support FUSE_LSEEK\n2) Without doing any open(), stat(), access(), or similar, try pathconf(\"/mountpoint/hello.txt\", _PC_MIN_HOLE_SIZE)\n3) It ought to return 1, but it will instead fail with EINVAL"
+}

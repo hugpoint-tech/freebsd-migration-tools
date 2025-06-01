@@ -1,0 +1,8 @@
+{
+ "id": 1268632,
+ "bug_id": 272896,
+ "attachment_id": 243805,
+ "creation_time": "2023-08-02T15:52:56Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 243805\na cd9660 image that causes cd9660_rrip_cont() to read beyond the end of a buf\n\ncd9660_rrip_loop() checks that the SUSP header is within the buf:\n\n                while (pend \u003e= phead + 1) {\n\nBut individual RRIP functions access fields beyond phead+1, and as a\nresult can crash if phead is just before the end of the buf.\n\nI've attached a demo image:\n\n# gunzip cd1a.iso.gz\n# mdconfig cd1a.iso\n# mount_cd9660 /dev/md0 /mnt\npanic: vm_fault_lookup: fault on nofault entry, addr: 0xffffffc003a35000\n--- exception 13, tval = 0xffffffc003a35001\nisonum_733() at isonum_733+0x8\ncd9660_rrip_cont() at cd9660_rrip_cont+0x16\ncd9660_rrip_loop() at cd9660_rrip_loop+0xfa\ncd9660_rrip_offset() at cd9660_rrip_offset+0x70\niso_mountfs() at iso_mountfs+0x692\ncd9660_mount() at cd9660_mount+0x1a2\nvfs_domount_first() at vfs_domount_first+0x1cc\nvfs_domount() at vfs_domount+0x26c\nvfs_donmount() at vfs_donmount+0x82c\nsys_nmount() at sys_nmount+0x5e\nsyscallenter() at syscallenter+0xe0\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xf2\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72\n--- syscall (378, FreeBSD ELF64, nmount)"
+}

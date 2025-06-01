@@ -1,0 +1,8 @@
+{
+ "id": 451471,
+ "bug_id": 124915,
+ "attachment_id": 0,
+ "creation_time": "2008-08-31T21:34:39Z",
+ "creator": "kientzle@FreeBSD.org",
+ "text": "Peter Schuller wrote:\n\u003e For the record, as a user, I would consider setting atime to\n\u003e mtime to be unexpected as well.\n\u003e \n\u003e It is better than setting it to 0 of course, but I would expect\n\u003e the atime to be set to the *actual* atime...\n\nThere are several different times that could be used\nby the restore code if the atime is unavailable:\n\n  1. mtime (or some other timestamp from the archive, though\n     practically speaking, that's always going to be mtime)\n  2. \"start time\" (the time at which tar was started)\n  3. the current time\n  4. the atime assigned by the system when the object\n     was created\n\nI prefer (2) to (3) because the latter requires an extra\nsyscall for every entry.\n\nOptions (3) and (4) differ primarily on filesystems mounted\nwith \"noatime.\"  Unfortunately, option (4) demands that I\nstat() the file before setting the time in order to find\nout what atime the system assigned.  Again, I'm reluctant\nto go down that path.  (There are a very few cases where\ntar does currently stat() something it has just created\nin order to find out how the system interpreted the request,\nbut I'm trying to minimize those cases.)\n\nI'm pretty ambivalent between options (1) and (2).  Both\nare equally easy to do.\n\nI'm getting ready to merge some code from Perforce that\ndoes more careful tracking of missing timestamps.  With that\ncode, I intend to skip the time update entirely if neither\nmtime nor atime is provided, though that should never\nhappen with tar.\n\nTim"
+}

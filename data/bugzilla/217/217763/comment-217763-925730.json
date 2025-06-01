@@ -1,0 +1,8 @@
+{
+ "id": 925730,
+ "bug_id": 217763,
+ "attachment_id": 180784,
+ "creation_time": "2017-03-13T17:02:15Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Created attachment 180784\nmake ifAlias dynamic\n\nFreeBSD allows to assign descriptions to network interfaces by means of ifconfig(8) utility or kernel API utilized by daemons like net/mpd5.\nsysctl net.ifdescr_maxlen limits maximum description length to 1024 bytes by default, including terminating zero byte.\n\nbsnmpd shows these descriptions with ifAlias OIDs in the ifXTable (MIB-II) but has compiled-in limit MIBIF_ALIAS_SIZE equal to 65 bytes. If an interface has longer description (say, 70 bytes), bsnmpd complains:\n\nSIOCGIFDESCR (ng7): too long (70)\n\nAnd no description is returned to interface's ifAlias OID.\nNevertheless, bsnmpd allocates a buffer of MIBIF_ALIAS_SIZE bytes to every network interface, is it used or not.\n\nAttached patch solves these problems and little more:\n\n- bsnmpd's network interface buffers for description/ifAlias now have dynamic size and allocate exact number of bytes; no extra memory allocated for interfaces having no description;\n\n- sysctl net.ifdescr_maxlen is used as limit instead of compiled-in MIBIF_ALIAS_SIZE; changes to this sysctl updated without restart of bsnmpd;\n\n- no more strlen() calls on every SNMP request for an ifAlias: we calculate actual size of buffer once, store it and use when needed;\n\n- corresponding data moved from struct mibif_private to struct mibif just as suggested by a comment: /* this should be made public */."
+}

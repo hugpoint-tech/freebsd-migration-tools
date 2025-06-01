@@ -1,0 +1,8 @@
+{
+ "id": 1029793,
+ "bug_id": 220103,
+ "attachment_id": 0,
+ "creation_time": "2019-01-05T05:12:11Z",
+ "creator": "mmel@FreeBSD.org",
+ "text": "(In reply to Dimitry Andric from comment #23)\nI was too brief, sorry. \n\n'environ' symbol is exported from /lib/crt1.o with *global* binding:\n# readelf -s /usr/lib/crt1.o | grep environ\n    46: 0000000000000008     8 OBJECT  GLOBAL DEFAULT  COM environ\n\nAnd it's referenced (not only) from /lib/libc:\n# readelf -s /lib/libc.so.7  | grep environ\n     3: 0000000000000000     0 NOTYPE  GLOBAL DEFAULT  UND environ\n\nFor final mplayer link, following command is issued:\n'ld … --version-script binary.ver /usr/lib/crt1.o –lc …'\nwhere linker script binary.ver is:\nMPLAYER_1 {\n  # to support glibcs abhorrent backwards-compatibility hack\n  global: _IO_stdin_used;\n  local: *;\n};\n\nThis script changes binding of all (but  _IO_stdin_used) symbols exported by mplayer from *global* to *local*, including ‘environ’ symbol from linked in crt1.o. Due to this, 'environ' becomes invisible to other DSO (libc..). So resulting binary is invalid, it cannot be run-time loaded and linker should report this issue.\nEverything above is also valid for '__progname' symbol.\n\nActual ld.bfd (2.30, from binutils) correctly report this problem and reject to build invalid binary:\n/usr/bin/ld: mplayer: local symbol '__progname' in /usr/lib/crt1.o is referenced by DSO\n\nBut ld.lld(7.0.1) doesn't and silently produces invalid binary.\n\nThe lack of error report and unloadable binary is, imho, evident ld.lld bug.\n\nI can prepare trivial testcase for this, if you want it."
+}

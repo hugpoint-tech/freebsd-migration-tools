@@ -1,0 +1,8 @@
+{
+ "id": 743432,
+ "bug_id": 184950,
+ "attachment_id": 0,
+ "creation_time": "2013-12-20T23:11:18Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/184950, you wrote:\n\u003e i have system configured for encrypted swap gdbe_swap_enabled=YES\n\n\u003e in fstab\n\u003e /dev/ada0s1b.bde none swap sw 0 0\n\n\u003e in backtrace:\n\n\u003e function swap_on_off() fails at 0x0804a756 which triggers stack\n\u003e checking routines from libc __stack_chk_fail() printing stack\n\u003e underflow\n\nThis bug is probably not that conspicuous because most people use geli\ninstead of gbde for disk encryption.\n\nI looked at the code anyway, and I think the compiler and the buffer\noverflow detector are perfectly right. On platforms where char is signed\n(i.e. most, with the notable exception of arm), the sprintf() call in\nswap_on_off_gbde() may write 9 instead of the expected 3 bytes. There is\na probability of 12.5% that the last 3 chars are all non-negative and\ntherefore no buffer overflow occurs.\n\nThe below patch should fix it. I have only tested that it compiles.\n\nIndex: sbin/swapon/swapon.c\n===================================================================\n--- sbin/swapon/swapon.c\t(revision 259508)\n+++ sbin/swapon/swapon.c\t(working copy)\n@@ -266,7 +266,8 @@ static const char *\n swap_on_off_gbde(const char *name, int doingall)\n {\n \tconst char *ret;\n-\tchar pass[64 * 2 + 1], bpass[64];\n+\tchar pass[64 * 2 + 1];\n+\tunsigned char bpass[64];\n \tchar *dname;\n \tint i, error;\n \n\n-- \nJilles Tjoelker"
+}

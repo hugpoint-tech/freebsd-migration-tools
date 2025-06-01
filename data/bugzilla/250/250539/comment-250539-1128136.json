@@ -1,0 +1,8 @@
+{
+ "id": 1128136,
+ "bug_id": 250539,
+ "attachment_id": 0,
+ "creation_time": "2020-10-23T16:24:57Z",
+ "creator": "ashish@FreeBSD.org",
+ "text": "(In reply to icjohnson from comment #2)\n\nHi,\n\nI believe what you're seeing is the expected behaviour with `add-to-list' function:\n\n    (add-to-list LIST-VAR ELEMENT \u0026optional APPEND COMPARE-FN)\n\nThis is because `add-to-list' function expects LIST-VAR binding to exist (or already defined) which in your case is not, as it's defined in \"ispell\" which you're not load-ing (or require-ing). You can resolve it in two ways:\n\n1. Add an entry to `after-load-list' using `eval-after-load' function which will defer the execution of `add-to-list' form until after \"ispell\" is loaded, which is when `ispell-dictionary-alist' will be defined: \n\n    (eval-after-load \"ispell\"\n      '(add-to-list 'ispell-dictionary-alist\n                    '(\"english-hunspell\" \"[[:alpha:]]\" \"[^[:alpha]]\" \"[']\" t (\"-d\" \"en_CA\") nil)))\n\n2. Use `setq' to define it like you're doing for other variables, that way you'll create a binding yourself:\n\n     (setq ispell-dictionary-alist (list '(\"english-hunspell\" \"[[:alpha:]]\" \"[^[:alpha]]\" \"[']\" t (\"-d\" \"en_CA\") nil)))\n\n\nHTH"
+}

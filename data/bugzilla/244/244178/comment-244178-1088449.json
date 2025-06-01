@@ -1,0 +1,8 @@
+{
+ "id": 1088449,
+ "bug_id": 244178,
+ "attachment_id": 0,
+ "creation_time": "2020-02-16T22:17:40Z",
+ "creator": "ben.rubson@gmx.com",
+ "text": "Hi,\n\nI still face, with 12.1-RELEASE-p2, the issue discussed here :\nhttps://bugs.freebsd.org/bugzilla/show_bug.cgi?id=230258#c35\nWhich continued there :\nhttps://bugs.freebsd.org/bugzilla/show_bug.cgi?id=235774\n\nThe issue is the following.\n\nLet's assume raw file is the underlying file.\nAnd fuse file the corresponding fuse file.\n\n1. create raw file with some data\n2. open fuse file\n3. verify fuse size : correct\n4. verify fuse data : correct\n5. add some data to raw file\n6. verify fuse size : correct (*)\n7. verify fuse data : garbage\n(*) as expected we have to use fuse options attr_timeout=0 entry_timeout=0.\n\nSo, if we keep the fuse file opened, while the underlying one is modified :\n- we read the fuse file up to the expected size, perfect ;\n- but we read garbage.\n\nIf we close and re-open the fuse file, then we correctly read it.\n\nThere are 2 possible workarounds :\n- use FUSE direct_io mount option ;\n- sysctl vfs.fusefs.data_cache_mode = 0.\n\nI don't know whether or not the default behavior is correct.\nBut at least with Linux, we correctly read the data even keeping the fuse file opened.\nThere may then still be a cache issue.\n\nMany thanks for your feedback !"
+}

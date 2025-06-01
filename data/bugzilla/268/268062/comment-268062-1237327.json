@@ -1,0 +1,8 @@
+{
+ "id": 1237327,
+ "bug_id": 268062,
+ "attachment_id": 238427,
+ "creation_time": "2022-11-29T17:07:05Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 238427\nsend a zero-length request to kadmind that causes it to use pointers from freed memory\n\nIf a client send kadmind a zero-length message, kadmind_dispatch()\nsees the error:\n\n    ret = krb5_ret_int32(sp, \u0026cmd);\n    if (ret) {\n        krb5_storage_free(sp);\n        goto fail;\n    }\n\nbut then calls through a pointer from the freed sp:\n\nfail:\n    ...;\n    krb5_storage_seek(sp, 0, SEEK_SET);\n\nKRB5_LIB_FUNCTION off_t KRB5_LIB_CALL\nkrb5_storage_seek(krb5_storage *sp, off_t offset, int whence)\n{\n    return (*sp-\u003eseek)(sp, offset, whence);\n}\n\nI've attached a demo; valgrind or a debugging malloc are required to\nreliably see the error:\n\n# cc kadmind18b.c -lkrb5\n# ./a.out\n\nThis is with source from git from this morning (Nov 29)."
+}

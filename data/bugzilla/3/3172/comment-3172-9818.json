@@ -1,0 +1,8 @@
+{
+ "id": 9818,
+ "bug_id": 3172,
+ "attachment_id": 0,
+ "creation_time": "1997-04-02T07:50:02Z",
+ "creator": "nsayer@quack.kfu.com",
+ "text": "\nThe current release of OSS seems broken, so I am left with trying to\nget the Voxware stuff to work. The CS4232 doesn't probe at all\nwithout the DOS/win enabler, but alas, even with it the resulting\nconfiguration is incompatable with the MSS driver. The enabler leaves\nthe card at 0x530, IRQ 5, DMA 0 \u0026 1.\n\nFortunately the contents of attach_ms_sound() are largely ineffectual\n(the parts that set the IRQ and DMA at least) for the CS4232.\nBut IRQ 5 is not a traditional MSS setting. The fix is to fiddle\nattach_ms_sound()'s interrupt_bits list so that the entry for\nirq 5 is 0 instead of -1, then compile the kernel with\nMSS_PLAIN_AD1848 (see PR # 1636). probe_ms_sound() will be largely\neviscerated MS_PLAIN_AD1848. attach_ms_sound() will poke around\nnot doing anything important, and pass along that it looks like a\nCS4231, which is fine, and everything will work.\n\nAll of this nonsense is necessary because the sb driver (which otherwise\nworks) doesn't realize that this is a 16 bit sound card (sbxvi doesn't\nwork).\n\nClearly, however, the correct thing to do is to add CS4232 support\nto both probe_ms_sound (to work around MSS_PLAIN_AD1848 and to do\nthe work of the DOS enabler) and attach_ms_sound (to not bother trying\nto set the DMA and IRQ and to not freak about \"weird\" combinations)."
+}

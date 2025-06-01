@@ -1,0 +1,8 @@
+{
+ "id": 1210658,
+ "bug_id": 263893,
+ "attachment_id": 0,
+ "creation_time": "2022-05-10T13:53:22Z",
+ "creator": "titus@edc.ro",
+ "text": "from pam_exec(8)\nexpose_authtok\n             Write the authentication token to the program's standard input\n             stream, followed by a NUL character.  Ignored for\n             pam_sm_setcred().\n\n\nproblem is that it is not ignored\nwhen code _pam_exec() is trying to retrieve the auth token when it is called from pam_sm_setcred pam_get_item will set item to null; PAM_AUTHTOK item is set to null when pam_authenticate finishes\nthen a strlen is performed on null and it segfaults\n\nif (options-\u003euse_first_pass ||\n                    strcmp(func, \"pam_sm_setcred\") == 0) {\n                        /* don't prompt, only expose existing token */\n                        rc = pam_get_item(pamh, PAM_AUTHTOK, \u0026item);\n                        authtok = item;\n                } \n......\n  authtok_size = strlen(authtok) + 1; // \u003c= bombs here"
+}

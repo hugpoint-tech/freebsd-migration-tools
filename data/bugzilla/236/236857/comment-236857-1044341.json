@@ -1,0 +1,8 @@
+{
+ "id": 1044341,
+ "bug_id": 236857,
+ "attachment_id": 203226,
+ "creation_time": "2019-03-28T23:07:49Z",
+ "creator": "olivier@freebsd.org",
+ "text": "Created attachment 203226\npatch using ATF_REQUIRE_SYSCTL_INT\n\nGood remark.\n\nThe original code was:\n\n```\nconst char *capname = \"kern.features.security_capability_mode\";\nATF_REQUIRE_EQ(0, sysctlbyname(capname, \u0026capinfo, \u0026len, NULL, 0))\n/* Without CAPABILITY_MODE enabled, cap_enter() returns ENOSYS */\nif (!capinfo)\n   atf_tc_skip(\"Capsicum is not enabled in the system\");\n```\n\nSo, the purpose was to check if kern.features.security_capability_mode==1.\nWhich mean \"Check if capability is enabled\".\n\nMy patch was adding a \"Check if this capability exist\", before to check its status.\n\nIf I remove the old sysctlbyname(3) call, I will not catch this condition:\n- Capability exist\n- But capability is disabled\n\nSo I've read freebsd_test_suite/macros.h, and I've found these functions:\n- ATF_REQUIRE_FEATURE(_feature_name)\n- ATF_REQUIRE_KERNEL_MODULE(_mod_name)\n- ATF_REQUIRE_SYSCTL_INT(_mib_name, _required_value)\n\nAnd I think the best way should using ATF_REQUIRE_SYSCTL_INT(capname,1) that manage both condition.\n\nWith this new patch:\n# kyua test sys/audit/process-control:cap_enter_success\nsys/audit/process-control:cap_enter_success  -\u003e  skipped: sysctl for kern.features.security_capability_mode failed: No such file or director\ny  [0.003s]\n\nResults file id is usr_tests.20190328-230635-632822\nResults saved to /root/.kyua/store/results.usr_tests.20190328-230635-632822.db\n\n1/1 passed (0 failed)"
+}

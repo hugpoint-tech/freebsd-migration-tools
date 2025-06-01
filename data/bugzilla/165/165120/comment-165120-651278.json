@@ -1,0 +1,8 @@
+{
+ "id": 651278,
+ "bug_id": 165120,
+ "attachment_id": 0,
+ "creation_time": "2012-02-14T01:10:14Z",
+ "creator": "grarpamp@gmail.com",
+ "text": "# /bin/ed has no means to relocate its temp file.\nAbsent other administrative solutions, this often leads\nto a full /tmp.\n\n# /usr/bin/sed has legacy/poor temp file handling.\nShould be updated to use mkstemp(3) so as to be more\nsecure and therefore less clobberish.\n\nFix for both (add all three):\na) Add environment: TMPDIR\nb) Add argument: -t \u003ctmpdir\u003e\n Takes precedence over environment.\nc) Change the default to: mkstemp(realpath(\u003cfile\u003e.XXXXXX))\n The directory that the file being edited resides in, and is\n  naturally expected to be writable and have sufficient free\n  space. Make tmp file named after \u003cfile\u003e if possible so as\n  to be recognizable if crash cleanup is needed.\n\n## line no's are for RELENG_8, topic applies to 8/9/HEAD\n\n# /bin/ed\nbuf.c:191:char sfn[15] = \"\";  /* scratch file name */\nbuf.c:202:      strcpy(sfn, \"/tmp/ed.XXXXXX\");\nbuf.c:203:      if ((fd = mkstemp(sfn)) == -1 ||\n\n# /usr/bin/sed\nmain.c:114:static char tmpfname[PATH_MAX];  /* Temporary file name (for in-place editing) */\nmain.c:360:                                             unlink(tmpfname);\nmain.c:398:                     len = snprintf(tmpfname, sizeof(tmpfname),\nmain.c:399:                         \"%s/.!%ld!%s\", dirname(fname), (long)getpid(),\nmain.c:400:                         basename(fname));\n\nFix: \n\nSee above.\nHow-To-Repeat: Have space contention in /tmp.\nHave security race or filename collision."
+}

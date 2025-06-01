@@ -1,0 +1,8 @@
+{
+ "id": 760982,
+ "bug_id": 188997,
+ "attachment_id": 0,
+ "creation_time": "2014-04-25T20:20:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "r253687 introduced a lock order reversal.  It's a lock of a sleepable lock while a nonsleepable lock is still held.  The problem is that lacp_attach creates some sysctl nodes, but further up the stack lagg_ioctl called LAGG_WLOCK() on the softc.\n\nFix: \n\nTwo possible solutions come to mind:\n\n1) Move the sysctl node creation out of lacp_attach.  Call it from lagg_ioctl after LAGG_WUNLOCK()\n\n2) Turn the sysctl nodes into ioctls instead.  That was proposed for a different reason at http://lists.freebsd.org/pipermail/svn-src-head/2013-July/049602.html .\nHow-To-Repeat: ifconfig tap0 create\nifconfig tap1 create\nifconfig tap2 create\nifconfig lagg0 create\nifconfig lagg0 up laggproto lacp laggport tap0 laggport tap1 laggport\ntap2 192.0.0.2/24"
+}

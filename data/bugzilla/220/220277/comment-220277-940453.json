@@ -1,0 +1,8 @@
+{
+ "id": 940453,
+ "bug_id": 220277,
+ "attachment_id": 0,
+ "creation_time": "2017-07-02T20:54:05Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I managed to capture the hang in ddb using boot -d. thread0 is mtx_sleep()ing in AcpiOsAcquireMutex() with a stack that goes through acpi_button_probe(). A taskqueue thread is pause()d with the following stack:\n\npause_sbt()\nAcpiExSystemDoSleep()\nAcpiDsExecEndOp\nAcpiPsParseLoop()\nAcpiPsParseAml()\nAcpiPsExecuteMethod()\nAcpiNsEvaluate()\nAcpiEvaluateObject()\nacpi_cmbat_get_bst()\nacpi_cmbat_init_battery()\n\u003ctaskqueue stuff\u003e\n\nI presume that this thread is holding the ACPI mutex that thread0 is waiting for. So it seems that r310336 wasn't sufficient."
+}

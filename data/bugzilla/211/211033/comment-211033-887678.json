@@ -1,0 +1,8 @@
+{
+ "id": 887678,
+ "bug_id": 211033,
+ "attachment_id": 0,
+ "creation_time": "2016-07-12T13:59:13Z",
+ "creator": "xavi.garcia@gmail.com",
+ "text": "rsyslogd hangs in an infinite loop trying to write a syslog record to a file descriptor. \ntruss -p pid outputs\n\nwrite(1,\"2016-07-06T10:01:23.061615+00:00\"...,116) ERR#5 'Input/output error'\nwrite(1,\"2016-07-06T10:01:23.061615+00:00\"...,116) ERR#5 'Input/output error'\nwrite(1,\"2016-07-06T10:01:23.061615+00:00\"...,116) ERR#5 'Input/output error'\nwrite(1,\"2016-07-06T10:01:23.061615+00:00\"...,116) ERR#5 'Input/output error'\nwrite(1,\"2016-07-06T10:01:23.061615+00:00\"...,116) ERR#5 'Input/output error'\nwrite(1,\"2016-07-06T10:01:23.061615+00:00\"...,116) ERR#5 'Input/output error'\n\nIt is not displayed here but the message written is exactly the same every time (truss -s 1024 -p pid)\n\n\nWe assumed it was the same bug that was closed upstream on https://github.com/rsyslog/rsyslog/issues/318 but we cannot reproduce it with the proof of concept. Furthermore, building the binary with debug mode (WITH_DEBUG=yes) stopped the bug from being triggered and we cannot get a coredump to investigate.\n\nWe then forced the debug build with optimisations on (-O2) and we still cannot reproduce the error.\n\n\nWe have seen this happening in fd 1 and fd 2.\n\nThe command `fstat -p pid`  returned\n\nroot     rsyslogd    1073    2 -         -         bad\n\nthat means bad file descriptor in stat(2) and errno.h (EBADF)."
+}

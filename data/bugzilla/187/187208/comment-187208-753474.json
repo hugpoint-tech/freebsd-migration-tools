@@ -1,0 +1,8 @@
+{
+ "id": 753474,
+ "bug_id": 187208,
+ "attachment_id": 0,
+ "creation_time": "2014-03-03T02:20:06Z",
+ "creator": "lorne@cons.org.nz",
+ "text": "This seems to be caused by r346763, which happened to reverse the order of a replacement for adding dragonfly support to configure scripts. Previously the configure was changed by\r\n\r\n case \"$host\" in\r\n-    *-*-freebsd*)\r\n+    *-*-freebsd*|dragonfly*)\r\n\r\nAfter r346763 its changed by:\r\n\r\n case \"$host\" in\r\n-    *-*-freebsd*)\r\n+    *-*-dragonfly* | freebsd*)\r\n\r\nNeither of which are correct.\r\n\r\nGrabbing any non whitespace characters preceding freebsd* will fix this case.\r\n\r\ndiff -ur a/Mk/Uses/libtool.mk b/Mk/Uses/libtool.mk\r\n--- a/Mk/Uses/libtool.mk\t2014-03-03 15:15:12.570514973 +1300\r\n+++ b/Mk/Uses/libtool.mk\t2014-03-03 15:15:56.955511819 +1300\r\n@@ -19,7 +19,7 @@\r\n patch-libtool:\r\n \t@${FIND} ${WRKDIR} \\( -name configure -or -name ltconfig \\)\t\\\r\n \t\t-type f | ${XARGS} ${REINPLACE_CMD}\t\t\t\\\r\n-\t\t-e '/dragonfly\\*/!s/freebsd\\*[ )]/dragonfly* | \u0026/'\t\\\r\n+\t\t-e '/dragonfly\\*/!s/\\([^[:space:]]*\\)freebsd\\*[ )]/\\1dragonfly* | \u0026/'\t\\\r\n \t\t-e '/gcc_dir=\\\\`/s/gcc /$$CC /'\t\t\t\t\\\r\n \t\t-e '/gcc_ver=\\\\`/s/gcc /$$CC /'\t\t\t\t\\\r\n \t\t-e '/link_all_deplibs[0-9A-Z_]*=/s/=unknown/=no/'\t\\\r\n\r\nWhich produces:\r\n\r\n case \"$host\" in\r\n-    *-*-freebsd*)\r\n+    *-*-dragonfly* | *-*-freebsd*)\r\n\r\nRegards,\r\nAndrew\r\n"
+}

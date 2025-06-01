@@ -1,0 +1,8 @@
+{
+ "id": 1008403,
+ "bug_id": 230903,
+ "attachment_id": 0,
+ "creation_time": "2018-08-26T05:09:25Z",
+ "creator": "sthalik@tehran.lain.pl",
+ "text": "Hey,\n\nOn this Alix machine, mounting root readonly after mounting it read-write is slow, as in:\n\n% mount -w /\n% time mount -r / # 15-20 seconds\n\nA workaround is to mount the partition async in which case the remount is almost instant. My typical workflow is to mount read-write, break something, then remount read-only for the sake of fsck(8).\n\nThe original Alix series use a Compact Flash -\u003e ATA controller. I've observed this behavior with multiple CF cards. Typical WCHAN is `biowr', `wdrain' or both. This behavior persists since at least FreeBSD 10 series.\n\nNote, the CF storage isn't that slow, see:\n  cat /usr/lib/* \u003e /dev/null  0.10s user 1.21s system 46% cpu 2.821 total\n  cat /usr/bin/* \u003e /dev/null  0.12s user 3.09s system 67% cpu 4.756 total\n\nThere are some nasty things in KERNCONF, only to reduce logspam and save time otherwise spent probing for nonexistent controllers. The Alix series have none of these controllers:\n\n--\u003e--\ninclude GENERIC\n[trivia]\n\nnooptions   SMP\nnooptions   APIC_IO\nnodevice    acpi\n\nnodevice    xenpci # fix build\nnooptions   XENHVM # idem\nnodevice    hyperv # idem\n--\u003c--\n\nI can attach various config files (sysctl.conf, rc.conf, dmesg.boot, fstab, KERNCONF) if necessary but they look sane other than the aforementioned KERNCONF.\n\ncheers,\nsh"
+}

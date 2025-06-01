@@ -1,0 +1,8 @@
+{
+ "id": 916278,
+ "bug_id": 216014,
+ "attachment_id": 0,
+ "creation_time": "2017-01-13T07:13:46Z",
+ "creator": "freebsd@phil.spodhuis.org",
+ "text": "The shells(5) manpage describes /etc/shells as \"a list of the shells on the system\".\n\nThe top of /usr/src/etc/shells documents the historical meaning:\n\n    # List of acceptable shells for chpass(1).\n    # Ftpd will not allow users to connect who are not using\n    # one of these shells.\n\nMy recollection is that 20 years ago, it was considered a security flaw for /etc/shells to list an untrusted shell, as the whole point was to define \"if a user has one of these shells, then they're trusted for local system access\".\n\nIndeed, /usr/bin/chpass is setuid-root and uses \"ok_shell()\" to enforce exactly this behavior; so if arbitrary code can be gotten running as uid N, it can invoke chpass to change shell to any shell listed in /etc/shells, as long as the current shell is listed in that file too.  Thus providing a privilege escalation attack.\n\nYet the standard behavior of Ports is to add _all_ shells, including restricted shells, to /etc/shells.\n\n    grep '^@shell' /usr/ports/shells/*/pkg-plist\n\nrbash, rzsh, scponly; also devel/git adds libexec/git-core/git-shell too.\n\nUsers with any of those should _not_ be able to change their shell.  The only reason I can think of to add these shells to /etc/shells is some gateway software deciding to only allow access if the shell is listed and so rejecting restricted shells ... which is a bug.\n\nSo either the description in /usr/src/etc/shells is wrong and chpass is a security hole, or the man-page shells(5) is wrong and has led to many Ports being configured to introduce security holes when installed."
+}

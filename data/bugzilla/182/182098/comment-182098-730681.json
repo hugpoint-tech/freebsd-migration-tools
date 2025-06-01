@@ -1,0 +1,8 @@
+{
+ "id": 730681,
+ "bug_id": 182098,
+ "attachment_id": 0,
+ "creation_time": "2013-09-15T23:39:58Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/182098, you wrote:\n\u003e Currently there an issue with linker.hints being different between\n\u003e machines that create binary update for freebsd-update.\n\n\u003e 'kldxref /boot/kernel/' will produce different linker.hints due to the\n\u003e way the fts_open() traverses the file system:\n\nIn the interest of reproducible builds, your patch seems a good idea. It\nseems unattractive to run kldxref /boot/kernel on every machine.\n\nThe implementation of compare() seems unnecessarily complex though. In\nfind -s, the fts_names are simply passed to strcoll() (here, strcmp()\nwould be better). The trickery with the length may cause inconsistent\nresults if one filename is a prefix of another (rare).\n\nThis change may also expose a latent bug with kldxref -R: it does not\nwork properly if a directory contains both files that need a mention in\na hints file and subdirectories, and at least one such file appears\nafter a subdirectory. Because your change alters the traversal order, it\nmight break a use of kldxref -R that previously happened to work. You\ncan make it work reliably by sorting FTS_D entries after other entries.\n\n-- \nJilles Tjoelker"
+}

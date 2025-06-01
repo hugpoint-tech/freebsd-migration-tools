@@ -1,0 +1,8 @@
+{
+ "id": 1205284,
+ "bug_id": 262983,
+ "attachment_id": 232871,
+ "creation_time": "2022-04-01T16:40:24Z",
+ "creator": "email@luiz.eng.br",
+ "text": "Created attachment 232871\ncarp_demotion_factor flag patch\n\nDuring a maintenance to move our pfsync connection, I tried to set \"net.pfsync.carp_demotion_factor\" to 0 in order to avoid a CARP demotion while the pfsync service restarted, but to my surprise, the CARP still got demoted by the default value of 240.\n\nThe server is acting as a router, running GENERIC kernel, version 13.0-RELEASE-p6.\n\nUpon investigation, I noticed that this sysctl was missing the flag CTLFLAG_VNET on its declaration.\n\nAfter patching the code in sys/netpfil/pf/if_pfsync.c to include the flag, the sysctl started behaving as expected.\n\nReproduction steps:\n$ sysctl net.pfsync.carp_demotion_factor=0\n$ service pfsync restart\n$ grep carp /var/log/syslog\nObserve the carp still getting demoted by the default value, 240.\n2022-03-31T09:09:16.428406+00:00 router-awtest-02 kernel: carp: demoted by 240 to 240 (pfsync bulk start)\n2022-03-31T09:09:16.428423+00:00 router-awtest-02 kernel: carp: demoted by -240 to 0 (pfsync bulk done)\n\nAfter applying the patch, the same steps should yield a demotion by 0:\n2022-04-01T10:05:35.764685+00:00 router-awtest-02 kernel: carp: demoted by 0 to 0 (pfsync bulk start)\n2022-04-01T10:05:35.764701+00:00 router-awtest-02 kernel: carp: demoted by 0 to 0 (pfsync bulk done)\n\nThe patch was applied to 13.0-RELEASE, but should also apply cleanly on CURRENT."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1171575,
+ "bug_id": 257368,
+ "attachment_id": 0,
+ "creation_time": "2021-07-23T23:29:46Z",
+ "creator": "jo@bruelltuete.com",
+ "text": "Looks like there's a 32 bit integer overflow or underflow glitch in ggated or ggatec (not sure yet which).\n\nRelevant lines from the log.\nggated first:\n\n[...snipped...]\ndebug: Received hdr packet.\ndebug: recv_thread: offset=53686845440 length=114688\ndebug: disk_thread: offset=53686845440 length=114688\ndebug: send_thread: offset=53686845440 length=114688\ndebug: Sent hdr packet.\ndebug: Sent 114688 bytes (offset=53686845440, size=114688).\ndebug: Received hdr packet.\ndebug: recv_thread: offset=16384 length=2147467264\ndebug: disk_thread: offset=16384 length=2147467264\ndebug: send_thread: offset=16384 length=2147467264\ndebug: Sent hdr packet.\ndebug: Process 2048 exiting.\n\nNotice the suspicious length paramter:\n2147467264 = 0x7FFFC000\n    114688 = 0x   1C000\n\n\nCorresponding log from ggatec:\n\n[...snipped...]\ndebug: Received 114688 bytes (offset=53686845440, size=114688).\ndebug: Sent hdr packet.\ndebug: Received hdr packet.\ndebug: Received data packet.\nerror: Lost connection 4.\ndebug: recv_thread: Died.\ndebug: send_thread: Died.\n\n\n\nAnd ggated promptly allocates an additional 2GB of memory. Line from top:\n\n PID USERNAME THR PRI NICE   SIZE    RES STATE   C TIME  WCPU COMMAND\n2048 root     1   20     0  2077M  1217M spa_na  1 0:05  0.00% ggated"
+}

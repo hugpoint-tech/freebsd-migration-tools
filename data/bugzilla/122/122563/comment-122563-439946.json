@@ -1,0 +1,8 @@
+{
+ "id": 439946,
+ "bug_id": 122563,
+ "attachment_id": 0,
+ "creation_time": "2008-04-08T12:20:00Z",
+ "creator": "susan.lan@zyxel.com.tw",
+ "text": "\tAbout the KEY_FREESAV() in key_checkrequest() in key.c:\n\nline 806:\n   if (isr-\u003esav != NULL) {\n      KEY_FREESAV(\u0026isr-\u003esav);\n      isr-\u003esav = NULL;\n   }\n\nThe codes are only going to free the sav used LAST TIME. For outgoing SA entries, the reference count will be always 2, instead of 1 like incoming SA. I thought the proper place to call KEY_FREESAV() should be ipsec6_output_trans() and ipsec6_output_tunnel() after invoking each transform's output function. Then the SA will be freed after its usage rather than being freed if there's next IPsec packet.\n\nIf the above condition is accpeted, then key_delsp() in key.c should not call KEY_FREESAV() in case SA reference count underflow!\n\nFix: \n\nI have solution in description already.\nHow-To-Repeat: \tCreate IPsec tunnel between the 2 PCs; for the outgoing SA, the reference count will always be 2, instead of 1."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1252064,
+ "bug_id": 265484,
+ "attachment_id": 0,
+ "creation_time": "2023-03-22T16:59:21Z",
+ "creator": "jeremie.jourdin@advens.fr",
+ "text": "(In reply to Mark Johnston from comment #6)\n\nHello, \n\nI faced the same issue running HardenedBSD (13-stable and current) on a HP Server DL360 Gen 10 plus with BROADCOM AERO-10E2 SAS Raid Controller. kernel panic occurs as soon as a write access is attempted on /dev/da0.\n\nSo I decided to test on FreeBSD and I can confirm that :\n - On FreeBSD-13.2-RC3 -\u003e it works\n - On FreeBSD-14.0-CURRENT -\u003e kernel panic\n\nAccording to me this problem is related to the \"INVARIANTS\" options in kernel : the mrsas driver source code has not been modified to deal with these options. kernel panic occurs when trying to unlock the \"sim_lock\" mutex.\n\nWith a custom GENERIC kernel without these options (tested on HardenedBSD), it works.\n\nAs a proof of concept, I patched sys/kern/kern_mutex.c to not panic in case of wrong assertion (!mtx_owned(m)) on the mutex \"mrsas_sim_lock\" used in sys/dev/mrsas/mrsas.c. With this workaround in place, even with INVARIANTS options, no problem with mrsas driver anymore.\n\nHope it can help to fix this issue, I would be happy to help testing a patch or anything, do not hesitate."
+}

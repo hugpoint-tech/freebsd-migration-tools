@@ -1,0 +1,8 @@
+{
+ "id": 828843,
+ "bug_id": 201073,
+ "attachment_id": 0,
+ "creation_time": "2015-06-23T11:55:33Z",
+ "creator": "masato@itc.naist.jp",
+ "text": "NFS client requests invalid principal name for RPCSEC_GSS security.\nThe man page mount_nfs(8) explains that default principal name is nfs@\u003cserver-fqdn\u003e, but NFS client uses nfs@\u003crhost\u003e:\u003cpath\u003e which includes inappropriate directory path.\n\nWorkaround:\nExplicitly use principal option for mount_nfs command.\n\nFix:\n===================================================================\n--- sys/fs/nfsclient/nfs_clvfsops.c\t(revision 284717)\n+++ sys/fs/nfsclient/nfs_clvfsops.c\t(working copy)\n@@ -774,7 +774,7 @@\n \tstruct thread *td;\n \tchar hst[MNAMELEN];\n \tu_char nfh[NFSX_FHMAX], krbname[100], dirpath[100], srvkrbname[100];\n-\tchar *opt, *name, *secname;\n+\tchar *opt, *name, *secname, *cp;\n \tint nametimeo = NFS_DEFAULT_NAMETIMEO;\n \tint negnametimeo = NFS_DEFAULT_NEGNAMETIMEO;\n \tint minvers = 0;\n@@ -1153,8 +1153,13 @@\n \n \tif (vfs_getopt(mp-\u003emnt_optnew, \"principal\", (void **)\u0026name, NULL) == 0)\n \t\tstrlcpy(srvkrbname, name, sizeof (srvkrbname));\n-\telse\n+\telse {\n \t\tsnprintf(srvkrbname, sizeof (srvkrbname), \"nfs@%s\", hst);\n+\t\tcp = strchr(srvkrbname, ':');\n+\t\tif (cp != NULL) {\n+\t\t\t*cp = '\\0';\n+\t\t}\n+\t}\n \tsrvkrbnamelen = strlen(srvkrbname);\n \n \tif (vfs_getopt(mp-\u003emnt_optnew, \"gssname\", (void **)\u0026name, NULL) == 0)"
+}

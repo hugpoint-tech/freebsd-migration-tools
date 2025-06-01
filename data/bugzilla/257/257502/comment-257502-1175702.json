@@ -1,0 +1,8 @@
+{
+ "id": 1175702,
+ "bug_id": 257502,
+ "attachment_id": 0,
+ "creation_time": "2021-08-26T07:57:51Z",
+ "creator": "delphij@FreeBSD.org",
+ "text": "Note that the current OpenLDAP usage of kqueue have some issues (long story short: kqueue descriptors shouldn't be close()'ed).  I've patched locally but am too busy to work on this for upcoming week.\n\ndiff --git a/servers/slapd/daemon.c b/servers/slapd/daemon.c\nindex 9048d25fe..c3b9cb24f 100644\n--- a/servers/slapd/daemon.c\n+++ b/servers/slapd/daemon.c\n@@ -228,19 +228,14 @@ static slap_daemon_st *slap_daemon;\n } while (0)\n \n /* a kqueue fd obtained before a fork can't be used in child process.\n- * close it and reacquire it.\n+ * reacquire it.\n  */\n # define SLAP_SOCK_INIT2() do { \\\n-       close(slap_daemon[0].sd_kq); \\\n        slap_daemon[0].sd_kq = kqueue(); \\\n } while (0)\n \n # define SLAP_SOCK_DESTROY(t) do { \\\n        int kq_i; \\\n-    if (slap_daemon[t].sd_kq \u003e 0) { \\\n-        close(slap_daemon[t].sd_kq); \\\n-        slap_daemon[t].sd_kq = -1; \\\n-    } \\\n     for (kq_i = 0;  kq_i \u003c 2;  kq_i++) { \\\n         if (slap_daemon[t].sd_kqc[kq_i].sd_changes != NULL) { \\\n             ch_free(slap_daemon[t].sd_kqc[kq_i].sd_changes); \\\n@@ -3155,10 +3150,6 @@ loop:\n                connections_shutdown();\n        }\n \n-#ifdef HAVE_KQUEUE\n-     close( slap_daemon[tid].sd_kq );\n-#endif\n-\n        if ( LogTest( LDAP_DEBUG_ANY )) {\n                int t = ldap_pvt_thread_pool_backload( \u0026connection_pool );\n                Debug( LDAP_DEBUG_ANY,"
+}

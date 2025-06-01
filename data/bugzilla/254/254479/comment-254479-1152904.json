@@ -1,0 +1,8 @@
+{
+ "id": 1152904,
+ "bug_id": 254479,
+ "attachment_id": 0,
+ "creation_time": "2021-03-22T14:15:33Z",
+ "creator": "cutesmilee.research@protonmail.com",
+ "text": "rsu_raw_xmit() in the last if statement calls rsu_tx_start(), taking a user-controlled mbuf as parameter.\nat the end of the function m_copydata() is called, and it copies the user-controlled mbuf with the length of the packet / the length of the mbuf (which isn't checked), the smaller size is taken (the user can provide a big payload), and the mbuf gets copied to the TX Descriptor struct (struct r92s_tx_desc) which is 32 bytes.\nthese vulnerabilities are only for Realtek RTL8188SU/RTL8191SU/RTL8192SU wifi cards (that are connected via USB?).\n\nvulnerable code:\n\nstatic int\nrsu_tx_start(struct rsu_softc *sc, struct ieee80211_node *ni, \n    struct mbuf *m0, struct rsu_data *data)\n{\n        struct ieee80211vap *vap = ni-\u003eni_vap;\n\tstruct ieee80211_frame *wh;\n\tstruct ieee80211_key *k = NULL;\n\tstruct r92s_tx_desc *txd;\n\tuint8_t type;\n\tint prio = 0;\n\tuint8_t which;\n\tint hasqos;\n\tint xferlen;\n\tint qid;\n\n\t[...]\n\n\txferlen = sizeof(*txd) + m0-\u003em_pkthdr.len;\n\tm_copydata(m0, 0, m0-\u003em_pkthdr.len, (caddr_t)\u0026txd[1]); // \u003c- heap overflow here\n\n\tdata-\u003ebuflen = xferlen;\n\tdata-\u003eni = ni;\n\tdata-\u003em = m0;\n\tSTAILQ_INSERT_TAIL(\u0026sc-\u003esc_tx_pending[which], data, next);\n\n\t/* start transfer, if any */\n\tusbd_transfer_start(sc-\u003esc_xfer[which]);\n\treturn (0);\n}"
+}

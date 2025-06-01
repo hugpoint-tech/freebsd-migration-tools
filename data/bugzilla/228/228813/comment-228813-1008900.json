@@ -1,0 +1,8 @@
+{
+ "id": 1008900,
+ "bug_id": 228813,
+ "attachment_id": 0,
+ "creation_time": "2018-08-28T19:10:44Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Well, one option is that a Host-PCI bridge driver could indicate that the child bridges aren't firmware-initialized somehow.  Actually, 'clear_pcib=1' should work fine as it doesn't write zeroes but correctly initializes the windows such that they are closed.  Note that right now with the bridges not initialized as you say, they are still actually decoding I/O requests (meaning if they ever got a PCI-e transaction for an I/O port in that range they would claim it), so it really is rather dubious behavior.  The power-on-reset state of these things really should be to have the windows closed (0 base and 0 limit isn't closed).  This is really a hardware bug in the bridges in that they do the wrong thing on reset, probably because the hardware engineer was too lazy to check the actual specification and assumed all-zeroes was ok.\n\nNevertheless, we can maybe add a quirk, especially if no arm systems actually use I/O ports to just always close I/O windows similar to what 'clear_pcib' does under #ifdef arm or the like."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 36099,
+ "bug_id": 11960,
+ "attachment_id": 0,
+ "creation_time": "1999-06-08T12:44:50Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "\u003e On Tue, 08 Jun 1999 12:26:45 +0100, David Malone wrote:\n\u003e \n\u003e \u003e contrib/tcp_wrappers/options.c about line 550. This actually means we\n\u003e \u003e should be reseting allow_severity and deny_severity before each call\n\u003e \u003e to hosts_access()?\n\u003e \n\u003e So you wanna work on that? I foresee 6 lines of code. :-)\n\nHow does the following look? It also includes the removal of the if(){}\nfrom around the syslog for allows.\n\n\tDavid.\n\n\n--- inetd.c.orig\tTue Jun  8 12:34:30 1999\n+++ inetd.c\tTue Jun  8 12:41:14 1999\n@@ -629,6 +629,8 @@\n \t\t\t\t\tsep-\u003ese_server_name : sep-\u003ese_service,\n \t\t\t\t\tRQ_FILE, ctrl, NULL);\n \t\t\t\tfromhost(\u0026req);\n+\t\t\t\tdeny_severity = LIBWRAP_DENY_FACILITY|LIBWRAP_DENY_SEVERITY;\n+\t\t\t\tallow_severity = LIBWRAP_ALLOW_FACILITY|LIBWRAP_ALLOW_SEVERITY;\n \t\t\t\tdenied = !hosts_access(\u0026req);\n \t\t\t\tif (denied || log) {\n \t\t\t\t    sp = getservbyport(sep-\u003ese_ctrladdr.sin_port, sep-\u003ese_proto);\n@@ -645,11 +647,9 @@\n \t\t\t\t        eval_client(\u0026req), service, sep-\u003ese_proto);\n \t\t\t\t    goto reject;\n \t\t\t\t}\n-\t\t\t\tif (log) {\n-\t\t\t\t    syslog(allow_severity,\n-\t\t\t\t        \"connection from %.500s, service %s (%s)\",\n-\t\t\t\t\teval_client(\u0026req), service, sep-\u003ese_proto);\n-\t\t\t\t}\n+\t\t\t\tsyslog(allow_severity,\n+\t\t\t\t    \"connection from %.500s, service %s (%s)\",\n+\t\t\t\t    eval_client(\u0026req), service, sep-\u003ese_proto);\n \t\t\t    }\n #endif /* LIBWRAP */\n \t\t\t    if (sep-\u003ese_bi) {"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1163881,
+ "bug_id": 255473,
+ "attachment_id": 225399,
+ "creation_time": "2021-05-31T07:09:10Z",
+ "creator": "xxjack12xx@gmail.com",
+ "text": "Created attachment 225399\nUnable to disable journal on softupdates after applying patch\n\nI'm still unable to turn off journaling with the patch.\n\nroot@upstairs:/usr/src # git diff\ndiff --git a/sys/ufs/ffs/ffs_softdep.c b/sys/ufs/ffs/ffs_softdep.c\nindex 2cc16ab2a2c1..cc3f64b4e70e 100644\n--- a/sys/ufs/ffs/ffs_softdep.c\n+++ b/sys/ufs/ffs/ffs_softdep.c\n@@ -2653,6 +2653,10 @@ softdep_uninitialize()\n        callout_drain(\u0026softdep_callout);\n }\n \n+static int enable_suj = 0;\n+SYSCTL_INT(_debug_softdep, OID_AUTO, enable_suj, CTLFLAG_RW,\n+    \u0026enable_suj, 0, \"Enable the activation of journaled soft updates\");\n+\n /*\n  * Called at mount time to notify the dependency code that a\n  * filesystem wishes to use it.\n@@ -2716,7 +2720,7 @@ softdep_mount(devvp, mp, fs, cred)\n        ACQUIRE_GBLLOCK(\u0026lk);\n        TAILQ_INSERT_TAIL(\u0026softdepmounts, sdp, sd_next);\n        FREE_GBLLOCK(\u0026lk);\n-       if ((fs-\u003efs_flags \u0026 FS_SUJ) \u0026\u0026\n+       if (enable_suj \u0026\u0026 (fs-\u003efs_flags \u0026 FS_SUJ) \u0026\u0026\n            (error = journal_mount(mp, fs, cred)) != 0) {\n                printf(\"Failed to start journal: %d\\n\", error);\n                softdep_unmount(mp);\n\nroot@upstairs:/usr/src # uname -a\nFreeBSD upstairs.jack.com 13.0-STABLE FreeBSD 13.0-STABLE #0 stable/13-n245805-4a4a174959ce-dirty: Sun May 30 23:31:47 PDT 2021     jack@upstairs.jack.com:/usr/obj/usr/src/amd64.amd64/sys/UPSTAIRS  amd64"
+}

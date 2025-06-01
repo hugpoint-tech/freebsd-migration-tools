@@ -1,0 +1,8 @@
+{
+ "id": 756193,
+ "bug_id": 187826,
+ "attachment_id": 0,
+ "creation_time": "2014-03-21T18:50:00Z",
+ "creator": "adrian@freebsd.org",
+ "text": "From the commit to amd64 (r263475):\n\nFix two issues with /dev/mem access on amd64, both causing kernel page\n  faults.\n\n  First, for accesses to direct map region should check for the limit by\n  which direct map is instantiated.\n\n  Second, for accesses to the kernel map, success returned from the\n  kernacc(9) does not guarantee that consequent attempt to read or write\n  to the checked address succeed, since other thread might invalidate\n  the address meantime.  Add a new thread private flag TDP_DEVMEMIO,\n  which instructs vm_fault() to return error when fault happens on the\n  MAP_ENTRY_NOFAULT entry, instead of panicing.  The trap handler would\n  then see a page fault from access, and recover in normal way, making\n  /dev/mem access safer.\n\n  Remove GIANT_REQUIRED from the amd64 memrw(), since it is not needed\n  and having Giant locked does not solve issues for amd64.\n\n  Note that at least the second issue exists on other architectures, and\n  requires similar patching for md code."
+}

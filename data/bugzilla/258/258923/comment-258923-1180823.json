@@ -1,0 +1,8 @@
+{
+ "id": 1180823,
+ "bug_id": 258923,
+ "attachment_id": 228433,
+ "creation_time": "2021-10-04T14:12:38Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "Created attachment 228433\nproposed patch\n\nSetting MTU `ifconfig mlxen0 mtu 9000` leads to panic:\n\nUnread portion of the kernel message buffer:\npanic: m_getzone: invalid cluster size 1522\ncpuid = 14\ntime = 1630422868\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x2b/frame 0xfffffe01500e5710\nvpanic() at vpanic+0x182/frame 0xfffffe01500e5760\npanic() at panic+0x43/frame 0xfffffe01500e57c0\ndebugnet_mbuf_reinit() at debugnet_mbuf_reinit+0x22b/frame 0xfffffe01500e5800\ndebugnet_any_ifnet_update() at debugnet_any_ifnet_update+0x14b/frame 0xfffffe01500e5850\nifhwioctl() at ifhwioctl+0x48e/frame 0xfffffe01500e58d0\nifioctl() at ifioctl+0x3ac/frame 0xfffffe01500e59a0\n\nmlx4_en_debugnet_init() uses priv-\u003erx_mb_size to set mbuf cluster size in DEBUGNET. It is calculated as:\n\n  priv-\u003erx_mb_size = dev-\u003eif_mtu + ETH_HLEN + VLAN_HLEN + ETH_FCS_LEN;\n\nBut DEBUGNET uses this value to call debugnet_mbuf_reinit(), where m_getzone() is called for specified cluster size. And since it has wrong value, this triggers panic."
+}

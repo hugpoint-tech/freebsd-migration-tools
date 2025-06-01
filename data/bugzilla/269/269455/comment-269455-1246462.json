@@ -1,0 +1,8 @@
+{
+ "id": 1246462,
+ "bug_id": 269455,
+ "attachment_id": 0,
+ "creation_time": "2023-02-10T23:50:26Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Alfredo, did you have any idea about this?\n\nIn our copy of lld there are no powerpc64 specific changes, but in the llvm sources themselves we have these two diff chunks:\n\n--- a/llvm/lib/CodeGen/TargetLoweringBase.cpp\n+++ b/llvm/lib/CodeGen/TargetLoweringBase.cpp\n@@ -1995,7 +1995,7 @@ void TargetLoweringBase::insertSSPDeclarations(Module\n     // FreeBSD has \"__stack_chk_guard\" defined externally on libc.so\n     if (TM.getRelocationModel() == Reloc::Static \u0026\u0026\n         !TM.getTargetTriple().isWindowsGNUEnvironment() \u0026\u0026\n-        !TM.getTargetTriple().isOSFreeBSD())\n+        !(TM.getTargetTriple().isPPC64() \u0026\u0026 TM.getTargetTriple().isOSFreeBSD()))\n       GV-\u003esetDSOLocal(true);\n   }\n }\n--- a/llvm/lib/Target/PowerPC/PPCISelLowering.cpp\n+++ b/llvm/lib/Target/PowerPC/PPCISelLowering.cpp\n@@ -16726,6 +16726,8 @@ bool PPCTargetLowering::isFMAFasterThanFMulAndFAdd(con\n\n bool PPCTargetLowering::isFMAFasterThanFMulAndFAdd(const Function \u0026F,\n                                                    Type *Ty) const {\n+  if (Subtarget.hasSPE())\n+    return false;\n   switch (Ty-\u003egetScalarType()-\u003egetTypeID()) {\n   case Type::FloatTyID:\n   case Type::DoubleTyID:\n\nI don't think it is likely the isFMAFasterThanFMulAndFAdd() fix will have any influence on your test case, but the insertSSPDeclarations() one might have..."
+}

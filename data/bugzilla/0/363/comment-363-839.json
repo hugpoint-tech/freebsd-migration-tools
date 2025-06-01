@@ -1,0 +1,8 @@
+{
+ "id": 839,
+ "bug_id": 363,
+ "attachment_id": 0,
+ "creation_time": "1995-04-25T18:50:04Z",
+ "creator": "pb@fasterix.freenix.fr",
+ "text": "\npage fault line 1296 in sioioctl() :\n\nsio.c:\n  1293\t\tcom = com_addr(MINOR_TO_UNIT(mynor));\n  1294\t\tiobase = com-\u003eiobase;\n  1295\t\ttp = com-\u003etp;\n-\u003e1296\t\tterm = tp-\u003et_termios;\n  1297\t\toldcmd = cmd;\n\nFix: \n\nsuggested fix in sioopen() :\n\n   781\t\tif ((u_int) unit \u003e= NSIO || (com = com_addr(unit)) == NULL)\n   782\t\t\treturn (ENXIO);\n|\u003c 783\t\tif (mynor \u0026 CONTROL_MASK)\n|\u003c 784\t\t\treturn (0);\n|  785\t#if 0 /* XXX TK2.0 */\n|  786\t\ttp = com-\u003etp = sio_tty[unit] = ttymalloc(sio_tty[unit]);\n|  787\t#else\n|  788\t\ttp = com-\u003etp = \u0026sio_tty[unit];\n|  789\t#endif\n--\u003e\n\nMove 783-784 after 789\n\nNote that there seems to be a workaround : access /dev/ttydX before\n/dev/tty[il]X, using comcontrol for example (as in rc.serial, which may\nexplain why the bug has gone unnoticed).\n\nNote also that there might be other pointers missing an initialization ;\nI had another panic after that fix (most likely related because it occured\non a system call done by getty()), but have not been able to track down\nthe problem yet.\nHow-To-Repeat: \n\tboot single\n\tstty -f /dev/ttyid0\n\n\t\t-\u003e page fault"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 83720,
+ "bug_id": 26806,
+ "attachment_id": 0,
+ "creation_time": "2001-04-23T23:30:01Z",
+ "creator": "ak03@gte.com",
+ "text": "\trpcbind occasionally dump core on my -CURRENT box. After I was unable\n\tto get the meaningful core dump, it turns out that the program\n\tis crashing due to the unitialized parameter in addrmerge \n\tprocedure in rpcbind/util.c\n\n\tIt looks like addrmerge tries to locate the network device most\n\tsuitable for sending request reply to the client and then converts\n\tthe unterface network address into a string. When the client\n\taddress is on the local subnet, everything is OK and one of\n\tthe branches of the switch statement on util.c:111 will execute\n \tand initialize tbuf structure with proper values. If client is\n\tnot on the local address, procedure tries to select \"best\"\n\tinterface to handle the requiest but does NOT initialize\n\ttbuf structure and passes random garbage to the taddr2uaddr later\n\twhen it reaches found: label.\n\ttaddr2uaddr crashes with sig 11 in inet_ntop shortly after that.\n\nFix: Attached patch delays initialization of the tbuf structure\n\tuntil right before taddr2uaddr is called. rpcbind did not crash\n\tfor a three days already while before it was reliably dumping \n\tcore no later than 30 min after system reboot.\nHow-To-Repeat: \tNot sure. Simply run -CURRENT box in a large network with\n\tmultiple subnets?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1341966,
+ "bug_id": 283799,
+ "attachment_id": 0,
+ "creation_time": "2025-01-02T22:10:29Z",
+ "creator": "jrm@freebsd.org",
+ "text": "[CC: kp@FreeSBD.org who has a better understanding of pf.]\n\nHello, and thank you for reporting.\n\nhdr-\u003euid is now defined as nd_uint32_t in contrib/tcpdump/pflog.h [0], so I /thought/ we needed GET_BE_U_4.  The equivalent upstream code (which has unfortunately diverged from ours) also uses GET_BE_U_4 when printing the uid [1].\n\nI'm not a pf user, so I'm not clear on the expected output before and after this change.  This is what I see now:\n\n% id -u\n1001\n\n% sudo service pf start\nEnabling pf.\n\n% sudo service pflog start\nStarting pflog.\n\n% cat /etc/pf.conf\nif=\"em0\"\nblock out log on $if inet proto icmp all\n\n% ping google.com # (in another vt)\n\n% sudo tcpdump -n -e -ttt -i pflog0\ntcpdump: verbose output suppressed, use -v[v]... for full protocol decode\nlistening on pflog0, link-type PFLOG (OpenBSD pflog file), snapshot length 262144 bytes\n 00:00:00.000000 rule 0/0(match) [uid 0]: block out on em0: 192.168.2.2 \u003e 142.250.80.46: ICMP echo request, id 40305, seq 0, length 64\n\nCould you share a recipe to demonstrate the problem?\n\n--\n\n[0] https://github.com/freebsd/freebsd-src/blob/main/contrib/tcpdump/pflog.h#L118-L151\n[1] https://github.com/the-tcpdump-group/tcpdump/blob/master/print-pflog.c#L424-L432"
+}

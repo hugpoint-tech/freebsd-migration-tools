@@ -1,0 +1,8 @@
+{
+ "id": 666773,
+ "bug_id": 168245,
+ "attachment_id": 0,
+ "creation_time": "2012-05-23T03:10:15Z",
+ "creator": "lacombar@gmail.com",
+ "text": "Permanent ARP entry not deleted on interface configuration failure. Older FreeBSD (ie. 7.1) does not show this bug.\n\nHow-To-Repeat: # ifconfig vr0 172.31.0.1\n# route delete 172.31.0.1\ndelete host 172.31.0.1\n# route delete 172.31.0.0/16\ndelete net 172.31.0.0\n# route add 172.31.0.1 -iface vr1\nadd host 172.31.0.1: gateway vr1\n# ifconfig vr0 delete 172.31.0.1\n\nAt this point, only the route to 172.31.0.1 exist, ARP for 172.31.0.1 has been cleared.\n\n# ifconfig vr0 172.31.0.1\nifconfig: ioctl (SIOCAIFADDR): File exists\n\nThe stale route entry cause the configuration to fail, leading to:\n\n# ifconfig vr0\nvr0: flags=8843\u003cUP,BROADCAST,RUNNING,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        options=8280b\u003cRXCSUM,TXCSUM,VLAN_MTU,WOL_UCAST,WOL_MAGIC,LINKSTATE\u003e\n        ether 00:00:24:cb:f4:90\n        nd6 options=29\u003cPERFORMNUD,IFDISABLED,AUTO_LINKLOCAL\u003e\n        media: Ethernet autoselect (100baseTX \u003cfull-duplex\u003e)\n        status: active\n\nthis is expected, however:\n\n# arp -a\n[...]\n? (172.31.0.1) at 00:00:24:cb:f4:90 on vr0 permanent [ethernet]\n\nThis should have been cleared while returning from the configuration path."
+}

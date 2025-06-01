@@ -1,0 +1,8 @@
+{
+ "id": 385442,
+ "bug_id": 111085,
+ "attachment_id": 0,
+ "creation_time": "2007-04-01T07:30:05Z",
+ "creator": "thebri@gmail.com",
+ "text": "qsort(3) fails if given an array of many small elements, where the total\nsize of the array is \u003e\u003e 2GB.  Exact conditions not known; 200 million 16\nbyte elements (~3GB  total size) fails.\n\nFix: \n\nIn /usr/src/lib/libc/stdlib/qsort.c, line 118, change the type of 'd and\n'r' from int to long.\nHow-To-Repeat: Compile and run (needs \u003e 3GB core):\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cinttypes.h\u003e\n\ntypedef struct {\n  uint64_t x;\n  uint64_t a;\n} thing;\n\nint\ncmp(const void *a, const void *b) {\n  thing const *A = (thing const *)a;\n  thing const *B = (thing const *)b;\n  if (A-\u003ex \u003c B-\u003ex)  return(-1);\n  if (A-\u003ex \u003e B-\u003ex)  return(1);\n  return(0);\n}\n\nint\nmain(int argc, char **argv) {\n  uint64_t  i;\n  uint64_t  Tn;\n  thing    *T;\n\n  srand48(4);\n\n  Tn  = 3; Tn *= 1024; Tn *= 1024; Tn *= 1024;\n  Tn /= sizeof(thing);\n\n  T  = (thing *)malloc(sizeof(thing) * Tn);\n  if (T == NULL)\n    exit(1);\n\n  fprintf(stderr, \"building %lu %lu\\n\", Tn, Tn * sizeof(thing));\n  for (i=0; i\u003cTn; i++)\n    T[i].x = lrand48();\n\n  fprintf(stderr, \"sorting\\n\");\n  qsort(T, Tn, sizeof(thing), cmp);\n\n  fprintf(stderr, \"sorted\\n\");\n  free(T);\n  exit(0);\n}"
+}

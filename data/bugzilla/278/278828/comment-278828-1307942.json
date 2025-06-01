@@ -1,0 +1,8 @@
+{
+ "id": 1307942,
+ "bug_id": 278828,
+ "attachment_id": 0,
+ "creation_time": "2024-05-07T08:44:52Z",
+ "creator": "mail@fbsd2.e4m.org",
+ "text": "kernel panics if we have no geli devices attached, attach a device, try to attach it again (which fails) and then write to (the attached) .eli.\n\nSteps to reproduce:\n\nkldload geom_eli.ko\ndd if=/dev/zero of=/tmp/testcrash bs=64k count=160\nmdconfig -a -t vnode -f /tmp/testcrash\ngeli init -P -K /bin/ls /dev/md0\ngeli attach -k /bin/ls -p /dev/md0\ngeli attach -k /bin/ls -p /dev/md0      (this fails)\nnewfs /dev/md0.eli                      !!! Crash !!!\n\n\nThe second \"geli attach\" makes g_eli_create() die at this point:\n\n        ...\n        dcw = (sc-\u003esc_flags \u0026 G_ELI_FLAG_RO) ? 0 : 1;\n        error = g_access(cp, 1, dcw, 1);\n        if (error != 0) {\n                ...\n                goto failed;\n        }\n        ...\n\n        ...\n        g_eli_init_uma();\n        ...\n\nfailed:\n        ...\n        g_eli_fini_uma();\n        ...\n\ng_eli_fini_uma() will find geli_devs being set to 1 (because we already\nhave a device attached but have not called g_eli_init_uma() in this\ncontext), decrements it and calls g_eli_destroy_uma().\n\nSo we will be left with g_eli_uma being NULL despite the fact that we\nstill have a device attached.\n\nI don't know the correct fix. I changed g_eli_create() so it calls\ng_eli_fini_uma() only if it has called g_eli_init_uma() before. This\nseems to work..."
+}

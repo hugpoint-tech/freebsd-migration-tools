@@ -1,0 +1,8 @@
+{
+ "id": 768112,
+ "bug_id": 190880,
+ "attachment_id": 0,
+ "creation_time": "2014-06-10T14:48:58Z",
+ "creator": "KOT@MATPOCKuH.Ru",
+ "text": "Changes from r264243 broke configuring aliases for 802.1q interfaces.\nIn my rc.conf I have:\ncloned_interfaces=\"nfe0.2 nfe0.6 nfe0.19\"\nifconfig_nfe0=\"up\"\nifconfig_nfe0_2=\"inet 192.168.2.2/24\"\nifconfig_nfe0_2_alias0=\"inet 192.168.222.2/24\"\nifconfig_nfe0_6=\"inet 192.168.6.2/24\"\nifconfig_nfe0_19=\"inet 192.168.19.2/30\"\n\nAfter update to 9.3-BETA2 (r267262) I got this message on boot:\nifconfig: interface nfe0_2 does not exist\n\nRoot cause is in replacing \".\" to \"_\" for $_if in ifalias_af_common() function in network.subr, and passing incorrect $_if to ifconfig command.\n\nTo fix a problem I used this patch:\n--- network.subr.orig   2014-06-10 14:50:39.516897085 +0400\n+++ network.subr        2014-06-10 12:59:44.755780832 +0400\n@@ -1095,7 +1095,7 @@\n        # Process the last component\n        case $_tmpargs in\n        ${_af}\\ *)\n-               ifalias_af_common_handler $_if $_af $_action $_tmpargs \u0026\u0026 _ret=0\n+               ifalias_af_common_handler $1 $_af $_action $_tmpargs \u0026\u0026 _ret=0\n        ;;\n        esac\n\n\nBut I'm not sure it is correct. Please verify it."
+}

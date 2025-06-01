@@ -1,0 +1,8 @@
+{
+ "id": 1229144,
+ "bug_id": 266886,
+ "attachment_id": 0,
+ "creation_time": "2022-10-07T10:49:07Z",
+ "creator": "jmillikin@gmail.com",
+ "text": "I'm not 100% sure this is a bug, but it's a difference in behavior from FUSE on Linux, and IMO the Linux version's behavior is more correct here.\n\nWhen using fcntl(F_GETLK) to check for the presence of advisory locks, it's possible to set the flock structure's `l_whence` field to `SEEK_CUR` or `SEEK_END` to adjust how the `l_start` and `l_end` fields are interpreted. For example, `SEEK_CUR` means they are relative to the file's current position.\n\nFUSE doesn't pass through `l_whence`, so the Linux kernel does the adjustment itself when generating the FUSE request. When parsing the response, it overwrites the flock structure's `l_whence` field to `SEEK_SET` to signal that absolute positions are being reported. \n\nFreeBSD's implementation of FUSE_GETLK doesn't have this behavior, it passes through the start and end offsets as-is in both directions. This causes FUSE mounts to have abberent advisory lock reporting for binaries that depend on the Linux behavior.\n\n(all of the above applies to F_SETLK / F_SETLKW also)"
+}

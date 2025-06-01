@@ -1,0 +1,8 @@
+{
+ "id": 11002,
+ "bug_id": 3572,
+ "attachment_id": 0,
+ "creation_time": "1997-05-10T04:10:00Z",
+ "creator": "gjm11@dpmms.cam.ac.uk",
+ "text": "\n\tThe virtualpaper-1.4 port contains the following, in\n\tbuildlectern/src/POSIX/OSUtilsPosix.m3 :\n\n\tIF Unix.mknod(M3toC.TtoS(p), Mode, 0) \u003c 0 THEN\n\t  OSErrorPosix.Raise();\n\tEND;\n\n\tUnfortunately, only root is supposed to call mknod(),\n\tso this is not a good idea. Calling mkfifo() instead\n\t(this is in a procedure called CreateFifo) seems to\n\twork.\n\nFix: \n\nDeclare an \u003c*EXTERNAL*\u003e procedure called mkfifo with the\n\tright type, and call that instead. The following lines of\n\tcode do this, but I know just enough Modula-3 to be\n\tcertain that they don't belong in the place where, in\n\tsearch of a quick fix, I put them. :-)\n\n\n\tin an interface file somewhere, insert:\n\n\tFROM Ctypes IMPORT char_star, int;\n\tFROM Utypes IMPORT mode_t;\n\t\u003c*EXTERNAL*\u003e PROCEDURE mkfifo(p: char_star; m: mode_t): int;\n\n\n\tin OSUtilsPosix.m3: replace the definition of CreateFifo with:\n\n\tPROCEDURE CreateFifo(p: TEXT) RAISES {OSError.E} =\n\t  CONST Mode = Unix.MROWNER + Unix.MWOWNER;\n\t  BEGIN\n\t    \u003c* ASSERT pFifo=NIL *\u003e\n\t    IF mkfifo(M3toC.TtoS(p), Mode) \u003c 0 THEN\n\t      OSErrorPosix.Raise();\n\t    END;\n\t    pFifo := p;\n\t  END CreateFifo;\nHow-To-Repeat: \n\tInstall virtualpaper-1.4 and type \"BuildLectern foo.ps zog.lect\"."
+}

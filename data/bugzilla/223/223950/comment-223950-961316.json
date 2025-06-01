@@ -1,0 +1,8 @@
+{
+ "id": 961316,
+ "bug_id": 223950,
+ "attachment_id": 0,
+ "creation_time": "2017-11-28T22:38:07Z",
+ "creator": "jim@ks.uiuc.edu",
+ "text": "We are seeing the issue with ZFS described at\nhttps://lists.freebsd.org/pipermail/freebsd-scsi/2015-July/006777.html\nwhere SATA SSDs on a SAS controller will time out on TRIM commands.\n\nThis was the original state, with TRIM failures recorded in kstat:\n\nkern.geom.dev.delete_max_sectors: 262144\nkern.cam.da.4.delete_max: 17179607040\nkern.cam.da.4.delete_method: ATA_TRIM\nkern.cam.da.3.delete_max: 17179607040\nkern.cam.da.3.delete_method: ATA_TRIM\nkern.cam.da.2.delete_max: 17179607040\nkern.cam.da.2.delete_method: ATA_TRIM\nkern.cam.da.5.delete_max: 17179607040\nkern.cam.da.5.delete_method: ATA_TRIM\nkern.cam.da.1.delete_max: 17179607040\nkern.cam.da.1.delete_method: ATA_TRIM\nkern.cam.da.0.delete_max: 17179607040\nkern.cam.da.0.delete_method: ATA_TRIM\nkern.cam.ada.0.delete_method: DSM_TRIM\nvfs.zfs.trim.max_interval: 1\nvfs.zfs.trim.timeout: 30\nvfs.zfs.trim.txg_delay: 32\nvfs.zfs.trim.enabled: 1\nvfs.zfs.vdev.trim_max_pending: 10000\nvfs.zfs.vdev.bio_delete_disable: 0\nvfs.zfs.vdev.trim_max_active: 64\nvfs.zfs.vdev.trim_min_active: 1\nvfs.zfs.vdev.trim_on_init: 1\nhw.nvd.delete_max: 1073741824\nkstat.zfs.misc.arcstats.deleted: 138850\nkstat.zfs.misc.zio_trim.failed: 9399097\nkstat.zfs.misc.zio_trim.unsupported: 0\nkstat.zfs.misc.zio_trim.success: 792148930\nkstat.zfs.misc.zio_trim.bytes: 31513520795648\n\nOur current workaround is to lower delete_max (for all drives):\nsysctl kern.cam.da.0.delete_max=536870912\n\nI suggest a lower default value than the current 17179607040."
+}

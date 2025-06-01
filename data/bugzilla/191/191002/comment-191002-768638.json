@@ -1,0 +1,8 @@
+{
+ "id": 768638,
+ "bug_id": 191002,
+ "attachment_id": 0,
+ "creation_time": "2014-06-13T18:08:43Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "Issue can be reproduced by simply restarting auditd.\n\nThat hack is buggy on the second sight.\n\nI did some poking around and trial file can be closed in several places and kqueue code is not tied to this in any way.\n\nThus it would seem the least intrusive fix is indeed in the form of that hack after all:\ndiff --git a/contrib/openbsm/bin/auditdistd/subr.c b/contrib/openbsm/bin/auditdistd/subr.c\nindex e98ed1e..0f531cc 100644\n--- a/contrib/openbsm/bin/auditdistd/subr.c\n+++ b/contrib/openbsm/bin/auditdistd/subr.c\n@@ -228,6 +228,11 @@ wait_for_file_init(int fd)\n        PJDLOG_ASSERT(fd != -1);\n \n #ifdef HAVE_KQUEUE\n+       if (wait_for_file_kq != -1) {\n+               close(wait_for_file_kq);\n+               wait_for_file_kq = -1;\n+       }\n+\n        kq = kqueue();\n        if (kq == -1) {\n                pjdlog_errno(LOG_WARNING, \"kqueue() failed\");"
+}

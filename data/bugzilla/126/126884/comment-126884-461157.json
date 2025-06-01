@@ -1,0 +1,8 @@
+{
+ "id": 461157,
+ "bug_id": 126884,
+ "attachment_id": 0,
+ "creation_time": "2008-08-27T12:40:02Z",
+ "creator": "Daan@VEHosting.nl",
+ "text": "\tIn ugen_isoc_rintr() old data is thrown away when the fifo is full.\n\tThis code contains multiple errors :\n\to Only in the case of sce-\u003efill \u003c sce-\u003ecur data is thrown away.\n\t  (No data is discarded when sce-\u003efill is near the end of the buffer\n\t  and sce-\u003ecur is near the beginning of the buffer.)\n\to Too much data is discarded. If 10 bytes need to be written with\n\t  only space left for 8 bytes, 10 bytes of input are discarded instead\n\t  of just 2.\n\to When sce-\u003ecur reaches/passes the end of the buffer, the pointer is\n\t  set to sce-\u003eibuf + (sce-\u003elimit - sce-\u003ecur) instead of to\n\t  sce-\u003eibuf + (sce-\u003ecur - sce-\u003elimit). This could leave the sce-\u003ecur\n\t  pointer ahead of the buffer pointing to unknown memory.\n\nFix: The attached patch is to -CURRENT, but the bug is found in other\n\tbranches too.\n\tThe patch moves the deletion of data into the while loop that copies\n\tdata from the incoming packet. This way data is also discarded in the\n\tcase where sce-\u003efill \u003e= sce-\u003ecur initially (because the while loop\n\talready breaks filling the end \u0026 beginning of the buffer into two\n\titterations).\n\n\t\nHow-To-Repeat: \tTry to use the ugen interface to read data from a device with an\n\tisochronous endpoint that delivers isochronous packets of varying\n\tlength and see that data gets corrupted."
+}

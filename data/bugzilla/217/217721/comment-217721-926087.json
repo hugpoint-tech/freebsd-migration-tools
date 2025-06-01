@@ -1,0 +1,8 @@
+{
+ "id": 926087,
+ "bug_id": 217721,
+ "attachment_id": 0,
+ "creation_time": "2017-03-16T05:49:06Z",
+ "creator": "yongari@FreeBSD.org",
+ "text": "(In reply to Eugene Lozovoy from comment #2)\nWouldn't you're able to send packets again if you wait some more\ntime(i.e. link establishment time + time taken to empty queued\npackets)?\n\nI guess your patch dequeues packets from if_snd queue and skip\npacket write when the link is not UP.  This will quickly empty\nif_snd queue if link is not UP.  So if your intention is to\ntransmit packets regardless of link state, the patch will work in\nthat case.   BTW, I think you also want to free dequeued packets,\notherwise you would end up with exhausting mbufs(i.e. mbuf leak).\n\nTraditional drivers try very hard not to drop TX packets since TX\nis more expensive operation than RX. Suppose you unplug UTP cable\nin the middle of TCP operation or ARP resolving and plug it again\nafter some time.  If driver ignores link state, it will quickly\ndrop all queued packets and upper stack has to retransmit all of\nthem when the link is UP.  If application is using UDP(i.e. NFS\nover UDP) it will also consume lots of CPU cycles.  If driver keep\npackets in if_snd queue, it can send them again when link is UP.\nMany drivers honor link state and don't drop packets when link is\nnot available.  This approach has a side-effect that queued packets\nare sent out later and those packets could be meaningless to\nreceiver.  For instance, if link down time is longer than TCP\ntimeout, receiver may already have dropped the connection.  \nHowever, given that link DOWN is not frequent event, I guess\ncurrent behavior would be slightly better than just dropping\npackets."
+}

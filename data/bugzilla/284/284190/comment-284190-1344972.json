@@ -1,0 +1,8 @@
+{
+ "id": 1344972,
+ "bug_id": 284190,
+ "attachment_id": 0,
+ "creation_time": "2025-01-20T13:27:50Z",
+ "creator": "alexis.savin@efficientip.com",
+ "text": "System's network stack silently fails after a vmotion triggered by the vcenter (DRS or Host Evacuation) as soon as netmap is used on a VMware vmx interface to handle the traffic.\n\nReproducing the issue with a manual vmotion is not guaranteed, however, suspending the virtual machine then resuming it does trigger the issue. As a result, the best easiest way to reproduce the issue with the usual system tools:\n\n1. Deploy a FreeBSD 14.2 Stable (or Release), We will refer to it as the target.\n2. Configure the network on the target with a static IP address (ex: 172.16.42.42).\n3. Install the netmap bridge utility on the target (https://github.com/luigirizzo/netmap/tree/master/apps/bridge).\n4. On the target run the following command: 'bridge -i netmap:vmx0'.\n5. Deploy or leverage any other device on your network (the source) to ping the target.\n6. On the source, ping the target (172.16.42.42) and observe the latency (everything is supposed to be fine).\n7. Suspend the target from the VMware vcenter or ESX.\n8. Resume the target from the VMware vcenter or ESX.\n9. Observe that the network does not come back up (no answer to the ping).\n\nNotice: Running netmap in emulated mode does not trigger the same issue. When sysctl dev.netmap.admode is set to '2', the network does come back as expected.\n\nNote: This is clearly a different issue than #252265 which is clearly fixed since FreeBSD 13."
+}

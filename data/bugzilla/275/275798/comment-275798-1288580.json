@@ -1,0 +1,8 @@
+{
+ "id": 1288580,
+ "bug_id": 275798,
+ "attachment_id": 0,
+ "creation_time": "2023-12-18T11:17:48Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "can you please provide the core (w/ kernel \u0026 kernel.debug)? The bblog data will have captured the evolution how we ended up in this state - but it currently\nrequires the core to undig all that information manually.\n\nAnd I spotted an oversight in the tcp_output error path, but that's not the issue here... \n\nBut the problem happens quite early in the affected TCP session:\n\niss = 331585966\n\nrecover = 14492 \nfack = 14492\nuna = 10936\nmax = 14492\n\nin frame 6, the incoming tcp header option sack appears to cover: 11171-12164(993)\nin frame 5, the sack block seems to cover the entire range from una to max (10936-14492) -  but this is probably after processing it in full.\n\nThe sack_bytes_rexmit is -235, or the delta between snd_una and the left edge of the to_sack block...\n\nI wonder if this is a DSACK block on a cumulative ack, after the holes have been retransmitted, ending up miscalculating this.. (So with reordering of packet delivery or ACKs carrying SACK information)."
+}

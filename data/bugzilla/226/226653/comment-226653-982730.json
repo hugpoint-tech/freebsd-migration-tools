@@ -1,0 +1,8 @@
+{
+ "id": 982730,
+ "bug_id": 226653,
+ "attachment_id": 191545,
+ "creation_time": "2018-03-16T10:29:27Z",
+ "creator": "berota@icepp.s.u-tokyo.ac.jp",
+ "text": "Created attachment 191545\nThis patch changes the targets to safe ones which are compatible with staging.\n\nBuild fails if option SLIB is set.\nIn the staging stage, WRKSRC/Makefile installs the binaries, data, etc.\nunder STAGEDIR. Then it tries to run:\n cd lib; $(MAKE) slibcat\nas the action for the \"install\" target. But it fails because it requires\n/usr/local/bin/gosh which is unavailable at this moment.\nWithout the SLIB option, \"make slibcat\" does nothing actually and build\nfinishes successfully.\n\nTo reproduce:\n\n1. Make sure that LOCALBASE/bin/gosh does not present.\n$ cd /usr/ports/lang/gauche\n$ make config\n(Enable SLIB.)\n$ make -V PORT_OPTIONS\n  DOCS EXAMPLES IPV6 NLS SLIB THREADS UTF8\n$ make stage\nBuild stops saying:\n(snip)\ncd lib; /usr/bin/make slibcat\nif test -f /usr/local/share/slib/require.scm \u0026\u0026 test amd64-portbld-freebsd11.1 = amd64-portbld-freebsd11.1 ; then  /usr/local/bin/gosh -ftest -uslib -E\"require 'new-catalog\" -Eexit; fi\n/bin/sh: /usr/local/bin/gosh: not found\n*** Error code 127\n\nStop.\n\n2. Alternatively, one can reproduce it by doing the same in poudriere(8) like:\n# poudriere options -j 11amd64 -p head -z clean lang/gauche\n(Enable SLIB.)\n# poudriere bulk -j 11amd64 -p head -z clean lang/gauche\nwhere\n  11amd64: FreeBSD 11.1-RELEASE-p6/amd64,\n  head: ports tree from svn head r464331, and\n  clean: a clean set without make.conf nor src.conf."
+}

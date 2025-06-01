@@ -1,0 +1,8 @@
+{
+ "id": 902766,
+ "bug_id": 213633,
+ "attachment_id": 175957,
+ "creation_time": "2016-10-20T00:10:07Z",
+ "creator": "jhale@FreeBSD.org",
+ "text": "Created attachment 175957\nRemove conditional post-patch\n\naudio/espeak fails to build when the RUNTIME option is selected:\n\nc++  -fstack-protector -shared -Wl,-soname,libespeak.so.1 -o libespeak.so \\\nx_speak_lib.o x_compiledict.o x_dictionary.o x_intonation.o x_readclause.o x_setlengths.o x_numbers.o x_synth_mbrola.o x_synthdata.o x_synthesize.o x_translate.o x_mbrowrap.o x_tr_languages.o x_voices.o x_wavegen.o x_phonemelist.o x_espeak_command.o x_event.o x_fifo.o x_wave.o x_wave_pulse.o x_debug.o x_klatt.o x_sonic.o -lstdc++ -L/usr/local/lib -lpulse -lpulse-simple -lportaudio -lpthread\nwavegen.o: In function `WavegenOpenSound()':\nwavegen.cpp:(.text+0xf0): undefined reference to `Pa_StreamActive'\nwavegen.o: In function `WavegenCloseSound()':\nwavegen.cpp:(.text+0x3d5): undefined reference to `Pa_StreamActive'\nc++: error: linker command failed with exit code 1 (use -v to see invocation)\ngmake[2]: *** [Makefile:105: speak] Error 1\ngmake[2]: *** Waiting for unfinished jobs....\nmv libespeak.so libespeak.so.1.1.48\n/bin/ln -sf libespeak.so.1.1.48 libespeak.so.1\n/bin/ln -sf libespeak.so.1 libespeak.so\ngmake[2]: Leaving directory '/usr/home/Jason/src/freebsd/ports/audio/espeak/work/espeak-1.48.04-source/src'\n===\u003e Compilation failed unexpectedly.\n\nThis is due to the fact that ${WRKSRC}/src/portaudio19.h should replace ${WRKSRC}/src/portaudio.h, but in the port Makefile this move is conditionalized to only happen when the PORTAUDIO option is selected.\n\nThe fix is just to remove the condition, as it is not neccessary even if PULSEAUDIO is selected. Patch is attached."
+}

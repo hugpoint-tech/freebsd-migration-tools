@@ -1,0 +1,8 @@
+{
+ "id": 33078,
+ "bug_id": 10918,
+ "attachment_id": 0,
+ "creation_time": "1999-04-02T16:30:01Z",
+ "creator": "winard@u3717a.dorm.ccu.edu.tw",
+ "text": "\n\tthe function _BIG5_sgetrune() in /usr/src/lib/libc/locale/big5.c\n\tis wrong,\n\tas a result it can't convert Big5 multi-byte words into\n\twide-character correctly.\n\nFix: \n\nchange these five lines in big5.c line #85:\n\twhile (len-- \u003e= 0)\n\t\trune = (rune \u003c\u003c 8) | ((u_int)(*string++) \u0026 0xff);\n\tif (result)\n\t\t*result = string + len;\n\treturn rune;\n\t\n\tto these correct codes:\n\twhile (--len \u003e= 0)\n\t\trune = (rune \u003c\u003c 8) | ((u_int)(*string++) \u0026 0xff);\n\tif (result)\n\t\t*result = string;\n\treturn rune;\nHow-To-Repeat: \n\tthe following program should output 72 75 6e 65 b4fa b8d5,\n\tbut a segmentation fault occurs now.\n\t\n\tbefore run this program, set the environment variable LD_PRELOAD\n\tto /usr/lib/libxpg4.so.2 first.\n\t\n/* a program convert characters into rune */\n\n#include \u003crune.h\u003e\n#include \u003cstdio.h\u003e\nint main(void)\n{\n\tsetrunelocale(\"zh_TW.BIG5\");\n\t\n\tconst char* src = \"rune\\xb4\\xfa\\xb8\\xd5\";\n\tconst char* ld = src;\n\t\n\trune_t rune[256];\n\tint num = 0;\n\twhile( ( rune[num] = sgetrune( ld, 3, \u0026ld ) ) != 0 )\n\t\tnum ++;\n\t\n\tfor( int c = 0; c \u003c num; c ++ )\n\t\tprintf( \" %02x\", rune[c] );\n\tputchar('\\n');\n\t\n}"
+}

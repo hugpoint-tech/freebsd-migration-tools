@@ -1,0 +1,8 @@
+{
+ "id": 900214,
+ "bug_id": 213173,
+ "attachment_id": 175389,
+ "creation_time": "2016-10-03T14:47:42Z",
+ "creator": "rhurlin@FreeBSD.org",
+ "text": "Created attachment 175389\npatch to add test env and circumvent dynamic-cast problems\n\nPorts like databases/postgisXX, graphics/qgis and others depend on graphics/geos. At least with QGIS and PostGIS there are problems in some functionality, based on graphics/geos. Especially PostGIS 2.1 and 2.2 show crashes with small datasets on FreeBSD 10.x, 11.x and HEAD [1]. The problem is also observed on OSX\u003e=10.6 [2].\n\nAfter adding some lines to the ports Makefile to get 'make check' functional[3], and running the tests for graphics/geos, an assertion can be observed, as described in tests/unit/test-suite.log:\n\n\n---\u003e group: geos::geom::CoordinateArraySequenceFactory, test: test\u003c1\u003e\n     problem: assertion failed\ntests summary: failures:1 ok:1037\nFAIL geos_unit (exit status: 1)\n\n\nIt turns out, that there is a dynamic-cast problem with newer base compiler suites, which can be circumvented[2]. The solution for FreeBSD is exactly the same as described for Mac OSX. After a rebuild of graphics/geos with 'CXXFLAGS=-Wnon-virtual-dtor -Woverloaded-virtual' all tests of GEOS are fine and also PostGIS does not crash on analyzing small datasets [1] anymore.\n\nThe appended patch should\n- enable testing environment and add target 'check'\n- add CXXFLAGS=-Wnon-virtual-dtor -Woverloaded-virtual\n- bump PORTREVISION\n\n\nportlint -AC is happy. Tested with Poudriere for HEADa/i, 10.3a/i and 9.3a/i with no problems.\n\n\n[1] https://trac.osgeo.org/postgis/ticket/2985\n[2] https://trac.osgeo.org/geos/wiki/BuildingOnUnixWithCMake\n[3] https://trac.osgeo.org/geos/ticket/299"
+}

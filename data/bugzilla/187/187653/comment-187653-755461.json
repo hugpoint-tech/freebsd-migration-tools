@@ -1,0 +1,8 @@
+{
+ "id": 755461,
+ "bug_id": 187653,
+ "attachment_id": 0,
+ "creation_time": "2014-03-17T08:40:00Z",
+ "creator": "tmwalaszek@gmail.com",
+ "text": "In my setup the system is searching for users in 2 sources, files and ldap.\npasswd: files ldap\n\nIf we have for example user 'test' in our ldap database and we try to change shell for user 'test' we will see strange behaviour:\n\n\nroot@ldap:~ # getent passwd | grep test\ntest:*:1000:1000:test:/home/test:/usr/local/bin/bash\nroot@ldap:~ # grep 'test' /etc/passwd\nroot@ldap:~ # \nroot@ldap:~ # pw mod user -n test -s /bin/sh\nroot@ldap:~ # grep 'test' /etc/passwd\ntest:*:1000:1000:test:/home/test:/bin/sh\nroot@ldap:~ # \nroot@ldap:~ # getent passwd | grep test\ntest:*:1000:1000:test:/home/test:/bin/sh\ntest:*:1000:1000:test:/home/test:/usr/local/bin/bash\n\nThe pw tool created new user instead of fail with 'no such user' message. Maybe this is desirable behaviour but in my opinion 'mod' switch should only change users not creating them.\n\nFix: \n\nThis behavior is caused by getpwnam getpwuid functions. Pw uses those functions to search for the users, when we have user test in ldap those function will return it. Pw dont know anything about ldap so it will create new entry in passwd files.\nFixes:\n1. Use pw with -V /etc. Pw with -V will not use getpwnam getpwuid but vgetpnam, vgetpwuid and search for the users in passwd files in /etc directory.\n2. Mayebe use functions defined in struct pwf VPWF ?\nHow-To-Repeat: To repeat the problem we need to setup ldap server and configure our system to use it as the user source.\nAfter that create in ldap user 'test' and try to change it shell using pw."
+}

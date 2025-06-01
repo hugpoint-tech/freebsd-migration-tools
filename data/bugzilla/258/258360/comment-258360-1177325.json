@@ -1,0 +1,8 @@
+{
+ "id": 1177325,
+ "bug_id": 258360,
+ "attachment_id": 0,
+ "creation_time": "2021-09-08T04:25:07Z",
+ "creator": "henry.hu.sh@gmail.com",
+ "text": "This was discovered by Dmitry Wagin in PR 258212. I'm able to reproduce the crash with a very simple program, which simply calls iconv_open() and setlocale() concurrently:\n\n#include \u003ciconv.h\u003e\n#include \u003cpthread.h\u003e\n#include \u003clocale.h\u003e\n\nvoid* iconv_thread(void* arg) {\n    iconv_open(\"UTF-8\", \"UTF-8\");\n    return NULL;\n}\n\nvoid* locale_thread(void* arg) {\n    setlocale(LC_ALL, \"en_US.UTF-8\");\n    return NULL;\n}\n\nint main() {\n    pthread_t t1, t2;\n    pthread_create(\u0026t1, NULL, iconv_thread, NULL);\n    pthread_create(\u0026t2, NULL, locale_thread, NULL);\n    pthread_join(t1, NULL);\n    pthread_join(t2, NULL);\n}\n\nOn my machine it has a 7/10 chance of crashing. On another user's machine it only crashes 1/15, so repeated testing is needed.\n\nThe stack can be seen at https://pastebin.com/raw/isvMUDRd"
+}

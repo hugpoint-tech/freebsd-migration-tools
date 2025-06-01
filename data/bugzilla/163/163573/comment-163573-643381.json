@@ -1,0 +1,8 @@
+{
+ "id": 643381,
+ "bug_id": 163573,
+ "attachment_id": 0,
+ "creation_time": "2011-12-23T19:20:07Z",
+ "creator": "adrian@freebsd.org",
+ "text": "When testing 802.11n hostap mode, the TX side still occasionally hangs.\n\nThis is again due to the \"busy\" buffer management code being slightly wrong, allowing a \"busy\" buffer to stay busy and eventually clogging up the free TX buffer ring.\n\nThis occurs with IEEE80211_SUPPORT_TDMA, as the busy buffer code isn't included otherwise. (It should be though, due to how the MAC behaves. But that's a different problem.)\n\nThe relevant output from \"sysctl dev.ath.0.txagg=1\" is:\n\nHW TXQ 0: axq_depth=2, axq_aggr_depth=2\nHW TXQ 1: axq_depth=0, axq_aggr_depth=0\nHW TXQ 2: axq_depth=0, axq_aggr_depth=0\nHW TXQ 3: axq_depth=0, axq_aggr_depth=0\nHW TXQ 8: axq_depth=0, axq_aggr_depth=0\nBusy: 0\nTotal TX buffers: 1; Total TX buffers busy: 1\n\n. the fact that there's only 1 total buffer in the free list, and that one is busy, indicates that things were going pear shaped.\n\nAlso, athstats can be helpful:\n\n# athstats | grep tx\n..\n294          tx stopped 'cuz no xmit buffer\n..\n\nFix: \n\nNot yet.\nHow-To-Repeat: Just exchange a bunch of traffic whilst in a lossy 802.11 network. It should eventually get angry and stop transmitting. ifconfig wlan0 down / up will flush the TX buffer queue.\n\nEnable both 802.11 and TDMA in the kernel configuration file (ATH_ENABLE_11N and IEEE80211_SUPPORT_TDMA.) Configure the unit as a hostap - in non-hostap mode, the interface resets will cause the TX buffer queue to be flushed.\n\nSit back and watch the fireworks."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1213713,
+ "bug_id": 263445,
+ "attachment_id": 0,
+ "creation_time": "2022-05-31T11:26:15Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "Hi Victor,\n\nsorry for the delay. Can you verify, that in all your cores the tcp t_state (p *tp in the first frame of tcp_do_segment) is TCPS_LAST_ACK (8)?\n\nAnd that you have some unacknowledged SACK information, where one byte is outstanding?\n\np *tp-\u003esackhint.nexthole\n\nf 10\np tp-\u003et_state\np *tp-\u003esackhint.nexthole\n$4 = {start = 3327712881, end = 3327714341, rxmit = 3327714340, scblink = {tqe_next = 0x0, tqe_prev = 0xfffffe044ba66578}}\n\nIt seems as if there is a little bit of data being sent, and before all of the data is fully acked by the client, the application closes the socket, but only receives a SACK for the FIN (?), while the two prior data packets are still outstanding - and probably an off-by-one error happens during SACK processing...\n\nAs a stopgap measure, you can disable SACK (net.inet.tcp.sack.enable=0), or disable PRR - this is one new SACK-related feature, but should only affect timing (when to send, NOT what to send) with net.inet.tcp.do_prr=0."
+}

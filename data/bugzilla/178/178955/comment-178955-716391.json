@@ -1,0 +1,8 @@
+{
+ "id": 716391,
+ "bug_id": 178955,
+ "attachment_id": 0,
+ "creation_time": "2013-05-24T18:50:00Z",
+ "creator": "jsteckli@os.inf.tu-dresden.de",
+ "text": "I just compiled qemu 1.5.0 on Linux and noticed that virtio network seems to have problems updating the MAC filter table:\n\nvtnet0: error setting host MAC filter table\n\nAs far as I understand, if_vtnet.c does the following in vtnet_rx_filter_mac. It appends two full struct vtnet_mac_tables (one for unicast and one for multicast) to the request. Each consists of the number of actual entries in the table and space for 128 (mostly unused) entries in total.\n\nThe qemu code parses this differently. It first reads the number of elements in the first table and then skips over so many MAC addresses and then expects the header to the second table (which in our case points to zero'd memory). Then it skips those 0 MAC entries as well and expects that it has consumed the whole request and returns an error, because there is still data left. The relevant code is in qemu/hw/net/virtio-net.c in virtio_net_handle_rx_mode.\n\nThis problem was introduced with the following commit in qemu:\nhttp://git.qemu.org/?p=qemu.git;a=commit;h=921ac5d0f3a0df869db5ce4edf752f51d8b1596a\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: Boot FreeBSD CURRENT in qemu 1.5.0 with virtio networking:\n qemu-system-x86_64 -net nic,model=virtio -net user -hda disk.img\n\nIn the FreeBSD system, issue\n ifconfig vtnet0 up\n\nKernel will fail to update MAC filter multiple times:\nvtnet0: error setting host MAC filter table"
+}

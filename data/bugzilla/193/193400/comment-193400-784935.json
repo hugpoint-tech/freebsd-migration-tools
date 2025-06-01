@@ -1,0 +1,8 @@
+{
+ "id": 784935,
+ "bug_id": 193400,
+ "attachment_id": 0,
+ "creation_time": "2014-09-06T22:34:30Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Actually, here's a potential fix:\n\nIndex: sys/mips/include/sf_buf.h\n===================================================================\n--- sys/mips/include/sf_buf.h   (revision 271210)\n+++ sys/mips/include/sf_buf.h   (working copy)\n@@ -48,4 +48,23 @@\n }\n \n #endif /* __mips_n64 */\n+\n+#ifndef        __mips_n64      /* in 32 bit mode we manage our own mappings */\n+\n+static inline void\n+sf_buf_map(struct sf_buf *sf, int flags)\n+{\n+\n+       pmap_qenter(sf-\u003ekva, \u0026sf-\u003em, 1);\n+}\n+\n+static inline int\n+sf_buf_unmap(struct sf_buf *sf)\n+{\n+       pmap_qremove(sf-\u003ekva, 1);\n+       return (1);\n+}\n+\n+#endif /* ! __mips_n64 */\n+\n #endif /* !_MACHINE_SF_BUF_H_ */\nIndex: sys/mips/include/vmparam.h\n===================================================================\n--- sys/mips/include/vmparam.h  (revision 271210)\n+++ sys/mips/include/vmparam.h  (working copy)\n@@ -189,6 +189,7 @@\n \n #ifndef __mips_n64\n #define        SFBUF\n+#define        SFBUF_MAP\n #endif\n \n #endif /* !_MACHINE_VMPARAM_H_ */\n\n\n.. the MIPS sfbuf code didn't keep the temporarily mapped kva bits around. It recycled them each time."
+}

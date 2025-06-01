@@ -1,0 +1,8 @@
+{
+ "id": 1237974,
+ "bug_id": 266496,
+ "attachment_id": 0,
+ "creation_time": "2022-12-05T06:47:38Z",
+ "creator": "kevans@freebsd.org",
+ "text": "(In reply to Graham Perrin from comment #1)\n\nIt seems to still be a problem on -HEAD, though we're getting a lot luckier there. Something like this works around it, but I haven't decided on the proper solution yet:\n\ndiff --git a/sbin/bectl/bectl_list.c b/sbin/bectl/bectl_list.c\nindex e43c3000d8f..7ea958a3e38 100644\n--- a/sbin/bectl/bectl_list.c\n+++ b/sbin/bectl/bectl_list.c\n@@ -347,7 +347,7 @@ prop_list_sort(nvlist_t *props, char *property, bool reverse)\n {\n        nvpair_t *nvp;\n        nvlist_t *nvl;\n-       int i, nvp_count;\n+       int error, i, nvp_count;\n        uint64_t lval, rval;\n        struct sort_column sc_prev, sc_next;\n \n@@ -360,7 +360,9 @@ prop_list_sort(nvlist_t *props, char *property, bool reverse)\n                nvp = nvlist_next_nvpair(nvl, NULL);\n                nvpair_value_nvlist(nvp, \u0026sc_prev.nvl);\n                nvlist_lookup_string(sc_prev.nvl, \"name\", \u0026sc_prev.name);\n-               nvlist_lookup_string(sc_prev.nvl, property, \u0026sc_prev.val);\n+               error = nvlist_lookup_string(sc_prev.nvl, property, \u0026sc_prev.val);\n+               if (error == ENOENT)\n+                       continue;\n \n                while ((nvp = nvlist_next_nvpair(nvl, nvp)) != NULL) {\n \n\n\nIt's basically just that one dataset doesn't have 'origin' set, but we don't actually check that the sort property we're looking up exists."
+}

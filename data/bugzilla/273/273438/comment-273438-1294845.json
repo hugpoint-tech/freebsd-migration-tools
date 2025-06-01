@@ -1,0 +1,8 @@
+{
+ "id": 1294845,
+ "bug_id": 273438,
+ "attachment_id": 0,
+ "creation_time": "2024-01-30T20:30:23Z",
+ "creator": "mhorne@freebsd.org",
+ "text": "(In reply to Mitchell Horne from comment #7)\n\nOkay I spoke too soon re: the offset; it is trivially calculated as 0x908 - 0x7f8 = 0x188 = 392. According to gdb, the struct dmu_buf_impl member at offset 392, for your revision, is db_user, an 8 byte pointer. \n\nThe expected contents of uninitialized memory is 0xdeadc0deadc0de, but your reports consistently show the affected address as 0x00000000de00c0de. So it is only partially overwritten, and therefore not an abuse of the db_user field in a dmu_buf_impl_t object.\n\nSo, I'm thinking this allocation missed the zone's cache (empty), and the memory could have belonged to anything before that, meaning use-after-free could exist anywhere... \n\nI'll have to see what other tips I can learn to help identify this. On other platforms we could use KASAN, but for riscv it is not implemented yet."
+}

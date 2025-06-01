@@ -1,0 +1,8 @@
+{
+ "id": 1069215,
+ "bug_id": 240594,
+ "attachment_id": 0,
+ "creation_time": "2019-09-29T09:28:33Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Well... I have a version that works with LTO and without GCC/binutils on 12.0 amd64, but its performance is considerably slower with base clang than it is with GCC9. \n\nFor one of my test cases, processing time rises substantially (50% user time on CPU) on rawtherapee-cli development of one file with denoising, demosaic, wavelet, and other stuff.\n\nGCC 9.2.0:\n        7,76 real        49,79 user        19,29 sys\n        7,64 real        49,46 user        19,46 sys\n        7,94 real        50,10 user        20,09 sys\n\nbase clang 6.0.1:\n        9,45 real        76,74 user        17,40 sys\nThis also causes OpenMP deprecation warnings at run-time.\n\nLLVM 9.0 miscompiles the program, it gets SIGBUS somewhere in rtengine::wavelet_decomposition::level_coeffs (this=0x24a5ca, level=0)\n    at /usr/ports.svn/graphics/rawtherapee/work/rawtherapee-5.7/rtengine/cplx_wavelet_dec.h:66\n66\t        return wavelet_decomp[level]-\u003esubbands();\n\nLLVM 8.0 doesn't even configure rawtherapee because it somehow forces /usr/bin/ld which barfs on LTO.\n\nSo given that situation, I need to isolate the package from potential compiler bugs as the base compiler gets updated, and I will leave the port as it is for now (with GCC dependency) so that a known good version gets branched into 2019Q4 (albeit with heavy requisites) and we can revisit things after 2019Q4 has branched - but that will need LLVM/clang bug fixes first.\n\nRawtherapee has always been a port that unmasks lots of bugs in our toolchains, and it continues to do that."
+}

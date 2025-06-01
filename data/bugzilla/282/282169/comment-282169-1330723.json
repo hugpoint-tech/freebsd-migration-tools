@@ -1,0 +1,8 @@
+{
+ "id": 1330723,
+ "bug_id": 282169,
+ "attachment_id": 0,
+ "creation_time": "2024-10-20T15:12:43Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Many threads are blocked on the ZFS \"teardown\" lock.  I guess a writer holds the lock, or a reader leaked one.  I looked through uses of ZFS_ENTER and couldn't find any leaks.\n\nI'm confused by the locking in zfsvfs_teardown().  That function unconditionally acquires the teardown write lock, but there exist cases later in the function where it won't be released.  Specifically, if `!unmounting \u0026\u0026 !zfsvfs-\u003ez_unmounted \u0026\u0026 zfsvfs-\u003ez_ops != NULL` is true, the write lock seems to be leaked.  I'm not sure if that condition is possible in practice, but it looks rather odd.\n\nThat code path could potentially be triggered by zfs_suspend_fs(), which is invoked by a couple of dataset operations, rollback and recv specifically, but as far as I can see renaming a dataset won't trigger suspension."
+}

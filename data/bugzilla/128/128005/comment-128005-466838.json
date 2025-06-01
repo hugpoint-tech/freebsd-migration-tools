@@ -1,0 +1,8 @@
+{
+ "id": 466838,
+ "bug_id": 128005,
+ "attachment_id": 0,
+ "creation_time": "2008-10-10T17:40:01Z",
+ "creator": "josh.carroll@gmail.com",
+ "text": "I have not personally experienced this problem, but I am submitting on behalf of the person who experienced the problem.\n\nThis user is using diald/ppp to establish a PPPoE connection, which is brought up on tun0.\n\n/etc/rc.d/pf happens before /etc/rc.d/ppp according to rcorder, so tun0 does not yet have an IP address and pf fails to load the ruleset.\n\nThis is already done for ipfw, so I guess it makes sense to do it also for pf:\n\n% rcorder /etc/rc.d/* | grep -E '(netif|ppp|pf)'\n/etc/rc.d/ipfilter\n/etc/rc.d/ipfs\n/etc/rc.d/sppp\n/etc/rc.d/netif\n/etc/rc.d/pfsync\n/etc/rc.d/pflog\n/etc/rc.d/pf\n/etc/rc.d/ppp\n/etc/rc.d/ipfw\n/etc/rc.d/pppoed\n/etc/rc.d/rfcomm_pppd_server\n\nPutting ppp as a REQUIRE for pf fixed this person's particular problem. I'm just not aware if there was a reason for not having this in place, historically speaking.\n\nThanks!\nJosh\n\nFix: \n\n# PROVIDE: pf\n-# REQUIRE: FILESYSTEMS netif pflog pfsync\n+# REQUIRE: FILESYSTEMS netif pflog pfsync ppp\n # BEFORE:  routing\n # KEYWORD: nojail--C4odIUyj6ohbTbZFfzjckM86tcftrQUf1gxd0ToGKFuhgZZI\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- pf.old      2008-10-10 12:37:47.000000000 -0400\n+++ pf  2008-10-10 12:37:52.000000000 -0400\n@@ -4,7 +4,7 @@\n #\nHow-To-Repeat: Setup ppp/diald for tun0 and have a pf.conf referencing the tun0 interface."
+}

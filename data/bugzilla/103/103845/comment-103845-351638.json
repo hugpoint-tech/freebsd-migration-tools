@@ -1,0 +1,8 @@
+{
+ "id": 351638,
+ "bug_id": 103845,
+ "attachment_id": 0,
+ "creation_time": "2006-09-30T12:51:45Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Sat, 30 Sep 2006, Helmut Schellong wrote:\n\n\u003e\u003e Description:\n\u003e sha256 /dev/acd0  returns *immediately*\n\u003e with a wrong checksum.\n\u003e\n\u003e CD content is BETA1-disc1.\n\u003e\n\u003e dd if=/dev/acd0 of=/usr/z bs=4b; sha256 /usr/z; rm /usr/z\n\u003e works fine.\n\nmd5(1) and friends haven't worked for files specified on the command\nline since 2001.  At least for md5, this is due to a bug in libmd.\nMDXFileChunk() has been used to implement MDXFile() since 2001, but\nMDXFileChunk() cannot be used for this since it assumes that the file\nis a regular file (or perhaps a symlink) so that st_size is valid and\nthe file is seekable.\n\nOne workaround is to run md5 on 1 file at a time and not specify the\nfile on the command line.  \"md5 \u003c/dev/acd0\" works because it uses the\n\"filter\" cases which doesn't go near the buggy code.\n\nAnother workaround is to use a pipeline: \"cat /dev/acd0 | md5\".  For\npipes, it is essential that md5 act as a filter.  However, the previous\nworkaround is better if you don't start with a pipe.\n\nThe workaround can also be used backwards to break the case where the\nfile or pipe is already open: \"md5 /dev/stdin \u003c/dev/acd0\" gives the\nchecksum of an empty file.\n\nBruce"
+}

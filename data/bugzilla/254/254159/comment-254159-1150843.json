@@ -1,0 +1,8 @@
+{
+ "id": 1150843,
+ "bug_id": 254159,
+ "attachment_id": 0,
+ "creation_time": "2021-03-09T14:36:08Z",
+ "creator": "ant_mail@inbox.ru",
+ "text": "OS: 12.2-STABLE r368657 GENERIC  amd64\n\nI've ecnountered reproduceable problem with keepalive connection probes which tolerate TCP RST response.\n\nThere is a connection between user application (client) and database (RDBMS) on FreeBSD server. After killing user application the connection is still alive (observed by netstat -x) on server.\n\nThe keepalive timer for the connection (initially set to net.inet.tcp.keepidle value) is counting down. When it comes to zero, server send a keepalive probe. Client response with TCP RST packet. Then connection on server is still alive but keepalive timer resetted to net.inet.tcp.keepintvl value. After expiration of this interval server do not send any packet but reset keepalive timer of connection back to the net.inet.tcp.keepidle value. Then the things loop forever.\n\nP.S.\nThere is no firewall. \nIt is proofed that server recieves TCP RST from client (visible with tcp dump).\nRDBMS is  running in jail.\n\nTCPdump from client:\n\n193.017688000\t192.168.0.3\t192.168.0.2\tTCP\t66\t3050→3583 [ACK] Seq=1 Ack=1 Win=1026 Len=0\n193.017816000\t192.168.0.2\t192.168.0.3\tTCP\t54\t3583→3050 [RST] Seq=1 Win=0 Len=0\n1093.033029000\t192.168.0.3\t192.168.0.2\tTCP\t66\t[TCP Dup ACK 5#1] 3050→3583 [ACK] Seq=1 Ack=1 \n1093.033154000\t192.168.0.2\t192.168.0.3\tTCP\t54\t3583→3050 [RST] Seq=1 Win=0 Len=0\n1993.113115000\t192.168.0.3\t192.168.0.2\tTCP\t66\t[TCP Dup ACK 5#2] 3050→3583 [ACK] Seq=1 Ack=1 \n1993.113245000\t192.168.0.2\t192.168.0.3\tTCP\t54\t3583→3050 [RST] Seq=1 Win=0 Len=0\n..."
+}

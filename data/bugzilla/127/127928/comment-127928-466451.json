@@ -1,0 +1,8 @@
+{
+ "id": 466451,
+ "bug_id": 127928,
+ "attachment_id": 0,
+ "creation_time": "2008-10-07T19:20:01Z",
+ "creator": "renaud@vmware.com",
+ "text": "FreeBSD 6,7 \u0026 8 have a bug in their tcp_xmit_bandwidth_limit() function.\n\nThe problem is that the bandwidth calculation is a 1/16th weigthed\naverage and that the saved bandwidth gets reset every time the RTT\nthreshold is crossed over.  This means that the bandwidth (and thus the\nB-D product, and thus the sending window) is briefly squeezed whenever\nthe mechanism kicks in and it takes a bit of time to reach sane values again.\n\nThe threshold by default is 10ms.  With HZ=100, this means that a RTT of\n0 tick disables the mechanism and a RTT of 1 tick activates it.  Because\nof the poor tick granularity, the RTT is of 1 tick every 10ms and the\nmechanism kicks in, brutally squeezing the sending window because\ntp-\u003esnd_bandwidth is 0.  The problem also appears with HZ=1000, when\nthe RTT fluctuates in the bad spot of ~10ms.\n\nFix: To fix this, kickstart tp-\u003esnd_bandwidth without the weighted average\nsmoothing when it is 0.\n\nPatch attached with submission follows:\nHow-To-Repeat: Run a kernel with HZ=100 (or HZ=1000 and a latency around ~10ms, which\nis harder) and any TCP load with tcp_inflight_debug = 1.  Notice the\nbandwidth reported by the log is inconsistent with the link capacity\nand that the tp-\u003esnd_bwnd is incorrectly low."
+}

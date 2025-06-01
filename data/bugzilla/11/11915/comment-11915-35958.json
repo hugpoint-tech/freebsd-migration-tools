@@ -1,0 +1,8 @@
+{
+ "id": 35958,
+ "bug_id": 11915,
+ "attachment_id": 0,
+ "creation_time": "1999-05-31T04:09:07Z",
+ "creator": "aron@cs.rice.edu",
+ "text": "Hi,\n    I agree that using acess() may present a race condition and arguably\none shouldn't use it. However, the very reason its still there is for\nbackward compatibility for existing applications that use it. So the\nleast it can do is to return the same value as fopen() when there was\n*no* race\ncondition.\n\nAs for how I ran into this. Well, it seems XOpenDisplay() library call\nin X11 uses access() to determine whether it can read a user's\n.Xauthority file. My home directory is NFS mounted on my\ndesktop machine and the NFS server maps the \"root\" of my machine into\n\"nobody\". So setuid programs (like xterm and Eterm) have a potential\nproblem - they run with the effective userid of\nroot and when they try to open my .Xauthority file,  the NFS server\nrefuses access. For this reason, Eterm temporarily swaps the real userid\nand effective userid (thus real userid becomes root and effective userid\nbecomes my user id) before issuing XOpenDisplay(). However, because of\nthie problem with access() even this fails.  It can potentially make\nboth the real userid and the\neffective userid to be my userid (and let the root's userid be saved in\nthe FreeBSD saved userid),\nhowever, this might break its portability across other platforms - e.g.\nLinux.\n\nFor these reasons, I'll argue that access() should behave similarly to\nthe fopen() calls.\n\n\n- Mohit"
+}

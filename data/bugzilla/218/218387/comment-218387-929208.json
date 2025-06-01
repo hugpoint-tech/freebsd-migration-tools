@@ -1,0 +1,8 @@
+{
+ "id": 929208,
+ "bug_id": 218387,
+ "attachment_id": 0,
+ "creation_time": "2017-04-05T21:20:26Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Rodney W. Grimes from comment #3)\n\u003e objdump -dSRC libm.so.5 indicates lots of legacy fpu instructions like\n\u003e fmuls instead of mulss as well as usage of the %st() registers\n\nNote that is mostly because of the many long double functions in our libm, which cannot be natively implemented with SSE.  For example, lrintf() and lrint() are compiled to:\n\n0000000000005090 \u003clrintf\u003e:\n    5090:       f3 48 0f 2d c0          cvtss2si %xmm0,%rax\n    5095:       c3                      retq\n\n00000000000050a0 \u003clrint\u003e:\n    50a0:       f2 48 0f 2d c0          cvtsd2si %xmm0,%rax\n    50a5:       c3                      retq\n\nbut lrintl() becomes:\n\n00000000000050b0 \u003clogbl\u003e:\n    50b0:       db 6c 24 08             fldt   0x8(%rsp)\n    50b4:       d9 f4                   fxtract\n    50b6:       dd d8                   fstp   %st(0)\n    50b8:       c3                      retq"
+}

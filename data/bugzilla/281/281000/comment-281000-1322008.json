@@ -1,0 +1,8 @@
+{
+ "id": 1322008,
+ "bug_id": 281000,
+ "attachment_id": 0,
+ "creation_time": "2024-08-22T22:17:32Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Creating and destroying CTL LUNs does not notify the camsim frontend.  Whether I create a LUN or destroy it, the camsim frontend does not report any change until a reprobe (for Mediasize changes) or rescan (for device creation or destruction).  Shouldn't this be automatic?\n\nSteps to Reproduce\n==================\n\n$ sudo kldload ctl\n$ sudo ctladm port -o on -p 0\nFront End Ports enabled\n$ sudo ctladm create -b ramdisk -s 1048576\nLUN created successfully\nbackend:       ramdisk\ndevice type:   0\nLUN size:      1048576 bytes\nblocksize      512 bytes\nLUN ID:        0\nSerial Number: MYSERIAL0000\nDevice ID:     MYDEVID0000\n$ sudo camcontrol devlist\n\nNotice that there are no da devices\n\n$ sudo camcontrol rescan all\nRe-scan of bus 0 was successful\n$ sudo camcontrol devlist\n\u003cFREEBSD CTLDISK 0001\u003e             at scbus0 target 0 lun 0 (da0,pass0)\n\nNow there is a da device\n\n$ sudo ctladm remove -b ramdisk -l 0\nLUN 0 removed successfully\n$ sudo camcontrol devlist\n\u003cFREEBSD CTLDISK 0001\u003e             at scbus0 target 0 lun 0 (da0,pass0)\n \nNotice that there is still a da device, even though it should be gone.\n\n$ sudo ctladm create -b ramdisk -s 2097152\nLUN created successfully\nbackend:       ramdisk\ndevice type:   0\nLUN size:      2097152 bytes\nblocksize      512 bytes\nLUN ID:        0\nSerial Number: MYSERIAL0000\nDevice ID:     MYDEVID0000\n$ geom disk list da0 | grep Mediasize\n   Mediasize: 1048576 (1.0M)\n\nNow we recreated the device, but notice that its Mediasize is wrong."
+}

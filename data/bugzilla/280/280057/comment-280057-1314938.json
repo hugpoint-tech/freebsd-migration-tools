@@ -1,0 +1,8 @@
+{
+ "id": 1314938,
+ "bug_id": 280057,
+ "attachment_id": 251784,
+ "creation_time": "2024-06-30T00:24:59Z",
+ "creator": "john@saltant.com",
+ "text": "Created attachment 251784\nTerminal output from \"service frr start\"\n\nOn a clean install of net/frr9 with empty config files, the mgmtd service component fails to start. During the config check step, it aborts with these errors followed by additional diagnostic output (see attached).\n\n\nMGMTD: [YKHB9-ND03T] FE-client: msg_conn_send_msg: can't send message on closed connection\nMGMTD: lib/vty.c:1684: vty_new(): assertion (new-\u003emgmt_session_id != 0) failed, extra info: Failed to create client session for VTY\nMGMTD: Received signal 6 at 1719706531 (si_addr 0x0); aborting...\n\n\nSteps to reproduce:\n\n    pkg install frr9\n    sysrc frr_enable=YES frr_daemons=\"zebra mgmtd staticd\"\n    mkdir /usr/local/etc/frr\n    cd /usr/local/etc/frr\n    umask 066\n    touch zebra.conf mgmtd.conf staticd.conf\n    chown -R frr:frr /usr/local/etc/frr\n    service frr start\n\nConfirmed on freshly deployed EC2 instances running 13.3-RELEASE (amd64 and arm64) and 14.1-RELEASE (amd64 and arm64).\n\nThe symptoms are similar to those reported in https://github.com/FRRouting/frr/issues/14174, except that the current version of devel/protobuf-c (1.4.1) is greater than the version that resolved that issue (1.3.3).\n\nEditing frr's rc script to skip the config check for mgmtd enables the service to start successfully."
+}

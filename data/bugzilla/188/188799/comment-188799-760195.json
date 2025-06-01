@@ -1,0 +1,8 @@
+{
+ "id": 760195,
+ "bug_id": 188799,
+ "attachment_id": 0,
+ "creation_time": "2014-04-19T19:10:00Z",
+ "creator": "jwb@freebsd.org",
+ "text": "\nBuild fails due to direct use of ipp_t fields in cups.c, which is no longer supported.\n\nFix: cups.c needs to be edited to use accessor functions instead of referencing ipp_t fields directly.\n\nPartial patch to demonstrate the approach:\n\n\n\nNot all the fixes appear to be so straightforward and I don't have time to work on it at the moment.--2ik3nwqQhKoQQSRiKcRkCA4oUMUEN8Y2NnKHiZuZ4xSF7zIk\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- printing-systems/cups/cups.c.orig   2014-04-19 12:20:18.000000000 -0500\n+++ printing-systems/cups/cups.c        2014-04-19 12:27:02.000000000 -0500\n@@ -133,8 +133,10 @@\n \n   language = cupsLangDefault ();\n   request = ippNew ();\n-  request-\u003erequest.op.operation_id = operation_id;\n-  request-\u003erequest.op.request_id = 1;\n+  //request-\u003erequest.op.operation_id = operation_id;\n+  ippSetOperation(request,operation_id);\n+  //request-\u003erequest.op.request_id = 1;\n+  ippSetRequestId(request,1);\n \n   ippAddString (request, IPP_TAG_OPERATION, IPP_TAG_CHARSET, \"attributes-charset\", NULL, \"utf-8\");\n \n@@ -242,7 +244,7 @@\n \n       if (!request)\n         continue;\n-      if (request-\u003estate == IPP_ERROR || request-\u003estate == IPP_IDLE) {\n+      if (ippGetState(request) == IPP_ERROR || request-\u003estate == IPP_IDLE) {\n         ippDelete (request);\n         continue;\n       }\nHow-To-Repeat: \nmake config\nselect CUPS\nmake"
+}

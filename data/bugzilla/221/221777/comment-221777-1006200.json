@@ -1,0 +1,8 @@
+{
+ "id": 1006200,
+ "bug_id": 221777,
+ "attachment_id": 0,
+ "creation_time": "2018-08-12T20:09:00Z",
+ "creator": "marc.priggemeyer@gmail.com",
+ "text": "(In reply to Oleksandr Tymoshenko from comment #6)\n\nPlease consider these two parts from the patch I provided last year:\n\nIn ig4_reg.h:\n+/* Newer versions of the I2C controller allow to check whether\n+ * the above ASSERT/DEASSERT is necessary by querying the DEVIDLE_CONTROL\n+ * register.\n+ * \n+ * the RESTORE_REQUIRED bit can be cleared by writing 1\n+ * the DEVICE_IDLE status can be set to put the controller in an idle state\n+ * */\n+\n+#define IG4_RESTORE_REQUIRED\t0x0008\n+#define IG4_DEVICE_IDLE\t\t0x0004\n\nand in ig4_iic.c\n+\tv = reg_read(sc, IG4_REG_DEVIDLE_CTRL);\n+\tif (sc-\u003eversion == IG4_SKYLAKE \u0026\u0026 (v \u0026 IG4_RESTORE_REQUIRED) ) {\n+\t\treg_write(sc, IG4_REG_DEVIDLE_CTRL, IG4_DEVICE_IDLE | IG4_RESTORE_REQUIRED);\n+\t\treg_write(sc, IG4_REG_DEVIDLE_CTRL, 0);\n+\n+\t\treg_write(sc, IG4_REG_RESETS_SKL, IG4_RESETS_ASSERT_SKL);\n+\t\treg_write(sc, IG4_REG_RESETS_SKL, IG4_RESETS_DEASSERT_SKL);\n+\t\tDELAY(1000);\n+\t}\n\n\nThis reinitialization makes sure to activate the I2C controller after power down if necessary. It is based on the Intel 100 series PCH documentation."
+}

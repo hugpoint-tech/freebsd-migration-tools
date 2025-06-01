@@ -1,0 +1,8 @@
+{
+ "id": 1313927,
+ "bug_id": 277060,
+ "attachment_id": 0,
+ "creation_time": "2024-06-21T16:44:06Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch main references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=681fd2bed8eaba88693867ba928a1c03a5b152cc\n\ncommit 681fd2bed8eaba88693867ba928a1c03a5b152cc\nAuthor:     Ganael Laplanche \u003cganael.laplanche@martymac.org\u003e\nAuthorDate: 2024-06-21 16:39:09 +0000\nCommit:     Warner Losh \u003cimp@FreeBSD.org\u003e\nCommitDate: 2024-06-21 16:39:09 +0000\n\n    pax: Terminate loop for empty directory names\n\n    Pax can sometimes loop forever. For example:\n\n    $ mkdir -p /tmp/src/foo/bar\n    $ rm -rf /tmp/dst ; mkdir -p /tmp/dst\n    $ cd /tmp/src\n    $ echo 'foo/bar/' | /bin/pax -r -w -d -pe \"/tmp/dst\"\n    \u003clooping infinitely\u003e\n\n    Here, pax(1) infinitely deletes and re-creates /tmp/dst/foo/bar/.\n\n    The problem is that chk_path() (bin/pax/file_subs.c), called from\n    node_creat() also creates the leaf directory when a trailing '/' appears\n    in the directory name to create. When the execution goes back from\n    chk_path() to node_creat(), the function still cannot create the leaf\n    directory (it has been created by chk_path()), so it unlinks it and\n    calls node_creat() again. The function re-creates it, and so on...\n\n    In node_creat() detect trailing slashes and not create a leaf directory,\n    but only intermediate ones.\n\n    PR: 277060\n    Reviewed by: imp\n\n bin/pax/file_subs.c | 7 ++++++-\n 1 file changed, 6 insertions(+), 1 deletion(-)"
+}

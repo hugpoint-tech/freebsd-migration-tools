@@ -1,0 +1,8 @@
+{
+ "id": 1237510,
+ "bug_id": 268093,
+ "attachment_id": 0,
+ "creation_time": "2022-12-01T02:46:05Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "It is better to match on pts/, not just pts. For tty, the short match allows\nto specify e.g. ttyuX, i.e. USB-serial ports.\n\nAlso, there is no need to have two identical snprintfs.\n\nBelow is what I intent to commit after your confirmation.\n\ncommit e442917ee41986c416afea1d152ad03c5daeeac4\nAuthor: Daniel Dowse \u003cfreebsd-bugs@daemonbytes.net\u003e\nDate:   Thu Dec 1 04:42:35 2022 +0200\n\n    killall(1): allow sending signals to processes with control terminal on pts(4)\n    \n    PR:     268093\n    Reviewed by:    kib\n    MFC after:      1 week\n\ndiff --git a/usr.bin/killall/killall.c b/usr.bin/killall/killall.c\nindex aca0830c158b..494a527d190b 100644\n--- a/usr.bin/killall/killall.c\n+++ b/usr.bin/killall/killall.c\n@@ -255,7 +255,8 @@ main(int ac, char **av)\n \tif (tty) {\n \t\tif (strncmp(tty, \"/dev/\", 5) == 0)\n \t\t\tsnprintf(buf, sizeof(buf), \"%s\", tty);\n-\t\telse if (strncmp(tty, \"tty\", 3) == 0)\n+\t\telse if (strncmp(tty, \"tty\", 3) == 0 ||\n+\t\t    strncmp(tty, \"pts/\", 4) == 0)\n \t\t\tsnprintf(buf, sizeof(buf), \"/dev/%s\", tty);\n \t\telse\n \t\t\tsnprintf(buf, sizeof(buf), \"/dev/tty%s\", tty);"
+}

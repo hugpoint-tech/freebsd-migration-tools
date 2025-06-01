@@ -1,0 +1,8 @@
+{
+ "id": 1224339,
+ "bug_id": 265974,
+ "attachment_id": 0,
+ "creation_time": "2022-08-26T21:40:19Z",
+ "creator": "pierre@habouzit.net",
+ "text": "(In reply to Mark Johnston from comment #4)\n\n\u003e The suggested patch adds two barriers to smr_poll_scan() and none to smr_poll(), is that intentional?\n\nYes, I cover this in my (2) paragraph:\n\n\u003e 2. similarly smr_poll_scan() needs a full barrier after the scan _before_ it updates the global rd_seq, this is about serializing the fast path of smr_poll with CPUs that weren't in a critical section (while the one on entry of smr_poll() is about synchronizing with the CPUs inside an active SMR critical section and was demonstrated in (1)).\n\nfundamentally the first barrier is about sequencing the \"scan\" operation with CPUs actively inside an active SMR section (and basically pairs with their smr_enter()), but the second barrier is about all the sections we ignored because they weren't active and pairs with the last `smr_leave()` that that core executed.\n\nWriting the litmus test to exhibit this problem was more work than I was willing to put in. For full disclosure I am the author of XNU's smr.[hc] and am reporting this bug as a courtesy given that FreeBSD was the inspiration. In XNU I'm definitely going to put both barriers (the current open source drop doesn't have it but as I was reasoning through this code recently I convinced myself they were needed)."
+}

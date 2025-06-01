@@ -1,0 +1,8 @@
+{
+ "id": 1267873,
+ "bug_id": 272758,
+ "attachment_id": 0,
+ "creation_time": "2023-07-27T16:28:58Z",
+ "creator": "pkk@spth.de",
+ "text": "When looking into an SDCC regression test failing for test-host, I found the following issue:\n\nThe mbrtoc16 and mbrtoc32 functions return a wrong value for my test case.\nI compiled the following code on a Raspi 4 running FreeBSD13 via \"cc test.c\" when executing the resulting binary, the last assertion fails.\n\n#include \u003climits.h\u003e\n#include \u003cassert.h\u003e\n#include \u003cuchar.h\u003e\n\nint main(void)\n{\n  static mbstate_t ps;\n  char16_t c16[3];\n  char c[MB_LEN_MAX] = \"C\";\n  assert(mbrtoc16(c16, c, 1, \u0026ps) == 1);\n  assert(mbrtoc16(c16 + 1, c + 1, 1, \u0026ps) == 0); // Writes a null wide character and thus puts ps into the initial conversion state (C2X section 7.30.1.3)\n  assert(c16[0] == (u\"C\")[0]);\n  assert(c16rtomb(c, c16[0], \u0026ps) == 1);\n  return(0);\n}\n\nI do not have any non-aarch64 FreeBSD 13.1 systems to test. But the test does not fail for Debian GNU/Linux on aarch64 and amd64."
+}

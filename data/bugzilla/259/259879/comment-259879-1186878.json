@@ -1,0 +1,8 @@
+{
+ "id": 1186878,
+ "bug_id": 259879,
+ "attachment_id": 0,
+ "creation_time": "2021-11-17T06:56:02Z",
+ "creator": "johan@stromnet.se",
+ "text": "I verified that logging is not working as expected (pass rule without allow-opts blocks but does not log):\n\n\nenabling pf with no rules\nlaunch the socat command that tries to join multicast address.\nPf now blocks igmp (as we now know is expected)\n\nadding a rule \"block return log on $if all\" and then running the socat again yields log entries in pflog:\n\nroot@freebsd:~ # tcpdump -i pflog0 igmp\ntcpdump: verbose output suppressed, use -v or -vv for full protocol decode\nlistening on pflog0, link-type PFLOG (OpenBSD pflog file), capture size 262144 bytes\n06:47:55.756617 IP 172.28.6.15 \u003e igmp.mcast.net: igmp v3 report, 1 group record(s)\n06:47:57.756382 IP 172.28.6.15 \u003e igmp.mcast.net: igmp v3 report, 1 group record(s)\n06:47:58.556249 IP 172.28.6.15 \u003e igmp.mcast.net: igmp v3 report, 1 group record(s)\n\nAdding a incomplete PF rule \"pass on $if inet proto igmp\" and starting socat. No igmp traffic out, but nothing in pflog eitiher. And that feels more like a bug?\n\n\nOne gotcha while debugging this: adding 'allow-opts' to the above role and rerunning socat does not actually work immediately , you have to flush/wait for the states to expire. Then it works."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 972130,
+ "bug_id": 225162,
+ "attachment_id": 0,
+ "creation_time": "2018-01-14T17:49:05Z",
+ "creator": "msl0000023508@gmail.com",
+ "text": "Source file https://svnweb.freebsd.org/base/head/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zfs_acl.c (latest version r323491 at this time), line 1220, in function zfs_aclset_common have a local variable definition \"zfs_acl_phys_t acl_phys;\". At line 1297, the pointer to this variable (\u0026acl_phys) is stored into the array \"bulk\"; then the current code block and the lifetime of \"acl_phys\" is ended after this, but \"bulk\" is still got used at line 1314.\n\nThis code resulted in undefined behavior, meaning this bug may not be generally noticeable. In my test, the clang 3.4.1 on FreeBSD 10.3 amd64 won't trigger wrong behavior; however gcc 4.7 4.8 4.9 at any optimization level (except \"-O0\") will resulting a buggy behavior which showing to the user as:\n\n[WHR@kmod-test /testpool]$ mkdir 35\n[WHR@kmod-test /testpool]$ cd 35\n-bash: cd: 35: Permission denied\n\nDue the ACL is failed to store.\n\nThe attached patch will fix this bug by moving the definition of \"acl_phys\" to the top block of the function, thus its lifetime will cover the whole function."
+}

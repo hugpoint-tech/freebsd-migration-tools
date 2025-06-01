@@ -1,0 +1,8 @@
+{
+ "id": 1160845,
+ "bug_id": 255685,
+ "attachment_id": 0,
+ "creation_time": "2021-05-11T20:26:34Z",
+ "creator": "kp@freebsd.org",
+ "text": "At this point I believe this isn't a pf bug, but a change in routing behaviour.\nIn 13 we route the alias address via em0, while we route it via lo0 on 12. That means that on 12 the ssh traffic bypasses pf (because skip on lo0) and it doesn't on 13.\n\nOn 12:\n\nRouting tables\n\nInternet:\nDestination        Gateway            Flags     Netif Expire\n127.0.0.1          link#2             UH          lo0\n192.168.1.100      link#1             UHS         lo0\n192.168.1.100/32   link#1             U           em0\n\nOn 13:\n\nRouting tables\n\nInternet:\nDestination        Gateway            Flags     Netif Expire\ndefault            192.168.183.1      UGS         em0\n127.0.0.1          link#2             UH          lo0\n192.168.1.100      link#1             UH          em0\n192.168.183.0/24   link#1             U           em0\n192.168.183.14     link#1             UHS         lo0\n\n(Look at the 192.168.1.100 route entry)\n\nAlso, if I try to add a link route (after deleting the 192.168.1.100 route):\nsudo route add 192.168.1.100 -link lo0\nroute: writing to routing socket: Network is unreachable\nadd host 192.168.1.100: gateway lo0 fib 0: Network is unreachable\n\ntl;dr: this looks like a routing issue, not a pf bug."
+}

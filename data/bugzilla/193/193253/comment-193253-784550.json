@@ -1,0 +1,8 @@
+{
+ "id": 784550,
+ "bug_id": 193253,
+ "attachment_id": 0,
+ "creation_time": "2014-09-05T20:46:53Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "This is a problem between the SSL front-end and the bugzilla instance.  We have a test case where we can reliably trigger the problem.\n\nThe problem, as we understand it, is that bugzilla maintains a recently viewed bugs list in cookies.  This can grow fairly large, however bugzilla knows what the browser client-side limits are (4k-5k) and what the apache server limit is (8k) and makes sure to not hit either of those.\n\nHowever, there was a debug header being added in between the ssl front-end and the bugzilla back-end that added a cookie trace header.  The ssl front-end has a limit of 4k for *http headers* when talking to a backend server and this debug trace header (which was a copy of the incoming cookie) overflowed nginx. \n\nWe've made multiple changes:\n- removed the debug header entirely\n- increased the nginx proxy_buffers settings to match the worst-case size limits.\n\nI suspect this will fix it, unless bugzilla itself is not maintaining the cookie size limits correctly.  I don't think any current browsers will allow this to happen though."
+}

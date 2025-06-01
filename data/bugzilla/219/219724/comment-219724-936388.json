@@ -1,0 +1,8 @@
+{
+ "id": 936388,
+ "bug_id": 219724,
+ "attachment_id": 0,
+ "creation_time": "2017-06-02T11:21:05Z",
+ "creator": "bblister@gmail.com",
+ "text": "10.3-RELEASE-p18 FreeBSD 10.3-RELEASE-p18 #0: Tue Apr 11 10:31:00 UTC 2017     root@amd64-builder.daemonology.net:/usr/obj/usr/src/sys/GENERIC  amd64\n\nfcgiwrap-1.1.0_5 \n\nThe startup script /usr/local/etc/rc.d/fcgiwrap at the function\n\nfcgiwrap_stop()\n\n\nfinds the pid file of the processed without checking if pidfile exists:\n\nfcgiwrap_pgrp=$(/bin/ps -o ppid= $(cat ${pidfile}))\n\nThus when the pidfile does not exist (for example, at the startup if you issue\n/usr/local/etc/rc.d/fcgiwrap onerestart  (and no pid file exist) then\nwe have an output that contains the PPID 1\n\nlike the following:\n\n/bin/ps -o ppid= $(cat /var/run/fcgiwrap/fcgiwrap.pid) \n\ncat: /var/run/fcgiwrap/fcgiwrap.pid: No such file or directory \n72303 \n    1 \n71730 \n72092 \n    1 \n    1 \n    1 \n  \nand then using two lines after this a command  kill -TERM -- -${fcgiwrap_pgrp} \nterminates all these pids. \n\nBut, PID 1 is the /sbin/init  and according to init(8) \n...init will signal the original (PID 1) init as follows: \n.... \n1            SIGTERM    Go to single-user mode \n\n\nSo the fastcgiwrap sends SIGTERM to /sbin/init and then systems reverts to single user mode. \n\n\nThe fix is to first check the existence of the file, like \n\nif [ -f  ${pidfile} ] ; then .... \n\n\n\n\nBB."
+}

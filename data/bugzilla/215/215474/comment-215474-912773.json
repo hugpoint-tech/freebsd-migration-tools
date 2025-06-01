@@ -1,0 +1,8 @@
+{
+ "id": 912773,
+ "bug_id": 215474,
+ "attachment_id": 0,
+ "creation_time": "2016-12-21T18:07:50Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "The sim_vid, hba_vid, and dev_name fields of struct ccb_pathinq are fixed-length strings.  AFAICT the only place they're read is in sbin/camcontrol/camcontrol.c, which assumes they'll be null-terminated.  However, the kernel doesn't null-terminate them. A bunch of copy-pasted code uses strncpy to write them, and doesn't guarantee null-termination.  For at least 4 drivers (mpr, mps, ciss, and hyperv), the hba_vid field actually overflows.  You can see the result by doing \"camcontrol negotiate da0 -v\".  Note the garbage at the end of the HBA vendor field:\n\n$ camcontrol negotiate da0 -v\nCurrent parameters:\n(pass0:mps0:0:10:0): transfer speed: 300.000MB/s\n(pass0:mps0:0:10:0): tagged queueing: enabled\nmps0: SIM/HBA version: 1\nmps0: supports tag queue messages\nmps0: supports SDTR message\nmps0: supports 16 bit wide SCSI\nmps0: unknown PIM bit set\nmps0: unknown PIM bit set\nmps0: user has disabled initial BUS RESET or controller is in target/mixed mode\nmps0: HBA engine count: 0\nmps0: maximum target: 255\nmps0: maximum LUN: 255\nmps0: highest path ID in subsystem: 0\nmps0: initiator ID: 255\nmps0: SIM vendor: FreeBSD\nmps0: HBA vendor: Avago Tech (LSI)mps\nmps0: HBA vendor ID: 0x0000\nmps0: HBA device ID: 0x0000\nmps0: HBA subvendor ID: 0x0000\nmps0: HBA subdevice ID: 0x0000\nmps0: bus ID: 0\nmps0: base transfer speed: 150.000MB/sec\nmps0: maximum transfer size: 4722688 bytes\n\nThe correct solution is to replace strncpy with strlcpy to null-terminate them, and shorten the hard-coded strings that are too long."
+}

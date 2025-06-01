@@ -1,0 +1,8 @@
+{
+ "id": 551121,
+ "bug_id": 145230,
+ "attachment_id": 0,
+ "creation_time": "2010-03-31T08:20:07Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "As discovered when reviewing mtree(8) as part of bin/144411, there are a number of items with -P that doesn't work... all chown, chmod, and stat calls for instance are the non-l variety, which means that unfortunately the file information for symlinks isn't being properly recorded.\n\nFurthermore, in verify.c where lchown is used:\n\n                        if (!(p-\u003eflags \u0026 (F_UID | F_UNAME)))\n                                (void)printf(\" (%s not created: user not specified)\", type);\n                        else if (!(p-\u003eflags \u0026 (F_GID | F_GNAME)))\n                                (void)printf(\" (%s not created: group not specified)\", type);\n                        else if (p-\u003etype == F_LINK) {\n                                if (symlink(p-\u003eslink, path))\n                                        (void)printf(\" (symlink not created: %s)\\n\",\n                                            strerror(errno));\n                                else\n                                        (void)printf(\" (created)\\n\");\n                                if (lchown(path, p-\u003est_uid, p-\u003est_gid) == -1) {\n\nthe symlink data isn't being properly recorded; it's resolving the file instead, which may store incorrect data, or may have incorrect permissions."
+}

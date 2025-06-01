@@ -1,0 +1,8 @@
+{
+ "id": 40237,
+ "bug_id": 13232,
+ "attachment_id": 0,
+ "creation_time": "1999-09-16T03:06:19Z",
+ "creator": "hatanaka@open.nm.fujitsu.co.jp",
+ "text": "Altough I am not sure to fix, you can try the following fixes.\nHope that helps.\n\n-Massa. Hatanaka\n\n==\n[1] For aged bug\n\n    route_output():sys/net/rtsock.c\n\n\t\tif ((rnh = rt_tables[dst-\u003esa_family]) == 0) {\n\t\t\tsenderr(EAFNOSUPPORT);\n\t\t} else if (rt = (struct rtentry *)\n\t\t\t\trnh-\u003ernh_lookup(dst, netmask, rnh))\n\t#ifdef\tnotdef\n\t\t\trt-\u003ert_refcnt++;\n\t#else   /* notdef */\n\t\t{\n\t\t\tif (rt-\u003ert_nodes[0].rn_flags \u0026 RNF_ROOT) {\n\t\t\t\trt = 0;\n\t\t\t\tsenderr(ESRCH);\n\t\t\t}\n\t\t\trt-\u003ert_refcnt++;\n\t\t}\n\t#endif  /* notdef */\n\t\telse\n\t\t\tsenderr(ESRCH);\n\n[2] For young bug\n\n    in_matroute():sys/netinet/in_rmx.c\n\n\tstatic struct radix_node *\n\tin_matroute(void *v_arg, struct radix_node_head *head)\n\t{\n\t\tstruct radix_node *rn = rn_match(v_arg, head);\n\t\tstruct rtentry *rt = (struct rtentry *)rn;\n\n#ifdef  notdef\n#endif  /* notdef */\n\t\tif (rn \u0026\u0026 (rn-\u003ern_flags \u0026 RNF_ROOT)) {\n\t\t\treturn (rn);\n\t\t}\n#endif  /* notdef */\n\t\tif(rt \u0026\u0026 rt-\u003ert_refcnt == 0) { /* this is first reference */\n\t\t\tif(rt-\u003ert_flags \u0026 RTPRF_OURS) {\n\t\t\t\trt-\u003ert_flags \u0026= ~RTPRF_OURS;\n\t\t\t\trt-\u003ert_rmx.rmx_expire = 0;\n\t\t\t}\n\t\t}\n\t\treturn rn;\n\t}\n\n===\nMassa. Hatanaka                                Fujitsu Limited, Japan\n/* E-Mail: masoh@itspf.fujitsu.oz.au */\nE-Mail: hatanaka@open.nm.fujitsu.co.jp"
+}

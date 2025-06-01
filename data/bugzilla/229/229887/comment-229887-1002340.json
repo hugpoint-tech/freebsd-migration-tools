@@ -1,0 +1,8 @@
+{
+ "id": 1002340,
+ "bug_id": 229887,
+ "attachment_id": 0,
+ "creation_time": "2018-07-19T14:36:41Z",
+ "creator": "mav@FreeBSD.org",
+ "text": "The first panic indeed looks like combination of r334810 making dmu_tx_assign() errors fatal and quota overflow causing that.  We need to handle those errors somehow.\n\nAbout second panic I am not sure, but I found such an interesting comment above zfs_unlinked_add():\n * When dealing with the unlinked set, we dmu_tx_hold_zap(), but we\n * don't specify the name of the entry that we will be manipulating.  We\n * also fib and say that we won't be adding any new entries to the\n * unlinked set, even though we might (this is to lower the minimum file\n * size that can be deleted in a full filesystem).  So on the small\n * chance that the nlink list is using a fat zap (ie. has more than\n * 2000 entries), we *may* not pre-read a block that's needed.\n * Therefore it is remotely possible for some of the assertions\n * regarding the unlinked set below to fail due to i/o error.  On a\n * nondebug system, this will result in the space being leaked.\nCurios whether it can be the case here."
+}

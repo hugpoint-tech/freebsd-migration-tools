@@ -1,0 +1,8 @@
+{
+ "id": 31442,
+ "bug_id": 10399,
+ "attachment_id": 0,
+ "creation_time": "1999-03-05T14:10:01Z",
+ "creator": "Max.Euston@archive.jmrodgers.com",
+ "text": "\ngetty sets a SOFT cpu limit to 60 seconds to help detect hung lines.\nIt resets this to infinity before exec()ing login, but does not reset\nit before exec()ing \"ppplogin\" (set with pp=... in /etc/gettytab).\n\nFix: 1) Apply this patch:\n\n\n\n2) Workaround:\n\nHave \"pp=...\" set to a shell script that does a \"ulimit -t unlimited\"\n(or limit for csh) before running \"ppp -direct\".--xmxdil8VY56DYm5O4yX2g1SKD0LSbDnkSYzJrGw6CdKKXHLF\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- /src/libexec/getty/main.c.orig      Mon Dec 15 02:10:53 1997\n+++ /src/libexec/getty/main.c   Wed Mar  3 14:58:44 1999\n@@ -349,6 +349,9 @@\n                if ((rval = getname()) == 2) {\n                        oflush();\n                        alarm(0);\n+                       limit.rlim_max = RLIM_INFINITY;\n+                       limit.rlim_cur = RLIM_INFINITY;\n+                       (void)setrlimit(RLIMIT_CPU, \u0026limit);\n                        execle(PP, \"ppplogin\", ttyn, (char *) 0, env);\n                        syslog(LOG_ERR, \"%s: %m\", PP);\n                        exit(1);\nHow-To-Repeat: \nSet \"pp=...\" in /etc/gettytab and ppp-connect to this line.  The\nconnection will silently drop some time in the future (15 minutes to\nseveral hours depending on line usage)."
+}

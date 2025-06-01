@@ -1,0 +1,8 @@
+{
+ "id": 1207349,
+ "bug_id": 263353,
+ "attachment_id": 233259,
+ "creation_time": "2022-04-16T21:58:20Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Created attachment 233259\nremove -g from the CFLAGS/LDFLAGS unless WITH_DEBUG is set not empty and not \"no\".\n\nI can no longer build Python 3.8 on a FreeBSD 13.0-RELEASE amd64 computer with 1.6 GB available memory (1 GB physical, 1 GB encrypted swap file on UFS).\n\nThe upstream configure.ac file in Python 3.8.13 as of 0058eede0ebf adds \"-flto -g\" to the build (through CFLAGS and LDFLAGS). This happens even without WITH_DEBUG=yes.\n\nThis considerably increases the memory that my FreeBSD 13.0-RELEASE ld.lld requires, and the kernel kills it with \"out of swap space\". \n\nI used to be able to build Python 3.8 on that machine earlier, and reviewing port history, I surmise that * 9a31e1b6d3bf 2022-03-09 | lang/python3*: add LTO option and enable by default everywhere except powerpc64 and riscv64 [Piotr Kubaj] \ncaused the increase in memory consumption from the desired LTO.\n\nChopping out the -g from CFLAGS and LDFLAGS fixes this for me, reducing linker memory consumption to below 400 MB VMEM, and lets my low-on-RAM computer complete the build. (It is a single Xeon core I rented out for a virtual server.)\n\nI am proposing the attached patch. I have not investigated yet whether Pythons 3.7 3.9 3.10 3.11 need an analogue patch, for lack of time. In Python 3.8 you will see \"-flto -g\" in the ${WRKSRC}/Makefile that results from a \"make configure\" with LTO option enabled, because the upstream configure.ac is written that way."
+}

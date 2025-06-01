@@ -1,0 +1,8 @@
+{
+ "id": 570314,
+ "bug_id": 149059,
+ "attachment_id": 0,
+ "creation_time": "2010-07-29T10:30:07Z",
+ "creator": "lampa@fit.vutbr.cz",
+ "text": "The last change in /etc/rc.subr broke sendmail startup with sendmail_enable=\"NONE\". We start sendmail in our local script, after this change,  MTA daemon from /etc/rc.d/sendmail is started, too. We don't want two sendmail daemons in one system :-(  See\nhttp://www.freebsd.org/cgi/cvsweb.cgi/src/etc/rc.subr.diff?r1=1.88.2.10;r2=1.88.2.11;f=h\n\nIn our case $rc_pid contains pid of locally started sendmail, so this case in  run_rc_command is now false:\n\n if [ -n \"${rcvar}\" -a \"$rc_arg\" != \"rcvar\" -a -z \"${rc_pid}\" ];\n        if ! checkyesno ${rcvar}; then\n                              if [ -n \"${rc_quiet}\" ]; then\n                                        return 0\n                                fi\n        fi\n fi\n\nThe checkyesno is not executed and the script doesn't return through return 0 as it was returning before this change. I really don't understand why the test for rc_pid was added here and the CVS comment doesn't help too much:\n\nSVN rev 207797 on 2010-05-08 21:18:22Z by dougb\n\nMFC r206686:\n\nMake 'stop' work even if ${name}_enable is not set."
+}

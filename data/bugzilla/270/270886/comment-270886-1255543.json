@@ -1,0 +1,8 @@
+{
+ "id": 1255543,
+ "bug_id": 270886,
+ "attachment_id": 0,
+ "creation_time": "2023-04-16T20:11:52Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "Updating to 9.0.4 was problematic but successful.  I'm sharing my experience in the hope that the maintainer (or others) can provide insight into the right solution.\n\nI modified the Makefile and pkg-plist with the usual number changes, eg 8.4.3 to 9.0.4. \n\nCompiling resulted in a failure\nld-elf.so.1: /var/ports/usr/ports/local/swi-pl-9.0.4-fail/work/.build/src/libswipl.so.9: Undefined symbol \"cnd_init\"\n\n(5 hours later) I added -lstdthreads to the set statement in cmake/Params.cmake\nif(MULTI_THREADED)\n  set(C_CFLAGS \"${C_CFLAGS} -pthread\")\nendif()\nAside - cc converted -pthread to -lpthread (magic happens!)\n\nBuild failure continued.  Out of frustration, I added -lstdthreads to LDFLAGS which resulted in a successful build \u0026 execution, eg\nswipl -f /usr/local/lib/swipl/library/test_cover.pl -g 'assert((a(X):-yaml_read(X,_)))' -g 'show_coverage(a(\"/tmp/os.yaml\"))' -g halt\n\nAside: There is a noticeable size increase. Changing only LDFLAGS+=-lstdthreads\n-rwxr-xr-x  0 root   wheel 2048104 16 Apr 19:26 /usr/local/lib/swipl/lib/amd64-freebsd/libswipl.so.8.4.3\n-rwxr-xr-x  0 root   wheel 2247928 17 Apr 05:14 /usr/local/lib/swipl/lib/amd64-freebsd/libswipl.so.9.0.4\n(Note: I use O3 and lto=thin)"
+}

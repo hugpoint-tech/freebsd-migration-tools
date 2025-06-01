@@ -1,0 +1,8 @@
+{
+ "id": 27302,
+ "bug_id": 8965,
+ "attachment_id": 0,
+ "creation_time": "1998-12-04T22:00:00Z",
+ "creator": "sclawson@cs.utah.edu",
+ "text": "\nA process tries to unmount a filesystem (in my case this is amd and\nit's an nfsv2 filesystem) and manages to get far enough into dounmount\nthat it sets the MNTK_UNMOUNT flag in the mountpoint's mnt_kern_flag\nfield.  Another process (in my case netscape) tries to stat a file\nthat's on that filesystem.  Netscape blocks in vfs_busy because\nMNTK_UNMOUNT is set.  However when amd runs again it gets an error and\nexits dounmount prematurely.  It clears the MNTK_UNMOUNT flag and\ngenerally cleaning up, but dosen't call wakeup on the mountpoint,\ncausing netscape to hang since it's in an un-interruptable sleep. =(\n\nHaving a hung netscape isn't so bad until other things start hanging\nbecause of the locks that it still holds. =)\n\nFix: Add in the missing wakeup. =)\nHow-To-Repeat: \nLeave a netscape running while a hyperactive amd tries to continually\nunmount and remount the filesystem that your netscape cache is on.  At\nleast that's what does it for me.\n\nThe timing is weird on this one, since it'll only happen if you're\ntrying to stat a file on a filesystem that's being unmounted in which\nboth the VFS_SYNC and VFS_UNMOUNT calls fail in dounmount."
+}

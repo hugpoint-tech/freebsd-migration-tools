@@ -1,0 +1,8 @@
+{
+ "id": 1061605,
+ "bug_id": 239799,
+ "attachment_id": 0,
+ "creation_time": "2019-08-12T11:36:15Z",
+ "creator": "vincent@bernat.ch",
+ "text": "Hey!\n\nUse of IP_MINTTL to ensure a minimum TTL on input TCP packets is broken. When this option is enabled for a socket, all incoming packets are dropped. When it comes to compare the TTL in `tcp_input.c`, the reported TTL is 0:\n\n```c\n\tif (inp-\u003einp_ip_minttl != 0) {\n#ifdef INET6\n\t\tif (isipv6) {\n\t\t\tif (inp-\u003einp_ip_minttl \u003e ip6-\u003eip6_hlim)\n\t\t\t\tgoto dropunlock;\n\t\t} else\n#endif\n\t\tif (inp-\u003einp_ip_minttl \u003e ip-\u003eip_ttl)\n\t\t\tgoto dropunlock;\n\t}\n```\n\nA few lines earlier, we have:\n\n```c\nstruct ipovly *ipov = (struct ipovly *)ip;\n\n/*\n * Checksum extended TCP header and data.\n */\nlen = off0 + tlen;\nbzero(ipov-\u003eih_x1, sizeof(ipov-\u003eih_x1));\nipov-\u003eih_len = htons(tlen);\nth-\u003eth_sum = in_cksum(m, len);\n/* Reset length for SDT probes. */\nip-\u003eip_len = htons(len);\n/* Reset TOS bits */\nip-\u003eip_tos = iptos;\n/* Re-initialization for later version check */\nip-\u003eip_v = IPVERSION;\nip-\u003eip_hl = off0 \u003e\u003e 2;\n```\n\n`ip-\u003eip_ttl` also needs to be restored after this code."
+}

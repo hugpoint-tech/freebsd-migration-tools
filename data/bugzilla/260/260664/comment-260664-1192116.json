@@ -1,0 +1,8 @@
+{
+ "id": 1192116,
+ "bug_id": 260664,
+ "attachment_id": 0,
+ "creation_time": "2021-12-27T17:20:04Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Ok, it does look like the commit in stable/13 would fix this hang.\nIt happens because read calls nfscl_hasexpired(), which tries to\nacquire the exclusive lock (similar to delegation return cases).\n\nHowever, calling nfscl_hasexpired() should *almost never* happen.\nIt happens when the client has been partitioned from the NFSv4\nserver for at least a minute.\nFor the FreeBSD NFSv4 server (which is what is called a courteous\nserver), the expired only happens when a conflicting open/lock\nrequest is done by another client or when open/lock resources\nbecome exhausted.\nWhen recovery from \"expired\" is done, all byte range locks are lost,\nso getting the client/server into this state is to be avoiding if\nat all possible.\n\nIf your NFSv4 server is a Linux one, expired will happen when the\nclient is network partitioned from the server for over 60sec.\n\nIn other words, I think you have some sort of network connectivity\nproblem to the NFS server.\n\nAs an alternative to upgrading to stable/13, you could switch to\nusing NFSv3 mounts to avoid the hang."
+}

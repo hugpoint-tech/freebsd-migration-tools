@@ -1,0 +1,8 @@
+{
+ "id": 577684,
+ "bug_id": 150503,
+ "attachment_id": 0,
+ "creation_time": "2010-09-12T17:30:04Z",
+ "creator": "william.franck@sterna.io",
+ "text": "After just creating zpool , not even zfs volumes, ZFS is fine.\nAfter rebooting the system, all zfs disk are marked UNAVAIL.\n\nTested with different disk formating :\n# dd if=/dev/zero of=/dev/ad4 bs=1m count=1\nor \n# gpart create -s gpt ad8\n# gpart add -b 34 -s 128 -t freebsd-boot ad8\n# gpart add -b 162 -s 1465148973 -t freebsd-zfs ad8\n\nTested with and without any real data.\n\nAfter reboot : \n# zpool status\npool: tank\nstate: FAULTED\nstatus: One or more devices could not be used because the label is missing \n\tor invalid.  There are insufficient replicas for the pool to continue\n\tfunctioning.\naction: Destroy and re-create the pool from a backup source.\n  see: http://www.sun.com/msg/ZFS-8000-5E\n scrub: none requested\nconfig:\n\tNAME        STATE     READ WRITE CKSUM\n\ttank        FAULTED      0     0     0  corrupted data\n\t  raidz1    ONLINE       0     0     0\n\t    ad4p2   UNAVAIL      0     0     0  corrupted data\n\t    ad8p2   UNAVAIL      0     0     0  corrupted data\n\nHow-To-Repeat: # zpool destroy  tank \n\nCASE A  (same apply for ad4 and ad8) :\n# gpart create -s gpt ad8\n# gpart add -b 34 -s 128 -t freebsd-boot ad8\n# gpart show ad8\n# gpart add -b 162 -s 1465148973 -t freebsd-zfs ad8\n# fdisk -a /dev/ad8\n\nnote : 1465148973 is the exact number reported by 'gpart show'\n\nor CASE B :\n# dd if=/dev/zero of=/dev/ad4 bs=1m count=1\n# dd if=/dev/zero of=/dev/ad8 bs=1m count=1\n\n\nAND FOLLOWING : \n# zpool create tank raidz ad4 ad8\n# zfs create -p tank/ROOT/freebsd\n\nREBOOT\n# shutdown -r now\n(restared... login ... )\n# zpool status"
+}

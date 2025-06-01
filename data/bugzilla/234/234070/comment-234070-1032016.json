@@ -1,0 +1,8 @@
+{
+ "id": 1032016,
+ "bug_id": 234070,
+ "attachment_id": 201141,
+ "creation_time": "2019-01-14T21:56:30Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "Created attachment 201141\nqt5-version.2.patch\n\nThe problem was in www/qt5-webengine.  It needs to be rebuilt with this patch.\n\nOlder versions of Qt5Webengine exported some memory allocation symbols from the bundled Chromium.  Version 5.9 stopped exporting these [1] but the symbols were kept as weak wrappers for the standard allocation functions to maintain binary compatibility. [2][3]  The problem is that the call to the standard function in these weak wrappers is only resolved to the standard function if there's a call to this standard function in other parts of Qt5Webengine, because only then is there a non-weak symbol that takes precedence over the weak one.  If there's no such non-weak symbol the call in the weak wrapper resolves to the weak wrapper itself creating an infinite tail call loop that overflows the stack and causes a crash.  Some of the allocation functions are variants of C++ new and delete and it probably depends on the compiler whether these variants are used in other parts of Qt5Webengine.\n\nThis patch removes the weak wrappers (makes them Linux specific).  This isn't binary compatible but we are already breaking that with the changes to the symbol versions.\n\n[1] https://github.com/qt/qtwebengine/commit/5c2cbfccf9aafb547b0b30914c4056abd25942a4\n[2] https://github.com/qt/qtwebengine/commit/2ed5054e3a800fa97c2c9e920ba1e6ea4b6ef2a5\n[3] https://github.com/qt/qtwebengine/commit/009f5ebb4bd6e50188671e0815a5dae6afe39db5"
+}

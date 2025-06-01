@@ -1,0 +1,8 @@
+{
+ "id": 496950,
+ "bug_id": 134192,
+ "attachment_id": 0,
+ "creation_time": "2009-05-03T20:50:00Z",
+ "creator": "rea-fbsd@codelabs.ru",
+ "text": "\nSome vendors (in my case, Asus) like to create aliases for node names\nin the DSDT table:\n-----\n    Scope (_PR)\n    {\n        Processor (P001, 0x01, 0x00000810, 0x06) {}\n        Alias (P001, CPU1)\n        Processor (P002, 0x02, 0x00000000, 0x00) {}\n        Alias (P002, CPU2)\n        Processor (P003, 0x03, 0x00000000, 0x00) {}\n        Alias (P003, CPU3)\n        Processor (P004, 0x04, 0x00000000, 0x00) {}\n        Alias (P004, CPU4)\n    }\n-----\nAnother example (from Asus system too) is presented in the patch below.\n\nSince AcpiWalkNamespace treats CPUX as the real Processor objects, the\nprobe order for acpi(4) bus children will be P001, CPU1, P002, CPU2,\nP003, CPU3, P004, CPU4.  This is very bad, because half of processors\nare attached twice and half -- aren't attached at all.  Moreover, est\n(Enhanced SpeedStep cpufreq driver) isn't able to get _PSS for CPUX, so\nP-states will be missing for half of processors.\n\nFix: The following patch adds ACPI namespace walking procedure that skips\nnodes that are results of the Alias() operator invocation.  This new\nmethod is used for probing of acpi(4) bus members.\n\nThe patch works on two machines of mine that have these annoying Alias()\ncalls in the _PR namespace.\n\nI had tried this patch both on 7.x and 8-CURRENT.\nHow-To-Repeat: \nInsert Alias() instruction to your custom DSDT and try to use it,\nenabling debug that will show what ACPI nodes are attached to cpuX\ndevice nodes."
+}

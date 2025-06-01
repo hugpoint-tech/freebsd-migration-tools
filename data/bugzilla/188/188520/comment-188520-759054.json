@@ -1,0 +1,8 @@
+{
+ "id": 759054,
+ "bug_id": 188520,
+ "attachment_id": 0,
+ "creation_time": "2014-04-12T16:50:00Z",
+ "creator": "guyyur@gmail.com",
+ "text": "ifconfig -L shows pltime and vltime as zero.\n\nSeems that ifconfig was missed in r253970 which\nchanged usage from time_second to time_uptime.\n\n\nifconfig -L\n...\n        inet6 XXXX:XXXX:XXXX:XXXX:YYYY:YYYY:YYYY:YYYY\n          prefixlen 64 autoconf temporary pltime 0 vltime 0\n\nThe prefix is learned via router advertisment.\ntcpdump shows non zero values in the icmp6 packet.\n\nA test program that calls SIOCGIFALIFETIME_IN6\nshows the value is \u003c wall clock which is\nthe test done by ifconfig.\ntime = 1397314436\nia6t_preferred = 608907\nia6t_expire = 2596107\n\nFix: Attached patch to use clock_gettime(CLOCK_MONOTONIC_FAST)\nin ifconfig per r253970 comment.\n\n\nHow-To-Repeat: Run \"ifconfig -L\" with global or ULA IPv6 addresses learned\nthrough router advertisment or define an IPv6 address\nwith pltime and vltime:\nifconfig IFNAME inet6 2001:DB8::1 pltime 100 vltime 100\nifconfig -L IFNAME inet6"
+}

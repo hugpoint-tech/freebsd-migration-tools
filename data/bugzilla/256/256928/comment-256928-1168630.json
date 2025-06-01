@@ -1,0 +1,8 @@
+{
+ "id": 1168630,
+ "bug_id": 256928,
+ "attachment_id": 0,
+ "creation_time": "2021-07-01T20:01:32Z",
+ "creator": "bmueller@panasas.com",
+ "text": "dtrace stack() is not resolving kernel module symbols for either FreeBSD 12.1 or 12.2.  The example below exercises autofs.ko.  autofs_readdir is displayed as linux.ko`0xffffffff82a3b314\n\ndtrace -n 'fbt:autofs::entry { @[stack(), ustack()] = count(); }' -c 'ls -l /net'\n...\n              linux.ko`0xffffffff82a3b314\n              kernel`VOP_READDIR_APV+0x7b\n              kernel`kern_getdirentries+0x201\n              kernel`sys_getdirentries+0x29\n              kernel`amd64_syscall+0x387\n              kernel`0xffffffff8106785e\n\n              libc.so.7`__sys_getdirentries+0xa\n              libc.so.7`readdir+0x30\n              libc.so.7`0x800389677\n              libc.so.7`fts_children+0x14b\n              ls`traverse+0x1a7\n              ls`main+0x945\n              ls`_start+0x100\n              `0x800235000\n                1\n...\n# kgdb /boot/kernel/kernel /dev/mem\n...\n(kgdb) l* 0xffffffff82a3b314\nReading in symbols for /usr/src/sys/fs/autofs/autofs_vnops.c...done.\n0xffffffff82a3b314 is in autofs_readdir (/usr/src/sys/fs/autofs/autofs_vnops.c:411).\n406             uio = ap-\u003ea_uio;\n407             initial_resid = ap-\u003ea_uio-\u003euio_resid;\n408\n409             KASSERT(vp-\u003ev_type == VDIR, (\"!VDIR\"));\n410\n411             if (autofs_cached(anp, NULL, 0) == false \u0026\u0026\n412                 autofs_ignore_thread(curthread) == false) {\n413                     error = autofs_trigger_vn(vp, \"\", 0, \u0026newvp);\n414                     if (error != 0)\n415                             return (error);"
+}

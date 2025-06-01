@@ -1,0 +1,8 @@
+{
+ "id": 1051291,
+ "bug_id": 238013,
+ "attachment_id": 204501,
+ "creation_time": "2019-05-21T07:04:54Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "Created attachment 204501\nProposed patch\n\nThere is a buffer overrun vulnerability in function dname_labeldec in usr.sbin/rtadvctl/rtadvctl.c, which is same as vulnerability that was fixed in https://github.com/freebsd/freebsd/commit/a9647f4732da9b517eec6d174a7c1f2441443729.\n\nstatic size_t\ndname_labeldec(char *dst, size_t dlen, const char *src)\n{\n        size_t len;\n        const char *src_origin;\n        const char *src_last;\n        const char *dst_origin;\n\n        src_origin = src;\n        src_last = strchr(src, '\\0');\n        dst_origin = dst;\n        memset(dst, '\\0', dlen);\n        while (src \u0026\u0026 (len = (uint8_t)(*src++) \u0026 0x3f) \u0026\u0026\n            (src + len) \u003c= src_last) {\n                if (dst != dst_origin)\n                        *dst++ = '.';\n                mysyslog(LOG_DEBUG, \"\u003c%s\u003e labellen = %zd\", __func__, len);\n                memcpy(dst, src, len);\n                src += len;\n                dst += len;\n        }\n        *dst = '\\0';\n\n        return (src - src_origin);\n}\n\nIn the condition of while, we should limit the range of variable dst.\n\nThe attachment is the proposed patch."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 545108,
+ "bug_id": 144061,
+ "attachment_id": 0,
+ "creation_time": "2010-05-27T16:27:40Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: rwatson\nDate: Thu May 27 15:27:31 2010\nNew Revision: 208601\nURL: http://svn.freebsd.org/changeset/base/208601\n\nLog:\n  When close() is called on a connected socket pair, SO_ISCONNECTED might be\n  set but be cleared before the call to sodisconnect().  In this case,\n  ENOTCONN is returned: suppress this error rather than returning it to\n  userspace so that close() doesn't report an error improperly.\n  \n  PR:\t\tkern/144061\n  Reported by:\tMatt Reimer \u003cmreimer at vpop.net\u003e,\n  \t\tNikolay Denev \u003cndenev at gmail.com\u003e,\n  \t\tMikolaj Golub \u003cto.my.trociny at gmail.com\u003e\n  MFC after:\t3 days\n\nModified:\n  head/sys/kern/uipc_socket.c\n\nModified: head/sys/kern/uipc_socket.c\n==============================================================================\n--- head/sys/kern/uipc_socket.c\tThu May 27 15:17:06 2010\t(r208600)\n+++ head/sys/kern/uipc_socket.c\tThu May 27 15:27:31 2010\t(r208601)\n@@ -665,8 +665,11 @@ soclose(struct socket *so)\n \tif (so-\u003eso_state \u0026 SS_ISCONNECTED) {\n \t\tif ((so-\u003eso_state \u0026 SS_ISDISCONNECTING) == 0) {\n \t\t\terror = sodisconnect(so);\n-\t\t\tif (error)\n+\t\t\tif (error) {\n+\t\t\t\tif (error == ENOTCONN)\n+\t\t\t\t\terror = 0;\n \t\t\t\tgoto drop;\n+\t\t\t}\n \t\t}\n \t\tif (so-\u003eso_options \u0026 SO_LINGER) {\n \t\t\tif ((so-\u003eso_state \u0026 SS_ISDISCONNECTING) \u0026\u0026\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

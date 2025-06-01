@@ -1,0 +1,8 @@
+{
+ "id": 1181764,
+ "bug_id": 259056,
+ "attachment_id": 0,
+ "creation_time": "2021-10-11T06:33:22Z",
+ "creator": "aehlig@linta.de",
+ "text": "Thanks for looking into the build failures of bazel on powerpc. As I don't have that architecture, I appreciate your help.\n\nWith respect to the the patch, I think, something went wrong during generation or upload: it mentions ${FILESDIR}/extra-patch-absl_base_internal_unscaledcycleclock.cc but does not add that file (as if the -N option was missing in the invocation of `diff`).\n\nConcerning the way the patch is added to the build, I think the approach of unpacking and repacking distfiles (in this case the bundled ones) is very maintainable. As\n- bazel includes grpc as an http_archive,\n- grp includes abseil as an http_archive, and\n- bazel's http_archive supports patching[1]\nI would use that official bazel mechanism to add the patch to the build. More precisely, I would do the following.\n\nAt pre (or even post) patch time copy the extra patch files to ${WRKSRC}/third_party/grpc.\n\nPatch line 1235 of the ${WRKSRC}/WORKSPACE to include an additional patch after the patch mentioned there already.\n\nThat patch patches bazel/grpc_deps.bzl to change the definition of the http_archive of abseil to include your patch (by adding the patches attribute). It has to be a p0 patch relative to grpc's root.\n\nWhat do you think? In my opinion, using bazel's official patching mechanism in the described way, the port stays easier to adapt on updates of bazel. Should we do it like this? Can you update your patch accordingly?\n\nThanks again for caring about the bazel port.\nKlaus\n\n\n\n[1] https://docs.bazel.build/versions/main/repo/http.html#http_archive"
+}

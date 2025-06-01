@@ -1,0 +1,8 @@
+{
+ "id": 861093,
+ "bug_id": 206551,
+ "attachment_id": 0,
+ "creation_time": "2016-01-24T09:39:29Z",
+ "creator": "ecturt@gmail.com",
+ "text": "It's worth noting that the minimum size which can be passed for a signed 32bit integer is `-0x7fffffff`, which wraps around to `0xffffffff80000001`.\n\nIf on FreeBSD 9, when this size goes through `malloc` it will eventually be passed down to `uma_large_malloc`, which treats size as `vm_size_t`, a typedef for a 32bit unsigned integer, this means the size will truncate to `0x80000001` (just over 2GB).\n\nAn allocation of 2GB is much more likely to succeed. And once it has succeeded, `copyin` will attempt to copy `0xffffffff80000001` bytes from userland into this allocation, which will clearly result in a heap overflow.\n\nThe size of this heap overflow could be controlled by unmapping the page after the userland mapping, resulting in the function returning `EFAULT` once it has reached the end of the userland mapping. With a heap overflow of controllable size and contents, this bug shouldn't be difficult to exploit. I've demonstrated a similar exploit for PS4 kernel using `kevent` for heap layout manipulation primitives.\n\nFortunately, for later versions of FreeBSD, the inner calls of `malloc` correctly handle `size` as 64bit types, which means the worst that can happen is the thread locking up whilst trying to allocate `0xffffffff80000001` bytes (because `M_WAITOK` is passed)."
+}

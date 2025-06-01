@@ -1,0 +1,8 @@
+{
+ "id": 1135469,
+ "bug_id": 251694,
+ "attachment_id": 0,
+ "creation_time": "2020-12-08T21:56:57Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "If you do a \"zfs send -p \u003csrc\u003e | zfs receive -F \u003cdst\u003e\" to an existing but empty dataset, the receive will complete successfully but spuriously fail with exit status 1 and the message \"cannot mount 'pool/dataset': mountpoint or dataset is busy\".\n\nFor example,\n\nzpool create pool vtbd\nzfs create pool/src\nzfs create pool/dst\ntouch /pool/src/foo\nzfs snapshot pool/src@1\nzfs send -p pool/src@1 | zfs receive -F pool/dst\ncannot mount 'pool/dst': mountpoint or dataset is busy\n\nThe root cause is a merge error made in r344569 and MFCed in r345578, which merged changes a10d50f999 and e63ac16d25 from ZoL.  The merge:\n* failed to flip a == to an != like the upstream change did, and\n* Left out one chunk\n\nThis bug affects stable/12, but not head.  It looks like stable/11 is affected too, but I haven't tested yet."
+}

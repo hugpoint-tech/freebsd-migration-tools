@@ -1,0 +1,8 @@
+{
+ "id": 696688,
+ "bug_id": 174689,
+ "attachment_id": 0,
+ "creation_time": "2012-12-25T14:51:54Z",
+ "creator": "mva@FreeBSD.org",
+ "text": "\r\n\u003e When initializing libmpg123.so.0 (audio/mpg123) from Python with CDLL,\r\n\u003e the 64-bit pointer value returned by mpg123_new(None, None) gets\r\n\u003e reduced to 32 bits. The equivalent program in C does not have this\r\n\u003e problem.\r\n\r\n\u003e from ctypes import *\r\n\u003e\r\n\u003e mpg123 = CDLL('libmpg123.so') # audio/mpg123\r\n\u003e print mpg123\r\n\u003e\r\n\u003e MPG123_OK = 0\r\n\u003e if mpg123.mpg123_init() != MPG123_OK:\r\n\u003e     print \"mpg123_init() failed\"\r\n\u003e else:\r\n\u003e     mh = mpg123.mpg123_new(None, None)\r\n[...]\r\n\r\nI do not see that you provide any information to ctypes about how the\r\nfunction mpg123_new() should behave. By default it will assume to return\r\na ctypes.c_int, which most likely will be a 4-byte value.\r\n\r\n\u003e\u003e\u003e import ctypes\r\n\u003e\u003e\u003e print ctypes.sizeof(ctypes.c_int)\r\n4\r\n\r\nFurthermore, the mpg123.h header declares the function as\r\n\r\n   mpg123_handle *mpg123_new(const char* decoder, int *error);\r\n\r\nmpg123_handle is a struct typedef. Instead of using a 4-byte int, you\r\nmight be better of with properly declaring the arguments\r\n(POINTER(c_char) and POINTER(c_int)) and  return\r\nvalue (c_void_p or a Structure stub) of the function within your ctypes\r\ncode.\r\n\r\nFrom what I can see on my test platform, it works properly according to\r\nthe basic ctypes definition.\r\n\r\nCheers\r\nMarcus"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1319843,
+ "bug_id": 280516,
+ "attachment_id": 0,
+ "creation_time": "2024-08-09T18:08:10Z",
+ "creator": "jlduran@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #3)\n\nThere are two issues:\n\n1. The main issue: blacklistd-helper should discard stderr when invoking the flush action (it already does for the add action). This has been submitted upstream (https://github.com/zoulasc/blocklist/pull/11). The attached patch has the proposed fix (just sweep the warnings under the rug).\n\n2. The warnings in pf:\n\n2.1. Use the attached sample pf.conf: it contains a \"blacklistd/*\" anchor, any anchor will do.\n\n2.2. First test: After reloading the rules, issue:\n\n    # pfctl -a blacklistd -sA\n    Anchor 'blacklistd' not found.\n\nThe anchor exists, and it works as it should. Seeing this message in the dmesg the first time threw me off a little, thinking blacklistd was not going to be able to add blocking rules (this can be silenced by applying step 1).  I *think* this is one bug in pfctl.\n\n2.3. Issue pfctl, specifying the anchor with all modifiers, just focusing on the warnings/errors:\n\n    # pfctl -a blacklistd -sa 1\u003e /dev/null\n    pfctl: DIOCGETETHRULES: No such file or directory\n    pfctl: DIOCGETRULES: Invalid argument\n    pfctl: DIOCGETRULES: Invalid argument\n    pfctl: DIOCGETRULES: Invalid argument\n\nI would guess this is another bug in pfctl.\n\n2.4. Optionally, use the attached pfctl.c diff, that allready has \"XXX\" marks on the paths that trigger the warnings above.\n\nNote that pf works fine, the warnings just don't seem right (to the untrained eye)."
+}

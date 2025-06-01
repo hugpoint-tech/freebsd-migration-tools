@@ -1,0 +1,8 @@
+{
+ "id": 1016493,
+ "bug_id": 201276,
+ "attachment_id": 0,
+ "creation_time": "2018-10-16T22:36:14Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #13)\nMy third comment is not right.  Consider the case where C is a child of P, and is traced.  If P exits, the kernel clears P_TRACED on C and sends SIGKILL to C.  Then (p-\u003ep_oppid != 0 \u0026\u0026 p-\u003ep_oppid != p-\u003ep_pptr-\u003ep_pid) is true for p = C, but C does not have P_TRACED set.\n\nOn the other hand, if P is tracing C and C exits, we end up leaving P_TRACED set on C through proc_reap() since p-\u003ep_oppid == p-\u003ep_pptr-\u003ep_pid.  So the latest patch is leaking P_TRACED in some cases.\n\nMy suspicion is that the code which sends SIGKILL to C in exit1() should set q-\u003ep_oppid = 0 in addition to clearing P_TRACED.  There's quite a lot of open-coded process state updates related to ptrace(), though, so it's hard to be sure. :("
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1341630,
+ "bug_id": 267028,
+ "attachment_id": 0,
+ "creation_time": "2024-12-30T16:21:44Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to George Mitchell from comment #344)\n\nYou might want to adjust the text of the panic as well,\nso that the wording does not mislead folks reading what\nis reported by the panic: no longer suggest the\ncondition's status.\n\nIt looks to me like the code:\n\n        if ((frame-\u003etf_rflags \u0026 PSL_I) == 0) {\n                /*\n                 * Buggy application or kernel code has disabled\n                 * interrupts and then trapped.  Enabling interrupts\n                 * now is wrong, but it is better than running with\n                 * interrupts disabled until they are accidentally\n                 * enabled later.\n                 */\n. . .\n\nwould still happen and do:\n\n                        default:\n                                printf(\n                                    \"kernel trap %d with interrupts disabled\\n\",\n                                    type);\n\n                                /*\n                                 * We shouldn't enable interrupts while holding a\n                                 * spin lock.\n                                 */\n                                if (td-\u003etd_md.md_spinlock_count == 0)\n                                        enable_intr();\n\nIt might be that Andriy was suggesting avoiding parts\nof this in some way."
+}

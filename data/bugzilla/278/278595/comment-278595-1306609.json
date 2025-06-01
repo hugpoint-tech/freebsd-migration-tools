@@ -1,0 +1,8 @@
+{
+ "id": 1306609,
+ "bug_id": 278595,
+ "attachment_id": 0,
+ "creation_time": "2024-04-26T19:47:11Z",
+ "creator": "freebsd@gushi.org",
+ "text": "This may also relate to 167822, and 205393.  For us, it hit us when the startup script for kadmin could not detect that kdc_enable was set in /etc/rc.conf.d/kdc\n\nRight now, when we have rc.subr load a config, it only loads $_name in /etc/rc.conf.d -- this means that it cannot source the whole configration tree:\n\n# If a service name was specified, attempt to load\n# service-specific configuration\nif [ -n \"$_name\" ] ; then\n        for _d in /etc ${local_startup}; do\n                _d=${_d%/rc.d}\n                if [ -f ${_d}/rc.conf.d/\"$_name\" ]; then\n                        debug \"Sourcing ${_d}/rc.conf.d/$_name\"\n                        . ${_d}/rc.conf.d/\"$_name\"\n                elif [ -d ${_d}/rc.conf.d/\"$_name\" ] ; then\n                        local _rc\n                        for _rc in ${_d}/rc.conf.d/\"$_name\"/* ; do\n                                if [ -f \"$_rc\" ] ; then\n                                        debug \"Sourcing $_rc\"\n                                        . \"$_rc\"\n                                fi\n                        done\n                fi\n        done\nfi\n\nMy proposal is that all files in /etc/rc.conf.d/* should in fact be sourced, just as we currently read in all of rc.conf, and don't limit it to $name_*.\n\n(I don't have a dog in tha particular way that this is done, so I'm not pushing a patch, but it seems fairly trivial.\n\nI mentioned this to cy@ in relation to kerberos and was asked to push a PR."
+}

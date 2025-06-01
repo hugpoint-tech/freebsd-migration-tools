@@ -1,0 +1,8 @@
+{
+ "id": 1153115,
+ "bug_id": 254514,
+ "attachment_id": 0,
+ "creation_time": "2021-03-23T20:56:21Z",
+ "creator": "freebsd@igalic.co",
+ "text": "This bug bubbled up as a side-effect to: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=254513\n\njail startup is stuck at:\n\n/sbin/ifconfig epair10b vnet $name\n\nwhen we run procstat kstack, we see for the different jails:\n\n  913 100682 ifconfig            -                   mi_switch _sx_xlock_hard epoch_drain_callbacks if_detach_internal if_vmove ifhwioctl ifioctl kern_ioctl sys_ioctl amd64_syscall fast_syscall_common \n\n  835 100475 ifconfig            -                   mi_switch sched_bind epoch_drain_callbacks if_detach_internal if_vmove ifhwioctl ifioctl kern_ioctl sys_ioctl amd64_syscall fast_syscall_common \n\nsimilarly, trying to destroy an epair also gets stuck:\n\n 1119 100988 ifconfig            -                   mi_switch _sx_xlock_hard epoch_drain_callbacks if_detach_internal if_detach epair_clone_destroy if_clone_destroyif if_clone_destroy ifioctl kern_ioctl sys_ioctl amd64_syscall fast_syscall_common \n\ngiven that this is a side-effect of 1 CPU core being 100% busy, does this mean that draining callbacks needs all CPUs?"
+}

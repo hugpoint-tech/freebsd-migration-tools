@@ -1,0 +1,8 @@
+{
+ "id": 826564,
+ "bug_id": 200637,
+ "attachment_id": 0,
+ "creation_time": "2015-06-04T14:59:28Z",
+ "creator": "bms@fastmail.net",
+ "text": "In FreeBSD, the following vmrun commands fail to operate due to a PAM-related permissions issue: copyFileFromHostToGuest, runProgramInGuest, runScriptInGuest.\n\nSymptom: If I try to use vmrun with e.g. a passwordless account, I get the following log message:\n%%%\nNov 27 16:49:11 myhost vmsvc[9911]: in openpam_load_module(): no\npam_unix2.so found\n%%%\n\nRoot cause: The PAM configuration installed with the port refers to\nnon-existent PAM modules.\n\nResolution: Remove the non-existent PAM modules from the configuration installed for vmtoolsd.\n\n%%%\nsed -i.orig -e '/pam_unix2/d;/pam_unix_auth/d;/pam_unix_acct/d'\n/usr/local/etc/pam.d/vmtoolsd\n%%%\n\nWith this change, vmrun commands will work with the following caveats at the host:\n\n - The runScriptInGuest command takes the content -- not a path -- of a script to be executed with /bin/sh.\n\n - vmrun logs error messages to stdout, so they need to be parsed for guest command return codes."
+}

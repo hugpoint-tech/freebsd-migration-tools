@@ -1,0 +1,8 @@
+{
+ "id": 750361,
+ "bug_id": 186515,
+ "attachment_id": 0,
+ "creation_time": "2014-02-06T17:50:00Z",
+ "creator": "jyhpsycho@gmail.com",
+ "text": "I tried to making USB memory stick using GPT partition table scheme. I usually use 152 entries to aligning 4KB boundary for data disk(start location) and use 156 entries to aligning 4KB boundary for system disk(end location, misalignment of start location is used for boot code and make 4KB aligned root partition). I don't like that some \"free\" sectors on disk :-)\n\nBut, it failed to boot when partition entry count is adjusted to more than 128.\n\n* WORKS : 128 entries GPT(1st usable sector = 34) with freebsd-boot partition at sector 34, 40.\n\n* DOESN'T WORK : 152 entries GPT(1st usable sector = 40) with freebsd-boot partition at sector 40, 156 entries GPT(1st usable sector = 41) with freebsd-boot partition at sector 41.\n\n\n\nYes, There's no problem with default size GPT partition table. \"128 entires\" - minimum entry count by spec. - seems to be sufficient at most cases. But, that can be arbitrary size and should be supported even that cases. I think there's some issue on gpart or early-stage boot loader(/boot/pmbr).\n\nHow-To-Repeat: * For example, USB disk is da0 here.\n\n# gpart create -s gpt -n 152 da0\n# gpart add -t freebsd-boot -b 40 -s 32 -i 1 da0\n# gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 da0\n\nand try to boot USB. It should be show \"clockwise\" loading screen even no freebsd-ufs partition on USB, but it doesn't show anything and reboot immediately. It(doesn't say anything and reboot) occurs with /boot populated freebsd-ufs partition, too."
+}

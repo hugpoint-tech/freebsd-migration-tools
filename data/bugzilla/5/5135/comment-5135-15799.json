@@ -1,0 +1,8 @@
+{
+ "id": 15799,
+ "bug_id": 5135,
+ "attachment_id": 0,
+ "creation_time": "1997-11-24T06:30:01Z",
+ "creator": "cagney@tpgi.com.au",
+ "text": "\nBurried away in the scanf documentation is:\n\n     L       Indicates that the conversion will be efg and the next pointer is\n             a pointer to long double. (This type is not implemented; the L\n             flag is currently ignored.)\n\nto be more precise, it assigns a `%g' value (32 bit float or single)\nto a `%Lg' destination (80 bit long double).  I'm sorry but doing this\nis worse than stupid!\n\nFix: \n\nFor FreeBSD:\n\no       modify scanf so that for, %Lg (long double) it parses\n        it as %lg (double) then extends/stores it as a long double.\n\no\tRemove all support for %Lg in both printf and scanf.\n\n\tSome software (eg gdb) tests printf (\"%Lg\") and then assumes\n\tscanf also works.  Consequently it is an all or nothing afair\n\t:-)\n\n\nFor GDB:\n\nI'll see if I can get GDB changed so that its configure script\nseparately checks for support of %Lg in scanf and printf.\n\n\nHave a nice day.\n\n\t\t\tAndrew\nHow-To-Repeat: \nOne example, all GDB floating point is broken:\n\n        $ gdb\n        ...\n        (gdb) print 1.0\n        $1 = 0\n\nIf you trace it through, c-exp.c:parse_number calls sscanf(...%Lg...)."
+}

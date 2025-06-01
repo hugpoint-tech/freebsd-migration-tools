@@ -1,0 +1,8 @@
+{
+ "id": 1055461,
+ "bug_id": 238794,
+ "attachment_id": 0,
+ "creation_time": "2019-06-25T03:26:32Z",
+ "creator": "jason@tubnor.net",
+ "text": "OpenBSD has just imported LLVM 8.0 into -current and the way the compiler builds code to test the LAPIC register has changed (though still valid according to Intel documentation).\n\nguenther@ from the OpenBSD project provided some insights based on information provided.  Below is an extract from the email thread:\n\n\u003e Below is output from bhyve.log:\n\u003e \n\u003e rdmsr to register 0xc80 on vcpu 0\n\u003e Failed to emulate instruction [0xf7 0x04 0x25 0x00 0xd3 0xd1 0x81 0x00 0x10\n\u003e 0x00 0x00 0x74 0x08 0xf3 0x90] at 0xffffffff817648f0\n\nAccording to objdump -d, that's:\n f7 04 25 00 d3 d1 81    testl  $0x1000,0xffffffff81d1d300\n 00 10 00 00\n 74 08                   je     \u003cforward some\u003e\n f3 90                   pause\n\nThat's testing the LAPIC ICRLO, a memory-mapped register.  Previously, the \ncompiler generated code like this:\n\n 8b 0c 25 00 63 cf 81    mov    0xffffffff81cf6300,%ecx\n f7 c1 00 10 00 00       test   $0x1000,%ecx\n 74 09                   je     \u003cforward some\u003e\n f3 90                   pause  \n\nwhere it loaded the LAPIC register into %ecx and then tested that value; \nnow it combines them and does a direct test.  Congrats, that's legal \naccording to Intel (reportedly, Windows will use SSE(!) instructions to \nread LAPIC registers), so this seems like a bug in Bhyve.\n\nThe full thread can be found here:\n\nhttps://marc.info/?l=openbsd-bugs\u0026m=156142900518812\u0026w=2"
+}

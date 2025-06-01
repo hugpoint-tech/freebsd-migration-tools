@@ -1,0 +1,8 @@
+{
+ "id": 1048147,
+ "bug_id": 233955,
+ "attachment_id": 0,
+ "creation_time": "2019-04-23T09:53:40Z",
+ "creator": "jason@zx2c4.com",
+ "text": "Alright, I've now spent a bit of time tracking down these race conditions and reproducing them in a VM. It looks like there are two separate kernel race conditions:\n\n- SIOCGIFSTATUS races with SIOCIFDESTROY, which was being triggered by the call to ifconfig(8) in the route monitor script. This should be now fixed by: https://git.zx2c4.com/WireGuard/patch/?id=90c546598c0a9d9da82c138c6c9c1396c453368e\n\n- The asynchronous callback of IPv6 Link Local DAD conflict with both SIOCIFDESTROY and the /dev/tun cloning mechanism, resulting in a wide variety of crashes with dangling pointers on IPv6 address lists. I'm able to trigger this by just running `while true; do ifconfig tun0 create; ifconfig tun0 destroy; done` and after a while, there's one sort of crash. This should now be fixed by: https://git.zx2c4.com/wireguard-go/patch/?id=bb42ec7d185ab5f5cd3867ac1258edff86b7f307\n\nI'd appreciate it if Michael Muenz could test these and make sure it fixes his own reproducer. After, Bernhard Froehlich can backport those two packages into the ports tree. Finally, THIS BUG SHOULD REMAIN OPEN until the FreeBSD kernel team actually gets the man power to fix these race conditions; the above only represents a few workarounds but does not address the underlying issue of this bug at all."
+}

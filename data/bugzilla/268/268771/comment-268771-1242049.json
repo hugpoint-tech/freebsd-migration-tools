@@ -1,0 +1,8 @@
+{
+ "id": 1242049,
+ "bug_id": 268771,
+ "attachment_id": 0,
+ "creation_time": "2023-01-05T17:50:32Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "During an exp-run for llvm 15 (see bug 265425), it turned out that graphics/sane-backends failed to build with clang 15:\n\n  jpegtopdf.c:204:5: error: incompatible pointer to integer conversion assigning to 'long' from 'char *(int, int)' [-Wint-conversion]\n          tz = timezone;\n             ^ ~~~~~~~~\n  scanimage.c:1248:42: warning: call to undeclared function 'basename'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]\n                png_set_iCCP(*png_ptr, *info_ptr, basename(icc_profile), PNG_COMPRESSION_TYPE_BASE, icc_buffer, icc_size);\n                                                  ^\n  scanimage.c:1248:42: error: incompatible integer to pointer conversion passing 'int' to parameter of type 'png_const_charp' (aka 'const char *') [-Wint-conversion]\n                png_set_iCCP(*png_ptr, *info_ptr, basename(icc_profile), PNG_COMPRESSION_TYPE_BASE, icc_buffer, icc_size);\n                                                ^~~~~~~~~~~~~~~~~~~~~\n\nThe jpegtopdf error is because 'timezone' as a global external variable does not exist on FreeBSD: it is a glibc-ism. Use struct tm's tm_gmtoff field instead, which also has its sign reversed from the glibc global.\n\nThe scanimage error is because basename(3) is used without including \u003clibgen.h\u003e. With glibc, basename() is declared in both string.h and\nlibgen.h, where the former gives you the GNU specific variant, and the latter the POSIX variant."
+}

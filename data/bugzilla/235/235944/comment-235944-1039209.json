@@ -1,0 +1,8 @@
+{
+ "id": 1039209,
+ "bug_id": 235944,
+ "attachment_id": 0,
+ "creation_time": "2019-02-25T08:21:48Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "(In reply to Ravi Pokala from comment #13)\nOh, I recall this now.  Thank you for refreshing my memory.  And I could have checked the code more thoroughly myself.  So, sorry for the noise.\n\nIn one part-specific datasheet I noticed this curious bit:\nhttps://www.onsemi.com/pub/Collateral/N34C04-D.PDF\n\u003e 17. The N34C04MU3ETG will respond with NoACK following the dummy Data Byte,\n\u003e while the N34C04MU3EKTG will respond with ACK.\n\nMaybe that NoACK (NACK) is what we are seeing here as an SMBus error.\nAlthough the code mapped PIIX4_SMBHSTSTAT_ERR | PIIX4_SMBHSTSTAT_INTR to SMB_EBUSERR rather than to SMB_ENOACK, I am not sure if that mapping is (universally) correct.\n\nE.g., in one AMD BKDG document I see this:\n\u003e Bits            Description\n\u003e 2               DeviceErr. Read; Write-1-to-clear; Set-by-hardware.\n\u003e                 Reset: 0.\n\u003e                 1=An error of one of the following occurred:\n\u003e                 • Illegal command field.\n\u003e                 • Unclaimed cycle\n\u003e                 • Host device time-out.\n\u003e 1               SMBusInterrupt. Read; Write-1-to-clear; Set-by-hardware.\n\u003e                 Reset: 0. 1=Completion of the last host command.\n\nA combination of these bits can mean an \"unclaimed cycle\" and maybe that means \"NACK\" in the SMBus protocol terminology.\n\nSo, it would be interesting to see\n- what specific EEPROM part the DIMM in question uses (a looking glass can help)\n- what happens if we ignore the error from the page change write"
+}

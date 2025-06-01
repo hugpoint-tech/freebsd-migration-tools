@@ -1,0 +1,8 @@
+{
+ "id": 1329811,
+ "bug_id": 277015,
+ "attachment_id": 0,
+ "creation_time": "2024-10-15T03:55:20Z",
+ "creator": "cullum@sacredheartsc.com",
+ "text": "Just in case anyone else encounters my issue from a search engine, I managed to solve this problem using Poudriere Sets: https://wiki.freebsd.org/VladimirKrstulja/Guides/Poudriere#Sets\n\nI have a special \"set\" used solely by my LDAP/KDC servers, where I set the following in /usr/local/etc/poudriere.d/kdc-make.conf:\n\nOPTIONS_SET=GSSAPI GSSAPI_MIT\nsecurity_krb5_SET=LDAP\nsecurity_cyrus-sasl2-gssapi_SET=GSSAPI_BASE\nsecurity_cyrus-sasl2-gssapi_UNSET=GSSAPI_MIT\n\nThis lets me build MIT KRB's against OpenLDAP. Then, when OpenLDAP pulls in cyrus-sasl, it links against the base Heimdal, resolving the dependency loop.\n\nIn my \"default\" set (used by all hosts *except* my LDAP/KDC servers), I instead use the following options in /usr/local/etc/poudriere.d/make.conf:\n\nOPTIONS_SET=GSSAPI GSSAPI_MIT\nsecurity_cyrus-sasl2-saslauthd_SET=GSSAPI_MIT\n\nThis allows everything in my environment to use MIT's Kerberos, with the exception of cyrus-sasl2-gssapi on the LDAP server itself, which uses the base heimdal libraries.\n\nThe only thing the LDAP server uses the base Heimdal for is to accept GSSAPI authenticated SASL connections from clients (which are all using MIT kerberos).\n\nNo issues so far."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 952470,
+ "bug_id": 220596,
+ "attachment_id": 0,
+ "creation_time": "2017-09-18T10:39:29Z",
+ "creator": "FreeBSD@ShaneWare.Biz",
+ "text": "(In reply to Roberto Fernandez Cueto from comment #27)\n\nYour example use of find_library is wrong.\n\nFrom pydocs -\n\u003e name is the library name without any prefix like lib, suffix like .so, .dylib or version number (this is the form used for the posix linker option -l)\n\nsysctlbyname takes a char* as the first arg - in ctypes get that from create_string_buffer(), also prefixing it as bytes works - b'kern.boottime'\n\nWhile it doesn't actually make a difference, using ctypes.c_size_t for sz would be more correct.\n\nSo for the proper results in 2.7 and 3.x use\n\nimport ctypes\nimport ctypes.util\nlibc = ctypes.CDLL(ctypes.util.find_library('c'), use_errno=True)\nsz = ctypes.c_size_t(0)\n\nThen either\nsysctl_name = ctypes.create_string_buffer(b'kern.boottime')\nlibc.sysctlbyname(sysctl_name, None, ctypes.byref(sz), None, 0)\n\nor\nlibc.sysctlbyname(b'kern.boottime', None, ctypes.byref(sz), None, 0)\n\n\nSo to get rid of the exception on starting xonsh -\n\nYou will find in _uptime_bsd() xp.LIBC is None so that points to the first fix being back in __amalgam__.py:LIBC()\n\nAdjust the ON_BSD test to use find_library() - the same as ON_DARWIN\n\nelif ON_BSD:\n    try:\n        libc = ctypes.CDLL(ctypes.util.find_library(\"c\"))\n\nThen in _uptime_bsd() either prefix the sysctlname with b or use create_string_buffer()\n\nxp.LIBC.sysctlbyname(b'kern.boottime', None, ctypes.byref(sz), None, 0)"
+}

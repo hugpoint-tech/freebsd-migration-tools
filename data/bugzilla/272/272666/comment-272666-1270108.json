@@ -1,0 +1,8 @@
+{
+ "id": 1270108,
+ "bug_id": 272666,
+ "attachment_id": 0,
+ "creation_time": "2023-08-13T16:25:16Z",
+ "creator": "schakrabarti@microsoft.com",
+ "text": "I have added two debug printfs in add route and post that we are not hitting the panic during reboot.\nI guess some race condition is happening, which is why the delay from printfs is mitigating the panic.\nI have tried 10 reboots with this, and no issue.\n\n\ndiff --git a/sys/net/route/route_ctl.c b/sys/net/route/route_ctl.c\nindex 9c9b148eba19..aaf404d565a1 100644\n--- a/sys/net/route/route_ctl.c\n+++ b/sys/net/route/route_ctl.c\n@@ -1237,6 +1237,7 @@ add_route(struct rib_head *rnh, struct rtentry *rt,\n                rc-\u003erc_nh_new = rnd-\u003ernd_nhop;\n                rc-\u003erc_nh_weight = rnd-\u003ernd_weight;\n\n+               printf(\"add_route called before rib_notify\\n\");\n                rib_notify(rnh, RIB_NOTIFY_IMMEDIATE, rc);\n                return (0);\n        }\ndiff --git a/sys/net/route/route_subscription.c b/sys/net/route/route_subscription.c\nindex 510b5117df1b..4a9cc0c5f800 100644\n--- a/sys/net/route/route_subscription.c\n+++ b/sys/net/route/route_subscription.c\n@@ -58,7 +58,7 @@ rib_notify(struct rib_head *rnh, enum rib_subscription_type type,\n     struct rib_cmd_info *rc)\n{\n        struct rib_subscription *rs;\n-\n+       printf(\"rnh is %s\",rnh? \"not null\": \"null\");\n        CK_STAILQ_FOREACH(rs, \u0026rnh-\u003ernh_subscribers, next) {\n                if (rs-\u003etype == type)\n                        rs-\u003efunc(rnh, rc, rs-\u003earg);"
+}

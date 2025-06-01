@@ -1,0 +1,8 @@
+{
+ "id": 825877,
+ "bug_id": 200493,
+ "attachment_id": 0,
+ "creation_time": "2015-05-29T16:27:05Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kib\nDate: Fri May 29 16:26:08 UTC 2015\nNew revision: 283745\nURL: https://svnweb.freebsd.org/changeset/base/283745\n\nLog:\n  When delivering a signal with default disposition to the thread,\n  tdsigwakeup() increases the priority of the low-priority threads, to\n  give them a chance to be terminated timely.  Also, kernel allows user\n  to signal kernel processes.  The combined effect is that signalling\n  idle process bump a priority of the selected delivery thread, which\n  starts eating CPU.\n\n  Check for the delivery thread be an idle thread and do not raise its\n  priority then.\n\n  The signal delivery to the kernel threads must be opt-in feature.\n  Kernel thread should explicitely declare the ability to handle signals\n  directed to it.  E.g., nfsd threads check for signal as an indication\n  of exit request.\n\n  Most threads do not handle signals at all, and queuing the signal to\n  them causes odd side-effects.  Most innocent consequence is the memory\n  leak due to queued ksiginfo, which is never deleted from the sigqueue.\n  Code to prevent even queuing signals to the kernel threads is trivial,\n  but it requires careful examination of each call to kproc/kthread\n  creation to decide should the signalling be allowed.  The commit is a\n  stop-gap measure which fixes the immediate case for now.\n\n  PR:\t200493\n  Reported and tested by:\ttrasz\n  Discussed with:\ttrasz, emaste\n  Sponsored by:\tThe FreeBSD Foundation\n  MFC after:\t1 week\n\nChanges:\n  head/sys/kern/kern_sig.c"
+}

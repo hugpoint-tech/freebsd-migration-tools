@@ -1,0 +1,8 @@
+{
+ "id": 43485,
+ "bug_id": 14266,
+ "attachment_id": 0,
+ "creation_time": "1999-10-11T20:40:01Z",
+ "creator": "dwhite@FreeBSD.org",
+ "text": "In src/lib/libc/gen/getvfsent.c, the structure vfs_lkmdirs is:\n\nstatic const char *vfs_lkmdirs[] = {\n        \"/lkm\",\n        \"/usr/lkm\",\n        0,\n        0\n};\n\nvfspath() uses this as the list of directories to search.  If the\nuser is root, the value of the environment variable LKMDIRS is appended\nto the list.\n\nObviously, /lkm is nonexistent on 3.X and later systems.  As a result,\nwhen mount_msdos() (or any mount_*) tries to dynamically load the \nFS module, it runs into the error.\n\nFor some reason it works as root but gives a cryptic 'No such file or\ndirectory' error when attempting to mount as a user, regardless of\nvfs.usermount sysctl.\n\nFix: \n\nChange references to 'lkm' to 'modules'.\n\nWORKAROUND: ln -s /modules /lkm\nHow-To-Repeat: Mount a filesystem with an unloaded KLD module but not compiled into \nthe kernel, such as msdos."
+}

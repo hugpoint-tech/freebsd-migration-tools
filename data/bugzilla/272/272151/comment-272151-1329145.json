@@ -1,0 +1,8 @@
+{
+ "id": 1329145,
+ "bug_id": 272151,
+ "attachment_id": 0,
+ "creation_time": "2024-10-10T20:29:03Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/14 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=012c194f39e872aad9e7a9798ef94662832bd11d\n\ncommit 012c194f39e872aad9e7a9798ef94662832bd11d\nAuthor:     Robert Wing \u003crew@FreeBSD.org\u003e\nAuthorDate: 2023-12-19 00:40:46 +0000\nCommit:     Mark Johnston \u003cmarkj@FreeBSD.org\u003e\nCommitDate: 2024-10-10 20:28:20 +0000\n\n    tty: delete knotes when TTY is revoked\n\n    Do not clear knotes from the TTY until it gets dealloc'ed, unless the\n    TTY is being revoked, in that case delete the knotes when closed is\n    called on the TTY.\n\n    When knotes are cleared from a knlist, those knotes become detached from\n    the knlist. And when an event is triggered on a detached knote there\n    isn't an associated knlist and therefore no lock will be taken when the\n    event is triggered.\n\n    This becomes a problem when a detached knote is triggered on a TTY since\n    the mutex for a TTY is also used as the lock for its knlists. This\n    scenario ends up calling the TTY event handlers without the TTY lock\n    being held and tripping on asserts in the event handlers.\n\n    PR:             272151\n    Reviewed by:    kib, markj\n    Differential Revision:  https://reviews.freebsd.org/D41605\n\n    (cherry picked from commit acd5638e268a6706f6b7ad84947a8425e8d51ef7)\n\n sys/kern/tty.c | 12 +++++++-----\n 1 file changed, 7 insertions(+), 5 deletions(-)"
+}

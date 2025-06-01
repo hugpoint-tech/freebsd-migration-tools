@@ -1,0 +1,8 @@
+{
+ "id": 787514,
+ "bug_id": 193053,
+ "attachment_id": 0,
+ "creation_time": "2014-09-18T22:53:41Z",
+ "creator": "ncrogers@gmail.com",
+ "text": "(In reply to Eric Joyner from comment #4)\n\u003e Why do you believe the third change is necessary? Is there a reason the\n\u003e extra code in the que_task tasklet must run in the legacy tx case?\n\nBecause of this part of the compile error when I tried to build a new kernel.\n\n/usr/src/sys/dev/ixgbe/ixgbe.c: In function 'ixgbe_local_timer':\n/usr/src/sys/dev/ixgbe/ixgbe.c:2077: error: 'struct tx_ring' has no member named 'txq_task'\n\nEverything else relying on txr-\u003etxq_task is either confined to within a multiqueue (non-legacy) function or there is an #ifndef IXGBE_LEGACY_TX around it.\n\nFurthermore, if you look at an older version of the ixgbe_local_timer function, it has taskqueue_enqueue(que-\u003etq, \u0026que-\u003eque_task)\ninstead of\ntaskqueue_enqueue(que-\u003etq, \u0026txr-\u003etxq_task);\n\nHere is the change where that happened. \n\nhttp://svnweb.freebsd.org/base/head/sys/dev/ixgbe/ixgbe.c?annotate=271648\nLine 2066\nhttp://svnweb.freebsd.org/base?view=revision\u0026revision=251964\n\nNote that was the only line in ixgbe_local_timer that was changed. I believe this change was made without consideration of the LEGACY_TX path, which is strange, because the commit was evidently intended to add ALTQ support via the LEGACY_TX path.\n\nAlso, the igb/e1000 driver (if_igb.c) has a similar behavior in the same function, where taskqueue_enqueue(que-\u003etq, \u0026que-\u003eque_task) is used."
+}

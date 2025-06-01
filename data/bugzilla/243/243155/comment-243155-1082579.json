@@ -1,0 +1,8 @@
+{
+ "id": 1082579,
+ "bug_id": 243155,
+ "attachment_id": 0,
+ "creation_time": "2020-01-07T20:30:57Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I think this is a problem with truss rather than the kernel.  Really there's two problems:\n\n1. We don't define distinct syscall argument structures for Linux32 vs Linux64.  That is, freebsd32_posix_fadvise_args splits the off_t arguments into two fields, but linux_fadvise64_args (used in the Linux32 sysent table) does not.  So for a posix_fadvise() call in a 32-bit FreeBSD binary on amd64, truss prints:\n\n    freebsd32_posix_fadvise(0x1,0x2,0x0,0x3,0x0,0x4) ERR#19 'Operation not supported by device'\n\nObviously not perfect either, but at least you can see what's happening.\n\n2. truss doesn't call quad_fixup() on 64-bit platforms even when the target ABI is freebsd32 or linux32.  Otherwise it could fix the splitting that I described above and always print four arguments like one would expect."
+}

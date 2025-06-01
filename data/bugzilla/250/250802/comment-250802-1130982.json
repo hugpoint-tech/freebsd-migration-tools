@@ -1,0 +1,8 @@
+{
+ "id": 1130982,
+ "bug_id": 250802,
+ "attachment_id": 0,
+ "creation_time": "2020-11-09T20:24:47Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to mr.xanto from comment #45)\nOk, so my current understanding after looking at all debug data:\n\n1. The real hardware BAR base address is 0xd000000.\n2. We remap the BAR at 0x800000000 in guest.\n3. The guest vmexit was due to EPT violation (exit reason 0x30) at GPA \n   0xde6d5000.\n\nIndeed, we did not mapped anything in the guest phys address 0xd0000000.\nI cannot explain it in any other way, then assume that NVIDIA device exposes\nBAR' bases somewhere beyond config space, and NVIDIA driver knows about that.\nThen it accesses (remaps in guest VA) something by that side-channel address.\n\nSo there is no bug in bhyve as is, instead I would say that we have an\nincompatibility between hardware and virtualization.  A possible, but quite\nwork-intensive approach to *try* to fix it is to ensure that pass-through\ndevices get their BARs bases mapped with GPA identical to HPA (host physical\naddress).  Doing that requires full rewrite of the BAR resource alloc code\nin bhyve.\n\nAny thought ?"
+}

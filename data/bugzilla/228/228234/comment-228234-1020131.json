@@ -1,0 +1,8 @@
+{
+ "id": 1020131,
+ "bug_id": 228234,
+ "attachment_id": 0,
+ "creation_time": "2018-11-04T20:11:21Z",
+ "creator": "pr@aoek.com",
+ "text": "The zlib_decompress/plist problem arises because current Makefile prevents zlib_decompress from being compiled.\nMakefile reads:\n-DWITH_ZLIB=system \\\n\nAnd then configure correctly identifies that zlib stuff needs to be compiled:\n-- The openssl command does support zlib\n\nBut fails to set the corresponding variable (OPENSSL_EXECUTABLE_HAS_ZLIB), so cmake does not compile it:\n# work/mysql-8.0.12/utilities/CMakeLists.txt\nIF (BUILD_BUNDLED_ZLIB OR NOT OPENSSL_EXECUTABLE_HAS_ZLIB)\n  MYSQL_ADD_EXECUTABLE(zlib_decompress zlib_decompress.cc)\n  TARGET_LINK_LIBRARIES(zlib_decompress ${ZLIB_LIBRARY} mysys)\nENDIF()\n\nAs a temporary workaround I propose to force compilation of zlib stuff by setting -DWITH_ZLIB=bundled in Makefile which, in turn, configures BUILD_BUNDLED_ZLIB that triggers compilation, as per attached patch.\n\nDeeper debugging shall understand why OPENSSL_EXECUTABLE_HAS_ZLIB is not being set at configure time.\n\nNOTE 1: I think this bug affects more people.\nNOTE 2: This is not a duplicate of 228810."
+}

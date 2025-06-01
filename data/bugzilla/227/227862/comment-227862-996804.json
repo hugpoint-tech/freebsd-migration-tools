@@ -1,0 +1,8 @@
+{
+ "id": 996804,
+ "bug_id": 227862,
+ "attachment_id": 0,
+ "creation_time": "2018-06-10T03:08:30Z",
+ "creator": "koobs@FreeBSD.org",
+ "text": "(In reply to Kai from comment #4)\n\ntestport -i is different to -I so may produce different results, but the test target for ports already installs build/run depends and has them installed at that point, so theoretically the behaviour shouldn't be different.\n\nThe issue with tox is that is creates a virtualenv that doesn't inherit from system site-packages by default, so those environments cant see the modules that were installed by ports (poudriere), and so tox tries to install them.\n\nI tried to make tox allow (enable) --sitepackages, but saw a different set of test failures in that case, which is why I switched it back to using bare pytest (which is what tox calls anyway).\n\nWarnings, all else being equal, either imply dependencies in setup.py (*_requires) are incorrect/incomplete and need to be fixed, but in this case i dont believe that's the cause.\n\nMy current thought is that maybe since pluggy (etc) are *run time* dependencies, but building docs (with sphinx) is a *build* time activity, that's whats producing the warnings. That would imply pluggy (if it is indeed required to build docs), should be a setup_requires, at least conditionally in the setup.py build docs target. However, I'm guessing its not actually required, but instead the warnings are an artifact of something else."
+}

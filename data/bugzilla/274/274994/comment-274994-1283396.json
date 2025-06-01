@@ -1,0 +1,8 @@
+{
+ "id": 1283396,
+ "bug_id": 274994,
+ "attachment_id": 0,
+ "creation_time": "2023-11-09T19:25:47Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "I can run FreeBSD in a vm on  Intel(R) Xeon(R) Platinum 8470N which is also Sapphire Rapids.\n\nI get:\n[  5]   0.00-10.00  sec  71.0 GBytes  61.0 Gbits/sec    3             sender\n[  5]   0.00-10.00  sec  71.0 GBytes  61.0 Gbits/sec                  receiver\n\nWhich is the as Linux on the same machine.\n\nPoor man's profiling with dtrace: dtrace -w -n 'profile:::profile-4999 { @[sym(arg0)] = count(); } tick-10s { system(\"clear\"); trunc(@, 40); printa(\"%40a %@16d\\n\", @); clear(@); }'\n\n... shows that while copyin is indeed high up in terms of CPU usage, the singular most time-consuming thing is lock contention.\n\n[snip]\n                         kernel`mb_dupcl             2172\n                      kernel`tcp_m_copym             2279\n                          kernel`m_getm2             2683\n               kernel`tcp_default_output             3364\n                      kernel`mb_free_ext             3443\n                    kernel`spinlock_exit             3487\n                   kernel`tcp_do_segment             4243\n                kernel`soreceive_generic             5127\n                kernel`copyout_smap_erms             9601\n                 kernel`copyin_smap_erms             9744\n                       kernel`lock_delay            12566\n                      kernel`acpi_cpu_c1           719581"
+}

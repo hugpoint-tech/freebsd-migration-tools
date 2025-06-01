@@ -1,0 +1,8 @@
+{
+ "id": 1149409,
+ "bug_id": 252165,
+ "attachment_id": 0,
+ "creation_time": "2021-03-01T17:25:22Z",
+ "creator": "ali.abdallah@suse.com",
+ "text": "I had a better look at the code, and I think I have an explanation of what is the root cause of the issue. \n\nThe function uether_rxflush releases the lock, causing a mess up with lock/unlock orders.\n\nvoid\nuether_rxflush(struct usb_ether *ue)\n{\n        ...       \n        UE_LOCK_ASSERT(ue, MA_OWNED);\n                \n        n = mbufq_flush(\u0026ue-\u003eue_rxq);\n        UE_UNLOCK(ue);\n        NET_EPOCH_ENTER(et);\n        ...\n        NET_EPOCH_EXIT(et);\n        UE_LOCK(ue);\n}   \n\nI've dtraced the calls\n\n2  64153           ure_ifmedia_sts:return      155646206056\n0  64153           ure_ifmedia_sts:return      155647214955\n0  64152            ure_ifmedia_sts:entry      155647476515\n2  64153           ure_ifmedia_sts:return      155648459628\n2  64152            ure_ifmedia_sts:entry      155648490676\n1  64220             uether_rxflush:entry      155649463422  \u003c-\n0  64153           ure_ifmedia_sts:return      155649466344  \u003c-\n1  64221            uether_rxflush:return      155649488201\n\n\nWhen uether_rxflush:entry is called, it has the lock, but then it is releasing it and re-acquiring it later, causing the mess with ure_ifmedia_sts IMHO."
+}

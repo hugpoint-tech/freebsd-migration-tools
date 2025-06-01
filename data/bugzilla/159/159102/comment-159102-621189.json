@@ -1,0 +1,8 @@
+{
+ "id": 621189,
+ "bug_id": 159102,
+ "attachment_id": 0,
+ "creation_time": "2011-07-22T09:00:20Z",
+ "creator": "martin.partel@gmail.com",
+ "text": "When you start a FUSE filesystem, such as bindfs, with fuse4bsd, then\nfuse_main() in libfuse daemonizes the process before the mount is usable.\nThis becomes a problem in scripts that first mount a filesystem and then\nimmediately use it. libfuse on Linux does not seem to have this problem.\n\nbindfs sources are available here: http://code.google.com/p/bindfs/downloads/list\nand here: https://github.com/mpartel/bindfs\nOther FUSE filesystems, such as the example filesystem shipped with it,\nprobably have the same behavior.\n\nHow-To-Repeat: #!/bin/bash\n# Test case to show that when mounting fuse4bsd filesystem like bindfs,\n# libfuse daemonizes before the mount becomes usable.\n# Since this test case relies on being fast enough, it may be unreliable.\n\nmkdir -p a\nmkdir -p b\nrm -f a/file\ntouch a/file\n\necho \"Testing...\"\nfor i in `seq 1 1000`; do\n  echo \"$i/1000\"\n  bindfs a b\n  #sleep 0.5  # Uncomment this and there should be no fail\n  if ! test -e b/file; then\n    echo \"FAIL. The mount appeared too late.\"\n    sleep 1\n    umount b\n    exit 1\n  fi\n  umount b\ndone"
+}

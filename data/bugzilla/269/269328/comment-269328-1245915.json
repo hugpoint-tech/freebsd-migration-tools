@@ -1,0 +1,8 @@
+{
+ "id": 1245915,
+ "bug_id": 269328,
+ "attachment_id": 0,
+ "creation_time": "2023-02-07T01:08:42Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Yes, the file ends up corrupted on the server\nunless the client does VOP_FSYNC() after\nthe vop_stddeallocet() call.\n\nI replaced \"random()\" with 0xcc in the test\nprogram, so that the data would be consistent\nbetween runs.\nFor the VOP_FSYNC() case, the file is consistently\ncorrect on the server (I looked at it with \"od\" and\ncompared that with what it should have been, given\nthe do_mapwrite() calls) and it was correct.\n\nWithout VOP_FSYNC(), the file was not the same on the\nserver. One of the non-zero ranges was all 0'd out.\nI think that one of the writes of zeros was delayed\nuntil after the non-zero write for the second range.\n(I will try and wade through the packet traces, but\nsince the VOP_WRITE()s done by vop_stddeallocate()\nwere not aligned, there are a lot of reads for the\nblocks as well as writes.)\n\nSince the NFS server could crash just after fspacectl()\nreturns success, I think the VOP_FSYNC() should be\ndone.\nHowever, \"man fspacectl\" does not clarify if the hole\nshould exist if the machine crashes immediately after\nfspacectl() returns success for a local fs.\nSince there is no standard, this should probably be\ndecided by the \"freebsd collective\". If the answer is\n\"yes, the hole should be there after the machine reboots\"\nthen VOP_FSYNC() will need to be added to vop_stddeallocate(),\nI think?\n\nHopefully asomers@ can test with the VOP_FSYNC() patch, to\nsee if all his test cases work for NFS?"
+}

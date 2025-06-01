@@ -1,0 +1,8 @@
+{
+ "id": 432721,
+ "bug_id": 121073,
+ "attachment_id": 0,
+ "creation_time": "2014-05-31T00:02:46Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In FreeBSD PR kern/121073, you wrote:\n\u003e We (Ed and I) thought it should be possible to chroot as non-root,\n\u003e This should (hopefully) increase the security, because no setuid-root\n\u003e and privilege dropping after the chroot(2) call is longer needed.\n\nThis change may be useful for package building without root.\n\nThe disable setuid/setgid part looks similar to Linux's\nprctl(PR_SET_NO_NEW_PRIVS). In Linux, this is a separate operation that\nis a precondition for certain operations if unprivileged.\n\nI found two possible security risks with this:\n\nFirstly, unprivileged chroot might be used to break out of a chroot. For\nexample, a directory file descriptor may be put onto a unix socket (to\ndefeat kern.chroot_allow_open_directories), chroot to a subdirectory,\nget the file descriptor back, fchdir and abuse \"..\". If this is the\nfirst chroot, fd_jdir will stop it but other chroots (but not nested\njails) can be escaped from. This can be fixed by only allowing a first\nor second chroot (fdp-\u003efd_jdir == NULL || fdp-\u003efd_jdir == fdp-\u003efd_rdir).\nDue to locking this check must be in change_root().\n\nSecondly, a mac_vnode_execve_will_transition could lower as well as\nincrease privilege; it may be better to reject the exec entirely if a\nMAC transition is denied.\n\n-- \nJilles Tjoelker"
+}

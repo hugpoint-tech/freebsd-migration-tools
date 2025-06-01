@@ -1,0 +1,8 @@
+{
+ "id": 1220214,
+ "bug_id": 265084,
+ "attachment_id": 0,
+ "creation_time": "2022-07-21T16:02:03Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "The problem with putting FLAVOR into the environment globally is that you don't have any control.  Any other subsequently forked instance (and any children of that) will inherit that FLAVOR whether that FLAVOR is valid for any given dependency or not.  This has broken certain port combinations where using that FLAVOR for the forked build of a dependency was clearly wrong.  I would have to dig up an example unfortunately, but it caused a real failure.\n\nWhat I did locally to set FLAVOR more surgically is to just pass FLAVOR to the immediate next 'make install':\n\n--- portmaster.orig     2022-07-08 05:32:04.000000000 -0600\n+++ portmaster  2022-07-21 09:59:32.242368000 -0600\n@@ -3846,8 +3846,8 @@ if [ -z \"$use_package\" ]; then\n        unset np_orphan\n        # Defining NO_DEPENDS ensures that we will control the installation\n        # of the depends, not bsd.port.mk.\n-       export_flavor $(flavor_part \"$portdir\")\n-       eval pm_make_s -DNO_DEPENDS install $port_log_args || install_failed $new_port\n+#      export_flavor $(flavor_part \"$portdir\")\n+       eval pm_make_s ${FLAVOR:+FLAVOR=$FLAVOR} -DNO_DEPENDS install $port_log_args || install_failed $new_port\n else\n        [ -n \"$local_package\" ] \u0026\u0026 ppd=${LOCAL_PACKAGEDIR}/All\n\n\nThat has worked out much better for me (locally patched for over a year at least).  I meant to submit that upstream, but I didn't ever get around to it."
+}

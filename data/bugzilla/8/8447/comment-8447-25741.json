@@ -1,0 +1,8 @@
+{
+ "id": 25741,
+ "bug_id": 8447,
+ "attachment_id": 0,
+ "creation_time": "1998-10-25T18:40:00Z",
+ "creator": "nightmar@acc.am",
+ "text": " In syslog.conf(5) man written\n [-skip-]\n     An asterisk (``*'') can be used to specify all facilities all levels or\n     all programs.\n [-skip-]\n If you put the !* in config file after some filters (like !tcpd)\n you cannot force syslogd to write messages from any program to the specified file\n\nFix: \n\n\u003c\n Here is a little patch for a /usr/src/usr.sbin/syslogd/syslogd.c\n\n [cut]\n 1156a1157,1160\n \u003e                         if(*p == '*') {\n \u003e                                 strcpy(prog, \"*\");\n \u003e                                 continue;\n \u003e                         }\n 1158,1161d1161\n \u003c                       if(!*p) {\n \u003c                               strcpy(prog, \"*\");\n \u003c                               continue;\n \u003c                       }\n [cut]\n \n Just save it under some name (syslog.diff ) \u0026 run\n patch /usr/src/usr.sbin/syslogd/syslogd.c \u003c/path_to_patch_file/syslog.diff\n After that run \n make \n killall -9 syslogd\n make install\n /usr/sbin/syslogd\n \u003e\nHow-To-Repeat: \n Put in the /etc/syslog.conf file after other filters (for instance , ftpd )\n these lines :\n # you can place here any other programm \n !ftpd\n *.* [tab] /dev/null\n #this lines allow you to log all messages in the system\n !*\n *.* [tab] root\n to log all messages in the system to the root's terminal.\n make killall -HUP syslogd\n Login as root. Make something , that will cause syslogd write a message to the log \n (login from other terminal,for example).\n You must see a message from syslogd on your first terminal ... you doesn't see it."
+}

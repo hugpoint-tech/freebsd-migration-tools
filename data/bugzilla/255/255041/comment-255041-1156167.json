@@ -1,0 +1,8 @@
+{
+ "id": 1156167,
+ "bug_id": 255041,
+ "attachment_id": 0,
+ "creation_time": "2021-04-14T11:26:47Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "Looks like 1ae20f7c70e is a detection of inappropriate use\nof M_WAITOK in a context where it is not allowed because\nit might sleep when sleeping is not allowed:\n\ndiff --git a/sys/kern/kern_malloc.c b/sys/kern/kern_malloc.c\nindex 48383358e3ad..0d6f9dcfcab7 100644\n--- a/sys/kern/kern_malloc.c\n+++ b/sys/kern/kern_malloc.c\n@@ -537,7 +537,7 @@ malloc_dbg(caddr_t *vap, size_t *sizep, struct malloc_type *mtp,\n #ifdef EPOCH_TRACE\n \t\t\tepoch_trace_list(curthread);\n #endif\n-\t\t\tKASSERT(1, \n+\t\t\tKASSERT(0,\n \t\t\t    (\"malloc(M_WAITOK) with sleeping prohibited\"));\n \t\t}\n \t}\n\nLetting the inappropriate activity happen by reverting the change\ndoes not look reasonable from what I can tell. (Not that I'm\nexpert, however.)\n\nMore likely the context needs to be analyzed for what allocation\nis happening in what kind of restricted context and then, with\nthat information, a fix that avoids the bad type of activity\nwould be developed. It is not obvious what all code would need\nto change at this point."
+}

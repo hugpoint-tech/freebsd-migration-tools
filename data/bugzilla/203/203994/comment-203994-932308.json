@@ -1,0 +1,8 @@
+{
+ "id": 932308,
+ "bug_id": 203994,
+ "attachment_id": 0,
+ "creation_time": "2017-04-30T18:17:42Z",
+ "creator": "grehan@FreeBSD.org",
+ "text": "Just an update on this. I used Ubuntu since it was easy to get a range of Linux kernel versions to test with.\n - Ubuntu 17.04 (kernel 4.10) works without any changes to bhyve\n - Ubuntu 15.10 doesn't advertize INVVPID capability. While it would be possible to modify bhyve to work in this mode, I'm loathe to do it since it's such a niche case\n - Ubuntu 16.04 seems to have the capabilities that most folk have reported.\n\nAfter modifying bhyve to ignore the unused INVVPID capabilities and to fall-back to the all-context INVEPT if single-context wasn't available, the next issue was that Linux/KVM wasn't setting the GLA on EPT faults. This is used by bhyve to verify the GLA that is also obtained through the instruction emulation path for guest MMIO operations. This verification path hasn't thrown any errors for a few years now, so I relaxed this test when in this mode.\n\n(Of note, this bug was reported here https://lkml.org/lkml/2016/9/4/156, and the author has submitted a diff review to relax some of the INVVPID/INVEPT checks at https://reviews.freebsd.org/D10049)\n\nHowever, after doing all this, bhyve would still eventually panic with a kernel trap-9 fault when issuing a vmread instruction, so there may still be some additional KVM bugs that are being hit on this kernel rev :(\n\nI'll do some more experimentation and then post the patch that I have."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 450660,
+ "bug_id": 124748,
+ "attachment_id": 0,
+ "creation_time": "2008-06-19T08:10:01Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Bourne shell (/bin/sh), as it stands, doesn't parse numbers properly, even though bash does:\n\n[gcooper@optimus /devel/ncvs/src/bin/sh]$ sh -c 'exit -1'\nexit: Illegal number: -1\n[gcooper@optimus /devel/ncvs/src/bin/sh]$ sh -c 'exit +1'\nexit: Illegal number: +1\n\nThese are valid numbers though, which are merely red herrings; the patch attached does fix this behavior though, according to the following gamut of tests:\n\n[gcooper@optimus /devel/ncvs/src/bin/sh]$ cat number_test.sh\n#!/bin/sh\n\nfor shell in sh $@; do\n        for i in -1 1 +1; do\n                echo \"$shell -c \\\"exit $i\\\"\"\n                $shell -c \"exit $i\"; echo $?\n        done;\ndone\n# End of test\n[gcooper@optimus /devel/ncvs/src/bin/sh]$ ./number_test.sh bash ./sh\nsh -c \"exit -1\"\nexit: Illegal number: -1\n2\nsh -c \"exit 1\"\n1\nsh -c \"exit +1\"\nexit: Illegal number: +1\n2\nbash -c \"exit -1\"\n255\nbash -c \"exit 1\"\n1\nbash -c \"exit +1\"\n1\n./sh -c \"exit -1\"\n255\n./sh -c \"exit 1\"\n1\n./sh -c \"exit +1\"\n1\n\nFix: Patch attached (also fixes histcmd.c and trap.c -- strange thing is that I can't seem to test that builtin cmd), and maintains proper compatibility with builtin jobs:\n\n[gcooper@optimus /devel/ncvs/src/bin/sh]$ sh -c 'builtin histcmd'\nhistcmd: not found\n\nPatch attached with submission follows:\nHow-To-Repeat: /bin/sh -c \"exit -1\"\n/bin/sh -c \"exit +1\""
+}

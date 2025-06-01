@@ -1,0 +1,8 @@
+{
+ "id": 839413,
+ "bug_id": 202933,
+ "attachment_id": 0,
+ "creation_time": "2015-09-06T17:04:01Z",
+ "creator": "fbsd.bugzilla@fenyo.net",
+ "text": "Hi,\n\nWhen a terminal is revoked, writing to it sets errno to:\n- ENXIO until FreeBSD 10.1 kernel\n- EIO with FreeBSD 10.2 kernel\n\nThe following program can be used to see this behaviour change:\n------------------------------------------------------------------\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\nextern int errno;\nint main() {\n  int id = open(\"/dev/console\", O_RDWR);\n  revoke(\"/dev/console\");\n  int ret = write(id, \"X\", 1);\n  if (ret \u003c 0) printf(\"errno=%d\\n\", errno);\n  return 0;\n}\n------------------------------------------------------------------\nIt returns 6 (ENXIO) on FreeBSD 10.1 and 5 (EIO) on FreeBSD 10.2.\n\nI wonder if this new behaviour would not be an unwanted side-effect due to kernel changes.\n\nFor instance, this leads to bug ID 202932 for the rsyslog8 port, that loops endlessly after /dev/console is revoked since the errno code tested to handle correctly this case is now EIO instead of ENXIO.\n\nThis could happen to some other tools for the same reason.\n\nSincerely,"
+}

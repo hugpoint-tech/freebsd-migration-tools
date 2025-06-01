@@ -1,0 +1,8 @@
+{
+ "id": 872779,
+ "bug_id": 204426,
+ "attachment_id": 0,
+ "creation_time": "2016-04-01T14:43:05Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Robert Blayzor from comment #79)\nThe page fault was not handled since some object in the shadow chain which backs the faulted region, has the OBJ_DEAD flag set.  I do not see why would this state valid for the object in question.  There is another PR 204764, where the same flag is set for a vnode object and the manifestation of the problem is different. Instead of vm_fault, the object was found by vnode_create_vobject(), which sleeps forever waiting for the object termination to finish.  Since the flag was not set by the termination conditions, termination does not happen and lookup is stuck forever.\n\nRight now, I have no idea why does this happen.  Either we have a bug in VM by spuriously setting the flag (but code reading does not support this possibility), or some random memory access happens and corrupts the vm object memory.  I do not know.\n\nI attached some additions to the debugging patch, which both asserts that the object is write-locked when object-\u003eflags are modified, and also it slightly changes the layout of struct vm_object.  So if the issue is VM bug, most likely unlocked modifications, it could be catched.  Or, if the problem is the memory corruption, it should migrate to other place.\n\nStill, it is only speculation.  Please make sure that you have INVARIANTS and WITNESS in your kernel config enabled."
+}

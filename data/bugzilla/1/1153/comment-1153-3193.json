@@ -1,0 +1,8 @@
+{
+ "id": 3193,
+ "bug_id": 1153,
+ "attachment_id": 0,
+ "creation_time": "1996-04-22T13:44:51Z",
+ "creator": "mmead@Glock.COM",
+ "text": "\tThe patch in the previous report would not work fully.  I\nfailed to test it on blank lines preceeding a the first line with\ntext.  The patch I sent in will cause blank lines preceeding the\nfirst line with text to be eaten.  This patch corrects this\nbehavior.  This patch is against the *original*\n/usr/src/usr.bin/fmt/fmt.c, *not* the one obtained after using my\nfirst patch.\n\n\n--- /usr/src/usr.bin/fmt/fmt.c-dist\tMon Apr 22 00:43:43 1996\n+++ /usr/src/usr.bin/fmt/fmt.c\tMon Apr 22 08:40:06 1996\n@@ -172,7 +172,9 @@\n \t\t\t*cp++ = c;\n \t\t\tc = getc(fi);\n \t\t}\n-\t\t*cp = '\\0';\n+\t\tif (cp != NULL) {\n+\t\t\t*cp = '\\0';\n+\t\t}\n \n \t\t/*\n \t\t * Toss anything remaining on the input line.\n@@ -186,7 +188,7 @@\n \t\tcol = 0;\n \t\tcp = linebuf;\n \t\tcp2 = canonb;\n-\t\twhile (cc = *cp++) {\n+\t\twhile ((cp != NULL) \u0026\u0026 (cc = *cp++)) {\n \t\t\tif (cc != '\\t') {\n \t\t\t\tcol++;\n \t\t\t\tif (cp2 - canonb \u003e= cbufsize) {\n@@ -217,12 +219,17 @@\n \t\t/*\n \t\t * Swipe trailing blanks from the line.\n \t\t */\n-\t\tfor (cp2--; cp2 \u003e= canonb \u0026\u0026 *cp2 == ' '; cp2--)\n-\t\t\t;\n-\t\t*++cp2 = '\\0';\n-\t\tprefix(canonb);\n-\t\tif (c != EOF)\n+\t\tif (cp != NULL) {\n+\t\t\tfor (cp2--; cp2 \u003e= canonb \u0026\u0026 *cp2 == ' '; cp2--)\n+\t\t\t\t;\n+\t\t\t*++cp2 = '\\0';\n+\t\t\tprefix(canonb);\n+\t\t\tif (c != EOF)\n+\t\t\t\tc = getc(fi);\n+\t\t} else {\n+\t\t\tputchar('\\n');\n \t\t\tc = getc(fi);\n+\t\t}\n \t}\n }\n \n\n-matt\n\n-- \nMatthew C. Mead\n\nmmead@Glock.COM\nhttp://www.Glock.COM/~mmead/"
+}

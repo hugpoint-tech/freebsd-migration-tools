@@ -1,0 +1,8 @@
+{
+ "id": 926618,
+ "bug_id": 217924,
+ "attachment_id": 180966,
+ "creation_time": "2017-03-19T19:18:19Z",
+ "creator": "tobik@freebsd.org",
+ "text": "Created attachment 180966\ndhclient.diff\n\nWith the sysctl kern.trap_enotcap=1, dhclient fails to fork into the\nbackground and dies. truss excerpt:\n\n4933: \u003cnew process\u003e\n4933: setsid()                                  = 4933 (0x1345)\n4933: sigaction(SIGHUP,{ SIG_DFL 0x0 ss_t },0x0) = 0 (0x0)\n4933: open(\"/dev/null\",O_RDWR,00)               ERR#94 'Not permitted in capability mode'\n4933: SIGNAL 5 (SIGTRAP)\n\nThere is an older comment in dhclient.c that says that it is expected\nthat daemon(3) will fail to open /dev/null in a chroot.  The is doubly\ntrue when in capability mode.  dhclient replicates the behavior of\ndaemon(3) in dup'ing /dev/null (with a previously opened fd) anyway,\nso why isn't noclose set too?  This way the attempt to open /dev/null\nagain can be avoided."
+}

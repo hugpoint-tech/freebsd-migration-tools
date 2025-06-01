@@ -1,0 +1,8 @@
+{
+ "id": 1146553,
+ "bug_id": 253275,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T22:15:41Z",
+ "creator": "emaste@freebsd.org",
+ "text": "(In reply to michiel from comment #9)\nI'm not sure if setting WITH_PIE will work, it may require the changed default as in the linked review. I tried building www/mathopd on my laptop (with the PIE default changed) and do see the failure.\n\nYou are correct, objects are being compiled w/o -fPIE but linking is attempted with -pie.\n\n(After a moment) I see what's happening here - www/mathopd/Makefile has:\n\nCFLAGS+=       -DFREEBSD_SENDFILE\nMAKE_ARGS=     CFLAGS=\"${CFLAGS}\"\n\nBecause option processing (bsd.opts.mk) does not happen in the context of the  ports Makefile, CFLAGS is just \"-O2 -pipe\" at this point, and we set MAKE_ARGS=CFLAGS=\"-O2 -pipe -DFREEBSD_SENDFILE\". This is used as CFLAGS by bsd.prog.mk later on.\n\nIf I make this (hacky) change:\n\n-CFLAGS+=       -DFREEBSD_SENDFILE\n+CFLAGS+=       -DFREEBSD_SENDFILE -fPIE\n\nthe port builds successfully as PIE. I'm not sure how to do this properly though."
+}

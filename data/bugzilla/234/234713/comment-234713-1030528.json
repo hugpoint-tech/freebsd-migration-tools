@@ -1,0 +1,8 @@
+{
+ "id": 1030528,
+ "bug_id": 234713,
+ "attachment_id": 0,
+ "creation_time": "2019-01-07T21:35:21Z",
+ "creator": "weiss@uni-mainz.de",
+ "text": "after upgrade from 11.1 to 11.2 release tivoli storage manager client (TSM)\nfails due to incorrect listxattr implementation.\n\nlistxattr should return error -EOPNOTSUPP if file system does not support\n   extended attributes and no error and result 0 if file does not have\n   extended attributes. With 11.2 listxattr returns -ENODATA in the\n   second case.\n\nOn linux output of strace of listxattr of directory ./nano without\n  extended attributes:\n  \n  listxattr(\".nano/\", NULL, 0)            = 0\n\nOn FreeBSD output of ktrace of listxattr of directory without\n  extended attributes:\n\n 54332 dsmc     RET   linux_llistxattr -1 errno -61 Attribute not found\n\n\nFollowing change in code between 11.1 and 11.2 led to the emergence of the bug.\nIn 11.1 EOPNOTSUPP was returned instead of ENODATA. This change may seem correct for other linux xattr calls, but not for listxattr.\n\n\n*** linux32_sysvec.c    Mon Jan  7 18:30:21 2019\n--- linux32_sysvec.c-11.2       Fri Jun 22 01:02:23 2018\n***************\n*** 146,152 ****\n        -100,-101,-102,-103,-104,-105,-106,-107,-108,-109,\n        -110,-111, -40, -36,-112,-113, -39, -11, -87,-122,\n        -116, -66,  -6,  -6,  -6,  -6,  -6, -37, -38,  -9,\n!         -6,  -6, -43, -42, -75,-125, -84, -95, -16, -74,\n         -72, -67, -71\n  };\n  \n--- 146,152 ----\n        -100,-101,-102,-103,-104,-105,-106,-107,-108,-109,\n        -110,-111, -40, -36,-112,-113, -39, -11, -87,-122,\n        -116, -66,  -6,  -6,  -6,  -6,  -6, -37, -38,  -9,\n!         -6,  -6, -43, -42, -75,-125, -84, -61, -16, -74,\n         -72, -67, -71\n  };"
+}

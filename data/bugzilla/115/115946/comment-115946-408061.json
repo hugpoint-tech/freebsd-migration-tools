@@ -1,0 +1,8 @@
+{
+ "id": 408061,
+ "bug_id": 115946,
+ "attachment_id": 0,
+ "creation_time": "2007-08-30T16:40:01Z",
+ "creator": "oleg.dolgov@gmail.com",
+ "text": "openpam_load_module/openpam_release_module (/usr/src/contrib/openpam/lib/openpam_load.c) called from pam_start/pam_end not thread safe.\nThey use global static variable for list of previously found modules.\nEasly reproduceable with attached program (only on true 2-x CPU machine).\n\nFix: Add synchronization code around access to global variable\n'modules' in /usr/src/contrib/openpam/lib/openpam_load.c.\n\nCan take from /usr/src/libexec/rtld-elf/rtld_lock.c or add new library depend from libpthread and use their function (ugly?)\n\nPatch attached with submission follows:\nHow-To-Repeat: Steps:\n# cc -Wall -D_UNIX -D_DEBUG -std=c99 -I/usr/local/include -I/usr/include/security -O0 -g -fno-inline   -L/usr/local/lib -o pthreads_and_pam main.c -Xlinker -Bdynamic -lpam -lpthread\n# echo \"auth required pam_permit.so\" \u003e/usr/local/etc/pam.d/pthreads_and_pam\n# ./pthreads_and_pam\n....................\n(after 4 sec - 5 min)\npthreads_and_pam in free(): error: chunk is already free\nAbort trap: 6 (core dumped)\n# grep openpam /var/log/messages\nAug 30 17:33:57 netsnapper pthreads_and_pam: in openpam_release_module(): module (null) has negative refcount"
+}

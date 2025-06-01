@@ -1,0 +1,8 @@
+{
+ "id": 1344508,
+ "bug_id": 283655,
+ "attachment_id": 0,
+ "creation_time": "2025-01-18T20:17:35Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to paparodeo from comment #5)\n\u003e the vector shouldn't contain the terminating null byte\n\nIt doesn't seem to matter for the functionality, but it looks better indeed. I think it is cleaner to not NUL-terminate the CharType arrays instead.\n\n\n\u003e and the 2nd equals comparison needs to compare to the end of the vector.\n\nThe original pbzip2 code has:\n\n    // compare the remaining part of magic header\n    int cmpres = pHdr-\u003ecompare( hsp, pHdr-\u003esize() - hsp,\n                    getInBuffSearchPtr() + hsp, pHdr-\u003esize() - hsp );\n\nso it compares at most `pHdr-\u003esize() - hsp` characters. In the replaced code:\n\n    bool cmpres = equal( pHdr-\u003ebegin() + hsp, pHdr-\u003ebegin() + pHdr-\u003esize() - hsp,\n                    getInBuffSearchPtr() + hsp );\n\nI now see that it should have been (to make it functionally equivalent\nto the original):\n\n    bool cmpres = equal( pHdr-\u003ebegin() + hsp, pHdr-\u003ebegin() + hsp + pHdr-\u003esize() - hsp,\n                    getInBuffSearchPtr() + hsp );\n\nwhich effectively becomes:\n\n    bool cmpres = equal( pHdr-\u003ebegin() + hsp, pHdr-\u003ebegin() + pHdr-\u003esize(),\n                    getInBuffSearchPtr() + hsp );\n\nor indeed, just pHdr-\u003eend(). I think this one is good too."
+}

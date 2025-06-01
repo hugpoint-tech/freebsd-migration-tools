@@ -1,0 +1,8 @@
+{
+ "id": 923762,
+ "bug_id": 217432,
+ "attachment_id": 0,
+ "creation_time": "2017-02-28T19:46:51Z",
+ "creator": "tim.newsham@nccgroup.trust",
+ "text": "The link_elf_load_file function in sys/kern/link_elf.c performs bounds checking on the program header element in the elf header with this code:\n\n    if (!((hdr-\u003ee_phentsize == sizeof(Elf_Phdr)) \u0026\u0026\n          (hdr-\u003ee_phoff + hdr-\u003ee_phnum*sizeof(Elf_Phdr) \u003c= PAGE_SIZE) \u0026\u0026\n          (hdr-\u003ee_phoff + hdr-\u003ee_phnum*sizeof(Elf_Phdr) \u003c= nbytes)))\n        link_elf_error(filename, \"Unreadable program headers\");\n\nhowever, it does not terminate processing at this point and will continue executing with an out-of-bounds e_phoff.  Any offset larger than (PAGE_SIZE-sizeof Elf_Phdr) will cause out of bounds reads, since only one page is allocated for the elf object.  This will later result in out-of-bounds reads and potentially a panic.  For example if e_phoff is very large, then execution will crash at the switch statement:\n\n    phdr = (Elf_Phdr *) (firstpage + hdr-\u003ee_phoff);\n    phlimit = phdr + hdr-\u003ee_phnum;\n    nsegs = 0;\n    phdyn = NULL;\n    phphdr = NULL;\n    while (phdr \u003c phlimit) {\n        switch (phdr-\u003ep_type) {  \u003c---- crash\n\nThis issue is not very severe since it requires PRIV_KLD_LOAD to trigger, and users that have this privilege can force crashes through loading malicious code into the kernel.\n\nThe fix is simple -- terminate further processing of the elf file when link_elf_error is reported."
+}

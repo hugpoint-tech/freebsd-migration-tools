@@ -1,0 +1,8 @@
+{
+ "id": 1197422,
+ "bug_id": 255685,
+ "attachment_id": 0,
+ "creation_time": "2022-02-01T17:53:17Z",
+ "creator": "freebsdbugzilla@agneau.org",
+ "text": "(In reply to Laurent Frigault from comment #5)\n\nman ifconfig still says:\n..\n     alias   Establish an additional network address for this interface.  This\n             is sometimes useful when changing network numbers, and one wishes\n             to accept packets addressed to the old interface.  If the address\n             is on the same subnet as the first network address for this\n             interface, a non-conflicting netmask must be given.  Usually\n             0xffffffff is most appropriate.\n\nbut it looks like since 13.0  we can now add aliases with non /32 mask even if there is already an ip with the same non /32 subnet and this works with jail ips too.\n\nexample:\nhost configuration:\nifconfig_bge0_alias0=\"inet 192.168.249.240 netmask 255.255.255.128\"\n\njail configuration:\n    ip4.addr += \"192.168.249.247/25\";\n\n# netstat -rn |fgrep 192.168.    \n192.168.249.128/25 link#1             U          bge0\n192.168.249.240    link#1             UHS         lo0\n192.168.249.247    link#1             UHS         lo0\n\nlo0 host routes are back and the 2 ips can talk to each other via lo0\n\nThis change may ne related to https://www.freebsd.org/releases/13.0R/relnotes/\n...\nDuplicate routes installation issue for /32 or /128 interface aliases has been fixed. 81728a538d24\n...\n\nmaybe the ifconfig manual page should be updated to remove \n\"Usually 0xffffffff is most appropriate\" from the alias item"
+}

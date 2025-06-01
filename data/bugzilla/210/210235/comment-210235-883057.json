@@ -1,0 +1,8 @@
+{
+ "id": 883057,
+ "bug_id": 210235,
+ "attachment_id": 0,
+ "creation_time": "2016-06-12T13:10:44Z",
+ "creator": "walter@pelissero.de",
+ "text": "conky, at least on my machine, fails to get the CPU temperature.\nA change to freebsd.c improves the chances of finding something useful, although possibly not from ACPI:\n\n@@ -419,13 +423,14 @@\n \tint temp;\n \t(void)fd;\n \n-\tif (GETSYSCTL(\"hw.acpi.thermal.tz0.temperature\", temp)) {\n-\t\tfprintf(stderr,\n-\t\t\t\"Cannot read sysctl \\\"hw.acpi.thermal.tz0.temperature\\\"\\n\");\n-\t\treturn 0.0;\n-\t}\n-\n-\treturn KELVTOC(temp);\n+\tif (0 == GETSYSCTL(\"hw.acpi.thermal.tz0.temperature\", temp))\n+\t\treturn KELVTOC(temp);\n+\tif (0 == GETSYSCTL(\"dev.cpu.0.temperature\", temp))\n+\t\treturn KELVTOC(temp);\n+\tif (0 == GETSYSCTL(\"dev.amdtemp.0.core0.sensor0\", temp))\n+\t\treturn KELVTOC(temp);\n+\tfprintf(stderr, \"Cannot read sysctl for temperature\\n\");\n+\treturn 0.0;\n }\n \n static void get_battery_stats(int *battime, int *batcapacity, int *batstate, int *ac) {"
+}

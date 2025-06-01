@@ -1,0 +1,8 @@
+{
+ "id": 1219260,
+ "bug_id": 264441,
+ "attachment_id": 0,
+ "creation_time": "2022-07-14T13:51:05Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/13 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=a70c03b2d383011dece503716faf504598d5fe29\n\ncommit a70c03b2d383011dece503716faf504598d5fe29\nAuthor:     Mark Johnston \u003cmarkj@FreeBSD.org\u003e\nAuthorDate: 2022-06-14 14:52:03 +0000\nCommit:     Mark Johnston \u003cmarkj@FreeBSD.org\u003e\nCommitDate: 2022-07-14 13:50:10 +0000\n\n    pipe: Use a distinct wait channel for I/O serialization\n\n    Suppose a thread tries to read from an empty pipe.  pipe_read() does the\n    following:\n\n    1. pipelock(), possibly sleeping\n    2. check for buffered data\n    3. pipeunlock()\n    4. set PIPE_WANTR and sleep\n    5. goto 1\n\n    pipelock() is an open-coded mutex; if a thread blocks in pipelock(), it\n    sleeps until the lock holder calls pipeunlock().\n\n    Both sleeps use the same wait channel.  So if there are multiple threads\n    in pipe_read(), a thread T1 in step 3 can wake up a thread T2 sleeping\n    in step 4.  Then T1 goes to sleep in step 4, and T2 acquires and\n    releases the pipelock, waking up T1 again.  This can go on indefinitely,\n    livelocking the process (and potentially starving a would-be writer).\n\n    Fix the problem by using a separate wait channel for pipelock().\n\n    Reported by:    Paul Floyd \u003cpaulf2718@gmail.com\u003e\n    Reviewed by:    mjg, kib\n    PR:             264441\n    Sponsored by:   The FreeBSD Foundation\n\n    (cherry picked from commit e8955bd643ee852d70a0b065f2a0d1bb3fa99df2)\n\n sys/kern/sys_pipe.c | 9 ++++-----\n 1 file changed, 4 insertions(+), 5 deletions(-)"
+}

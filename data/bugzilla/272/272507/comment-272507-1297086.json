@@ -1,0 +1,8 @@
+{
+ "id": 1297086,
+ "bug_id": 272507,
+ "attachment_id": 0,
+ "creation_time": "2024-02-15T18:37:05Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Thanks, I found the SBTO from one of the dumps.  It looks to be some sort of GPIO controller.\n\nExcerpts:\n\n```\n        Scope (\\_SB.PCI0.GPP7.UP00.DP40)\n        {\n            Device (UP00)\n            {\n...\n                Device (DP68)\n                {\n                    Name (_ADR, 0x000D0000)  // _ADR: Address\n```\n\nSo this seems like it would be some other PCI device next to the AHCI controller, but it isn't showing up in the PCI probe.\n\n```\n    Scope (\\_SB.PCI0.GPP7.UP00.DP40.UP00.DP68)\n    {\n        Name (SPTS, 0x01)\n        Name (TSGP, 0x0F)\n        Device (SPTO)\n        {\n            Name (_HID, \"AMDIF031\")  // _HID: Hardware ID\n            Name (_CID, \"AMDIF031\")  // _CID: Compatible ID\n            Name (_UID, 0x02)  // _UID: Unique ID\n            Method (_CRS, 0, NotSerialized)  // _CRS: Current Resource Settings\n            {\n                Name (RBUF, ResourceTemplate ()\n                {\n                    Memory32Fixed (ReadWrite,\n                        0xF4700000,         // Address Base\n                        0x00001000,         // Address Length\n                        )\n                })\n                Return (RBUF) /* \\_SB_.PCI0.GPP7.UP00.DP40.UP00.DP68.SPTO._CRS.R\nBUF */\n            }\n```\n\nThis shows the _HID (which is a GPIO controller) and the conflicting resource.  There are other references to GPIO pins from this device as well.\n\nI think I will probably take the approach in hack.patch and will post a candidate commit patch in a bit for folks to test."
+}

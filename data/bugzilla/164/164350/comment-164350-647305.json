@@ -1,0 +1,8 @@
+{
+ "id": 647305,
+ "bug_id": 164350,
+ "attachment_id": 0,
+ "creation_time": "2012-01-22T03:14:57Z",
+ "creator": "yuri@freebsd.org",
+ "text": "I will clarify the symptoms:\nkdm starts, after I try to login screen turns black and comes back with \nanother kdm login prompt.\nSo this bug should be maybe renamed to \"kdm fails\" instead of \"Xorg fails\".\n\nI did some troubleshooting.\nThese errors:\n--- Xorg.0.log gets these errors ---\n(EE) config/hal: NewInputDeviceRequest failed (8)\n(II) config/hal: Adding input device PS/2 Mouse\n(II) AutoAddDevices is off - not adding device.\n(EE) config/hal: NewInputDeviceRequest failed (8)\ngo away when in /etc/X11/xorg.cong has Option \"AutoAddDevices\" \"on\". It \nwas \"off\" before.\n\nBut problem persists after this. Message 'failed to set mtrr: No space \nleft on device' still in kdm.log\nThis message is printed by package libpciaccess-0.12.1, file \nsrc/freebsd_pci.c in it. Rebuilding this package doesn't help.\n\nThe error 'failed to set mtrr: No space left on device' results from \nsystem call ioctl(fd, MEMRANGE_SET, \u0026mro) @ freebsd_pci.c:146.\nfd there is the fd for /dev/mem\nParameters of this ioctl call are (mro.r.mr_base=40000000 \nmro.r.mr_len=10000000 mro.r.mr_flags=2 mro.r.mr_owner=\"pciacces\" \nmro.mo_arg[0]=0 mro.mmo_arg[1]=0)\n\nThis system only has 1GB memory, mr_base=40000000 is already at 1GB, so \nmr_len=10000000 makes itout of range? That's why it maybe failed.\n\nI am not sure this wasn't happening on this system on 8.2-STABLE before \nupdate to 9.0. But I am sure kdm worked fine.\n\nDBUS error may or may not be related to mtrr error.\n\nYuri"
+}

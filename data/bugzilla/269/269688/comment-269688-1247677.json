@@ -1,0 +1,8 @@
+{
+ "id": 1247677,
+ "bug_id": 269688,
+ "attachment_id": 0,
+ "creation_time": "2023-02-19T16:31:14Z",
+ "creator": "pjfloyd@wanadoo.fr",
+ "text": "The implementation is to just call aligned_alloc():\n\n\treturn (aligned_alloc(align, roundup(size, align)));\n\nwhere roundup is this macro\n\n:#define        roundup(x, y)   ((((x)+((y)-1))/(y))*(y))  /* to any y */\n\nIf size is 0 that will be\n\n   (0 + align - 1) / 0 * 0\n\n\nThat gives me\n\n(gdb) r\nStarting program: /usr/home/paulf/scratch/valgrind/memcheck/tests/memalign2 \n\nProgram received signal SIGFPE, Arithmetic exception.\nInteger divide by zero.\n0x00000008002f3415 in memalign (align=0, size=\u003coptimized out\u003e) at /usr/src/lib/libc/gen/memalign.c:39\n39              return (aligned_alloc(align, roundup(size, align)));\n\nMy source code is\n\n91         p = memalign(0, 100);      assert(NULL == p);"
+}

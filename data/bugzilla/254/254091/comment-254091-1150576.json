@@ -1,0 +1,8 @@
+{
+ "id": 1150576,
+ "bug_id": 254091,
+ "attachment_id": 0,
+ "creation_time": "2021-03-08T00:03:28Z",
+ "creator": "emaste@freebsd.org",
+ "text": "As far as I can tell there is no compatible way to specify no backup extension (between GNU and current FreeBSD sed), but we could have FreeBSD sed handle both -i and -i '' (assuming that there's no legitimate other interpretation of -i '').\n\nMaybe we can do this in a couple of steps, starting with a warning on '-i .bak'?\n\nsomething like:\n\n                case 'i':\n                        if (optarg) {\n                                inplace = optarg;\n                        } else {\n                                if (optind \u003e= argc)\n                                        errx(1, \"no arg for -i\");\n                                if (*argv[optind] == '\\0') {\n                                        inplace = \"\";\n                                } else {\n                                        inplace = argv[optind];\n                                        warnx(\"-i %s deprecated, use -i%s\", inplace, inplace);\n                                }\n                                optind++;\n                        }\n                }\n\nand then later:\n\n                case 'i':\n                        if (optarg) {\n                                inplace = optarg;\n                        } else {\n                                inplace = \"\";\n                                // Backwards compat for historical -i ''\n                                if (optind \u003c argc \u0026\u0026 *argv[optind] == '\\0')\n                                        optind++;\n                        }\n                        break;"
+}

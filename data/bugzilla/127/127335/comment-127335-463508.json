@@ -1,0 +1,8 @@
+{
+ "id": 463508,
+ "bug_id": 127335,
+ "attachment_id": 0,
+ "creation_time": "2008-09-27T02:57:33Z",
+ "creator": "seburke@rent.com",
+ "text": "fwrite does set errno correctly. I modified the demo code\nto call perror before and after, like so:\n\n#include \u003cstdio.h\u003e\n\nint\nmain (void)\n{\n    perror (\"pre-fwrite\");\n    fwrite (\"Hello world!\", 1, 12, stdin);\n    perror (\"post-fwrite\");\n\n    if (ferror (stdin))\n        printf (\"Error writing to stdin\\n\");\n    else if (feof (stdin))\n        printf (\"EOF detected while writing to stdin\\n\");\n    else\n        printf (\"This shouldn't happen!\\n\");\n\n    return 0;\n}\n\nWhich produces this output:\n\npre-fwrite: Unknown error: 0\npost-fwrite: Bad file descriptor\nThis shouldn't happen!\n\nThe relevant code is in wsetup.c, where is tests where the\n'WRite' or 'Read-Write' flags are set, and fails if not:\n\n        if ((fp-\u003e_flags \u0026 __SWR) == 0) {\n                if ((fp-\u003e_flags \u0026 __SRW) == 0) {\n                        errno = EBADF;\n                        return (EOF);\n                }\n\nI believe that the fix is to set the error flag on failure,\nlike so:\n\n         if ((fp-\u003e_flags \u0026 __SWR) == 0) {\n                if ((fp-\u003e_flags \u0026 __SRW) == 0) {\n                        fp-\u003e_flags |= __SERR;\n                        errno = EBADF;\n                        return (EOF);\n                }"
+}

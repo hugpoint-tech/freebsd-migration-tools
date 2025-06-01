@@ -1,0 +1,8 @@
+{
+ "id": 758324,
+ "bug_id": 188342,
+ "attachment_id": 0,
+ "creation_time": "2014-04-07T12:30:00Z",
+ "creator": "natbsd@instinctive.eu",
+ "text": "To build an internal socket pair, www/aws listens on a socket bound to 127.0.0.1 and connected to it, returning connected and accepted sockets after some sanity checks (and closing the listening socket).\n\nOne of those sanity checks is that the address of the remote peer of the accepted socket is indeed 127.0.0.1.\n\nHowever in a jailed environment, binding to 127.0.0.1 might not be possible, and is instead silently interpreted as binding to the main IP address of the jail (e.g. 172.16.0.2). During the connection, 127.0.0.1 is reinterpreted as well, so the connection is successful. However the sanity check fails, because remote address is not 127.0.0.1 but 127.16.0.2.\n\nSince this is an issue only because of a pecuilarity in FreeBSD jail environment, I don't believe this issue to be worth reporting upstream.\n\nAttached to this PR is a patch that changes the sanity check from comparing against hardcoded \"127.0.0.1\" to comparing against the address associated with the connected socket, which keeps the intent of the code.\n\nFix: Add the attached patch as ports/www/aws/files/patch-src_core_aws-net.adb\n\nPatch attached with submission follows:\nHow-To-Repeat: Start a program that uses www/aws to listen for HTTP connections (www/aws-demos provides a bunch of them), inside a jailed environment that doesn't inherit host network interface and that doesn't have 127.0.0.1 as one of its aliases.\n\nIt will fail after about 250ms (internal timeout of the socket connection described above)."
+}

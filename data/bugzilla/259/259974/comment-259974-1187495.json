@@ -1,0 +1,8 @@
+{
+ "id": 1187495,
+ "bug_id": 259974,
+ "attachment_id": 0,
+ "creation_time": "2021-11-21T18:42:34Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "If the VFS calls VOP_LOOKUP for \"..\" where dvp is the root of a fuse file system, fusefs will panic with the message \"Looking up .. is TODO\" (the panic message is not completely accurate, because looking up \"..\" DOES work for any other directory).\n\nThis panic has always been present, though before SVN r348135 it was a page fault rather than an explicit panic.  I never knew any way to trigger this behavior until now.  The following sequence of operations will trigger the panic:\n\nFirst install necessary packages\n\n$ sudo pkg install fish fusefs-ext2\n\nStart the fuse server in one terminal\n\n$ rm -f /tmp/ext2.img \u0026\u0026 truncate -s 128m /tmp/ext2.img \u0026\u0026 mkfs.ext2 /tmp/ext2.img \u0026\u0026 sudo fuse-ext2 /tmp/ext2.img /tmp/mnt -o allow_other,rw+,debug\n\nAccess the fuse file system and trigger the bug from another terminal\n\n$ sudo su\n# fish\n# cd /tmp/mnt\n# mkdir -p a/b\n# cd a/b\n# /bin/sh\n# cd /\n# umount /tmp/mnt\numount: unmount of /tmp/mnt failed: Device busy\n# exit"
+}

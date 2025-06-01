@@ -1,0 +1,8 @@
+{
+ "id": 468015,
+ "bug_id": 128247,
+ "attachment_id": 0,
+ "creation_time": "2008-10-20T17:31:17Z",
+ "creator": "bzeeb-lists@lists.zabbadoz.net",
+ "text": "On Mon, 20 Oct 2008, Mark Atkinson wrote:\n\n\u003e #0  doadump () at pcpu.h:221\n\u003e 221             __asm __volatile(\"movl %%fs:0,%0\" : \"=3Dr\" (td));\n\u003e (kgdb) l *0xc09af288\n\u003e 0xc09af288 is in ip6_forward (/usr/src/sys/netinet6/ip6_forward.c:420).\n\u003e 415              * address).  We use a local copy of ip6_src, since =\n\u003e in6_setscope()\n\u003e 416              * will possibly modify its first argument.\n\u003e 417              * [draft-ietf-ipngwg-icmp-v3-04.txt, Section 3.1]\n\u003e 418              */\n\u003e 419             src_in6 =3D ip6-\u003eip6_src;\n\u003e 420             if (in6_setscope(\u0026src_in6, rt-\u003ert_ifp, \u0026outzone)) {\n\u003e 421                     /* XXX: this should not happen */\n\u003e 422                     V_ip6stat.ip6s_cantforward++;\n\u003e 423                     V_ip6stat.ip6s_badscope++;\n\u003e 424                     m_freem(m);\n\u003e\n\u003e (kgdb) frame 10\n\u003e #10 0xc09af288 in ip6_forward (m=3D0xc5ed8300, srcrt=3D0)\n\u003e    at /usr/src/sys/netinet6/ip6_forward.c:420\n\u003e 420             if (in6_setscope(\u0026src_in6, rt-\u003ert_ifp, \u0026outzone)) {\n\u003e (kgdb) p rt\n\u003e $3 =3D (struct rtentry *) 0x0\n\nand rt comes from\n \trt = V_ip6_forward_rt.ro_rt;\n\nwhich is an unprotected (no lock) single global cache in the ipv6\nstack. So I guess another packet changed it while this one was\nprocessed. The problem is well known and will hopefully be eliminated\none day along with other caches left.\n\n/bz\n\n-- \nBjoern A. Zeeb              Stop bit received. Insert coin for new game."
+}

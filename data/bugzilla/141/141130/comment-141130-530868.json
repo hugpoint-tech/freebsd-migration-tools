@@ -1,0 +1,8 @@
+{
+ "id": 530868,
+ "bug_id": 141130,
+ "attachment_id": 0,
+ "creation_time": "2009-12-03T09:20:04Z",
+ "creator": "liujb@arraynetworks.com.cn",
+ "text": "In svc_getreqset function, high-number fd will not be handled.\nData is still in receiving buffer, so rpc lib will be called \nfrequently, which leads high cpu usage.  \n\nIt's because fd_mask is unsinged long, which is 64-bits in amd64,\nbut ffs only handles 32bit int. The high fd will be ingored, \nand jump out of the second for loop.\n\nPlease read my comments in the following source code.\n\nvoid\nsvc_getreqset(readfds)\n        fd_set *readfds;\n{\n        int bit, fd;\n        fd_mask mask, *maskp;\n        int sock;\n\n        assert(readfds != NULL);\n\n        maskp = readfds-\u003efds_bits;\n        for (sock = 0; sock \u003c FD_SETSIZE; sock += NFDBITS) {\n            for (mask = *maskp++; (bit = ffs(mask)) != 0;    \n                                         --\u003eshould be ffsl\n                mask ^= (1 \u003c\u003c (bit - 1))) {                  \n                         --\u003e1 should be (long)1\n                /* sock has input waiting */\n                fd = sock + bit - 1;\n                svc_getreq_common(fd);\n            }\n        }\n}\n\nFix: \n\nThe fix should be take care of the long type of fd_mask in i386 and amd64, \nalso should pay attention to other places using ffs.\nHow-To-Repeat: Open a rpc connection with a high number file description."
+}

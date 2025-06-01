@@ -1,0 +1,8 @@
+{
+ "id": 558967,
+ "bug_id": 146845,
+ "attachment_id": 0,
+ "creation_time": "2010-05-22T23:10:01Z",
+ "creator": "lavr@ncbi.nlm.nih.gov",
+ "text": "When an INET socket is being closed from two ends almost simultaneously,\nwith both sides using a series of SO_LINGER, shutdown and close, and one\nside being slightly behind the other, the side closing last gets -1\nfrom close() on such a socket, and errno 54, Connection reset by peer,\neven though there was no data in the socket (so it more likely seems that\nthe FIN that the late shutdown() was assumed to send was counted towards\nthe actual data, but it should not have).  No other UNIX flavor (and we\nhave many here at NCBI) exhibits this kind of problem.  Also, the problem\nis not 100% reproducible on FreeBSD (but is pretty frequent, nonetheless).\nWe have seen this very same problem on both version 6 and 8 of the OS\n(reporting here for 8).\n\nFix: There are workarounds (as to not to use either setsockopt(SO_LINGER) or\nshutdown(SHUT_WR), or both) but they do not fix the problem in general.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: In the attached, there is a server-client C program that reproduces the\nproblem (although, the program itself has to be started a few times before\nthe actual error occurs).  At the bottom of the attached C program,\na ktrace of the communicating processes, and errno 54 coming out of\nclose().  select(0,...) is used to slowdown one process to imitate some\nof its midwork before it is ready to proceed with actual socket disposal.\nIf either shutdown() or setsockopt(SO_LINGER) are excluded from the code,\nthe problem in close() seems to be gone.\n\nwhile ktrace -i ./a.out; do date; done\nkdump"
+}

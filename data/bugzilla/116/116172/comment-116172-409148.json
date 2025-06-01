@@ -1,0 +1,8 @@
+{
+ "id": 409148,
+ "bug_id": 116172,
+ "attachment_id": 0,
+ "creation_time": "2007-10-19T03:32:25Z",
+ "creator": "peter@wemm.org",
+ "text": "I've narrowed down the panic trigger.\n\nI have two userland processes doing a tun0 tunnel.  The purpose is to do \nIPv6 encapsulated in UDP.\n\nThe local end has an open ssh connection to the remote end.\n\nIf I reboot at that instant, both the ssh and the tunnel driver receive \na sigterm at the same time.\n\nThe death of the tun0 driver causes the tun0 interface to be torn down \nand the routes cleaned up.\n\nAt the same time, the death of the ssh process attempts to send a tcp6 \nFIN to be sent.  This causes the panic described above.\n\nA simple workaround is to do a 'ssh -4' to the remote end rather than \nover the tunnel.  This avoids the simultanious tun0 route teardown and \nthe ssh teardown.  It only seems to be a problem with ssh to the \nprecise remote endpoint.  ssh over the tunnel to other machines does \nnot cause the panic when the machine is rebooted.\n\nSample tun0 driver to trigger the panic:  \nhttp://people.freebsd.org/~peter/qd_tun.c   - quick \u0026 dirty tunnel :-) \n\nIfconfig some ipv6 addresses to each end.  ssh to the other end, \nreboot(8) locally, wait for the kaboom!\n\n-Peter"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1182481,
+ "bug_id": 259152,
+ "attachment_id": 0,
+ "creation_time": "2021-10-15T16:04:48Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Please redo the packet capture with '-s 0'.  The SCSI response PDUs are in the same packet as the Data-In but can't be seen in WireShark since the captured packets are truncated.  Given the small number of packets involved, using '-s 0' should be ok without risk of dropping packets.\n\nNote that since there is a Data-In, the ExpDataSN field should be 1 in the SCSI Response.  It is a count of the Data-In PDUs sent in the reply to the original request prior to the SCSI Response PDU that closes it:\n\nhttps://datatracker.ietf.org/doc/html/rfc7143#section-11.4.8\n\nThe error messages in comment #4 suggest a completely garbled connection, e.g. if there are extra bytes in the stream that cause the client to read PDU headers at the wrong offset.  'PDU 0x0' means that it thinks the opcode of the PDU is 0 (NOP-Out).  However, NOP-out PDUs are only sent by the initiator (client), not the target.\n\nI wonder if OCI is using AHS (which isn't generally supported in FreeBSD's iSCSI stack)?  A full pcap might help.\n\nOh, also, the LoginRespone shows 'iSCSIProtocolLevel=Not Understood\" in the reply.  That may be ok though as that just means we can't use features from RFC 7144 I think (reading in RFC 7144 which defines version 2 where as 7143 is version 1)."
+}

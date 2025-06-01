@@ -1,0 +1,8 @@
+{
+ "id": 1189607,
+ "bug_id": 259458,
+ "attachment_id": 0,
+ "creation_time": "2021-12-10T12:33:44Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/12 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=f43d2e1199b9fd265b72281d2779e2554fa7cb6d\n\ncommit f43d2e1199b9fd265b72281d2779e2554fa7cb6d\nAuthor:     Andriy Gapon \u003cavg@FreeBSD.org\u003e\nAuthorDate: 2021-11-19 07:56:30 +0000\nCommit:     Andriy Gapon \u003cavg@FreeBSD.org\u003e\nCommitDate: 2021-12-10 12:33:12 +0000\n\n    iflib_stop: drain rx tasks to prevent any data races\n\n    iflib_stop modifies iflib data structures that are used by _task_fn_rx,\n    most prominently the free lists.  So, iflib_stop has to ensure that the\n    rx task threads are not active.\n\n    This should help to fix a crash seen when iflib_if_ioctl (e.g.,\n    SIOCSIFCAP) is called while there is already traffic flowing.\n\n    The crash has been seen on VMWare guests with vmxnet3 driver.\n\n    My guess is that on physical hardware the couple of 1ms delays that\n    iflib_stop has after disabling interrupts are enough for the queued work\n    to be completed before any iflib state is touched.\n\n    But on busy hypervisors the guests might not get enough CPU time to\n    complete the work, thus there can be a race between the taskqueue\n    threads and the work done to handle an ioctl, specifically in iflib_stop\n    and iflib_init_locked.\n\n    PR:             259458\n\n    (cherry picked from commit 1bfdb812c786ac2607a82633f9c84a5d16f54079)\n\n sys/net/iflib.c | 3 ++-\n 1 file changed, 2 insertions(+), 1 deletion(-)"
+}

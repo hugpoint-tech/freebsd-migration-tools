@@ -1,0 +1,8 @@
+{
+ "id": 361839,
+ "bug_id": 106030,
+ "attachment_id": 0,
+ "creation_time": "2006-11-29T20:20:12Z",
+ "creator": "mjacob@FreeBSD.org",
+ "text": "\nI had a mounted ufs disk that went away. I rebooted so as to avoid a\npanic. Too bad. Geom paniced on me anyway:\n\nSyncing disks, vnodes remaining...2 (da8:isp1:0:6:2): Invalidating pack\ng_vfs_done():da8a[WRITE(offset=81920, length=4096)]error = 6\npanic: bundirty: buffer 0xc6d76f70 still on queue 1\ncpuid = 0\nKDB: enter: panic\n[thread pid 3 tid 100000 ]\nStopped at      kdb_enter+0x2b: nop\ndb\u003e bt\nTracing pid 3 tid 100000 td 0xc1e98000\nkdb_enter(c0936604) at kdb_enter+0x2b\npanic(c093f33c,c6d76f70,1,c6d76f70,cba0ec48,...) at panic+0x127\nbundirty(c6d76f70) at bundirty+0x35\nbrelse(c6d76f70) at brelse+0x82f\nbufdone_finish(c6d76f70) at bufdone_finish+0x34c\nbufdone(c6d76f70) at bufdone+0xaa\nffs_backgroundwritedone(c6d76f70) at ffs_backgroundwritedone+0xca\nbufdone(c6d76f70) at bufdone+0x8f\ng_vfs_done(c21475ac) at g_vfs_done+0x8a\nbiodone(c21475ac) at biodone+0x58\ng_io_schedule_up(c1e98000) at g_io_schedule_up+0xe6\ng_up_procbody(0,cba0ed38) at g_up_procbody+0x5a\nfork_exit(c067d58c,0,cba0ed38) at fork_exit+0xac\nfork_trampoline() at fork_trampoline+0x8\n--- trap 0x1, eip = 0, esp = 0xcba0ed6c, ebp = 0 ---\n\n\nIt's unclear to me where this should be fixed. Since device invalidation\nis an inherently asynchronous process that could happen at any time, it\nseems to me that GEOM should be a bit more tolerant here.\n\nHow-To-Repeat: \nTurn a disk off that has a mounted filesystem and just do a reboot."
+}

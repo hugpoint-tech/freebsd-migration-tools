@@ -1,0 +1,8 @@
+{
+ "id": 889209,
+ "bug_id": 211195,
+ "attachment_id": 172760,
+ "creation_time": "2016-07-20T21:58:51Z",
+ "creator": "ryan@ryanday.net",
+ "text": "Created attachment 172760\nPatch for 211195\n\nThe crash occurs in the rm_r() function, however the core dump issue looks a little more subtle than not having a home directory. For example, the commands\n\n# pw user add someuser -g somegroup -d \"/home/someuser\" -s \"/usr/sbin/nologin\"\n# pw user del someuser -r\n\nWon't core dump. /home/someuser doesn't exist, and the problematic code never runs.\n\nIn your example the home directory was \"/dev/null\", which *does* exist even though -m wasn't specified. The program uses openat(2) with the O_DIRECTORY flag to open \"/dev/null\" which is not a directory. openat() returns an unchecked error, and the program crashes when it tries to open the invalid descriptor.\n\nI was able to reproduce this in the master branch on the Github repo. I attached a patch for the rm_r() function to check the return value of openat(). It looks like openat()'s return value isn't checked in a couple other locations in the code as well. Those code paths may not be accessible though."
+}

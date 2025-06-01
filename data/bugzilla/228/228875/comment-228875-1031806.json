@@ -1,0 +1,8 @@
+{
+ "id": 1031806,
+ "bug_id": 228875,
+ "attachment_id": 0,
+ "creation_time": "2019-01-13T19:56:50Z",
+ "creator": "gonzo@FreeBSD.org",
+ "text": "The problem is not in the kernel it's in xf86-input-synaptics driver.\n\nThe trackpad sends all events to the driver as a Synaptics packets that are supposed to contain all the information:number of presspoints, movements, \"button\" states. The trackpoint/buttons events also reported the same way as \"guest device\" events and can be detected by checking \"finger width\" field value in a packet to be equal 3 (see sys/dev/atkbdc/psm.c line 3268 and below). The xf86-input-synaptics switches /dev/psm0 \"native\" mode that disables all the in-kernel processing of synaptics packet and makes kernel pass them to the userland as-is for further handling. The problem is that xf86-input-synaptics doesn't have code to handle guest device events and so the trackpoint and physical buttons do not work.\n\nI ended up using xf86-input-libinput on my Thinkpad for the gestures/synpatics support. I think it requires some changes in kernel config and some X11 drivers before it can be made default for the release.\n\nClosing this issue as \"works as intended\" because it can't be fixed in FreeBSD code. I am not sure if xf86-input-synaptics is actively maintained but I think it's worth reporting the issue to the upstream."
+}

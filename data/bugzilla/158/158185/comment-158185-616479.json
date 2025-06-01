@@ -1,0 +1,8 @@
+{
+ "id": 616479,
+ "bug_id": 158185,
+ "attachment_id": 0,
+ "creation_time": "2011-06-23T00:50:09Z",
+ "creator": "ambrisko@ambrisko.com",
+ "text": "Recently, I ran into a problem in which IPv4 works fine but IPv6 doesn't.\nI use a trick to \"fail-over\" NICs via ifconfig down the bad link and then \nifconfig up the good link.  Both NICs have the same IP.  The 2nd IP is \nassigned when the 1st NIC is down.  This works fine with IPv4 since on down \nit removes the NIC's local route that was set when the IP was assigned ie. \nthe /x network.  In the IPv4 stack it calls if_up and if_down to purge the \nroute and if_up to recreate the NIC's route.  Only when you delete the\nIP does the route go away.\n\nThis doesn't happen with IPv6, instead the route is created when\nthe NIC is first assigned an IP and persists when the NIC is down\nand even when another is up.\n\nYou can see this with route get or netstat -r pointing to a NIC that\nisn't valid.\n\nI have a prototype/first hack to fix it by modeling the IPv4 paradigm and\ndeal with the routes/multicast groups.  I'd like someone to take a look \nand tell me what I messed up and how it should be done better.\n\nThis appears to be a fairly simple bug in FreeBSD that was just never\nlooked at before since it is a bit of a corner case.\n\nFix: Here is the hacky patch I came up with.\nHow-To-Repeat: A lot of this problem can be seen tested via\n\tnetstat -r\n\tndp -a\n\tifmcstat\n\nAssign an IPv6 address via ifconfig, then ifconfig down it and the route\nis still there."
+}

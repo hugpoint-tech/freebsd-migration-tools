@@ -1,0 +1,8 @@
+{
+ "id": 1130848,
+ "bug_id": 250802,
+ "attachment_id": 0,
+ "creation_time": "2020-11-08T20:45:33Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to mr.xanto from comment #34)\nOk, so D27138 cannot work because BARs are not mapped into userspace, and patch\ncaused infinite recursion.  Not to mention Peter' objection.\n\nLets try to see why EPT violation was translated to instruction assist instead\nof being handled by vm_fault().\n\nFirst, you use stable/12 and you do not have debugging turned on.  Please enable\nat least INVARIANTS in your kernel.\n\nSecond, I do not see how to find the cause except by some debugging.  Apply\nthe following patch for start and report if the printf triggered\n\ndiff --git a/sys/amd64/vmm/vmm.c b/sys/amd64/vmm/vmm.c\nindex 3a1d0d54bca..1e715d458a9 100644\n--- a/sys/amd64/vmm/vmm.c\n+++ b/sys/amd64/vmm/vmm.c\n@@ -650,6 +650,7 @@ vm_mem_allocated(struct vm *vm, int vcpuid, vm_paddr_t gpa)\n \t\t\treturn (true);\t\t/* 'gpa' is sysmem or devmem */\n \t}\n \n+if (gpa \u003e= 0xd0000000 \u0026\u0026 gpa \u003c 0xe0000000) printf(\"ppt_is_mmio %#lx %d\\n\", gpa, ppt_is_mmio(vm, gpa));\n \tif (ppt_is_mmio(vm, gpa))\n \t\treturn (true);\t\t\t/* 'gpa' is pci passthru mmio */"
+}

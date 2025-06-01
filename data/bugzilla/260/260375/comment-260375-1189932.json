@@ -1,0 +1,8 @@
+{
+ "id": 1189932,
+ "bug_id": 260375,
+ "attachment_id": 0,
+ "creation_time": "2021-12-13T03:37:48Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "VOP_READDIR can return a list of cookies that store seek offsets for the directory entries returned in uio.  Each cookie is a 64-bit value, matching the 64-bit d_off field in struct dirent.  However, The NFS server truncates these cookies to 32-bits.  It happens in both nfsrvd_readdir and nfsrvd_readdirplus.  The relevant lines are these:\n\n*tl++ = 0;\n*tl = txdr_unsigned(*cookiep);\n\nThat works just fine for UFS, where dirent offsets correspond to byte offsets within a densely packed array.  And it works just fine for ZFS, where dirent offsets seem to come from a 29-bit hash function.  But it fails for the FUSE file system I'm developing, where the dirent offset uses all 64 bits.\n\nAccording to RFC-1813, the NFSv3 standard, the cookie3 data type is a uint64 variable.  I can't figure out any good reason why the NFS server should truncate it.  It's probably just a legacy thing.  I'll try to come up with a patch."
+}

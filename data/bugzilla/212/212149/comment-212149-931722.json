@@ -1,0 +1,8 @@
+{
+ "id": 931722,
+ "bug_id": 212149,
+ "attachment_id": 182090,
+ "creation_time": "2017-04-25T20:32:48Z",
+ "creator": "brnrd@freebsd.org",
+ "text": "Created attachment 182090\nsvn diff for security/strongswan\n\nstrongSwan makes a bit of a mess of the OpenSSL includes.\n\nFiles checking OPENSSL_VERSION_NUMBER\nopenssl_crl.c\nopenssl_diffie_hellman.c\nopenssl_ec_private_key.c\nopenssl_ec_public_key.c\nopenssl_gcm.c\nopenssl_hmac.c\nopenssl_pkcs7.c\nopenssl_plugin.c\nopenssl_plugin.c.orig\nopenssl_rsa_private_key.c\nopenssl_rsa_public_key.c\nopenssl_sha1_prf.c\nopenssl_util.c\nopenssl_x509.c\ncp -p \nApart from _gcm and _pkcs7 these don't include opensslv.h. Most get OPENSSL_VERSION_NUMBER defined through\ninclude openssl_util.h \n   -\u003e \u003copenssl/bn.h\u003e\n      -\u003e \u003copenssl/crypto.h\u003e \n         -\u003e \u003copenssl/opensslv.h\u003e\n\nFiles NOT including openssl_util.h get OPENSSL_VERSION_NUMBER defined through\nopenssl_gcm.c -\u003e opensslv.h\nopenssl_hmac.c NONE\nopenssl_sha1_prf.c NONE\nIt is entirely possible that the path is different in OpenSSL.\n\nI've created new files\nopenssl_compat.h\nopenssl_compat.c\nModified all files checking OPENSSL_VERSION and not including openssl_util.h to add include openssl_compat.h\nModified openssl_util.h to include openssl_compat.h\nAdded openssl_compat.h and openssl_compat.c to Makefile.am (and ran automake)\n\nPlease find a patch to test attached. I've created an account on strongswan.org but that's pending moderator approval.\n\nDewayne, Franco, can you test this patch?"
+}

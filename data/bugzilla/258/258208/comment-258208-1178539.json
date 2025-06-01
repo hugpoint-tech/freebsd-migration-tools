@@ -1,0 +1,8 @@
+{
+ "id": 1178539,
+ "bug_id": 258208,
+ "attachment_id": 0,
+ "creation_time": "2021-09-17T13:21:52Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Dave Cottlehuber from comment #5)\nSo there is effectively an LOR here:\n\n   56 152682 zfs                 -                   mi_switch+0xc1 _vm_page_busy_sleep+0x100 vm_page_sleep_if_busy+0x28 vm_object_page_remove+0xdf vn_pages_remove+0x4c zfs_rezget+0x35 zfs_resume_fs+0x258 zfs_ioc_rollback+0x158 zfsdev_ioctl_common+0x4e3 zfsdev_ioctl+0x143 devfs_ioctl+0xc7 vn_ioctl+0x1a4 devfs_ioctl_f+0x1e kern_ioctl+0x26d sys_ioctl+0xf6 amd64_syscall+0x10c fast_syscall_common+0xf8 \n\n  445 168579 ping                -                   mi_switch+0xc1 _sleep+0x1cb rms_rlock_fallback+0x90 zfs_freebsd_getpages+0x52 vnode_pager_getpages+0x41 vm_pager_get_pages+0x22 vm_fault+0x49a vm_fault_trap+0x6d trap_pfault+0x1f8 trap+0x3fd calltrap+0x8\n\nThe page array passed to zfs_getpages() is busied upon entry, and then we do ZFS_ENTER(zfsvfs).  But zfs_rezget() is called with this lock held and then tries to busy vnode pages."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 542804,
+ "bug_id": 143568,
+ "attachment_id": 0,
+ "creation_time": "2010-02-05T05:50:01Z",
+ "creator": "ports@grosbein.net",
+ "text": "\tktrace stops writing trace file if \"filesize\" limit is enabled\n\tby traced process.\n\nFix: \n\nUnknown\nHow-To-Repeat: \n\tCompile this test code: cc -o example example.c\n\tIt needs two command line arguments: filesize limit (in bytes)\n\tand some user's uid (f.e., 65534 for \"nobody\").\n\n#include \u003csys/types.h\u003e\n#include \u003csys/resource.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cunistd.h\u003e\n\nint main(int argc, char *argv[])\n{\n  \n  struct rlimit rl;\n\n  if (argc \u003e 2) {  \n    rl.rlim_cur = atol(argv[1]);\n    setrlimit(RLIMIT_FSIZE, \u0026rl);\n    seteuid(atol(argv[2]));\n    while(1)\n      usleep(10);\n  }\n  return 0;\n}\n\n\tUse kernel with \"options KTRACE\" and run the example as root,\n\tit breaks as soon as trace file size hits limit:\n\n# ktrace ./example 100000 65535\nFilesize limit exceeded: 25\n\n\tNote that traced code does not write anything, it runs as another user\n\tand sets limit for itself only and not for ktrace.\n\t\n\tThis makes it difficult to debug real services using \"filesize\"\n\tlimit like stock ftpd serving users with limited login class assigned."
+}

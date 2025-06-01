@@ -1,0 +1,8 @@
+{
+ "id": 781251,
+ "bug_id": 192924,
+ "attachment_id": 0,
+ "creation_time": "2014-08-22T17:40:02Z",
+ "creator": "kate@elide.org",
+ "text": "Using 11.0-CURRENT on a macbook, -r 270176, on boot I found catting /dev/apt showed no output when i touched the trackpad.\n\nIf I kldunload atp and load it again, then (confusingly) the wsp0 device is created instead. I can cat that fine, and see data from the trackpad's movements.\n\nI think either wsp(4) or ums(4) is interfering with the priority for devd.conf when attaching devices. As I understand it, atp(4) obsoletes wsp(4). So I worked around this by changing the priorities such that atp(4) attaches before ums(4), and I commented out wsp(4) entirely:\n\nnotify 120 {\n        match \"system\" \"DEVFS\";\n        match \"subsystem\" \"CDEV\";\n        match \"type\" \"CREATE\";\n        match \"cdev\" \"atp[0-9]+\";\n\n        action \"/etc/rc.d/moused quietstart $cdev\";\n};\n\nnotify 100 {\n        match \"system\" \"DEVFS\";\n        match \"subsystem\" \"CDEV\";\n        match \"type\" \"CREATE\";\n        match \"cdev\" \"ums[0-9]+\";\n\n        action \"/etc/rc.d/moused quietstart $cdev\";\n};\n\n#notify 110 {\n#       match \"system\" \"DEVFS\";\n#       match \"subsystem\" \"CDEV\";\n#       match \"type\" \"CREATE\";\n#       match \"cdev\" \"wsp[0-9]+\";\n\n#       action \"/etc/rc.d/moused quietstart $cdev\";\n#};\n\nI'm not sure what's the proper thing to do. My guess is that wsp(4) ought to be removed entirely, if atp(4) includes its supported models."
+}

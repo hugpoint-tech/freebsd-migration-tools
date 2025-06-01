@@ -1,0 +1,8 @@
+{
+ "id": 1083662,
+ "bug_id": 242913,
+ "attachment_id": 0,
+ "creation_time": "2020-01-13T20:57:53Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "The linuxkpi file close function doesn't handle a null thread argument.  As noted in e.g., closef() and devfs_close_f(), the unix domain socket code passes a null thread pointer to fo_close, so linux_file_close() should try to handle it.  I think using curthread is fine in this case.\n\ndiff --git a/sys/compat/linuxkpi/common/src/linux_compat.c b/sys/compat/linuxkpi/common/src/linux_compat.c\nindex 614148ae212e..7a4c0986bb08 100644\n--- a/sys/compat/linuxkpi/common/src/linux_compat.c\n+++ b/sys/compat/linuxkpi/common/src/linux_compat.c\n@@ -1498,6 +1498,8 @@ linux_file_close(struct file *file, struct thread *td)\n        KASSERT(file_count(filp) == 0,\n            (\"File refcount(%d) is not zero\", file_count(filp)));\n \n+       if (td == NULL)\n+               td = curthread;\n        error = 0;\n        filp-\u003ef_flags = file-\u003ef_flag;\n        linux_set_current(td);"
+}

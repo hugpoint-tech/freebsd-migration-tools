@@ -1,0 +1,8 @@
+{
+ "id": 930213,
+ "bug_id": 218634,
+ "attachment_id": 0,
+ "creation_time": "2017-04-13T15:33:33Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "vdev_geom.c uses the g_consumer's private field to point to a vdev_t.  That way, a GEOM event can cause a change to a ZFS vdev.  For example, when you remove a disk, the vdev's status will change to REMOVED.  However, vdev_geom will sometimes attach multiple vdevs to the same GEOM consumer.  If this happens, then geom events will only be propagated to one of the vdevs.\n\nSteps to reproduce:\n# Create two pools with a shared spare\n$ sudo zpool create -f foo da0 spare da1\n$ sudo zpool create -f bar da2 spare da1\n# Physically remove da1\n$ zpool status\n  pool: bar\n state: ONLINE\n  scan: none requested\nconfig:\n\n        NAME                    STATE     READ WRITE CKSUM\n        bar                     ONLINE       0     0     0\n          da2                   ONLINE       0     0     0\n        spares\n          13402883250515786666  REMOVED   was /dev/da1\n\nerrors: No known data errors\n\n  pool: foo\n state: ONLINE\n  scan: none requested\nconfig:\n\n        NAME        STATE     READ WRITE CKSUM\n        foo         ONLINE       0     0     0\n          da0       ONLINE       0     0     0\n        spares\n          da1       AVAIL\n\nBoth spares should be listed as REMOVED.  Instead, only one is."
+}

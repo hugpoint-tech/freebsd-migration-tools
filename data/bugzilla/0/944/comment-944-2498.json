@@ -1,0 +1,8 @@
+{
+ "id": 2498,
+ "bug_id": 944,
+ "attachment_id": 0,
+ "creation_time": "1996-01-14T07:31:18Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\u003eDescription:\n\n\u003eSecurity problems with mktemp race condition.\n\u003eFrom Linux Security FAQ Update #10\n\n\u003eThere is a good bit of stuff done between the mktemp() and the actual usage of\n\u003ethe temporary file, so this bug is not very difficult to exploit.  This bug\n\u003ecould allow another local user to execute commands as you, when you start FVWM.\n\nBSD provides mkstemp() to handle this problem properly.  I'm not sure of\nit's history, but it is old enough to be in FreeBSD-1.1.5.\n\nI tried exploiting the bug in mktemp() pointed out by Josh the other day\n(mk[s]temp() uses stat(), not lstat(), so mktemp() can return a filename\nthat is a symlink.  This doesn't seem to be a problem for mkstemp()\nsince O_EXCL in the open flags stop all (?) existing directory entries\nfrom being openable).\n\n\u003e+    /* make a directory to guard against following symlinks */\n\u003e+    if (mkdir(tmp_name, 0700) != 0) {\n\u003e+      perror(\"exclusive open for tmp_name failed in m4_defs\");\n\u003e+      exit(0377);\n\u003e+    }\n\u003e+    strcat(tmp_name, \"/data\"); /* what actual tmp file is to be called */\n\nI think the O_EXCL method is better.  Except of course if you really\nwant a directory or another type of non-regular file.  It's surprisingly\nhard to get the interface for temporary file [name] creation right.\nFreeBSD has 5 BAD interfaces: tempnam(), tmpfile(), tmpnam(), mktemp()\nand mkstemp().\n\nBruce"
+}

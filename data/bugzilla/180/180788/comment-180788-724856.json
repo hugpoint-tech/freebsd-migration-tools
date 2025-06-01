@@ -1,0 +1,8 @@
+{
+ "id": 724856,
+ "bug_id": 180788,
+ "attachment_id": 0,
+ "creation_time": "2013-08-07T10:18:34Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kib\nDate: Wed Aug  7 09:18:21 2013\nNew Revision: 254053\nURL: http://svnweb.freebsd.org/changeset/base/254053\n\nLog:\n  Revert the MFC of the r244237, done as r244806.  There are indeed bugs\n  in XEN pmap.  The revert hides a panic with the cost of non-working\n  vfork(2), which means more obscure misbehaviour in the usermode.\n  Revert is only done on the stable branch to maintain the consistent\n  erratic behaviour.\n  \n  PR:\tkern/180788\n\nModified:\n  stable/9/sys/kern/kern_fork.c\nDirectory Properties:\n  stable/9/sys/   (props changed)\n\nModified: stable/9/sys/kern/kern_fork.c\n==============================================================================\n--- stable/9/sys/kern/kern_fork.c\tWed Aug  7 08:20:11 2013\t(r254052)\n+++ stable/9/sys/kern/kern_fork.c\tWed Aug  7 09:18:21 2013\t(r254053)\n@@ -150,7 +150,11 @@ sys_vfork(struct thread *td, struct vfor\n \tint error, flags;\n \tstruct proc *p2;\n \n+#ifdef XEN\n+\tflags = RFFDG | RFPROC; /* validate that this is still an issue */\n+#else\n \tflags = RFFDG | RFPROC | RFPPWAIT | RFMEM;\n+#endif\t\t\n \terror = fork1(td, flags, 0, \u0026p2, NULL, 0);\n \tif (error == 0) {\n \t\ttd-\u003etd_retval[0] = p2-\u003ep_pid;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

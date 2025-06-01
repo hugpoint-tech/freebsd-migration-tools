@@ -1,0 +1,8 @@
+{
+ "id": 1176923,
+ "bug_id": 258287,
+ "attachment_id": 0,
+ "creation_time": "2021-09-05T12:29:35Z",
+ "creator": "1203405394@qq.com",
+ "text": "Hello，we find two underlying jails security issues to exhaust host's kernel's resources which may cause Dos attack.\n\nThe first one is we can easily exhaust the host's `numvnodes` and reach the `maxvnodes` limit in a jail.\n\nThecsecond one is we can keep produce dirty data in a jail and make the `dp_dirty_total` reachs `zfs_dirty_data_max` limit. As a result, other writing request may delay.\n\nReproduction steps:\n1. We set up jails following the FreeBSD's handbook.\n\n2. Use `ezjail-admin create` commands to create a normal malicious jail.\n\n3. For numvnodes, we just keep creating directories using `Mkdir` command in the malicious jail. Host's numvnodes will keep rising until it reach the maxvnodes limit.\n\n4. For `dp_dirty_total`, we observed that the `zfs_dirty_data_max` limit is 800Mi, we keep writing data to a file at high speed. As a result, the host's `dp_dirty_total` will reach the `zfs_dirty_data_max` limit and cause other writing request being delayed.\n\nAlthough it seems that there is no serious performance and functional impact on host, I wonder if there should be some ways to limit the per-jail `vnodes` or `dp_dirty_total` like `rctl` which can avoid malicious jails to launch Dos attack."
+}

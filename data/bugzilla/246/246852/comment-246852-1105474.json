@@ -1,0 +1,8 @@
+{
+ "id": 1105474,
+ "bug_id": 246852,
+ "attachment_id": 215037,
+ "creation_time": "2020-05-29T23:51:34Z",
+ "creator": "thoma555-bsd@yahoo.com",
+ "text": "Created attachment 215037\nbounce_bus_dmamap_load_buffer fix.\n\nWhen the arm64 version of bounce_bus_dmamap_load_buffer() exits with error EFBIG (due to too many segments), it leaves the dma map in a state where the next call fails with EFBIG too even though the next request has a single segment.\n\nThis happens when a network driver calls bus_dmamap_load_mbuf_sg() with a complicated mbuf chain.  Typical drivers respond to the EFBIG error by defragging the mbuf and trying the bus_dmamap_load_mbuf_sg() again.  In my case, the second call would also fail in which case the driver gives up and drops the packet.\n\nIt looks like this was fixed in the arm and mips versions of busdma_machdep.c at some point.  In those architectures, the routine calls bus_dmamap_unload() to clean up the state if it fails with EFBIG.  The same change was made to bounce_bus_dmamap_load_phys() too.  I've attached a possible fix based on those.  It seems to work for me.\n\nIt looks like riscv also has the same issue."
+}

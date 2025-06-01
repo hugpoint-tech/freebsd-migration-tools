@@ -1,0 +1,8 @@
+{
+ "id": 932598,
+ "bug_id": 219024,
+ "attachment_id": 182255,
+ "creation_time": "2017-05-02T23:48:23Z",
+ "creator": "fbsd@opal.com",
+ "text": "Created attachment 182255\n[patch] csplit.c\n\nWhen using:\n    csplit -k - '/patt/' '{count}'\nwith an input containing less than count lines matching patt, a logic error causes the final pattern that matches to be left both at the start of file N and also at the end of file N-1.  This is due to the fact that when there are less than count matches, csplit will error when looking for another match.  In that error condition, csplit simply prints a message and exits, rather than calling its toomuch() function which is what truncates the previous output file.\n\nRepeat by:\n    echo \"one\\ntwo\\nxxx 1\\nthree\\nfour\\nxxx 2\\nfive\\nsix\" | csplit -k - '/xxx/' '{10}'\n\nExpected output:\nxx00:\n    one\n    two\n\nxx01:\n    xxx 1\n    three\n    four\n\nxx02:\n    xxx 2\n    five\n    six\n\nActual output:\nxx01:\n    one\n    two\n\nxx02:\n    xxx 1\n    three\n    four\n    xxx 2\n\nxx03:\n    xxx 2\n    five\n    six\n\nThe \"xxx 2\" at the end of file xx02 is incorrect.  The attached patch fixes this by making sure that toomuch() is called in the error case when a third match is not found."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 701310,
+ "bug_id": 175705,
+ "attachment_id": 0,
+ "creation_time": "2013-01-30T17:00:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I tried using userland dtrace exactly according to the instructions at https://wiki.freebsd.org/DTrace/userland.  The following panic resulted:\n\npanic: process not held\ncpuid = 0\nKDB: stack backtrace:\ndb_trace_self_wrapper() at 0xffffffff8036266a = db_trace_self_wrapper+0x2a\nkdb_backtrace() at 0xffffffff8090c4b7 = kdb_backtrace+0x37\npanic() at 0xffffffff808d4a48 = panic+0x1d8\nproc_ops() at 0xffffffff8232a03a = proc_ops+0x8a\nfasttrap_pid_probe() at 0xffffffff8232b319 = fasttrap_pid_probe+0x9a9\ntrap() at 0xffffffff80bd2e85 = trap+0x2c5\ncalltrap() at 0xffffffff80bbcec3 = calltrap+0x8\n--- trap 0x3, rip = 0x80086a911, rsp = 0x7fffffffdb98, rbp = 0x7fffffffdba0 ---\nKDB: enter: panic\n[ thread pid 40555 tid 114882 ]\nStopped at      0xffffffff8090c17b = kdb_enter+0x3b:    movq    $0,0xb4d1a2(%rip)\n\n\nLooking at the source, it seems that fasttrap_isa.c acquires a process lock at line 1036, drops it at line 1184, then calls uwrite at line 1737.  uwrite calls proc_ops() which panics because it expects a process lock to be held.  The subversion history shows that this bug was introduced in change 227291, which replaced fasttrap_copyout (which does not require a process lock) with uwrite (which does).  It probably wasn't caught at the time because nobody tested it with INVARIANTS.\n\nFix: \n\nPossibly could be fixed be reacquiring the process lock before calling uwrite().\nHow-To-Repeat: 1) Load a kernel with INVARIANTS enabled. \n2) kldload dtraceall\n3) Try to dtrace a user process according to the instructions at https://wiki.freebsd.org/DTrace/userland"
+}

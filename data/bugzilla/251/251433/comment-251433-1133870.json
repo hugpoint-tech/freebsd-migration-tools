@@ -1,0 +1,8 @@
+{
+ "id": 1133870,
+ "bug_id": 251433,
+ "attachment_id": 0,
+ "creation_time": "2020-11-29T04:19:00Z",
+ "creator": "raj@gusw.net",
+ "text": "# umount test-union\n# kldunload unionfs.ko\n# rm -rf test-upper/foo\n# chown -R root:wheel test-union/*\n# echo \"I'm root\" \u003e test-union/foo/bar/data\n# chmod g+w test-union/foo/bar/data\n# mount -t unionfs test-upper test-union\n# su user\n$ echo \"I'm not root!\" \u003e test-union/foo/bar/data\nsu: test-union/foo/bar/data: Permission denied\n\nHa! That's probably exactly the permission denied error from the last VOP_SETATTR. Let's do a quick baseline test. Removing the error = VOP_SETATTR again, make modules co unionfs.ko to /boot/kernel ... and going through the same motions above and BINGO!\n\nThe only additional problem I found -- YET ANOTHER BUG REALLY! -- is that if I had the immediate directory of the data file not also with g+w I would get permission denied with either version of unionfs.ko.\n\nBut that's part of the same bug really. Since unionfs_copyfile creates the file with the creds of the current user, it can't do it on the upper layer shadow directory which has been created with the perfect transparent owner uid and gid. \n\nThis means, to fix this bug, all we need to do is make sure the copyfile runs in the root creds already at VOP_CREATE, and also at VOP_SETATTR.\n\nIMO this could use some re-factoring, because there is no reason why we have to do VOP_SETATTR after we already copied the file. We should do it while we are creating the node on upper! Anyone would object?"
+}

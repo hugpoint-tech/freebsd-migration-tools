@@ -1,0 +1,8 @@
+{
+ "id": 1207740,
+ "bug_id": 263379,
+ "attachment_id": 0,
+ "creation_time": "2022-04-19T17:24:58Z",
+ "creator": "eugen@freebsd.org",
+ "text": "(In reply to John Baldwin from comment #10)\n\nThank you very much. I've found that EINVAL is also returned if I forget to kldload ipsec.ko. Pilot error.\n\nOTOH, maybe it is time for our setkey(8) to kldload ipsec.ko automatically just like ifconfig(8) loads needed modules. We have ipsec.ko in all supported branches (since 11.1-RELEASE).\n\nSomething like this maybe?\n\n--- sbin/setkey.c.orig       2022-02-04 20:36:27.627040000 +0000\n+++ sbin/setkey.c    2022-04-19 17:22:46.193421000 +0000\n@@ -34,6 +34,8 @@\n\n #include \u003csys/types.h\u003e\n #include \u003csys/param.h\u003e\n+#include \u003csys/linker.h\u003e\n+#include \u003csys/module.h\u003e\n #include \u003csys/socket.h\u003e\n #include \u003csys/time.h\u003e\n #include \u003cerr.h\u003e\n@@ -102,6 +104,17 @@ usage()\n        exit(1);\n }\n\n+static int\n+modload(const char *name)\n+{\n+        if (modfind(name) \u003c 0)\n+                if (kldload(name) \u003c 0 || modfind(name) \u003c 0) {\n+                        warn(\"%s: module not found\", name);\n+                        return 0;\n+                }\n+        return 1;\n+}\n+\n int\n main(ac, av)\n        int ac;\n@@ -167,6 +180,7 @@ main(ac, av)\n                }\n        }\n\n+       modload(\"ipsec\");\n        so = pfkey_open();\n        if (so \u003c 0) {\n                perror(\"pfkey_open\");"
+}

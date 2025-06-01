@@ -1,0 +1,8 @@
+{
+ "id": 30481,
+ "bug_id": 10094,
+ "attachment_id": 0,
+ "creation_time": "1999-03-30T18:17:31Z",
+ "creator": "james@ehlo.com",
+ "text": "In order to analyze the problem, I need to know what arguments that chpass\nwas called with.   Please pkg_delete the port, remove the msql user from\nyour passwd file, and apply the following patch to\nports/databases/msql/scripts/createuser:\n\n--- createuser.orig\tTue Mar 30 12:11:15 1999\n+++ createuser\tTue Mar 30 12:13:21 1999\n@@ -32,7 +32,9 @@\n print \"msql user using uid $msqlUID\\n\";\n print \"msql user using gid $msqlGID\\n\";\n \n-system( \"/usr/bin/chpass -a \\\"msql:*:$msqlUID:$msqlGID::0:0:mSQL-2 pseudo-user:/var/db/msqldb:/bin/sh\\\"\" );\n+$chpassargs = \"\\\"msql:*:$msqlUID:$msqlGID::0:0:mSQL-2 pseudo-user:/var/db/msqldb:/bin/sh\\\"\";\n+system( \"logger args to chpass are $chpassargs\" );\n+system( \"/usr/bin/chpass -a $chpassargs\" );\n \n sub append_file {\n \tlocal($file,@list) = @_;\n\n\nThen, re-install the port.  The arguments that are passed to chpass should\nshow up in your syslog (probably /var/log/messages if your haven't changed\nsyslog.conf from the default).  Please submit a followup to the PR once you\nhave this info and I'll see if I can fix the problem.\n\n-- \nj.\n\nJames FitzGibbon (JF647)                                        james@ehlo.com\nEHLO Solutions                                         Voice/Fax (416)410-0100"
+}

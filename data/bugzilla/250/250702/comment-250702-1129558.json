@@ -1,0 +1,8 @@
+{
+ "id": 1129558,
+ "bug_id": 250702,
+ "attachment_id": 0,
+ "creation_time": "2020-11-01T16:25:30Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "The simple case, e.g. '_ZZ5func1vENK3$_0clEv' has regressed with https://sourceforge.net/p/elftoolchain/code/3531/ (\"libelftc: revamped demangler support for function return type\"), aka https://github.com/elftoolchain/elftoolchain/commit/68c2224b7 .\n\nThe https://sourceforge.net/p/elftoolchain/tickets/539/ has another example however, '_ZZN9libunwind17LocalAddressSpace18findUnwindSectionsEjRNS_18UnwindInfoSectionsEENUlP12dl_phdr_infojPvE_8__invokeES4_jS5_', which GNU c++filt unpacks to 'libunwind::LocalAddressSpace::findUnwindSections(unsigned int, libunwind::UnwindInfoSections\u0026)::{lambda(dl_phdr_info*, unsigned int, void*)#1}::__invoke(dl_phdr_info*, unsigned int, void*)'.\n\nWith the elftc demangler, before upstream r3531, it simply returns \"not a valid mangled name\", while after upstream r3531, it asserts \"(ddata-\u003eoutput.size \u003e 0)\".\n\nWhat seems to happen is that r3531 added a cpp_demangle_data::cur_output member, and this is being used for any cpp_demangle_push_str() call. When cpp_demangle_read_sname() reads the '5func1' part of the original string, it calls cpp_demangle_push_str to push the 'func1' name that it decodes, but at that point cur_output is *not* pointing to ddata-\u003eoutput, which the assert expects."
+}

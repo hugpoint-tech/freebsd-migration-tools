@@ -1,0 +1,8 @@
+{
+ "id": 1299214,
+ "bug_id": 277411,
+ "attachment_id": 0,
+ "creation_time": "2024-03-01T09:23:53Z",
+ "creator": "yasu@freebsd.org",
+ "text": "(In reply to Baptiste Daroussin from comment #1)\n\nThanks for quick reply.\n\nI found the problem(?) while testing attached patch of bug #276990. Currently security/gnupg/pkg-plist includes following lines.\n\n----------------------------------------------------------------------\n@postexec [ -e %D/man/man1/gpg.1.gz ] || ln -sf gpg2.1.gz %D/man/man1/gpg.1.gz\n@postunexec [ -e %D/man/man1/gpg.1.gz ] || rm -f %D/man/man1/gpg.1.gz\n----------------------------------------------------------------------\n\nThe intention of them is to make manpage of gpg2(1) also accessible as gpg(1) when security/gpg1 isn't installed. And when manpages of the port were move to share/man these lines shold also have been adjusted. But they didn't and, as a result, ${PREFIX}/man/man1/gpg.1.gz is stale symlink now.\n\nSo the patch of bug #276990 changes above lines as following.\n\n----------------------------------------------------------------------\n@postexec [ -e %D/share/man/man1/gpg.1.gz ] || ln -sf gpg2.1.gz %D/share/man/man1/gpg.1.gz\n@postunexec [ -e %D/share/man/man1/gpg.1.gz ] || rm -f %D/share/man/man1/gpg.1.gz\n----------------------------------------------------------------------\n\nBut ${PREFIX}/man/man1/gpg.1.gz isn't removed after the package is upgraded with `pkg upgrade` because @postunexec command of old version isn't executed.\n\nIn bug #276990, comment #3 it is proposed to keep old @postunexec command line. But it doesn't solve the problem.\n\nSo is there any way to remove old ${PREFIX}/man/man1/gpg.1.gz with `pkg upgrade`?"
+}

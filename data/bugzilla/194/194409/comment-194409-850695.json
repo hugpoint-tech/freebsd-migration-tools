@@ -1,0 +1,8 @@
+{
+ "id": 850695,
+ "bug_id": 194409,
+ "attachment_id": 0,
+ "creation_time": "2015-11-24T21:55:47Z",
+ "creator": "andrew@rinet.ru",
+ "text": "(In reply to craig001 from comment #15)\n\nStrictly speaking, it is not a problem of GlusterFS itself, but different behaviour of FreeBSD and Linux implementation of FUSE: by default, Linux adds 'allow_other' mount option to FUSE mounts while FreeBSD does not.\nSo, it is rather simple to spin things around: just add missing mount option. :)\n\ndiff --git a/contrib/fuse-lib/mount.c b/contrib/fuse-lib/mount.c\nindex 1edde86..521a571 100644\n--- a/contrib/fuse-lib/mount.c\n+++ b/contrib/fuse-lib/mount.c\n@@ -256,6 +256,7 @@ fuse_mount_sys (const char *mountpoint, char *fsname,\n         build_iovec (\u0026iov, \u0026iovlen, \"from\", \"/dev/fuse\", -1);\n         build_iovec (\u0026iov, \u0026iovlen, \"volname\", source, -1);\n         build_iovec (\u0026iov, \u0026iovlen, \"fd\", fdstr, -1);\n+        build_iovec (\u0026iov, \u0026iovlen, \"allow_other\", NULL, -1);\n         ret = nmount (iov, iovlen, mountflags);\n #else\n         ret = mount (source, mountpoint, fstype, mountflags,\n\nThat's all, I run GlusterFS on FreeBSD for a quite time."
+}

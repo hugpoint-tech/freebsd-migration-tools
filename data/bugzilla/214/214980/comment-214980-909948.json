@@ -1,0 +1,8 @@
+{
+ "id": 909948,
+ "bug_id": 214980,
+ "attachment_id": 0,
+ "creation_time": "2016-12-01T15:58:35Z",
+ "creator": "lidl@FreeBSD.org",
+ "text": "The relevant bit of the current blacklist-helper script:\n\n        ipfw)\n                # use $ipfw_offset+$port for rule number\n                rule=$(($ipfw_offset + $6))\n                tname=\"port$6\"\n                /sbin/ipfw table $tname create type addr 2\u003e/dev/null\n                /sbin/ipfw -q table $tname add \"$addr/$mask\"\n                /sbin/ipfw -q add $rule drop $3 from \"table(\"$tname\")\" to \\\n                    any dst-port $6 \u0026\u0026 echo OK\n                ;;\n\nI think that the problem is the '-q' on the last line is forcing \"quiet\"\nbehaviour, and (I missed this when adapting the code from 'pf'), it no\nlonger errors out on duplicate rules with the same number.\n\nThere's two different ways to address this that come to mind immediately:\n\n1) Check to see if the rule exists before attempting to add it, and if\n   it already exists, don't add it a second time.\n2) Attempt to add the rule without -q, but with stderr redirected to /dev/null.\n   I don't particularly like this, as it means that otherwise legitimate\n   errors cannot be handled.\n\nI'll take a stab at implementing #1 in the next few days.  (My dev machines\nrun 'pf'.)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 16083,
+ "bug_id": 5236,
+ "attachment_id": 0,
+ "creation_time": "1997-12-05T15:00:03Z",
+ "creator": "pb@fasterix.frmug.org",
+ "text": "\nps shows zombie processes left with non-zero %CPU and %MEM:\n\nbash$ ps axuww\nUSER       PID %CPU %MEM   VSZ  RSS  TT  STAT STARTED       TIME COMMAND\npb        4076 78.4  0.1     0    0  p1  Z    -          0:00.00  (a.out)\n...\n\nThe values stay stable while the zombie is in the process table.\n\nHow-To-Repeat: \nCompile the following code (trivial: forks, then the child uses\nthe CPU while the parent waits 10 minutes):\n\n-------------------------------\n#include \u003cstdio.h\u003e\n\nint main()\n{\n\tswitch(fork()) {\n\tcase -1:\n\t\tperror(\"fork\");\n\t\treturn 1;\n\tcase 0:\n\t\t/* in child */\n\t\tfor(;;);\n\t\texit(0);\n\tdefault:\n\t\t/* in parent */\n\t\tsleep(600);\n\t}\n\treturn 0;\n}\n-------------------------------\n\nRun it:\n\n$ ./a.out \u0026\n[1] 4075\n\nWait for the child to show-up with a reasonnable %CPU:\n\n$ ps axuww | grep a.out\npb        4076 82.2  6.3   136  400  p1  R     3:46PM    0:05.60 ./a.out\npb        4075  0.0  6.4   136  404  p1  S     3:46PM    0:00.04 ./a.out\n\nKill the child:\n$ kill 4076\n\nLook at ps again:\npb        4076 78.4  0.1     0    0  p1  Z    -          0:00.00  (a.out)\npb        4075  0.0  0.0   136    0  p1  SW    3:46PM    0:00.04 ./a.out"
+}

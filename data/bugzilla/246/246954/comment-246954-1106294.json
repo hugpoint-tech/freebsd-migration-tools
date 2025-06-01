@@ -1,0 +1,8 @@
+{
+ "id": 1106294,
+ "bug_id": 246954,
+ "attachment_id": 215205,
+ "creation_time": "2020-06-03T17:04:00Z",
+ "creator": "salvadore@freebsd.org",
+ "text": "Created attachment 215205\nhikari_3\n\nThank you very much. I am now testing with a few modifications.\n\n- You defined twice the MAKE_ARGS, always with = instead of +=, so that you were overriding the variable value. I fixed it by defining MAKE_ARGS only once and with +=. Moreover, I have put a blank line after the USE block as MAKE_ARGS is not part of this block (please see https://www.freebsd.org/doc/en/books/porters-handbook/porting-order.html). So these lines become:\n\nUSES=           compiler:c11 gnome pkgconfig xorg\nUSE_GNOME=      cairo glib20 pango\nUSE_XORG=       pixman\n\nMAKE_ARGS+=      ${WITH_DEBUG:DDEBUG=YES} \\\n                WITHOUT_SUID=YES\n\nOPTIONS_DEFINE=         GAMMA LAYERSHELL SCREENCOPY SUID X11\nOPTIONS_DEFAULT=        GAMMA LAYERSHELL SCREENCOPY SUID X11\n\n- You were stripping binaries without checking WITH_DEBUG before and you forgot to rename hikari.conf to hikari.conf.sample. I fixed the post-install target as follows:\n\npost-install:\n.ifndef WITH_DEBUG\n        ${STRIP_CMD} ${STAGEDIR}${PREFIX}/bin/hikari\n        ${STRIP_CMD} ${STAGEDIR}${PREFIX}/bin/hikari-unlocker\n.endif\n        ${MV} ${STAGEDIR}${ETCDIR}/hikari.conf \\\n        ${STAGEDIR}${ETCDIR}/hikari.conf.sample\n\nI have put everything into a patch so that you can check it more easily.\n\nIf you are fine with those changes and testing goes fine, as soon as I receive a mentor approval (from gerald or tcberner, who are already CCed in this PR) I will commit your patch.\n\nThank you very much for maintaining this port. I use it myself and could not wait for 2.0.0 :)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1273517,
+ "bug_id": 273615,
+ "attachment_id": 244698,
+ "creation_time": "2023-09-07T14:29:56Z",
+ "creator": "greg@codeconcepts.com",
+ "text": "Created attachment 244698\npatch to prevent infinite loop in sbflush_internal()\n\nIf I run iperf3 in a loop over a 100gbe network (via cxgbe) eventually either the client or server gets stuck in sbflush_internal().  This is because sb-\u003esb_ccc is an unsigned int that contains a value greater than INT_MAX.  sb-\u003esb_ccc is cast to an int and passed into sbcut_internal(), which then fails to consume the data and returns NULL.  sbflush_internal() then keeps retrying the operation having made no progress.\n\nThere is a KASSERT in sbcut_internal() to catch this, but I'm not able to reproduce the problem with INVARIANTS enabled.  See commit b5b023b91eee30bacb28684c7aa467bf547f7c0d for additional information about this problem.\n\nNote that I haven't yet been able to reproduce this on a 10gbe network.\n\nI've attached a patch which addresses the immediate problem, but it seems that given the mixed usage of ssize_t, u_int, and int by callers of sbflush() and related interfaces that a larger scoped cleanup is desirable.  Note that when the bug arises, sb_ccc is always around 3.1-billion, which makes me wonder if my patch is merely a bandaid for a symptom of a deeper problem... ???\n\nHere's the iperf3 loop I use to catch the problem:\n\nwhile : ; do sudo iperf3 -c 172.16.10.200 --bidir || break; sleep 1; done"
+}

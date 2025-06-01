@@ -1,0 +1,8 @@
+{
+ "id": 921816,
+ "bug_id": 211746,
+ "attachment_id": 0,
+ "creation_time": "2017-02-14T11:07:25Z",
+ "creator": "decui@microsoft.com",
+ "text": "(In reply to Marcel Moolenaar from comment #6)\n\nDifferences between the maps are:\n\n1) In the first red rectangle, we can see 48MB memory (0x3000 pages) is allocated from ConvventionalMemory to LoaderData and this is the expected correct behavior.\n\n2) In the second red rectangle, we can see 4 pages are allocated, probably by the firmmare itself. I guess we can ignore this.\n\n3) No other difference except the above.\n\nSo, Hyper-V's AllocatePages should be correct. :-)\n\n\nBut there is indeed some BootServicesData memory starting at 0x2f73000 with 0x118d pages (i.e. starting at 47.449 MB with the length == 17.55MB)!!!\n\n\"elf64_exec() -\u003e trampoline() -\u003e efi_copy_finish -\u003e *dst++ = *src++;\" tries to overwrite the memory between 2MB and 2+48=50MB, and we get the crash -- I guess Hyper-V has some mechanism to prevent the guest from writing into that BootServideData memory block.\n\nWith STAGE_PAGES \u003c= 45MB, we don't touch that BootServiceData memory block due to the fact 2+45 \u003c 47.449 and hence we don't get the crash.\n\nNow, it looks to me this is a bug of FreeBSD?\n\nIt looks the hardcoded macro for the 2MB kernel base is LOADER_ADDRESS. I guess it's not easy to make it a runtime dynamic value, but we should have a long term plan to fix this.\n\nAnd can we have a short term workaround for Hyper-V?\ne.g. making STAGE_PAGES a dynamic variable and using 45MB if the loader detecets the underlying hypervisor is Hyper-V??? :-)\n\nThanks Marcel for the effective help and let's brainstorm."
+}

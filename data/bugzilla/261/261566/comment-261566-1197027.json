@@ -1,0 +1,8 @@
+{
+ "id": 1197027,
+ "bug_id": 261566,
+ "attachment_id": 0,
+ "creation_time": "2022-01-30T08:51:20Z",
+ "creator": "gharris@sonic.net",
+ "text": "Note also that, if you try to read a DLT_PFLOG capture with the OpenBSD struct pfloghdr, and round the length up to a multiple of 8, you will *NOT* correctly read it.\n\nHere's version 1.29 of sys/net/if_pflog.h:\n\n    https://cvsweb.openbsd.org/src/sys/net/if_pflog.h?rev=1.29\u0026content-type=text/x-cvsweb-markup\n\nstruct pf_addr is 16 bytes (containing a union big enough to hold either an IPv4 or an IPv6 address, as per version 1.505 of sys/net/pfvar.h:\n\n    https://cvsweb.openbsd.org/src/sys/net/pfvar.h?rev=1.505\u0026content-type=text/x-cvsweb-markup\n\n), IFNAMSIZ is 16, sa_family_t is 1 byte, and uid_t and pid_t are both 4 bytes, for a total of 1+1+1+1+16+16+4+4+4+4+4+4+1+1+1+1+16+16+2+2 = 100 bytes, which is *not* a multiple of 8, although it *is* a multiple of 4.\n\nThe new-style header was introduced in version 1.8:\n\n    https://cvsweb.openbsd.org/src/sys/net/if_pflog.h?rev=1.8\u0026content-type=text/x-cvsweb-markup\n\n    https://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/net/if_pflog.h.diff?r1=1.7\u0026r2=1.8\u0026f=h\n\nand they got rid of the \"PFLOG_REAL_HDRLEN doesn't include the padding to a 4-byte boundary\" stuff in version 1.16:\n\n    https://cvsweb.openbsd.org/src/sys/net/if_pflog.h?rev=1.16\u0026content-type=text/x-cvsweb-markup\n\n    https://cvsweb.openbsd.org/cgi-bin/cvsweb/src/sys/net/if_pflog.h.diff?r1=1.15\u0026r2=1.16\u0026f=h"
+}

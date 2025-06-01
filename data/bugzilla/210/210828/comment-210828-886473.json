@@ -1,0 +1,8 @@
+{
+ "id": 886473,
+ "bug_id": 210828,
+ "attachment_id": 0,
+ "creation_time": "2016-07-04T21:17:03Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "gcc-6.1.0/gcc/fortran/decl.c has code has code of the structure:\n\nstatic bool\nadd_hidden_procptr_result (gfc_symbol *sym)\n{\n  bool case1,case2;\n \n  if (gfc_notification_std (GFC_STD_F2003) == ERROR)\n    return false;\n \n  /* First usage case: PROCEDURE and EXTERNAL statements.  */\n  case1 = gfc_current_state () == COMP_FUNCTION \u0026\u0026 gfc_current_block ()\n          \u0026\u0026 strcmp (gfc_current_block ()-\u003ename, sym-\u003ename) == 0\n          \u0026\u0026 sym-\u003eattr.external;\n  /* Second usage case: INTERFACE statements.  */\n  case2 = gfc_current_state () == COMP_INTERFACE \u0026\u0026 gfc_state_stack-\u003eprevious\n          \u0026\u0026 gfc_state_stack-\u003eprevious-\u003estate == COMP_FUNCTION\n          \u0026\u0026 strcmp (gfc_state_stack-\u003eprevious-\u003esym-\u003ename, sym-\u003ename) == 0;\n \n  if (case1 || case2)\n    {\n      gfc_symtree *stree;\n      if (case1)\n        gfc_get_sym_tree (\"ppr@\", gfc_current_ns, \u0026stree, false);\n      else if (case2)\n        {\n          gfc_symtree *st2;\n          gfc_get_sym_tree (\"ppr@\", gfc_current_ns-\u003eparent, \u0026stree, false);\n          st2 = gfc_new_symtree (\u0026gfc_current_ns-\u003esym_root, \"ppr@\");\n          st2-\u003en.sym = stree-\u003en.sym;\n        }\n\nThe compiler used to compile lang/gcc6 complained about stree not being initialized (when both parts of the if. . .else if. . . were not executed.\n\nThe code would be less likely to produce the false positive if the \"if (case2)\" was not code: just use an else instead, possibly with a case2 comment."
+}

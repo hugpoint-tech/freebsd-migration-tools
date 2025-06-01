@@ -1,0 +1,8 @@
+{
+ "id": 37616,
+ "bug_id": 12431,
+ "attachment_id": 0,
+ "creation_time": "1999-06-28T16:00:00Z",
+ "creator": "dima@server.ru",
+ "text": "The arguments of subroutine with multiple entry points could be used as any other variables anywhere withing body of subroutine.\nSo argument of one entry point (or it's value) should be copied to local static variable if it used in the call to other entry point.\n\nThis is valid FORTRAN code (works with many FORTRAN compilers but f2c):\n\tsubroutine a(x, y, z)\n\tz=x+y\n\treturn\n\tentry b(i)\n\ti=z\n\treturn\n\tend\nf2c will produce this C code:\n/* Subroutine */ int a_0_(n__, x, y, z__, i__)\nint n__;\nreal *x, *y, *z__;\ninteger *i__;\n{\n    switch(n__) {\n\tcase 1: goto L_b;\n\t}\n\n    *z__ = *x + *y;\n    return 0;\n\nL_b:\n    *i__ = *z__;\n    return 0;\n} /* a_ */\n\n/* Subroutine */ int a_(x, y, z__)\nreal *x, *y, *z__;\n{\n    return a_0_(0, x, y, z__, (integer *)0);\n    }\n\n/* Subroutine */ int b_(i__)\ninteger *i__;\n{\n    return a_0_(1, (real *)0, (real *)0, (real *)0, i__);\n    }\n\nOn the call to b argument z points to 0, what cause core dump.\n\nFix: \n\nBefore exit from functions generated for entry points values of arguments should be copied to static variables. In calls to common function all pointers to 0 should be changed to pointers to that static variables."
+}

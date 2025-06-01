@@ -1,0 +1,8 @@
+{
+ "id": 1119787,
+ "bug_id": 248932,
+ "attachment_id": 217545,
+ "creation_time": "2020-08-26T17:01:50Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 217545\nFix integer underflow in getgrent.c\n\nWhen calling getgrnam_r for nonexistent group \"root\", nscd will for some reason return a 1-byte buffer.  This triggers an underflow from an unsigned integer comparison, causing grp_unmarshal_func to return ERANGE.  That, in turn, may lead applications to repeat the call with ever-larger buffers.\n\nI haven't tried to debug nscd yet, but I think the correct thing to do in this case is for grp_unmarshall_func to return NS_UNAVAIL.  That's what the attached patch does.\n\nSteps to Reproduce:\n* Install pkg from git head (prior to https://github.com/freebsd/pkg/pull/1873 pkg would ignore ERANGE errors)\n* enable nscd.  I'm using it with LDAP, and in my nsswitch.conf I have \"group: files cache ldap\", but I don't think the order matters.\n* Try to install a package that sets the group ownership of one or more files to \"root\" (which does not exist).\n\nIt will print errors like:\npkg: getgrnam_r: Result too large"
+}

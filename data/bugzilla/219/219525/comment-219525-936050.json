@@ -1,0 +1,8 @@
+{
+ "id": 936050,
+ "bug_id": 219525,
+ "attachment_id": 0,
+ "creation_time": "2017-05-30T20:27:13Z",
+ "creator": "ecturt@gmail.com",
+ "text": "Thanks for taking a look.\n\nTo clarify the point you asked about:\n\n`recorded_events` is a fixed size, it looks like this in `struct mpr_softc`:\n\nmpr_event_entry_t               recorded_events[MPR_EVENT_QUEUE_SIZE];\n\nThe kernel should copy out only `sizeof(sc-\u003erecored_events)` bytes at most from here, or else it will copy out of bounds memory to userland.\n\nGoing back to the code:\n\n        size = data-\u003eSize;\n        if ((size \u003e= sizeof(sc-\u003erecorded_events)) \u0026\u0026 (status == 0)) {\n            mpr_unlock(sc);\n            if (copyout((void *)sc-\u003erecorded_events,\n                PTRIN(data-\u003ePtrEvents), size) != 0)\n                status = EFAULT;\n            mpr_lock(sc);\n        }\n\nNotice that it passes `size` to `copyout`, which can be greater than `sizeof(sc-\u003erecorded_events)` (see the check).\n\nInstead, the `copyout` call should be passed `sizeof(sc-\u003erecorded_events)` so that it won't read more than the array contains.\n\nSo, you are correct when you say that it \"is just checking if the user supplied size is enough to hold sizeof(sc-\u003erecored_events)\". But this check won't prevent copying out of bounds memory to userland."
+}

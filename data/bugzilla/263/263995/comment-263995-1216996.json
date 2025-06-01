@@ -1,0 +1,8 @@
+{
+ "id": 1216996,
+ "bug_id": 263995,
+ "attachment_id": 0,
+ "creation_time": "2022-06-23T16:36:51Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "Hi,\n\nI'm aware about the drop patch, but that is no solution, because the stop endpoint is there to prevent freed DMA memory from being used after usbd_transfer_unsetup() finishes. Let me explain.\n\nHere is my analysis:\n\nIt appears that on endpoint 0x84, there is some kind of \"HELLO\" packet appearing at the very first:\n\nJun 23 15:37:29 jailhost-b kernel: xhci_check_transfer: slot=4 epno=9 remainder=0 status=1\n\nThe length appears to be 64-bytes:\n\nJun 23 15:37:29 jailhost-b kernel: xhci_generic_done_sub: xfer=0xfffffe00ca4dd278[0/1] rem=0/64 status=1\n\nThe USB interrupt job is asynchronous, which means it goes on trying to read the next USB packet after it has completed.\n\nNow in the case we are closing the UHID file descriptor a function called usbd_transfer_unsetup() is called, which basically invoke the XHCI stop endpoint, with drop=1, because we are pulling out all active USB transfers and free memory.\n\nThe problem is that the last USB packet has already been received, and the USB stack is waiting for another one, which accidentially is received, but because we are in the process of tearing down the USB transfers, get lost:\n\nJun 23 15:37:29 jailhost-b kernel: xhci_check_transfer: slot=4 epno=9 remainder=0 status=27 (XHCI_TRB_ERROR_LENGTH and data was received)\n\nI will make a patch shortly to disable USB read ahead on the interrupt endpoint, and that will hopefully fix the problem!\n\n--HPS"
+}

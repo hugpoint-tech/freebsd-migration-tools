@@ -1,0 +1,8 @@
+{
+ "id": 2352,
+ "bug_id": 901,
+ "attachment_id": 0,
+ "creation_time": "1996-01-06T21:54:21Z",
+ "creator": "phk@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003efeedback\n\n\nIt actually looks like you're right, if  \n((caddr_t) pg - bp-\u003eb_data)  \nis bigger than 0x7f000000 \nthen trouble abounds. \n\nCould you try this patch instead ? \n\nIndex: vfs_bio.c \n=================================================================== \nRCS file: /home/ncvs/src/sys/kern/vfs_bio.c,v \nretrieving revision 1.81 \ndiff -u -r1.81 vfs_bio.c \n--- vfs_bio.c\t1996/01/05 20:12:33\t1.81 \n+++ vfs_bio.c\t1996/01/06 21:58:17 \n@@ -1637,9 +1637,9 @@ \nvm_page_t p; \nvm_offset_t from = round_page(froma); \nvm_offset_t to = round_page(toa); \n+\tunsigned int index = ((caddr_t) from - bp-\u003eb_data) \u003e\u003e PAGE_SHIFT; \n\n-\tfor (pg = from; pg \u003c to; pg += PAGE_SIZE) { \n-\t\tint index = ((caddr_t) pg - bp-\u003eb_data) \u003e\u003e PAGE_SHIFT; \n+\tfor (pg = from; pg \u003c to; pg += PAGE_SIZE, index++) { \np = bp-\u003eb_pages[index]; \nbp-\u003eb_pages[index] = 0; \npmap_kremove(pg); \n\n\nPoul-Henning Kamp \n"
+}

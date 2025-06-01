@@ -1,0 +1,8 @@
+{
+ "id": 1020038,
+ "bug_id": 232950,
+ "attachment_id": 0,
+ "creation_time": "2018-11-04T09:45:09Z",
+ "creator": "zhecka@gmail.com",
+ "text": "FreeBSD execle system call works wrong in code written for Linux.\n\nIn many Linux sources i see next system call notation like\nexecle(\"/sbin/shutdown\", \"shutdown\", \"-h\", shutdown_flag, \"+0\",\n               \"hypervisor initiated shutdown\", (char*)NULL, environ);\n\nWhere second argument used as short \"program name\".\nIn FreeBSD systems, this argument is not bypassed in call and attached to args list.\n\nAs a result, when the source is ported to FreeBSD, the system call is not executed correctly.\n---- truss output start ----\n946: execve(\"/sbin/shutdown\",[ \"shutdown\", \"-h\", \"-r\", \"+0\", \"hypervisor initiated shutdown\" ],0x7fffffffeac0) = 0 (0x0)\n946: geteuid() = 0 (0x0)\n946: write(2,\"shutdown: \",10) = 10 (0xa)\n946: write(2,\"incompatible switches -c, -h, -k\"...,43) = 43 (0x2b)\n---- truss output end ----\n\nIf we change system call to\nexecle(\"/sbin/shutdown\", \"-h\", shutdown_flag, \"+0\",\n               \"hypervisor initiated shutdown\", (char*)NULL, environ);\n\nall is ok.\n\nBut, may be this an error in args parsing in FreeBSD \"shutdown\" ?"
+}

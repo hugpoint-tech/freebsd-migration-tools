@@ -1,0 +1,8 @@
+{
+ "id": 809866,
+ "bug_id": 197608,
+ "attachment_id": 152953,
+ "creation_time": "2015-02-14T02:59:59Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Created attachment 152953\nzombie demonstration\n\nAttached is a zombie demonstration - it forks and the child immediately exits. The parent sleeps for one second and does not wait() for the child's status. As expected it terminates after 1 second:\n\njoule% /usr/bin/time ./a.out\n        1.02 real         0.00 user         0.00 sys\n\nHowever, running under timeout(1) results in waiting for the timeout period to expire:\n\njoule% /usr/bin/time /timeout 10s ./a.out\n       10.02 real         0.00 user         0.00 sys\n\nIt looks like the issue is that we collect only one child status (cpid = wait(\u0026status)), which happens to be the zombie from a.out (cpid != pid). We then loop to sigsuspend() and get stuck until the timeout expires."
+}

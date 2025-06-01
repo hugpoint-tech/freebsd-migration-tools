@@ -1,0 +1,8 @@
+{
+ "id": 837200,
+ "bug_id": 202173,
+ "attachment_id": 0,
+ "creation_time": "2015-08-20T20:18:39Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "When I you mentioned that libressl has its own certificate bundle I had a look.  Libressl's 225k bundle vs the standard 944k bundle means a lot were removed.  I discovered that libressl appear to not have added the new sha256 certificate roots to their bundle and keep relying on the antiquated sha1 roots.\n\nIf you look at the trust chains here:\nhttps://www.ssllabs.com/ssltest/analyze.html?d=svn.freebsd.org\n\nThe second path was incomplete - certificate 3 required an extra download.  I would guess that either svn or libressl do not do downloads to complete the chain.\n\nIn any case, the sha256 chain that was \"complete\" does not appear to end in a certificate that libressl trusts.\n\nThe 4-step chain that ends in the legacy sha1 signature does appear to be trusted by libressl.\n\nI made one change to the servers - I added the intermediate certificate from the modern sha256 certificate chain to the legacy sha1 root and it now should be complete.\n\nThis may fix svn with libressl without requiring ca_root_nss, but I have no desire to build/install it if it prefers legacy sha1 roots over sha256 roots.\n\nPlease try reverting the symlink change and let us know."
+}

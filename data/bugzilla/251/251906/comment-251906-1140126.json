@@ -1,0 +1,8 @@
+{
+ "id": 1140126,
+ "bug_id": 251906,
+ "attachment_id": 0,
+ "creation_time": "2021-01-05T16:03:06Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "It seems that there are further problems with mounttab handling... I am using chroot to change into different environments, and in each environment the same automount structure is being used:\n\n#\n# $FreeBSD: releng/12.2/usr.sbin/autofs/auto_master 337749 2018-08-14 13:52:08Z trasz $\n#\n# Automounter master map, see auto_master(5) for details.\n#\n/net            -hosts3         -nobrowse,nosuid,intr\n# When using the -media special map, make sure to edit devd.conf(5)\n# to move the call to \"automount -c\" out of the comments section.\n#/media         -media          -nosuid,noatime,autoro\n#/-             -noauto\n\n/z/netboot/920/net   -hosts3 -nobrowse,nosuid,intr\n\n/z/netboot/921/net   -hosts3 -nobrowse,nosuid,intr\n\n(special_hosts3 is an improved version of special_hosts.)\n\nThis means that one server directory can well be mounted into multiple locations on the client.\n\nBut in both mounttab and mountdtab, only the host path is added, so that when unmounting on the client it is not clear how many mounts of the same server directory are still active.\n\nIt seems that the handling of /var/db/mounttab and /var/db/mountdtab need be thoroughly re-worked, including the client path (or in the case of mountdtab maybe just a count), and including making it race-free when multiple programs try to modify these files.\n\n-- Martin"
+}

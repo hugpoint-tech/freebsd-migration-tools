@@ -1,0 +1,8 @@
+{
+ "id": 373134,
+ "bug_id": 108390,
+ "attachment_id": 0,
+ "creation_time": "2009-04-05T17:08:46Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "POSIX seems to agree with what FreeBSD does. The change you refer to\njust makes ignoring SIGCHLD do the same as SA_NOCLDWAIT, i.e. avoid\ncreating zombies from terminated child processes.\n\nFact of the matter is that signal(SIGCHLD, SIG_IGN) and SA_NOCLDWAIT are\npretty useless, even if this were to be \"fixed\". If the child process\nterminates while you are not executing waitpid(), the status is just\nlost and it is even possible for a new child process to get the same\npid. Also think of functions like system(3), wordexp(3) and grantpt(3)\n(the latter only on freebsd 5, 6 and 7), which create child processes to\ndo some of their work.\n\nIf you want to check if the pid still exists (beware of pid reuse), use\nkill(pid, 0); to wait (not portably and with the same caveat), use\nkqueue/kevent with EVFILT_PROC.\n\nAdditionally, if your code does not have to be portable, you can use\nrfork(2) with the RFNOWAIT flag to avoid zombie creation for specific\nchild processes only. If that's not possible, consider forking twice and\nwaiting for the first child immediately or doing execl(\"/bin/sh\", \"sh\",\n\"...\u0026\", (const char *)NULL); in a child process.\n\n-- \nJilles Tjoelker"
+}

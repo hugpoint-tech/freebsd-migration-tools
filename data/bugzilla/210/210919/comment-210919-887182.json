@@ -1,0 +1,8 @@
+{
+ "id": 887182,
+ "bug_id": 210919,
+ "attachment_id": 0,
+ "creation_time": "2016-07-09T10:11:08Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "This is a problem similar to some other ports that I have fixed in bug 209103 and bug 209921.  For unknown reasons, some ports like to add -isystem /usr/include to their CFLAGS and CXXFLAGS.  For C++ programs, this messes up the include path order.\n\nThe normal include path order for C++ programs without any -I flags is:\n\n#include \"...\" search starts here:\n#include \u003c...\u003e search starts here:\n /usr/include/c++/v1\n /usr/bin/../lib/clang/3.8.0/include\n /usr/include\nEnd of search list.\n\nHowever, with -isystem /usr/include, the order becomes:\n\nignoring duplicate directory \"/usr/include\"\n#include \"...\" search starts here:\n#include \u003c...\u003e search starts here:\n /usr/include\n /usr/include/c++/v1\n /usr/bin/../lib/clang/3.8.0/include\nEnd of search list.\n\nThe libc++ headers rely on being able to #include_next\u003c\u003e any C standard headers, and this is defeated by moving /usr/include to before /usr/include/c++/v1.\n\nFor this port, the solution is also to find some way of getting rid of the the -isystem /usr/include option."
+}

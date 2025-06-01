@@ -1,0 +1,8 @@
+{
+ "id": 601265,
+ "bug_id": 155183,
+ "attachment_id": 0,
+ "creation_time": "2011-03-02T10:00:20Z",
+ "creator": "cmt@freebsd.org",
+ "text": "Build of gegl-0.1.6 fails because of missing log2f():\n\n CXX    exp_combine-exp_combine.o                                               \nexp_combine.cpp: In function 'gfloat expcombine_get_file_ev(const gchar*)':     \nexp_combine.cpp:94: error: 'log2f' was not declared in this scope               \ngmake[2]: *** [exp_combine-exp_combine.o] Error 1                               \ngmake[2]: Leaving directory `/usr/ports/graphics/gegl/work/gegl-0.1.6/tools'\n\nlog2f() is in POSIX and C89, so FreeBSD should have one, too; but that is\noutside the scope of this PR.\n\nFix: If I got my logarithms right, the following patch should produce equivalent\ncode without relying on log2f(). Please review, in case I'm making a fool\nof myself.\n\n\n\nRegards,\nChristoph--TpBmpqwvbL8Sw8NfjNGz05mWnHzDrikaebco9WdEApYMPNCC\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\ndiff -Nru gegl.orig/files/patch-tools-exp_combine.cpp gegl/files/patch-tools-exp_combine.cpp\n--- gegl.orig/files/patch-tools-exp_combine.cpp\t1970-01-01 01:00:00.000000000 +0100\n+++ gegl/files/patch-tools-exp_combine.cpp\t2011-03-02 10:26:21.000000000 +0100\n@@ -0,0 +1,11 @@\n+--- tools/exp_combine.cpp.orig\t2011-03-02 10:23:52.000000000 +0100\n++++ tools/exp_combine.cpp\t2011-03-02 10:25:03.000000000 +0100\n+@@ -91,7 +91,7 @@\n+       gain = 1.0f;\n+     }\n+ \n+-  return log2f (aperture * aperture) + log2f (1 / time) + log2f (gain);\n++  return logf (aperture * aperture * gain / time) / logf (2.0);\n+ }\n+ \n+ \nHow-To-Repeat: \ttry to build gegl"
+}

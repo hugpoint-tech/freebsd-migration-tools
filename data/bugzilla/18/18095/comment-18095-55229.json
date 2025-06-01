@@ -1,0 +1,8 @@
+{
+ "id": 55229,
+ "bug_id": 18095,
+ "attachment_id": 0,
+ "creation_time": "2000-05-14T19:41:34Z",
+ "creator": "dillon@apollo.backplane.com",
+ "text": "    Paul, try this patch to /usr/src/sys/vm/vm_map.c and tell me if \n    it works.  It appears to work for me when I test using your \n    test program.\n\n\t\t\t\t\t-Matt\n\t\t\t\t\tMatthew Dillon \n\t\t\t\t\t\u003cdillon@backplane.com\u003e\n\nIndex: vm_map.c\n===================================================================\nRCS file: /home/ncvs/src/sys/vm/vm_map.c,v\nretrieving revision 1.187\ndiff -u -r1.187 vm_map.c\n--- vm_map.c\t2000/02/28 04:10:35\t1.187\n+++ vm_map.c\t2000/05/14 18:31:06\n@@ -1127,15 +1127,19 @@\n \t\t     (current != \u0026map-\u003eheader) \u0026\u0026 (current-\u003estart \u003c end);\n \t\t     current = current-\u003enext\n \t\t) {\n+\t\t\tvm_offset_t useStart;\n+\n \t\t\tif (current-\u003eeflags \u0026 MAP_ENTRY_IS_SUB_MAP)\n \t\t\t\tcontinue;\n \n \t\t\tpindex = OFF_TO_IDX(current-\u003eoffset);\n \t\t\tcount = atop(current-\u003eend - current-\u003estart);\n+\t\t\tuseStart = current-\u003estart;\n \n \t\t\tif (current-\u003estart \u003c start) {\n \t\t\t\tpindex += atop(start - current-\u003estart);\n \t\t\t\tcount -= atop(start - current-\u003estart);\n+\t\t\t\tuseStart = start;\n \t\t\t}\n \t\t\tif (current-\u003eend \u003e end)\n \t\t\t\tcount -= atop(current-\u003eend - end);\n@@ -1148,7 +1152,7 @@\n \t\t\tif (behav == MADV_WILLNEED) {\n \t\t\t\tpmap_object_init_pt(\n \t\t\t\t    map-\u003epmap, \n-\t\t\t\t    current-\u003estart,\n+\t\t\t\t    useStart,\n \t\t\t\t    current-\u003eobject.vm_object,\n \t\t\t\t    pindex, \n \t\t\t\t    (count \u003c\u003c PAGE_SHIFT),"
+}

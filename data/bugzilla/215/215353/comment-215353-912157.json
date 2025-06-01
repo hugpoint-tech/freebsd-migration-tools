@@ -1,0 +1,8 @@
+{
+ "id": 912157,
+ "bug_id": 215353,
+ "attachment_id": 178024,
+ "creation_time": "2016-12-17T14:30:56Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 178024\nFix sysctl_add_oid() for head after r310051\n\nAfter head r310051, where the prototype of sysctl_add_oid(9) has changed, adding one extra parameter, previously built vmmemctl.ko modules insta-panic the kernel.\n\nAdditionally, attempting to rebuild the open-vm-tools ports with the new prototype results in errors in the vmmemctl module now:\n\nos.c:894:46: error: too few arguments to function call, expected 11, have 10\n                         BALLOON_NAME_VERBOSE);\n                                             ^\n/usr/src/sys/sys/sysctl.h:1014:1: note: 'sysctl_add_oid' declared here\nstruct sysctl_oid *sysctl_add_oid(struct sysctl_ctx_list *clist,\n^\n1 error generated.\n\nFor some reason, the vmmemctl module does not make use of the SYSCTL_ADD_OID macro from \u003csys/sysctl.h\u003e, but directly uses the 'real' declaration of sysctl_add_oid(9).\n\nFortunately __FreeBSD_version was bumped to 1200019 very soon afterwards, in r310149, though it was for unrelated changes.  We can use this as a stopgap fix, to add an extra NULL parameter."
+}

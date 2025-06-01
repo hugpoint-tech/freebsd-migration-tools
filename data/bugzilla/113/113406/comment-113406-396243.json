@@ -1,0 +1,8 @@
+{
+ "id": 396243,
+ "bug_id": 113406,
+ "attachment_id": 0,
+ "creation_time": "2007-09-04T19:51:34Z",
+ "creator": "NORCOTT381@aol.com",
+ "text": "Hi, On my pc running the ifconfig command 2 times recreates the error. \nLooking at the code in if_xl.c:\n \n \n \nstatic int\nxl_ifmedia_upd(struct ifnet *ifp)\n{\nstruct xl_softc *sc  = ifp-\u003eif_softc;\nstruct ifmedia *ifm = NULL;\nstruct mii_data *mii =  NULL;\n\nXL_LOCK(sc);\n\nif (sc-\u003exl_miibus != NULL)\nmii =  device_get_softc(sc-\u003exl_miibus);\nif (mii == NULL)\nifm =  \u0026sc-\u003eifmedia;\nelse\nifm = \u0026mii-\u003emii_media;\n\nswitch  (IFM_SUBTYPE(ifm-\u003eifm_media)) {\ncase IFM_100_FX:\ncase  IFM_10_FL:\ncase IFM_10_2:\ncase IFM_10_5:\nxl_setmode(sc,  ifm-\u003eifm_media);\nreturn (0);    \u003c---------- *** does not release lock  ****\nbreak;\ndefault:\nbreak;\n}\n\nif (sc-\u003exl_media \u0026  XL_MEDIAOPT_MII ||\nsc-\u003exl_media \u0026 XL_MEDIAOPT_BTX  ||\nsc-\u003exl_media \u0026 XL_MEDIAOPT_BT4)  {\nxl_init_locked(sc);\n} else {\nxl_setmode(sc,  ifm-\u003eifm_media);\n}\n\nXL_UNLOCK(sc);\n\nreturn (0);\n}\n\n\n\nThis return does not release the lock at the begining.\n \nI removed the 'return(0);' and the pc does not produce the error and allows  \nme to change the media.\n \nAt the moment I cannot test the BNC part.\n \n \n \npn.\n\n\n\n   "
+}

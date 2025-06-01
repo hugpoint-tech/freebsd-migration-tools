@@ -1,0 +1,8 @@
+{
+ "id": 1096169,
+ "bug_id": 245314,
+ "attachment_id": 0,
+ "creation_time": "2020-04-08T19:25:18Z",
+ "creator": "cem@freebsd.org",
+ "text": "It seems like that check in sendit() is bogus.  In kern_sendit(), we permit msg_name == NULL if CAP_CONNECT is present:\n\n   730 int\n   731 kern_sendit(struct thread *td, int s, struct msghdr *mp, int flags,\n   732     struct mbuf *control, enum uio_seg segflg)\n   733 {\n   734         struct file *fp;\n   735         struct uio auio;\n   736         struct iovec *iov;\n   737         struct socket *so;\n   738         cap_rights_t *rights;\n   739 #ifdef KTRACE\n   740         struct uio *ktruio = NULL;\n   741 #endif\n   742         ssize_t len;\n   743         int i, error;\n   744\n   745         AUDIT_ARG_FD(s);\n   746         rights = \u0026cap_send_rights;\n   747         if (mp-\u003emsg_name != NULL) {\n   748                 AUDIT_ARG_SOCKADDR(td, AT_FDCWD, mp-\u003emsg_name);\n   749                 rights = \u0026cap_send_connect_rights;\n   750         }\n   751         error = getsock_cap(td, s, rights, \u0026fp, NULL, NULL);\n\n\nAnd sendit() is just a shim around kern_sendit()."
+}

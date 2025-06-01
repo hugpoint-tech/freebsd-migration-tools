@@ -1,0 +1,8 @@
+{
+ "id": 865887,
+ "bug_id": 207312,
+ "attachment_id": 167155,
+ "creation_time": "2016-02-18T19:35:20Z",
+ "creator": "mi@FreeBSD.org",
+ "text": "Created attachment 167155\nRemove a silly check, const-poison key-handling\n\nThe article at\n\n  http://www.viva64.com/en/b/0377/\n\nlisted a problem with the KAME-derived code: the key_parse() function is comparing m-\u003em_pkthdr.len with itself. We have this line since 2002, when sam committed what was than known as FAST_IPSEC option in base r105197.\n\nThe original KAME sources (https://github.com/kame/kame/) and NetBSD have this issue, but I could not find this code in OpenBSD cvs-repo online.\n\nThe minimal fix is to simply remove the useless check -- something the compiler must've been doing automatically ever since:\n\n@@ -7245,9 +7245,8 @@ key_parse(struct mbuf *m, struct socket\n        orglen = PFKEY_UNUNIT64(msg-\u003esadb_msg_len);\n        target = KEY_SENDUP_ONE;\n\n-       if ((m-\u003em_flags \u0026 M_PKTHDR) == 0 ||\n-           m-\u003em_pkthdr.len != m-\u003em_pkthdr.len) {\n-               ipseclog((LOG_DEBUG, \"%s: invalid message length.\\n\",__func__));\n+       if ((m-\u003em_flags \u0026 M_PKTHDR) == 0) {\n+               ipseclog((LOG_DEBUG, \"%s: invalid message length.\\n\", __func__));\n                PFKEYSTAT_INC(out_invlen);\n                error = EINVAL;\n                goto senderror;\n\nHowever, the attached patch goes further and adds \"const-poisoning\" to functions in netipsec/key.c and netipsec/keysock.c . Please, review."
+}

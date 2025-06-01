@@ -1,0 +1,8 @@
+{
+ "id": 893008,
+ "bug_id": 211836,
+ "attachment_id": 0,
+ "creation_time": "2016-08-15T16:03:50Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Babak Farrokhi from comment #9)\n\u003e Created attachment 173703 [details]\n\u003e textdump after applying patch from @ae\n\u003e \n\u003e Panicked again after patch\n\nOk, this is yet another case :)\nCan you test this patch instead? It should cover both (all) cases.\nThe NETISR_DISPATCH_HYBRID case looks not quite correct, but it is better than panic...\n\nIndex: sys/net/netisr.c\n===================================================================\n--- sys/net/netisr.c\t(revision 304101)\n+++ sys/net/netisr.c\t(working copy)\n@@ -810,10 +810,12 @@ netisr_select_cpuid(struct netisr_proto *npp, u_in\n \t\t * dispatch.  In the queued case, fall back on the SOURCE\n \t\t * policy.\n \t\t */\n-\t\tif (*cpuidp != NETISR_CPUID_NONE)\n+\t\tif (*cpuidp != NETISR_CPUID_NONE) {\n+\t\t\t*cpuidp = nws_array[ *cpuidp % nws_count ];\n \t\t\treturn (m);\n+\t\t}\n \t\tif (dispatch_policy == NETISR_DISPATCH_HYBRID) {\n-\t\t\t*cpuidp = curcpu;\n+\t\t\t*cpuidp = nws_array[ curcpu % nws_count ];\n \t\t\treturn (m);\n \t\t}\n \t\tpolicy = NETISR_POLICY_SOURCE;"
+}

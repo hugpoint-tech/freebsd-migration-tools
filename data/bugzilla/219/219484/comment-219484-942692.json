@@ -1,0 +1,8 @@
+{
+ "id": 942692,
+ "bug_id": 219484,
+ "attachment_id": 0,
+ "creation_time": "2017-07-16T22:45:17Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to fernando.apesteguia from comment #1)\n\u003e ldd /usr/local/bin/vsp\n\n\"ldd -a\" exposes more libc++ consumers: libGLU (from mesa-libs), fltk and cpptest. Each of those libraries may have their own consumers (ignoring openvsp) linked against libc++.\n\n\u003e But in 10.x the libc++ does not provide a delete operator with parameters (void*, unsigned long).\n[...]\n\u003e operator delete(void* ptr, size_t) _NOEXCEPT \u003c---\n\u003e operator delete[] (void* ptr, size_t) _NOEXCEPT\n\nProbably added by https://llvm.org/viewvc/llvm-project?view=revision\u0026revision=229281\n\n\u003e either updating libc++ on 10.x or forcing linking against libstc++ if possible should help.\n\nCan toolchain@ suggest a better workaround? libstdc++ usage is fragile as any dependency can bring libc++ into runtime leading to crashes. While mixing libc++ and libstdc++ is possible by replacing libsupc++ with libcxxrt it's not supported by any of lang/gcc* ports. libcxxrt is essentially frozen from ports POV.\n\nAlternatives are locking the ports to USE_GCC \u003c 6 (if gerald is OK) or laying on BROKEN_FreeBSD_10 deathbed."
+}

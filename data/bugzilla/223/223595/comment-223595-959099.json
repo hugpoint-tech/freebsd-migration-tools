@@ -1,0 +1,8 @@
+{
+ "id": 959099,
+ "bug_id": 223595,
+ "attachment_id": 0,
+ "creation_time": "2017-11-10T15:15:17Z",
+ "creator": "jdc@koitsu.org",
+ "text": "I recently upgraded from bind910-9.10.6_3 to bind911-9.11.2_3 on FreeBSD 10.4-STABLE (stable/10, kernel/world built from r325340) and have begun to see this show up in my kernel logs/syslog (i.e. console, /var/log/all.log, dmesg, etc.) every time named is started:\n\nNov 10 06:51:44 mambo named[71491]: socket.c:5695: unexpected error:\nNov 10 06:51:44 mambo named[71491]: setsockopt(21, TCP_FASTOPEN) failed with Protocol not available\nNov 10 06:51:44 mambo named[71491]: socket.c:5695: unexpected error:\nNov 10 06:51:44 mambo named[71491]: setsockopt(22, TCP_FASTOPEN) failed with Protocol not available\n\ndns/bind910 does not have this problem.  I have not checked dns/bind912.\n\nRFC7413 (TCP fast open) support is disabled (read: not included in the kernel) by default on FreeBSD 10.x (and also 11.x, unless that's changed recently) because it's considered experimental.  This system uses a kernel config very similar to GENERIC, and thus does not include \"option TCP_RFC7413\".\n\nBug 206338 is for an unrelated piece of software, but further justifies advocacy of disabling this feature (in 3rd-party software) by default.\n\nReviewing the BIND 9.11.2 source, it appears configure.in includes TCP_FASTOPEN auto-detection by using #include and #ifdef TCP_FASTOPEN, resulting in #define ISC_PLATFORM_HAVETFO 1.  FreeBSD should override this somehow (either through a patch that comments out the code, or better yet, #undef ISC_PLATFORM_HAVETFO).  I do not see an explicit configure flag for disabling it.  See lib/isc/unix/socket.c lines ~5684 to ~5700 and/or configure.in lines ~3206 to ~3222 for details."
+}

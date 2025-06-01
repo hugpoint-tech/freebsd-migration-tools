@@ -1,0 +1,8 @@
+{
+ "id": 915762,
+ "bug_id": 215933,
+ "attachment_id": 0,
+ "creation_time": "2017-01-10T12:27:13Z",
+ "creator": "ian@niw.com.au",
+ "text": "By adding a small delay to the example code the problem becomes\nfar more consistently repeatable.\n\nint\nmain(int argc, char *argv[]){\n        int fds[2];\n        size_t total=0;\n        if(socketpair(AF_UNIX,SOCK_STREAM,0,fds)==0){\n                size_t sequence=0;\n                int newpid=fork();\n                if(newpid\u003c0) exit(EX_OSERR);\n                if(newpid==0){ close(fds[1]); run_consumer(fds[0]); }\n                close(fds[0]);\n                printf(\"Master ready..\\n\");\n                for(size_t i=6000;i\u003c8500;i++){\n                        int tfd=open(\"/dev/null\",O_WRONLY);\n                        total+=send_test_message(fds[1],sequence++,i,-1);\n                        total+=send_test_message(fds[1],sequence++,0,tfd);\n                        close(tfd);\n -----\u003e                 usleep(100);\n                }\n        }\n        printf(\"Master sent a total of %zd bytes\\n\",total);\n        usleep(50000);\n        exit(0);\n}\n\nWith this change I have 100% consistent loss of data for large frame sizes of \n8154 to 8192 when using a local stream socket buffer size of 8192 bytes."
+}

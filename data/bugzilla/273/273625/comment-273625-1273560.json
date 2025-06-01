@@ -1,0 +1,8 @@
+{
+ "id": 1273560,
+ "bug_id": 273625,
+ "attachment_id": 0,
+ "creation_time": "2023-09-07T19:51:27Z",
+ "creator": "gnikl@justmail.de",
+ "text": "The chromium build does ignore USES=iconv settings. If converters/libiconv is installed the header ${LOCALBASE}/include/iconv.h is found before base iconv.h. Since LIBICONV_PLUG defines from USES/iconv.mk do not affect the chromium build system linking with -liconv was added in commit bfedd5f1f016c. Commit eb0137c80b62d enforced use of converters/libiconv by switching to iconv:wchar_t. However chromium builds successfully without libiconv installed when the modification of third_party/maldoca/BUILD.gn is removed. If base iconv is sufficient for chromium, then third_party/maldoca/BUILD.gn should simply define LIBICONV_PLUG like this:\n\n-- cut --\n--- third_party/maldoca/BUILD.gn~\t2022-11-20 12:40:52.000000000 +0100\n+++ third_party/maldoca/BUILD.gn\t2022-11-21 09:48:50.410589000 +0100\n@@ -18,6 +18,9 @@ config(\"maldoca_flags\") {\n \n config(\"maldoca_chromium_config\") {\n   defines = [ \"MALDOCA_IN_CHROMIUM\" ]\n+  if (is_bsd) {\n+    defines += [ \"LIBICONV_PLUG\" ]\n+  }\n }\n \n static_library(\"zlibwrapper\") {\n-- cut --\n\nWhether this approach works on OpenBSD, I do not know. It does work on FreeBSD.\n\nMaybe USES=iconv should removed completely since it does not work as intended for chromium build."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 949433,
+ "bug_id": 221807,
+ "attachment_id": 0,
+ "creation_time": "2017-08-25T16:38:14Z",
+ "creator": "emaste@freebsd.org",
+ "text": "I've been investigating building the ports tree with LLVM's lld installed as /usr/bin/ld (via the exp-run in PR 214864). Through this I've found a few common issues, some of which are due to limitations of lld or choices made by its authors, and some of which are problems in the ports themselves. audio/oss is affected by one of the latter cases.\n\nNormally $LDFLAGS contains flags passed to the compiler driver when invoked for linking. One issue that affects a small number of ports is passing $LDFLAGS to direct linker invocation (i.e, $LD $LDFLAGS ...), when $LDFLAGS contains flags that are appropriate only for the compiler driver, not the linker.\n\nAt one point in the build -fPIC is passed to ld, which is accepted by GNU BFD ld although it results in a bogus DT_AUXILIARY entry in the output:\n\n% readelf -d work/.build/target/lib/libossmix.so\n\nDynamic section at offset 0x5000 contains 15 entries:\n  Tag                Type                  Name/Value\n 0x000000007ffffffd AUXILIARY            Auxiliary library: [PIC]\n...\n\nwhile lld produces an error:\n\nld  -shared -fPIC -o ../../target/lib/libossmix.so ./libossmix_cache.o ./libossmix_local.o ./libossmix_main.o ./libossmix_tcp.o\nld: error: unknown argument: -fPIC"
+}

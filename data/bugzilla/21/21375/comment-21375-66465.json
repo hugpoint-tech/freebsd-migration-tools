@@ -1,0 +1,8 @@
+{
+ "id": 66465,
+ "bug_id": 21375,
+ "attachment_id": 0,
+ "creation_time": "2000-09-18T22:00:01Z",
+ "creator": "lyndon@messagingdirect.com",
+ "text": "\nOnce the NIC is up and dhclient has configured the NIC, removing\nthe card causes dhclient to go into a spin loop on the select() in\nthe dispatch() routine. The call to got_one() gets an error from\nthe read() on the socket, but doesn't do anything special with the\nerror. got_one() returns and the whole thing repeats, grabbing most\nof the CPU in the process (and generating gobs of syslog cruft).\n\nFix: Fixing this correctly would require dhclient be able to handle\ndynamic interfaces correctly. Short of doing that rewrite, the\nfollowing patch adds a test for the read() returning ENXIO, and shuts\ndown the application in that event. This is definately a bit if a hack.\nIt's based on the premise that the failing dhclient was launched from\npccardd (via pccard_ether) and that pccardd will start another dhclient\nthe next time the NIC is inserted. I think this is safe -- I can't think\nof another normal dhclient scenario where one of the interfaces\nwould just disappear.\n\nAn alternative fix would be to invalidate the interface on dhclient's\ninternal interface list (removing it from the FD set), and terminate if\nthe interface count goes to zero.\n\nPatch against /usr/src/contrib/isc-dhcp/common/dispatch.c:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 6096,
+ "bug_id": 2011,
+ "attachment_id": 0,
+ "creation_time": "1996-11-15T05:40:01Z",
+ "creator": "seki@sysrap.cs.fujitsu.co.jp",
+ "text": "\n\tEd driver counts some collision-related events in SNMP Dot3 MIBs\n\twrong way.\n\n\tRFC 1650 specifies that dot3StatsDeferredTRansmissions,\n\tdot3StatsSingleCollisionFrames, dot3StatsMultipleCollisionFrames,\n\tand dot3StatsExcessiveCollisions are exclusive; i.e., a frame\n\tmay cause one of the above MIBs be incremented, but cannot\n\tcause two or more of the above.\n\n\tEd driver in 2.2 ALPHA, however, increments two or more for a\n\tframe.  It conflicts with RFC 1650.\n\n\tFor example, the definition of dot3StatsDeferredTransmissions\n\tin RFC 1650 says: \"The count represented by an instance of this\n\tobject does not include frames involved in collisions.\"  However,\n\tEd in 2.2 ALPHA increments both DeferredTransmissions and\n\tSimgleCollisionsFrames for one single-collided frame.\n\n    One more related note.\n\n\tRFC 1650 also says that error conditions are also exclusive.\n\tCurrently, ed driver tests for some bits in a hardware register,\n\tand update error-related MIBs independently.  *If* two or more\n\terror bits in the register can be set for a frame, it causes\n\tanother wrong stat.  I'm not sure it can be happen, or never\n\thappen due to the hardware specification.\n\nFix: The following is a suggested patch to sys/i386/isa/if_ed.c.\n\n\tThis patch fixes bugs on collision-related stats.  Handling of\n\terror related MIBs are not touched.\n\n--- cut here ---\nHow-To-Repeat: \n\tTransmit an Ethernet frame through an ed compatible card, and\n\tmake it collide."
+}

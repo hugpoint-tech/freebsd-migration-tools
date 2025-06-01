@@ -1,0 +1,8 @@
+{
+ "id": 1239371,
+ "bug_id": 268378,
+ "attachment_id": 238789,
+ "creation_time": "2022-12-14T18:15:52Z",
+ "creator": "jyoung15@gmail.com",
+ "text": "Created attachment 238789\nnetwork.subr ifalias_af_common_handler patch\n\nWhile testing CARP as described in the handbook (https://docs.freebsd.org/en/books/handbook/advanced-networking/#carp), I discovered the system hangs on bootup if the passphrase contains only hex characters and a hyphen (-).\n\nExample from the handbook:\n\nifconfig_em0=\"inet 192.168.1.3 netmask 255.255.255.0\"\nifconfig_em0_alias0=\"inet vhid 1 pass testpass alias 192.168.1.50/32\"\n\nIf instead of \"testpass\" something like \"abc-def\" is used, it will trigger this issue.\n\nThe issue was traced to ifalias_af_common_handler in network.subr.\n\nLine 1050 seems to have a typo with a miscellaneous closing brace (\"$_tmpargs}\"), however the issue is with the shell pattern matching at line 1052:\n\n${_af}\\ *[0-9a-fA-F]-*)\n\nThis is intended to match the address range specification as described in rc.conf(5) (see man page starting at \"It also possible to configure multiple IP addresses\").\n\nHowever, it also matches other scenarios such as the CARP example above.\n\nDue to the limitations of shell pattern matching, it may be better to use regular expression matching using expr(1).  Attached is a proposed patch file with more strict matching based on the examples in the rc.conf(5) description."
+}

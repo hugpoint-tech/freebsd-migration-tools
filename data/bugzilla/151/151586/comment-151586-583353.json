@@ -1,0 +1,8 @@
+{
+ "id": 583353,
+ "bug_id": 151586,
+ "attachment_id": 0,
+ "creation_time": "2010-10-19T22:50:07Z",
+ "creator": "aboyer@averesystems.com",
+ "text": "The ipmi driver prints out some status information when the driver loads:\nipmi0: \u003cIPMI System Interface\u003e on isa0\nipmi0: KCS mode found at io 0xca2 alignment 0x1 on isa\nipmi0: IPMI device rev. 1, firmware rev. 1.2, version 2.0\nipmi0: Number of channels 8\n\nI noticed that the 'firmware rev' is not correct.  In this case, the rev should be 1.60 (hex) or 1.96 (dec).\n\nThe wrong byte is used in the printf statement.  See IPMI 2.0 spec 1.0 Table 20-2 on page 240.\n\nFix: \n\n--- a/src/sys/dev/ipmi/ipmi.c\n+++ b/src/sys/dev/ipmi/ipmi.c\n@@ -726,7 +726,7 @@ ipmi_startup(void *arg)\n        device_printf(dev, \"IPMI device rev. %d, firmware rev. %d.%d, \"\n            \"version %d.%d\\n\",\n             req-\u003eir_reply[1] \u0026 0x0f,\n-            req-\u003eir_reply[2] \u0026 0x0f, req-\u003eir_reply[4],\n+            req-\u003eir_reply[2] \u0026 0x0f, req-\u003eir_reply[3],\n             req-\u003eir_reply[4] \u0026 0x0f, req-\u003eir_reply[4] \u003e\u003e 4);\n \n        ipmi_free_request(req);\nHow-To-Repeat: Compare the printed firmware rev to the installed firmware."
+}

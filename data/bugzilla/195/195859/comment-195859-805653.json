@@ -1,0 +1,8 @@
+{
+ "id": 805653,
+ "bug_id": 195859,
+ "attachment_id": 0,
+ "creation_time": "2015-01-19T15:16:54Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "(In reply to Craig Rodrigues from comment #8)\n\nNo, it's still used in the same jail.\n\nWhat seems to happen is:\n(a) the bridges get destroyed (all members detached, etc.), the lock gets destroyed.\n(b) the loopback interface in the same jail gets destroyed\n(c) the globally registered eventhandler in if_bridge is called for the interface (lo) disappearing.\n(d) we get to the point where we try to acquire the lock which we previously destroyed.\n\nEither extra checks in bridge_ifdetach() need to be implemented to catch that case (and I think that's not possible without adding extra bandaid information), or\nproper handling of net cloned interfaces and startup/teardown ordering needs to be implemented \"as a whole\".\n\nWith all that the CURVET_SET/RESTORE question from comment #1 remains, as to what happens if bridge_members in the normal case reside in different VNETs (child jails)?"
+}

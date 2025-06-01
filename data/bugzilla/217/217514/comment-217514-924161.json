@@ -1,0 +1,8 @@
+{
+ "id": 924161,
+ "bug_id": 217514,
+ "attachment_id": 180455,
+ "creation_time": "2017-03-03T06:06:35Z",
+ "creator": "russo@bogodyn.org",
+ "text": "Created attachment 180455\nThis patch replaces bad hard-coded path with the appropriate one for FreeBSD\n\nTrying to portupgrade flightgear from 2016.4.4_1 to 2017.1.1 I got a build failure saying it failed to find ft2build.h.\n\nOn investigation, I found that one of FlightGear's CMakeLists.txt files has a hard-coded path of \"/usr/include/freetype2\", so it's looking in the wrong place.\n\nMy system:\nFreeBSD bogodyn.org 10.3-STABLE FreeBSD 10.3-STABLE #0 r312435: Thu Jan 19 13:55:14 MST 2017     russo@bogodyn.org:/usr/obj/usr/src/sys/GENERIC  amd64\n\nThe error:\n--- utils/fgpanel/CMakeFiles/fgpanel.dir/FGFontCache.cxx.o ---\nIn file included from /usr/ports/games/flightgear/work/flightgear-2017.1.1/utils/fgpanel/FGFontCache.cxx:28:\n/usr/ports/games/flightgear/work/flightgear-2017.1.1/utils/fgpanel/FGFontCache.hxx:21:10: fatal error: 'ft2build.h' file not found\n#include \u003cft2build.h\u003e\n         ^\nWhen I edit flightgear-2017.1.1/utils/fgpanel and change the offending path in CMakeLists.txt from /usr/include/freetype2 to /usr/local/include/freetype2, then force a reconfigure and rebuild, it all works.\n\nThe attached patch will do that, but seems the wrong approach.  This CMakeLists.txt clearly has a \"FindPackage(Freetype)\" at the top, and then instead of using the path found there hard-codes the Linux-style location.\n\nThis mistake in CMakeLists.txt should ideally be fixed upstream, but at least this patch will make it work for now."
+}

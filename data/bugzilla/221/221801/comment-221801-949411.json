@@ -1,0 +1,8 @@
+{
+ "id": 949411,
+ "bug_id": 221801,
+ "attachment_id": 0,
+ "creation_time": "2017-08-25T12:58:32Z",
+ "creator": "emaste@freebsd.org",
+ "text": "I've been investigating the state of the ports tree with LLVM's lld installed as /usr/bin/ld (from the exp-run in PR 214864).\n\nNormally LDFLAGS contains flags passed to the compiler driver when invoked for linking. One issue that affects a small number of ports is passing $LDFLAGS to direct linker invocation (i.e, $LD), where it contains flags that are appropriate only for the compiler driver, not the linker.\n\nIn several instances this comes from bsd.ssp.mk, which adds -fstack-protector to LDFLAGS.  GNU BFD ld accepts the flag but produces undesired output, while lld produces an error:\n\nld -fstack-protector -shared -o libcfg+.so.0 ../src/cfg+.o ../src/parse.o ../src/props.o ../src/cmdline.o ../src/cfgfile.o ../src/shared.o ../src/platon/str/strplus.o ../src/platon/str/strctype.o ../src/platon/str/strdyn.o ../src/platon/str/dynfgets.o\nld: error: unknown argument: -fstack-protector\n(from devel/libcfg)\n\n(GNU ld produces output with a bogus DT_AUXILIARY \"stack-protector\" entry for this case.)\n\nThis affects at least the following ports:\nwww/mod_jk\ndevel/libcfg\narabic/libitl\nwww/tdom\nwww/dummyflash\nftp/rexx-curl\n\nwww/tdom build excerpt:\nld -Bshareable -x -o libtdom0.8.3.so xmlrole.o xmltok.o xmlparse.o xmlsimple.o utf8conv.o dom.o domhtml.o domxpath.o domxslt.o domlock.o tcldom.o nodecmd.o tdominit.o tclexpat.o tdomStubInit.o  -L/usr/local/lib -ltclstub86  -fstack-protector -export-dynamic\nld: error: unknown argument: -fstack-protector"
+}

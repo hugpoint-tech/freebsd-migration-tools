@@ -1,0 +1,8 @@
+{
+ "id": 1193710,
+ "bug_id": 255072,
+ "attachment_id": 0,
+ "creation_time": "2022-01-08T11:34:28Z",
+ "creator": "tsoome@freebsd.org",
+ "text": "(In reply to spell from comment #22)\n\n\nCould you post the disk properties -- actual ones you see from OS tool like gpart or such, and what you get from probing in biosdisk.c (sector size, number of sectors; I guess it is detecting EDD).\n\nThe disk IO in early loader is about detecting partition type and reading partition table - what type of partitioning is used on that disk? In case of GPT, we read disk start *and* disk end to be sure there is no corruption.\n\nSecondly, disk IO is from the time we attempt to discover zfs pools, that will read every candidate partition start and end (pool config has 4 copies).\n\nAfter that we have hopefully established our boot file system and will start to read loader files.\n\nUsually, when there is a problem with disk IO, we see failure while detecting partitioning or, while probing for zfs pools.\n\nSo, what to look for: certainly sector number for read - if we do fit inside the disk. Reading past disk end can crash many BIOS systems.\n\nSecond possible issue is if the disk read will read more than we have buffer space - memory corruption. Possible way to test this guess would be to read 1 sector at a time. We use low memory buffer space for realmode INT13 calls and that memory area is 16k, so single sector read will (hopefully) not trash past that buffer end..."
+}

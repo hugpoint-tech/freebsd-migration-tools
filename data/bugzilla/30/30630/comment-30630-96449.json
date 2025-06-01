@@ -1,0 +1,8 @@
+{
+ "id": 96449,
+ "bug_id": 30630,
+ "attachment_id": 0,
+ "creation_time": "2001-09-17T16:20:02Z",
+ "creator": "brandt@fokus.gmd.de",
+ "text": "\nif_mib.c:sysctl_ifdata fails to check whether the accessed interface really\nexists.\n\nThe problem is, that since the advent of loadable modules the interface\nindex name space may be sparse. Before loadable modules one was sure that\nall interfaces between 1 and if_index really exists so the check\n\n   if (name[0] \u003c= 0 || name[0] \u003e if_index)\n\nwas ok. Now it is possible to unload interface drivers so that interfaces\nbetween 1 and if_index may disappear. ifaddr_byindex(IDX) will return NULL\nin this case which in turn leads to a kernel panic.\n\nThere may be other places in the kernel that also build on the old assumption.\n\nHow-To-Repeat: \nPut 2 network cards in your computer which need different drivers. Build\nthese drivers as loadable modules and reboot. Now configure the two interfaces.\nNow unload the driver for the first interface and execute the test program\nbelow:\n\n# include \"stdio.h\"\n# include \"err.h\"\n# include \"sys/types.h\"\n# include \"sys/sysctl.h\"\n# include \"sys/socket.h\"\n# include \"net/if.h\"\n# include \"net/if_mib.h\"\n\nint\nmain(int argc, char *argv[])\n{\n\tint name[6];\n\tsize_t len;\n\n\tname[0] = CTL_NET;\n\tname[1] = PF_LINK;\n\tname[2] = NETLINK_GENERIC;\n\tname[3] = IFMIB_IFDATA;\n\tname[4] = 4;\n\tname[5] = IFDATA_LINKSPECIFIC;\n\n\tif (sysctl(name, 6, NULL, \u0026len, NULL, 0) \u003c 0) {\n\t\terr(1, \"sysctl failed\");\n\t\treturn (1);\n\t}\n\treturn (0);\n}\n\nWatch the kernel panic."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1322565,
+ "bug_id": 280099,
+ "attachment_id": 0,
+ "creation_time": "2024-08-26T15:34:42Z",
+ "creator": "kevans@freebsd.org",
+ "text": "pw(8) probably should have been doing this all along:\n\ndiff --git a/usr.sbin/pw/cpdir.c b/usr.sbin/pw/cpdir.c\nindex 504933ab88af..856ab95ee781 100644\n--- a/usr.sbin/pw/cpdir.c\n+++ b/usr.sbin/pw/cpdir.c\n@@ -49,9 +49,13 @@ copymkdir(int rootfd, char const * dir, int skelfd, mode_t mode, uid_t uid,\n        if (*dir == '/')\n                dir++;\n \n-       if (mkdirat(rootfd, dir, mode) != 0 \u0026\u0026 errno != EEXIST) {\n-               warn(\"mkdir(%s)\", dir);\n-               return;\n+       if (mkdirat(rootfd, dir, mode) != 0) {\n+               if (errno != EEXIST) {\n+                       warn(\"mkdir(%s)\", dir);\n+                       return;\n+               }\n+\n+               (void)fchmodat(rootfd, dir, mode, AT_SYMLINK_NOFOLLOW);\n        }\n        fchownat(rootfd, dir, uid, gid, AT_SYMLINK_NOFOLLOW);\n        if (flags \u003e 0)"
+}

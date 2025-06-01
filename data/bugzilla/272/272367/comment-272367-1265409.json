@@ -1,0 +1,8 @@
+{
+ "id": 1265409,
+ "bug_id": 272367,
+ "attachment_id": 0,
+ "creation_time": "2023-07-04T23:09:26Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "Several preliminary facts:\n1. posix_spawn is basically vfork + exec.\n2. vfork does not stop other threads in the forked process\n3. vfork copies file descriptor table, creating additional ref for each file\n4. flock semantic is that the lock is dropped only on last close\n\nSo what could happen in your program is that some thread A has opened and locked\nits file. while thread B called posix_spawn().  Forked child now shares the\nreference to the file of thread A.  Thread A closes the file and tries to\nopen it again, which would block on the old lock still existing due to ref\nin the child of the thread B.\n\nThat's it."
+}

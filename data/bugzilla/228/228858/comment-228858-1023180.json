@@ -1,0 +1,8 @@
+{
+ "id": 1023180,
+ "bug_id": 228858,
+ "attachment_id": 0,
+ "creation_time": "2018-11-23T21:22:59Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "The process closing the kqueue should drain all of the kqueue's notes; this happens in kqueue_drain().  Unfortunately, we have a few races:\n- kqueue_register() doesn't check for KQ_CLOSING, so it may add knotes to the fdtable or hash table after we've started draining.  This can be triggered by knote_fork().\n- The locking in knote_fork() is wrong: at the end of the loop we should be acquiring the list lock before the kqueue lock.  Otherwise there's a window where the knote is unlocked and not in flux, and thus may be freed.  To fix this I believe it's sufficient to just reorder the locking; the list lock comes before the kqueue lock in the lock order.  The in-flux state of the knote is sufficient to prevent it from being removed, I believe, so we don't need a marker knote to hold our place in the list."
+}

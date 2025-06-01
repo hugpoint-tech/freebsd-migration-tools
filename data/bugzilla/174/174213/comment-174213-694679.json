@@ -1,0 +1,8 @@
+{
+ "id": 694679,
+ "bug_id": 174213,
+ "attachment_id": 0,
+ "creation_time": "2012-12-06T01:20:00Z",
+ "creator": "accornehl@fastmail.fm",
+ "text": "Thread is here: http://lists.freebsd.org/pipermail/freebsd-infiniband/2012-November/000002.html\n\nMellanox Connect-X VPI cards allow the QSFP ports to be used for InfiniBand or Ethernet communication, by setting the port mode in sysfs/sysctl. But it appears that a sysfs/sysctl abstraction didn't get carried over all the for FreeBSD...\n\n---\n# sysctl sys.device.mlx4_core0.mlx4_port1\nsys.device.mlx4_core0.mlx4_port1: ib\n\n# sysctl sys.device.mlx4_core0.mlx4_port1=ib\nsys.device.mlx4_core0.mlx4_port1: ib\n\nsysctl: sys.device.mlx4_core0.mlx4_port1: Invalid argument\n---\n\nThe problem is that sysfs allows our MLX4 code to use two functions in an attribute structure, .store and .show. The compat header for sysfs in `sys/ofed/include/linux/sysfs.h` is doing something wrong and never calls the .store function in `sys/ofed/drivers/net/mlx4/main.c` for this sysctl.\n\nIt looks like sysctl_handle_attr() should be handling this, but I'm not sure how. Yet.\n\nHow-To-Repeat: # pciconf -lv | grep -C2 'ConnectX VPI'\n# kldload mlx4\n# sysctl sys.device.mlx4_core0.mlx4_port1=eth\n\nThe value from `sysctl sys.device.mlx4_core0.mlx4_port1` should be \"eth\"."
+}

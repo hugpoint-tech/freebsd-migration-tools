@@ -1,0 +1,8 @@
+{
+ "id": 548769,
+ "bug_id": 144765,
+ "attachment_id": 0,
+ "creation_time": "2010-05-09T01:16:32Z",
+ "creator": "swell.k@gmail.com",
+ "text": "Mk/bsd.port.mk says:\n\n  To make options work, you need to include bsd.port.pre.mk before you\n  start testing the WITH_xyz variables.\n\nthat's why your tests fail.\n\n  $ make showconfig\n  ===\u003e The following configuration options are available for\n  directfb-1.4.3:\n       FREETYPE2=on \"Enable Freetype support\"\n       X11=on \"Enable X11 backend\"\n       SDL=on \"Enable SDL backend\"\n  ===\u003e Use 'make config' to modify these settings\n\n  $ make -V CONFIGURE_ARGS\n  --enable-freetype --disable-x11 --disable-sdl  --prefix=/usr/pkg ${_LATE_CONFIGURE_ARGS}\n\nBTW, ports/146417 affects this version, too.\n\n--- a.diff begins here ---\n--- devel/directfb/Makefile~\n+++ devel/directfb/Makefile\n@@ -33,6 +33,8 @@ PLIST_SUB+=\tDIRECTFB_VERSION=${PORTVERSI\n \t\tDIRECTFB_VER=${PORTVERSION:R}-0 \\\n \t\tDIRECTFB_SHLIBVER=${PORTVERSION:R}\n \n+.include \u003cbsd.port.pre.mk\u003e\n+\n .if exists(${LOCALBASE}/lib/libfreetype.so.9)\n WITH_FREETYPE2=\tyes\n .endif\n@@ -74,8 +76,6 @@ PLIST_SUB+=\tINPUTDRIVERS=\"@comment \"\n MAN1=\t\tdirectfb-csource.1 dfbg.1\n MAN5=\t\tdirectfbrc.5\n \n-.include \u003cbsd.port.pre.mk\u003e\n-\n .if ${ARCH} == \"alpha\"\n BROKEN=\t\tDoes not compile on alpha\n .endif\n--- a.diff ends here ---"
+}

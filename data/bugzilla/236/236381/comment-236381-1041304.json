@@ -1,0 +1,8 @@
+{
+ "id": 1041304,
+ "bug_id": 236381,
+ "attachment_id": 0,
+ "creation_time": "2019-03-08T01:57:45Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Normally fuse filesystems are required to always write the exact amount of data requested by a FUSE_WRITE operation.  However, if the filesystem sets FOPEN_DIRECT_IO in the response to a FUSE_OPEN request, then it is allowed to write less data than was requested.  In that case, the client will likely want to write the remainder of the data.\n\nThe problem is that fuse_write_directbackend doesn't correctly account for the short write.  It correctly detects a short write, and tries to \"rewind\" the uio by adjusting its uio_resid and uio_offset fields.  However, it neglects to rewind the uio_iov field.  In fact, it will not always be possible to rewind the uio_iov, because uiomove may have incremented the uio_iov pointer.  I see two possible solutions:\n\n1) Add a second inner loop to fuse_write_directbackend.  The inner loop will handle short writes, and will get its data from the fdi buffer.  uiomove will not be called again.  In addition to fixing the bug, this method will also be more efficient than current code, because it won't copy data across the user-kernel boundary multiple times.\n\n2) Don't try to make up for short writes.  Simply return to userland.  This would probably be more in the spirit of direct_io.  However, fuse_write_directbackend can have many different callers, and it might not be appropriate for all of them.  In particular, fuse(4) currently doesn't accurately track whether the filesystem requested FOPEN_DIRECT_IO."
+}

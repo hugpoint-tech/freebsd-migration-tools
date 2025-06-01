@@ -1,0 +1,8 @@
+{
+ "id": 837875,
+ "bug_id": 202660,
+ "attachment_id": 160356,
+ "creation_time": "2015-08-25T18:47:18Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 160356\nFix signed left-shifting in lang/ruby21's public ruby.h\n\nDuring the exp-run in bug 201377, it was found that devel/rubygem-thrift gives errors with a recent clang 3.7.0 snapshot:\n\nhttp://package18.nyi.freebsd.org/data/headi386PR201377-default/2015-08-20_15h42m20s/logs/errors/rubygem-thrift-0.9.1,1.log\n\nThis is because it includes ruby.h from the lang/ruby21 port, which uses this macro:\n\n#define INT2FIX(i) ((VALUE)(((SIGNED_VALUE)(i))\u003c\u003c1 | FIXNUM_FLAG))\n\nUnfortunately, left-shifting negative 'i' values is undefined behavior, so clang warns about this.  I changed the macro to:\n\n#define INT2FIX(i) ((VALUE)(((VALUE)(i))\u003c\u003c1 | FIXNUM_FLAG))\n\nwhich avoids the undefined behavior by casting to VALUE (which is unsigned) first.  I ran all ruby21 tests before and after this fix, and I got \"1 failures, 4 errors\" in both cases, so no regressions.\n\nHowever, since this is a public ruby header, I can imagine that this is a change that makes some people nervous.  So if ruby maintainers prefer to fix this in the devel/rubygem-thrift port instead, for example by squelching the warning, please let me know."
+}

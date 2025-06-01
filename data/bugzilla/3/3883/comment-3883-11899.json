@@ -1,0 +1,8 @@
+{
+ "id": 11899,
+ "bug_id": 3883,
+ "attachment_id": 0,
+ "creation_time": "1997-06-16T17:20:01Z",
+ "creator": "Dominic.Froud@dcs.qmw.ac.uk",
+ "text": "When getpwent(3) encounters a +@netgroup entry in the /etc/passwd file,\nit sets a flag (_pw_stepping_yp) to 1. This short-circuits successive\ncalls to getpwent() so that they jump to 'grabbing the next NIS entry'.\nThis flag isn't reset when all the netgroup members have been retrieved.\nThis causes a problem when another NIS-style entry (specifically named\nNIS users) is mentioned because getpwent() is permanently locked to\nretrieving the same user entry (and hence loops based around getpwent()\nnever return).\n\nFix: Non-rebuild workaround:\n\nPlace all +user entries before any +@netgroup entries in /etc/passwd\nif possible. I don't think inserting a local user between the two\nentries will work.\n\nSoftware fix:\n\namend /usr/src/lib/libc/gen/getpwent.c as follows, and rebuild libc:\nHow-To-Repeat: Add lines in the following format to the end of /etc/passwd (using vipw):\n+@netgroup-that-exists:::::::::\n+NIS-user-that-exists:::::::::\n+:::::::::/bin/true\n\nTry: finger NIS-added-user-not-included-above\n\nfinger(1) will hang and a kernel trace will show \na NIS lookup in passwd.byname for NIS-user-that-exists followed by\na successful return of their passwd entry.\nAfter that, the trace is filled with nothing but gettimeofday(2) calls."
+}

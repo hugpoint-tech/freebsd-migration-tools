@@ -1,0 +1,8 @@
+{
+ "id": 354270,
+ "bug_id": 104406,
+ "attachment_id": 0,
+ "creation_time": "2007-06-05T21:26:26Z",
+ "creator": "jdw@wheelhouse.org",
+ "text": "I believe we have also experienced this bug (or a very similar one) on \nour 8-core amd64 systems under 6.2-RELEASE-p4.\n\nIn our case, \"top\" shows that the system is 100% CPU utilized, with the \nvast majority of it as \"system\" time.  (Ordinarily the system\n\nIn the last case, we ended up with about 200 Apache processes that \nlooked like this in ps:\n\n   UID   PID  PPID CPU PRI NI   VSZ   RSS MWCHAN STAT  TT       TIME COMMAND\n25000 27121 26860 1977  -4  5 146324 33732 ufs    DN    ??    0:03.75 httpd\n25000 27147 37257 1994  -4  5 153748 29280 ufs    DN    ??    0:03.72 httpd\n25000 27157 36912 1805  -4  5 150756 26592 ufs    DN    ??    0:02.91 httpd\n25000 27224 27030 1845  -4  5 137536 24804 ufs    DN    ??    0:01.25 httpd\n25000 27274 26794 1829  -4  5 148140 35416 ufs    DN    ??    0:02.90 httpd\n\nOnce a process gets \"stuck\" in WCHAN ufs, it's blocked indefinitely, as \ndescribed here, or at least so slow as to be indistinguishable from \nstuck.  (Typical wait channels for our httpds are accept or kqread, as \none would expect.)\n\nEach process in this state counts against the load average, so we often \nsee load averages north of 200 when this is occurring.  (Typical load \naverage is below 2.)\n\nKill enough processes (or possibly enough to hit the \"right\" process) \nand everything picks up again right where it left off.\n\nI also have no idea how to debug this.\n\nThanks,\nJeff\n\n-- \nJeff Wheelhouse\njdw@wheelhouse.org"
+}

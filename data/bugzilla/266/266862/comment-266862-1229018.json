@@ -1,0 +1,8 @@
+{
+ "id": 1229018,
+ "bug_id": 266862,
+ "attachment_id": 0,
+ "creation_time": "2022-10-06T10:49:25Z",
+ "creator": "takawata@FreeBSD.org",
+ "text": "The code was not be compiled. Correct code is as follows. \nWith this patch, \n% devctl devpath FreeBSD root0\ndoes not cause panic and show error message, as I expected.\ndevctl: Failed to get path via FreeBSD to root0: Cannot allocate memory\n\n\ndiff --git a/sys/kern/subr_bus.c b/sys/kern/subr_bus.c\nindex 487e573451ed..041e77259313 100644\n--- a/sys/kern/subr_bus.c\n+++ b/sys/kern/subr_bus.c\n@@ -5310,13 +5310,9 @@ device_get_path(device_t dev, const char *locator)\n        ssize_t len;\n        char *rv = NULL;\n        int error;\n-       device_t parent = device_get_parent(dev);\n-\n-       if(parent == NULL)\n-               return rv;\n \n        sb = sbuf_new(NULL, NULL, 0, SBUF_AUTOEXTEND | SBUF_INCLUDENUL);\n-       error = BUS_GET_DEVICE_PATH(parent, dev, locator, sb);\n+       error = BUS_GET_DEVICE_PATH(device_get_parent(dev), dev, locator, sb);\n        sbuf_finish(sb);        /* Note: errors checked with sbuf_len() below */\n        if (error != 0)\n                goto out;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1107356,
+ "bug_id": 247126,
+ "attachment_id": 0,
+ "creation_time": "2020-06-09T21:53:08Z",
+ "creator": "leres@freebsd.org",
+ "text": "Somewhere between FreeBSD 11 and 12, zfgrep and friends became a wrapper shell script. We've found that it does not handle the -f flag correctly:\n\n    # Works\n    % zfgrep RELEASE /etc/motd\n    FreeBSD 12.1-RELEASE-p3 GENERIC \n\n    # Hangs reading from stdin\n    % echo RELEASE \u003e /tmp/0\n    % zfgrep -f /tmp/0 /etc/motd\n    /etc/motd:FreeBSD 12.1-RELEASE-p3 GENERIC\n    ^Z\n    Suspended\n    leviathan 89 % ps t\n      PID TT  STAT    TIME COMMAND\n      11249  4  Ss   0:00.11 -csh (csh)\n      12190  4  T    0:00.00 /bin/sh /usr/bin/zfgrep -f /tmp/0 /etc/motd\n      12191  4  T    0:00.00 /usr/bin/zcat -f -\n      12192  4  T    0:00.00 grep -F -f /tmp/0 -- /etc/motd -\n      12193  4  R+   0:00.00 ps t\n\nThe problem is when -f is used there is no command line pattern and the wrapper script incorrectly uses the first non-flag argument as a pattern and incorrectly decides we want to read from stdin. Meanwhile grep is invoked with the pattern (really the target file) and a '-'. In then outputs any matches and hangs, reading from stdin.\n\nHere's the most minimal patch I could develop in two minutes."
+}

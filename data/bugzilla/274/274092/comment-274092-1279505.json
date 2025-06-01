@@ -1,0 +1,8 @@
+{
+ "id": 1279505,
+ "bug_id": 274092,
+ "attachment_id": 0,
+ "creation_time": "2023-10-12T13:04:47Z",
+ "creator": "pmh@hausen.com",
+ "text": "Unfortunately I cannot boot the board without USB Ethernet connected. It's a compute module placed into this board:\n\nhttps://www.waveshare.com/wiki/Compute_Module_PoE_Board\n\nAlso although I tried for a long time I could not get serial console to work. So once the system crashes at boot and I lose SSH access all I can do is re-image.\n\nWith a debug kernel will there be more output to get a screenshot with a camera? Or can I dd the entire EMMC of the module to a file and then extract information, somehow?\n\nKind regards,\nPatrick\n\nFor the moment I am satisfied to be able to use these tasks in Ansible to solve the matter:\n\n- name: Read serial number\n  ansible.builtin.shell: |\n    set -o pipefail \u0026\u0026 /bin/kenv | \\\n    /usr/bin/awk '/smbios.system.serial/ {printf \"%s:%s:%s\\n\", substr($0, length($0)-6, 2),  substr($0, length($0)-4, 2),  substr($0, length($0)-2, 2)}'\n  register: mac_lower\n  changed_when: false\n\n- name: Set MAC address\n  ansible.builtin.copy:\n    dest: \"/etc/start_if.{{ network.wired.interface }}\"\n    owner: root\n    group: wheel\n    mode: '0644'\n    content: |\n      /sbin/ifconfig $1 down\n      /sbin/ifconfig $1 link b8:27:eb:{{ mac_lower.stdout }}\n      /sbin/ifconfig $1 up\n\nAnyway what would be the result if we get this to work? As I have been arguing on the mailinglist the RPi foundation clearly documents that we should use the device's serial number to generate the MAC and nothing else for all RPi 3 and older.\n\nKind regards,\nPatrick"
+}

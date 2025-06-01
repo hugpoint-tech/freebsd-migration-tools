@@ -1,0 +1,8 @@
+{
+ "id": 506004,
+ "bug_id": 136013,
+ "attachment_id": 0,
+ "creation_time": "2009-06-24T20:30:04Z",
+ "creator": "forst@mff.cuni.cz",
+ "text": "\tThe res_searchN() function makes a decision about loop continuation\n    after returning from the res_querydomainN() call based on two pieces\n    of information: res-\u003eres_h_errno and hp-\u003ercode. However, if the query\n    was made for both A and AAAA RRs, the hp address points just to the\n    first res_target structure, but the res-\u003eres_h_errno will be set by\n    the result of the second query. Thus, res-\u003eres_h_errno and hp-\u003ercode\n    can be inconsistent.\n\nFix: \n\n1. Both pieces of information (h_errno and rcode) must be consistent.\n       I.e. the rcode should be saved e.g. into res_state structure (as\n       a new res_rcode member?).\n    2. The question is, whether the result (h_errno+rcode) should really\n       be defined as \"last query result\". Why the responses NXDomain (A)\n       and ServFail (AAAA) bring a different behavior than the case of\n       ServFail (A) and NXDomain (AAAA)? Maybe the final result selection\n       should not follow \"the last\" response but \"the most relevant\" one.\nHow-To-Repeat: \tAt least two-domains search-list, query for a name without dots,\n    the first (A) response should be NXDomain, the second (AAAA) should\n    be ServFail. In this situation, the first res_querydomainN() call\n    (for the NAME.DOMAIN1) returns with res-\u003eres_h_errno == TRY_AGAIN\n    (according to the second query) but hp-\u003ercode == NXDomain (because\n    hp reflects the first res_target). As such, the second domain will\n    not be tried (in spite of that in all three other combinations of\n    results, the domain is tried)."
+}

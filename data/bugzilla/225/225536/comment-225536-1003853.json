@@ -1,0 +1,8 @@
+{
+ "id": 1003853,
+ "bug_id": 225536,
+ "attachment_id": 0,
+ "creation_time": "2018-07-30T02:58:12Z",
+ "creator": "avernar@gmail.com",
+ "text": "The incorrect network order byte compare on a little endian processor explains exactly what Emmanuel is seeing.\n\nAn mss of 8960 (0x0023 network order) which is compared \u003c= to the desired mss of 1460 (0xB405 network order) will be true and break out before setting the mss.  The test value of 1400 (0x7805 network order) will also break out.\n\nIn the case where the locally generated traffic worked with the 1400 rule I suspect the mss was 1460 already.  So 1460 (0xB405 network order) \u003c= 1400 (0x7805 network order) is false, since we're comparing the network order values, we don't break and go on to set the mss in the packet.\n\nPeople using it for the usual PPPoE clamp would normally not notice on normal 1460  mss packets.  The 1460 (0xB405 network order) \u003c= 1452 (0xAC05 network order) test would be false and the mss would be changed.  Any device using an mss less than 1460 might have its mss increased.\n\nThis bug also affects me as I also use MTU 9000 (mss 8960) on my internal network.  After I applied my patch and reloaded the kernel module it started working and setting the mss properly."
+}

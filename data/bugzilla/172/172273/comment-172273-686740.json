@@ -1,0 +1,8 @@
+{
+ "id": 686740,
+ "bug_id": 172273,
+ "attachment_id": 0,
+ "creation_time": "2012-10-02T18:44:22Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: ache\nDate: Tue Oct  2 17:44:08 2012\nNew Revision: 241137\nURL: http://svn.freebsd.org/changeset/base/241137\n\nLog:\n  Using putenv() and later direct pointer contents modification it is possibe\n  to craft environment variables with similar names like that:\n  a=1\n  a=2\n  ...\n  unsetenv(\"a\") should remove them all to make later getenv(\"a\") impossible.\n  Fix it to do so (this is GNU autoconf test #3 failure too).\n  \n  PR:             172273\n  MFC after:      1 week\n\nModified:\n  head/lib/libc/stdlib/getenv.c\n\nModified: head/lib/libc/stdlib/getenv.c\n==============================================================================\n--- head/lib/libc/stdlib/getenv.c\tTue Oct  2 17:05:20 2012\t(r241136)\n+++ head/lib/libc/stdlib/getenv.c\tTue Oct  2 17:44:08 2012\t(r241137)\n@@ -675,11 +675,13 @@ unsetenv(const char *name)\n \n \t/* Deactivate specified variable. */\n \tenvNdx = envVarsTotal - 1;\n-\tif (__findenv(name, nameLen, \u0026envNdx, true) != NULL) {\n+\t/* Remove all occurrences. */\n+\twhile (__findenv(name, nameLen, \u0026envNdx, true) != NULL) {\n \t\tenvVars[envNdx].active = false;\n \t\tif (envVars[envNdx].putenv)\n \t\t\t__remove_putenv(envNdx);\n \t\t__rebuild_environ(envActive - 1);\n+\t\tenvNdx = envVarsTotal - 1;\n \t}\n \n \treturn (0);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

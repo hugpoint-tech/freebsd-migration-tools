@@ -1,0 +1,8 @@
+{
+ "id": 866638,
+ "bug_id": 207446,
+ "attachment_id": 0,
+ "creation_time": "2016-02-23T23:07:49Z",
+ "creator": "jonolson@google.com",
+ "text": "As far as I know we're compliance with the VIRTIO spec here. We do advertise max queues == to number of vCPUs, but there is not requirement that a guest configure/use all of them to take advantage of multiqueue support. From the (draft) spec change introducing multi-queue (edited for readability from https://github.com/rustyrussell/virtio-spec/commit/67023431c8796bc430ec0a79b15bab57e2e0f1f6): \n\n\"\"\"\nOnly receiveq0, transmitq0 and controlq are used by default. To use more queues driver must negotiate the VIRTIO_NET_F_MQ feature; initialize up to `max_virtqueue_pairs` of each of transmit and receive queues; execute VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET command specifying the number of the transmit and receive queues that is going to be used and wait until the device consumes the controlq buffer and acks this command.\n\"\"\"\n\nThis is what we do -- by default we service only rx0, tx0, and cq. Upon receiving VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET we will begin servicing the number of queues requested up to the value from the `max_virtqueue_pairs`. Larger values (and zero) should be NAK'd by the virtual device (and no change in the number of queue serviced will occur).\n\nIf a guest kernel does not wish to use more than, e.g., 8 tx/rx virtqueue pairs it need not configure more than the first eight and the control queue (always at index 2*max_queue_pairs + 1, per the spec).\n\nAs I said, I think we're in compliance with the spec here, but certainly if not I'll treat it as a bug."
+}

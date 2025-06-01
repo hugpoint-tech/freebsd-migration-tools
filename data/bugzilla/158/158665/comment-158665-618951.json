@@ -1,0 +1,8 @@
+{
+ "id": 618951,
+ "bug_id": 158665,
+ "attachment_id": 0,
+ "creation_time": "2011-07-05T11:10:11Z",
+ "creator": "cuicui@gmail.com",
+ "text": "When I set up a 6to4 tunnel device (stf0) and put it in output only mode according to man stf(4):\n\n     # ifconfig ne0 inet 133.4.5.6 netmask 0xffffff00\n     # ifconfig stf0 inet6 2002:8504:0506:0000:a00:5aff:fe38:6f86 \\\n             prefixlen 16 alias deprecated link0\n     # route add -inet6 2002:: -prefixlen 16 ::1\n     # route change -inet6 2002:: -prefixlen 16 ::1 -ifp stf0\n\nThe kernel often crashes sending traffic to other other 2002::/16 hosts. I think the problem is the \"deprecated\" address that's causing problems when trying to resolve ipv6 scope.\n\nThe instruction causing the fault is:\nc069cee8:       0f b1 96 18 02 00 00    cmpxchg %edx,0x218(%esi)\n\nwhich I think corresponds to this line in the source:\n\nint\nin6_setscope(struct in6_addr *in6, struct ifnet *ifp, u_int32_t *ret_id)\n{\n        int scope;\n        u_int32_t zoneid = 0;\n        struct scope6_id *sid;\n\n        IF_AFDATA_LOCK(ifp);  \u003c----- HERE\n\nThe fault virtual address is 0x218, which seems to suggest that ifp passed into this function is NULL.\n\nHow-To-Repeat: 1. On a machine with both a public IPv6 address (not 6to4 address) as well as IPv4, create a stf0 device and put it in \"output only\" mode according to man stf(4).\n2. Ping another host using its 6to4 address (2002::/16)."
+}

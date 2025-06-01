@@ -1,0 +1,8 @@
+{
+ "id": 1192923,
+ "bug_id": 260884,
+ "attachment_id": 0,
+ "creation_time": "2022-01-02T20:41:56Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "I found a way to reproduce the panic within seconds:\n\n```\n$ cat \u003ecrashme.c\u003c\u003cEOF\n#include \u003cunistd.h\u003e\n#include \u003csys/stdtypes.h\u003e\n#include \u003clibzfs_core.h\u003e\n\nint main(int argc, char** argv)\n{\n  fork(); fork(); fork(); fork();\n  for (int i=0; i\u003c1000000; ++i) {\n    libzfs_core_init();\n    lzc_exists(argc \u003e= 2 ? argv[1] : \"zroot\");\n    libzfs_core_fini();\n  }\n}\nEOF\n\n$ cc \\\n  -I/usr/src/sys/contrib/openzfs/include \\\n  -I/usr/src/sys/contrib/openzfs/lib/libspl/include \\\n  -lzfs_core -lzfs -o crashme crashme.c\n\n$ ./crashme zroot\n```\n\nThis doesn't require root privileges.\n\nApplying the patch mentioned above fixes the problem:\n\n```\n# cd /usr/src/sys/contrib/openzfs\n# fetch -o - \\\n  https://github.com/openzfs/zfs/commit/f845b2dd1c60.diff | patch -p1\n# cd /usr/src\n# make -j8 kernel\n# reboot\n...\n$ ./crashme zroot \u0026\u0026 echo \"I'm ok\"\nI'm ok\n$ \n```\n\nGiven that this can be triggered by two unfortunately timed `zfs list` calls and that it actually happens in practice (like in my example, where I would see my hosts crash every few hours/days), I would like us to import this fix to release/13.0 and create an errata notice."
+}

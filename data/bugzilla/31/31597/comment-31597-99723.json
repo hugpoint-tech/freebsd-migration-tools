@@ -1,0 +1,8 @@
+{
+ "id": 99723,
+ "bug_id": 31597,
+ "attachment_id": 0,
+ "creation_time": "2001-10-29T16:30:00Z",
+ "creator": "ak03@gte.com",
+ "text": "\tpcm_addchans function in sys/dev/sound/pcm/sound.c incorrectly\n\tadds virtual channels to each and every hardware channel, passed\n\tto it as a parameter. If the hardware channel has the direction\n\tset to PCMDIR_REC, this leads to the scenario, where PCMDIR_PLAY\n\tvirtual channel sits on top of PCMDIR_REC physical channel. Each\n\tattempt to play through such a vistual channel leads to \"interrupt\"\n\ttimeout,channel dead\" errors.\n\n\tWhen hw.snd.maxautovchans=\u003cnum\u003e is set through /boot/loader.conf,\n\tvirtual channels subsystem is enabled at the\n\nFix: The following patch changes pcm_addchan function to only create\nvirtual channels if the parent channel is PCMDIR_PLAY and if\nno virtual channels have been created already. This fixes pcm\nplayback on my -CURRENT boxes.\nHow-To-Repeat: \tSet the hw.snd.maxautovchans=\u003cnum\u003e in /boot/loader.conf. This way \n\tvirtual channels will be enabled at the sound card probe time and\n\tvirtual channel will be created for each hardware channel on the\n\tcard. Now, if driver calls pcm_addchan(..., PCMDIR_REC) before\n\tpcm_addchan(..., PCMDIR_PLAY), the virtual channel sitting on \n\ttop of the record channel will be choosen at the next playback\n\tattempt and playback will fail with the above interrupt timeout\n\tmessage.\n\n\tThe problem can not be reproduced if hw.snd.maxautovchans is being\n\tset through sysctl, because pcm_setmaxautovchan function is smart\n\tenough to ignore record channels and it will only create single\n\tvcannel on the first free hardware playback channel."
+}

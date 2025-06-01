@@ -1,0 +1,8 @@
+{
+ "id": 1344167,
+ "bug_id": 284112,
+ "attachment_id": 0,
+ "creation_time": "2025-01-17T11:02:33Z",
+ "creator": "ray@bellis.me.uk",
+ "text": "With latest 2025q1 packages for puppetserver7, the puppet daemon crashes after a few seconds, with this (snipped) stack trace appearing in the log as apparent root cause:\n\n--8\u003c--8\u003c--\nCaused by: org.jruby.embed.EvalFailedException: (NoMethodError) undefined method `bind_call' for #\u003cUnboundMethod: Kernel#warn\u003e\n        at org.jruby.embed.internal.EmbedEvalUnitImpl.run(EmbedEvalUnitImpl.java:134)\n...\nCaused by: org.jruby.exceptions.NoMethodError: (NoMethodError) undefined method `bind_call' for #\u003cUnboundMethod: Kernel#warn\u003e\n        at RUBY.warn(/usr/local/lib/ruby/site_ruby/3.2/rubygems/core_ext/kernel_warn.rb:16)\n...\n--8\u003c--8\u003c--\n\nI have traced this to a 4 month old commit to ruby-gems, which among other things replaces a few calls to `.bind(self).call(args...)` with `.bind_call(self, args...)`:\n\nhttps://github.com/rubygems/rubygems/commit/fc1f03b06a72b9e74a5e7410cf9a2d11b28090e7\n\nIIUC this crash might arise because the version of JRuby embedded inside the FreeBSD puppetserver7 package perhaps does not support `.bind_call()` ?\n\nI have been able to get my puppetserver running in the meantime by patching ruby-gems itself to revert the use of `.bind_call` in lines 16 and 43 of site_ruby/3.2/rubygems/core_ext/kernel_warn.rb\n\nI'm happy to file additional reports elsewhere as needed, but in the first instance I think this needs triage from someone with much more experience with (J)Ruby than I have."
+}

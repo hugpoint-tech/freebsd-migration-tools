@@ -1,0 +1,8 @@
+{
+ "id": 880683,
+ "bug_id": 206128,
+ "attachment_id": 0,
+ "creation_time": "2016-05-28T06:42:57Z",
+ "creator": "phil@freebsd.org",
+ "text": "Was finally able to reproduce this and have a fix.  I was using the wrong value when checking for available buffer space:\n\ndiff --git a/libxo/libxo.c b/libxo/libxo.c\nindex 9df67de..7a714b1 100644\n--- a/libxo/libxo.c\n+++ b/libxo/libxo.c\n@@ -2816,7 +2816,7 @@ xo_format_string (xo_handle_t *xop, xo_buffer_t *xbp, xo_xff_flags_t flags,\n         * but if we did the work ourselves, then we need to do it.\n         */\n        int delta = xfp-\u003exf_width[XF_WIDTH_MIN] - cols;\n-       if (!xo_buf_has_room(xbp, delta))\n+       if (!xo_buf_has_room(xbp, xfp-\u003exf_width[XF_WIDTH_MIN]))\n            goto bail;\n\n        /*\n\nIn addition, I'm adding a high-water mark that will trigger a flush:\n\n@@ -6128,6 +6128,12 @@ xo_do_emit_fields (xo_handle_t *xop, xo_field_info_t *fields,\n\n     XOIF_CLEAR(xop, XOIF_REORDER);\n\n+    /*\n+     * If we've got enough data, flush it.\n+     */\n+    if (xo_buf_offset(\u0026xop-\u003exo_data) \u003e XO_BUF_HIGH_WATER)\n+       flush = 1;\n+\n     /* If we don't have an anchor, write the text out */\n     if (flush \u0026\u0026 !XOIF_ISSET(xop, XOIF_ANCHOR)) {\n        if (xo_write(xop) \u003c 0)\n\nI'll roll a new version of libxo tomorrow.\n\nApologies for taking so long with this, but it was mostly just an issue of reproducing it.  I wasn't seeing enough churn in my \"vmstat -z\" value to trigger the issue, so I munged one of the regression tests to help.\n\nThanks,\n Phil"
+}

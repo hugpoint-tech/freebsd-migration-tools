@@ -1,0 +1,8 @@
+{
+ "id": 913886,
+ "bug_id": 214315,
+ "attachment_id": 0,
+ "creation_time": "2016-12-28T19:39:31Z",
+ "creator": "kevinz5000@gmail.com",
+ "text": "There was a little bit of misunderstanding. In FreeBSD 11, it is no longer valid to add addresses to a table before creating it. In the past, SSHGuard could simply add addresses to a table without having created it first. This doesn't change the fact that users must still block the table with their own rule.\n\nThis is probably a good local change to keep around until the next version rolls around to support FreeBSD 11:\n\n--- a/src/fwalls/ipfw.sh\n+++ b/src/fwalls/ipfw.sh\n@@ -5,7 +5,9 @@\n IPFW_TABLE=22\n \n fw_init() {\n-    ipfw table ${IPFW_TABLE} list \u003e /dev/null\n+    # Starting in FreeBSD 11, tables must first be created.\n+    ipfw table ${IPFW_TABLE} create 2\u003e/dev/null || \\\n+        ipfw table ${IPFW_TABLE} list \u003e /dev/null\n }\n \n fw_block() {\n@@ -21,5 +23,5 @@ fw_flush() {\n }\n \n fw_fin() {\n-    :\n+    ipfw table ${IPFW_TABLE} destroy 2\u003e/dev/null\n }\n\nAlternatively, as the reporter suggests, run `ipfw table 22 create` manually."
+}

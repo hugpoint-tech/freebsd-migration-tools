@@ -1,0 +1,8 @@
+{
+ "id": 92986,
+ "bug_id": 29631,
+ "attachment_id": 0,
+ "creation_time": "2001-08-11T19:50:00Z",
+ "creator": "t-ogawa@triaez.kaisei.org",
+ "text": "In /etc/rc, special care is taken so that portmap will be automatically\nenabled if either amd, nfs or nis enabled:\n\n\tchkdepend amd amd_enable        portmap portmap_enable\n\tchkdepend NFS nfs_server_enable portmap portmap_enable\n\tchkdepend NIS nis_server_enable portmap portmap_enable\n\tchkdepend NIS nis_client_enable portmap portmap_enable\n\nThanks to these lines, variable ${portmap_enable} will be set to \"YES\"\nif needed.\n\nHowever, /etc/rc later loads /etc/rc.firewall, which unconditionally\nreloads /etc/defaults/rc.conf (and /etc/rc.conf, if exists):\n\n        if [ -r /etc/defaults/rc.conf ]; then\n                . /etc/defaults/rc.conf\n                source_rc_confs\n        elif [ -r /etc/rc.conf ]; then\n                . /etc/rc.conf\n        fi\n\nThus, unless user specifically set ${portmap_enable} to \"YES\" in /etc/rc.conf,\n${portmap_enable} will be reset to \"NO\" in /etc/defaults/rc.conf.\n\nLater on, /etc/rc invokes network_pass2() (which defined in /etc/rc.network)\nbut portmap won't be run because ${portmap_enable} has been reset to \"NO\".\n\nFix: In /etc/rc.firewall, don't reload /etc/rc.conf nor /etc/defaults/rc.conf\nif they are already loaded.\n\n/etc/rc.firewall6 already cares this so the same approach can be applied to\n/etc/rc.firewall as well. Patch is as follows:\nHow-To-Repeat: Create /etc/rc.conf as follows:\nnfs_server_enable=\"YES\"\n\nAnd reboot the system. During bootup, rc shows:\n\n\tDEPENDENCY NOTE: portmap_enable will be enabled to support NFS\n\nHowever,\n\n\t% ps ax | grep portmap\n\nproduces nothing."
+}

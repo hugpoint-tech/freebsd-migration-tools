@@ -1,0 +1,8 @@
+{
+ "id": 79411,
+ "bug_id": 25477,
+ "attachment_id": 0,
+ "creation_time": "2001-03-01T17:00:03Z",
+ "creator": "B.Candler@pobox.com",
+ "text": "When using pam_radius, if there is no password (AUTHTOK) set previously\nthen PAM always prompts the user for a password.\n \nHowever, when using a RADIUS server with challenge/response, the password\nin the first Access-Request packet is always ignored. It should be possible\nto provide a null password in this packet, and for PAM only to prompt\nat the point of receiving an Access-Challenge.\n\nSee RFC2865\n\nFix: Patch for /usr/src/lib/libpam/modules/ attached which adds a \"nullok\"\nparameter to pam_radius.so\nHow-To-Repeat: Try configuring sshd for SkeyAuthentication with PAM, and a cryptocard\neasyRadius server.\n\nYou will find that the TIS challenge is\nRADIUS password:\nand the TIS response sent back is the dummy password for the initial\nAccess-Request. The subsequent Access-Challenge causes an unexpected extra\nexchange from PAM, and sshd aborts with \"Conversation Error\"\n\nApplying the patch below, and adding \"nullok\" after pam_radius.so in\npam.conf, makes it work. The initial Access-Request uses a null\npassword without prompting the user. The first user prompt is thus\nthe Radius challenge (given as an SSH_SMSG_AUTH_TIS_CHALLENGE), and\nthe response is, well, the response :-)\n\nThis works nicely and allows even a Windows client running ttssh to make\na successful ssh login with challenge/response and RADIUS backend."
+}

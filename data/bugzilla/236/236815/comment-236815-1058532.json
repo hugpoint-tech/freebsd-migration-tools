@@ -1,0 +1,8 @@
+{
+ "id": 1058532,
+ "bug_id": 236815,
+ "attachment_id": 205931,
+ "creation_time": "2019-07-20T13:59:37Z",
+ "creator": "lantw44@gmail.com",
+ "text": "Comment on attachment 205931\nproposed fix\n\n\u003e--- glib/gspawn.c.orig\t2018-09-21 12:29:23.000000000 +0300\n\u003e+++ glib/gspawn.c\t2019-07-20 15:37:26.923958000 +0300\n\u003e@@ -1077,6 +1084,45 @@ set_cloexec (void *data, gint fd)\n\u003e }\n\u003e \n\u003e #ifndef HAVE_FDWALK\n\u003e+\n\u003e+#ifdef __FreeBSD__\n\u003e+static int\n\u003e+fdwalk_s(int (*cb)(void *data, int fd), void *data, gint *resp)\n\u003e+{\n\u003e+  char\t*bp, *ep;\n\u003e+  int\t mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_FILEDESC, 0};\n\u003e+  size_t len = 0;\n\u003e+  struct kinfo_file kif;\n\u003e+\n\u003e+  mib[3] = (int)getpid();\n\u003e+\n\u003e+  if (sysctl(mib, nitems(mib), NULL, \u0026len, NULL, 0) != 0)\n\u003e+      return FALSE;\n\u003e+\n\u003e+  if ((bp = (char*) malloc(len)) == NULL)\n\u003e+      return FALSE;\n\nI am not sure if it is OK to use malloc here. The current fallback fdwalk function says 'Avoid use of opendir/closedir since these are not async-signal-safe'. Since malloc isn't async-signal-safe, using it may break the expectation."
+}

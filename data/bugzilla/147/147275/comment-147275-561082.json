@@ -1,0 +1,8 @@
+{
+ "id": 561082,
+ "bug_id": 147275,
+ "attachment_id": 0,
+ "creation_time": "2010-06-07T11:09:51Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: delphij\nDate: Mon Jun  7 10:09:40 2010\nNew Revision: 208888\nURL: http://svn.freebsd.org/changeset/base/208888\n\nLog:\n  Correct a bug in gzip(1): make sure that initialize isb with fstat() on\n  input file before using it.\n  \n  PR:\t\tbin/147275\n  Submitted by:\tthomas\n  MFC after:\t1 week\n\nModified:\n  head/usr.bin/gzip/gzip.c\n\nModified: head/usr.bin/gzip/gzip.c\n==============================================================================\n--- head/usr.bin/gzip/gzip.c\tMon Jun  7 08:23:16 2010\t(r208887)\n+++ head/usr.bin/gzip/gzip.c\tMon Jun  7 10:09:40 2010\t(r208888)\n@@ -1224,17 +1224,23 @@ file_compress(char *file, char *outfile,\n \t\treturn -1;\n \t}\n \n+#ifndef SMALL\n+\tif (fstat(in, \u0026isb) != 0) {\n+\t\tmaybe_warn(\"couldn't stat: %s\", file);\n+\t\tclose(in);\n+\t\treturn -1;\n+\t}\n+#endif\n+\n \tif (cflag == 0) {\n #ifndef SMALL\n-\t\tif (fstat(in, \u0026isb) == 0) {\n-\t\t\tif (isb.st_nlink \u003e 1 \u0026\u0026 fflag == 0) {\n+\t\tif (isb.st_nlink != 1 \u0026\u0026 fflag == 0) {\n \t\t\t\tmaybe_warnx(\"%s has %d other link%s -- \"\n \t\t\t\t\t    \"skipping\", file, isb.st_nlink - 1,\n \t\t\t\t\t    isb.st_nlink == 1 ? \"\" : \"s\");\n \t\t\t\tclose(in);\n \t\t\t\treturn -1;\n \t\t\t}\n-\t\t}\n \n \t\tif (fflag == 0 \u0026\u0026 (suff = check_suffix(file, 0))\n \t\t    \u0026\u0026 suff-\u003ezipped[0] != 0) {\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

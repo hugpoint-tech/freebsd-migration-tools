@@ -1,0 +1,8 @@
+{
+ "id": 881632,
+ "bug_id": 207831,
+ "attachment_id": 0,
+ "creation_time": "2016-06-02T22:08:02Z",
+ "creator": "guyyur@gmail.com",
+ "text": "Oliver,\n\nDid you try to connect with more than one openvpn client?\n\nFor me the problem was only seen when the second client tried to connect.\nThe first client got the address assigned to the remote side of the tunnel\nand there is a correct route for it.\nThe second client got an address that required using the /24 route which\nincorrectly leads to lo0.\n\n\nBad route for 192.168.170.0/24 with r293159:\n# netstat -rnf inet | grep -e Destination -e 192.168.170\nDestination        Gateway            Flags     Netif Expire\n192.168.170.0/24   192.168.170.1      UGS         lo0\n192.168.170.1      link#4             UHS         lo0\n192.168.170.2      link#4             UH         tun0\n\n\nGood route for 192.168.170.0/24 with r293159 rtsock.c changes reverted:\n# netstat -rnf inet | grep -e Destination -e 192.168.170\nDestination        Gateway            Flags     Netif Expire\n192.168.170.0/24   192.168.170.1      UGS        tun0\n192.168.170.1      link#4             UHS         lo0\n192.168.170.2      link#4             UH         tun0\n\n\n# ifconfig tun0 inet\ntun0: flags=8051\u003cUP,POINTOPOINT,RUNNING,MULTICAST\u003e metric 0 mtu 1500\n        options=80000\u003cLINKSTATE\u003e\n        inet 192.168.170.1 --\u003e 192.168.170.2 netmask 0xffffff00\n        Opened by PID 671\n\n\nYou can also manually create the tunnel and route to compare 10.3-RELEASE to 11-CURRENT:\nifconfig tun0 create\nifconfig tun0 192.168.170.1 192.168.170.2 mtu 1500 netmask 255.255.255.0 up\nroute add -net 192.168.170.0 192.168.170.1 255.255.255.0"
+}

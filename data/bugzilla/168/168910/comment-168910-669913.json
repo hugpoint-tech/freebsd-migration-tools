@@ -1,0 +1,8 @@
+{
+ "id": 669913,
+ "bug_id": 168910,
+ "attachment_id": 0,
+ "creation_time": "2012-06-10T07:20:04Z",
+ "creator": "ryao@gentoo.org",
+ "text": "The hptrr driver is incompatible with the Marvel MV88SXxxxx, but it disregards the pci vendor id, attaching to it anyway. This behavior seems to have been caused by a combination of lack of hardware for testing and a desire to provide RAID-capable drivers for as much hardware as possible.\n\nThe attach_generic module option was implemented in FreeBSD 8.0 with notes about non-high point controllers, but it was set on by default, presumably to prevent the use of ata, which is slow. The mvs driver was introduced in FreeBSD 8.1 to replace the hptrr driver on non-highpoint controllers, but the default setting for attach_generic was left unchanged.\n\nThis lead to a Gentoo user encountering issues with the Marvel MV88SXxxxx in Gentoo FreeBSD 9.0. Debugging on IRC lead to the discovery that setting hptrr.attach_generic=0 in /boot/loader.conf solved it.\n\nI initilally patched the driver to exclude Marvell's devices from attach_generic, but I realized that is the wrong solution. A driver should only claim devices it knows it can support, rather than blindly guess. I have therefore revised my patch to disable generic_attach by default.\n\nFix: Apply this patch:\nHow-To-Repeat: 1. Boot a LiveCD on a system with disks attached to a Marvel MV88SXxxxx.\n2. Observe that no disks attached to the controller have block devices in /dev"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 11885,
+ "bug_id": 3878,
+ "attachment_id": 0,
+ "creation_time": "1997-06-15T20:40:01Z",
+ "creator": "roman@rpd.univ.kiev.ua",
+ "text": "This problem is result infinite looping in one function libutil.\nOther small problem is in man login.conf, in this manual instead ttys.deny,\nttys.allow refering to tty.deny, tty.allow.\n\nFix: \n\nFor fix this problem I made some change in function login_strinlist ()\nfrom libutil. \n\nOriginal function:\n\nint\nlogin_strinlist(char **list, char const *str, int flags)\n{\n    int rc = 0;\n\n    if (str != NULL \u0026\u0026 *str != '\\0') {\n        int     i = 0;\n\n        while (rc == 0 \u0026\u0026 list[i] != NULL)\n            rc = fnmatch(list[i], str, flags) == 0;\n    }\n    return rc;\n} \n\nTo fix problem replace this function on:\nint\nlogin_strinlist(char **list, char const *str, int flags)\n{\n    int rc = 0;\n\n    if (str != NULL \u0026\u0026 *str != '\\0') {\n        int     i = 0;\n\n        while (rc == 0 \u0026\u0026 list[i] != NULL)\n            rc = fnmatch(list[i++], str, flags) == 0;\n    }\n    return rc;\n}\n\nAfter recompile libutil, login work fine.\nHow-To-Repeat: if /etc/login.conf contain ttys.deny for some userclass and if you \ntrying login as user belong to userclass from other than ttys.deny\nterminal, then login session is hang. For example:\n\n$cat /etc/login.conf\nuserclass1:\\\n\t :ttys.deny=ttyd2:\n\ncat /etc/master.passwd\nuser1:encrypt_passwd:1103:20:userclass1:0:0::/home/user1:/usr/local/bin/bash\n\nIf you try to login as user1 from ttyd1 - then login process is hang."
+}

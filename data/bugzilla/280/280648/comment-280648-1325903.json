@@ -1,0 +1,8 @@
+{
+ "id": 1325903,
+ "bug_id": 280648,
+ "attachment_id": 0,
+ "creation_time": "2024-09-19T14:00:09Z",
+ "creator": "banezmesm@gmail.com",
+ "text": "I tried to use bird but it didn't up bgp sessions in fib 1.\n\nbird_enable=\"YES\"\nbird_fib=\"1\"\n\nlog \"/var/log/bird.log\" all;\nlog stderr all;\n\nrouter id 10.64.244.139;\n\nprotocol device { }\n\nprotocol kernel {               # Primary routing table\n        learn;                  # Learn alien routes from the kernel\n        persist;                # Do not remove routes on bird shutdown\n        scan time 10;           # Scan kernel routing table every 10 seconds\n        kernel table 1;\n        ipv4 {\n                import all;\n                export all;\n        };\n}\n\nprotocol bfd {\n        interface \"mce*\" {\n                interval 100 ms;\n                min rx interval 100 ms;\n                multiplier 5;\n        };\n}\n\nfilter vxlan_fabric {\n        if (net ~ [ 172.16.0.0/15{15,16}]) then {\n                accept;\n        }\n}\n\nprotocol bgp {\n        local as 4230040015;\n        neighbor 192.168.255.0 as 4230041240;\n        hold 180;\n        keepalive 60;\n        bfd on;\n        ipv4 {\n                export filter vxlan_fabric;\n                import all;\n                next hop self;\n        };\n}\n\nbgp1       BGP        ---        start  13:55:50.007  Connect       Socket: Connection refused\n  BGP state:          Connect\n    Neighbor address: 192.168.255.0\n    Neighbor AS:      4230041240\n    Local AS:         4230040015\n    Last error:       Socket: Connection refused\n  Channel ipv4\n    State:          DOWN\n    Table:          master4\n    Preference:     100\n    Input filter:   ACCEPT\n    Output filter:  vxlan_fabric"
+}

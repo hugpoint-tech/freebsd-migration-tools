@@ -1,0 +1,8 @@
+{
+ "id": 1210265,
+ "bug_id": 263845,
+ "attachment_id": 0,
+ "creation_time": "2022-05-07T15:42:52Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "The following simple program crashes with SIGILL when compiled on armv7 FreeBSD 13:\n\n#include \u003cGL/gl.h\u003e\nint main()\n{\n\tglGetError();\n}\n\nI am compiling with \"cc -I/usr/local/lib -L/usr/local/include test.c -lGL.  My package version is libglvnd 1.4.0_1 and I've tested this both on native armv7 and in an armv7 jail running on arm64.\n\nThe behaviour is extremely strange.  I am aware that glvnd does some sort of dispatch logic to get to the platform's native driver, but this does not match what I see.\n\nWhen I try to debug this code, it seems that it is somehow iterating through the entirety of the the libGL API, only to then crash after having gone through glWriteMaskEXT.  I do not understand what the purpose of this is and it does not seem to match any code I found in the library.\n\nDigging further into this, it seems that the library is compiled in ARM mode, but executed in Thumb mode for some reason (wtf).  I suspect this might be because the source file src/GLdispatch/vnd-glapi/entry_armv7_tsd.c uses \".thumb_func\" to label the stub entry points, but then they don't get compiled in thumb mode for some reason."
+}

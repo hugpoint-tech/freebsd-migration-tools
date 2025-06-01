@@ -1,0 +1,8 @@
+{
+ "id": 983411,
+ "bug_id": 226800,
+ "attachment_id": 0,
+ "creation_time": "2018-03-20T15:29:46Z",
+ "creator": "ftigeot@wolfpond.org",
+ "text": "textproc/elasticsearch6 sets up Elasticsearch to use a PID file located in /var/run , /var/run/elasticsearch.pid\n\nOn my system, /var/run belongs to root:wheel and has permissions 755.\n\nWhen Elasticsearch is started or stopped manually by running /usr/local/etc/rc.d/elasticsearch start or stop, there is no obvious issue.\n\nUnfortunately, in case of a system shutdown or reboot, Elasticsearch fails to start again automatically:\n\n[2018-03-20T07:37:33,968][WARN ][o.e.b.ElasticsearchUncaughtExceptionHandler] [cube] uncaught exception in thread [Thread-2]\norg.elasticsearch.ElasticsearchException: Failed to delete pid file /var/run/elasticsearch.pid\n        at org.elasticsearch.common.PidFile$1.run(PidFile.java:115) ~[elasticsearch-6.2.2.jar:6.2.2]\nCaused by: java.nio.file.AccessDeniedException: /var/run/elasticsearch.pid\n\nThis seems to be because Elasticsearch itself tries to remove or rewrite the PID file, and Elasticsearch is run as the elasticsearch user, not as root. It doesn't have permission to delete or create files in /var/run.\n\nI have access to a Debian system and it uses a /run/elasticsearch/ directory belonging to elasticsearch:elasticsearch with permissions 755 to prevent the\nkind of issues I am experiencing.\n\nWould it be possible to modify this port to use a /var/run/elasticsearch/ directory ?"
+}

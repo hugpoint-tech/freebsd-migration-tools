@@ -1,0 +1,8 @@
+{
+ "id": 982965,
+ "bug_id": 226688,
+ "attachment_id": 0,
+ "creation_time": "2018-03-18T09:08:54Z",
+ "creator": "melifaro@FreeBSD.org",
+ "text": "Interestingly, there seem to be an issue with the ipfw \u003c\u003e radix interaction.\n\nipfw record add process for radix-backed table:\n\ninput -\u003e ta_prepare_add_radix() -\u003e tei_to_sockaddr_ent()\nta_add_radix -\u003e rnh-\u003ernh_addaddr() == rn_addroute()\n\ndtrace:\n\n## good one:\n  1  65028       tei_to_sockaddr_ent:return addr=255.255.255.251 mask=255.255.255.255\n  1  26742                rn_addroute:entry addr=fffff8006fc26560 mask=0 rh=fffff80005046d00 elem=fffff8006fc26500\nkey: addr=255.255.255.251 len=8 family=2\n\n  1  26743               rn_addroute:return ret=fffff8006fc26500\n  1  64859              ta_add_radix:return return=0\n\n## bad one:\n\n  1  65028       tei_to_sockaddr_ent:return addr=255.255.255.255 mask=255.255.255.255\n  1  26742                rn_addroute:entry addr=fffff8006fc26be0 mask=0 rh=fffff80005046d00 elem=fffff8006fc26b80\nkey: addr=255.255.255.255 len=8 family=2\n\n  1  26743               rn_addroute:return ret=0\n  1  64859              ta_add_radix:return return=22\n\n## in general, radix seem to work with 255.255.255.255:\n## route add -host 255.255.255.255 10.0.0.2\n  1  26742                rn_addroute:entry addr=fffff80003b63ce0 mask=0 rh=fffff80003b02800 elem=fffff800320cdc30\nkey: addr=255.255.255.255 len=16 family=2\n\n  1  26743               rn_addroute:return ret=fffff800320cdc30"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1292554,
+ "bug_id": 276363,
+ "attachment_id": 0,
+ "creation_time": "2024-01-16T14:29:19Z",
+ "creator": "aly@aaronly.me",
+ "text": "Well, after testing, I found 'pkt-\u003ep_mtu' is actually 0 for keepalive packets; however, those packets also have a zero length, so calculate_padding() didn't cause any real problems.\n\nI suggest the following new patch:\n\n--- if_wg.c.orig\t2023-10-12 09:06:16.983637264 +0800\n+++ if_wg.c\t2024-01-16 22:25:04.878629478 +0800\n@@ -1461,8 +1461,11 @@ calculate_padding(struct wg_packet *pkt)\n {\n \tunsigned int padded_size, last_unit = pkt-\u003ep_mbuf-\u003em_pkthdr.len;\n \n-\tif (__predict_false(!pkt-\u003ep_mtu))\n-\t\treturn (last_unit + (WG_PKT_PADDING - 1)) \u0026 ~(WG_PKT_PADDING - 1);\n+\t/* Keepalive packets don't set p_mtu, but also have a zreo length. */\n+\tif (__predict_false(pkt-\u003ep_mtu == 0)) {\n+\t\tpadded_size = (last_unit + (WG_PKT_PADDING - 1)) \u0026 ~(WG_PKT_PADDING - 1);\n+\t\treturn padded_size - last_unit;\n+\t}\n \n \tif (__predict_false(last_unit \u003e pkt-\u003ep_mtu))\n \t\tlast_unit %= pkt-\u003ep_mtu;"
+}

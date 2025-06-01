@@ -1,0 +1,8 @@
+{
+ "id": 1248750,
+ "bug_id": 267028,
+ "attachment_id": 0,
+ "creation_time": "2023-02-26T20:56:08Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "Using the gdb-based backtrace information:\n\n#8  0xffffffff80be8c5d in modlist_lookup (name=0xfffff80006217400 \"acpi_wmi\", \n    ver=0) at /usr/src/sys/kern/kern_linker.c:1487\n\nis for the strcmp code line in:\n\nstatic modlist_t\nmodlist_lookup(const char *name, int ver)\n{\n        modlist_t mod;\n\n        TAILQ_FOREACH(mod, \u0026found_modules, link) {\n                if (strcmp(mod-\u003ename, name) == 0 \u0026\u0026\n                    (ver == 0 || mod-\u003eversion == ver))\n                        return (mod);\n        }\n        return (NULL);\n}\n\nWe also see that strcmp was called via:\n\n#6  \u003csignal handler called\u003e\n#7  strcmp (s1=\u003coptimized out\u003e, s2=\u003coptimized out\u003e)\n    at /usr/src/sys/libkern/strcmp.c:46\n\nWe also see name was accessible, as shown in the \"#8\" line above.\nWe see from #7 that strcmp was considered called, suggesting that\nthe mod-\u003ename of itself did not fail. The implication would be that\nthat value of name in mod-\u003ename was a bad pointer when strcmp tried\nto use the value.\n\nNothing says that mod-\u003ename was or should have been for acpi_wmi\nat all. The \"acpi_wmi\" side of the comparison need not be\nrelevant information. Other backtraces that look similar may\nwell have a similar status for the name in the right had argument\nto the strcmp.\n\nThis might be a useful hint to someone with appropriate background\nor suggest some way of detecting the bad value in mod-\u003ename earlier\nwhen that earlier context might be of more use for investigations."
+}

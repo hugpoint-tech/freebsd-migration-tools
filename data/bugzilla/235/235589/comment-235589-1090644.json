@@ -1,0 +1,8 @@
+{
+ "id": 1090644,
+ "bug_id": 235589,
+ "attachment_id": 0,
+ "creation_time": "2020-03-01T23:06:26Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "This is quite nice, but please run the tests (basically, cd /usr/tests/bin/sh \u0026\u0026 kyua test) and add new tests for $((LINENO)). Existing tests should not be modified unless they were broken or too specific.\n\nI think NCASE and NFOR nodes should also contain a line number.\n\nAn earlier version of the patch did a simple 32-bit integer write during execution, leaving the snprintf(..., \"%d\", ...) to when LINENO was expanded. I liked that better. There could be a VLINENO flag indicating LINENO's struct var (and that it is still special, see below).\n\nMaking LINENO readonly matches zsh but I found some obscure scripts searching for \"LINENO=\" on codesearch.debian.net (such as https://sources.debian.org/src/opentmpfiles/0.2+2019.05.21.git.44a55796ba-2/tmpfiles.sh/?hl=443#L443 ) that assign values to LINENO and will then break. Currently, this is accepted but has almost no effect, so completely ignoring assignments is probably quite safe. This also seems to happen in bash.\n\nIn ksh variants, assigning to LINENO changes an offset for future LINENO expansions (for example, if line 10 contains LINENO=1010, future LINENO references will result in a line number 1000 more than normal; a bit like #line in C). I suggest not implementing this because it will not work well with the current design for line numbers within functions.\n\nIn both bash and ksh, unsetting LINENO makes it a normal variable, and the only way to expand line numbers again is to restart the shell. Implementing this may or may not be worth it."
+}

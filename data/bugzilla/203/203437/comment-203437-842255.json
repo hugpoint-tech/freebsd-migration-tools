@@ -1,0 +1,8 @@
+{
+ "id": 842255,
+ "bug_id": 203437,
+ "attachment_id": 0,
+ "creation_time": "2015-09-29T15:43:59Z",
+ "creator": "lampa@fit.vutbr.cz",
+ "text": "Current imake port doesn't work with clang (FreeBSD-10+). BUILD_DEPENDS requires tradcpp, but imake will always use cc:\n\nimake -v  -DUseInstalled -I/usr/local/lib/X11/config\ncc -I. -Uunix -D__amd64__ -D__amd64__ -traditional -DUseInstalled -I/usr/local/lib/X11/config -E -v Imakefile.c\n...\n\nimake Makefile contains\nCPP_PROGRAM = tradcpp\nbut this is ignored, since USE_CC_E has greater priority and it is set, see\n\nwork/imake-1.0.7/imake.c (287)\n#ifndef CROSSCOMPILE\n# ifdef USE_CC_E\n#  ifndef DEFAULT_CC\n#   define DEFAULT_CC \"cc\"\n#  endi\n# else\n#  ifndef DEFAULT_CPP\n#   ifdef CPP_PROGRAM\n#    define DEFAULT_CPP CPP_PROGRAM\n#   else\n#    define DEFAULT_CPP \"/lib/cpp\"\n#   endif\n#  endif\n# endif\n#endif\n\n\nwork/imake-1.0.7/imakemdep.h  (304)\n#   if defined(__FreeBSD__)  || defined(__NetBSD__) || defined(__OpenBSD__) || d\nefined(__DragonFly__)\n#    define USE_CC_E\n#   endif\n...\n#   if defined(__GNUC__) \u0026\u0026 !defined(USE_CC_E)\n#    define USE_CC_E\n#    ifndef DEFAULT_CC\n#     define DEFAULT_CC \"gcc\"\n#    endif\n#   endif\n\nTo get tradcpp I had to remove both these tests. Proper solution is probably to set DEFAULT_CC=tradcpp in configure or make invocation. It seems that ac_cv_path_RAWCPP=tradcpp in port Makefile is ignored."
+}

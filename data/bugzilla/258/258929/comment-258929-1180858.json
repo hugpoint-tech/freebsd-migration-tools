@@ -1,0 +1,8 @@
+{
+ "id": 1180858,
+ "bug_id": 258929,
+ "attachment_id": 228439,
+ "creation_time": "2021-10-04T16:43:26Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 228439\nsysutils/fusefs-ntfs: this disk image causes ntfs-3g to seg fault due to a corrupt directory entry\n\nntfs_inode_lookup_by_name() doesn't adequately bounds-check\nthe ie loop variable. If ir-\u003eindex.entries_offset is huge,\nthen ie = \u0026ir-\u003eindex + ir-\u003eindex.entries_offset will be\na wild pointer. If in addition ir-\u003eindex.index_length is\nhuge, then the for-loop's check that ie \u003c index_end won't\nbe effective. And the for loop will crash when it tries to\ncheck that ie + ie-\u003ekey_length \u003c index_end, because ie isn't\nvalid.\n\nI've attached a demo disk image.\n\n% gunzip ntx6.img.gz\n% sudo mdconfig -f ntx6.img\n% sudo ntfs-3g /dev/md0p1 /mnt\nSegmentation fault\n% ntfs-3g --version\nntfs-3g 2017.3.23 external FUSE 29\n% uname -a\nFreeBSD xxx 13.0-RELEASE-p4 FreeBSD 13.0-RELEASE-p4 #0: Tue Aug 24 07:33:27 UTC 2021     root@amd64-builder.daemonology.net:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\n\nThe backtrace:\n\n#0  ntfs_inode_lookup_by_name (dir_ni=0x40869320, uname=0x40842010, \n    uname_len=7) at dir.c:307\n#1  0x00000000400bb0b0 in ntfs_pathname_to_inode (vol=0x40845000, parent=0x0, \n    pathname=\u003coptimized out\u003e) at dir.c:782\n#2  0x00000000400d113a in ntfs_open_secure (vol=\u003coptimized out\u003e)\n    at security.c:4482\n#3  0x00000000400d5dca in ntfs_device_mount (dev=\u003coptimized out\u003e, \n    flags=436207616) at volume.c:1243\n#4  0x00000000400d6478 in ntfs_mount (name=\u003coptimized out\u003e, flags=436207616)\n    at volume.c:1386"
+}

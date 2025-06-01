@@ -1,0 +1,8 @@
+{
+ "id": 449229,
+ "bug_id": 124462,
+ "attachment_id": 0,
+ "creation_time": "2008-06-10T22:00:08Z",
+ "creator": "ed@FreeBSD.org",
+ "text": "The mail/metamail port has been patched some time ago to use termios,\nnot sgtty. Unfortunately the patch missed two chunks, which means it\nstill called stty() and gtty(), even though it should have used\ntcsetattr() and tcgetattr() there.\n\nFix: \n\n--- mail/metamail/files/patch-metamail_metamail.c\n+++ mail/metamail/files/patch-metamail_metamail.c\n@@ -138,6 +138,33 @@\n  #else\n  static struct sgttyb MyTtyStateIn, MyTtyStateOut;\n  #endif\n+@@ -2385,9 +2397,9 @@\n+ SaveTtyState() {\n+     /* Bogus -- would like a good portable way to reset the terminal state here */\n+ #if !defined(AMIGA) \u0026\u0026 !defined(MSDOS)\n+-#ifdef SYSV\n+-    ioctl(fileno(stdin), TCGETA, \u0026MyTtyStateIn);\n+-    ioctl(fileno(stdout), TCGETA, \u0026MyTtyStateOut);\n++#if 1\n++    tcgetattr(fileno(stdin), \u0026MyTtyStateIn);\n++    tcgetattr(fileno(stdout), \u0026MyTtyStateOut);\n+ #else\n+     gtty(fileno(stdin), \u0026MyTtyStateIn);\n+     gtty(fileno(stdout), \u0026MyTtyStateOut);\n+@@ -2398,10 +2410,10 @@\n+ \n+ RestoreTtyState() {\n+ #if !defined(AMIGA) \u0026\u0026 !defined(MSDOS)\n+-#ifdef SYSV\n++#if 1\n+     if (HasSavedTtyState) {\n+-        ioctl(fileno(stdout), TCSETA, \u0026MyTtyStateOut);\n+-        ioctl(fileno(stdin), TCSETA, \u0026MyTtyStateIn);\n++        tcsetattr(fileno(stdout), TCSANOW, \u0026MyTtyStateOut);\n++        tcsetattr(fileno(stdin), TCSANOW, \u0026MyTtyStateIn);\n+     }\n+ #else\n+     if (HasSavedTtyState) {\n @@ -2681,15 +2693,15 @@\n  \n  StartRawStdin() {"
+}

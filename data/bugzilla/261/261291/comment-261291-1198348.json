@@ -1,0 +1,8 @@
+{
+ "id": 1198348,
+ "bug_id": 261291,
+ "attachment_id": 0,
+ "creation_time": "2022-02-08T22:43:15Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Ok, I looked and this time the packet trace makes it clear.\nThe ESXi client is broken.\n\nIf you look at the seqid after the clientid in packet #477\n(the Exchange_ID reply), you will see it is 0.\n\nIf you look at the seqid in the CREATE_SESSION request in packet #478,\nyou will see it is 39.\n\nThey must be the same, as noted by the RFC...\ncsa_sequence:\n\n      Each client ID serializes CREATE_SESSION via a per-client ID\n      sequence number (see Section 18.36.4).  The corresponding result\n      is csr_sequence, which MUST be equal to csa_sequence.\n\nThe RFC does not seem to make it crystal clear what the error reply\nshould be. The FreeBSD server uses NFS4ERR_STALE_CLIENTID.\nIf the VMware engineers argued that it should be a different error,\nthat could be changed in the FreeBSD server code. Since they send a\nbogus seqid argument, I doubt it matters which error the FreeBSD\nserver sends in the reply.\n\nThis is basically the same bug that shows up when multiple trunks\n(multiple TCP connections) are used by the client. In that case,\nit usually succeeded after several hundred tries, when the seqid values\nhappen to be the same.\n\nIf you have a maintenance contract with VMware, you can try reporting\nthe bug to them. I have no way of doing so.\n\nAlso, doing the DESTROY_SESSSION, EXCHANGE_ID, CREATE_SESSION makes no\nsense to me. If there is a problem with a TCP connection, other clients\n(Linux and FreeBSD, plus others) create a new TCP connection.\nThey only do the above commands if the server replies NFS4ERR_EXPIRED."
+}

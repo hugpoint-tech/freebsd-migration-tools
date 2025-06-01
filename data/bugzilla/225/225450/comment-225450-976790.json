@@ -1,0 +1,8 @@
+{
+ "id": 976790,
+ "bug_id": 225450,
+ "attachment_id": 0,
+ "creation_time": "2018-02-10T23:59:22Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Hmm, I don't know why the previous simple lock didn't help.  One other possible thing to try is placing 'while (1);' infinite loop in the init_secondary_tail() function in sys/x86/x86/mp_x86.c and moving it around in the function to narrow down when the APs are triggering the double fault (which is a stack overflow).  If you put the while(1) before the smp_cpus++; the failure mode you should see if the AP doesn't fault is a 'panic AP #x failed to start'.  After the smp_cpus++ line you should at least no longer get the double fault panic if you haven't hit the double fault yet.\n\nAnother thought is that it might be there is a missing MFC in 11 related to one or more kthreads starting too early.  You could perhaps build a kernel with:\n\noptions KTR_COMPILE=KTR_PROC\noptions KTR_MASK=KTR_PROC\noptions KTR_VERBOSE\n\nAnd see what messages are logged before the crash (to see if the APs are starting to run other kthreads besides the idle thread)."
+}

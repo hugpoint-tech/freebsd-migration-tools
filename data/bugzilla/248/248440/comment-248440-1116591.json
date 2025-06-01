@@ -1,0 +1,8 @@
+{
+ "id": 1116591,
+ "bug_id": 248440,
+ "attachment_id": 216970,
+ "creation_time": "2020-08-02T23:20:02Z",
+ "creator": "larkinconr@gmail.com",
+ "text": "Created attachment 216970\ntest program to reproduce bug via filling/monitoring stdout\n\nWhen using kevent to monitor the write end of a pipe for writability via EVFILT_WRITE, if the pipe is full when the read end is closed, an event is not returned. I would expect an event with EV_EOF set to be returned. Note that this does not seem to reproduce with sockets or named pipes (fifos), those return an event with EV_EOF set just fine in this situation.\n\nI'm attaching a sample program that verifies stdout is a pipe and then attempts to fill  it with data, then waits for an event with EVFILT_WRITE for stdout. If you pipe this to  some program that doesn't read stdin, for instance sleep(1), the pipeline hangs forever. Notably, if you instead redirect its output to a named pipe and have sleep \"read\" the named pipe with shell redirection, the program *does* receive an event for stdout with EV_EOF set once sleep exits.\n\nI originally detected this with a test case that creates a pipe via pipe(2) in process, so testing with socketpair(2) was convenient, but it used threads and other infrastructure etc so I wrote a new test program. But I just want to mention that because it would seem to exclude some weird interaction with my shell etc.\n\nExample test case using the attached kqwrite.c:\n\n$ ./kqwrite | /bin/sleep 1 # hangs forever\n^C\n$ mkfifo dummy; /bin/sleep 1 \u003c dummy \u0026; ./kqwrite \u003e dummy # returns EV_EOF:\n[1] 1734\nkevent returned 1\n        1 -2 32768 0 0 0x0\n[1]  + done       /bin/sleep 1 \u003c dummy"
+}

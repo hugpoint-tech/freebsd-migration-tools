@@ -1,0 +1,8 @@
+{
+ "id": 993878,
+ "bug_id": 228430,
+ "attachment_id": 0,
+ "creation_time": "2018-05-24T14:45:06Z",
+ "creator": "arrowd@FreeBSD.org",
+ "text": "I was able to reproduce this in the jail created from the latest 12.0-CURRENT snapshot:\n\nCreate a new jail\n# poudriere -c -j cur12 -v 12.0-CURRENT\n\nBuild pkg and leave the jail running\n# poudriere testport -j cur12 -I ports-mgmt/pkg\n\nCopy the testcase into the jail\n# cp test.cpp /usr/local/poudriere/data/.m/cur12-default/ref/root/\n\nEnter it\n# sudo jexec cur12-sbreeze-n env -i TERM=$TERM /usr/bin/login -fp root\n\nCompile the testcase\n# c++ -I/usr/local/include/qt5/QtCore -I/usr/local/include/qt5 -fPIC -L/usr/local/lib/qt5 -lQt5Core test.cpp -o fail\n\nGet a segfault\n# ./fail\nSegmentation fault (core dumped)\n\n\nThe reversing effort I did was right - when QJsonObject::~QJsonObject is called it dereferences .d field and the count becomes 0. However, returned QJsonValueRef enabledByDefaultValue also holds the same d while it gets deleted. So, when the execution gets to enabledByDefaultValue.isNull(), that .d field is already freed and contains garbage."
+}

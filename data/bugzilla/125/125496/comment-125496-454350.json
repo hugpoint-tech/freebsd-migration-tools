@@ -1,0 +1,8 @@
+{
+ "id": 454350,
+ "bug_id": 125496,
+ "attachment_id": 0,
+ "creation_time": "2008-07-11T07:10:00Z",
+ "creator": "bu7cher@yandex.ru",
+ "text": "ataraid module has subdisk pseudo-driver which attaches to ata diskis.\nIt calls ata_raid_read_metadata() function which allocate memory which shares\nbetween all subdisks in RAID:\n\n        if (!raidp[array]) {\n            raidp[array] =\n                (struct ar_softc *)malloc(sizeof(struct ar_softc), M_AR,\n                                          M_NOWAIT | M_ZERO);\n            if (!raidp[array]) {\n                device_printf(parent, \"failed to allocate metadata storage\\n\");\n                goto adaptec_out;\n            }\n        }\n(Similar code has all ata_raid_xxxx_read_meta functions)\nPointer to this memory stored in static local array ata_raid_arrays[]. \nThis memory not freed when ataraid module unloads.\n\nAttached patch adds freeing memory on module unload. Because ataraid(4)\nmodule has two kernel modules - subdisk and ataraid, they both will be\nunloaded when `kldunload ataraid`. And all subdisks will be detached.\nSo we can free shared memory between subdisks, but we should reset all\npointers before freeing, because ata_raid_subdisk_detach() method will be\ncalled on module unload and this method can do access to this memory after\nfreeing.\n\nI'm not 100% sure in correctness of this patch, so it needs review.."
+}

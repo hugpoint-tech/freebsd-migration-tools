@@ -1,0 +1,8 @@
+{
+ "id": 558919,
+ "bug_id": 146832,
+ "attachment_id": 0,
+ "creation_time": "2011-09-24T15:56:55Z",
+ "creator": "kvs@binarysolutions.dk",
+ "text": "As far as I can tell, the patch below fixes.\n\nI'm not sure about the semantics of \"we don't need to install a host =\nroute\", but the\neventhandler-part was added to the bottom of the case-scope, and =\nseemingly just missed\ndealing with the non-error early exit when prefixlen of a new address is =\n128.\n\nIndex: sys/netinet6/in6.c\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D\n--- sys/netinet6/in6.c\t(revision 225328)\n+++ sys/netinet6/in6.c\t(working copy)\n@@ -589,6 +589,8 @@\n \t\tpr0.ndpr_plen =3D =\nin6_mask2len(\u0026ifra-\u003eifra_prefixmask.sin6_addr,\n \t\t    NULL);\n \t\tif (pr0.ndpr_plen =3D=3D 128) {\n+\t\t\tif (error =3D=3D 0 \u0026\u0026 ia)\n+\t\t\t    EVENTHANDLER_INVOKE(ifaddr_event, ifp);\n \t\t\tbreak;\t/* we don't need to install a host =\nroute. */\n \t\t}\n \t\tpr0.ndpr_prefix =3D ifra-\u003eifra_addr;\n\n--=20\nKenneth Vestergaard="
+}

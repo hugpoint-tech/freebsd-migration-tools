@@ -1,0 +1,8 @@
+{
+ "id": 1196563,
+ "bug_id": 261496,
+ "attachment_id": 0,
+ "creation_time": "2022-01-26T18:00:19Z",
+ "creator": "wosch@FreeBSD.org",
+ "text": "BSD sort has an option to configure the size of the memory buffer:\n\n     -S size, --buffer-size=size\n             Use size for the maximum size of the memory buffer.  Size\n             modifiers %,b,K,M,G,T,P,E,Z,Y can be used.  If a memory limit is\n             not explicitly specified, sort takes up to about 90% of available\n             memory.  If the file size is too big to fit into the memory\n             buffer, the temporary disk files are used to perform the sorting.\n\nLooking at the source I see no reference to the default 90% except in the manual page. It appears that sort(1) use by default 50% of main memory, which is more reasonable for a server OS.\n\n$ sysctl hw.physmem\nhw.physmem: 68576686080\n\n$ cat /dev/null  | sort --debug\nMemory to be used for sorting: 34288343040\n\n$ expr 34288343040 \\* 2\n68576686080\n\nthe 50% is apparently from  free_memory / 2;\nsort.c: available_free_memory = free_memory / 2;\n\nHowever, this is not right for percentage modifiers.\n\n$ cat /dev/null  | sort -S 100% --debug\nMemory to be used for sorting: 34288343040\n\nso, 100% use only 32GB (50%) of main memory, and \n\ncat /dev/null  | sort -S 20% --debug \nMemory to be used for sorting: 6857668608\nuse only 6.5GB (10%) of main memory."
+}

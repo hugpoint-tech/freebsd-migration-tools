@@ -1,0 +1,8 @@
+{
+ "id": 1320358,
+ "bug_id": 269770,
+ "attachment_id": 0,
+ "creation_time": "2024-08-13T09:28:18Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "Hunting it down - the problem is a race condition: libalias has an internal representation of a flow (called a \"temporary link\"). \nThese can expire and get deleted - the logic when and how this happens is unintellegible, but there is a time gap between expiry and deletion.\n\nWhen another packet arrives from outside during this time gap - which is unlikely in TCP, but likely with UDP (like syslog sending another message after some pause, or VPN restarting after reboot) - libalias finds the old \"temporary link\", detects that it is already expired, and deletes it - but does then not anymore check for a configured portforward for this flow.\nSo the newly installed \"temporary link\" is without portforwarding, and will continue to exist until perchance traffic ceases and it might get expired."
+}

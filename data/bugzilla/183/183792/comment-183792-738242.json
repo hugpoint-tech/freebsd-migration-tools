@@ -1,0 +1,8 @@
+{
+ "id": 738242,
+ "bug_id": 183792,
+ "attachment_id": 0,
+ "creation_time": "2013-11-08T17:20:01Z",
+ "creator": "uwe@NetBSD.org",
+ "text": "_attach_handler() in libalias/alias_mod.c looks like it was originally written with hand-rolled list code and later converted to BSD \u003csys/queue.h\u003e macros incorrectly.  Wrong comment after LIST_FOREACH loop is a strong hint.  The fact that _detach_handler() uses a loop is another indication: LISTs are double-linked, so LIST_REMOVE can be done directly.\n\nWhat was intended there in _attach_handler() is to append to the list, but b != NULL is unreachable since b is always NULL after the loop.  So the new element that should have been appended is prepended instead, breaking the ordering of handler_chain that the loop assumes.\n\nUnder certain order of calls this may lead to creating of infinite loop in the handler_chain.\n\nConsider adding a handler with priority 1, then another one with priority 2, than the first handler again.  The list will be:\n\n{ 1 }\n{ 2, 1 } -- BUG: 2 is prepended instead of appended\n{ 1, 2, 1, ... } - 1 is inserted before 2, creating infinite loop\n\nThe problem was originally reported by Yohanes Nugroho on vbox-dev mailing list:\nhttps://www.virtualbox.org/pipermail/vbox-dev/2013-November/011936.html\nthough the suggested fix provided there is incorrect - it just hides the bug for the particular ordering of the calls involved in that scenario.\n\nThe proper fix is to change handler_chain to a queue so that appending to it is possible.  While there, _detach_handler() should drop the loop and just use remove operation directly since double-linked lists/queues support that.\n\nFix: \n\nChange handler_chain to a queue."
+}

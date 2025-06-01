@@ -1,0 +1,8 @@
+{
+ "id": 33994,
+ "bug_id": 11222,
+ "attachment_id": 0,
+ "creation_time": "1999-04-19T19:20:01Z",
+ "creator": "faber@ISI.EDU",
+ "text": "\nIf there are dirty buffers from an MFS file system when the reboot\nsyscall is made, those buffers are never cleaned.  Therefore all\nfilesystems (including real disk-based ones) are not unmounted\ncleanly, requiring a full fsck on reboot.\n\nInternally the problem is that the MFS strategy routine, which is\ncalled by the sync calls in reboot (syscall), queues buffers for the\nMFS process itself to write, and wakes that process up.  The reboot\nsyscall never releases the processor, so those buffers remain dirty.\n\nThe enclosed patch adds code to the reboot syscall to detect such MFS\nmounted buffers and if they are present, release the processor to\nallow the MFS to clean up after itself.  The patch also raises the\nMFS process's sleep priority to make sure that it runs when reboot\nreleases the processor.\n\nThe patch is relative to /sys on a 3.1-RELEASE system.  It modifies\n/sys/kern/kern_shutdown.c and /sys/ufs/mfs/nfs_vfsops.c\n\nFix: The enclosed patch allows the buffers to be cleaned.  Without the\npatch, users can reboot their system by using shutdown and manually\numounting /tmp (the MFS) before rebooting.\n\nThe patch is relative to /sys on a 3.1-RELEASE system.  It modifies\n/sys/kern/kern_shutdown.c and /sys/ufs/mfs/nfs_vfsops.c\nHow-To-Repeat: \nI was able to consistently reproduce the problem by rebooting from a\ncomplex X session that uses /tmp (an MFS) extensively.  The default\nroot X session does not tickle the bug.  Although I didn't try it, I\nwould bet that rebooting while one or more processes was rewriting a\nfile to an MFS file system would also work."
+}

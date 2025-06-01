@@ -1,0 +1,8 @@
+{
+ "id": 660774,
+ "bug_id": 167009,
+ "attachment_id": 0,
+ "creation_time": "2012-04-17T20:08:12Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "FreeBSD PR gnu/167009:\n\u003e [strings -a /usr/local/bin/bison | grep -qw /usr/local fails]\n\nThe peculiar thing is the shell, tcsh.\n\nWhat happens is that grep -q terminates early, so that strings receives\nSIGPIPE when it tries to write further data. Whereas the exit status\nof a pipeline in sh is always the exit status of the last element so\nthat your command has the expected behaviour, this is different in tcsh.\nTcsh looks backwards for a failing command if the last element has exit\nstatus 0, and returns the 141 corresponding to SIGPIPE.\n\nIf you do not use -q, grep reads all of its input and strings will not\nbe hit by SIGPIPE, so the exit status of the pipeline is the exit status\nof grep.\n\nSomething similar happens if 'set -o pipefail' is in effect in bash or\nksh93.\n\nI can't help but be happy that I'm not using tcsh, because\n  tcsh -c 'yes | :'\ndoes return 0 (apparently it doesn't look backwards if the last element\nis a builtin) and\n  tcsh -c 'yes | if (1) true'\nhangs. Also, the double prompt I see after typing\n  yes | :\nin an interactive tcsh doesn't really inspire confidence.\n\n-- \nJilles Tjoelker"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 396355,
+ "bug_id": 113430,
+ "attachment_id": 0,
+ "creation_time": "2007-06-08T21:24:50Z",
+ "creator": "nox@jelal.kn-bremen.de",
+ "text": "On Fri, Jun 08, 2007 at 03:10:10PM +0000, Allan Jude wrote:\n\u003e  I recreated it again, and the 'stopped at' in the kernel panic is:\n\u003e  \n\u003e  userret+0x22\tmovq\t0(%rdi),%rbx\n\nOk so apparently userret was called with a bogus td arg, can you find\nout from where?  (there should be a return address on the stack, userret\nhere starts with a sub $0x28,%rsp (hmm, no frame pointer?) so add that or\nwhatever yours subtracts.)\n\n Btw,\n\n\u003e  fault virtual address   = 0x202\n\u003e  fault code              = supervisor read, page not present\n\u003e[...]\n\u003e  #9  0xffffffff80650f5d in trap (frame=\n\u003e        {tf_rdi = 0xffffff012f655720, tf_rsi = 0x4, tf_rdx = 0x46, tf_rcx\n\u003e[...]\n\n shouldnt tf_rdi here be rdi at the time of the fault, i.e. 0x202?\nAnyone know why its different?  Also, as mentioned above userret doesnt\nsave a frame pointer here (rbp) and indeed,\n\n\u003e  0xffffff012f655720, tf_rax = 0x2, tf_rbx = 0xf4240, tf_rbp =\n\u003e  0xffffffffb38f5d10, tf_r10 = 0xffffff012b39e108, tf_r11 = 0x2, tf_r12 =\n\u003e[...]\n\u003e  tf_rflags = 0x10282, tf_rsp = 0xffffffffb38f5bb0, tf_ss =\n\n tf_rbp seems to be way off compared to tf_rsp, are parts of the kernel\nnow compiled with -fomit-frame-pointer?  (even for a debug kernel?)\nThis may explain why we dont see who called userret in the kgdb backtrace..."
+}

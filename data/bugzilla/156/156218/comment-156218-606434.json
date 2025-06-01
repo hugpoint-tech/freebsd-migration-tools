@@ -1,0 +1,8 @@
+{
+ "id": 606434,
+ "bug_id": 156218,
+ "attachment_id": 0,
+ "creation_time": "2011-09-03T22:18:54Z",
+ "creator": "pguyot@kallisys.net",
+ "text": "The provided patch can be ported to 8-stable (zfs v28) as follows:\n\n--- sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dbuf.c\t=\n2011-09-03 20:58:38.433358843 +0000\n+++ sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dbuf.c\t=\n2011-09-03 20:47:55.213438417 +0000\n@@ -626,6 +626,9 @@\n \t\tDB_DNODE_EXIT(db);\n \t} else if (db-\u003edb_state =3D=3D DB_UNCACHED) {\n \t\tspa_t *spa =3D dn-\u003edn_objset-\u003eos_spa;\n+#ifdef _KERNEL\n+\t\tcurthread-\u003etd_ru.ru_inblock++;\n+#endif\n=20\n \t\tif (zio =3D=3D NULL)\n \t\t\tzio =3D zio_root(spa, NULL, NULL, =\nZIO_FLAG_CANFAIL);\n--- sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dmu.c\t=\n2011-09-03 20:59:05.094501013 +0000\n+++ sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dmu.c\t=\n2011-09-03 20:54:49.092064065 +0000\n@@ -400,6 +400,10 @@\n \t\tif (read) {\n \t\t\t(void) dbuf_read(db, zio, dbuf_flags);\n \t\t}\n+#ifdef _KERNEL\n+\t\telse\n+\t\t\tcurthread-\u003etd_ru.ru_oublock++;\n+#endif\n \t\tdbp[i] =3D \u0026db-\u003edb;\n \t}\n \trw_exit(\u0026dn-\u003edn_struct_rwlock);"
+}

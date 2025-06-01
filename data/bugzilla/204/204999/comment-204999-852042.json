@@ -1,0 +1,8 @@
+{
+ "id": 852042,
+ "bug_id": 204999,
+ "attachment_id": 0,
+ "creation_time": "2015-12-03T19:13:29Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "If a kthread returns instead of calling kthread_exit(), fork_exit() tries to cope by exiting for it.  However, it calls kproc_exit() instead of kthread_exit().  This is especially disastrous if you fork a kthread from proc 0 as killing proc 0 breaks all sorts of things.\n\nToday I was debugging a device driver that spawned a kthread from proc0 that returned.  It resulted in a double fault of nested traps from the fork_exit as well as triggered a double fault in an idle thread.  I think that the kproc_exit(0) on proc0 just broke a lot of things.  The fix is to change this to kthread_exit().\n\nThis bug is mostly a reminder so I don't forget to write up a test case and test the fix."
+}

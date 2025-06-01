@@ -1,0 +1,8 @@
+{
+ "id": 940713,
+ "bug_id": 219453,
+ "attachment_id": 0,
+ "creation_time": "2017-07-04T10:36:22Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Marek Zarychta from comment #18)\n\u003e The TCP-MD5 signatures received directly on IPv4 enabled LAGG interface are\n\u003e also incorrect. That makes the issue strictly LAGG related.\n\u003e \n\u003e Curiously the packets originating from the affected interface are reported\n\u003e by the receiving (unaffected) peer as correct. So the problem is in checking\n\u003e TCP-MD5 signatures of incoming packets on the affected interface, not packet\n\u003e signing originating from this interface, if it at all could be considered\n\u003e separately.\n\u003e \n\u003e Any chance to make it work again before 11.1 is released?\n\nI don't know how lagg or vlan can affect TCP-MD5 calculation.\n\nThere are several counters that could be changed during processing inbound signed packet:\n1. \"no signature provided by segment\" is incremented when signed TCP segment received, but socket is not configured to receive them.\n2. \"failed to make signature due to no SA\" is incremented when received signed TCP segment, but there is no SA for given addresses. \n3. \"packets with bad signature received\" is incremented when signed TCP segment received, SA is found, but calculated signature for given addresses and password from SA doesn't match to expected value.\n\nThere are many users who have tested the TCP-MD5 code and it works for both IPv4 and IPv6. According to your last `netstat` output I can suggest to check that password is the same on both hosts in all SAs.\n\nUse tcpdump with -M flag on both hosts to check that sent and received packets are correct."
+}

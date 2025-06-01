@@ -1,0 +1,8 @@
+{
+ "id": 681711,
+ "bug_id": 171228,
+ "attachment_id": 0,
+ "creation_time": "2012-09-01T11:00:20Z",
+ "creator": "dan@obluda.cz",
+ "text": "\nRealtek network card driver, if_re.c:\n\n1. re_clrwol()\n   CFG5 register writen after config register write done claimed. Yes, some documentation show that it's not necesarry to be in such mode to write CFG5, but it's unclear it apply to all chip versions.\n   See SVN rev 232145 comment also. \n   It's good to be consistent in all parts of code. All other writes to CFG5 register in module are done in \"EEPROM write enable\" mode but this one in re_clrwol() (see re_setwol and re_attach routines)\n\n2. unecesarry writes into EEPROM (e.g. write of data althougth unchanged)\n  There are several places, where config register is read, examined, sometime) modified, then written back into EEPROM. \n  Unfortunately, they are written back unconditionally, whenever they has been modified or not. \n  As EEPROM have limited number of write cycles, such behavior may short lifetime of network card\n\nFix: [1] - move CFG5 write before \"EEPROM write mode\" close. It's better to be on safe side and it doesn't harm anything even it's not necesarry for particular chip\n[2] - store original value of configuration register read, write back only if changed\n\nHow-To-Repeat: \tsee description"
+}

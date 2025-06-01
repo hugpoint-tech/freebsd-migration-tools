@@ -1,0 +1,8 @@
+{
+ "id": 1269746,
+ "bug_id": 239891,
+ "attachment_id": 0,
+ "creation_time": "2023-08-10T09:08:28Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "So I tried to test your patched kernel module on my amd64 server and it crashed the system :-(  The crash occured at:\n\n#7  \u003csignal handler called\u003e\n#8  0xffffffff82b9fbe1 in aoenet_xmitbcast () from /boot/modules/aoe.ko\n#9  0xffffffff82ba0987 in discover_timer () from /boot/modules/aoe.ko\n#10 0xffffffff80c23803 in softclock_call_cc (\n    c=0xffffffff82ba2868 \u003cdiscover_callout\u003e, \n    cc=cc@entry=0xffffffff81cb3940 \u003ccc_cpu\u003e, direct=direct@entry=0)\n    at /usr/src/sys/kern/kern_timeout.c:692\n#11 0xffffffff80c23c69 in softclock (arg=0xffffffff81cb3940 \u003ccc_cpu\u003e)\n    at /usr/src/sys/kern/kern_timeout.c:812\n#12 0xffffffff80bc620a in intr_event_execute_handlers (ie=0xfffff80003c1c100, \n    p=\u003coptimized out\u003e) at /usr/src/sys/kern/kern_intr.c:1169\n#13 ithread_execute_handlers (ie=0xfffff80003c1c100, p=\u003coptimized out\u003e)\n    at /usr/src/sys/kern/kern_intr.c:1182\n#14 ithread_loop (arg=arg@entry=0xfffff80003c35000)\n    at /usr/src/sys/kern/kern_intr.c:1270\n#15 0xffffffff80bc2f9e in fork_exit (\n    callout=0xffffffff80bc5fb0 \u003cithread_loop\u003e, arg=0xfffff80003c35000, \n    frame=0xfffffe00e1b39f40) at /usr/src/sys/kern/kern_fork.c:1093\n#16 \u003csignal handler called\u003e\n\nThis seems to correspond to the line\n\n    IFNET_FOREACH(ifp)\n\nin aoenet_xmitbcast.  The specific faulting instruction seems to be one that tries to load vnet_entry_ifnet.  It fails with what looks like it is a null pointer dereference."
+}

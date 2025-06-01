@@ -1,0 +1,8 @@
+{
+ "id": 1233170,
+ "bug_id": 264275,
+ "attachment_id": 0,
+ "creation_time": "2022-10-27T13:43:24Z",
+ "creator": "tamelingdaniel@gmail.com",
+ "text": "The error comes from trying to compile the umlaut as a regex. I managed to create a small reproducer that just calls regcomp.\n\nThe error seems to come from this snippet in the p_simp_re function in lib/libc/regex/regcomp.c:\n\n  if ((c \u0026 BACKSL) == 0 || may_escape(p, wc))\n       ordinary(p, wc);\n  else\n       SETERROR(REG_EESCAPE);\n\nBoth checks in the if statement are false and thus we end up with the trailing backslash error. In may_escape this is the return statement that gets taken:\n\n  if (isalpha(ch) || ch == '\\'' || ch == '`')\n      return (false);\n\nch is the wint_t representation of the umlaut, which is 0xe4. In de_DE.ISO8859-1, the isalpha call returns true. (If I do it with an UTF8 ä in an UTF8 locale, ch becomes also 0xe4, but the isalpha call returns false, so this doesn't trigger the trailing backslash error.)"
+}

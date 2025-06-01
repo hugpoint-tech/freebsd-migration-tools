@@ -1,0 +1,8 @@
+{
+ "id": 808762,
+ "bug_id": 197228,
+ "attachment_id": 152419,
+ "creation_time": "2015-02-06T22:05:54Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Comment on attachment 152419\nlibrasterlite2 port\n\nCan you reindent Makefile with tab width 8 to make it look consistently? Otherwise, provide vim/emacs hinting in modeline.\n\n\u003e+DISTNAME=\t\t${PORTNAME}-${PORTVERSION}-rc0\n\nDefine DISTVERSIONSUFFIX instead.\n\n\u003e+GNU_CONFIGURE=\tyes\n\nIf the build glue were preprocessed by automake you may also want\n\n  INSTALL_TARGET=\tinstall-strip\n\nto avoid warnings when building with DEVELOPER=1.\n\n\u003e+CONFIGURE_ARGS+=\tLIBLZMA_CFLAGS=-I/usr/include LIBLZMA_LIBS=-I/usr/lib\n\nBogus _LIBS and variables should be passed via CONFIGURE_ENV.\n\nBesides, pass implicit CFLAGS/LDFLAGS to base libs may break port dependencies e.g., where libgcc_s or libstdc++ is located, which iconv.h to use. Try the following instead:\n\n  # Work around PKG_CHECK_MODULES before base r276898\n  .if !exists(/usr/libdata/pkgconfig/liblzma.pc)\n  CONFIGURE_ENV+=\tLIBLZMA_CFLAGS=\" \" LIBLZMA_LIBS=\"-llzma\"\n  .endif\n\n\u003e+CPPFLAGS+=\t\t\t-I${LOCALBASE}/include\n\u003e+LDFLAGS+=\t\t\t-L${LOCALBASE}/lib -L/usr/lib\n\nDrop -L/usr/lib per previous note.\n\n\u003e+\n\u003e+post-patch:\n\u003e+\t@${REINPLACE_CMD} -e 's|$$(libdir)/pkgconfig|$$(prefix)/libdata/pkgconfig|' \\\n\u003e+\t\t${WRKSRC}/Makefile.in\n\nReplace with USES=pathfix.\n\n\u003e+librasterlite is an open source library that stores and retrieves huge raster\n\u003e+coverages using a SpatiaLite DBMS.\n\u003e+\n\u003e+WWW: https://www.gaia-gis.it/fossil/librasterlite/index\n\nDid you forget to replace after copying from graphics/librasterlite ?"
+}

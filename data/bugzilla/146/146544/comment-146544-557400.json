@@ -1,0 +1,8 @@
+{
+ "id": 557400,
+ "bug_id": 146544,
+ "attachment_id": 0,
+ "creation_time": "2010-05-13T12:50:03Z",
+ "creator": "joerg@FreeBSD.org",
+ "text": "\tWhen running in a localized environment, Inkscape has a\n\ttendency to crash with a message box\n\n\t\"Inkscape encountered an internal error and will be\n\tterminated.\" (approximately, the original message was\n\tlocalized)\n\n\tIt then writes a coredump.  Analyzing the coredump shows\n\tthat std::locale::locale() throw an error, which eventually\n\tleads to an abort().\n\nFix: In my opinion, Inkscape already implements the correct code\n\tin src/util/ucompose.hpp:\n\n  inline Composition::Composition(std::string fmt)\n    : arg_no(1)\n  {\n#if __GNUC__ \u003e= 3\n    try {\n\tos.imbue(std::locale(\"\")); // use the user's locale for the stream\n    }\n    catch (std::runtime_error\u0026 e) { // fallback to classic if it failed\n\tos.imbue(std::locale::classic());\n    }\n\n\tIt first attempts to set the locale the \"new way\" (which\n\tis not supported at all under FreeBSD), and upon catching\n\tthe exception, wants to revert to classic locales.\n\n\tWhen I use the following mini application:\n\n#include \u003clocale\u003e\n#include \u003cstdexcept\u003e\n\nint\nmain(void)\n{\n  try {\n   std::locale(\"\");\n  }\n  catch (std::runtime_error \u0026e) {\n   std::locale::classic();\n  }\n   return 0;\n}\n\n\tcatching the exception works correctly.  For whatever\n\treason (I did not find so far), catching the exception\n\tdoes not work in Inkscape though.\n\n\tAs a quick hack, the following patch makes it work\n\tcorrectly:\nHow-To-Repeat: \tThis can, for example, be simply triggered by trying to\n\tchange the document orientation from portrait to landscape\n\tin the document properties dialog."
+}

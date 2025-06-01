@@ -1,0 +1,8 @@
+{
+ "id": 529970,
+ "bug_id": 140935,
+ "attachment_id": 0,
+ "creation_time": "2009-11-27T11:50:00Z",
+ "creator": "nicolas.fugier@sagem.com",
+ "text": "Hi,\n\nAccording to DHCP RFC 2131 (Figure 5 page 34\nhttp://www.ietf.org/rfc/rfc2131.txt), the following actions should be\ndone by DHCP client when entering in RENEWING state:\n - Send Unicast DHCPREQUEST to DHCP server\n - If DHCPACK is received, then enter BOUND state\n - If T2 expires and no DHCPACK is received, then enter the REBINDING\n    state by sending a broadcast DHCPREQUEST [1]\n - If DHCPNACK is received then enter INIT state by Halting Network.\n\nThe patch here:\n http://www.freebsd.org/cgi/cvsweb.cgi/ports/net/isc-dhcp31-server/files/patch-client%3A%3Adhclient.c?rev=1.1;content-type=text%2Fplain\nintroduces some modifications in this state machine, particularly in the\n[1] step:\n - If no packet is received within 10 seconds or if send function\n   returned an error, then enter INIT state.\n\nWe found this issue because we do not store the DHCP-given default\ngateway in the routing table, for security reasons, and it happens that\nour host is sometimes on a network with DHCP relay. In this case, as no\nroute to DHCP server is available (DHCP server is on another IP network),\nthe unicast DHCPREQUEST fails (due to inexistant route), and DHCP client\nstate goes to INIT state, which halts network (losing some application\nadded routes).\n\nI did not find any clue about the reasons of the mentioned modifications\nof the patch.  I consider it as a bug as it breaks DHCP client state\nmachine but I may be wrong."
+}

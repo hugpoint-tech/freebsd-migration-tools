@@ -1,0 +1,8 @@
+{
+ "id": 902175,
+ "bug_id": 213549,
+ "attachment_id": 0,
+ "creation_time": "2016-10-16T23:41:20Z",
+ "creator": "ebay@looksharp.net",
+ "text": "I have some custom system setup scripts that leverage \"firstboot\" support but I discovered problems when trying them on FreeBSD 11 -stable and -release. The short version is /etc/rc attempts to remount the / partition as readonly (ro) at the end after it deletes /firstboot. I think this issue originated with:\nhttps://svnweb.freebsd.org/base?view=revision\u0026revision=293115\n\nAbbreviated code:\nif [ -e ${firstboot_sentinel} ]; then\n        [ ${root_rw_mount} = \"yes\" ] || mount -uw /\n        chflags -R 0 ${firstboot_sentinel}\n        rm -rf ${firstboot_sentinel}\n        [ ${root_rw_mount} = \"yes\" ] || mount -ur /\nfi\n\nOn a stock FreeBSD 11 install, if you touch /firstboot and reboot, here are the results:\nUFS: prints \"mount: /dev/vtbd0s1a: Device busy\" late during boot but no apparent harm\nZFS: succeeds in remounting / as ro even if it was rw to start with\n\nDepending on your system configuration you might notice the issue immediately on the console, for example programs which need to write to / will start complaining. You can login and run mount -v to verify. Other random things fail such as recording your login in 'w' output. I do not use ${firstboot_sentinel}-reboot which might be why this was not discovered, as a reboot makes the problem go away but I do not want to reboot.\n\nQuick hack of a fix for me: comment out the last line containing \"mount -ur /\" but this is not a proper fix."
+}

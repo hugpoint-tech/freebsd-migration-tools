@@ -1,0 +1,8 @@
+{
+ "id": 427886,
+ "bug_id": 120095,
+ "attachment_id": 0,
+ "creation_time": "2008-01-28T19:20:02Z",
+ "creator": "christoph.mallon@gmx.de",
+ "text": "GDB is not able to catch signals from threaded processes, even if no\nextra threads get created. According to rwatson@ this is probably a kernel-\nside signal handling problem and he can reproduce this on 8.x, too (though\ninstead of -pthread he used -lkse, because the standard threading\nimplementation was changed).\n\nBuilding the test program below with the different thread libraries gives\nthe following results:\n\n[WORKS] no threading: (cc -ggdb test.c)\n(gdb) r\nStarting program: /usr/home/tron/a.out \n\nProgram received signal SIGABRT, Aborted.\n0x2814cc47 in kill () from /lib/libc.so.6\n(gdb)\n\n\n[BROKEN] pthread (KSE on my 6.x box): (cc -ggdb -pthread test.c)\n(gdb) r\nStarting program: /usr/home/tron/a.out \nwarning: Unable to get location for thread creation breakpoint: generic error\n[New LWP 100103]\n\nProgram exited normally.\n(gdb)\n\n\n[WORKS] libthr: (cc -ggdb -lthr test.c)\n(gdb) r\nStarting program: /usr/home/tron/a.out \n[New LWP 100118]\n[New Thread 0x804b000 (LWP 100118)]\n\nProgram received signal SIGABRT, Aborted.\n[Switching to Thread 0x804b000 (LWP 100118)]\n0x2815fc47 in kill () from /lib/libc.so.6\n(gdb)\n\n\n[BROKEN] libc_r: (cc -ggdb -lc_r test.c)\n(gdb) r\nStarting program: /usr/home/tron/a.out \nwarning: Unable to get location for thread creation breakpoint: generic error\n[New LWP 100185]\nCannot find thread, Thread ID=1, generic error\n(gdb)\n\nHow-To-Repeat: #include \u003csys/types.h\u003e\n#include \u003csignal.h\u003e\n#include \u003cunistd.h\u003e\nint main(void) { kill(getpid(), SIGABRT); }"
+}

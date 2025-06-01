@@ -1,0 +1,8 @@
+{
+ "id": 1297338,
+ "bug_id": 277115,
+ "attachment_id": 0,
+ "creation_time": "2024-02-17T17:29:38Z",
+ "creator": "freebsd@dev.thsi.be",
+ "text": "Cdrdao doesn't work on (S)ATA drives anymore:\n\ncdrdao disk-info --device /dev/cd0\n/dev/cd0:  \tRev:\nUsing driver: Generic SCSI-3/MMC - Version 2.0 (options 0x0000)\n\nERROR: Cannot setup device /dev/cd0.\n\ndmesg shows:\nata0: FAILURE - zero length DMA transfer attempted\nata0: setting up DMA failed\n\nThis is caused by a bad SCSI CCB having CAM_DIR_IN and a zero length (presumably FreeBSD started to reject zero-sized DMA SCSI transfer), fixed by using CAM_DIR_NONE in such case.\n\nAfter this issue is fixed, for any cd with an odd number of tracks there will be the following error (note that read-cd and \"slow mode\" read-toc will still work):\n\ncdrdao read-toc --device /dev/cd0 --fast-toc -v9999   toc-file\n...\nReading toc data...\ngetTocGeneric: data len 124\nRaw toc data len: 191\nERROR: Cannot read disk toc.\n\nAnd dmesg to show:\n\nata0: FAILURE - odd-sized DMA transfer attempt 191 % 2\nata0: setting up DMA failed\n\n191 is 11 bytes * 17 tracks + 4, read from the disc, see dao/GenericMMC.cc:GenericMMC::getRawToc  \n\n\nThe attached patch adds a cdrdao patch that fixes both issues. It also\nsets the GNU_CONFIGURE_MANPREFIX according to the new rule, and portrevision is incremented.\n\nAfter patch:\ncdrdao read-toc --device /dev/cd0 --fast-toc -v9999   toc-file\n/dev/cd0:  \tRev:\nReading driver table from file \"/usr/local/share/cdrdao/drivers\".\nFound 316 valid driver table entries.\nUsing driver: Generic SCSI-3/MMC - Version 2.0 (options 0x0000)\n\nReading toc data...\ngetTocGeneric: data len 124\nRaw toc data len: 191\nRaw toc contains HEX values.\n[output truncated]"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 103859,
+ "bug_id": 32806,
+ "attachment_id": 0,
+ "creation_time": "2002-01-11T10:56:25Z",
+ "creator": "ru@FreeBSD.org",
+ "text": "On Tue, Jan 01, 2002 at 05:29:38PM +0300, Maxim Konovalov wrote:\n\u003e \n\u003e Hello,\n\u003e \n\u003e Luigi and Ruslan, could you please review the patch?\n\u003e \nI have a much simpler solution to this problem.\n\nIndex: ip_icmp.c\n===================================================================\nRCS file: /home/ncvs/src/sys/netinet/ip_icmp.c,v\nretrieving revision 1.65\ndiff -u -p -r1.65 ip_icmp.c\n--- ip_icmp.c\t2001/12/14 19:32:47\t1.65\n+++ ip_icmp.c\t2002/01/11 10:50:08\n@@ -609,8 +609,8 @@ icmp_reflect(m)\n \tLIST_FOREACH(ia, INADDR_HASH(t.s_addr), ia_hash)\n \t\tif (t.s_addr == IA_SIN(ia)-\u003esin_addr.s_addr)\n \t\t\tgoto match;\n-\tKASSERT(m-\u003em_pkthdr.rcvif != NULL, (\"icmp_reflect: NULL rcvif\"));\n-\tif (m-\u003em_pkthdr.rcvif-\u003eif_flags \u0026 IFF_BROADCAST) {\n+\tif (m-\u003em_pkthdr.rcvif != NULL \u0026\u0026\n+\t    m-\u003em_pkthdr.rcvif-\u003eif_flags \u0026 IFF_BROADCAST) {\n \t\tTAILQ_FOREACH(ifa, \u0026m-\u003em_pkthdr.rcvif-\u003eif_addrhead, ifa_link) {\n \t\t\tif (ifa-\u003eifa_addr-\u003esa_family != AF_INET)\n \t\t\t\tcontinue;\n\nThe case that causes a panic condition is then handled by\na routing table lookup below.  I think that this KASSERT()\nwas bogus in the first place.\n\nThe same patch applies cleanly to -STABLE as well.\n\nI'd also like to MFC this change ASAP, hence the re@ CC:ed.\n\n\nCheers,\n-- \nRuslan Ermilov\t\tOracle Developer/DBA,\nru@sunbay.com\t\tSunbay Software AG,\nru@FreeBSD.org\t\tFreeBSD committer,\n+380.652.512.251\tSimferopol, Ukraine\n\nhttp://www.FreeBSD.org\tThe Power To Serve\nhttp://www.oracle.com\tEnabling The Information Age"
+}

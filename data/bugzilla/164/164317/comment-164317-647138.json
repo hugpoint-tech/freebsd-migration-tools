@@ -1,0 +1,8 @@
+{
+ "id": 647138,
+ "bug_id": 164317,
+ "attachment_id": 0,
+ "creation_time": "2012-01-19T20:20:08Z",
+ "creator": "amdmi3@FreeBSD.org",
+ "text": "Currently write(1) doesn't handle utf8 locale at all:\n\n    (this is Russian)\n# echo \"ÐÑÐ¾Ð²ÐµÑÐºÐ°\" | write amdmi3 pts/29\n\nMessage from amdmi3@hades.panopticon on pts/29 at 23:31 ...\nM-PM-^_M-QM-^@M-PM-\u003eM-PM-2M-PM-5M-QM-^@M-PM-:M-PM-0\nEOF\n\nchecks used in character printing routine (((*s \u0026 0x80) \u0026\u0026 *s \u003c 0xA0)) seem to assume specific encoding (for example, CP866 has letters in 0x80-0xA0), so this will not work correctly for even 8 bit locales.\n\nThe utility is easily convertable to wchar_t however, which should handle them all, and the patch for it is attached.\n\n% (echo \"ÐÑÐ¾Ð²ÐµÑÐºÐ°\"; echo \"Some control characters: \\b\\t^[[D^[[C^[[A^[[B^[\") | ./write amdmi3 pts/29\n\nMessage from amdmi3@hades.panopticon on pts/29 at 23:43 ...\nÐÑÐ¾Ð²ÐµÑÐºÐ°\nSome control characters: \u003c0x8\u003e  \u003c0x1B\u003e[D\u003c0x1B\u003e[C\u003c0x1B\u003e[A\u003c0x1B\u003e[B\u003c0x1B\u003e\nEOF\n\nThe way of displaying non-printable characters is discussable, but since one can neither assume that locale is UTF nor that that wchar_t value is somehow linked to codepoint, it would be inappropriate to use notations like U+%X or \\u%X or \u0026#%d; and/or modify wchar_t with bitwise operations. Notation like \u003c0x%X\u003e however is charset-agnostic and pretty readable, so I think it's quite suitable here."
+}

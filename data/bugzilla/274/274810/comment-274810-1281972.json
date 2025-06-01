@@ -1,0 +1,8 @@
+{
+ "id": 1281972,
+ "bug_id": 274810,
+ "attachment_id": 0,
+ "creation_time": "2023-10-30T19:34:26Z",
+ "creator": "mhorne@freebsd.org",
+ "text": "Hi,\n\nI looked at the reported faulting address in objdump/addr2line. It seems to be the result of a bad call to acpi_get_handle(), whose definition is expanded from line 280 of acpivar.h.\n\nConsider the following two lines in vmbus_doattach(), added in e7a9817b8d32 (Sept 2023):\n\n\tdev_res =  devclass_get_device(devclass_find(\"vmbus_res\"), 0);\n\thandle = acpi_get_handle(dev_res);\n\nThere is no NULL check for dev_res, which means if the vmbus_res0 device is not found (attached), we will get a page fault in the following call to acpi_get_handle().\n\nNow, _why_ vmbus_res0 can't be found, I cannot guess. It has similar attachment criteria to vmbus0.\n\nStrangely, my Vultr VM doesn't run on Hyper-V, instead the kern.vm_guest sysctl reports \"kvm\". So this is all I can do when it comes to testing/debugging. Let me tag the maintainers."
+}

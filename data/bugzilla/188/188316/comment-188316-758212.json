@@ -1,0 +1,8 @@
+{
+ "id": 758212,
+ "bug_id": 188316,
+ "attachment_id": 0,
+ "creation_time": "2014-04-06T15:40:00Z",
+ "creator": "chneukirchen@gmail.com",
+ "text": "According to POSIX 2008, the functions ntohl etc. are defined in \u003carpa/inet.h\u003e (http://pubs.opengroup.org/onlinepubs/9699919799/functions/htonl.html), which works because they are defined unconditionally there.\n\nHowever, just including \u003cnetinet/in.h\u003e should also define them (http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/netinet_in.h.html):\n\n\u003e The htonl(), htons(), ntohl(), and ntohs() functions shall be available\n\u003e as described in \u003carpa/inet.h\u003e. Inclusion of the \u003cnetinet/in.h\u003e header may\n\u003e also make visible all symbols from \u003carpa/inet.h\u003e.\n\nBut ntohl etc are inside a \"#if !defined(_KERNEL) \u0026\u0026 __BSD_VISIBLE\" in \u003cnetinet/in.h\u003e, violating the \"shall be\" requirement above.\n\nFix: \n\nGuard the definition with __POSIX_VISIBLE \u003e= 200112.\nHow-To-Repeat: echo '#include \u003carpa/inet.h\u003e\\nint main(){htonl(1);}' | cc -D_XOPEN_SOURCE=700 -x c -\n(all good)\n\necho '#include \u003cnetinet/in.h\u003e\\nint main(){htonl(1);}' | cc -D_XOPEN_SOURCE=700 -x c -                                                                               \n\u003cstdin\u003e:2:12: warning: implicit declaration of function 'htonl' is invalid in C99 [-Wimplicit-function-declaration]\nint main(){htonl(1);}\n           ^\n1 warning generated."
+}

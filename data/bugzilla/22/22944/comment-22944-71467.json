@@ -1,0 +1,8 @@
+{
+ "id": 71467,
+ "bug_id": 22944,
+ "attachment_id": 0,
+ "creation_time": "2000-11-18T18:20:01Z",
+ "creator": "tegge@trondheim.fast.no",
+ "text": "\nOn machines with lots of memory (\u003e= 512 MB), all of the ISA memory might be\nallocated before the device probes has completed.  This causes ISA devices to\nfail during DMA buffer allocation:\n\n isa_probe_children: probing non-PnP devices\n fdc0: \u003cNEC 72065B or clone\u003e at port 0x3f0-0x3f5,0x3f7 irq 6 drq 2 on isa0\n isa_dmainit(2, 1024) failed\n fdc0: FIFO enabled, 8 bytes threshold\n fd0: \u003c1440-KB 3.5\" drive\u003e on fdc0 drive 0\n\nThe ISA memory has been used by\n\n\tkernel text, data, bss\n\tarrays allocated by vm_page_startup()\n\tmemory allocated via kmem_alloc()\n\tmemory allocated via malloc() with M_ZERO\n\nPrinting the number of free ISA memory pages at the end of vm_mem_init() showed\nthat with 512 MB memory and a standard kernel, only 165 pages were available at\nthat time.  Later during probing, the floppy driver failed to allocate ISA\nmemory.\n\nAttempts to access the floppy device causes an instant panic:\n\nnot# dd if=/dev/rfd0a of=/dev/null bs=512 count=1\npanic: isa_dmastart: bad bounce buffer\n\nsyncing disks... 1 1\n\nFix: Ensure that the largest memory region described by phys_avail[] doesn't\ncontain the ISA memory.  This increases the number of free ISA pages \nat end of vm_mem_init() from 165 to 2341.\n\nChange vm_add_new_page to alternate between adding to the head and the\ntail of the page queues.  This further increases the number of free ISA \npages at end of vm_mem_init() from 2341 to 2789.\nHow-To-Repeat: \nUse the floppy device on a -current machine with 512 MB or more memory."
+}

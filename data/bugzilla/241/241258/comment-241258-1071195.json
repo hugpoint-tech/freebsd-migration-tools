@@ -1,0 +1,8 @@
+{
+ "id": 1071195,
+ "bug_id": 241258,
+ "attachment_id": 0,
+ "creation_time": "2019-10-15T07:08:06Z",
+ "creator": "sigsys@gmail.com",
+ "text": "buildworld failed like that while trying to build 12.1-RC1 (as of r353451) on a 11.3-RELEASE-p1 system:\n\n--- libpmc_events.c ---\n./pmu-events/jevents \"x86\" /usr/src/lib/libpmc/pmu-events/arch libpmc_events.c\nSegmentation fault\n*** [libpmc_events.c] Error code 139\n\nmake[5]: stopped in /usr/src/lib/libpmc\n1 error\n\nWith this change it doesn't fail anymore:\n\nIndex: lib/libpmc/pmu-events/jevents.c\n===================================================================\n--- lib/libpmc/pmu-events/jevents.c     (revision 353534)\n+++ lib/libpmc/pmu-events/jevents.c     (working copy)\n@@ -119,8 +119,7 @@\n        char *e = s + strlen(s);\n\n        /* Remove trailing dots that look ugly in perf list */\n-       --e;\n-       while (e \u003e= s \u0026\u0026 isspace(*e))\n+       while (e \u003e s \u0026\u0026 isspace(e[-1]))\n                --e;\n        if (*e == '.')\n                *e = 0;\n\nDunno if the problem happens because of something specific to this system but this loop is wrong nevertheless (it could access before the string if it was empty or all spaces)."
+}

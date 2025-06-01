@@ -1,0 +1,8 @@
+{
+ "id": 1176393,
+ "bug_id": 258011,
+ "attachment_id": 0,
+ "creation_time": "2021-08-31T15:31:30Z",
+ "creator": "ml@netfence.it",
+ "text": "After some more investigation:\n\n1) opendkim does not start if called from /root:\nI.e.\n# cd /root\n# mkdir /var/run/milteropendkim\n# chown mailnull:mailnull /var/run/milteropendkim/\n# chmod 755 /var/run/milteropendkim/\n#/usr/local/sbin/opendkim -l -u mailnull:mailnull -P /var/run/milteropendkim/pid -x /usr/local/etc/mail/opendkim.conf -f\nopendkim: socket cleanup failed: Permission denied\n# cd /any_other_dir\n#/usr/local/sbin/opendkim -l -u mailnull:mailnull -P /var/run/milteropendkim/pid -x /usr/local/etc/mail/opendkim.conf -f\n(works)\n\nI don't underestand why; possibly it's a bug upstream? I have not looked into this.\n\n\n\n2) As a consequence, \"/usr/local/etc/rc.d/milter-opendkim start\" does NOT work if called from /root, but does if called from any other directory.\n\n\n\n3) \"service -R\" does not set current dir (bug???), so the above still applies: if launched from /root it will fail to start milter-opendkim, while succeeding if run from any other directory.\n(\"service milter-opendkim start\" always works as /usr/sbin/service does \"cd /\" before calling any rc script in this case).\n\n\n\n\nA simple workaround would be to put \"cd /\" as the second-last line of ${PREFIX}/etc/rc.d/milter-opendkim (just before 'run_rc_command \"$1\"')."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 629536,
+ "bug_id": 160770,
+ "attachment_id": 0,
+ "creation_time": "2011-10-02T19:12:05Z",
+ "creator": "olgeni@FreeBSD.org",
+ "text": "Hello,\n\nOn Mon, 19 Sep 2011, h h wrote:\n\n\u003e And if I add the subdir explicitly it'd succeed loading trivial-features.\n\u003e\n\u003e  (push '(#P\"/usr/local/lib/common-lisp/trivial-features/src/\"\n\u003e          #P\"/usr/local/lib/common-lisp/trivial-features/sbclfasl/src/\")\n\u003e        *freebsd-output-translations*)\n\nIt turns our that the initial output translation configuration was \nusing the old logic (i.e. without :wild-inferiors).\n\nThere are still some issues on the clisp side, but sbcl seems ok with \nthis. Does this patch work for you?\n\ndiff --git a/asdf-init.lisp b/asdf-init.lisp\nindex 0306df2..a8a6e0e 100644\n--- a/asdf-init.lisp\n+++ b/asdf-init.lisp\n@@ -226,10 +226,13 @@ LISP-SPECIFIC-FASL-SUBDIR as well.\"\n  (pushnew :inherit-configuration *freebsd-output-translations*)\n\n  (dolist (path (directory \"/usr/local/lib/common-lisp/*/\"))\n-  (let ((fasldir (make-pathname \n-\t\t  :directory (append (pathname-directory path)\n-\t\t\t\t     (list (lisp-specific-fasl-subdir))))))\n-    (pushnew (list path fasldir) *freebsd-output-translations*)))\n+  (let ((source (make-pathname\n+                 :directory (append (pathname-directory path)\n+                                    (list :wild-inferiors))))\n+        (target (make-pathname\n+                 :directory (append (pathname-directory path)\n+                                    (list (lisp-specific-fasl-subdir) :wild-inferiors)))))\n+    (pushnew (list source target) *freebsd-output-translations*)))\n\n  (if (and (getenv \"FBSD_ASDF_COMPILE_PORT\")\n           (getenv \"PORTNAME\")"
+}

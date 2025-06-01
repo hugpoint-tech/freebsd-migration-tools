@@ -1,0 +1,8 @@
+{
+ "id": 53243,
+ "bug_id": 17487,
+ "attachment_id": 0,
+ "creation_time": "2000-03-19T13:30:01Z",
+ "creator": "tuomov@cc.tut.fi",
+ "text": "1. Detection of ATAPI device by some magic signature\n(ata-all.c, row 818-\u003e) does not seem to work on my cdrom\n(\"noname\" 12x). I managed to fix this by a simple identify patch.\n\n2. After this it still complains \"NO DRIVER\". I managed to track the\nproblem to acd_mode_sense() failure in acdattach() but I didn't\nstart trying to fix that too.\n\nFix: \n\n1. Always try atapi identify if ata identify fails. Below is a quick\nand dirty patch to ata-all.c\n\n109a110,120\n\u003e #define TRY_IDENT(scp, SM) \\\n\u003e       if (scp-\u003edevices \u0026 (ATA_ATA_##SM|ATA_ATAPI_##SM)){ \\\n\u003e           if (ata_getparam(scp, ATA_##SM, ATA_C_ATA_IDENTIFY)) { \\\n\u003e               scp-\u003edevices \u0026= ~ATA_ATA_##SM; \\\n\u003e               if (ata_getparam(scp, ATA_##SM, ATA_C_ATAPI_IDENTIFY)) \\\n\u003e                   scp-\u003edevices \u0026= ~ATA_ATAPI_##SM; \\\n\u003e               else \\\n\u003e                   scp-\u003edevices |= ATA_ATAPI_##SM; \\\n\u003e           } \\\n\u003e       }\n\u003e \n884a896,899\n\u003e #if 1\n\u003e       TRY_IDENT(scp, SLAVE);\n\u003e       TRY_IDENT(scp, MASTER);\n\u003e #else\n896a912,913\n\u003e #endif\n\u003e \n1028a1046,1050\n\u003e \n\u003e #if 1\n\u003e       TRY_IDENT(scp, SLAVE);\n\u003e       TRY_IDENT(scp, MASTER);\n\u003e #else\n1040a1063\n\u003e #endif\nHow-To-Repeat: Another broken noname cdrom drive?"
+}

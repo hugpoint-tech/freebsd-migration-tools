@@ -1,0 +1,8 @@
+{
+ "id": 15791,
+ "bug_id": 5133,
+ "attachment_id": 0,
+ "creation_time": "1997-11-23T17:50:00Z",
+ "creator": "volf@oasis.IAEhv.nl",
+ "text": "\nKernel compilation with option FAILSAFE changes the size of the internal\ndata structures of the ncr driver. \n\nTo be precise MAX_START is different for kernels compiled with and without\nFAILSAFE. MAX_START is used in the ncb struct, so this structure has a\ndifferent size for kernels with and without FAILSAFE.\n\nUnfortunately, the size of this struct is used to calculate the \"ncr\nversion\" (as strored in the const ncr_version), which is calculated as\n\nstatic const u_long     ncr_version = NCR_VERSION       * 11\n        + (u_long) sizeof (struct ncb)  *  7\n        + (u_long) sizeof (struct ccb)  *  5\n        + (u_long) sizeof (struct lcb)  *  3\n        + (u_long) sizeof (struct tcb)  *  2;\n\nin ncr.c\n\nA problem arises when compiling the ncrcontrol.c program. This program \n(correctly) checks if the kernel ncr version is equal to the ncr version\nwith which this program is build. Unfortunately, the FAILSAFE option\nis not passed to the cc command line compiling ncrcontrol.c, thus\nthe ncrcontrol program will *always* complain about the version mismatch\nwhen used with a \"FAILSAFE\" kernel. Adding -DFAILSAFE to the CFLAGS\nin the Makefile fixes the problem for me, but that is of course very\nundesirable solution.\n\nCurrently, I don't see a clean way to solve this problem, other than always\nusing the same datastructures (and thus waste a few bytes when FAILSAFE\nis specified).\n\nBTW: I only looked at the 2.2.2 kernel code, I don't know if this is\nfixed in current.\n\nFrank"
+}

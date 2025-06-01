@@ -1,0 +1,8 @@
+{
+ "id": 580820,
+ "bug_id": 151091,
+ "attachment_id": 0,
+ "creation_time": "2010-09-29T23:40:03Z",
+ "creator": "bdheller@users.sourceforge.net",
+ "text": "I have experienced this using the normal ata drivers, and the new\nATA/AHCI/CAM integration. I have done all tests only with AHCI/CAM\nfrom now on.\n\nI have been trying to get my JMB363 SATA controller to be usable after\nputting the machine into S3 with acpiconf. The result in the logs after\nresume looks like this:\n\nkernel: ahci0: AHCI controller reset failure\n\nComparing the PCI registers before and after shows that not the entire\nstate is restored. So fixing the problem seemed easy enough: save and\nrestore the registers in the driver *_suspend/*_restore functions. The\nmain problem however is, that those are called AFTER the AHCI driver\nhas executed the reset. The call chain seems to go like this:\n\npci_resume()\nahci_resume()\nahci_ctrl_reset()\nata_jmicron_resume()\n\nI only got a first rudimentary hack to work by modifying ahci_resume()\nsuch, that it first calls bus_generic_resume() and then does the reset().\nI have absolutely no idea if that has any other side effects. Someone who\nknows these systems in depth should have a look though.\n\nFix: \n\nI have a hack that seems to lead in the right direction, but no patch\nquality code yet.\nHow-To-Repeat: Use a system with a JMB363 controller. Put the system to sleep with\n\"acpiconf -s 3\". On resume try to access the disks: no go."
+}

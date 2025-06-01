@@ -1,0 +1,8 @@
+{
+ "id": 68556,
+ "bug_id": 22006,
+ "attachment_id": 0,
+ "creation_time": "2000-10-17T13:28:13Z",
+ "creator": "Andre.Albsmeier@mchp.siemens.de",
+ "text": "On Tue, 17-Oct-2000 at 15:16:56 +0800, Wei-Kai-Wu wrote:\n\u003e On Mon, Oct 16, 2000 at 10:35:39AM +0200, Andre Albsmeier wrote:\n\u003e \u003e What is the highest uid you have on /raid1 and /raid2 ?\n\u003e \u003e You might want to look into PR #2325...\n\u003e \u003e If this applies to your problem, I might have a patch for you.\n\u003e \n\u003e I have found that there are some files uid = -2.\n\u003e It cause quotacheck halt...\n\nIt doesn't halt. It just scans the quotacheck file from 0 to 2^32-1\nand this takes a while. Do you use PC-NFS? That is how I got these\nuid -2 files into my filesystems.\n\nIf you are interested, this my (real ugly) patch to solve this:\nIt maps all uids \u003e 65535 to user nobody. I use it for many years\nnow and it works great... Don't know about security concerns.\n\n--- sbin/quotacheck/quotacheck.c.ORI\tMon Jul 31 09:20:54 2000\n+++ sbin/quotacheck/quotacheck.c\tMon Jul 31 09:21:15 2000\n@@ -506,6 +506,8 @@\n \tstruct fileusage *fup, **fhp;\n \tint len;\n \n+\tif( id \u003e 65535 )\n+\t\tid = 65534;\n \tif ((fup = lookup(id, type)) != NULL)\n \t\treturn (fup);\n \tif (name)\n--- sys/ufs/ufs/ufs_quota.c.ORI\tMon Jul 31 09:36:03 2000\n+++ sys/ufs/ufs/ufs_quota.c\tMon Jul 31 09:36:44 2000\n@@ -750,6 +750,8 @@\n \t/*\n \t * Check the cache first.\n \t */\n+\tif( id \u003e 65535 )\n+\t\tid = 65534;\n \tdqh = DQHASH(dqvp, id);\n \tfor (dq = dqh-\u003elh_first; dq; dq = dq-\u003edq_hash.le_next) {\n \t\tif (dq-\u003edq_id != id ||\n\n\n\u003e \n\u003e By the way, shall we take it as a bug?\n\nIt is a bug. It is covered by my PR.\n\n\t-Andre"
+}

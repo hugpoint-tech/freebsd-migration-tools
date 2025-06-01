@@ -1,0 +1,8 @@
+{
+ "id": 1242477,
+ "bug_id": 268828,
+ "attachment_id": 0,
+ "creation_time": "2023-01-09T07:30:52Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "Part of the point of the aformentioned change was to stop exporting ni_startdir. I probably should have added some poisononing of that value so that this would have been found sooner.\n\nAnyhow, for vrele to be called in this case both dvp and vp have to be null, which means the lookup failed to find anything? Should this code even be reachable in such a case?\n\nAs a quick hack the following will probably do it:\ndiff --git a/sys/fs/nfsserver/nfs_nfsdport.c b/sys/fs/nfsserver/nfs_nfsdport.c\nindex 665e2c00ce08..012f84f8befa 100644\n--- a/sys/fs/nfsserver/nfs_nfsdport.c\n+++ b/sys/fs/nfsserver/nfs_nfsdport.c\n@@ -1918,7 +1918,7 @@ nfsvno_open(struct nfsrv_descript *nd, struct nameidata *ndp,\n                }\n        } else {\n                nfsvno_relpathbuf(ndp);\n-               if (create == NFSV4OPEN_CREATE) {\n+               if (create == NFSV4OPEN_CREATE \u0026\u0026 ndp-\u003eni_dvp != NULL) {\n                        if (ndp-\u003eni_dvp == ndp-\u003eni_vp)\n                                vrele(ndp-\u003eni_dvp);\n                        else"
+}

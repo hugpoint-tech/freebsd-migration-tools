@@ -1,0 +1,8 @@
+{
+ "id": 809971,
+ "bug_id": 197648,
+ "attachment_id": 0,
+ "creation_time": "2015-02-14T17:32:21Z",
+ "creator": "bugs@rdls.net",
+ "text": "Just upgraded a bridging firewall from 10.0 to 10.1-RELEASE-p5. The first rule is:\n reass all from any to any in\n\nThe only time I receive fragmented UDP packets is when my DNS server attempts to resolve www.freebsd.org, as it returns large UDP packets which are fragmented over my broadband connection:\n\n17:09:54.182826 IP 81.5.134.122.49514 \u003e 63.243.194.1.53: 36047 [1au] A? wfe0.ysv.freebsd.org. (49)\n17:09:54.202100 IP 63.243.194.1.53 \u003e 81.5.134.122.49514: 36047*- 2/4/11 A 8.8.178.110, RRSIG (1424)\n\nI added the reass rule in 10.0 and it's been working perfectly. I upgraded to 10.1-RELEASE-p5 and everything else works as expected except that www.freebsd.org does not resolve.\n\nI added:\n allow ip from any to any frag\n\n...just after the check-state rule, and that fixed the problem (but only after the reass rule was first deleted).\n\nIt seems that the reass rule is absorbing fragments but not passing them perhaps. This bridging firewall only sees IPv4 traffic. Tcpdump shows the response packet on the external interface and the bridge interface, but not the internal interface.\n\nA sanitised version of the rules are here: http://rdls.net/dl/bridge/rc.firewall.local\n\nuname -a:\n FreeBSD motoko.rdls.net 10.1-RELEASE-p5 FreeBSD 10.1-RELEASE-p5 #0: Tue Jan 27 08:55:07 UTC 2015     root@amd64-builder.daemonology.net:/usr/obj/usr/src/sys/GENERIC  amd64"
+}

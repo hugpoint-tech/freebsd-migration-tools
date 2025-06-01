@@ -1,0 +1,8 @@
+{
+ "id": 955327,
+ "bug_id": 222937,
+ "attachment_id": 187086,
+ "creation_time": "2017-10-11T19:27:07Z",
+ "creator": "bugzilla.freebsd@omnilan.de",
+ "text": "Created attachment 187086\n/etc/rc.d/pciptdetach: Work around RAM corruption at guest shutdown\n\nVarious different panics will happen after shutting down a bhyve guest with PCIe passthrough NICs if some conditions are met.\n\nThis can lead to completely destroyed zpools, like I found out after some dozend not so impacting crashes...\n\nQuoting jhb@:\nI suspect what is happening is that the PCI devices are still issuing DMAs\nafter the guest has been shutdown which end up trashing other parts of host\nmemory.  This may somewhat be my fault as I made a change which moves the\ndevice back into the host domain after FLR during guest shutdown.  I should\nperhaps leave the device disabled in the DMAR table instead if the FLR\ndoesn't succeed.  (We could also add some other forms of reset for devices\nnot supporting FLR.)\n\u003c/quote\u003e\n\nSince I don't have the skills to help fixing the root cause, I wrote a little workaround in form of a rc(8) script (to be copied to /etc/rc.d) which should protect against accidental crashes and data losses, by bringing the PciPassThrough devices down before shutting down, which prevents DMA writes from the card after moving it back into host domain.\n\n-harry"
+}

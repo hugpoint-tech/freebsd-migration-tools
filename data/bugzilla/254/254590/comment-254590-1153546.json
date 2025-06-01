@@ -1,0 +1,8 @@
+{
+ "id": 1153546,
+ "bug_id": 254590,
+ "attachment_id": 0,
+ "creation_time": "2021-03-26T21:11:43Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I am hoping that testing will indicate that, at least,\nthe patch does not result in a regression.\nIf so, I will commit it.\n(Unfortunately Jason cannot patch his production\n server.)\n\nJason does report that this script can be run on the\nLinux client to \"unstick\" the mount.\n(Essentially, it looks for the stuck TCP connection and then\n blocks network traffic to get the closureto complete.)\n#!/bin/sh\n\nprogName=\"nfsClientFix\"\ndelay=15\nnfs_ip=NFS.Server.IP.X\n\nnfs_fin_wait2_state() {\n    /usr/bin/netstat -an | /usr/bin/grep ${nfs_ip}:2049 | /usr/bin/grep FIN_WAIT2 \u003e /dev/null 2\u003e\u00261\n    return $?\n}\n\n\nnfs_fin_wait2_state\nresult=$?\nif [ ${result} -eq 0 ] ; then\n    /usr/bin/logger -s -i -p local7.error -t ${progName} \"NFS Connection is in FIN_WAIT2!\"\n    /usr/bin/logger -s -i -p local7.error -t ${progName} \"Enabling firewall to block ${nfs_ip}!\"\n    /usr/sbin/iptables -A INPUT -s ${nfs_ip} -j DROP\n\n    while true\n    do\n        /usr/bin/sleep ${delay}\n        nfs_fin_wait2_state\n        result=$?\n        if [ ${result} -ne 0 ] ; then\n            /usr/bin/logger -s -i -p local7.notice -t ${progName} \"NFS Connection is OK.\"\n            /usr/bin/logger -s -i -p local7.error -t ${progName} \"Disabling firewall to allow access to ${nfs_ip}!\"\n            /usr/sbin/iptables -D INPUT -s ${nfs_ip}  -j DROP\n            break\n        fi\n    done\nfi"
+}

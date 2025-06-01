@@ -1,0 +1,8 @@
+{
+ "id": 1284060,
+ "bug_id": 275099,
+ "attachment_id": 246324,
+ "creation_time": "2023-11-15T06:19:57Z",
+ "creator": "msl0000023508@gmail.com",
+ "text": "Created attachment 246324\nhelloworld-dir.c\n\nWhile it is not common to read(2) a directory directly, this is still supported in FreeBSD (with security.bsd.allow_read_dir=1); and it could be actually useful in FUSE as an user space file system implementation may provide some data in a directory itself.\n\nThe followings demonstrate the issue with a FUSE-based file system:\n\n\n# sysctl security.bsd.allow_read_dir=1\nsecurity.bsd.allow_read_dir: 0 -\u003e 1\n# helloworld-dir /mnt/3/\n# ls -al /mnt/3/\ntotal 0\ndrwxr-xr-x  2 root wheel 27 Jan  1  1970 .\ndrwxr-xr-x  2 root wheel 13 Jan  1  1970 hello\n# ls -al /mnt/3/hello/\ntotal 0\ndrwxr-xr-x  2 root wheel 13 Jan  1  1970 .\ndrwxr-xr-x  2 root wheel 27 Jan  1  1970 ..\n-rw-r--r--  1 root wheel 12 Jan  1  1970 world\n# cat /mnt/3/hello/world \nHello world\n# cat /mnt/3/hello\ncat: stdout: Is a directory\n# dd status=none if=/mnt/3/hello\nHello world!\n# cat /mnt/3/\ncat: stdout: Is a directory\n# dd status=none if=/mnt/3/\nThis is the root directory\n# umount /mnt/3/\n\n\nIt shows that cat(1) failed to read the directories but dd(1) works without problem.\n\nThe cause is that cat(1) tries to use copy_file_range(2) to copy input file to stdout but this system call dosen't work on directories as documented, and cat(1) didn't fallback to read(2) and write(2) on copy_file_range(2) fail with EISDIR.\n\nThe FUSE program for demonstration is attached."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1107910,
+ "bug_id": 247201,
+ "attachment_id": 0,
+ "creation_time": "2020-06-12T10:40:58Z",
+ "creator": "fk@fabiankeil.de",
+ "text": "stat()'ing /dev/tap (with \"stat\" or \"ls -l\") results in a new interface:\n\n# uname -a\nFreeBSD  13.0-CURRENT FreeBSD 13.0-CURRENT #0 r361779: Thu Jun  4 05:01:54 UTC 2020     root@releng1.nyi.freebsd.org:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\n# ifconfig | grep ^tap\n# stat /dev/tap\n1895890688 93 crw------- 1 uucp dialer 93 0 \"Jun 12 12:25:33 2020\" \"Jun 12 12:25:33 2020\" \"Jun 12 12:25:33 2020\" \"Dec 31 23:59:59 1969\" 4096 0 0 /dev/tap\n# ifconfig | grep ^tap\ntap0: flags=8802\u003cBROADCAST,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n\nThe issue is also present in earlier versions such as 11/stable where dtrace shows the following stack:\n\nfk@t520 ~ $sudo dtrace -n \"fbt:if_tap:tapcreate:entry {stack()}\"\ndtrace: description 'fbt:if_tap:tapcreate:entry ' matched 1 probe\nCPU     ID                    FUNCTION:NAME\n  1  44398                  tapcreate:entry \n              if_tap.ko`tap_clone_create+0x71\n              kernel`if_clone_createif+0xb3\n              if_tap.ko`tapclone+0x1af\n              kernel`devfs_lookup+0x59e\n              kernel`VOP_LOOKUP_APV+0x7a\n              kernel`lookup+0x6d1\n              kernel`namei+0x455\n              kernel`kern_statat+0x9a\n              kernel`sys_lstat+0x30\n              kernel`amd64_syscall+0xa86\n              kernel`0xffffffff8085cd40\n\n^C"
+}

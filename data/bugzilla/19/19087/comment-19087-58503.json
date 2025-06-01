@@ -1,0 +1,8 @@
+{
+ "id": 58503,
+ "bug_id": 19087,
+ "attachment_id": 0,
+ "creation_time": "2000-06-07T09:40:00Z",
+ "creator": "bryanm@is.co.za",
+ "text": "Threads blocking on select default to being restarted after\nsignals.  Shouldn't the default be to interrupt, given that\nthese are POSIX threads?\n\nCalling siginterrupt(1) doesn't help, since it isn't thread aware.\nOne has to use sigaction to explicity set sa_flags to 0 to get\nthe POSIX behaviour.\n\nFix: \n\nlibc_r includes an implementation of signal which implements\nthe POSIX semantics, but it is not listed in HIDDEN_SYSCALLS,\nso the libc implementation gets used anyway.\n\nIs this an oversight, or is this merely a porting issue?\nAre there any other side effects due to calling the libc signal?\nHow-To-Repeat: In a threaded app (eg, slapd from openldap-1.2.10):\n\nint shutdown = 0;\nsignal( SIGTERM, set_shutdown)\n\nwhile (!shutdown) {\n  i = select( nfds, \u0026readfds, \u0026writefds, 0, 0)\n  ...\n}\n\nvoid set_shutdown( int sig )\n{\n  shutdown = 1\n}\n\nIn response to a SIGTERM, shutdown is set to 1, but if the fds\nare idle, the process never exits because the select restarts\neach time."
+}

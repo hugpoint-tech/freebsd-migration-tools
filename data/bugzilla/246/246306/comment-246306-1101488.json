@@ -1,0 +1,8 @@
+{
+ "id": 1101488,
+ "bug_id": 246306,
+ "attachment_id": 0,
+ "creation_time": "2020-05-08T14:41:47Z",
+ "creator": "gerald@FreeBSD.org",
+ "text": "(In reply to Mohammad S. Babaei from comment #2)\n\u003e OK, let me explain a bit more. This is a fresh install of FreeBSD 12.1\n\u003e on a VPS with ZFS filesystem\n:\n\u003e WITH_CCACHE_BUILD=yes\n\u003e CCACHE_DIR=/var/cache/ccache\n\nThere's a lot of good information in your follow-up, enough for me to\nsupport a very vague theory I had.\n\nFrom the original log you shared, it does not appear anything crashes;\nrather it appaers some that should be there is missing, the cc1 binary:\n \n   xgcc: fatal error: cannot execute 'cc1': execvp: No such file or \n   directory compilation terminated.\n\nThe way GCC builds is for stage 1 to built with an existing compiler,\nthe result then to built stage 2, and the result of that to build stage 3,\nso building three times, the last time with a compiler that built itself.\n\nI am wondering whether in your case cc1 was built and copied/installed\nalready, so the build proceeded, alas that copy had not \"arrived\" yet,\nwas not visible yet, when there was an attempt to consume it.  Hence\nthe failure.\n\nThat could happen if storage does not reflect a write to some (other)\nclients yet or some parallel building is not synchronized properly.\n\nMaybe there is some configuration in ZFS to look into.  Maybe ccache\nexhibits an issue or indeed it is running out of RAM (though that I\nwould expect to trigger a segmentation fault and abort the build).\n\nTwo things to try (together) are disabling parallel build and ccache."
+}

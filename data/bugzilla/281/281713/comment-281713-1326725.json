@@ -1,0 +1,8 @@
+{
+ "id": 1326725,
+ "bug_id": 281713,
+ "attachment_id": 0,
+ "creation_time": "2024-09-25T15:06:19Z",
+ "creator": "divVerent@gmail.com",
+ "text": "Note: this bug kinda implies that https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=204837 has been \"fixed\" - the command definitely does something now, just not the right thing.\n\nRunning these shell commands in order:\n\n```\nkbdcontrol -b 300.440\nsleep 0.1\nprintf '\\a'\nsleep 0.4\nkbdcontrol -b 300.554\nsleep 0.1\nprintf '\\a'\nsleep 0.4\nkbdcontrol -b 300.659\nsleep 0.1\nprintf '\\a'\n```\n\nshould play an increasing chords, as the frequencies are the ones of the notes A, C# and E.\n\nAnd it does this fine when booting with `kern.vty=sc`.\n\nHowever, it actually plays a decreasing, and too high pitched, chord when in `vt`! According to audacity, the frequencies actually played are 2659Hz, 2149Hz and 1804Hz.\n\nThis can be repro'd right on the \"disc1\" image.\n\nThere is a frequency division here in `kbdcontrol`:\n\nhttps://github.com/freebsd/freebsd-src/blob/main/usr.sbin/kbdcontrol/kbdcontrol.c#L1042\n\nRemoving this division statement makes it sound exactly as it should. And in fact, when multiplying intended and measured frequencies, I get 1169960, 1190546 and 1188836, respectively - all really close to the magic constant in that division.\n\nThus, I suspect one of two things is the case:\n\n- vt intentionally changed the meaning of the `ESC [ = pitch ; duration B` escape sequence to now express pitch in Hertz, not 8254 timer ticks, but it was forgotten to make `kbdcontrol` detect whether it's running on vt or syscons and respond accordingly.\n- vt accidentally changed the meaning of the sequence, and should get a fix added to match up with syscons."
+}

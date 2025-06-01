@@ -1,0 +1,8 @@
+{
+ "id": 1129777,
+ "bug_id": 250802,
+ "attachment_id": 0,
+ "creation_time": "2020-11-02T23:31:56Z",
+ "creator": "crowston@protonmail.com",
+ "text": "Are you on AMD? I have had the same problem.\n\nFor some reason the processor is unable to handle accesses to BARs mapped above 4 GB.  The vm exits on such access and transfers control back to the vmm. But the vmm does not expect to handle memory passthrough -- the processor is supposed to handle that natively -- only i/o passthrough, tripping this assertion.\n\nThere is a hardcoded limit where we decide whether to allocate a bar above or below the 4 GB mark, in pci_emul.c, at pci_emul_alloc_pbar():\n                                                                                      \n/*\n * XXX\n * Some drivers do not work well if the 64-bit BAR is allocated\n * above 4GB. Allow for this by allocating small requests under\n * 4GB unless then allocation size is larger than some arbitrary\n * number (32MB currently).\n */\n if (size \u003e 32 * 1024 * 1024) {\n\nIn the past I have found that by raising this limit, such that all bars are allocated in the lower 32 bit address space, I can start a GPU under Linux. I have not had success under Windows.\n\nIt's worth noting that most real BIOS or UEFIs preferentially allocate even large BARs in the lower 4 GB of the address space, so that configuration is much better tested for consumer devices.\n\n    -- RHC."
+}

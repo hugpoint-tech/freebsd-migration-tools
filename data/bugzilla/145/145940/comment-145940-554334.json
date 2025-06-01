@@ -1,0 +1,8 @@
+{
+ "id": 554334,
+ "bug_id": 145940,
+ "attachment_id": 0,
+ "creation_time": "2010-06-02T11:26:52Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: des\nDate: Wed Jun  2 10:26:31 2010\nNew Revision: 208735\nURL: http://svn.freebsd.org/changeset/base/208735\n\nLog:\n  Fix expansion of AuthorizedKeysFile (upstream patch)\n  \n  PR:\t\t146334, 145940\n  Approved by:\tre (kib@)\n\nModified:\n  stable/8/crypto/openssh/servconf.c\n\nModified: stable/8/crypto/openssh/servconf.c\n==============================================================================\n--- stable/8/crypto/openssh/servconf.c\tWed Jun  2 10:20:38 2010\t(r208734)\n+++ stable/8/crypto/openssh/servconf.c\tWed Jun  2 10:26:31 2010\t(r208735)\n@@ -1227,7 +1227,17 @@ process_server_config_line(ServerOptions\n \t\tcharptr = (opcode == sAuthorizedKeysFile) ?\n \t\t    \u0026options-\u003eauthorized_keys_file :\n \t\t    \u0026options-\u003eauthorized_keys_file2;\n-\t\tgoto parse_filename;\n+\t\targ = strdelim(\u0026cp);\n+\t\tif (!arg || *arg == '\\0')\n+\t\t\tfatal(\"%s line %d: missing file name.\",\n+\t\t\t    filename, linenum);\n+\t\tif (*activep \u0026\u0026 *charptr == NULL) {\n+\t\t\t*charptr = tilde_expand_filename(arg, getuid());\n+\t\t\t/* increase optional counter */\n+\t\t\tif (intptr != NULL)\n+\t\t\t\t*intptr = *intptr + 1;\n+\t\t}\n+\t\tbreak;\n \n \tcase sClientAliveInterval:\n \t\tintptr = \u0026options-\u003eclient_alive_interval;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

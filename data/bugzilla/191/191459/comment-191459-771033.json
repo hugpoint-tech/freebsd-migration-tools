@@ -1,0 +1,8 @@
+{
+ "id": 771033,
+ "bug_id": 191459,
+ "attachment_id": 0,
+ "creation_time": "2014-06-28T12:45:03Z",
+ "creator": "clbuisson@orange.fr",
+ "text": "In src/bsd_KbdMap.c, the function KbdGetMapping is called to setup an appropriate keyboard map.\n\nAt line 1260 the function calls ioctl(pInfo-\u003efd, GIO_KEYMAP, \u0026keymap) to get\nthe current OS keyboard mapping, then loops accessing the table eascii_to_x|]\nto map keyboard delivered chars to X KeySyms.\n\n1. this table is built from the cp437 definition, which is only a special case,\nnot taking into account the many character codes being in real use.\n\n2. the code assumes that the character values delivered by the FreeBSD keyboard\ndriver are only 1 byte wide, which may not be the case using syscons with option TEKEN_UTF8 or using newcons/vt(4).\n\nA consequence is that out of bounds accesses are done to the eascii_to_x[] table returning at best meaningless results, or at worst (every time on my amd64 systems) leadind to segmentation faults.\n\nAs this mapping operation seems to be rather useless, I use a workaround which is to #ifdef this part of the code, using the attached patch.\n\nI hope that someone more knowledgeable than me can validate/refine this hack."
+}

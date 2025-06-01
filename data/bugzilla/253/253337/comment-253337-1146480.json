@@ -1,0 +1,8 @@
+{
+ "id": 1146480,
+ "bug_id": 253337,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T17:16:47Z",
+ "creator": "cem@freebsd.org",
+ "text": "In exec, we map the stack with vm_map_stack() with rlim_cur (I think); in vm_map_stack, we set the init_ssize with MIN(sysctl kern.sgrowsiz, rlim_cur).  \n\nkern.sgrowsiz is 128kB.\n\nThere's a comment about the behavior in vm/vm_map.c:4565.  At line 4585 we insert the normal stack mapping.  At line 4599 we insert the reservation for the unallocated portion of the stack with no access (---).\n\nWe won't insert the --- mapping if gap_bot == gap_top, which I think only happens if kern.sgrowsiz happens to match the stack rlimit.rl_cur.\n\nSo... a crappy workaround here might be to set kern.sgrowsiz to 8MB.  Obviously, that's system-wide, and doesn't chase rlim_cur.  I'm not sure of the ramifications.  I don't think this actually faults in backing physical memory pages, and both RW- and no-prot (---) pages consume the same amount of virtual memory.  So it might be pretty harmless."
+}

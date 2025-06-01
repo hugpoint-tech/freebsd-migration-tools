@@ -1,0 +1,8 @@
+{
+ "id": 919123,
+ "bug_id": 202269,
+ "attachment_id": 179399,
+ "creation_time": "2017-01-29T15:38:38Z",
+ "creator": "jsm@FreeBSD.org",
+ "text": "Created attachment 179399\nUpdate to consolekit 1.0.2 with active sessions working.\n\nThis is another approach. I have narrowed the problem down. On Linux the X process' control tty is the same as Xfree86_VT (e.g the display device). On FreeBSD it is the invoking tty. e.g startx on /dev/ttyv1 the Xorg procees' tt is ttyv1 even though Xfree86_VT is vt9\n\nInspired by\nhttp://unix.stackexchange.com/questions/32884/which-virtual-terminal-is-a-given-x-process-running-on\nI use libprocstat to read the actual display device from pid. e.g no need to only use the root window property XFree86_VT as in my previous patch.\nThis needs the ck-get-x11-display-device to be setuid root. The Makefile reflects/sets this.\nAnother problem was that the active tty is returned as full path and display-deivce was only ttyvX. I have prefixed display-device with \"/dev/\"\n\nck-sysdeps-freebsd.c\n@@ -128,7 +128,7 @@ ck_process_stat_get_tty (CkProcessStat *stat)\n {\n         g_return_val_if_fail (stat != NULL, NULL);\n \n-        return g_strdup (stat-\u003etty_text);\n+        return g_strdup_printf(\"/dev/%s\",stat-\u003etty_text);\n }\nFurhermore I have reverted the use of consolectl as it does not work on 11-RELEASE. I have not tested on 10."
+}

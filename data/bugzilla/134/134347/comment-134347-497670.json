@@ -1,0 +1,8 @@
+{
+ "id": 497670,
+ "bug_id": 134347,
+ "attachment_id": 0,
+ "creation_time": "2009-05-09T19:33:11Z",
+ "creator": "ohauer@gmx.de",
+ "text": "Hi,\n\nis it possible that you have also spamlogd running?\n\nspamd honors the times given (spamd.c line ~1132 variable whiteexp),\nbut if you have spamlogd running then the white times are pushed to\n36 days (from grey.h) after the sending machine is whitelisted and\nconnects to your MTA.\n\n\nSee the following test.\n\n# -- file /etc/rc.conf.local\nobspamd_enable=\"YES\"\nobspamd_times=\"-G 1:6:2\"\nobspamd_flags=\"-5 -v -l127.0.0.1 -S0 -s0 ${obspamd_times}\"\n\n\n# 1st. connect\n# spamdb\nGREY|127.0.0.1|foo|sender@example.com|rcpt@example.com|1241892180|1241913780|1241913780|1|0\n\n# 2nd. connect after one minute\n# spamdb\nGREY|127.0.0.1|foo|sender@example.com|rcpt@example.com|1241892180|1241892278|1241913780|2|0\n\n# again after DB_SCAN_INTERVAL 60\n# spamdb\nWHITE|127.0.0.1|||1241892180|1241892278|1241899531|2|0\n\n\nNow look at the timestamps from the white entry\n\n# date -j -r 1241892180\nSa  9 Mai 2009 20:03:00 CEST\n\n# date -j -r 1241892278\nSa  9 Mai 2009 20:04:38 CEST\n\n# date -j -r 1241913780\nSa  9 Mai 2009 22:05:31 CEST\n\nThe whitelist time is around 2 hours.\n\n\n//olli\n-- \nNeu: GMX FreeDSL Komplettanschluss mit DSL 6.000 Flatrate + Telefonanschluss für nur 17,95 Euro/mtl.!* http://dslspecial.gmx.de/freedsl-surfflat/?ac=OM.AD.PD003K11308T4569a"
+}

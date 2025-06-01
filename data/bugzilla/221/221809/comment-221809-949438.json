@@ -1,0 +1,8 @@
+{
+ "id": 949438,
+ "bug_id": 221809,
+ "attachment_id": 0,
+ "creation_time": "2017-08-25T17:07:40Z",
+ "creator": "emaste@freebsd.org",
+ "text": "I've been investigating building the ports tree with LLVM's lld installed as /usr/bin/ld (via the exp-run in PR 214864). Through this I've found a few common issues, some of which are due to limitations of lld or choices made by its authors, and some of which are problems in the ports themselves. print/openprinting is affected by one of the latter cases.\n\nWhen linking with lld the build failed with:\n\ncc -shared  .libs/common.o .libs/uri.o .libs/list.o .libs/attribute.o .libs/status.o .libs/library.o .libs/misc.o  -L/usr/local/lib -lintl  -Wl,-Mmapfile -Wl,-soname -Wl,libpapi-common.so.0 -o .libs/libpapi-common.so.0.0.0\n/usr/bin/ld: error: unknown argument: -Mmapfile\n\nGNU ld documents -M as:\n       -M\n       --print-map\n           Print a link map to the standard output.  A link map provides\n           information about the link, including the following:\n\nto write the mapping to a file the argument is:\n\n       -Map mapfile\n           Print a link map to the file mapfile.  See the description of the\n           -M option, above.\n\nso presumably this should be using -Wl,-Map,mapfile in $LDFLAGS\n\nIt appears that when GNU ld is invoked with -Mmapfile outputs the mapfile to stdout and discards the rest of the argument."
+}

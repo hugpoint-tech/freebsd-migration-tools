@@ -1,0 +1,8 @@
+{
+ "id": 517166,
+ "bug_id": 138307,
+ "attachment_id": 0,
+ "creation_time": "2009-08-29T12:30:02Z",
+ "creator": "rafael.carre@gmail.com",
+ "text": "http://www.opengroup.org/onlinepubs/9699919799/functions/posix_memalign.html quotes:\n\"If the size of the space requested is 0, the behavior is implementation-defined; the value returned in memptr shall be either a null pointer or a unique pointer.\"\n\nThe behaviour is different using differents alignements:\n\nposix_memalign either returns EINVAL, either asserts.\n\nSample test program is attached, output is:\n--8\u003c--\n% ./a.out \nmalloc 0\n\nalign 4\nInvalid argument\n\nalign 8\nAssertion failed: (size != 0), function arena_malloc, file /usr/src/lib/libc/stdlib/malloc.c, line 3349.\nzsh: abort (core dumped)  ./a.out\n--8\u003c--\n\ncall stack:\n\n#2  0x000000080071c225 in __assert () from /lib/libc.so.7\n#3  0x00000008006be011 in malloc_usable_size () from /lib/libc.so.7\n#4  0x00000008006c1228 in posix_memalign () from /lib/libc.so.7\n\n\nI got a report that it functions correctly on \"FreeBSD turbine 7.1-RELEASE-p5 FreeBSD 7.1-RELEASE-p5 #7 r191765: Thu Aug 20 12:26:09 CEST 2009\" but I can't test myself\n\nHow-To-Repeat: #include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cerrno.h\u003e\n\nint main(void)\n{\n    void *p;\n    int i;\n\n    errno = 0;\n\n    printf(\"malloc 0\\n\");\n    p = malloc(0);\n    if(!p)\n        printf(\"%s\\n\", strerror(errno));\n    printf(\"\\n\");\n\n    printf(\"align 4\\n\");\n    i = posix_memalign(\u0026p, 4, 0);\n    printf(\"%s\\n\\n\", strerror(i));\n\n    printf(\"align 8\\n\");\n    i = posix_memalign(\u0026p, 8, 0);\n    printf(\"%s\\n\\n\", strerror(i));\n\n    return 0;\n}"
+}

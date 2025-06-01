@@ -1,0 +1,8 @@
+{
+ "id": 378750,
+ "bug_id": 109580,
+ "attachment_id": 0,
+ "creation_time": "2007-02-26T23:50:04Z",
+ "creator": "snb@threerings.net",
+ "text": "When installing math/gnuplot on a machine with emacs or xemacs installed, the port will attempt to install some lisp files. USE_EMACS is set conditionally based on the presence of emacs or xemacs binaries, and having USE_EMACS set is what includes bsd.emacs.mk. However, bsd.emacs.mk does not seem to ever be loaded, and thus variables such as EMACS_SITE_LISPDIR are not set. The packing list incorrectly includes %%EMACS_SITE_LISPDIR%%/gnuplot-gui.el and %%EMACS_SITE_LISPDIR%%/gnuplot.el (without substituting), and gnuplot-gui.el and gnuplot.el get installed in ${PREFIX} rather than ${PREFIX}/${EMACS_SITE_LISPDIR}\n\nI think this might be because USE_EMACS is only conditionally set after bsd.port.pre.mk is included in the makefile. Portlint does complain about the fact that EMACS_PORT_NAME is set after including bsd.port.pre.mk.\n\nFix: This patch does something similar to what is done in net/gnu-radius--explicitly includes bsd.emacs.mk if it is needed. A better way to solve this problem may be to set USE_EMACS, EMACS_PORT_NAME, EMACS_NO_BUILD_DEPENDS, and EMACS_NO_RUN_DEPENDS unconditionally, before including bsd.port.pre.mk, but only add --with-lisp-files to the configure args and install the .el files if emacs or xemacs is actually installed on the system.\n\nPatch attached with submission follows:\nHow-To-Repeat: Try to make install or make package for math/gnuplot on a system with emacs installed."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1339316,
+ "bug_id": 283317,
+ "attachment_id": 0,
+ "creation_time": "2024-12-15T18:38:36Z",
+ "creator": "freebsd@dev.thsi.be",
+ "text": "(In reply to Robert Clausecker from comment #4)\n\nHi, yes please you can proceeed with the patch. As noted above, that armv7 failure is unfortunately still expected. I'm hoping to fix that failure by producing a fix for lang/ocaml.\n\nIn short, that failure is caused by the non-functionning floating-point support of the \"native-mode\" compiler of OCaml on armv7 on freebsd. This can be demonstrated by the following command, which will output a non-sensical value instead of the well-known answer:\n  echo \"print_float 42.0\" \u003e pf.ml ; ocamlopt pf.ml \u0026\u0026 ./a.out\n\nThe longer and probably less accurate explanation is that sexp uses a ppx transformer to serialize-deserialize json, said transformer relies on a library which must know what is the range of integers that can safely be represented in a float (or maybe the oppositite?), and since the floating point support is broken, this determination of the safe-range triggers an assertion. \n\nI'm working on a patch for lang/ocaml to fix the armv7-a/VFPv3 support instead of using the soft-float abi (which, I assume, is non-working on freebsd), but although it seems to work okayish (at least to buil sexp), there is still a correctness issue exhibed by the ocaml test suite. I need more time to investigate.\n\nIf that plan doesn't work (fixing lang/ocaml), then maybe it would be possible to use the bytecode mode of ocaml to work around this issue on armv7. In any case, it would be nice to already unlock textproc/sexp for aarch64 (and possibly ppc64?)."
+}

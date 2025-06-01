@@ -1,0 +1,8 @@
+{
+ "id": 1066978,
+ "bug_id": 240573,
+ "attachment_id": 0,
+ "creation_time": "2019-09-14T00:28:30Z",
+ "creator": "rozhuk.im@gmail.com",
+ "text": "int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_FILEDESC, getpid() };\n\nif (0 != sysctl(mib, 4, NULL, \u0026buf_size, NULL, 0))\n\treturn (errno);\nbuf = malloc(buf, buf_size);\nnewfd = open(\"/dev/null\", O_RDONLY); /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */\nif (0 != sysctl(mib, 4, buf, \u0026buf_size, NULL, 0)) {\n\tif (ENOMEM != errno) {\n\t\tfree(buf)\n\t\treturn (errno);\n\t}\n}\n\nThis code should fail, but it fill buf with struct kinfo_file, and there is no newfd.\nNo fail, no error code set, silent data truncation.\n\n\nProbably sys/kern/kern_descrip.c: export_kinfo_to_sb()\n...\n\t\tif (efbuf-\u003eremainder \u003c kif-\u003ekf_structsize) {\n\t\t\t/* Terminate export. */\n\t\t\tefbuf-\u003eremainder = 0;\n\t\t\treturn (0);\n\t\t}\n...\nshould return here ENOMEM!?\n\nI see hack to avoid missing fd for that in\nlib/libutil/kinfo_getfile.c: kinfo_getfile():\n...\nlen = len * 4 / 3;\n...\n\n\nSame for kern.ipc.posix_shm_list.\n\nsys/kern/uipc_shm.c: sysctl_posix_shm_list()\n\t\t\tif (req-\u003eoldptr != NULL \u0026\u0026\n\t\t\t    kif.kf_structsize + curlen \u003e req-\u003eoldlen)\n\t\t\t\tbreak;\nerror = ENOMEM; - before break missed.\n\nhack:\nusr.bin/posixshmcontrol/posixshmcontrol.c: list_shm()\n\n\nsys/kern/kern_proc.c: kern_proc_vmmap_out()\n...\n\t\t/* Halt filling and truncate rather than exceeding maxlen */\n\t\tif (maxlen != -1 \u0026\u0026 maxlen \u003c kve-\u003ekve_structsize) {\n\t\t\terror = 0;\n\t\t\tvm_map_lock_read(map);\n\t\t\tbreak;\n...\nerror = ENOMEM;?\n\n\nAnd probably other places where exist buf size check and exit from loop before call sbuf_bcat()."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 988630,
+ "bug_id": 227723,
+ "attachment_id": 0,
+ "creation_time": "2018-04-24T08:45:19Z",
+ "creator": "lampa@fit.vutbr.cz",
+ "text": "test case was for constant, which was optimized to immediate, here is another with variable:\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n\n#define EX_TMP_VAR(ex, n)         ((temp_variable*)(((char*)(ex)) + ((int)(n))))\n#define EX_TMP_VAR_NUM(ex, n)  (EX_TMP_VAR(ex, 0) - (1 + (n)))\n#define VAR_NUM(v) ((unsigned int)(EX_TMP_VAR_NUM(0, 0) - EX_TMP_VAR(0, v)))\n\ntypedef struct TV {\n        long tmp;\n        char tmp3[30];\n} temp_variable;\n\nint num = -1000;\n\nint main()\n{\n        printf(\"%x\\n\", VAR_NUM(num));\n        return 0;\n}\n\nclang50 result is 18\nclang60 result is 60000018\n\nThe only difference in generated code (clang50 first, clang60 second):\n\n\u003c       movslq  num(%rip), %rax\n---\n\u003e       movl    num(%rip), %eax\n        movq    $-40, %rcx\n        subq    %rax, %rcx\n        shrq    $3, %rcx\n\n\nIt looks like num is not sign extended before pointer arithmetic."
+}

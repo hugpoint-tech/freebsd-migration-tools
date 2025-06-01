@@ -1,0 +1,8 @@
+{
+ "id": 677223,
+ "bug_id": 170358,
+ "attachment_id": 0,
+ "creation_time": "2012-08-13T21:22:48Z",
+ "creator": "tomek.apostata@gmail.com",
+ "text": "Hi,\n\nIt seams that I found the problem and partial solution:\nI checked what is really coming out of the hid device  and found that\n\"tilt wheel\" is properly reported as horizontal scroll (on 8th byte).\nBut in ums.c:\n\n  289                         if (dt \u003e 0)\n  290                                 buttons |= 1UL \u003c\u003c 3;\n  291                         else if (dt \u003c 0)\n  292                                 buttons |= 1UL \u003c\u003c 4;\n  293\n  294                         sc-\u003esc_status.button = buttons;\n  295                         sc-\u003esc_status.dx += dx;\n  296                         sc-\u003esc_status.dy += dy;\n  297                         sc-\u003esc_status.dz += dz;\n  298                         /*\n  299                          * sc-\u003esc_status.dt += dt;\n  300                          * no way to export this yet\n  301                          */\n\nAs You see the sc_status is mousestatus_t which does not have dt... so\ndriver assigns fixed numbers to buttons - the problem is that these\nbuttons do exists - so we have 2 sets of buttons with the same\nnumbers.\n\nFor me the fix is simple - just assign different, free numbers:\n\n  290                                 buttons |= 1UL \u003c\u003c 5;\n  291                         else if (dt \u003c 0)\n  292                                 buttons |= 1UL \u003c\u003c 6;\n\nI know that this is not a real fix - other devices can also have these\nnumbers \"taken\" - real fix should implement horizontal scroll in\nsys/sys/mouse.h, but for now it works for me.\n\n-- \nTomek"
+}

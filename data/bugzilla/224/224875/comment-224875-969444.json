@@ -1,0 +1,8 @@
+{
+ "id": 969444,
+ "bug_id": 224875,
+ "attachment_id": 0,
+ "creation_time": "2018-01-03T20:10:45Z",
+ "creator": "emaste@freebsd.org",
+ "text": "In kldxref.c:read_kld() we have a 33-byte cval buffer:\n\nchar ... cval[MAXMODNAME + 1] ...\n\ninto which we read a string:\n\ncheck(EF_SEG_READ(\u0026ef, (Elf_Off)md.md_cval, sizeof(cval), cval));\n\nThis requires that a 33-byte read is successful, however it may fail if the string is shorter than 32 characters (plus the NUL) and is located near the highest allocated address.\n\nIt appears this has never been an issue with ld.bfd, which places a loadable .comment section after other sections of interest, so kldxref is free to read unrelated data beyond the end of the cval string.\n\nld.lld however places .comment early in the section list, and so the cval may be in a .data or .rodata section that comes at the end of the section list.\n\n(CTF data may also be after .data/.rodata and would mitigate this issue; it may happen only with CTF disabled)"
+}

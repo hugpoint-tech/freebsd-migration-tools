@@ -1,0 +1,8 @@
+{
+ "id": 1343276,
+ "bug_id": 283679,
+ "attachment_id": 0,
+ "creation_time": "2025-01-10T21:39:12Z",
+ "creator": "emaste@freebsd.org",
+ "text": "\u003e Can you double check whether commit 41adc5f29ba6955e09f46e4d2c25da6fcd263ba2\n\nIt looks like etcupdate's extract_tree (or similar) is failing in NO_ROOT mode. In NO_ROOT mode we place METALOG in `mktemp -d $WORKDIR/etcupdate-XXXXXXXX`/$DISTDIR/METALOG -- with DISTDIR unset this \"works.\"\n\nMaybe etcupdate should explicitly set DISTDIR when it invokes targets that use METALOG, something like:\n\ndiff --git a/usr.sbin/etcupdate/etcupdate.sh b/usr.sbin/etcupdate/etcupdate.sh\nindex 39d1f9e56a54..402b3bd939ec 100755\n--- a/usr.sbin/etcupdate/etcupdate.sh\n+++ b/usr.sbin/etcupdate/etcupdate.sh\n@@ -226,10 +226,10 @@ build_tree()\n                                fi\n                        fi\n                        if [ -n \"$($make -V.ALLTARGETS:Minstalletc)\" ]; then\n-                               $make DESTDIR=$destdir installetc || exit 1\n+                               $make DESTDIR=$destdir DISTDIR=. installetc || exit 1\n                        else\n-                               $make DESTDIR=$destdir distrib-dirs || exit 1\n-                               $make DESTDIR=$destdir distribution || exit 1\n+                               $make DESTDIR=$destdir DISTDIR=. distrib-dirs || exit 1\n+                               $make DESTDIR=$destdir DISTDIR=. distribution || exit 1\n                        fi\n                ) || return 1\n        fi\n\n(regardless we should disentangle ports and src use of DISTDIR)"
+}

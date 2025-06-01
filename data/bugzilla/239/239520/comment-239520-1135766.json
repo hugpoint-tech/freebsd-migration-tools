@@ -1,0 +1,8 @@
+{
+ "id": 1135766,
+ "bug_id": 239520,
+ "attachment_id": 0,
+ "creation_time": "2020-12-11T08:06:11Z",
+ "creator": "a.shikov@itcons.net.ua",
+ "text": "Hi!\n\nIt seems that issue was fixed partially. C code above does not reproduce it on 12.2-RELEASE, but perl scripts still leak memory.\n\nFor example, running this code:\n#!/usr/local/bin/perl -w\n\nuse strict;\nuse Sys::Syslog qw(:standard :macros);\n\nopenlog('leak-demo', LOG_NDELAY, LOG_LOCAL2);\n\nmy $c = 0;\n\nmy @chars = (\"A\"..\"Z\", \"a\"..\"z\", \"0\"..\"9\", \".\" , \"-\", \"_\" );\n\nwhile ($c++ \u003c= 10000) {\n        my $string = '';\n        $string .= $chars[rand @chars] for 1..32;\n        for (1..2048) {\n                syslog(LOG_DEBUG, \"DEBUG LOG %d/%d RANDOM STRING: %s\", $c, $_, $string );\n        }\n        sleep 1;\n}\n\ncloselog();\n\n... with locale settings like these:\nLANG=uk_UA.UTF-8\nLC_CTYPE=\"uk_UA.UTF-8\"\nLC_COLLATE=\"uk_UA.UTF-8\"\nLC_TIME=\"uk_UA.UTF-8\"\nLC_NUMERIC=\"uk_UA.UTF-8\"\nLC_MONETARY=\"uk_UA.UTF-8\"\nLC_MESSAGES=\"uk_UA.UTF-8\"\nLC_ALL=\n\n... results to memory leak:\n\nlast pid: 39263;  load averages:  0.46,  0.36,  0.28                                                                                                         up 0+15:53:09  09:55:04\n49 processes:  1 running, 48 sleeping\nCPU: 24.1% user,  0.0% nice, 11.4% system,  0.6% interrupt, 63.9% idle\nMem: 770M Active, 558M Inact, 2068K Laundry, 447M Wired, 200M Buf, 231M Free\nSwap: 4096M Total, 52M Used, 4044M Free, 1% Inuse\n\n  PID USERNAME    THR PRI NICE   SIZE    RES STATE    C   TIME    WCPU COMMAND\n39237 root          1  35    0   659M   646M nanslp   1   0:18  18.06% perl\n[...]\n\nRunning the same script with \"env LANG=C\" does not leak memory."
+}

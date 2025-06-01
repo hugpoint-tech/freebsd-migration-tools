@@ -1,0 +1,8 @@
+{
+ "id": 1044450,
+ "bug_id": 236864,
+ "attachment_id": 0,
+ "creation_time": "2019-03-29T16:15:44Z",
+ "creator": "kp@freebsd.org",
+ "text": "It appears to be reproducible by running the pf tests (/usr/tests/sys/netpfil/pf, not just the ioctl tests) in a loop.\n\nThe backtrace suggests this is a generic issue with setting up or tearing down interfaces rather than something specific to pf though.\n\nThis panics in ifunit_ref(), because while we're iterating the list of interfaces (and have the NET_EPOCH held) we run into a freed interface:\n\n#16 0xffffffff80cdcce1 in ifunit_ref (name=0xfffffe009dfae7e0 \"epair0b\") at /usr/src/sys/net/if.c:2422\n2422                    if (strncmp(name, ifp-\u003eif_xname, IFNAMSIZ) == 0 \u0026\u0026\n(kgdb) p name\n$1 = 0xfffffe009dfae7e0 \"epair0b\"\n(kgdb) p ifp\n$2 = (struct ifnet *) 0xdeadc0dedeadc0de\n\nI'd assume that means some other part of the code has free()d the interface without going through the appropriate 'wait until the epoch is over' callback."
+}

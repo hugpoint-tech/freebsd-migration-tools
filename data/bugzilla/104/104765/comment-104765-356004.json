@@ -1,0 +1,8 @@
+{
+ "id": 356004,
+ "bug_id": 104765,
+ "attachment_id": 0,
+ "creation_time": "2006-11-14T10:05:50Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "Responsible Changed\nFrom-To: freebsd-bugs-\u003erwatson\n\nClaim ownership, since I've been looking at issues similar or identical \nto this.  Some questions: \n\n(1) Could you let me know what versions of ip_output.c and tcp_usrreq.c \nyou're running with? \n\n(2) Could you try the most recent patch attached to PR 102412?  This is \na patch to ip_ctloutput().  I've attached it below, but the chances \nare good that GNATS will mangle the patch. \n\nIndex: ip_output.c \n=================================================================== \nRCS file: /home/ncvs/src/sys/netinet/ip_output.c,v \nretrieving revision 1.242.2.16 \ndiff -u -r1.242.2.16 ip_output.c \n--- ip_output.c\t24 Oct 2006 13:23:03 -0000\t1.242.2.16 \n+++ ip_output.c\t26 Oct 2006 18:20:55 -0000 \n@@ -1155,6 +1155,7 @@ \nstruct sockopt *sopt; \n{ \nstruct\tinpcb *inp = sotoinpcb(so); \n+\tstruct\tinpcbinfo *pcbinfo = inp-\u003einp_pcbinfo; \nint\terror, optval; \n\nerror = optval = 0; \n@@ -1190,12 +1191,15 @@ \nm_free(m); \nbreak; \n} \n+\t\t\tINP_INFO_WLOCK(pcbinfo); \nif (so-\u003eso_pcb == NULL) { \n+\t\t\t\tINP_INFO_WUNLOCK(pcbinfo); \nm_free(m); \nerror = EINVAL; \nbreak; \n} \nINP_LOCK(inp); \n+\t\t\tINP_INFO_WUNLOCK(pcbinfo); \nerror = ip_pcbopts(inp, sopt-\u003esopt_name, m); \nINP_UNLOCK(inp); \nreturn (error);"
+}

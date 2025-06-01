@@ -1,0 +1,8 @@
+{
+ "id": 694085,
+ "bug_id": 174075,
+ "attachment_id": 0,
+ "creation_time": "2012-12-03T07:20:00Z",
+ "creator": "phil.pennock@globnix.org",
+ "text": "(Confirmed present in Makefile 1.147, latest version seen via cvsweb.cgi)\n\nThe GnuPG (2) port, security/gnupg, has an option CURL:\n\nCURL_DESC=\t\tUse the real curl library (worked around if no)\nOPTIONS_DEFAULT=\tCURL\n\nThat is misleading, and looks to be a sense inversion.\n\n.if ${PORT_OPTIONS:MCURL}\nCONFIGURE_ARGS+=--without-libcurl\n.else\nLIB_DEPENDS+=\tcurl:${PORTSDIR}/ftp/curl\nCONFIGURE_ARGS+=--with-libcurl=${LOCALBASE}\n.endif\n\nSo, if the option is set, as it is by default, then the use of curl is entirely disabled and GnuPG uses an internal stub/shim implementation which pretends to be Curl.  If the option is explicitly *unset*, then libcurl is used and /usr/local/libexec/gpg2keys_hkp has rather more linkage dependencies reported by ldd(1).\n\nFix: \n\nChange the ordering of the .if/.else/.endif branches when testing against ${PORT_OPTIONS:MCURL}\nHow-To-Repeat: Build security/gnupg with and without the options set.\n\nUse ldd(1) to examine linkage dependencies.\n\nUse { gpg --keyserver-options verbose,debug --keyserver hkp://..../ --recv-key ... } to retrieve keys with debugging reporting showing which implementation is in use."
+}

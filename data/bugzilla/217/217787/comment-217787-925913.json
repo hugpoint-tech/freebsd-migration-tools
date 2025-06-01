@@ -1,0 +1,8 @@
+{
+ "id": 925913,
+ "bug_id": 217787,
+ "attachment_id": 180821,
+ "creation_time": "2017-03-14T18:09:28Z",
+ "creator": "tobik@freebsd.org",
+ "text": "Created attachment 180821\nlibsysdecode.diff\n\nI wanted to added cap_rights_t decoding to truss(1) and thought with\nsysdecode_cap_rights(3) it was going to be trivial, but it does not seem\nto decode cap_rights_t properly.\n\nConsider this simple test program:\n#include \u003csys/capsicum.h\u003e\n\nint\nmain(int argc, char *argv[])\n{\n\tcap_rights_t rights;\n\tcap_rights_init(\u0026rights, CAP_WRITE);\n\tcap_rights_limit(1, \u0026rights);\n\treturn 0;\n}\n\nWhen ktraceing+kdumping it I get the following wrong output at the moment:\n\n90024 bla      STRU  cap_rights_t CAP_MAC_GET,CAP_MAC_SET,CAP_SEM_GETVALUE,CAP_SEM_WAIT,CAP_EVENT,CAP_KQUEUE_EVENT,CAP_IOCTL,CAP_PDWAIT,CAP_PDKILL,CAP_EXTATTR_DELETE,CAP_EXTATTR_GET,CAP_EXTATTR_LIST,CAP_ACL_GET,CAP_KQUEUE_CHANGE\n\nI'd expect it to be\n\n90024 bla      STRU  cap_rights_t CAP_WRITE\n\nThe attached patch fixes this for me.\n\nFreeBSD thor 12.0-CURRENT FreeBSD 12.0-CURRENT #0 5ba1b0f9966(master): Tue Mar 14 15:59:54 CET 2017     root@thor:/usr/obj/usr/src/sys/GENERIC  amd64\n\nThe problem also exists with the most recent 12.0-CURRENT snapshot\n20170309-r314972, but not on 11.0-RELEASE."
+}

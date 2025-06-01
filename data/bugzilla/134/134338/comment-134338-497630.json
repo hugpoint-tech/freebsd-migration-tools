@@ -1,0 +1,8 @@
+{
+ "id": 497630,
+ "bug_id": 134338,
+ "attachment_id": 0,
+ "creation_time": "2009-05-07T17:40:01Z",
+ "creator": "gavin@FreeBSD.org",
+ "text": "\tThere are several points in the code where GPIO registers are read,\nvarious operations are performed with the result, then GPIO registers are\nwritten back to.  The problem here is that there is nothing preventing other\naccess occuring between the read and the write.  Some parts of the code (IIC)\ngo one step further and use Giant as a lock around these accesses, but as it\nis not done globally, this makes little difference.\n\nI stumbled on this while writing a driver for the NSLU LEDs, while hammering\nthe driver I saw interrupts being missed.  Whilst I have no absolute proof\nthat this is the cause, I've not been able to recreate it with this patch\nin place.\n\nI've gone for a seperate spin lock for the GPIO pins as it is used in various\ncontexts where a spin lock seems to be the correct choice.  It's also\nimplemented as a global lock rather than being stored in a softc or similar -\nuntil there is a GPIO driver, I can't see any better solution.\n\nSomething like this is probably also needed for the other arm platforms,\nhowever I do not have the hardware required to test these.\n\nHow-To-Repeat: \t(ab)use code paths that toggle GPIO lines (e.g. use IIC heavily while\nUSB generates interrupts)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1308281,
+ "bug_id": 278855,
+ "attachment_id": 0,
+ "creation_time": "2024-05-09T14:23:24Z",
+ "creator": "stb@lassitu.de",
+ "text": "You are correct. With forgejo-1.21.10.0_1, a service forgejo start does not report anything, and no process is running.\n\nIf I create /usr/local/etc/syslog.d/forgejo.conf with this contents:\n!forgejo\n*.*\t/var/log/forgejo.log\n\nand create the file and kick syslogd, I get this at the next attempt to start forgejo:\nMay  9 16:14:02 fbsd14 forgejo[1382]: 2024/05/09 16:14:02 cmd/web.go:242:runWeb() [I] Starting Forgejo on PID: 1383\nMay  9 16:14:02 fbsd14 forgejo[1382]: 2024/05/09 16:14:02 ...es/setting/oauth2.go:147:loadOAuth2From() [F] save oauth2.JWT_SECRET failed: failed to save \"/usr/local/etc/forgejo/conf/app.ini\": open /usr/local/etc/forgejo/conf/app.ini: permission denied\n\nSo the issue is that the config file is missing some information that forgejo is trying to add itself, but since the config file is not writeable by the git user by default, this fails.\n\nThis is due to changes that were made to the default app.ini that now contain \"CHANGE_ME\" instead of valid secrets, leading to exactly this startup problem.\n\nAdditionally, gitea/forgejo have historically lacked a method to check the config file for verifying the config. I will try and add forgejo doctor to the start script to make it easier to diagnose when the config is invalid."
+}

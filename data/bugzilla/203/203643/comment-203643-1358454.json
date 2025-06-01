@@ -1,0 +1,8 @@
+{
+ "id": 1358454,
+ "bug_id": 203643,
+ "attachment_id": 0,
+ "creation_time": "2025-04-09T00:48:10Z",
+ "creator": "kwhite.uottawa@gmail.com",
+ "text": "No, I had not tried #10.  I still wanted to see any errors and to be able to turn any workaround on/off.\n\nThanks for the suggestion, though!  I tried a modified version of #10 that provides a hw.vmm.svm.disable_decode_assist sysctl that optionally disables the decode_assist() check.  This too works for me.\n\nA long-winded way of saying \"yes\" #10 also works for me.\n\ndiff --git a/sys/amd64/vmm/amd/svm.c b/sys/amd64/vmm/amd/svm.c\nindex 6c16daaa47c2..63f559037687 100644\n--- a/sys/amd64/vmm/amd/svm.c\n+++ b/sys/amd64/vmm/amd/svm.c\n@@ -122,6 +122,11 @@ static uint32_t nasid;\n SYSCTL_UINT(_hw_vmm_svm, OID_AUTO, num_asids, CTLFLAG_RDTUN, \u0026nasid, 0,\n     \"Number of ASIDs supported by this processor\");\n \n+/* AMD A8 has no decode_assist, allow disabling the check */\n+static int disable_decode_assist;\n+SYSCTL_INT(_hw_vmm_svm, OID_AUTO, disable_decode_assist, CTLFLAG_RWTUN,\n+    \u0026disable_decode_assist, 0, \"Set to 1 to disable the decode_assist check\");\n+\n /* Current ASID generation for each host cpu */\n static struct asid asid[MAXCPU];\n \n@@ -146,7 +151,7 @@ static __inline int\n decode_assist(void)\n {\n \n-       return (svm_feature \u0026 AMD_CPUID_SVM_DECODE_ASSIST);\n+       return ((svm_feature \u0026 AMD_CPUID_SVM_DECODE_ASSIST) || disable_decode_assist);\n }\n \n static void"
+}

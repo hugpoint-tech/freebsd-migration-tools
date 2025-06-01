@@ -1,0 +1,8 @@
+{
+ "id": 845233,
+ "bug_id": 203943,
+ "attachment_id": 0,
+ "creation_time": "2015-10-21T20:04:16Z",
+ "creator": "scdbackup@gmx.net",
+ "text": "usr.sbin/makefs/cd9660/cd9660_debug.c\n\nCID 977469: Out-of-bounds access (OVERRUN)\n   1. overrun-buffer-val: Overrunning array pttemp-\u003eparent_number\n   of 2 bytes by passing it to a function which accesses it at\n   byte offset 3.\n\n186        printf(\"\u003cparent_number\u003e%i\u003c/parent_number\u003e\\n\",\n187            debug_get_encoded_number(pttemp-\u003eparent_number,mode));\n\n--------------- Source analysis:\n\nThe problem is with debug_get_encoded_number() which depending\non iparameter \"mode\" reads more or less bytes.\n\nThe complained call is in function debug_dump_to_xml_ptentry(),\nwhich gets called only by function debug_dump_to_xml_path_table().\nIt gets the \"mode\" value as parameter.\nThis function gets called at two occasions in debug_dump_to_xml():\n\n        debug_dump_to_xml_path_table(fd, t, t2, 721);\n\n        debug_dump_to_xml_path_table(fd, t, t2, 722);\n\nThe modes 721 and 722 select 2-byte reading in debug_get_encoded_number().\nSo the size of pttemp-\u003eparent_number is sufficient.\n\n--------------- Remedy proposal:\n\nIn Coverity classify CID 977469 as \"False positive\" and set its Action\nto \"Ignore\"."
+}

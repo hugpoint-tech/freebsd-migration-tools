@@ -1,0 +1,8 @@
+{
+ "id": 1051459,
+ "bug_id": 238043,
+ "attachment_id": 204534,
+ "creation_time": "2019-05-22T08:16:17Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "Created attachment 204534\nProposed patch\n\nThere is a null pointer deference vulnerability in function xdr_rpcb_entry_list_ptr of sys/rpc/rpcb_prot.c.\n\n01                if (freeing)\n02                        next = (*rp)-\u003erpcb_entry_next;\n03                if (! xdr_reference(xdrs, (caddr_t *)rp,\n04                    (u_int)sizeof (rpcb_entry_list),\n05                                    (xdrproc_t)xdr_rpcb_entry)) {\n06                        return (FALSE);\n07                }\n08                if (freeing \u0026\u0026 *rp) {\n09                        next_copy = next;\n10                        rp = \u0026next_copy;\n11                        /*\n12                         * Note that in the subsequent iteration, next_copy\n13                         * gets nulled out by the xdr_reference\n14                         * but next itself survives.\n15                         */\n16                } else if (*rp) {\n17                        rp = \u0026((*rp)-\u003erpcb_entry_next);\n18                }\n\n\nThere is an access of rp in line2 and no access in line 9 and line 10.\nTherefore, we should change condition in line1 to line 8, and change condition line 8 to line1.\n\nThe attachment is the proposed patch."
+}

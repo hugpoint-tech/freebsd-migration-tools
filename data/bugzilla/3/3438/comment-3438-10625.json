@@ -1,0 +1,8 @@
+{
+ "id": 10625,
+ "bug_id": 3438,
+ "attachment_id": 0,
+ "creation_time": "1998-01-27T20:10:19Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "Could somebody apply Tor's fix for this problem to the -stable tree too?\n\nSince moving about 1500 nfs-mounted user home directories to FreeBSD servers,\nresulting in NFS v3 being used by clients, we have been getting frequent\nclient panics in reassignbuf() and nfs_flush(). The fault address is always\naround NOLIST (0x87654321) and the panics occur during NFS writes when the\nmachine is fairly busy.\n\nThe following patch to nfs/nfs_bio.c (as applied in rev 1.37 in -current)\nseems to fix the problem:\n\n\n--- nfs_bio.c.old       Tue Jan 27 19:36:57 1998\n+++ nfs_bio.c   Tue Jan 27 19:37:34 1998\n@@ -1059,7 +1059,7 @@\n \t\tio.iov_base = (char *)bp-\u003eb_data + bp-\u003eb_dirtyoff;\n \t\tuiop-\u003euio_rw = UIO_WRITE;\n \t\tnfsstats.write_bios++;\n-\t\tif ((bp-\u003eb_flags \u0026 (B_ASYNC | B_NEEDCOMMIT | B_NOCACHE)) == B_ASYNC)\n+\t\tif ((bp-\u003eb_flags \u0026 (B_ASYNC | B_NEEDCOMMIT | B_NOCACHE | B_CLUSTER)) == B_ASYNC)\n \t\t    iomode = NFSV3WRITE_UNSTABLE;\n \t\telse\n \t\t    iomode = NFSV3WRITE_FILESYNC;\n\n\nIan"
+}

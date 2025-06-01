@@ -1,0 +1,8 @@
+{
+ "id": 787981,
+ "bug_id": 193827,
+ "attachment_id": 0,
+ "creation_time": "2014-09-22T06:39:02Z",
+ "creator": "kyuupichan@gmail.com",
+ "text": "My system:\n\nDragonFly zotac.akihabara.co.uk 3.9-DEVELOPMENT DragonFly v3.9.0.597.g07f336-DEVELOPMENT #2: Fri Sep 19 23:52:56 JST 2014     root@zotac.akihabara.co.uk:/usr/obj/usr/src/sys/X86_64_GENERIC  x86_64\n\nI noticed tcpclient didn't work resolving hostnames; I think this is because the default port uses the IPV6 option.  I'm not sure whether this is supposed to work.  For example with the default port:\n\n$ tcpclient dnsseed.bluematt.me 8333 sh -c 'echo $TCPREMOTEIP'\ntcpclient: fatal: no IP address for dnsseed.bluematt.me\n\nI tried deselecting the IPV6 option and rebuilding.  However changing the option means patches are not applied, in particular error.h doesn't have the errno fix.  This causes the build to fail (on my system) as so:\n\n/usr/libexec/binutils224/elf/ld.bfd: errno: TLS definition in /usr/lib/libc.so section .tbss mismatches non-TLS reference in unix.a(buffer_get.o)\n/usr/lib/libc.so: error adding symbols: Bad value\n*** [addcr] Error code 1\n\nThis is easily fixed with the following change to the top of error.h:\n\n   #include \u003cerrno.h\u003e\n\ninstead of\n\n   extern int errno;\n\nWith the above one-line change the package builds and installs, and works:\n\n$ tcpclient dnsseed.bluematt.me 8333 sh -c 'echo $TCPREMOTEIP'\n120.69.148.210\n\nPlease update the port so that the error.h issue is patched regardless of option selection.  Thanks."
+}

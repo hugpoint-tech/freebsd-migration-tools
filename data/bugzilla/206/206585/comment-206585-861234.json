@@ -1,0 +1,8 @@
+{
+ "id": 861234,
+ "bug_id": 206585,
+ "attachment_id": 0,
+ "creation_time": "2016-01-24T17:57:25Z",
+ "creator": "ecturt@gmail.com",
+ "text": "In `hpt_status` -\u003e `hpt_set_info`, `nOutBufferSize` and `nInBufferSize` are checked at the same time, but not individually:\n\nif (piop-\u003enInBufferSize+piop-\u003enOutBufferSize \u003e PAGE_SIZE) {\n\tKdPrintE((\"User buffer too large\\n\"));\n\treturn -EINVAL;\n}\n\nBefore performing a kernel allocation:\n\nke_area = malloc(piop-\u003enInBufferSize+piop-\u003enOutBufferSize, M_DEVBUF, M_NOWAIT);\n\nHowever, the sizes are later used individually for some copies:\n\nif (piop-\u003enInBufferSize)\n\tcopyin((void*)(ULONG_PTR)piop-\u003elpInBuffer, ke_area, piop-\u003enInBufferSize);\n\n...\n\nif (piop-\u003enOutBufferSize)\n\tcopyout(ke_area + piop-\u003enInBufferSize, (void*)(ULONG_PTR)piop-\u003elpOutBuffer, piop-\u003enOutBufferSize);\n\nIt might be possible for `nInBufferSize`, or `outBufferSize`, or both, to be large enough for `piop-\u003enInBufferSize+piop-\u003enOutBufferSize` to overflow and be less than `PAGE_SIZE`.\n\nIn this situation the copy calls would result in a heap overflow."
+}

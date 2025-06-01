@@ -1,0 +1,8 @@
+{
+ "id": 869112,
+ "bug_id": 207783,
+ "attachment_id": 167941,
+ "creation_time": "2016-03-09T22:02:50Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 167941\nFix bug caused by r296462\n\nIf you ask me, this is caused by r296462 [1], specifically the part:\n\n\u003e constant-time MOD_EXP_CTIME_COPY_FROM_PREBUF.\n\u003e [CVE-2016-0702, upstream d6482a8. 5ea08bd, d6d422e,\n\u003e 8fc8f48 317be63 skipped intentionally as we are not\n\u003e using the code on FreeBSD.  Backport done by jkim@.\n\nThe problem is that all calls of MOD_EXP_CTIME_COPY_TO_PREBUF() are adjusted to use the 'window' parameter, but it appears the one call to MOD_EXP_CTIME_COPY_FROM_PREBUF() was forgotten: it still uses 'numPowers', which is actually 1 \u003c\u003c window!\n\nNow MOD_EXP_CTIME_COPY_FROM_PREBUF() itself calls this input parameter 'window', and then proceeds to calculate the xstride as 1 \u003c\u003c (window - 2), which in some cases can end up being 2^30.  The loop which then goes through 'table' (the buffer) will almost certainly hit bad memory.\n\nThe fix is to call MOD_EXP_CTIME_COPY_FROM_PREBUF() with 'window' instead.\n\n[1] https://svnweb.freebsd.org/changeset/base/296462"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 669574,
+ "bug_id": 168836,
+ "attachment_id": 0,
+ "creation_time": "2012-06-08T06:50:11Z",
+ "creator": "mariovazq@gmail.com",
+ "text": "When /var/tmp is mounted using tmpfs, it starts with clean contents each time the system boots.  Nginx from ports requires a directory inside /var/tmp which is created when the port is installed.  But since the Nginx script do not check or recreate that dir, it will fail to start giving this message.\n\nPerforming sanity check on nginx configuration:\nnginx: the configuration file /usr/local/etc/nginx/nginx.conf syntax is ok\nnginx: [emerg] mkdir() \"/var/tmp/nginx/client_body_temp\" failed (2: No such file or directory)\nnginx: configuration file /usr/local/etc/nginx/nginx.conf test failed\nStarting nginx.\nnginx: [emerg] mkdir() \"/var/tmp/nginx/client_body_temp\" failed (2: No such file or directory)\n/usr/local/etc/rc.d/nginx: WARNING: failed to start nginx\n\nFix: Maybe not the best place, but I added 3 lines in the nginx init script to check and create the needed directory if it's missing.  I added the 3 lines to the nginx_checkconfig function.\n\n nginx_checkconfig()\n {\n       if [ ! -d \"/var/tmp/nginx\" ] ; then\n               mkdir /var/tmp/nginx\n       fi\n       ...\n\nI included a patch that make the changes.\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. Mount /var/tmp as tmpfs\n    My current fstab line is:\n     tmpfs    /var/tmp      tmpfs rw,nosuid,noexec,mode=01777       0 0\n2. Reboot the system or start Nginx."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1068016,
+ "bug_id": 240629,
+ "attachment_id": 0,
+ "creation_time": "2019-09-21T14:35:09Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Ok, at least I have been able to reproduce the gcc failures on a cleanly installed VM.\n\nIt looks like in such an environment, the gencondmd.c tool is compiled without any optimization, causing the references to e.g. ix86_isa_flags and similar variables, which are declared in gcc's options.h, but do not seem to be actually *defined* anywhere.\n\nFor some reason, on my own machine, gencondmd.c is compiled with -O2 -pipe, and that causes all the references to disappear, hence there are no linking errors.\n\nAs to *why* that is, I'm still in the dark.  Gcc's build system is notoriously muddy, so it is hard to see where the options are coming from, and what is supposed to happen.\n\nIn short:\n1) For the initial generator tools such as 'gencondmd' the flag -DGENERATOR_FILE is used, causing option flags such as ix86_isa_flags to be declared as global extern variables.\n2) However, there is no clear location where these global variables are *defined*, as options.c only has them as members of a gcc_option struct.\n3) By accident, the references to these non-existing symbols can get optimized out, since they are all in unused inline functions."
+}

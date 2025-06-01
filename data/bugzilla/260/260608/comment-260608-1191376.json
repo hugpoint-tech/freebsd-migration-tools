@@ -1,0 +1,8 @@
+{
+ "id": 1191376,
+ "bug_id": 260608,
+ "attachment_id": 0,
+ "creation_time": "2021-12-22T14:05:31Z",
+ "creator": "lapo@lapo.it",
+ "text": "current:\n\n# pkg install zrepl\n# zrepl version\nclient: zrepl version= go=go1.17.3 GOOS=freebsd GOARCH=amd64 Compiler=gc\n\nexpected:\n\n# zrepl version\nclient: zrepl version=0.4.0 go=go1.17.3 GOOS=freebsd GOARCH=amd64 Compiler=gc\n\nThe reason is that the port is using `go build` directly, instead of using `gmake`. I tried like this:\n\n  USES=           gmake go:modules,no_targets\n  USE_RC_SUBR=    zrepl\n  MAKE_ENV=       ZREPL_VERSION=${DISTVERSION}\n\nbut it gets a bit complex as it would probably require modifications to the Makefile (but, as we're not using it, should USES=gmake removed from the port?).\n\nI finally managed like this (but is a bit more hackish and breaks WITH_DEBUG as it overrides \"-ldflags=-s\" as would be otherwise done in /usr/ports/Mk/Uses/go.mk) but it's simple enough and works in the general case:\n\n  GO_BUILDFLAGS+= -ldflags=\"-X github.com/zrepl/zrepl/version.zreplVersion=${DISTVERSION}\""
+}

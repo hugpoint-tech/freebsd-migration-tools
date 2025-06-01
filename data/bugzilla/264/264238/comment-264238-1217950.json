@@ -1,0 +1,8 @@
+{
+ "id": 1217950,
+ "bug_id": 264238,
+ "attachment_id": 0,
+ "creation_time": "2022-07-03T07:21:27Z",
+ "creator": "fbsd@opal.com",
+ "text": "I think that the workaround patch is the wrong approach.\n\nIf there are many folk clamoring for a fix, then okay, commit it.  But I don't get the sense that this is that urgent is it?\n\nWhat I found in yesterday and Friday's debugging is that the code in the area I am looking at, in wpas_populate_assoc_ies(), appears to be generating our IE for outbound transmission.  It isn't parsing the AP's incoming IE.  The section that adds the IE that breaks things has the comment:\n\n         * Workaround: Add Extended Capabilities element only if the AP\n         * included this element in Beacon/Probe Response frames. Some older\n         * APs seem to have interoperability issues if this element is\n         * included, so while the standard may require us to include the\n         * element in all cases, it is justifiable to skip it to avoid\n         * interoperability issues.\n\nAs Cy pointed out, this code has been there for ages.  So, the question is, why are we now triggering the addition of this Extended Capabilities IE when we apparently didn't in earlier versions?\n\nAnd, a second question is, given that we do add this ExtCapab IE with the cotents that I showed in comment #176, why does that cause our own driver to select WPA mode?\n\nGiven that the comment says that adding this IE can be skipped, I would suggest that a better temporary fix is to put \"#if 0 ... #endif\" around this section of the code in wpas_populate_assoc_ies().\n\nI am just sitting back down again today and will look more at these now."
+}

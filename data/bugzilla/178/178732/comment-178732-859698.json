@@ -1,0 +1,8 @@
+{
+ "id": 859698,
+ "bug_id": 178732,
+ "attachment_id": 165695,
+ "creation_time": "2016-01-17T07:29:01Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "Created attachment 165695\n[patch] improve freebsd rpath usage in devel/ncurses configure\n\nThe cases that use ld(1) directly are vanishingly small, so having '-Wl,-rpath,' in the .pc file rather than '-rpath ' seems far better - for any software using pkg-config --libs.\n\nWhile scons could be fixed to convert any '-rpath foo' it sees to '-Wl,-rpath,foo' (especially since smart_link() in link.py invokes cc by default (and never ld unless the user perversely defines CC=ld), it's a fact of life that it doesn't do such a conversion right now.\n\nSo I vote we patch ncurses and move on so gpsd is fixed when the ncurses package is installed.\n\nAttached is an alternate patch that fixes the freebsd case in the ncurses configure script - it may be more palatable and could be fed upstream to ncurses.\n\nIt's more correct than just -rpath since the vast majority of possible consumers of 'pkg-config --libs' flags will be linkers invoked by 'cc' or 'c++'.  And the bare -rpath will cause those to fail, not just those wrapped by scons.  How often do we see a port invoke ld(1) directly to do the linking?\n\nMaybe scons could be convinced to improve their arg parsing as well (convert any '-rpath foo' it might see to Wl,-rpath,foo), but that doesn't solve the issue for any non-scons user of the 'pkg-config --libs ncurses' flags.  Seeing as there have been likely few other reported failures due to this issue, the number is probably low, but we should fix ncurses for freebsd, IMO."
+}

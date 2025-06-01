@@ -1,0 +1,8 @@
+{
+ "id": 833,
+ "bug_id": 360,
+ "attachment_id": 0,
+ "creation_time": "1995-04-24T22:00:01Z",
+ "creator": "curt@mofo.emergent.com",
+ "text": "\n\tthe filesystem deadlocks when installing a file to itself.\n\ta ktrace shows a strange sequence:\n\n   450 install  CALL  stat(0xefbfda0f,0xefbfd87c)\n   450 install  NAMI  \"/var/tmp/xx\"\n   450 install  RET   stat 0\n   450 install  CALL  stat(0xefbfda07,0xefbfd7ec)\n   450 install  NAMI  \"termcap\"\n   450 install  RET   stat 0\n   450 install  CALL  stat(0x4414,0xefbfd78c)\n   450 install  NAMI  \"/var/tmp/xx/termcap\"\n   450 install  RET   stat 0\n   450 install  CALL  unlink(0x4414)\n   450 install  NAMI  \"/var/tmp/xx/termcap\"\n   450 install  RET   unlink 0\n   450 install  CALL  open(0x4414,0x601,0x180)\n   450 install  NAMI  \"/var/tmp/xx/termcap\"\n   450 install  RET   open 3\n   450 install  CALL  open(0xefbfda07,0,0)\n   450 install  NAMI  \"termcap\"\n   450 install  RET   open 4\n   450 install  CALL  mmap(0,0x2c48e,0x1,0,0x4,0,0,0)\n   450 install  RET   mmap 134807552/0x8090000\n   450 install  CALL  write(0x3,0x8090000,0x2c48e)\n\n\tat this point, deadlock with ps -l reporting ufslk2\n\nFix: \n\ndon't install a file to itself.\nHow-To-Repeat: \n\tcd /tmp\n\tcp /etc/termcap .\n\tinstall -c -m 0644 termcap /tmp\n\t\u003elockup\u003c"
+}

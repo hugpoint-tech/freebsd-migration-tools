@@ -1,0 +1,8 @@
+{
+ "id": 903321,
+ "bug_id": 213714,
+ "attachment_id": 0,
+ "creation_time": "2016-10-23T03:48:33Z",
+ "creator": "cynix@cynix.org",
+ "text": "On 11.0-RELEASE-p1, getcwd(3) returns EACCES under the following conditions:\n\n* Current directory is under a ZFS filesystem (seems to also affect other filesystems mounted under ZFS root).\n* The ZFS dataset's \"normalization\" property is not \"none\" (can be any of formC/formD/formKC/formKD).\n* Any parent directory in the path does not have read permission for the user.\n\nWhereas on 10.3 (I have tested 10.3-RELEASE-p5 and earlier) it would succeed and populate the correct full path.\n\nFor example:\n\n# zfs create -o normalization=formD z/test1\n# mkdir -m711 /test1/foo\n# mkdir /test1/foo/bar\n# chown nobody /test1/foo/bar\n# cd /test1/foo/bar\n# su -m nobody\n% /bin/pwd\npwd: .: Permission denied\n\nThe problem does not occur if normoalization is none:\n\n# zfs create -o normalization=none z/test2\n# mkdir -m711 /test2/foo\n# mkdir /test2/foo/bar\n# chown nobody /test2/foo/bar\n# cd /test2/foo/bar\n# su -m nobody\n% /bin/pwd\n/test2/foo/bar\n\nIt seems that zfs_acl_next_ace() for the parent dir returns an access_mask of 0x1200af when normalization is none, and 0x1200a8 otherwise, all else being equal."
+}

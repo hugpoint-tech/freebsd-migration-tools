@@ -1,0 +1,8 @@
+{
+ "id": 1334117,
+ "bug_id": 282639,
+ "attachment_id": 0,
+ "creation_time": "2024-11-09T01:42:35Z",
+ "creator": "jeffpc@josefsipek.net",
+ "text": "Recently, I set up a new jail to handle my email and so I wanted to increase the number of rotated maillogs to 60 days (from the default 7).  I tried to be clever by creating /usr/local/etc/newsyslog.conf.d/maillog.conf with the following line in it:\n\n/var/log/maillog\t\t\t640  60\t   *\t@T00  JC\n\nand I keeping the maillog entry in /etc/newsyslog.conf alone.\n\nI assumed that the .d snippet would *override* the line from the main config file.\n\nWhat ended up happening was that *every* rotated maillog would look like:\n\n# bzcat maillog.20241019T000000.bz2\nOct 19 00:00:00 smtp newsyslog[33052]: logfile turned over\nOct 19 00:00:00 smtp newsyslog[33052]: logfile turned over\n\nI believe that what happened is that newsyslog rotated the log twice every night - first based on the /etc/newsyslog.conf rule and then based on the /usr/local/etc/newsyslog.conf.d/maillog.conf rule.  Since there were no log messages from postfix during the few milliseconds between rotations, the log only had the newsyslog markers when it got rotated for the second time and the actual log contents from the first log rotation of the night got lost.\n\n(I like timestamp-based log rotation, and so my /etc/crontab has `newsyslog -t DEFAULT`.  It is possible that using the regular integer suffixes would have resulted in every-other-log still containing the log messages from the day.  I haven't tested it.)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1000186,
+ "bug_id": 229381,
+ "attachment_id": 0,
+ "creation_time": "2018-07-03T17:37:49Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: asomers\nDate: Tue Jul  3 17:37:17 UTC 2018\nNew revision: 335899\nURL: https://svnweb.freebsd.org/changeset/base/335899\n\nLog:\n  auditd(8): register signal handlers interrutibly\n\n  auditd_wait_for_events() relies on read(2) being interrupted by signals,\n  but it registers signal handlers with signal(3), which sets SA_RESTART.\n  That breaks asynchronous signal handling. It means that signals don't\n  actually get handled until after an audit(8) trigger is received.\n  Symptoms include:\n\n  * Sending SIGTERM to auditd doesn't kill it right away; you must send\n    SIGTERM and then send a trigger with auditon(2).\n  * Same with SIGHUP\n  * Zombie child processes don't get reaped until auditd receives a trigger\n    sent by auditon. This includes children created by expiring audit trails\n    at auditd startup.\n\n  Fix by using sigaction(2) instead of signal(3).\n\n  Cherry pick https://github.com/openbsm/openbsm/commit/d060887\n\n  PR:\t\t229381\n  Reviewed by:\tcem\n  Obtained from:\tOpenBSM\n  MFC after:\t2 weeks\n  Differential Revision:\thttps://github.com/openbsm/openbsm/pull/36\n\nChanges:\n  head/contrib/openbsm/bin/auditd/auditd.c"
+}

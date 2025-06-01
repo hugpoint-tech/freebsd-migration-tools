@@ -1,0 +1,8 @@
+{
+ "id": 1225381,
+ "bug_id": 266240,
+ "attachment_id": 0,
+ "creation_time": "2022-09-05T21:10:45Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Creating an NFSv4 ACL with an entry that denies ACL_READ_ATTRIBUTES ought to deny the user the ability to stat the file.  On ZFS, it does.  But on UFS, it has no effect.\n\nSteps to Reproduce:\n\n#! /bin/sh\ntruncate -s 1g /tmp/ufs.img\nMD=`mdconfig -a -t vnode -f /tmp/ufs.img`\nnewfs $MD\ntunefs -N enable /dev/$MD\nsudo mount /dev/$MD /mnt\ncd /mnt\ntouch foo\nsetfacl -a 0 user:nobody:------a-------:-------:deny foo\nsudo -u nobody stat $FILE \u003e/dev/null 2\u003e\u00261\nif [ $? -eq 0 ]; then\n\techo -e \"ERROR: user nobody can stat the file, despite being denied by ACL\"\nfi\n\ncd /\numount /mnt\nmdconfig -d -u $MD"
+}

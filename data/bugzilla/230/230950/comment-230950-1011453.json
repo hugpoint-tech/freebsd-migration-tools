@@ -1,0 +1,8 @@
+{
+ "id": 1011453,
+ "bug_id": 230950,
+ "attachment_id": 0,
+ "creation_time": "2018-09-16T21:01:29Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #15)\n\nLook at the v4 version;  we haven't done this there in over 7 years either:\nhttps://svnweb.freebsd.org/base/head/sys/netinet/udp_usrreq.c?r1=222487\u0026r2=222488\u0026\n\nhttps://svnweb.freebsd.org/base/head/sys/netinet/udp_usrreq.c?annotate=337018#l1540\n\n\nAnd we are doing the same kind of invalidations in the legacy output path:\nhttps://svnweb.freebsd.org/base/head/sys/netinet/ip_output.c?annotate=328271\u0026pathrev=328271#l285\n\n\nWhy are people stumbling over this on v6 more?  I kept suspecting that it has to do with RAs, one of the reasons I could not replicate it in a \"noise-free\" testbed.\n\nThe real problem is that if there are two consumers of the same lle and the lle gets freed, then the refcount on the lle isn't right, right?  And given they are on the same inp, the problem is that we are freeing them off the inp while we are holding a rlock only;  in turn this would mean we need wlocks for both ip_output and ip6_output calls all the time to prevent this?\n\nI think this is partly why the original route caching was passing and updated route all the way back up the stack to a save place where we could alter the inp and only worked on a local copy compared to doing the in-place changes?\n\nI am adding karels to Cc:"
+}

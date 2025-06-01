@@ -1,0 +1,8 @@
+{
+ "id": 727722,
+ "bug_id": 181448,
+ "attachment_id": 0,
+ "creation_time": "2013-08-21T09:00:02Z",
+ "creator": "dariaz@mellanox.com",
+ "text": "When reloading mlxen there are messages in the logs:\n\ncan't re-use a leaf (various leaf names)!\n\nthen, when trying to read these leafs - the kernel crashes.\n\nFix: The order of releasing resources in mlxen needed to be corrected.\n\n\n\n-       if (priv-\u003esysctl)\n-               sysctl_ctx_free(\u0026priv-\u003econf_ctx);\n-\n        cancel_delayed_work(\u0026priv-\u003estats_task);\n        /* flush any pending task for this netdev */\n        flush_workqueue(mdev-\u003eworkqueue);\n@@ -937,6 +934,10 @@ void mlx4_en_destroy_netdev(struct net_device *dev\n        mutex_unlock(\u0026mdev-\u003estate_lock);\n\n        mlx4_en_free_resources(priv);\n+\n+       if (priv-\u003esysctl)\n+               sysctl_ctx_free(\u0026priv-\u003econf_ctx);\n+\n        mtx_destroy(\u0026priv-\u003estats_lock.m);\n        mtx_destroy(\u0026priv-\u003evlan_lock.m);\n        kfree(priv);--uNG4LiJEvBLt5Xf8cNAOunN2O02VJbT6WCktmtc1b291laWA\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: sys/ofed/drivers/net/mlx4/en_netdev.c\n===================================================================\n--- sys/ofed/drivers/net/mlx4/en_netdev.c       (revision 254594)\n+++ sys/ofed/drivers/net/mlx4/en_netdev.c       (working copy)\n@@ -924,9 +924,6 @@ void mlx4_en_destroy_netdev(struct net_device *dev\n        if (priv-\u003eallocated)\n                mlx4_free_hwq_res(mdev-\u003edev, \u0026priv-\u003eres, MLX4_EN_PAGE_SIZE);\nHow-To-Repeat: reload mlxen then try sysctl -a or a certain problematic leaf."
+}

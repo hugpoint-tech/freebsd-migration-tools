@@ -1,0 +1,8 @@
+{
+ "id": 625873,
+ "bug_id": 160035,
+ "attachment_id": 0,
+ "creation_time": "2011-08-23T20:30:10Z",
+ "creator": "mm@FreeBSD.org",
+ "text": "ZFS rollback does not invalidate mmapped cache - this may lead to a different\nor corrupted view of files after a rollback (or clone swap).\nThis bug is related to kern/156933\n\nFix: \n\nThe problem may be in zfs_vnops.c, zfs_inactive():\n\nOriginal OpenSolaris implementation contains:\n\nif (zp-\u003ez_sa_hdl == NULL) {\n\t/*\n\t * The fs has been unmounted, or we did a\n\t * suspend/resume and this file no longer exists.\n\t */\n\tif (vn_has_cached_data(vp)) {\n\t\t(void) pvn_vplist_dirty(vp, 0, zfs_null_putapage,\n\t\t    B_INVAL, cr);\n\t}\n\nOur implementation misses the \"if (vn_has_cached_data(vp))\" part.\nThe function vm_object_sync() might be a possible solution to invalidate\nthe pages.\nHow-To-Repeat: dd if=/dev/zero of=/tmp/testfile bs=1m count=64\nzpool create test /tmp/testfile\necho \"First text\" \u003e /test/file.txt\nzfs snapshot test@s1\necho \"Second text\" \u003e /test/file.txt\ntail /test/file.txt\nzfs rollback test@s1\ncat /test/file.txt\n\nWithout the tail command (mmap) the file reads properly \"First text\".\nWith tail it reads cached \"Second text\" a remount of /test is required -\nthe on-disk data is correct but cached data incorrect.\nThe cached pages should get properly invalidated."
+}

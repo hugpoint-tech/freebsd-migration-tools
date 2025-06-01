@@ -1,0 +1,8 @@
+{
+ "id": 1132760,
+ "bug_id": 250576,
+ "attachment_id": 0,
+ "creation_time": "2020-11-20T14:07:23Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "(In reply to andrew from comment #12)\n\nI was wrong about it taking a different path there, and I've uncovered a bug, but I don't think the bug I found accounts for the original problem.\n\nThese lines of code (ffs_truncate, lines 216 and 259 of ffs_inode.c in my 12-stable snapshot):\n\n\u003e     int softdeptrunc, journaltrunc;\n\n\u003e     journaltrunc = DOINGSUJ(vp);\n\nand this definition of DOINGSUJ(vp) from line 198 of ufs_inode.h:\n\n\u003e #define\tDOINGSUJ(vp)\t   ((vp)-\u003ev_mount-\u003emnt_flag \u0026 MNT_SUJ)\n\nand this definition of MNT_SUJ (from mount.h line 302):\n\n\u003e #define\tMNT_SUJ\t\t0x0000000100000000ULL /* using journaled soft updates */\n\ncombine to cause the value of journaltrunc to always be 0, because the result of DOINGSUJ() is out of range for an integer.\n\nSo DOINGSUJ needs to be defined as  (((vp)-\u003ev_mount-\u003emnt_flag \u0026 MNT_SUJ) != 0)  or something of that ilk.\n\nThat explains why enabling journalling did not prevent the ffs_syncvnode call from line 410, but there's still the original problem to track down."
+}

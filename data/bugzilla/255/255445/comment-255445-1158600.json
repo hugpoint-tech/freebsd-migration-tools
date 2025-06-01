@@ -1,0 +1,8 @@
+{
+ "id": 1158600,
+ "bug_id": 255445,
+ "attachment_id": 0,
+ "creation_time": "2021-04-27T19:22:03Z",
+ "creator": "yocalebo@gmail.com",
+ "text": "(In reply to Li-Wen Hsu from comment #1)\n\nHi Li-Wen Hsu, thanks for the feedback. I will definitely use stock GENERIC freeBSD 12.2 kernel. The hard part is instrumenting a program that causes the SIGSEV :(.\n\nI can, however, confirm that stock 12.2 has a regression with threads on py3.8.7. You can use this script to test it.\n\nfrom multiprocessing.pool import ThreadPool\nfrom datetime import datetime\n\nclass Broken(object):\n    def __init__(self):\n        self.pool = ThreadPool()\n\n    def __del__(self):\n        self.pool.close()\n        self.pool.join()\n\nohno = Broken()\ndate = datetime.now()\n\nprint(str(date), ohno)\n\nRunning that 52 times caused an indefinite hang ~19.2% of the time. After cherry-picking the 2 commits I linked above, I confirmed that it resolved the \"hangs\". It never did reproduce a core dump.\n\nAnyways, I'll keep trying to write a program that tickles the problem. If you or anyone has any ideas reading this, I'm all ears at this point and will happily try anything at this point :)"
+}

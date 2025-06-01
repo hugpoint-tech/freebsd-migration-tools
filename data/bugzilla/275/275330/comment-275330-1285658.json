@@ -1,0 +1,8 @@
+{
+ "id": 1285658,
+ "bug_id": 275330,
+ "attachment_id": 0,
+ "creation_time": "2023-11-25T12:19:58Z",
+ "creator": "vini.ipsmaker@gmail.com",
+ "text": "I recently wrote Lua bindings for Capsicum and faced two inconveniences with the API.\n\nFirst problem is related to initalization. I'm using gperf to translate a string known only at runtime (whatever the Lua code is trying to do) to a cap_rights_t. Something like:\n\ncap_rights_t values[N] = {\n  CAP_READ, // HASH(\"CAP_READ\") = 0\n  CAP_WRITE, // HASH(\"CAP_WRITE\") = 0\n  // ...\n};\n\nHowever there are several holes in this table that are used whenever the known-at-runtime-string doesn't point to a valid capability and I need to initialize them to a default value.\n\nOther APIs such as POSIX threads solve this problem by offering a macro (PTHREAD_MUTEX_INITIALIZER) that can be used to initialize the variable instead of calling a function.\n\nIt'd be very helpful if Capsicum offered a macro CAP_RIGHTS_INITIALIZER in the same fashion. That'd solve half of my problems with Capsicum's API.\n\nThe second problem I'm facing is a lack of a function to check whether cap_rights_t is empty. Right now I have to do this:\n\ncap_rights_t all_rights;\ncap_rights_init(\u0026all_rights);\nCAP_ALL(\u0026all_rights); //\u003c I don't even know whether CAP_ALL() is part of the intended public API\ncap_rights_t complement = all_rights;\ncap_rights_remove(\u0026complement, \u0026flag); //\u003c flag is what I want to know whether is empty\nif (cap_rights_contains(\u0026complement, \u0026all_rights)) {\n    // ...\n}\n\nThat's *very* inconvenient (and inefficient). Can we have cap_rights_is_empty(flag)? That'd solve the other half of my problems with the API."
+}

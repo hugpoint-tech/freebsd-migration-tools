@@ -1,0 +1,8 @@
+{
+ "id": 884208,
+ "bug_id": 206291,
+ "attachment_id": 0,
+ "creation_time": "2016-06-20T05:42:04Z",
+ "creator": "cy@FreeBSD.org",
+ "text": "(In reply to Adrian Chadd from comment #3)\nThat's what my first patch did. The problem is, as you stated, that makes differing system behaviour depending on whether /usr is found or not.\n\nThe other option, which I prefer over my first suggestion in the email thread, is to use $start_cmd in rc.d scripts that execute prior to mountcritlocal, which is assigned at line 999 in rc.subr and executed at line 1005. The limits command is only executed if $start_cmd is not specified and the defaults are used. Essentially, This is differing system behaviour depending on whether $start_cmd is specified in the rc.d script or not.\n\nScanning through the rc.d scripts that execute prior to FILESYSTEMS, only ddb and var do not specify $start_cmd. The var script executes directly, it's not executed by rc.subr. The ddb script doesn't specify start_cmd and is the only script affected by this.\n\nIf ddb did specify $start_cmd, it would avoid the code in rc.subr that attempts and fails to execute limits(1). I think adding $start_cmd to either run a function in /etc/rc.d/ddb or run /sbin/ddb directly would circumvent this ticket. Just a thought. Going the function route is probably simpler.\n\nI'll upload my two patches for the record and may the best one, or some other patch, be used."
+}

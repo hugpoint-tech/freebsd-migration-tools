@@ -1,0 +1,8 @@
+{
+ "id": 977741,
+ "bug_id": 225927,
+ "attachment_id": 0,
+ "creation_time": "2018-02-16T10:33:34Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Hans Petter Selasky from comment #3)\n\u003e Can you try the patch in D4605 ?\n\nThis problem is not easy to trigger and I'm not sure that the patch solves it.\nI think how it happens:\non ifnet departure in6_domifdetach() is called, then lltable_free() unlinks lltable and acquires LLE_WLOCK for each llentry. While we are acquiring all these locks it is possible, that callout for some entry has been started and blocked on the LLE_WLOCK() since lock is held by lltable_free(). Then llentry_free() releases LLE_WLOCK(), and nd6_llinfo_timer() acquires it. Now we have invalid ifp pointer, it is strange enough that it is NULL...\n\nAbout your patch, it seems the code:\n \n  if (callout_stop(\u0026lle-\u003elle_timer) \u003e 0)\n      LLE_REMREF(lle);\n\ncan be placed in the llentry_free() only once, and also removed from lltable_free(). But it doesn't protect from described scenario. I think we need somehow handle the case when nd6_llinfo_timer() is already active, but it hasn't obtained lock yet."
+}

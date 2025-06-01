@@ -1,0 +1,8 @@
+{
+ "id": 102492,
+ "bug_id": 32420,
+ "attachment_id": 0,
+ "creation_time": "2001-12-01T04:20:01Z",
+ "creator": "brett@lariat.org",
+ "text": "FreeBSD's syslogd has a \"repeat counting\" feature, implemented by\nEric Allman, which is designed to save file space and prevent \nflooding of the console with messages. Unfortunately, because it\nalso works when messages are piped to a log monitoring program, it\nprevents a log monitor from seeing the stream of messages and taking\nappropriate action (e.g. blackholing an attacker). While it's a\ngood idea to do repeat counting when the destination of log messages\nis a file, a user, or the console, it should be disabled when the\noutput is piped.\n\nFix: \n\nHere's the original code:\n\n                /*\n                 * suppress duplicate lines to this file\n                 */\n                if ((flags \u0026 MARK) == 0 \u0026\u0026 msglen == f-\u003ef_prevlen \u0026\u0026\n                    !strcmp(msg, f-\u003ef_prevline) \u0026\u0026\n                    !strcasecmp(from, f-\u003ef_prevhost)) {\n                        (void)strncpy(f-\u003ef_lasttime, timestamp, 15);\n                        f-\u003ef_prevcount++;\n\nAdd f-\u003ef_type != F_PIPE to the ANDed conditions in the initial if,\npreferably before the string length comparison.\n\nP.S. -- What are all those comments in the source about a\n\"hollow laugh?\""
+}

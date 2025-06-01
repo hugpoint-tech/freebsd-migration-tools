@@ -1,0 +1,8 @@
+{
+ "id": 1141921,
+ "bug_id": 252743,
+ "attachment_id": 0,
+ "creation_time": "2021-01-16T16:11:11Z",
+ "creator": "freebsd@tim.thechases.com",
+ "text": "To reproduce:\n\n    $ jot 3 | rs -C,\n\nExpected output:\n\n    1,2,3\n\nActual output:\n\n    1,2,3,\n\n(note the trailing comma)\n_________________________________\n\nBy default, rs(1) will strip trailing delimiters:\n\n    $ jot 3 | rs\n    1  2  3\n    $ jot 3 | rs | hexdump -C | head -1\n    00000000  31 20 20 32 20 20 33 0a                           |1  2  3.|\n\nand `rs -m` will properly preserve them:\n\n    $ jot 3 | rs -m | hexdump -C | head -1\n    00000000  31 20 20 32 20 20 33 20  20 0a                    |1  2  3  .|\n\n(note the additional two hex \"20\" space values).\n\nSimilarly, the -S$DELIM option properly strips trailing delimiters while `-m` keeps them:\n\n    $ jot 3 | rs -S,\n    1,,2,,3\n    $ jot 3 | rs -mS,\n    1,,2,,3,,\n\nHowever, when specifying an output delimiter with -C, it doesn't strip the trailing delimiter:\n\n    $ jot 3 | rs -C,\n    1,2,3,\n\nThat's the output I would expect from `rs -mC,` to maintain a trailing delimiter:\n\n    $ jot 3 | rs -C, -m\n    1,2,3,\n\nas the man-page for rs(1) says\n\n\u003e -m  Do not trim excess delimiters from the ends of the output array.\n\nsuggesting that trailing delimiters (including those from `-C`) should be trimmed unless `-m` is specified."
+}

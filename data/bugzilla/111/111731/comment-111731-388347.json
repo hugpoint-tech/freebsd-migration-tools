@@ -1,0 +1,8 @@
+{
+ "id": 388347,
+ "bug_id": 111731,
+ "attachment_id": 0,
+ "creation_time": "2007-04-16T20:20:12Z",
+ "creator": "Mark.Martinec@ijs.si",
+ "text": "A recent change to a mail/dkim-milter startup script started to supply\na gratuitous options '-k /var/db/domainkeys/default.key.pem -s default'\neven when starting a milter in a verification-only mode '-b v',\nthus breaking existing installations and requiring a workaround.\n\nSince the /var/db/domainkeys/default.key.pem does not exist (and need\nnot exist), the milter refuses to start (here is a clip from a startup\nwith shell echo enabled):\n\n+ /usr/local/libexec/dkim-filter -b v -l -p inet:4443@127.0.0.1\n  -u dkimfilter -P /var/run/milterdkim/verifier.pid -d ijs.si\n  -k /var/db/domainkeys/default.key.pem -s default\ndkim-filter: /var/db/domainkeys/default.key.pem:\n  stat(): No such file or directory\n\nA section from my /etc/rc.conf, pertaining to \"verifier\":\n\nmilterdkim_enable=\"YES\"\nmilterdkim_uid='dkimfilter'\nmilterdkim_domain='ijs.si'\nmilterdkim_profiles=\"verifier signer\"\nmilterdkim_verifier_socket='inet:4443@127.0.0.1'\nmilterdkim_verifier_flags='-b v'\n\nFix: \n\nA workaround it to supply a dummy key file (which won't be used)\nto a verifying-only milter.\nHow-To-Repeat: Place the following in /etc/rc.conf:\n\nmilterdkim_enable=\"YES\"\nmilterdkim_uid='dkimfilter'\nmilterdkim_domain='example.com'\nmilterdkim_socket='inet:4443@127.0.0.1'\nmilterdkim_flags='-b v'\n\nand start the milter:\n\n# /usr/local/etc/rc.d/milter-dkim start\nStarting milterdkim.\ndkim-filter: /var/db/domainkeys/default.key.pem: stat(): No such file or directory"
+}

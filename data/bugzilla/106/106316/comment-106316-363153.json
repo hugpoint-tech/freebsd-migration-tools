@@ -1,0 +1,8 @@
+{
+ "id": 363153,
+ "bug_id": 106316,
+ "attachment_id": 0,
+ "creation_time": "2006-12-04T13:50:04Z",
+ "creator": "cichas@seznam.cz",
+ "text": "IPFW2 with dummynet pipes \nnet.inet.ip.fw.one_pass: 0\nno skipto rule\n\nAfter 'ipfw -f flush' you will get lots of:\nipfw: ouch!, skip past end of rules, denying packet\n\nIt's bug because at least kernel rule 65535 should be used for packets going out of pipes after rule flush.\n\nFix: \n\nOnly workaround:\n/sbin/sysctl net.inet.ip.fw.one_pass=1\n$fwcmd -f flush\n$fwcmd add 65500 allow all from any to any\n\nsleep XY to flush pipes, load new ruleset, one_pass=0 and delete rule 65500\nHow-To-Repeat: PC1 -- ethernet -- PC2\nRun iperf test between them\n\nOn PC1 od PC2 run:\n/sbin/sysctl net.inet.ip.fw.one_pass 0\nipfw pipe 1 config bw 256Kbit/s queue 512KBytes\nipfw pipe 2 config bw 256Kbit/s queue 512KBytes\nipfw add 10 pipe 1 ip from any to any out\nipfw add 10 allow ip from any to any out\nipfw add 20 pipe 2 ip from any to any in\nipfw add 20 allow ip from any to any in\n/bin/sleep 20\nipfw -f flush"
+}

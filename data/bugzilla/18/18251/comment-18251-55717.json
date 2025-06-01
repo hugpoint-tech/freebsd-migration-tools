@@ -1,0 +1,8 @@
+{
+ "id": 55717,
+ "bug_id": 18251,
+ "attachment_id": 0,
+ "creation_time": "2000-04-27T09:30:01Z",
+ "creator": "pavlin@catarina.usc.edu",
+ "text": "\n\tinet_aton() may fail for some IPv4 addresses that may look OK.\n\tE.g. such address is 204.08.126.0 (note the '0' in front of '8',\n\ti.e. \"08\" is OK in base-10, but not valid in base-8\n\t(a fact that triggers the error because of the particular\n\timplemetation which uses strtoul()\n\nFix: \n\nThe problem is in the inet_aton() implementation in libc:\n\t/usr/src/lib/libc/net/inet_addr.c\n\n\tOlder FreeBSD versions (e.g. FreeBSD-3.2) are OK, so one\n\tpossible solution is to use the implementation from\n\tthose older systems instead of the FreeBSD-4.0 solution.\nHow-To-Repeat: \n\tCompile and execute the following code:\n\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetinet/in.h\u003e\n#include \u003carpa/inet.h\u003e\n\nint\nmain()\n{\n    struct in_addr in_addr;\n    char *s;\n\n    s = \"204.08.126.0\";\n    if (inet_aton(s, \u0026in_addr) == 1)\n\tprintf(\"OK\\n\");\n    else\n\tprintf(\"ERROR\\n\");\n    \n    exit (0);\n}"
+}

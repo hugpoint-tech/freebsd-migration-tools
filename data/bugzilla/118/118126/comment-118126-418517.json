@@ -1,0 +1,8 @@
+{
+ "id": 418517,
+ "bug_id": 118126,
+ "attachment_id": 0,
+ "creation_time": "2011-12-16T00:58:55Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: rmacklem\nDate: Fri Dec 16 00:58:41 2011\nNew Revision: 228560\nURL: http://svn.freebsd.org/changeset/base/228560\n\nLog:\n  Patch the new NFS server in a manner analagous to r228520 for the\n  old NFS server, so that it correctly handles a count == 0 argument\n  for Commit.\n  \n  PR:\t\tkern/118126\n  MFC after:\t2 weeks\n\nModified:\n  head/sys/fs/nfsserver/nfs_nfsdport.c\n\nModified: head/sys/fs/nfsserver/nfs_nfsdport.c\n==============================================================================\n--- head/sys/fs/nfsserver/nfs_nfsdport.c\tFri Dec 16 00:48:53 2011\t(r228559)\n+++ head/sys/fs/nfsserver/nfs_nfsdport.c\tFri Dec 16 00:58:41 2011\t(r228560)\n@@ -1254,7 +1254,13 @@ nfsvno_fsync(struct vnode *vp, u_int64_t\n {\n \tint error = 0;\n \n-\tif (cnt \u003e MAX_COMMIT_COUNT) {\n+\t/*\n+\t * RFC 1813 3.3.21: if count is 0, a flush from offset to the end of\n+\t * file is done.  At this time VOP_FSYNC does not accept offset and\n+\t * byte count parameters so call VOP_FSYNC the whole file for now.\n+\t * The same is true for NFSv4: RFC 3530 Sec. 14.2.3.\n+\t */\n+\tif (cnt == 0 || cnt \u003e MAX_COMMIT_COUNT) {\n \t\t/*\n \t\t * Give up and do the whole thing\n \t\t */\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

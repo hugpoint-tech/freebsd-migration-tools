@@ -1,0 +1,8 @@
+{
+ "id": 975811,
+ "bug_id": 225692,
+ "attachment_id": 0,
+ "creation_time": "2018-02-05T20:21:08Z",
+ "creator": "cem@freebsd.org",
+ "text": "iswprint(wc) is a thin shim around __istype(wc, _CTYPE_R);\n\n__istype(wc, type) is a thin shim in include/_ctype.h:\n  return (!!__maskrune(wc, _CTYPE_R));\n\n__maskrune() is defined earlier in the same file:\n  return ((wc \u003c 0 || wc \u003e= _CACHED_RUNES) ? ___runetype(wc) :\n    _CurrentRuneLocale-\u003e__runetype[wc]) \u0026 _CTYPE_R;\n\n(CACHED_RUNES is probably 1\u003c\u003c8.)\n\nThis tells me the type information is being looked up in ___runetype() and that\nthe _CTYPE_R bit must be unset for 0x2002/0xff08.\n\nAt some level, I thought we got this metadata from the unicode standard tables, but maybe ours are out of date or this particular data is sourced independently.\n\n___runetype(wc) is a thin shim around ___runetype_l(wc, __get_locale());\n\n___runetype_l() does a binary search in the _RuneRange table for the current locale object.  If nothing is found, it returns 0.  This suggests the current locale object does not have or does not have correct type metadata for at least these two characters."
+}

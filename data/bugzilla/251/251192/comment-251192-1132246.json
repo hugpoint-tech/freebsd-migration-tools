@@ -1,0 +1,8 @@
+{
+ "id": 1132246,
+ "bug_id": 251192,
+ "attachment_id": 219740,
+ "creation_time": "2020-11-16T19:18:42Z",
+ "creator": "amdmi3@FreeBSD.org",
+ "text": "Created attachment 219740\nPatch\n\nI've ran into reproducible postgresql13 crash with LLVM enabled.\n\nCan be reproduced with the following query:\n\nSET jit_above_cost = 0;\nSET jit_inline_above_cost = 0;\nSET jit_optimize_above_cost = 0;\nSELECT (jsonb_array_elements('[true]'::jsonb)-\u003e\u003e0)::boolean;\n\nProblem summary: thread local storage access from code inlined by LLVM JIT instantly crashes (llvm11 also reports an error about unsupported relocation). On FreeBSD TLS accesses are quite common as functions like isspace() (used in boolin and input functions for many other commonly used postgresql types) involve caching of locale specific data in TLS. \n\nUpstream bug including details, investigation and a workaround:\n\nhttps://www.postgresql.org/message-id/flat/16696-29d944a33801fbfe%40postgresql.org#e010f0f56325aac5de96f8d0bb77dec0\n\nFor now, I suggest to apply the attached patch which disables inlining of functions which access TLS. Alternative would be to disable LLVM completely and mark it BROKEN, but IMO that'd be an overkill."
+}

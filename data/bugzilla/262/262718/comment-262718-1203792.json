@@ -1,0 +1,8 @@
+{
+ "id": 1203792,
+ "bug_id": 262718,
+ "attachment_id": 232630,
+ "creation_time": "2022-03-22T14:37:00Z",
+ "creator": "dinoex@FreeBSD.org",
+ "text": "Created attachment 232630\nSuggested patch\n\nSetup:\nI run BGP with md5 passwords, using setkey and ipsec.conf.\nWith FreeBSD-13 this configuration fail to work.\n\n\nfrom logfile:\nkernel: Feeding entropy: .\nkernel: Installing ipsec manual keys/policies.\nkernel: The result of line 1: Invalid argument.\nkernel: The result of line 2: Invalid argument.\nkernel: The result of line 3: Invalid argument.\nkernel: The result of line 4: Invalid argument.\nkernel: Loading kernel modules:\n\n/etc/ipsec.conf:\nadd 185.XXX.XXX.15 185.XXX.XXX.130 tcp 0x1000 -A tcp-md5 \"password\";\nadd 185.XXX.XXX.130 185.XXX.XXX.15 tcp 0x1000 -A tcp-md5 \"password\";\nadd 185.XXX.XXX.15 185.XXX.XXX.129 tcp 0x1000 -A tcp-md5 \"password\";\nadd 185.XXX.XXX.129 185.XXX.XXX.15 tcp 0x1000 -A tcp-md5 \"password\";\n\n/etc/rc.conf:\nipsec_file=\"/etc/ipsec.conf\"\nipsec_enable=\"YES\"\nkld_list=\"netgraph tcpmd5 ng_ether ng_pppoe ng_socket ng_mppc ng_ppp ng_tee ng_tcpmss\"\n\n# service -l | egrep 'ipsec|kld'\nipsec\nkld\nkldxref\n\nWorkaround after reboot I run:\n# /etc/rc.d/ipsec start\n\nSuggested fix:\nChange the Starting order.\n\nPatching /etc/rc.d/ipsec solves the problem:\n\n# rcorder /etc/rc.d/* /usr/local/etc/rc.d/* | egrep 'ipsec|kld'\n/etc/rc.d/kldxref\n/etc/rc.d/kld\n/etc/rc.d/ipsec\n\n\nstart ipsec after"
+}

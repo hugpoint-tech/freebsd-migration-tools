@@ -1,0 +1,8 @@
+{
+ "id": 828723,
+ "bug_id": 201045,
+ "attachment_id": 0,
+ "creation_time": "2015-06-22T13:58:29Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "When upgrading nginx using pkg, NGINX_TMPDIR (usually /var/tmp/nginx) is removed. In setups relying on tmpdir this breaks the webserver (file upload, caches etc.) and therefore an immediate restart of nginx is required right after the upgrade (plus user experience might by suboptimal due to removed files).\n\nThe plist already contains a fix for portmaster (which sets UPGRADE_PORT when upgrading the port):\n\nnginx/pkg-plist:@unexec if [ -z ${UPGRADE_PORT} ] ; then rm -fr %%NGINX_TMPDIR%%; fi\n\nUnfortunately this doesn't help when using pkg, so pkg install will remove /var/tmp/nginx, essentially breaking the webserver.\n\nThe workaround is to set UPGRADE_PORT yourself on pkg install, e.g.:\n\nUPGRADE_PORT=nginx pkg install nginx\n\nThis is not really user friendly though, so it might be better to simply not remove the temporary directory on pkg delete by default."
+}

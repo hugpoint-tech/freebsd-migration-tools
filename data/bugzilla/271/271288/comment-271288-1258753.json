@@ -1,0 +1,8 @@
+{
+ "id": 1258753,
+ "bug_id": 271288,
+ "attachment_id": 0,
+ "creation_time": "2023-05-07T20:32:42Z",
+ "creator": "martin@bxlr.sk",
+ "text": "In my first example when I checked the udp_input() argument, struct mbuf **mp:\n\n(gdb) p **(struct mbuf**)0xd5ecebc8\n...\n...\n  m_data = 0xd91e501a \"E\\020\\001.\",\n\nm_data here is struct ip* , first being used in sys/netinet/udp_usrreq.c:432:\n\n 432         ip = mtod(m, struct ip *);\n\nCrash occurs later here:\n\n 504                         bcopy(((struct ipovly *)ip)-\u003eih_x1, b, 9);\n\nI don't understand the process how the mbuf gets allocated and used later in the connection. It seems though address for the ip structure is not aligned (maybe system was in thumb mode?).\n\nI wondered if this is a driver problem, in this case virtio-net. I changed my configuration to use realtek card instead:\n\nqemu-system-arm -M virt -m 2G -hda FreeBSD-13.2-RELEASE-arm-armv7-GENERICSD.img -s -bios u-boot.bin \\\n-device rtl8139,netdev=network0 -netdev user,id=network\n\nAnd system boots and can be used without problem (at least the network tests I did were ok)."
+}

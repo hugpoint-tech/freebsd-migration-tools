@@ -1,0 +1,8 @@
+{
+ "id": 1088993,
+ "bug_id": 187835,
+ "attachment_id": 0,
+ "creation_time": "2020-02-20T16:30:00Z",
+ "creator": "admin@support.od.ua",
+ "text": "(In reply to Aleksandr Fedorov from comment #6)\n\nYes, thank you.\n\nOn FreeBsd 12.1, with kern.ipc.maxsockbuf = 83886080 and adding 564 vlan, we get the binary format:\n\n# ngctl msg em2:lower gettable |more\nRec'd response 3 from \"[b]:\":\n0000:  34 02 00 00 76 6c 61 6e 31 30 30 00 00 00 00 00  4...vlan100.....\n0010:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................\n0020:  00 00 00 00 64 00 64 00 00 00 76 6c 61 6e 31 30  ....d.d...vlan10\n0030:  31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  1...............\n0040:  00 00 00 00 00 00 00 00 00 00 65 00 65 00 00 00  ..........e.e...\n0050:  76 6c 61 6e 31 30 32 00 00 00 00 00 00 00 00 00  vlan102.........\n0060:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................\n0070:  66 00 66 00 00 00 76 6c 61 6e 31 30 33 00 00 00  f.f...vlan103...\n...\n\nFurther, after a sequence of commands leads to a kernel panic.\n\n# delete all freshly created vlans\nngctl list | awk ' $2 ~ /ngeth/ {print \"ngctl shutdown \"$2\":\";}' | sh\n\n# add already 700 vlan\ncat test_creating_vlan.sh:\n\n#!/bin/sh\n\n# man ng_vlan\n\nETHER_IF=em2\n\nngctl -f- \u003c\u003cEOF\n     mkpeer ${ETHER_IF}: vlan lower downstream\n     name ${ETHER_IF}:lower vlan-${ETHER_IF}\n     connect ${ETHER_IF}: vlan-${ETHER_IF}: upper nomatch\nEOF\n\nfor i in `jot 700 100`; do\n    ngctl mkpeer vlan-${ETHER_IF}: eiface vlan$i ether\n    ngctl msg vlan-${ETHER_IF}: addfilter \\{ vlan=$i hook=\\\"vlan$i\\\" \\}\ndone\n\n### Again we delete these 700 vlans\nngctl list | awk ' $2 ~ /ngeth/ {print \"ngctl shutdown \"$2\":\";}' | sh\n\n### and\nkernel panic"
+}

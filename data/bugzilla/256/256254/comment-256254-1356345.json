@@ -1,0 +1,8 @@
+{
+ "id": 1356345,
+ "bug_id": 256254,
+ "attachment_id": 0,
+ "creation_time": "2025-03-24T13:41:37Z",
+ "creator": "emaste@freebsd.org",
+ "text": "The check in Makefile.inc1:\n\n.if !defined(DB_FROM_SRC)\n#\n# Check for missing UIDs/GIDs.\n#\nCHECK_UIDS=     auditdistd\nCHECK_GIDS=     audit\nCHECK_UIDS+=    ntpd\nCHECK_GIDS+=    ntpd\nCHECK_UIDS+=    proxy\nCHECK_GIDS+=    proxy authpf\nCHECK_UIDS+=    smmsp\nCHECK_GIDS+=    smmsp\nCHECK_UIDS+=    unbound\nCHECK_GIDS+=    unbound\n_installcheck_world: __installcheck_UGID\n__installcheck_UGID: .PHONY\n.for uid in ${CHECK_UIDS}\n        @if ! `id -u ${uid} \u003e/dev/null 2\u003e\u00261`; then \\\n                echo \"ERROR: Required ${uid} user is missing, see /usr/src/UPDATING.\"; \\\n                false; \\\n        fi\n.endfor\n.for gid in ${CHECK_GIDS}\n        @if ! `find / -prune -group ${gid} \u003e/dev/null 2\u003e\u00261`; then \\\n                echo \"ERROR: Required ${gid} group is missing, see /usr/src/UPDATING.\"; \\\n                false; \\ \n        fi\n.endfor\n.endif\n\nThese UIDs and GIDs are checked unconditionally right now, but we could easily include them based on the associated options - e.g. with something like this diff:\n\n-CHECK_GIDS+=   proxy authpf\n+CHECK_GIDS+=   proxy\n+.if ${MK_AUTHPF} != no\n+CHECK_GIDS+=   authpf\n+.endif"
+}

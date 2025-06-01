@@ -1,0 +1,8 @@
+{
+ "id": 15821,
+ "bug_id": 5140,
+ "attachment_id": 0,
+ "creation_time": "1997-11-24T20:20:00Z",
+ "creator": "Joel.Faedi@esial.u-nancy.fr",
+ "text": "On Compaq Prolinea with Pentium CPU (Prolinea 575/590/5133/5150, I have\nonly these models), all kernels will panic. The problem is due to due\nto a call at \"bios32_SDCI\" address. This addess is given bios_sigsearch\nfunction in bios.c (see fix) after a cast in bios32_SDheader structure\nand on Compaq Prolinea, this value is too big (perhaps coded diffently).\n\nFix: \n\nFix bios32_init function in /usr/src/sys/i386/i386/bios.c: very value of\nsdh-\u003eentry, I think in should be less than BIOS max address:\n\n\t/* get a virtual pointer to the structure */\n\tsdh = (struct bios32_SDheader *)BIOS_PADDRTOVADDR(sigaddr);\n\tfor (cv = (u_int8_t *)sdh, ck = 0, i = 0; i \u003c (sdh-\u003elen * 16); i++) {\n\t    ck += cv[i];\n\t}\n\t/* If checksum is OK, enable use of the entrypoint */\n\tif (ck == 0 \u0026\u0026 sdh-\u003eentry \u003c (BIOS_START + BIOS_SIZE)) { \u003c\u003c\u003c\u003c-\n\t    bios32_SDCI = (caddr_t)BIOS_PADDRTOVADDR(sdh-\u003eentry);\nHow-To-Repeat: Boot 3.0-971123-SNAP (or some more older versions) from boot floppy,\nkernel will panic very quickly."
+}

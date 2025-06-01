@@ -1,0 +1,8 @@
+{
+ "id": 1030612,
+ "bug_id": 230160,
+ "attachment_id": 0,
+ "creation_time": "2019-01-08T11:15:32Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "It's actually worse than as described.  Linux's value for `MADV_DONTNEED` is 8, which corresponds to FreeBSD's `MADV_NOCORE`, so we're not even getting the FreeBSD `MADV_DONTNEED` behaviour.\n\nThis test program demonstrates the problem.  Compiled on Linux, it runs to completion on a real Linux system and dies in the last assert on FreeBSD.\n\n```\n#include \u003csys/mman.h\u003e\n#include \u003cassert.h\u003e\n\nint main(void)\n{\n        char *page = mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);\n        assert(page != MAP_FAILED);\n        page[0] = 42;\n        assert(page[0] == 42);\n        madvise(page, 4096, MADV_DONTNEED);\n        assert(page[0] == 0);\n}\n```\n\nThis `madvise` flag is commonly used by memory allocators to guarantee zeroed memory for reuse.  It would be nice if we had a `MADV_ZERO` that did the same thing as Linux's `MADV_DONTNEED` for shared memory as well as anonymous memory."
+}

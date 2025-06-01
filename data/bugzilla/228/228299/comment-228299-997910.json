@@ -1,0 +1,8 @@
+{
+ "id": 997910,
+ "bug_id": 228299,
+ "attachment_id": 0,
+ "creation_time": "2018-06-17T03:09:17Z",
+ "creator": "dteske@FreeBSD.org",
+ "text": "The \"-f file\" argument to sysrc is working as-intended (explanation below).\n\n$ cat file1\nA=file1\n$ cat file2\nA=file2\n$ sysrc -n -ffile{1,2} A\nfile2\n$ sysrc -n -ffile{2,1} A\nfile1\n\nPassing \"-f file\" multiple times does not tell sysrc to output the variable from each file, but rather it tells sysrc to allow overrides.\n\nThe point of sysrc is to allow you to modify rc.conf(5) variables which affect the boot process, service(8), and rc.d scripts -- and those things use a collection of files which override each other. The primary purpose of sysrc is to allow you have visibility into what values persist for the boot process, service(8) invocations, and rc.d scripts . Illustrated above you can see that if you change the order in which you specify multiple \"-f file\" arguments, you have a direct result on which value is printed. Specifically, passing \"-f file1 -f file2\" has a different result than \"-f file2 -f file1\" when requesting the value of variable A -- the last file specified overrides all previously specified files.\n\nIf you want to use sysrc to get the value from each file, use separate invocations (example below):\n\n$ sysrc -nf file1 A\nfile1\n% sysrc -nf file2 A\nfile2\n\nBut if you must use a single command, you can use:\n\n$ echo file{1,2} | xargs -n1 -Ifile sysrc -nf file A\nfile1\nfile2"
+}

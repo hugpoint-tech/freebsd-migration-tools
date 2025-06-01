@@ -1,0 +1,8 @@
+{
+ "id": 1229011,
+ "bug_id": 266863,
+ "attachment_id": 0,
+ "creation_time": "2022-10-06T08:38:44Z",
+ "creator": "sebastian.huber@embedded-brains.de",
+ "text": "I am referring to the SHA512_224_Final() implementation in sys/crypto/sha2/sha512c.c:\n\nvoid\nSHA512_224_Final(unsigned char digest[static SHA512_224_DIGEST_LENGTH], SHA512_CTX * ctx)\n{\n\n\t/* Add padding */\n\tSHA512_Pad(ctx);\n\n\t/* Write the hash */\n\tbe64enc_vect(digest, ctx-\u003estate, SHA512_224_DIGEST_LENGTH);\n\n\t/* Clear the context state */\n\texplicit_bzero(ctx, sizeof(*ctx));\n}\n\nWe have\n\n#define SHA512_224_DIGEST_LENGTH      28\n\nwhich is not a multiple of 8.\n\nWe have for little-endian machines:\n\n/*\n * Encode a length len/4 vector of (uint64_t) into a length len vector of\n * (unsigned char) in big-endian form.  Assumes len is a multiple of 8.\n */\nstatic void\nbe64enc_vect(unsigned char *dst, const uint64_t *src, size_t len)\n{\n\tsize_t i;\n\n\tfor (i = 0; i \u003c len / 8; i++)\n\t\tbe64enc(dst + i * 8, src[i]);\n}\n\nThe result is that the last 32-bits of the digest are not written."
+}

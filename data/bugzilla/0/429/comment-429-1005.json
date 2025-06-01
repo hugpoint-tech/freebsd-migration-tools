@@ -1,0 +1,8 @@
+{
+ "id": 1005,
+ "bug_id": 429,
+ "attachment_id": 0,
+ "creation_time": "1995-05-17T11:40:00Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "\n\t\n\tif_de.c's BPF/multicast logic is broken.  It goes something like:\n\n#if BPF is configured\n        if there is a BPF listener\n                send the packet to BPF\n                If it was a packet I normally wouldn't get, then just drop it\n        else if there is no BPF listener\n                If this packet is not for me and not broadcast,\n                just drop it (i.e. if it is multicast, drop it!)\n#endif\n\n\tThis means that if BPF is configured, but there are no BPF listeners,\n\tyou don't get any multicast.\n\nFix: The reason for the checks is because BPF might decide to put the interface\nin promiscuous mode.  Therefore,\na) if there are no BPF listeners, there is no need to do this checking\nb) can optimize out the ethernet address comparisons by checking IFF_PROMISC\n\nI have been running this fix for two weeks and haven't had any problems,\nrunning multicast apps and tcpdump at the same or different times.\nHow-To-Repeat: \n\t\n\tOn a machine on the MBONE with a de card and bpfilter in the kernel,\n\trun \"vat\" and notice that you get no names showing up in the name\n\twindow.  Leave the \"vat\" running and start a \"tcpdump\", and notice\n\tthe name window fill up.  Kill the \"tcpdump\" and watch all the names\n\tgray out."
+}

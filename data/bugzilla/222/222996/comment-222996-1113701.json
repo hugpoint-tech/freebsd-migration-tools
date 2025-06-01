@@ -1,0 +1,8 @@
+{
+ "id": 1113701,
+ "bug_id": 222996,
+ "attachment_id": 0,
+ "creation_time": "2020-07-16T07:07:12Z",
+ "creator": "weh@microsoft.com",
+ "text": "(In reply to Dexuan Cui from comment #35)\nOn Gen1, the system provided pcib driver grabs these mmio addresses way earlier than vmbus comes up. I then allocates the address to the vga driver:\n\npcib0: allocated type 3 (0xf8000000-0xfbffffff) for rid 10 of pci0:0:8:0\n\nThis happened before vmbus comes up.\n\nOn Gen2 I just look at my test VM without having a passthrough deivce. There is no pcib device comes before vmbus loading. The efifb (framebuffer) driver is loaded before vmbus but it doesn't show which mmio address it is using. When vmbus comes up it gets the address:\nvmbus0: decoding 3 range 0xf8000000-0xfed3ffff\n\nI am not sure whether the passthrough device comes before or after vmbus is loaded. If it comes before, then this patch may not work. We may need to reserve the address before the passthrough device asks for mmio address. Once Dmitry has the environment we can find out.\n\nThe bad address we know now is just 8MB (0xf8000000 - 0xf87fffff). I think the default maximum space HyperV gives for frame buffer is 64MB which should be ok."
+}

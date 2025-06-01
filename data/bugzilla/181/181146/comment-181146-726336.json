@@ -1,0 +1,8 @@
+{
+ "id": 726336,
+ "bug_id": 181146,
+ "attachment_id": 0,
+ "creation_time": "2013-08-08T16:20:02Z",
+ "creator": "thierry@pompo.net",
+ "text": "\tqt4-qmake-4.8.4 installs the file\n\t$PREFIX/share/qt4/mkspecs/features/unix/gdb_dwarf_index.prf\n\twhich contains the following lines:\n\n    QMAKE_GDB_INDEX += \\\n      test \\$\\$(gdb --version | sed -e \\'s,[^0-9]\\\\+\\\\([0-9]\\\\)\\\\.\\\\([0-9]\\\\).*,\\\\1\\\\2,;q\\') -gt 72 \u0026\u0026 \\\n      gdb --nx --batch --quiet -ex \\'set confirm off\\' -ex \\\"save gdb-index $$QMAKE_GDB_DIR\\\" -ex quit \\'$(TARGET)\\'  \u0026\u0026 \\\n      test -f $(TARGET).gdb-index \u0026\u0026 \\\n      $$QMAKE_OBJCOPY --add-section \\'.gdb_index=$(TARGET).gdb-index\\' --set-section-flags \\'.gdb_index=readonly\\' \\'$(TARGET)\\' \\'$\n(TARGET)\\' \u0026\u0026 \\\n      $$QMAKE_DEL_FILE $(TARGET).gdb-index || true\n\n\tUnfortunately, the regex is specific to gsed, and when the\n\tcorresponding scriptlet\n\n\ttest $(gdb --version | sed -e 's,[^0-9]\\+\\([0-9]\\)\\.\\([0-9]\\).*,\\1\\2,;q') -gt 72\n\n\tis run, it fails with the following error:\n\n\ttest: GNU: unexpected operator\n\nFix: \n\nEither replace sed by gsed, adding the dependency, or\n\ttranslate the regex to our sed.\n\n\tYet better, since the base GDB is older, this part might be\n\tommitted?\nHow-To-Repeat: \tTest the line:\n\ttest $(gdb --version | sed -e 's,[^0-9]\\+\\([0-9]\\)\\.\\([0-9]\\).*,\\1\\2,;q') -gt 72\n\n\tThen compare to:\n\ttest $(gdb --version | gsed -e 's,[^0-9]\\+\\([0-9]\\)\\.\\([0-9]\\).*,\\1\\2,;q') -gt 72"
+}

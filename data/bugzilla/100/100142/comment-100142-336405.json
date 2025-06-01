@@ -1,0 +1,8 @@
+{
+ "id": 336405,
+ "bug_id": 100142,
+ "attachment_id": 0,
+ "creation_time": "2006-07-12T06:10:14Z",
+ "creator": "arthur.hartwig@nokia.com",
+ "text": "System configured with devices intppm, smbb and smbus.\n\nOn startup smbus1 is reported but no smbus0 is reported. There is no file\n/dev/smb0\n\nIn sys/pci/intpm.c intpm_attach() executes \n    smbinterface = device_add_child(dev, \"\"intsmb\", unit); \n\n    device_probe_and_attach(smbinterface);\n\ndevice_probe_and_attach() calls device_probe_child() which ends us calling\nintsmb_probe() twice, once when search for the best matching driver and\nagain, because intsmb_probe() returns BUS_PROBE_DEFAULT, immediately after\nthe comment \"Call the probe method again to make sure we have the right\ndescription.\"\n\nCalling intsmb_probe() twice results in creation of devices smbus0 (on the\nfirst call to intsmb_probe) and smbus1 (on the second call to intsmb_probe).\nThe second probe call results in When intsmb_attach(0 is called, sc-\u003esmbus\ncontains a pointer to a device structure for smbus1 and consequently smbus1\nis reported in the startup.\n\nFix: \n\nSuggested fix:\nIn sys/pci/intpm move\n        sc-\u003esmbus=device_add_child(dev, \"smbus\", -1);\n        if (!sc-\u003esmbus)\n                return (EINVAL);    /* XXX don't know what to return else */\n\nfrom intsmb_probe() to intsmb_attach()\n\nThe suggested fix mirrors more closely the code in sys/pci/viapm.c and\nsys/pci/amdpm.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 539784,
+ "bug_id": 142937,
+ "attachment_id": 0,
+ "creation_time": "2010-01-18T15:30:03Z",
+ "creator": "matthijs@stdin.nl",
+ "text": "(Please assign this bug to Bjoern A. Zeeb \u003cbz@FreeBSD.org\u003e at his request)\n\nI've been trying to get ipsec working on a FreeBSD 6.4 box, and found a bug. This bug is specific to FreeBSD 6, since it is in the original IPSEC implementation (that got removed in FreeBSD 7 and replaced with FAST_IPSEC).\n\nHowever, since the bug might still be worth fixing for people running FreeBSD 6, I'll describe it anyway.\n\nThe bug occurs when using link-local addresses for ipsec. The kernel is then unable to find the right SA for an incoming packet. The cause of this lies in the scope identifier of the address. These scope identifiers are initially embedded in the full address (in the 3rd and 4th byte IIRC).\n\nWhen addresses are stored in the sadb, these scope id's are left embedded (even though the addresses are stored in a sockaddr_in6 struct with the scope id field left to 0). However, when looking for a matching SA in key_allocsa, the zone id is recovered from the address and put into the zone id field before comparison. This means the address will never match.\n\nA simple fix (as attached) is not to recover the zone id and just always leave it embedded. I think it would be better to always recover the zone id instead, but I don't know the code well enough to produce a patch for that.\n\nThe patch attached is currently in use on a production system and has showed up no problems so far. However, I've discussed this with Bjoern through email and he thinks it needs a better look first. Hence this PR.\n\nFix: Patch attached with submission follows:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 426378,
+ "bug_id": 119778,
+ "attachment_id": 0,
+ "creation_time": "2008-01-18T17:40:00Z",
+ "creator": "James.Juran@baesystems.com",
+ "text": "There are two early returns in unp_connect() that need to re-acquire the\nUNP global lock before returning.  I tested on the December snapshot of\nCURRENT-8.0, but the same problem occurs in RELENG_7.\n\nI posted this problem to freebsd-net (http://lists.freebsd.org/pipermail/freebsd-net/2008-January/016392.html) but did not receive a response.\n\nFix: I believe this patch will fix the problem, but unfortunately I do not\nhave time to test it.  Could someone please try this out?  Instead of\nthis approach, it may be possible to move the unlocking to after the\nearly returns are done, but I have not analyzed what impact this would\nhave.\nHow-To-Repeat: This program will trigger a panic on a WITNESS-enabled system:\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003csys/un.h\u003e\n\nint main(void)\n{\n    int s;\n    struct sockaddr_un un;\n\n    s = socket(PF_LOCAL, SOCK_STREAM, 0);\n    if (s == -1)\n    {\n\tperror(\"socket\");\n\texit(1);\n    }\n\n    memset(\u0026un, 0, sizeof(un));\n    un.sun_family = AF_UNIX;\n    if ((connect(s, (struct sockaddr *)\u0026un, 2)) == -1)\n    {\n\tperror(\"connect\");\n\texit(1);\n    }\n    return 0;\n}"
+}

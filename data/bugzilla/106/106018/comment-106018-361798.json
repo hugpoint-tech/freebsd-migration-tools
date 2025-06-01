@@ -1,0 +1,8 @@
+{
+ "id": 361798,
+ "bug_id": 106018,
+ "attachment_id": 0,
+ "creation_time": "2006-11-29T15:40:14Z",
+ "creator": "olli@secnetix.de",
+ "text": "\n\tA recent thread in the freebsd-fs mailing list\n\treveals that src/sys/fs/msdosfs/msdosfs_vnops.c\n\thas a bug handling ctime, mtime and birthtime\n\ttime stamps.  The cause of the bug is probably\n\tthe confusing fact that the FAT world calls the\n\tbirthtime \"CTime\" (creation time), while it does\n\tnot support at all what UNIX calls the ctime.\n\n\tAs a result from that confusion, the function\n\tmsdosfs_getattr() sets ctime field to the \"CTime\"\n\tof the FAT entry (which is really the birthtime),\n\tand doesn't set the birthtime in the struct vattr\n\tat all, returning garbage.\n\n\tThe patch below fixes the problem as follows:\n\tFirst, the ctime (which FAT doesn't support) is\n\talways set equal to the mtime.\n\tSecond, in the MSDOSFSMNT_LONGNAME case, the\n\tbirthtime is taken from the FAT's \"CTime\", and\n\tin the other case (unsupported) it is set to -1\n\twhich should be a reasonable value.\n\n\tBruce Evans asked me to record the whole thing\n\tvia send-pr, so here it is.\n\nFix: Patch for RELENG_6:\n\nPatch for HEAD (untested!):\nHow-To-Repeat: \n\tMount an msdosfs (you can easily create one with\n\tmdconfig + newfs_msdos, or use a USB stick with\n\ta FAT on it if you have one handy), touch a file\n\tin it, and check the birthtime with \"ls -lU\"."
+}

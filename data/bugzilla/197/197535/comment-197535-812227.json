@@ -1,0 +1,8 @@
+{
+ "id": 812227,
+ "bug_id": 197535,
+ "attachment_id": 0,
+ "creation_time": "2015-02-25T14:48:53Z",
+ "creator": "luca.pizzamiglio@gmail.com",
+ "text": "Finally, I get the behavior of the my re0 interface, unfortunately, still without solution.\n\nWhen the driver gets a new descriptor on the rxring, the mbuf is still full of 0xdeadcode.\n\nThe Memory modified after free:\nMemory modified after free 0xfffff800039de800(2048) val=ffffffff @ 0xfffff800039de800\nThe value is the first 4 byte of a broadcast ethernet packet and the address is one previously used to store a mbuf.\n\nThe first conclusion is that packets are not yet written when a rxring entry is sent.\n\nI've also checked why rxring entries are flying away causing page faults: simply, the ring is acting as an array :) In other words, new entries are always written sequentially, violating the size of the ring.\nWhen the last element of the ring (idx=255) is used, it correctly rewritten using 0xC0000800 instead of 0x80000800, signalling that it's the last entry of the ring.\n\nAny ideas?"
+}

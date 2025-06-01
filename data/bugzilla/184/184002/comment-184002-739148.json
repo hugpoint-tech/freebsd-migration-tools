@@ -1,0 +1,8 @@
+{
+ "id": 739148,
+ "bug_id": 184002,
+ "attachment_id": 0,
+ "creation_time": "2013-11-15T15:30:00Z",
+ "creator": "xnox@debian.org",
+ "text": "As per http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/signal.h.html\n\nsiginfo_t.si_status is \"Exit value or signal.\"\n\nThe waitid call is suppose to fill in siginfo_t structure if one was passed to the function http://pubs.opengroup.org/onlinepubs/9699919799/functions/waitid.html\n\nInstead at the moment the returned siginfo_t.si_status of FreeBSD is same on as \u0026status returned by waitpid() call. I.E. value which hasn't been extraced with WEXITSTATUS()\n\nFix: Untested patch against kfreebsd-source-10.0/sys/kern/kern_exit.c\nHow-To-Repeat: The below program should not assert.\n\n#include \u003csys/types.h\u003e\n#include \u003csys/wait.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cassert.h\u003e\n\nint main() {\n\n  siginfo_t siginfo;\n  pid_t pid = -1;\n\n  pid = fork ();\n  if (pid \u003e 0) {\n    waitid (P_PID, pid, \u0026siginfo, WEXITED | WNOWAIT);\n    assert (siginfo.si_code == CLD_EXITED);\n    assert (siginfo.si_status == 123);\n  } else if (pid == 0) {\n    exit (123);\n  }\n\n}"
+}

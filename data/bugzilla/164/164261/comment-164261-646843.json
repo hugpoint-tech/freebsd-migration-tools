@@ -1,0 +1,8 @@
+{
+ "id": 646843,
+ "bug_id": 164261,
+ "attachment_id": 0,
+ "creation_time": "2012-01-17T20:40:14Z",
+ "creator": "rea@FreeBSD.org",
+ "text": "\nWhen one exports NULLFS filesystems via NFS, he can face kernel\npanics if external clients use readdir+ feature and are accessing\nsame directories simultaneously.\n\nThe example of the backtrace can be obtained at\n  http://codelabs.ru/fbsd/prs/2012-jan-nullfs-LK_SHARED/panic-backtrace.txt\nThis backtrace is from 9.x as of December 2011.\n\nThe real problem is that the thread that loses the race in\nnull_nodeget (/sys/fs/nullfs/null_subr.c) will put the native lock\n(vp-\u003ev_vnlock = \u0026vp-\u003ev_lock) to the nullfs vnode that should be\ndestroyed (because the thread lost the race).  And null_reclaim\n(/sys/fs/nullfs/null_vnops.c) will try to lock vnode's v_lock in the\nexclusive mode.  This will lead to panic, because v_vnlock is already\nlocked at the time of VOP_RECLAIM processing and we have v_vnlock that\npoints to v_lock.  Bingo!\n\nFix: \n\nPatches\n  http://codelabs.ru/fbsd/prs/2012-jan-nullfs-LK_SHARED/0001-NULLFS-properly-destroy-node-hash.patch\nand\n  http://codelabs.ru/fbsd/prs/2012-jan-nullfs-LK_SHARED/0002-NULLFS-fix-panics-when-lowervp-is-locked-with-LK_SHA.patch\nwill fix the problem (in reality, the first patch is just some\nnitpicking).\n\nI had tested this patch on my 10-CURRENT machine; tomorrow I intend\nto test in on the 9.x production NFS server with 300-400 clients.\nHow-To-Repeat: \nSee http://codelabs.ru/fbsd/prs/2012-jan-nullfs-LK_SHARED/README.txt\nsection \"How to reproduce\"."
+}

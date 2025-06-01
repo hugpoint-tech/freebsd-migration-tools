@@ -1,0 +1,8 @@
+{
+ "id": 650099,
+ "bug_id": 164901,
+ "attachment_id": 0,
+ "creation_time": "2012-02-08T09:00:20Z",
+ "creator": "ports@grosbein.net",
+ "text": "\n\tSuppose, we have a router (BRAS) using two lagg(4) interfaces in LACP mode.\n\n\tTwo-port lagg0 has IP address and its ports carry untagged IPoE frames.\n\tlagg1 has no IP address and has two ports (82576-based igb0 and igb1)\n\tthat carry 1000 dot-q vlans with PPPoE frames only.\n\n\tIn RELENG_7, lagg(4) evenly distributes traffic going from lagg1 to lagg0.\n\tSince 8.0-RELEASE all this traffic goes out through one\tof lagg0's ports only.\n\n\t82576-based NICs and igb(4) support Microsoft Receive-Side Scaling (RSS),\n\tsee http://download.intel.com/design/network/datashts/82576_Datasheet.pdf\n\t\n\tRSS states that queue number for non-IP frames (PPPoE/GRE/etc.)\n\tis not computed with hash. So, all these frames get same (zero)\n\tqueue number and igb(4) assigns tag M_FLOWID=0 to mbufs.\n\n\tSince 8.0-RELEASE, lagg(4) skips its own hash computation for mbuts\n\thaving M_FLOWID tag attached. Hence, it directs all such traffic\n\tto its first port only in this setup.\n\nFix: The following patch fixes the regression by introducing new sysctls\n\tthat disable usage of M_FLOWID per lagg interface:\n\nnet.link.lagg.0.use_flowid\nnet.link.lagg.1.use_flowid\n\n\tDefault value is 1 that corresponds to current behaviour of lagg(4).\n\tTo fix our issue, we set net.link.lagg.0.use_flowid=0\n\tthat restores pre-8 behaviour for lagg0 only, so it ignores misleading\n\tM_FLOWID assigned to mbufs by lagg1's ports.\nHow-To-Repeat: \t\n\tSee above."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1013310,
+ "bug_id": 231773,
+ "attachment_id": 0,
+ "creation_time": "2018-09-28T07:50:45Z",
+ "creator": "kp@freebsd.org",
+ "text": "I recently upgraded one of my stable/11 machines to head (so what will be stable/12 soon), and ran into an issue with my nested jails setup.\n\nI run standard (i.e. non-vnet) jails, by assigning e.g. 172.16.4.2 to the parent jail, and starting a jail with that IP address from within that jail (basically, so I can delegate a jailed setup to other people).\n\nThat used to work on stable/11, but now it failed with ‘IPv4 addresses clash’.\nTo the extent that I understand the relevant code it looks like we try to verify that no other jail uses the address we’re trying to assign to the new jail.\n\nI think this block tries to ensure we start at either the host system or the vnet jail that’s hosting us. I suspect that’s just wrong, because we don’t do that if VIMAGE is not enabled (and there’s no need either, because this check will already have been done for the parent jail).\n\n    #ifdef VIMAGE\n                for (; tppr != \u0026prison0; tppr = tppr-\u003epr_parent)\n                        if (tppr-\u003epr_flags \u0026 PR_VNET)\n                                break;\n    #endif\n\nI can work around the problem by resetting 'tppr = ppr;' just before the FOREACH_PRISON_DESCENDANT() loop.\n(The IPv6 code has exactly the same problem.)\n\nPresumably the trigger for this is the enabling of VIMAGE in CURRENT."
+}

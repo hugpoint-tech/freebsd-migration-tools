@@ -1,0 +1,8 @@
+{
+ "id": 1318953,
+ "bug_id": 280579,
+ "attachment_id": 0,
+ "creation_time": "2024-08-02T20:09:38Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "devel/llvm17: fix build with libc++ 19\n\nAs noted in the libc++ 19 release notes [1], std::char_traits\u003c\u003e is now only provided for char, char8_t, char16_t, char32_t and wchar_t, and any instantiation for other types will fail.\n\nThis causes devel/llvm17 to fail to compile with clang 19 and libc++ 19, resulting in errors similar to:\n\n    /usr/include/c++/v1/string:820:42: error: implicit instantiation of undefined template 'std::char_traits\u003cunsigned char\u003e'\n      820 |   static_assert(is_same\u003c_CharT, typename traits_type::char_type\u003e::value,\n          |                                          ^\n    /wrkdirs/usr/ports/devel/llvm17/work-default/llvm-project-17.0.6.src/lldb/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationServerLLGS.cpp:634:34: note: in instantiation of template class 'std::basic_string\u003cunsigned char\u003e' requested here\n      634 |       std::basic_string\u003cuint8_t\u003e zeros(reg_info.byte_size, '\\0');\n          |                                  ^\n    /usr/include/c++/v1/__fwd/string.h:23:29: note: template is declared here\n       23 | struct _LIBCPP_TEMPLATE_VIS char_traits;\n          |                             ^\n\nUpstream llvm has fixed this in commit 68744ffbdd7d [2], so add this as either a PATCHFILES entry in the Makefile, or as a backported patch file.\n\n[1] https://libcxx.llvm.org/ReleaseNotes/19.html#deprecations-and-removals\n[2] https://github.com/llvm/llvm-project/commit/68744ffbdd7d"
+}

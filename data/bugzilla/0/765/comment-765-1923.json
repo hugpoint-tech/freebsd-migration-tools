@@ -1,0 +1,8 @@
+{
+ "id": 1923,
+ "bug_id": 765,
+ "attachment_id": 0,
+ "creation_time": "2001-05-24T22:19:39Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "In message \u003c200105242025.WAA24656@mother.ludd.luth.se\u003e, Mattias Pantzare writes\n:\n\u003eYou can't remove the check, then this works:\n\u003e\n\u003emount foo:/bar /mnt\n\u003ecd /mnt\n\u003eumount /mnt\n\u003e\n\u003eThat is not good.\n\nYes, I figured that out when I examined the code more closely (the\nexample above is not a good one because of what checkdirs() does\nin -current, but you are quite correct otherwise). It turned out,\nhowever, that all the 9 filesystems in FreeBSD that make use of\nvflush's `skipvp' argument had this same problem, so I fixed this\nin a different way.\n\nSee revision 1.312 of vfs_subr.c and associated filesystem changes\nfor details. The filesystem now just tells vflush() how many extra\nreferences to expect on the root vnode, and vflush() does all the\nnecessary FORCECLOSE checking; it then releases these extra references\nwhen successful.\n\nI'm not sure that I can MFC this to -stable, since it would break\ncompatibility with existing filesystem modules, so maybe the NetBSD\nfix is more appropriate there.\n\nIan"
+}

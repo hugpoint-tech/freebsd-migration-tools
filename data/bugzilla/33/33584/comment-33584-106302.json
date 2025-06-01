@@ -1,0 +1,8 @@
+{
+ "id": 106302,
+ "bug_id": 33584,
+ "attachment_id": 0,
+ "creation_time": "2002-01-05T22:10:01Z",
+ "creator": "smkelly@zombie.org",
+ "text": "\tAccording to the 'gcc' manpage, there is a '-ggdb' flag which adds\n\tmore debugging information to the compiled binary.  However, when\n\tone attempts to use 'gdb' on a binary compiled with -ggdb, oddities\n\toccur when dealing with pointers.\n\nFix: \n\nWish I knew.\nHow-To-Repeat: \tCompile this code with '-ggdb':\n#include \u003cstdio.h\u003e\n\nint pointtest(char *arg)\n{\n    printf(\"pointtest(\\\"%s\\\")\\n\", arg);\n    return 1;\n}\n\nint main(int argc, char *argv[])\n{\n    char *x = (char *)malloc(512);\n    printf(\"argc=%d, argv=%X\\n\", argc, argv);\n    strcpy(x, \"Got Milk?\");\n    pointtest(x);\n    return 0;\n}\n\n\tThen 'gdb' it:\n\t$ gcc -ggdb -o gdbtest gdbtest.c\n\t$ gdb gdbtest\n\t(gdb) break main\n\tBreakpoint 1 at 0x804855e\n\t(gdb) run\n\t*keep 'step'ping through*\n\t13          strcpy(x, \"Got Milk?\");\n\t(gdb) step\n\t14          pointtest(x);\n\t* BAD BEHAVIOR FOLLOWS *\n\t(gdb) print x\n\t$1 = 0xbfbffbac \"\\210ü¿¿\"\n\t(gdb) print *x\n\t$2 = -120 '\\210'\n\t(gdb) step\n\tpointtest (arg=0xbfbffb58 \"¤û¿¿¡\\204\\004\\b\\001\") at gdbtest.c:5\n\t5           printf(\"pointtest(\\\"%s\\\")\\n\", arg);\n\t(gdb) step\n\tpointtest(\"Got Milk?\")\n\nSo it is clear that the program is working right, but gdb is totally broken\nwhen dealing with the pointers in the program."
+}

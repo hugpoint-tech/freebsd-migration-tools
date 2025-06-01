@@ -1,0 +1,8 @@
+{
+ "id": 1173234,
+ "bug_id": 257020,
+ "attachment_id": 0,
+ "creation_time": "2021-08-06T06:43:03Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "(In reply to Damjan Jovanovic from comment #3)\n\nIt's even funnier than that. makedep generates Makefile with proper (x86_64-) paths on the configure step, then it overwrites those paths right at the start of the build step. Apparently it reads ARCH from the MAKEFLAGS environment variable, which is typically set to something like: w -- _SMP_CPUS=4 _PKG_TRANSITIONING_TO_NEW_EXT=yes _PKG_CHECKED=1 _PERL5_FROM_BIN=5.32.1 _OSRELEASE=13.0-RELEASE OSVERSION=1300139 OSREL=13.0 OPSYS=FreeBSD HAVE_COMPAT_IA32_KERN=YES\\  CONFIGURE_MAX_CMD_LEN=524288 BATCH=y ARCH=amd64. There is nothing there that makedep would ever want to read, so we should just patch it like this:\n\npost-patch:\n\t${REINPLACE_CMD} 's/\"MAKEFLAGS\"/\"MAKEDEP_MAKEFLAGS\"/g' ${WRKSRC}/tools/makedep.c\n\nand leave that variable unset. I see no downsides."
+}

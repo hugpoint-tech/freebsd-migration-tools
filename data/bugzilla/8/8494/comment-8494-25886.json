@@ -1,0 +1,8 @@
+{
+ "id": 25886,
+ "bug_id": 8494,
+ "attachment_id": 0,
+ "creation_time": "1998-11-03T19:00:04Z",
+ "creator": "fenner@FreeBSD.org",
+ "text": "I wrote this code when trying to use sbcheck() myself a while ago.\nDoes this do what you want?\n\n  Bill\n\ncvs diff: Diffing .\nIndex: uipc_socket2.c\n===================================================================\nRCS file: /home/ncvs/src/sys/kern/uipc_socket2.c,v\nretrieving revision 1.39\ndiff -u -r1.39 uipc_socket2.c\n--- uipc_socket2.c\t1998/09/05 13:24:39\t1.39\n+++ uipc_socket2.c\t1998/11/03 18:58:16\n@@ -477,15 +477,17 @@\n \tregister struct sockbuf *sb;\n {\n \tregister struct mbuf *m;\n+\tregister struct mbuf *n = 0;\n \tregister int len = 0, mbcnt = 0;\n \n-\tfor (m = sb-\u003esb_mb; m; m = m-\u003em_next) {\n+\tfor (m = sb-\u003esb_mb; m; m = n) {\n+\t    n = m-\u003em_nextpkt;\n+\t    for (; m; m = m-\u003em_next) {\n \t\tlen += m-\u003em_len;\n \t\tmbcnt += MSIZE;\n \t\tif (m-\u003em_flags \u0026 M_EXT) /*XXX*/ /* pretty sure this is bogus */\n \t\t\tmbcnt += m-\u003em_ext.ext_size;\n-\t\tif (m-\u003em_nextpkt)\n-\t\t\tpanic(\"sbcheck nextpkt\");\n+\t    }\n \t}\n \tif (len != sb-\u003esb_cc || mbcnt != sb-\u003esb_mbcnt) {\n \t\tprintf(\"cc %d != %d || mbcnt %d != %d\\n\", len, sb-\u003esb_cc,"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1164707,
+ "bug_id": 256393,
+ "attachment_id": 0,
+ "creation_time": "2021-06-03T21:41:15Z",
+ "creator": "melifaro@FreeBSD.org",
+ "text": "Okay, so there are two things mentioned here:\n1) refusal to set an interface address when p2p route is already present in the system\n2) routed(8) adding loopback routes and causing (1)\n\n\nFor 1)\nCould you check that net.inet.ip.no_same_prefix is set to 0?\nIn my tests, `ifconfig tun0 192.168.42.1 192.168.42.2` always work on 13-S, regardless of 42.1 and 42.2 routes present in the rtable or not.\n\nFor 2)\nAs far as I understand the reason is the fix of host route dualism ( https://reviews.freebsd.org/D28668 ). Effectively \"host/32\" and \"host w/empty netmask\" routes were different routes in the routing table.\nRouted always tried to manipulate /32 route, while kernel operated host routes w/o netmask. As a result, routed would install /32, which would not affect forwarding as route w/o netmask is the most specific.\nAfter the diff, \"host/32\" routes gets automatically converted to the \"host w/empty netmask\" resulting in routed touching kernel routes.\n\nThat said, I'm all up with removing the loopback manipulation piece from routed(8)."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1006644,
+ "bug_id": 230619,
+ "attachment_id": 0,
+ "creation_time": "2018-08-15T10:06:29Z",
+ "creator": "kp@freebsd.org",
+ "text": "It's a tradeoff. pfr_update_stats() is currently called without any relevant locks held, so there's a risk of both a memory leak and incorrect counting.\nUsing PCPU counters (and always allocating them) mitigates this.\n\nOne alternative would be to take the rules lock, which is usually used to protect tables, but we'd have to take it for writing, to ensure no other threads are updating the counters at the same time, which I would expect to be devastating for throughput.\n\nWe might be able to get away with a per-table (but there are throughput concerns for that too), or even per pfr_kentry lock, but the locking structure of pf is already complex, and I'm not immediately clear on how it would interact with the rest of the locking."
+}

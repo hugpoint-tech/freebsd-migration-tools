@@ -1,0 +1,8 @@
+{
+ "id": 844272,
+ "bug_id": 172942,
+ "attachment_id": 0,
+ "creation_time": "2015-10-16T12:34:06Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I believe there is a race caused by smb_iod_destroy() where it\ncalls sbm_iod_request() to shutdown the connection/iod thread.\nsmb_iod_request() does an msleep(..PDROP..), which can return\nas soon as smb_iod_main() does the wakeup(). After returning\nfrom the msleep(), it returns to smb_iod_destroy(), which then\ndestroys the mutexes and frees the iod structure.\n\nUnfortunately, smb_iod_main() is not done with the mutexes when\nit calls wakeup().\n\nI believe this patch fixes the problem by moving the code that\ndestroys the mutexs and frees the iod structure to the end of\nthe smb_iod thread."
+}

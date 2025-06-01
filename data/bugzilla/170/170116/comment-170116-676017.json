@@ -1,0 +1,8 @@
+{
+ "id": 676017,
+ "bug_id": 170116,
+ "attachment_id": 0,
+ "creation_time": "2012-07-31T06:10:10Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Hey,\n\ncan you test this change; it should equally apply to HEAD and\nstable/9:\n\n\nhttp://people.freebsd.org/~bz/20120731-01-ipsec-v6.diff\n\nIn case of IPsec he have to do delayed checksum calculations before\nadding any extension header, or rather before calling into IPsec\nprocessing as we may send the packet and not return IPv6 output\nprocessing here.\n\nPR:\t\tkern/170116\nTested by: \nMFC After: \nIndex: sys/netinet6/ip6_output.c\n===================================================================\n--- sys/netinet6/ip6_output.c\t(revision 238894)\n+++ sys/netinet6/ip6_output.c\t(working copy)\n@@ -305,6 +306,20 @@ ip6_output(struct mbuf *m0, struct ip6_pktopts *op\n  \t\tgoto freehdrs;\n  \tcase -1:                /* Do IPSec */\n  \t\tneedipsec = 1;\n+\t\t/*\n+\t\t * Do delayed checksums now, as we may send before returning.\n+\t\t */\n+\t\tif (m-\u003em_pkthdr.csum_flags \u0026 CSUM_DELAY_DATA_IPV6) {\n+\t\t\tplen = m-\u003em_pkthdr.len - sizeof(*ip6);\n+\t\t\tin6_delayed_cksum(m, plen, sizeof(struct ip6_hdr));\n+\t\t\tm-\u003em_pkthdr.csum_flags \u0026= ~CSUM_DELAY_DATA_IPV6;\n+\t\t}\n+#ifdef SCTP\n+\t\tif (m-\u003em_pkthdr.csum_flags \u0026 CSUM_SCTP_IPV6) {\n+\t\t\tsctp_delayed_cksum(m, sizeof(struct ip6_hdr));\n+\t\t\tm-\u003em_pkthdr.csum_flags \u0026= ~CSUM_SCTP_IPV6;\n+\t\t}\n+#endif\n  \tcase 0:                 /* No IPSec */\n  \tdefault:\n  \t\tbreak;\n\n-- \nBjoern A. Zeeb                                 You have to have visions!\n          Stop bit received. Insert coin for new address family."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 819476,
+ "bug_id": 199407,
+ "attachment_id": 155531,
+ "creation_time": "2015-04-13T01:43:06Z",
+ "creator": "ksw.childe@gmail.com",
+ "text": "Created attachment 155531\nrequested enhancements to mkuzip and makefs\n\nAfter an Easter weekend's head scratching over a frustratingly\nintermittent problem...\n\nmkuzip's default verbosity level hides a message that might help\nend users (me) when disk /dev/ufs/... labels on mkuzip filesystems\n\"mysteriously\" don't appear at boot.  mkuzip provides useful messages\nwhen \"-v\" is added, but they're lost amongst the noise.  I propose\nadding verbosity levels: \"-v\" \"-vv\"\n\nPatch for mkuzip(8) attached.  The mkulzma(8) derivative could be\nmodified similarly.\n\nsys/geom/label/g_label_ufs.c expects well behaved filesystem sizes.\nUnfortunately, mkuzip(8) may need to add some padding when compressing\na filesystem, and the provider size will then no longer match the\nsuperblock.  Particularly for a makefs(8) filesystem.\n\nOne workaround for \"file size is not multiple of XXXX, padding data\"\nwould be for the user to specify a bsize the same as the intended\nmkuzip blocksize.  e.g.:\n\n        $ ZBLOCKSIZE=32768\n        $ FSIZE=`expr $ZBLOCKSIZE / 8`\n        $ LABEL=\"ALabel\"\n        $ makefs -o label=\"$LABEL\" -o bsize=$ZBLOCKSIZE -o fsize=$FSIZE ...\n        $ mkuzip -v -s $ZBLOCKSIZE ...\n\nA patch (attached) for makefs(8) that pads the resulting filesystem\nto fit on a mkuzip cluster_size boundary, might be useful as well.\n\n        $ ZBLOCKSIZE=32768\n        $ LABEL=\"ALabel\"\n        $ makefs -o label=\"$LABEL\" -c $ZBLOCKSIZE ...\n        $ mkuzip -v -s $ZBLOCKSIZE\n\n...keith\n~"
+}

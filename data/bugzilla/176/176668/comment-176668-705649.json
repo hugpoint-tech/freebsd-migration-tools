@@ -1,0 +1,8 @@
+{
+ "id": 705649,
+ "bug_id": 176668,
+ "attachment_id": 0,
+ "creation_time": "2013-03-05T17:00:02Z",
+ "creator": "carlj@peak.org",
+ "text": "The periodic daily scripts normally save the entire state of the pkgdb\nand a backup, even when there are no changes.  That is a considerable\nuse of backup space when there is no change.  The accompanying patch to\n/etc/periodic/daily/220.backup-pkgdb saves only if there have been some\nchanges in the /var/db/pkg/ directory.  I have tested the same patch on\n8.3-RELEASE and 9.0-RELEASE systems.\n\nFix: \n\n+       changes=$(find $pkg_dbdir -newer $bak_file -print 2\u003e\u00261 | wc -l)\n+       if [ \"$changes\" -eq \"0\" ] ; then\n+           echo 'No changes.'\n+           exit 0\n+       fi\n+\n        new_bak_file=`mktemp ${bak_file}-XXXXX`\n\n        if tar -cjHf \"${new_bak_file}\" \"$pkg_dbdir\" 2\u003e/dev/null; then\n@@ -47,5 +53,6 @@\n            rc=3\n        fi ;;\n esac\n+echo 'Done.'\n\n exit $rc--a8f6VQeGLHYdNABm8ipJbUtsgm2PtkrLkpvdZ2WsAoTDjvFF\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- /etc/periodic/daily/220.backup-pkgdb.orig   2013-03-01 10:45:28.199970000 -0800\n+++ /etc/periodic/daily/220.backup-pkgdb        2013-02-27 15:32:45.201213000 -0800\n@@ -32,6 +32,12 @@\n        echo ''\n        echo 'Backing up package db directory:'\nHow-To-Repeat: The normal behaviour is to always save."
+}

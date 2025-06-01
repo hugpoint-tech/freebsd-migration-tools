@@ -1,0 +1,8 @@
+{
+ "id": 1169439,
+ "bug_id": 253060,
+ "attachment_id": 0,
+ "creation_time": "2021-07-08T12:51:11Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "I have played around a bit what Leo has written.\nThe patch cannot be applied as such. If /etc/ssl/cert.pem does not exist sendmail will say:\n\u003e Jul  8 14:32:44 deblndw013x3j sm-mta[90513]: STARTTLS=client: file /etc/ssl/cert.pem unsafe: No such file or directory\n\u003e Jul  8 14:32:44 deblndw013x3j sm-mta[90513]: STARTTLS=client, error: load verify locs /etc/ssl/certs, /etc/ssl/cert.pem failed: 0\n\u003e Jul  8 14:32:44 deblndw013x3j sm-mta[90513]: STARTTLS=client, relay=mail2.siemens.de., version=TLSv1.2, verify=FAIL, cipher=DHE-RSA-AES256-GCM-SHA384, bits=256/256\nEven if /etc/ssl/certs will contain valid hashed links.\n\nNow if you consider to prepend a dnl because you don't have such a file it will fail also.\nThe only valid options I see are\n* to leave confCACERT as-is and fix confCACERT_PATH only\n* tell sendmail not to verify any paths and leave it to OpenSSL which will do the right thing. With that you can drop confCACERT if it does not exist\n* apply libfetch's approach and set default's if neither is set:\nhttps://github.com/freebsd/freebsd-src/blob/373ffc62c158e52cde86a5b934ab4a51307f9f2e/lib/libfetch/common.c#L1105-L1109\n\nSo this does work for me now:\n\u003e define(`confCACERT', `CERT_DIR/cacert.pem')dnl\n\u003e define(`confCACERT_PATH', `/etc/ssl/certs')dnl\noutput:\n\u003e Jul  8 14:51:27 deblndw013x3j sm-mta[90897]: STARTTLS=client, relay=mail3.siemens.de., version=TLSv1.2, verify=OK, cipher=DHE-RSA-AES256-GCM-SHA384, bits=256/256\n\nI prefer option 2 AND 3"
+}

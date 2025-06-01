@@ -1,0 +1,8 @@
+{
+ "id": 675140,
+ "bug_id": 169947,
+ "attachment_id": 0,
+ "creation_time": "2012-07-18T14:33:39Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "On 2012-07-17, Filip Palian wrote:\n\u003e User who has read permission on \"/dev/mdctl\" is able to crash the\n\u003e system (also within the jail if only provided by devfs(.rules)) via\n\u003e ioctl() handler in \"/usr/src/sys/dev/md/md.c:1082\". The crash occures\n\u003e in function swap_release_by_cred() (swap_pager.c:285) called in\n\u003e vm_object_deallocate() (md.c:1119). Some detailed information included\n\u003e below.\n\u003e \n\u003e \u003e \n\u003e #include \u003cstdio.h\u003e\n\u003e #include \u003cstdlib.h\u003e\n\nI couldn't reproduce the problem with your test program on current or\nstable/9:\n\n$ ./mdtest.orig \nsay goodnight...\nioctl(MDIOCATTACH) failed: Invalid argument\nno +r no fun\n\nI tried to modify the test program with following changes but still no\nsuccess.\n\n%%%\n--- mdtest.c\t2012-07-18 16:13:34.000000000 +0300\n+++ mdtest.c\t2012-07-18 16:17:05.000000000 +0300\n@@ -21,7 +21,8 @@\n \ts.md_version = MDIOVERSION;\n \t// s.md_type = MD_SWAP;\n \ts.md_type = MD_PRELOAD;\n-\ts.md_options = MD_CLUSTER | MD_AUTOUNIT | MD_COMPRESS;\n+\ts.md_base = -1;\n+\ts.md_options = MD_AUTOUNIT;\n \n \t// typedef long long = int64 = off_t\n \t//s.md_mediasize = 4096*1000000000000000000000000000000000000000000000000000;\n%%%\n\n\n$ ./mdtest \nsay goodnight...\nno +r no fun\n\nA new md device is successfully created.\n\nAre you sure that you attached the correct test program and you didn't\nhave local patches applied to your kernel?\n\n-- \nJaakko"
+}

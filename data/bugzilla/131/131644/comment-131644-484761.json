@@ -1,0 +1,8 @@
+{
+ "id": 484761,
+ "bug_id": 131644,
+ "attachment_id": 0,
+ "creation_time": "2009-02-13T15:20:00Z",
+ "creator": "freebsd@omnilan.de",
+ "text": "\tWhen focus changings happen with windows on different monitors\non a xinerama setup the mouse events get lost to the root window.\nFor further details see this thread:\nhttp://bugs.freedesktop.org/show_bug.cgi?id=18668\n\nFix: \n\nLike the link above tells there is a problem in mipointer.c\n\tCreate the following patch file in x11-servers/xorg-server/files/\n\tpatch-mipointer.c\n--- mi/mipointer.c.orig\n+++ mi/mipointer.c\n@@ -260,7 +260,14 @@ miPointerWarpCursor (pScreen, x, y)\n        miPointer.pScreen = pScreen;\n     }\n \n-    if (changedScreen)\n+    /* Don't call USFS if we use Xinerama, otherwise the root window is\n+     * updated to the second screen, and we never receive any events.\n+     * (FDO bug #18668) */\n+    if (changedScreen\n+#ifdef PANORAMIX\n+            \u0026\u0026 noPanoramiXExtension\n+#endif\n+       )\n         UpdateSpriteForScreen (pScreen) ;\n }\nHow-To-Repeat: \tPlace two windows on two different monitors and frequently change\nthe focus. After about 100 changes the mouse event's don't show any reaction\nany more."
+}

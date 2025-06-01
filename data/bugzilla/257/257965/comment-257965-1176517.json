@@ -1,0 +1,8 @@
+{
+ "id": 1176517,
+ "bug_id": 257965,
+ "attachment_id": 0,
+ "creation_time": "2021-09-01T20:54:29Z",
+ "creator": "zec@FreeBSD.org",
+ "text": "(In reply to Konrad from comment #10)\n\nIt looks like full table rebuilds are being triggered far too often, most probably for no good reason.  Try bumping sysctl net.route.algo.dxr.max_range_holes to somewhere between 50 and 100, and observe whether full rebuilds would occur less frequently.  This sysctl aims to limit range table fragmentation which gets accumulated with incremental updates, and may start to hurt both cache effectiveness during lookups as well as the speed of incremental updates, but the default value might be too strict for full-view BGP workloads.\n\nCould you post more complete logs with net.route.algo.debug_level=6, like in your initial report, as I'm curious re. the effectiveness of my Aug 23 patch WRT incremental trie updates?\n\nMoreover, my reading of the logs is that indeed full rebuilds may be related to packet loss events, for example:\n\nAug 31 13:33:01 Storm kernel: [fib_algo] inet.0 (dxr#155) dxr_build: range table rebuilt in 706.353 ms\nAug 31 13:33:01 Storm kernel: [fib_algo] inet.0 (dxr#155) dxr_build: trie rebuilt in 8.615 ms\n\n[2021-08-31 13:33:00] 534246\n[2021-08-31 13:33:01] 550441\n[2021-08-31 13:33:02] 551616\n\nor:\n\nAug 31 13:45:22 Storm kernel: [fib_algo] inet.0 (dxr#155) dxr_build: range table rebuilt in 701.239 ms\nAug 31 13:45:22 Storm kernel: [fib_algo] inet.0 (dxr#155) dxr_build: trie rebuilt in 8.632 ms\n\n[2021-08-31 13:45:21] 551616\n[2021-08-31 13:45:22] 563845\n[2021-08-31 13:45:23] 571588\n\netc.  Perhaps yielding the CPU during lengthy table rebuilds could help, I'll post a follow-up patch when ready..."
+}

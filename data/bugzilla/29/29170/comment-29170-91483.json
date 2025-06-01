@@ -1,0 +1,8 @@
+{
+ "id": 91483,
+ "bug_id": 29170,
+ "attachment_id": 0,
+ "creation_time": "2001-11-29T00:22:08Z",
+ "creator": "pherman@frenchfries.net",
+ "text": "The following patch (against 4.4-RELEASE) solves this problem.  In\n-CURRENT it's a little different, but the same if condition should\napply, as long as it appears before the rt_setgate() statement.\n\nVoradesh, does this solve your problem?\n\n-Paul.\n\nIndex: sys/net/rtsock.c\n===================================================================\nRCS file: /mnt/ncvs/src/sys/net/rtsock.c,v\nretrieving revision 1.44.2.4\ndiff -u -r1.44.2.4 rtsock.c\n--- sys/net/rtsock.c\t2001/07/11 09:37:37\t1.44.2.4\n+++ sys/net/rtsock.c\t2001/11/27 01:33:03\n@@ -399,6 +399,14 @@\n \t\t\tbreak;\n\n \t\tcase RTM_CHANGE:\n+\t\t\t/* Don't let the user specify non-link information\n+\t\t\t * for a gateway if the RTF_LLINFO flag is set.\n+\t\t\t * We'll just leave the gateway alone.\n+\t\t\t */\n+\t\t\tif (gate \u0026\u0026 (rt-\u003ert_flags \u0026 RTF_LLINFO) \u0026\u0026\n+\t\t\t    gate-\u003esa_family != AF_LINK)\n+\t\t\t\tgate = rt-\u003ert_gateway;\n+\n \t\t\tif (gate \u0026\u0026 (error = rt_setgate(rt, rt_key(rt), gate)))\n \t\t\t\tsenderr(error);"
+}

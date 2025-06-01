@@ -1,0 +1,8 @@
+{
+ "id": 1192427,
+ "bug_id": 260796,
+ "attachment_id": 0,
+ "creation_time": "2021-12-29T12:47:57Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "net.inet.ip.fw.dyn_keep_states=1 will keep dynamic rules (for currently active connections) when the original stateful rule is deleted. \nThe resulting behaviour is obvious when the corresponding action is finite (e.g. allow, deny).\nBut when the corresponding action is NOT finite (e.g. count, tag) and when net.inet.ip.fw.one_pass=0, then processing of further rules should continue at the point after the original stateful rule (which does no longer exist).\n\nIn this case the current implementation redirects the rule processing to the final default rule 65535 (which normally is an unconditional unlogged deny), and so the respective packet does silently vanish.\nWhile this may be the most safe assumption, it is practically useless.\n\nA properly crafted ruleset can be made able to continue proper processing at the respective original line-number even after it has been refactored and reloaded (e.g. nonfinite stateful rules always followed by a \"return\" rule). In that case it should be possible to have dyn_keep_states continue processing after the original line number.\nI successfully obtained that desired behaviour by just removing the respective line from the code in sys/netpfil/ipfw/ip_fw_dynamic.c\n\nI might propose a second option dyn_keep_states=2 to obtain this behaviour. Or, alternatively, dyn_keep_states might contain the actual rule number where processing should continue."
+}

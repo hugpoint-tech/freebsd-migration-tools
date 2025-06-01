@@ -1,0 +1,8 @@
+{
+ "id": 385595,
+ "bug_id": 111121,
+ "attachment_id": 0,
+ "creation_time": "2007-04-02T06:40:04Z",
+ "creator": "jau@iki.fi",
+ "text": "After the latest updates to ipfw2 it has started complaining\n\"ipfw: opcode 50 size 2 wrong\"\nApparently this also causes the rest of the rules to be rejected starting\nfrom the rule triggering the opcode error.\n\nAs a side effect one firewall instance that has been using ipfw2 has stopped\npassing packets out through it internal interface, because the rules allowing\nthe internal transmissions are no longer loaded.\n\nIf I counted correctly the opcodes in the header file,\nopcode 50 corresponds to the \"pipe\" rules.\n\nIn the ipfw2 instance in which the problem was found there are only a few\npipe related rules...\n\npipe 100 config bw 512kbit/s\npipe 101 config bw 128Kbit/s\nadd 04500 pipe 101 tcp from SLOWLANE to any 80,443 \nadd 65533 pipe 100 tcp from any 80,443 to SLOWLANE\n\nIt seems that ipfw gives up when trying the rule 04500.\n\nThe SLOWLANE in capital letters is a macro which expands to \"table(13)\".\nThis table is intended to hold a dynamically adjustable list of bandwidth\nhog internal addresses. Initially it is an empty table.\n\nFix: \n\nNone yet.\nHow-To-Repeat: Try enough rules triggering opcode 50 (pipe) I guess."
+}

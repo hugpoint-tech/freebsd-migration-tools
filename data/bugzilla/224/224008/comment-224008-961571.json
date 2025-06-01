@@ -1,0 +1,8 @@
+{
+ "id": 961571,
+ "bug_id": 224008,
+ "attachment_id": 188440,
+ "creation_time": "2017-11-30T23:03:46Z",
+ "creator": "parakleta@darkreality.org",
+ "text": "Created attachment 188440\nSave and Restore U-Boot registers.\n\nUsing `ubldr.bin` I was getting intermittent behaviour depending on which options I compiled into U-Boot.  Eventually I discovered that the issue is that the entry point in `sys/boot/arm/uboot/start.S` is not correctly saving and restoring registers.  Most importantly the r9 register is the base of the global data and this is not typically a callee-saved register, but must be for U-Boot.\n\nThere is a change to this file on April 2 by \"ian\" which saves the argument and return address but it doesn't go far enough.  My patch is to applied to the state before that patch.\n\nEssentially the important caller-saved registers are pushed (r0, r1, r9, lr) before the relocation call, and popped after.  Then r8/r9 are saved as usual for the syscall trampoline, and lr is stored in r8 (now free) as a callee-saved value before calling into `main`.\n\nThe call to `main` can no longer be a tail call because we must restore r9 especially after main returns (although since we have used r8 to hold lr we must also restore this).\n\nI don't know how this affects the ELF version, but this patch is critical for the correct functioning of the binary version of UBLDR."
+}

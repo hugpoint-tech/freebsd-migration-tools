@@ -1,0 +1,8 @@
+{
+ "id": 1109898,
+ "bug_id": 247482,
+ "attachment_id": 0,
+ "creation_time": "2020-06-22T15:44:38Z",
+ "creator": "contact@evilham.com",
+ "text": "Hello,\n\nI just had some time to track this down. The loader has been wrong on CURRENT with my setup for a couple days, particularly since this was merged:\nhttps://reviews.freebsd.org/D25324\n(If I revert the mentioned diff, HEAD's loader works just fine)\n\n\nJudging by the messages I see when booting, the boot loader tries the disk partitions one by one as expected, finds the one with the OS and tries the active Boot Environment.\nAnd then it bails out in this bit of code from vdev_clear_pad2(vdev_t *vdev):\n\n\n+       if (vdev_write(vdev, vdev-\u003ev_read_priv, off, be, VDEV_PAD_SIZE)) {\n+               printf(\"failed to clear be area of primary vdev: %d\\n\",\n+                   errno);\n+       }\n\n\nThe errno given for the right boot environment is 45, which appears to be EOPNOTSUPP.\n\nThis is the message I'm seeing (modulo typos, transcript):\n\nSetting currdev to zfs:zroot/ROOT/13-current:\nfailed to clear be area of primary vdev: 45\nzfs nextboot: zfs:zroot/ROOT/12-release:\nERROR: cannot open /boot/lua/loader.lua: no such file or directory.\n\n\nThe setup is pretty simple, full disk geli-encrypted system created from the installer with zfs on root with Boot Environments.\n\n\nI'd try to fix this but ATM I don't feel too comfortable touching things that appear to write to the disk :-D; can I help provide more information to fix this?\n\nThank you,"
+}

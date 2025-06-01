@@ -1,0 +1,8 @@
+{
+ "id": 786020,
+ "bug_id": 193569,
+ "attachment_id": 0,
+ "creation_time": "2014-09-11T17:32:37Z",
+ "creator": "adrian@freebsd.org",
+ "text": "The TL;DR is this:\n\n* 5GHz passive channels require the station to hear a beacon from an AP doing DFS before it transmits anything;\n* so net80211 does this;\n* then it tries to associate;\n* .. and iwn/wpi will just issue a new RXON to associate, clearing the firmware state\n* which includes that it's seen beacons;\n* so then it transmits a frame (association request);\n* and the firmware immediately fails it with some status code (IWN_TX_*) that says \"nope, need to see a beacon first.\"\n\nI forget the status code but it's pretty easy to see with 'sysctl dev.iwn.0.debug=0x1' when associating on a 5GHz channel.\n\nWhat the linux iwlwifi driver does - and what I think we should do - is this:\n\n* have a per-vap buffer of temporarily failed frames;\n* (not per-node; it's not required for this NIC);\n* if we see a TX fail for this reason, don't free the mbuf - just append it to the vap retry queue - and set some flag + channel number;\n* upon receiving a beacon notification - if it's for a beacon on the currently associated channel then schedule a taskqueue to flush that queue;\n* .. then flush this queue as appropriate in iwn_newstate().\n* .. and make sure the taskqueue is cancelled during state changes, suspend/resume, etc.\n\nthe flush may get complicated - we should flush it if we transition away from RUN. Just make sure it works. :)"
+}

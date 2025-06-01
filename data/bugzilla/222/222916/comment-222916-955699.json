@@ -1,0 +1,8 @@
+{
+ "id": 955699,
+ "bug_id": 222916,
+ "attachment_id": 0,
+ "creation_time": "2017-10-14T17:12:44Z",
+ "creator": "grehan@FreeBSD.org",
+ "text": "\u003eOr does the interaction between bhyve and the host scheduler somehow\n\u003eresult in the virtual cpus being set aside\n\n Yes, though:\n\n\u003e for tens of seconds?\n\n The error message from Linux is a bit misleading. There is a low-priority kernel thread that tries to run every 5 seconds and then sleeps. If it hasn't been able to run for an extended amount of time, for example due to high interrupt activity, higher priority threads running, or spinlocks being held, the error message will be displayed.\n\n What I believe you are seeing is a classic hypervisor problem, not specific to bhyve, known as \"lock-holder preemption\" where a vCPU holding a spin-lock is preempted by the host, and other vCPUs that are running then spin attempting to acquire that lock which can't be released. A search will show the large amount of literature on this issue :)\n\n Maybe the best reading on this is the ESXi scheduler paper:\n    http://www.vmware.com/content/dam/digitalmarketing/vmware/en/pdf/techpaper/vmware-vsphere-cpu-sched-performance-white-paper.pdf\n \n There has been some talk of putting knowledge of vCPUs in the FreeBSD scheduler to allow some form of gang scheduling, but nothing has come of that so far.\n\n As to your point; it's more than just fairness that the hypervisor scheduler has to provide - heuristics about guest o/s behaviour are also needed."
+}

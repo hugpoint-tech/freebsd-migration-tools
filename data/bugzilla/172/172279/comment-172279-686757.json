@@ -1,0 +1,8 @@
+{
+ "id": 686757,
+ "bug_id": 172279,
+ "attachment_id": 0,
+ "creation_time": "2012-10-02T18:10:14Z",
+ "creator": "daniel.thibault@drdc-rddc.gc.ca",
+ "text": "The au_to_process32_ex function of bsm_token.c (a component of the current libbsm implementation) reads in part:\n\n/*\n[...]\n *   machine address      16 bytes\n */\ntoken_t *\nau_to_process32_ex(au_id_t auid, uid_t euid, gid_t egid, uid_t ruid,\n    gid_t rgid, pid_t pid, au_asid_t sid, au_tid_addr_t *tid)\n{\n[...]\n\tif (tid-\u003eat_type == AU_IPv4)\n\t\tGET_TOKEN_AREA(t, dptr, sizeof(u_char) +\n\t\t    10 * sizeof(u_int32_t));\n\telse if (tid-\u003eat_type == AU_IPv6)\n\t\tGET_TOKEN_AREA(t, dptr, sizeof(u_char) +\n\t\t    13 * sizeof(u_int32_t));\n[...]\n\tif (tid-\u003eat_type == AU_IPv6) {\n\t\tADD_MEM(dptr, \u0026tid-\u003eat_addr[1], sizeof(u_int32_t));\n\t\tADD_MEM(dptr, \u0026tid-\u003eat_addr[2], sizeof(u_int32_t));\n\t\tADD_MEM(dptr, \u0026tid-\u003eat_addr[3], sizeof(u_int32_t));\n\t}\n\n   Clearly the token's size is variable, unlike what the preamble says.\n\nFix: \n\nChange the au_to_process32_ex preamble to conclude with:\n\n *   machine address       4 bytes/16 bytes (depending on address type-len)\n */\nHow-To-Repeat: Look up http://www.opensource.apple.com/source/OpenBSM/OpenBSM-21/openbsm/libbsm/bsm_token.c and search for au_to_process32_ex."
+}

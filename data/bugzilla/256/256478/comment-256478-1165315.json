@@ -1,0 +1,8 @@
+{
+ "id": 1165315,
+ "bug_id": 256478,
+ "attachment_id": 0,
+ "creation_time": "2021-06-08T10:22:08Z",
+ "creator": "jsm@FreeBSD.org",
+ "text": "Hi\nUsing notifyd you get NOTIFY(EVENT): datagram too large \nwhen using notifyd \n\nIt is bececase net.local.dgram.maxdgram is smaller than on linux default is 2048 so you get a bufsiz of 204-32=172 most events are bigger. so add_arg fails here:\n\nif (*buflen + len \u003e max_size) return -1;\n\n\n(max_size is bufsiz)\n\n\na Workaround is to set sysctl net.local.dgram.maxdgram higher e.g to 655552\n\nBut perhaps a patch that does not divide with 10\nwork-basic/cyrus-imapd-3.4.1/imap/notify.c:223:    bufsiz = MIN(bufsiz / 10 - 32, NOTIFY_MAXSIZE);\n\nwork-basic/cyrus-imapd-3.4.1/notifyd/notifyd.c:123:    bufsiz = MIN(bufsiz / 10 - 32, NOTIFY_MAXSIZE); \n\nIs better?"
+}

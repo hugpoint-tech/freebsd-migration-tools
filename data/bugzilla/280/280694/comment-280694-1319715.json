@@ -1,0 +1,8 @@
+{
+ "id": 1319715,
+ "bug_id": 280694,
+ "attachment_id": 0,
+ "creation_time": "2024-08-08T18:24:50Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "As noted in the libc++ 19 release notes [1], std::char_traits\u003c\u003e is now\nonly provided for char, char8_t, char16_t, char32_t and wchar_t, and any\ninstantiation for other types will fail.\n\nThis causes databases/mysql81-server to fail to compile with clang 19\nand libc++ 19, resulting in errors similar to:\n\n    /usr/include/c++/v1/string:820:42: error: implicit instantiation of undefined template 'std::char_traits\u003cunsigned char\u003e'\n      820 |   static_assert(is_same\u003c_CharT, typename traits_type::char_type\u003e::value,\n          |                                          ^\n    /wrkdirs/usr/ports/databases/mysql81-client/work/mysql-8.1.0/sql/rpl_log_encryption.h:820:14: note: in instantiation of template class 'std::basic_string\u003cunsigned char\u003e' requested here\n      820 |   Key_string m_encrypted_password;\n          |              ^\n    /usr/include/c++/v1/__fwd/string.h:23:29: note: template is declared here\n       23 | struct _LIBCPP_TEMPLATE_VIS char_traits;\n          |                             ^\n\n`Key_string` is defined as `std::basic_string\u003cunsigned char\u003e`, which is\nno longer possible. So redefine it as a `std::vector\u003cunsigned char\u003e`\ninstead.\n\nThis requires only a few small adjustments in other places: replacing\nthe `length()` method with the equivalent `size()` method, and adjusting\nthe arguments for the `assign()` method, which for `std::vector` takes a\nbegin and end iterator, instead of a begin iterator and a size.\n\n[1] https://libcxx.llvm.org/ReleaseNotes/19.html#deprecations-and-removals"
+}

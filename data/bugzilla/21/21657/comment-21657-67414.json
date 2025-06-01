@@ -1,0 +1,8 @@
+{
+ "id": 67414,
+ "bug_id": 21657,
+ "attachment_id": 0,
+ "creation_time": "2000-09-30T06:50:01Z",
+ "creator": "mzaki@e-mail.ne.jp",
+ "text": "I've updated my laptop (TOSHIBA Libretto) to -current (21:00 29 Sep\nGMT) from of 28 Aug, then it wouldn't boot because trap 12 happened.\n\nThe boottime messages were shown that:\n :\n :\nnpx0: INT 16 interface\nisa0: \u003cISA bus\u003e\n               ^\n               normally is succeeded \"on motherboard\" but isn't\n\n\nAnd the trap 12 (page fault) occured at: \n\n(sys/i386/i386/nexus.c)\nstatic int\nnexus_print_all_resources(device_t dev)\n{\n        struct  nexus_device *ndev = DEVTONX(dev);\n        struct resource_list *rl = \u0026ndev-\u003enx_resources;\n                                   ~~~~~~~\n                                   This dereference (ndev was NULL!!)\n\nThis 'struct nexus_device *ndev' is IVAR of nexus,\nand initialized in nexus_add_child(),\nbut never called this function in my laptop.\n\nFix: In nexus_attach(), ISA bus directly binded to nexus is\nconnected via calling device_add_child(),\nbut this is probably WRONG. This causes uninitialized IVAR of nexus\nbecause of skipping nexus_add_child().\n\nI changed this to calling nexus_add_child() directly,\nand my laptop successfully booted."
+}

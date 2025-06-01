@@ -1,0 +1,8 @@
+{
+ "id": 1214668,
+ "bug_id": 209396,
+ "attachment_id": 0,
+ "creation_time": "2022-06-06T20:08:29Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "I didn't realize this until today myself but this is working as intended. L2ARC only takes metadata/data from ARC before it is evicted. So if using primarycache=metadata then data can never make it to L2ARC since it was not in the ARC.\n\nhttps://www.mail-archive.com/zfs-discuss@opensolaris.org/msg45601.html\n\nI can't find a great source for this (in a manpage) but the code spells it out.\nsys/contrib/openzfs/module/zfs/arc.c\n\n    * 2. The L2ARC attempts to cache data from the ARC before it is evicted.\n    * It does this by periodically scanning buffers from the eviction-end of\n    * the MFU and MRU ARC lists, copying them to the L2ARC devices if they are\n    * not already there. It scans until a headroom of buffers is satisfied,\n    * which itself is a buffer for ARC eviction. [...]\n\nIt also won't cache prefetched data by default. Apparently primarycache=metadata also effectively disables prefetch (https://github.com/openzfs/zfs/issues/1773)\n\nhttps://github.com/openzfs/zfs/issues/12028 discusses this primary bug's issue and the fact that this primary=metadata,secondary=all setup can lead to read amplification too.\n\n\nIf I've misunderstood and your report is about the fact that already-cached-in-ARC data is not sent to L2arc and you think it should I think a better place to report is https://github.com/openzfs/zfs anyway. I doubt they would handle that as it's quite a hack to set primarycache=all, cache a bunch of data, and then change to metadata and expect it to fill up L2arc. Eventually that data would leave the l2arc as well and you would need to manually do the hack over again."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 523626,
+ "bug_id": 139606,
+ "attachment_id": 0,
+ "creation_time": "2010-01-07T17:13:06Z",
+ "creator": "gpf.kira@gmail.com",
+ "text": "Hello!\n\nWhy pkg_add crashes:\n\nThe problem exists in function fexists() which resides in file\nsrc/usr.sbin/pkg_install/lib/file.c\n\nThe function is supposed to check if a file exists, but lstat(2) is\nbeing used instead of stat(2).\nlstat(2) checks only if the symbolic link file exists and not the\nactual file that the symbolic link points to.\nSo, the symbolic link file exists, lstat returns 0. In\nsrc/usr.sbin/pkg_install/add/main.c we pass the check in line #247 and\nstrdup(3) crashes because realpath(3) returns NULL. realpath() returns\nNULL because the actual file does not really exist.\n\nFix:\n\nInstead of lstat(2) in file.c use stat(2). There is no reason to use\nlstat since we don't want to perform any special checks in case it is\na sym link. So we use stat(2) which checks if the actual file that the\nsymlink points to exists. This is done in patch-a-1.diff\n\nBut the strdup(realpath()) call is still likely to cause a seg fault\nbecause there is a race condition: Check done (ok) -\u003e file erased\nsomehow -\u003e realpath returns NULL -\u003e strdup goes boom. So we check for\nthe return value of the realpath() function too. This is done in\npatch-b-1.diff\n\nWith these patches, the utility will just exist gracefully with an\nappropriate error message when, in pkg_perform, it cannot stat the\nactual file, so no crashes:\n\nps: A lot of race conditions still exist in this utility but that is\nfor another pr, another time.\ndon't know if these are of any use but the original files I used are:\n\nmain.c SVN rev 201226\nfile.c SVN rev 198460\n\nCheers\n\n-- \n\nEfstratios \"GPF\" Karatzas"
+}

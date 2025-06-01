@@ -1,0 +1,8 @@
+{
+ "id": 857145,
+ "bug_id": 205882,
+ "attachment_id": 0,
+ "creation_time": "2016-01-04T16:20:34Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "r292066 makes vdev_geom more careful about what devices it will open.  It fixed a bug with booting from ZFS when the device order has changed.  However, delphij points out that it breaks importing l2arc devices by guid, because l2arc devices' labels lack a pool guid.  The following sequence of commands will reproduce the failure:\n\nzpool create -f withcache mirror da0 da2 cache da3\nzpool export withcache\n# remove da1 and da3, then reinsert da3.  It should now be called da1\nzpool import withcache\n# zpool status withcache\n  pool: withcache\n state: ONLINE\nstatus: One or more devices could not be opened.  Sufficient replicas exist for\n\tthe pool to continue functioning in a degraded state.\naction: Attach the missing device and online it using 'zpool online'.\n   see: http://illumos.org/msg/ZFS-8000-2Q\n  scan: none requested\nconfig:\n\n\tNAME                    STATE     READ WRITE CKSUM\n\twithcache               ONLINE       0     0     0\n\t  mirror-0              ONLINE       0     0     0\n\t    da0                 ONLINE       0     0     0\n\t    da2                 ONLINE       0     0     0\n\tcache\n\t  13126929149130124089  UNAVAIL      0     0     0  was /dev/da3\n\nerrors: No known data errors"
+}

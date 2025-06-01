@@ -1,0 +1,8 @@
+{
+ "id": 778755,
+ "bug_id": 192558,
+ "attachment_id": 0,
+ "creation_time": "2014-08-11T19:38:04Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I think your diagnosis is correct, but I'm unsure of the fix.  In particular, I suspect we may want to avoid sleeping if the fbuf is full so that this \"fails fast\" to avoid blocking network traffic.  Also, when you are awakened, other threads might have already called catchpacket() (e.g. a multiq NIC), so you don't actually know that you should be in the current state.  I worry that you need to jump back to the preceding if, so something like:\n\n    again:\n        if (curlen + totlen \u003e d-\u003ebd_bufsize || !bpf_canwritebuf(d)) {\n            if (d-\u003ebd_fbuf == NULL) {\n                ...\n            }\n            if (d-\u003ehd_buf_in_use) {\n                mtx_sleep(...);\n                goto again;\n            }\n            ...\n        }\n\n\nArguably the earlier call to mtx_sleep() earlier in this function is also racy as you don't know that the condition is still true when you awake given a concurrent call to catchpacket() from another RX queue on the same NIC.  That is, I think that loop should also be altered, though it can probably avoid a goto:\n\n        while (d-\u003ebd_fbuf == NULL \u0026\u0026 bpf_canfreebuf(d)) {\n            if (d-\u003ebd_hbuf_in_use) {\n                mtx_sleep(...);\n                continue;\n            }\n            ...\n        }\n\nPossibly, the 'again' label needs to move all the way up to before this 'while' loop, and if so, the hrdlen/totlen/curlen assigments should be moved up before the first while."
+}

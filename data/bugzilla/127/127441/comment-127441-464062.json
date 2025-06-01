@@ -1,0 +1,8 @@
+{
+ "id": 464062,
+ "bug_id": 127441,
+ "attachment_id": 0,
+ "creation_time": "2009-06-26T14:22:05Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "on 26/06/2009 14:19 Andriy Gapon said the following:\n\u003e What do you think about the following patch?\n\u003e I am testing it here now and it looks OK so far.\n\u003e \n\u003e --- a/sys/cddl/dev/dtrace/amd64/dtrace_subr.c\n\u003e +++ b/sys/cddl/dev/dtrace/amd64/dtrace_subr.c\n\u003e @@ -439,7 +439,16 @@\n\u003e  uint64_t\n\u003e  dtrace_gethrtime()\n\u003e  {\n\u003e -\treturn ((rdtsc() + tsc_skew[curcpu]) * (int64_t) 1000000000 / tsc_freq);\n\u003e +\tstatic const uint64_t NSEC_FACTOR = 1000000000;\n\u003e +\tuint64_t t;\n\u003e +\tuint64_t s;\n\u003e +\tuint64_t r;\n\u003e +\n\u003e +\tt = rdtsc() + tsc_skew[curcpu];\n\u003e +\ts = t / tsc_freq;\n\u003e +\tr = t % tsc_freq;\n\u003e +\n\u003e +\treturn (s * NSEC_FACTOR + (r * NSEC_FACTOR) / tsc_freq);\n\u003e  }\n\u003e \n\u003e  uint64_t\n\nBut I've just found a problem that this patch brings to the light.\nI have a machine with invariant_tsc=0 and powerd running (est cpufreq driver), as\na result tsc_freq changes wildly (by an order of magnitude).\n\nAs a result dtrace_gethrtime returns very inconsistent results.\nE.g.: X/Y vs (X+1)/(Y*10), where X is rdtsc return value and Y is some value of\ntsc_freq.\n\n\n-- \nAndriy Gapon"
+}

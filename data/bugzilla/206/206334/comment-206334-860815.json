@@ -1,0 +1,8 @@
+{
+ "id": 860815,
+ "bug_id": 206334,
+ "attachment_id": 0,
+ "creation_time": "2016-01-22T17:33:03Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "From the core.txt, the crash occurred due to a divide by zero in the ath(4) driver.  Specifically, this line in ar9300_ani.c:\n\n    ofdm_phy_err_rate =\n        ani_state-\u003eofdm_phy_err_count * 1000 / ani_state-\u003elisten_time;\n\nThis means 'listen_time' must be zero.\n\nSome other places in the debugging code handle the listen_time == 0 case explicitly, e.g.:\n\n        /* express ofdm_phy_err_count as errors/second */\n        log_data.ofdm_phy_err_count = ani_state-\u003elisten_time ?\n            ani_state-\u003eofdm_phy_err_count * 1000 / ani_state-\u003elisten_time : 0;\n        /* express cck_phy_err_count as errors/second */\n        log_data.cck_phy_err_count =  ani_state-\u003elisten_time ?\n            ani_state-\u003ecck_phy_err_count * 1000 / ani_state-\u003elisten_time  : 0;\n\n\nThere is this comment here where listen_time is updated:\n\n    /* XXX beware of overflow? */\n    ani_state-\u003elisten_time += listen_time;\n\nI suspect you were bitten by the overflow wrapping to zero.  I've added Adrian who might have a suggestion on how best to handle the overflow to zero.  The code is the same in HEAD so I suspect this is busted there as well."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1189351,
+ "bug_id": 260272,
+ "attachment_id": 229975,
+ "creation_time": "2021-12-08T11:02:10Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 229975\nCause an NFS v4 client to crash due to a short OPEN reply.\n\nIn these lines in nfsrpc_createv4():\n\n                (void) nfsrv_getattrbits(nd, \u0026attrbits, NULL, NULL);\n                NFSM_DISSECT(tl, u_int32_t *, NFSX_UNSIGNED);\n\nIf the RPC response being parsed is short, then nfsrv_getattrbits()'s\ncalls to NFSM_DISSECT can leave nd-\u003end_md == NULL, causing the\nNFSM_DISSECT to crash.\n\nI've attached a demo:\n\n# uname -a\nFreeBSD  14.0-CURRENT FreeBSD 14.0-CURRENT #133 main-n250909-08e6880c1a5c-dirty: Wed Dec  8 05:41:49 EST 2021     rtm@xxx:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM  riscv\n# cc fnfs_7.c\n# ./a.out\n...\npanic: Fatal page fault at 0xffffffc0001818e2: 0x00000000000010\n--- exception 13, tval = 0x10\nnfsm_dissect() at nfsm_dissect+0xa\nnfsrpc_createv4() at nfsrpc_createv4+0x372\nnfsrpc_create() at nfsrpc_create+0x1ae\nnfs_create() at nfs_create+0x196\nvop_sigdefer() at vop_sigdefer+0x26\nnfs_vnodeops_bypass() at nfs_vnodeops_bypass+0x16\nVOP_CREATE_APV() at VOP_CREATE_APV+0x3a\nVOP_CREATE() at VOP_CREATE+0x2e\nvn_open_cred() at vn_open_cred+0x20a\nvn_open() at vn_open+0x32\nkern_openat() at kern_openat+0x164\nsys_openat() at sys_openat+0x32\nsyscallenter() at syscallenter+0xf4\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xea\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72"
+}

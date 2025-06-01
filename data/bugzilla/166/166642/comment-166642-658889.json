@@ -1,0 +1,8 @@
+{
+ "id": 658889,
+ "bug_id": 166642,
+ "attachment_id": 0,
+ "creation_time": "2012-04-04T16:20:01Z",
+ "creator": "andrew@atrens.ca",
+ "text": "This little bit of code (wrapped by me in notanymore) absolutely cripples FreeBSD 802.11n AP  tx throughput if one or more stations is in power save mode (or as macbooks and ipods do - going in and out of power save mode constantly).\n\nAll ping times also ratchet from sub 1ms up to 100+ms.\n\n\n-- atrens@andrew: /localdisk/freebsd/sys/dev/ath (11:02) --\n$ svn diff .\nIndex: if_ath_tx.c\n===================================================================\n--- if_ath_tx.c (revision 233851)\n+++ if_ath_tx.c (working copy)\n@@ -1451,8 +1451,10 @@\n         * anyone.  This is likely a very suboptimal way of dealing\n         * with things.\n         */\n+#if notanymore\n        if ((! is_ampdu) \u0026\u0026 (vap-\u003eiv_ps_sta || avp-\u003eav_mcastq.axq_depth))\n                txq = \u0026avp-\u003eav_mcastq;\n+#endif\n \n        /* Do the generic frame setup */\n        /* XXX should just bzero the bf_state? */\n\nFix: \n\nWorkaround for me is to remove the mentioned code snippet. I'm not sure of the original intent of that change but the net effect of this bug is likely more deleterious than the problem the change attempted to address.\nHow-To-Repeat: Set up a FreeBSD AP in 802.11n mode and start a ping to any station.  Turn on your ipod and let it connect to the network.  You will see the pings ratchet from sub 1ms up to 100+ms .. FreeBSD AP tx throughput will also be crippled."
+}

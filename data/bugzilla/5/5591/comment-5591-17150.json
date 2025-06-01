@@ -1,0 +1,8 @@
+{
+ "id": 17150,
+ "bug_id": 5591,
+ "attachment_id": 0,
+ "creation_time": "2001-08-28T07:03:16Z",
+ "creator": "jkoshy@FreeBSD.org",
+ "text": "In function `make_cat_file' in \".../man/man.c\", the code constructs\na complex pipe command and hands it off to `popen()'.  \n\n trying command: (cd /usr/local/man ; /usr/bin/zcat /usr/local/man/man1/bzip2.1.gz \n | /usr/bin/tbl | /usr/bin/groff -S -Wall -mtty-char -man -Tascii | /usr/bin/col | \n /usr/bin/gzip -c)\n\nOne of the processes in the middle of pipe command is failing, but\n`pclose()' checks the exit status of the LAST process in the pipe.\n\n   \"/usr/src/gnu/usr.bin/man/man.c\"\n   1258         if (!f || ((s = pclose(pp)) == -1)) {\n   1259           s = errno;\n   1260           fprintf(stderr, \"Failed.\\n\");\n   1261           errno = s;\n   1262           perror(\"pclose\");\n   1263           unlink(temp);\n   1264           restore_sigs();\n   1265           fclose(fp);\n   1266           return 0;\n   1267         }\n\nThe last process happens to be \"/usr/bin/gzip\" which is perfectly happy\nreading zero bytes from its input.  There is an additional check whether\nnon-zero bytes were read from the input pipe: however, this check fails\nto catch the error because \"gzip\" will always write out a 20 byte header\nto standard output.\n\n   \"/usr/src/gnu/usr.bin/man/man.c\"\n   1253         f = 0;\n   1254         while ((s = getc(pp)) != EOF) {\n   1255           putc(s, fp); f++;\n   1256         }\n\nComplex pipelines are not a good idea.\n\nKoshy\n\u003cjkoshy@freebsd.org\u003e"
+}

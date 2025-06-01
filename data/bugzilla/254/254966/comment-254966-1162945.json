@@ -1,0 +1,8 @@
+{
+ "id": 1162945,
+ "bug_id": 254966,
+ "attachment_id": 0,
+ "creation_time": "2021-05-24T19:55:36Z",
+ "creator": "freebsd@devet.org",
+ "text": "I might have found the problem. It seems to be caused by the use of cached_passphrase (to attach multiple providers with the same passphrase). However, when using geli setkey on a detached provider it does not make any sense. This patch (13.0) works for me:\n\n--- geom_eli.c.ORIG     2021-05-24 21:11:15.718321000 +0200\n+++ geom_eli.c  2021-05-24 21:30:47.511489000 +0200\n@@ -1387,6 +1387,12 @@\n        bcopy(mkey, mkeydst, sizeof(mkey));\n        explicit_bzero(mkey, sizeof(mkey));\n\n+       /*\n+        * The previous eli_genkey() set cached_passphrase, we do not want\n+        * to use that for the new passphrase so always prompt for it\n+        */\n+       explicit_bzero(cached_passphrase, sizeof(cached_passphrase));\n+\n        /* Generate key for Master Key encryption. */\n        if (eli_genkey(req, md, key, true) == NULL) {\n                explicit_bzero(key, sizeof(key));"
+}

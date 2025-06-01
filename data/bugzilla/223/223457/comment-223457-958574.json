@@ -1,0 +1,8 @@
+{
+ "id": 958574,
+ "bug_id": 223457,
+ "attachment_id": 187771,
+ "creation_time": "2017-11-06T14:20:51Z",
+ "creator": "tobik@freebsd.org",
+ "text": "Comment on attachment 187771\nsvn diff for security/testssl.sh\n\nSure, in principle this sound like a good idea.  However there are a\ncouple of issues.\n\n+.if ${ARCH} != i386\n+BUILD_DEPENDS=\t${LOCALBASE}/openssl-unsafe/bin/openssl:security/openssl-unsafe\n+RUN_DEPENDS+=\t${BUILD_DEPENDS_amd64}\n\n post-patch:\n+\t${REINPLACE_CMD} -e \"s|OPENSSL=PREFIX|OPENSSL=${PREFIX}|\" ${WRKSRC}/testssl.sh\n+.endif\n\nSo what happens on i386?  Why is openssl-unsafe not working on i386?\nWhat does BUILD_DEPENDS_amd64 do?  Why even set BUILD_DEPENDS when the\nport now uses NO_BUILD=yes? \n\n-\t-e 's@$${TESTSSL_INSTALL_DIR:-\"\"}@$${TESTSSL_INSTALL_DIR:-\"${DATADIR}\"}@'\n\nThis needs to stay.  Otherwise testssl.sh can't find its data files.\n\n-\t-e '/check_bsd_mount$$/d'\n\nThis too.  The check is bogus.  Testssl.sh does not require a mounted\nfdescfs to work and neither does bash.\n\n--- security/testssl.sh/pkg-message\t(nonexistent)\n+++ security/testssl.sh/pkg-message\t(working copy)\n\nWhat for?\n\n\u003e This port was failing if the user had selected e.g. DEFAULT_VERSIONS= ssl=openssl-devel.\n\nI cannot replicate this with the latest version in the ports tree\n(openssl-devel-1.1.0g) on 11.1/amd64."
+}

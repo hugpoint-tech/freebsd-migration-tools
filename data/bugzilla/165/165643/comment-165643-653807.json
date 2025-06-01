@@ -1,0 +1,8 @@
+{
+ "id": 653807,
+ "bug_id": 165643,
+ "attachment_id": 0,
+ "creation_time": "2012-03-04T11:11:45Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: zec\nDate: Sun Mar  4 11:11:03 2012\nNew Revision: 232487\nURL: http://svn.freebsd.org/changeset/base/232487\n\nLog:\n  Properly restore curvnet context when returning early from\n  ether_input_internal().\n  \n  This change only affects options VIMAGE kernel builds.\n  \n  PR:\t\tkern/165643\n  Submitted by:\tVijay Singh\n  MFC after:\t3 days\n\nModified:\n  head/sys/net/if_ethersubr.c\n\nModified: head/sys/net/if_ethersubr.c\n==============================================================================\n--- head/sys/net/if_ethersubr.c\tSun Mar  4 10:37:26 2012\t(r232486)\n+++ head/sys/net/if_ethersubr.c\tSun Mar  4 11:11:03 2012\t(r232487)\n@@ -661,8 +661,10 @@ ether_input_internal(struct ifnet *ifp, \n \t\tm = (*lagg_input_p)(ifp, m);\n \t\tif (m != NULL)\n \t\t\tifp = m-\u003em_pkthdr.rcvif;\n-\t\telse \n+\t\telse {\n+\t\t\tCURVNET_RESTORE();\n \t\t\treturn;\n+\t\t}\n \t}\n \n \t/*\n@@ -681,6 +683,7 @@ ether_input_internal(struct ifnet *ifp, \n #endif\n \t\t\tifp-\u003eif_ierrors++;\n \t\t\tm_freem(m);\n+\t\t\tCURVNET_RESTORE();\n \t\t\treturn;\n \t\t}\n \n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

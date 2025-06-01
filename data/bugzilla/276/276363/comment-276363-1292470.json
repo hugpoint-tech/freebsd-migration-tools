@@ -1,0 +1,8 @@
+{
+ "id": 1292470,
+ "bug_id": 276363,
+ "attachment_id": 0,
+ "creation_time": "2024-01-16T05:24:32Z",
+ "creator": "aly@aaronly.me",
+ "text": "The padding length calculation in calculate_padding() is wrong for the special case of 'p_mtu = 0'.  It's calculating the padded length instead of the length to pad.  So it should be:\n\nif (__predict_false(!pkt-\u003ep_mtu))\n\treturn ((last_unit + (WG_PKT_PADDING - 1)) \u0026 ~(WG_PKT_PADDING - 1)) - last_unit;\n\nHowever, it's impossible for 'p_mtu' to be zero.  So I'd propose the following fix:\n\n@@ -1461,8 +1461,7 @@ calculate_padding(struct wg_packet *pkt)\n {\n \tunsigned int padded_size, last_unit = pkt-\u003ep_mbuf-\u003em_pkthdr.len;\n \n-\tif (__predict_false(!pkt-\u003ep_mtu))\n-\t\treturn (last_unit + (WG_PKT_PADDING - 1)) \u0026 ~(WG_PKT_PADDING - 1);\n+\tKASSERT(pkt-\u003ep_mtu != 0, (\"%s: packet %p has p_mtu = 0\", __func__, m));\n \n \tif (__predict_false(last_unit \u003e pkt-\u003ep_mtu))\n \t\tlast_unit %= pkt-\u003ep_mtu;"
+}

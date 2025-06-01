@@ -1,0 +1,8 @@
+{
+ "id": 73299,
+ "bug_id": 23521,
+ "attachment_id": 0,
+ "creation_time": "2000-12-13T13:20:01Z",
+ "creator": "luddes@hotmail.com",
+ "text": "This code crashes because of a NULL pointer write inside the vfprintf code.\nIt should print the 8th argument as an integer.\nprintf(\"%8$d\", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);\n\nGDB output:\n0x280d49e0 in vfprintf () from /usr/lib/libc.so.4\n(gdb) x/i $eip\n0x280d49e0 \u003cvfprintf+10028\u003e:    mov    %eax,(%edx)\n(gdb) info reg edx\nedx            0x0      0\n\nFix: \n\nPerhaps the memory allocation failure is at:\nif (tablemax \u003e= STATIC_ARG_TBL_SIZE) {\n        *argtable = (void **)\n                malloc (sizeof (void *) * (tablemax + 1));\n}\nHow-To-Repeat: Compile a C program with this contents:\nint main() {\n    printf(\"%8$d\", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);\n}\nand run it"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 952131,
+ "bug_id": 222356,
+ "attachment_id": 186420,
+ "creation_time": "2017-09-15T19:21:54Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "Created attachment 186420\nfirefox patch\n\nMulti-process firefox appears to use a lot of shared memory backed by files on /tmp.  If /tmp is not tmpfs but a regular file system this causes significant delays.  Scrolling pages can be slow for example.  This can be improved by patching firefox to use MAP_NOSYNC which prevents dirty pages being flushed to disc as long as they are mapped.  When they are unmapped (and all descriptors have been closed) FreeBSD still flushes them though and there are several situations where firefox does this (e.g. switching between tabs and minimising and restoring the browser window).  The backing files have been unlinked so why doesn't FreeBSD just discard the pages?\n\nI've attached a patch for firefox that works around this problem by using POSIX shared memory with shm_open for the case of anonymous shared memory.  Named shared memory is left unchanged but doesn't appear to be used.  The patch also removes recording of the inode because I don't think it's valid for shm_open."
+}

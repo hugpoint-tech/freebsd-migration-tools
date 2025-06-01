@@ -1,0 +1,8 @@
+{
+ "id": 1344436,
+ "bug_id": 276522,
+ "attachment_id": 0,
+ "creation_time": "2025-01-18T07:46:05Z",
+ "creator": "rm@richardmay.net",
+ "text": "To the best of my knowledge ESXi 4kn support encompasses only local disks.\n\nFor remote (SAN) storage ESXi appears tolerant of varying physical block sizes (pblocksize) but is *not* tolerant of anything but 512 byte logical blocks -- in my experience.\n\nArticle ID: 327012 at https://knowledge.broadcom.com/external/article?legacyId=2091600 touches on this but doesn't seem to make an explicit declaration here.  Over the years I've spotted other verbiage within VMware docs that seems to corroborate ESXi + remote storage only working with 512e or 512n.\n\nFWIW I'm playing with this using 14.2-RELEASE and ESXi 8.0.3 build 24414501.  I've set:\n\nblocksize 4096\noption pblocksize 8192\n\n...and ESXi is unhappy about it.  It sees the empty LUN and appears to work until you begin the format process (from within vCenter).  Then the storage path drops.  I can't find anything in hostd.log, vmkernel.log, or anywhere else that's intuitive or descriptive -- just a dead path as if someone pulled a cable.\n\nIt seems fine with:\n\nblocksize 512\noption pblocksize 8192\n\n...though \"esxcli storage core device capacity list\" worryingly lists the Format Type as Unknown.\n\nI'm thinking the best plan here is:\n\nblocksize 512\noption pblocksize 4096\n\n...the latter effectively hides zvol volblocksize rather than passing it through. This keeps ESXi logfiles clear and the disk sector format listed as a comforting 512e.\n\nLet me know if I can help test anything. ESXi seems to be a small but persistent pain point when people point it toward *nix block storage targets.  I've got it working fairly well over here."
+}

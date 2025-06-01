@@ -1,0 +1,8 @@
+{
+ "id": 1354803,
+ "bug_id": 137145,
+ "attachment_id": 0,
+ "creation_time": "2025-03-15T01:48:11Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "Gleb changed some logic of mb_dupcl(), the patch should be rebased. I think we still risk concurrent mb_dupcl().\n\n```\n         /* See if this is the mbuf that holds the embedded refcount. */\n         if (m-\u003em_ext.ext_flags \u0026 EXT_FLAG_EMBREF) {\n                 refcnt = n-\u003em_ext.ext_cnt = \u0026m-\u003em_ext.ext_count;\n                 n-\u003em_ext.ext_flags \u0026= ~EXT_FLAG_EMBREF;\n         } else {\n                 KASSERT(m-\u003em_ext.ext_cnt != NULL,\n                     (\"%s: no refcounting pointer on %p\", __func__, m));\n                 refcnt = m-\u003em_ext.ext_cnt;\n         }\n \n         if (*refcnt == 1)\n                 *refcnt += 1; /* XXX_ZL possible to lose update on concurrent mb_dupcl() */\n         else\n                 atomic_add_int(refcnt, 1);\n```\n\nalso CC @Gleb"
+}

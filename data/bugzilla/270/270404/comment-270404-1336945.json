@@ -1,0 +1,8 @@
+{
+ "id": 1336945,
+ "bug_id": 270404,
+ "attachment_id": 0,
+ "creation_time": "2024-11-27T20:36:27Z",
+ "creator": "emaste@freebsd.org",
+ "text": "You don't even need to make use of .. traversal; user@0:/etc/remote will also work as comsat is prepared to handle absolute paths (for whatever reason).\n\nThat said, after a brief investigation I think there's no significant security concern here. Comsat generally does setuid to the appropriate user before attempting to read a file, so this issue alone shouldn't allow access to arbitrary files that the user could not already access anyway.\n\nThe setuid call does only happen if getpwnam returns an entry for the user though:\n\n        /* Set effective uid to user in case mail drop is on nfs */\n        if ((p = getpwnam(user)) != NULL)\n                (void) setuid(p-\u003epw_uid);\n\nIt seems that if the user isn't known or the setuid fails we'd be better to just return, e.g.\n\n        if ((p = getpwnam(user)) == NULL)\n                return;\n        if (setuid(p-\u003epw_uid) != 0)\n                return;\n\ninetd.conf contains the note:\n\n# run comsat as root to be able to print partial mailbox contents w/ biff,\n# or use the safer tty:tty to just print that new mail has been received.\n\nIf running as tty the change proposed above would have comsat return from jkfprintf due to the setuid call failing rather than because the fopen failed, but that's OK.\n\nOf course even better would be to just remove comsat all together, but probably as a later step."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1331625,
+ "bug_id": 280057,
+ "attachment_id": 0,
+ "creation_time": "2024-10-26T15:45:02Z",
+ "creator": "john@saltant.com",
+ "text": "(In reply to Olivier Cochard from comment #4)\n\nYes, this solves the problem of the frr service failing to start.\n\nI'm still trying to identify the new, best way to grant an otherwise low privilege user access via vtysh.\n\n# pkg install -y frr9\n# sysrc frr_enable=YES frr_daemons=\"mgmtd zebra staticd\"\n# service frr start\n\nThe service is running and the rc script has initialized /usr/local/etc/frr. At this point, I feel like I should be able to grant vtysh like this:\n\n# pw groupmod frrvty -m neirbowj\n\nHowever, when neirbowj tries to run vtysh, I get:\n\nvtysh_connect(/var/run/frr/mgmtd.vty): stat = Permission denied\n\nThe socket itself is g=rwx, so this must be a problem with the directory it's in.\n\n# ls -ld /var/run/frr; ls -l /var/run/frr/mgmtd.vty\ndrwxr-x---  2 frr frr 14 Oct 26 15:22 /var/run/frr\nsrwxrwx---  1 frr frrvty 0 Oct 26 15:22 /var/run/frr/mgmtd.vty\n\nIf I\n\n# chmod o+rx /var/run/frr\n\nthen neirbowj can run vtysh and interact with the services as desired. This also works if I leave /var/run/frr alone and additionally do this:\n\n# pw groupmod frr -m neirbowj\n\nbut I'm uncertain what the point is of having the two different groups.\n\nIf you prefer to resolve this ticket and move the follow-up discussion to a different venue, please don't hesitate to say so."
+}

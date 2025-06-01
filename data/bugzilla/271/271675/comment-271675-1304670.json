@@ -1,0 +1,8 @@
+{
+ "id": 1304670,
+ "bug_id": 271675,
+ "attachment_id": 0,
+ "creation_time": "2024-04-11T00:06:25Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I believe the EINTR would be coming from the I/O\noperation done by sshfs. For the NFS mounts, it\noccurs for \"soft\" mounts when the NFS server takes\ntoo long to reply to an RPC.\n- It was returned by the copy_file_range(2) syscall since the same\n  happens for a read(2) or write(2) done on such a mount.\nAlthough \"soft\" is not a great mount option, getting\nEINTR from an NFS mount would normally indicate\n\"hung NFS mount\" and termination of \"cp\" seems\nappropriate when that happens.\n\nI think the EINTR is most likely being returned by\nvn_rdwr(), which would be doing VOP_READ()/VOP_WRITE().\n\nI'd guess that sshfs is an out-of-src port and that,\nfor some reason, the VOP_READ()/VOP_WRITE() is\nreturning EINTR sometimes?\n\nI suppose that vn_generic_copy_file_range() could\nignore EINTR (and return 0) when some data has been\ncopied (since it is allowed to return less than requested\nand that does not indicate \"near EOF\").\n\nAs Mark said, it would be nice to know why sshfs is\nreturning EINTR and when."
+}

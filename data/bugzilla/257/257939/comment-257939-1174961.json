@@ -1,0 +1,8 @@
+{
+ "id": 1174961,
+ "bug_id": 257939,
+ "attachment_id": 0,
+ "creation_time": "2021-08-19T09:31:15Z",
+ "creator": "ltning-freebsd@anduin.net",
+ "text": "We are using MariaDB in a Galera Cluster setup, and the 10.5.10 to \n10.5.11 upgrade brought huge changes to the wsrep_sst_common and \nwsrep_sst_mariabackup scripts. These changes make them entirely \nFreeBSD-incompatible. The most important changes (to us) are\n  - reliance on --tmpdir option to mktemp\n  - is_local_ip always returns true in a jail\n\nThe former makes the SST script fail because of invalid option. \nThis is easily (and probably compatible with Linux) fixed by removing \nthe --tmpdir option and rather prefixing mktemp with 'TMPDIR=$tmpdir ;' \ninside the same $() around line 935 of wsrep_sst_mariabackup:\n   \u003c xtmpdir=$(mktemp '-d' --tmpdir \"$tmpdir\")\n   \u003e xtmpdir=$(TMPDIR=\"$tmpdir\" ; mktemp '-d')\n\nThe latter I had to hack by removing the commonname option passed to \nsocat on line 387 of the same file:\n   \u003c CN_option='localhost'\n   \u003e CN_option=''\n\nThis is obviously not a fix, as I don't fully understand what's going on \n- but I did not have more time to spend on this as our cluster was down :(\n\nAnything you can do to help bring attention to this from upstream? It's \nreally broken that they're making linux-ism assumptions all over the \nplace.. And the change set between these two releases seems pretty big \nin these scripts.\n\nAlternatively, patches need to be put in place in the port itself, though I imagine this is a less desirable option long-term."
+}

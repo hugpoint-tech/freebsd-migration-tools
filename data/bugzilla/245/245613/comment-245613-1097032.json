@@ -1,0 +1,8 @@
+{
+ "id": 1097032,
+ "bug_id": 245613,
+ "attachment_id": 0,
+ "creation_time": "2020-04-14T06:14:06Z",
+ "creator": "chris@chrullrich.net",
+ "text": "Zabbix 4.4.7 (actually 4.4.6) changed the way it detects libxml2. Instead of the apparently obsolescent xml2-config tool it now uses pkgconfig.\n\nThe Zabbix source provides an autoconf module for using pkgconfig to detect libxml2. This module does not work with the port.\n\nFrom the poudriere log:\n\n    [00:00:05] --CONFIGURE_ENV--\n    [00:00:05] PKG_CONFIG=pkgconf XDG_DATA_HOME=/wrk[...]\n\n$PKG_CONFIG is set (by USES=pkgconfig) to the bare name of pkgconf without path. The m4 module from the Zabbix source (m4/libxml2.m4) then does this:\n\n    if test -x \"$PKG_CONFIG\"; then [...]\n\nand falls over because it expects $PKG_CONFIG to include the path.\n\nFrom what sense I can make of Zabbix's m4 module, it wants to look up pkg-config (pkgconf) first and remember the full path, but it skips this part because USES=pkgconfig has defined $PKG_CONFIG already.\n\nPossible fix: Remove the definition of PKG_CONFIG from Uses/pkgconfig.mk. I suppose this could be predicated on an option to the USES so it won't break everything else."
+}

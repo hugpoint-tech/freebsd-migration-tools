@@ -1,0 +1,8 @@
+{
+ "id": 1136607,
+ "bug_id": 233622,
+ "attachment_id": 0,
+ "creation_time": "2020-12-15T22:36:33Z",
+ "creator": "kp@freebsd.org",
+ "text": "I've had a very quick look at this. Happily it's trivial to reproduce: kldload ng_ether and then run the /usr/tests/sys/net/if_vlan test.\n\nI think the problem is that during vnet teardown we run SI_SUB_NETGRAPH first, which calls vnet_netgraph_uninit(), where we free all nodes. Only then do we SI_SUB_INIT_IF, which does vnet_vlan_uninit() through which we ether_ifdetach() and ng_ether_detach().\n\nng_ether_detach() tries to remove the node from the ifp and free it, but before it does so it tries to priv-\u003eifp = NULL (priv being part of the node private information) where we panic because priv is now 0xdeadc0dedeadc0de."
+}

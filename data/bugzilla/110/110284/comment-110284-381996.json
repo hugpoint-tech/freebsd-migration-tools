@@ -1,0 +1,8 @@
+{
+ "id": 381996,
+ "bug_id": 110284,
+ "attachment_id": 0,
+ "creation_time": "2007-03-13T20:40:05Z",
+ "creator": "devon.odell@coyotepoint.com",
+ "text": "Many NICs simply offload ioctls for SIOCSIFADDR to ether_ioctl(). When in\nether_ioctl(), we call the interface's if_init() routine. This is good \nwhen the interface is down and we haven't assigned an IP address yet. \nHowever, this routine is also called when aliases are added to the \ninterface.\n\nCalling if_init() at this point is undesirable because the chip is \nlready running and doesn't need to be initialized again. Additionally, \nfor some chips (em(4) and vr(4) in my observations) the number of chip \nresets and the time required to autonegotiate is significant enough to \ncause the NIC to go OTL for a significant period of time (\u003e15 seconds).\n\nThe attached patch only calls if_init() if the driver's if_flags field \n*DOES NOT* have the IFF_RUNNING bit set.\n\nThe gratuitous ARP (which is sent, if I understand correctly, because of\nthe succeeding arp_ifinit() call) should still be sent in either case.\n\nFix: \n\nA patch is available at http://databits.net/~dho/if_ethersubr.patch\n\nI would have attached it, but the form doesn't like the Content-type\nof my if_ethersubr.patch :(\nHow-To-Repeat: I'm not sure whether this is visible on all em(4) or vr(4) chips. To\nvisualize the problem, open two terminal sessions. In one, ping a machine\non the same network. On another, add an interface alias. Some number of\npackets should never reach their destination."
+}

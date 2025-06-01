@@ -1,0 +1,8 @@
+{
+ "id": 584822,
+ "bug_id": 151871,
+ "attachment_id": 0,
+ "creation_time": "2010-11-12T11:36:18Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: brucec\nDate: Fri Nov 12 11:36:12 2010\nNew Revision: 215174\nURL: http://svn.freebsd.org/changeset/base/215174\n\nLog:\n  MFC r214781, r214807:\n  \n  Improve rounding of standby timer.\n  22-29 minutes can't be encoded so must be rounded up to 30.\n  \n  PR:\tbin/151871\n\nModified:\n  stable/8/sbin/camcontrol/camcontrol.c\nDirectory Properties:\n  stable/8/sbin/camcontrol/   (props changed)\n\nModified: stable/8/sbin/camcontrol/camcontrol.c\n==============================================================================\n--- stable/8/sbin/camcontrol/camcontrol.c\tFri Nov 12 11:22:59 2010\t(r215173)\n+++ stable/8/sbin/camcontrol/camcontrol.c\tFri Nov 12 11:36:12 2010\t(r215174)\n@@ -4302,14 +4302,19 @@ atapm(struct cam_device *device, int arg\n \t\tcmd = ATA_SLEEP;\n \t\tt = -1;\n \t}\n+\n \tif (t \u003c 0)\n \t\tsc = 0;\n \telse if (t \u003c= (240 * 5))\n-\t\tsc = t / 5;\n+\t\tsc = (t + 4) / 5;\n+\telse if (t \u003c= (252 * 5))\n+\t\t/* special encoding for 21 minutes */\n+\t\tsc = 252;\n \telse if (t \u003c= (11 * 30 * 60))\n-\t\tsc = t / (30 * 60) + 241;\n+\t\tsc = (t - 1) / (30 * 60) + 241;\n \telse\n \t\tsc = 253;\n+\n \tcam_fill_ataio(\u0026ccb-\u003eataio,\n \t\t      retry_count,\n \t\t      NULL,\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

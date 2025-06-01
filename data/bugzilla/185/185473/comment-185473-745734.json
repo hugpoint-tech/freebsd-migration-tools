@@ -1,0 +1,8 @@
+{
+ "id": 745734,
+ "bug_id": 185473,
+ "attachment_id": 0,
+ "creation_time": "2014-01-04T19:50:00Z",
+ "creator": "russo@bogodyn.org",
+ "text": "Trying to update wine-devel from 1.7.9 to 1.7.10, got the following compilation error:\n\nsocket.c: In function 'is_sockaddr_bound':\nsocket.c:1476:35: error: invalid operands to binary || (have 'int' and 'union ipx_net')\n\n\nThe offending line is in socket.c in wine-1.7.10/dlls/ws2_32:\n\n            return ipx-\u003esipx_port || ipx-\u003esipx_network || memcmp(\u0026ipx-\u003esipx_node, \u0026emptyAddr.sipx_node, sizeof(emptyAddr.sipx_node));\n\nipx-\u003esipx_network is not an int, it's a union ipx_net, as seen in /usr/include/netipx/ipx.h:\n\nstruct ipx_addr {\n        union ipx_net   x_net;\n        union ipx_host  x_host;\n        u_short         x_port;\n};\n\nstruct sockaddr_ipx {\n        u_char          sipx_len;\n        u_char          sipx_family;\n        struct ipx_addr sipx_addr;\n        char            sipx_zero[2];\n};\n\nipx on line 1476 is of type sockaddr_ipx *, and sipx_network is #defined at the top of socket.h as sipx_addr.x_net\n\nHow-To-Repeat: Try to build wine-devel 1.7.10 on FreeBSD 9.2."
+}

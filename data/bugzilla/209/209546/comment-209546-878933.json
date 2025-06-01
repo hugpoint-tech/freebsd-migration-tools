@@ -1,0 +1,8 @@
+{
+ "id": 878933,
+ "bug_id": 209546,
+ "attachment_id": 170348,
+ "creation_time": "2016-05-16T10:24:11Z",
+ "creator": "novel@FreeBSD.org",
+ "text": "Created attachment 170348\nproposed fix, v1\n\nCurrently, fetch(1) fails to download a file if there's HTTP 307 redirect for it.\n\nFor example:\n\n$ fetch https://jigsaw.w3.org/HTTP/300/307.html\nfetch: https://jigsaw.w3.org/HTTP/300/307.html: Temporary Redirect\n$\n\nHowever, it should not fail on redirect unless -A flag was given.\n\nAdditionally, in verbose mode it manages to download that file.\n\nThis appears to happen because in \"switch (http_get_reply(conn))\" in http_request_body() from http.c there's no case for HTTP_TEMP_REDIRECT, so it fails to \"default\" that looks like this:\n\n1816 default:\n1817 http_seterr(conn-\u003eerr);\n1818 if (!verbose)\n1819 goto ouch;\n\nSo in verbose mode it goes further and downloads the file, because HTTP_REDIRECT() macro does include check for HTTP_TEMP_REDIRECT.\n\nFix by handing HTTP_TEMP_REDIRECT in the http_get_reply(conn) switch."
+}

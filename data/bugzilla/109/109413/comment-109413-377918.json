@@ -1,0 +1,8 @@
+{
+ "id": 377918,
+ "bug_id": 109413,
+ "attachment_id": 0,
+ "creation_time": "2007-06-25T19:38:26Z",
+ "creator": "john@baldwin.cx",
+ "text": "Yes, the place to fix this is in the kernel, not in userland applications.  We \nhave a hack at work for 4.x at least to address this, but a more proper fix \nis needed and requires us to have good knowledge in the kernel of online vs \noffline CPUs.\n\n--- //depot/vendor/freebsd_4/src/sys/kern/kern_clock.c\t2003/08/22 15:39:19\n+++ //depot/yahoo/ybsd_4/src/sys/kern/kern_clock.c\t2005/02/01 08:02:41\n@@ -376,6 +375,11 @@\n \t}\n }\n \n+#ifdef SMP\n+/* XXXHACK */\n+extern int hlt_cpus_mask;\n+#endif\n+\n /*\n  * Statistics clock.  Grab profile sample, and if divider reaches 0,\n  * do process and kernel statistics.  Most of the statistics are only\n@@ -450,6 +450,15 @@\n \t\t * so that we know how much of its real time was spent\n \t\t * in ``non-process'' (i.e., interrupt) work.\n \t\t */\n+#ifdef SMP\n+\t\t/*\n+\t\t * XXXHACK: If this is a halted CPU, then don't count it\n+\t\t * in the statistics.\n+\t\t */\n+\t\tif (hlt_cpus_mask \u0026 1 \u003c\u003c cpuid)\n+\t\t\tp = NULL;\n+\t\telse {\n+#endif\n \t\tp = curproc;\n \t\tif (CLKF_INTR(frame)) {\n \t\t\tif (p != NULL)\n@@ -460,6 +469,9 @@\n \t\t\tcp_time[CP_SYS]++;\n \t\t} else\n \t\t\tcp_time[CP_IDLE]++;\n+#ifdef SMP\n+\t\t}\n+#endif\n \t}\n \tpscnt = psdiv;\n \n\n-- \nJohn Baldwin"
+}

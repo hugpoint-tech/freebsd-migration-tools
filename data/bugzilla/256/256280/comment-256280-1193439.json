@@ -1,0 +1,8 @@
+{
+ "id": 1193439,
+ "bug_id": 256280,
+ "attachment_id": 0,
+ "creation_time": "2022-01-06T12:31:51Z",
+ "creator": "riccardo@torrini.org",
+ "text": "I was probably bitten by the same bug, but my setup is slightly different:\n- server 13.0-RELEASE-p4/p5, UFS on system, ZFS on /home (also NFS exported)\n- client 13.0-RELEASE-p4/p5, /home mounted by the server\n\nunder heavy load (find on dir tree with millions of files[1], md5 and/or mv them elsewhere) the server hangs (cpu is not responding, caps lock does not work, need a power cycle on the server)\nI can't run any debug command on client or server because of cpu hangs.\n\nAlso note that I'm fairly new to ZFS, the server machine was full-UFS until last week (neither crashes on NFS nor any other UFS issues)\nSo imho is definitely something related to the NFS + ZFS mix.\n\nJust tried to disable TSO on broadcom on server (no TSO available on client), I'll let you know if it's enough (hopefully) waiting for 13.1\n\n(both client and server)# freebsd-version -kru\n13.0-RELEASE-p4\n13.0-RELEASE-p4\n13.0-RELEASE-p5\n\n(server)# ifconfig | grep -iB1 tso\nbge0: flags=8843\u003cUP,BROADCAST,RUNNING,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        options=c019b\u003cRXCSUM,TXCSUM,VLAN_MTU,VLAN_HWTAGGING,VLAN_HWCSUM,TSO4,VLAN_HWTSO,LINKSTATE\u003e\n\n# grep ^bge /var/run/dmesg.boot\nbge0: \u003cHP NC107i PCIe Gigabit Server Adapter, ASIC rev. 0x5784100\u003e mem 0xfe9f0000-0xfe9fffff irq 18 at device 0.0 on pci3\nbge0: CHIP ID 0x05784100; ASIC REV 0x5784; CHIP REV 0x57841; PCI-E\nbge0: Using defaults for TSO: 65518/35/2048\n\nShould I also disable HWTSO?\n\n[1] something like /var/db/freebsd-update/files/{long_hex_name_like_md5_or_sha} to be reorganized under 00-ff subdirs"
+}

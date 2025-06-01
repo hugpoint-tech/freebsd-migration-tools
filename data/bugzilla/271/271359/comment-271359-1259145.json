@@ -1,0 +1,8 @@
+{
+ "id": 1259145,
+ "bug_id": 271359,
+ "attachment_id": 242116,
+ "creation_time": "2023-05-11T04:05:19Z",
+ "creator": "t_uemura@macome.co.jp",
+ "text": "Created attachment 242116\npatch-sys_kern_kern__shutdown.c\n\nOn RPi4B running 13.2-RELEASE official image (or home-brew 13.2-STABLE with more recent u-boot and firmware), reset after shutdown -h by pressing a key to \"The operating system has halted.\\nPlease press any key to reboot.\" prompt never works as expected. It simply freezes just after \"Rebooting...\" message, and a power cycle is required to restart the operating system.\n\nPrecisely, reset after shutdown -h is handled by sys/kern/kern_shutdown.c:shutdown_reset() but there are two hardware specific issues here. \n\nThe one is that mtx_lock_spin(\u0026smp_ipi_mtx) never returns. I don't know how important this lock is and tried to see by commenting it out, and faced another issue.\n\nIf I omitted the lock, then psci_call(PSCI_FNID_SYSTEM_RESET) was subsequently called from cpu_lock() and it never successfully reset the board. Just stop. Screen was still on and \"Rebooting...\" was intact. I don't know whether this psci_call() failure is caused by the skipped lock.\n\nTo workaround, a watchdog firing is good alternative, as did in sys/arm/broadcom/bcm2835/bcm2835_wdog.c:bcmwd_reboot_system().\n\nI was very reluctant to add machine-dependent code to the file under sys/kern, but I couldn't think of any other way to get around the lock other than what was did in the attached patch."
+}

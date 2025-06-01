@@ -1,0 +1,8 @@
+{
+ "id": 955834,
+ "bug_id": 223031,
+ "attachment_id": 0,
+ "creation_time": "2017-10-15T15:39:38Z",
+ "creator": "J.deBoynePollard-newsgroups@NTLWorld.COM",
+ "text": "See https://unix.stackexchange.com/questions/398223/ for how to replicate this.\n\nSome investigation reveals that this is apparently down to the pmatch object in the procline() function not being used properly.\n\nIn the outer loop, it is being used to track the start and end position within the current input line.  However, if multiple patterns are provided, in the inner loop it is overwritten by the first call to fastexec()/regexec() and not reinitialized with st and l-\u003elen for the next.\n\nThe (re)initialization code for pmatch.rm_so and pmatch.rm_eo needs to be moved down into the inner loop, so that it is set correctly for every pattern, not just for the first one.\n\nThis also means that the\n\nif (st == (size_t)pmatch.rm_so)\n\ncode in the outer loop is probably wrong, too, as that will only detect the output of the last fastexec()/regexec() call for the last of multiple patterns.  Perhaps there should be one pmatch object per pattern."
+}

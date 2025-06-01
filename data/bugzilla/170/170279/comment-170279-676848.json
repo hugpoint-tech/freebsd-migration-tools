@@ -1,0 +1,8 @@
+{
+ "id": 676848,
+ "bug_id": 170279,
+ "attachment_id": 0,
+ "creation_time": "2012-07-30T16:20:09Z",
+ "creator": "johnpoz@gmail.com",
+ "text": "dhclient uses by default ttl of 16, depending on isp this can prevent getting dhcp lease from dhcp server.\n\nHelping user troubleshoot problem with freebsd based pfsense, user discovered that ttl of dhcp traffic was at 16, vs os default.\n\ninfo can be found in this thread\nhttp://forum.pfsense.org/index.php/topic,51803.0.html\n\nPer packet.c in source, \nhttp://svnweb.freebsd.org/base/release/8.3.0/sbin/dhclient/packet.c?revision=234063\u0026view=markup\n\np.ip_ttl = 16;\n\nVerified this with tcpdump both on freebsd machine along with on dhcp server in local network.  TTL on dhcp traffic shows 16\n\n10:09:51.512335 00:0c:29:9a:bc:8a (oui Unknown) \u003e Broadcast, ethertype IPv4 (0x0800), length 342: (tos 0x10, ttl 16, id 0, offset 0, flags [none], proto UDP (17), length 328)\n\nWith default dhclient user not able to get dhcp from his isp.  Using modified dhclient where packet.c p.ip_ttl changed 128 user was able to get IP from his ISP dhcp server.\n\nFix: \n\nChanged\n\np.ip_ttl = 16;\n\nTo be\np.ip_ttl = 128;\n\nRan make, used this new modified dhclient, verified via tcpdump that client was now setting ttl to 128\n\nThis allowed dhclient to obtain ip address from dhcp server.\n\n10:04:47.893610 00:0c:29:9a:bc:8a (oui Unknown) \u003e Broadcast, ethertype IPv4 (0x0800), length 342: (tos 0x10, ttl 128, id 0, offset 0, flags [none], proto UDP (17), length 328)\nHow-To-Repeat: Request lease and check dhcp traffic for ttl.\n\n10:09:51.512335 00:0c:29:9a:bc:8a (oui Unknown) \u003e Broadcast, ethertype IPv4 (0x0800), length 342: (tos 0x10, ttl 16, id 0, offset 0, flags [none], proto UDP (17), length 328)"
+}

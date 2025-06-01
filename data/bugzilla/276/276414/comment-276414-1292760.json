@@ -1,0 +1,8 @@
+{
+ "id": 1292760,
+ "bug_id": 276414,
+ "attachment_id": 0,
+ "creation_time": "2024-01-18T03:52:21Z",
+ "creator": "ivy@FreeBSD.org",
+ "text": "tested on FreeBSD 15.0-CURRENT #8 main-n267554-c8328f1a7b6e\n\nwhen an interface is destroyed, an rtnetlink socket monitoring RTNLGRP_LINK will get 1 or more spurious RTM_NEWLINKS, followed by the actual RTM_DELLINK.\n\nthis can be observed with 'route monitor' which uses netlink:\n\n# ifconfig bridge1 create\n\n03:49:47.538 PID 10747 add/repl iface iface#8 bridge1 admin DOWN oper DOWN mtu 1500\n\n# ifconfig bridge1 destroy\n\n03:50:14.124 PID 10747 add/repl iface iface#8 bridge1 admin DOWN oper DOWN mtu 1500\n03:50:14.124 PID 10747 delete iface iface#8 bridge1 admin DOWN oper DOWN mtu 1500\n\nwith wg(4) interfaces, there are several spurious RTM_NEWLINKs after destroy:\n\n03:50:44.607 PID 10747 add/repl iface iface#8 wg1 admin DOWN oper DOWN mtu 1420\n03:50:44.607 PID    0 add/repl iface iface#8 wg1 admin DOWN oper DOWN mtu 1420\n03:50:44.654 PID 10747 add/repl iface iface#8 wg1 admin DOWN oper DOWN mtu 1420\n03:50:44.654 PID    0 delete iface iface#8 wg1 admin DOWN oper DOWN mtu 1420\n\ni'm not particularly familiar with the netlink API, but from reading the documentation, this isn't the behaviour i'd expect."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 891801,
+ "bug_id": 211674,
+ "attachment_id": 0,
+ "creation_time": "2016-08-08T17:43:55Z",
+ "creator": "mqudsi@neosmart.net",
+ "text": "SUMMARY\n\nRunning on FreeBSD 10.3-RELEASE-p6/i386 with fuse compiled into kernel and with fusefs-ntfs 2016.2.22 installed, there is a fuse_vnode leak (though it seems it may be more of a complete failure to reclaim vnodes) resulting in quick resource exhaustion.\n\nREPRODUCTION\n\nThis is easily reproduced with the following:\n\nntfs-3g /dev/xxx /mnt/yyyy\ncd /mnt/yyyy\nfind . -exec touch {} \\;\n\nIn another virtual terminal:\n\nvmstat | head -n1; vmstat -m | sed 1d | sort -hk 3,3\n\nACTUAL RESULTS\n\nfuse_vnode will continuously balloon, and will not be reclaimed until the filesystem is unmounted.\n\n(likewise, fuse_msgbuff also balloons but unlike fuse_vnode, it is never reclaimed. Separate PR?)\n\nEXPECTED RESULTS\n\nfuse_vnode entries should be reclaimed\n\nADDITIONAL INFORMATION\n\nHere's a snapshot of the fuse-related vmstat entries after this process:\n\nfuse_vnode 36020 9005K - 502349 256\nfuse_msgbuf 58141 14895K - 311095 256,512,1024,2048,4096,8192"
+}

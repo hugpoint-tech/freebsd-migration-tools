@@ -1,0 +1,8 @@
+{
+ "id": 906166,
+ "bug_id": 213255,
+ "attachment_id": 176698,
+ "creation_time": "2016-11-06T19:31:52Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "Created attachment 176698\npatch\n\nSo this turned out to be caused by /compat being a symlink to usr/compat on my system and it's a bug in libarchive.  It can be reproduced with tar like this:\n\n% mkdir dir2\n% ln -s dir2 dir\n% touch dir/file\n% ln dir/file dir/file2\n% tar cf dir.tar dir/file dir/file2\n% rm dir/*\n% tar xf dir.tar -P\ndir/file2: Can't create 'dir/file2'\ntar: Error exit delayed from previous errors.\ntijl@kalimero:~/tmp/test% ls -l dir/\ntotal 0\n-rw-r--r--  1 tijl  wheel  0  6 Nov 20:05 file\n\nWith -P extraction through a symlink (dir-\u003edir2) should work, but fails for hardlinks.\n\nThe attached patch fixes this.  In archive_write_disk_posix.c the function create_filesystem_object() calls check_symlinks_fsobj() in the case of hardlinks, but not in the case of symlinks or regular files.  The patch removes this call.  check_symlinks_fsobj() is still called elsewhere in the same file and the 'tar xf' command above without -P still fails on both archive entries."
+}

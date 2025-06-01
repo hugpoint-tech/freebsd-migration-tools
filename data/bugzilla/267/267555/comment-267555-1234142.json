@@ -1,0 +1,8 @@
+{
+ "id": 1234142,
+ "bug_id": 267555,
+ "attachment_id": 237855,
+ "creation_time": "2022-11-03T22:01:27Z",
+ "creator": "dev@submerge.ch",
+ "text": "Created attachment 237855\nFix the length check for mmap of the dsp sound buffer\n\nFor some sound cards, the system call mmap(2) consistently fails with EINVAL instead of mapping the sound buffer memory into userspace. It took me a while to figure out a pattern until I found the culprit.\n\nWhat happens:\n 1) Application does a ioctl(2) query of the dsp sound buffer size (SNDCTL_DSP_GETISPACE or SNDCTL_DSP_GETOSPACE).\n 2) Application requests to mmap(2) the dsp buffer of that size.\n 3) The requested memory map length is rounded to page size (vm_mmap() in sys/vm/vm_mmap.c).\n 4) The device checks that the requested length does not exceed its buffer size (dsp_mmap_single() in sys/dev/sound/pcm/dsp.c).\n\nNow because of the rounding in 3), 4) will always fail if the buffer size is not a multiple of the page size. This primarily affects dsp devices with a non-power-of-two number of channels, 24bit sample size, or low-latency sound buffers smaller than one page.\n\nI was able to reproduce the problem with multiple sound card setups on both 13.1-RELEASE and 14.0-CURRENT.\n\nProposed fix (see patch attached):\nLet the device check the requested length against the allocation size of the buffer, which is always whole pages. This still prevents mapping pages which do not belong to the dsp buffer allocation, but works fine with the rounding in 3).\nEven though the application may now map more than the actual sound buffer (but no more than allocated by the dsp), the additional parts are effectively unused.\n\nThis fix was tested with multiple sound card setups on 14.0-CURRENT."
+}

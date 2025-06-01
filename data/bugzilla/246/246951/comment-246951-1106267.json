@@ -1,0 +1,8 @@
+{
+ "id": 1106267,
+ "bug_id": 246951,
+ "attachment_id": 0,
+ "creation_time": "2020-06-03T14:44:41Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I looked at the ip_input() and ip_output() faults.  ip_input() is crashing here:\n\n 709   if (ifp != NULL \u0026\u0026 ifp-\u003eif_flags \u0026 IFF_BROADCAST) {                                                                              \n 710           IF_ADDR_RLOCK(ifp);\n 711           TAILQ_FOREACH(ifa, \u0026ifp-\u003eif_addrhead, ifa_link) {\n 712                   if (ifa-\u003eifa_addr-\u003esa_family != AF_INET) \u003c- null ifa_addr\n 713                           continue;\n\nand ip_output() is crashing here:\n\n 678                 if (error == 0) {                                                                                                        \n 679                         /* Record statistics for this interface address. */\n 680                         if (ia != NULL) {\n 681                                 counter_u64_add(ia-\u003eia_ifa.ifa_opackets, 1);\n 682                                 counter_u64_add(ia-\u003eia_ifa.ifa_obytes,\n 683                                     m-\u003em_pkthdr.len);\n 684                         }\n\nSo there is some race involving interface address changes.\n\nIt would be useful to see the dmesg leading up to the panic."
+}

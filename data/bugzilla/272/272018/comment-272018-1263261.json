@@ -1,0 +1,8 @@
+{
+ "id": 1263261,
+ "bug_id": 272018,
+ "attachment_id": 0,
+ "creation_time": "2023-06-15T18:41:33Z",
+ "creator": "daveb@spectralogic.com",
+ "text": "The state machine to read a device's VPD in pci_vpd_read() has this statement at the end of the top level switch() statement:\n\nif (cfg-\u003evpd.vpd_ident == NULL || cfg-\u003evpd.vpd_ident[0] == '\\0') {\n       pci_printf(cfg, \"no valid vpd ident found\\n\");\n       state = -2;\n}\n\nThe issue is the cfg-\u003evpd.vpd_ident[0] == '\\0' check.\n\nOn the first iteration with state == 0, case 0: if a \"name\" of 2 is discovered (name = (byte \u003e\u003e 3) \u0026 0xf) then the code falls into a sub-switch() statement where if everything else is valid then vpd_ident is allocated:\n\nswitch(name)\ncase 0x2:\n    ...\n    ...\n    ...\n    cfg-\u003evpd.vpd_ident = malloc(remain + 1, M_DEVBUF, M_WAITOK);\n    i = 0;\n    state = 1;\n    break;\n\nNow when the code falls out of the top level switch() the above check triggers.\nThe code has not assigned anything to cfg-\u003evpd.vpd_ident[0]; it is therefore random luck weather or not a device with valid VPD gets its VPD cached.\n\nMy quick hack: assign a characther not '\\0' to cfg-\u003evpd.vpd_ident[0] after it is allocated. It will be overwritten in case 1 of the top level switch() on the next iteration; I'm sure there's a more elegant solution."
+}

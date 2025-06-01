@@ -1,0 +1,8 @@
+{
+ "id": 1040980,
+ "bug_id": 236327,
+ "attachment_id": 0,
+ "creation_time": "2019-03-06T17:58:26Z",
+ "creator": "cem@freebsd.org",
+ "text": "Is FUSE_RELEASE synchronous or asynchronous anyway?  There seems to be some confusion in its documentation / behavior over time.\n\nIt looks like we *could* detect and check some errors at FUSE_RELEASE time, assuming FUSE_RELEASE is synchronous, in fuse_filehandle_close via fdi.answ_stat.\n\nHowever, fuse_vnop_close (= VOP_CLOSE, = close(2)) doesn't actually close ordinary file filehandles; therefore, it doesn't issue a FUSE_RELEASE at all.\n\nWe leave filehandles open until VOP_INACTIVE, at which point it is impossible to return an error to users anyway.  The vnode has no references and therefore userspace has no fds associated with it.\n\nThis pattern makes it impossible for close() to fail.  If users want to ensure consistency it seems like they must manually fsync() before close().\n\nUFS has the same behavior."
+}

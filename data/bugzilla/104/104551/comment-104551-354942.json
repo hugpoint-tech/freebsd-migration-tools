@@ -1,0 +1,8 @@
+{
+ "id": 354942,
+ "bug_id": 104551,
+ "attachment_id": 0,
+ "creation_time": "2006-10-18T22:30:24Z",
+ "creator": "freebsd@rwoolley.com",
+ "text": "After running portmanager, pkgdb will sometimes find numerous stale dependencies on strings that aren't package names. These don't seem to do any harm to portmanager, but they have to be deleted before portupgrade can be used. It may create more severe problems for portmaster, I haven't tried it.\n\nPortmanager performs a runtime patch on bsd.port.mk, which causes the makefile to call back into portmanger with the undocumented command  \"package-depends\". This enables portmanager to set PKG_ARGS, which in turn sets the package dependencies.\n\nUnfortunately, portmanager doesn't suppress all of it's debug messages when invoked with \"package-depends\" and the resulting unwanted strings end-up in PKG_ARGS.\n\nFix: All of the portmanager debug message lines start with \"MGPMr\", so a simple solution is just to filter them out.   The following patch patches the patchfile that is used to patch bsd.port.mk. I've been using it for several weeks without a problem, but the PR webpage say it's the wrong content type when I try to attach it. \n\n$ cat /usr/ports/sysutils/portmanager/files/patch-patch-bsd.port.mk-0.3.6\nHow-To-Repeat: Find a port that depends on a forbidden port and run \nportmanager /\u003corigin\u003e package-depends \n\ne.g multimedia/win32-codecs is forbidden when built  WITH_QUICKTIME  \n\n# setenv WITH_QUICKTIME yes \u0026\u0026 portmanager /multimedia/mplayer package-depends\n\nThis shows the unwanted debug messages. Upgrading the same port (mplayer) will reproduce the package database corruption."
+}

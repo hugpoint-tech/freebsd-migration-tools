@@ -1,0 +1,8 @@
+{
+ "id": 2972,
+ "bug_id": 1087,
+ "attachment_id": 0,
+ "creation_time": "1996-03-18T05:31:54Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\tIn sys/miscfs/specfs/spec_vnops.c:spec_close(), the case of\n\u003e\tVBLK, vcount() always returns 2 even if the last close.  Then\n\u003e\tdevice close entry never called from spec_close() function.\n\n\u003e\u003eFix:\n\u003e\t\n\u003e\tI don't know why vcount() returns 2 at last close, so I\n\u003e\tbeleive this is not a ture fix.\n\nvn_vmio holds a reference.  See ffs_unmount() and vn_close().  Perhaps\nthe correct fix is to move the vn_vmio_close() before the VOP_CLOSE()?\nWHere does the reference count get incremented for the non-VREG case\nof vn_open()?  vn_close() releases a reference in all cases.\n\n\u003e--- sys/miscfs/specfs/spec_vnops.c-dist\tTue Jan  2 05:20:45 1996\n\u003e+++ sys/miscfs/specfs/spec_vnops.c\tMon Mar 18 10:52:36 1996\n\u003e@@ -625,7 +625,7 @@\n\u003e \t\t * sum of the reference counts on all the aliased\n\u003e \t\t * vnodes descends to one, we are on last close.\n\u003e \t\t */\n\u003e-\t\tif (vcount(vp) \u003e 1 \u0026\u0026 (vp-\u003ev_flag \u0026 VXLOCK) == 0)\n\u003e+\t\tif (vcount(vp) \u003e 2 \u0026\u0026 (vp-\u003ev_flag \u0026 VXLOCK) == 0)\n\u003e \t\t\treturn (0);\n\u003e \t\tdevclose = bdevsw[major(dev)]-\u003ed_close;\n\u003e \t\tmode = S_IFBLK;\n\nBruce"
+}

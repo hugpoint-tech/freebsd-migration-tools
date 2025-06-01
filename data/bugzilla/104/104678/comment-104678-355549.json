@@ -1,0 +1,8 @@
+{
+ "id": 355549,
+ "bug_id": 104678,
+ "attachment_id": 0,
+ "creation_time": "2006-11-17T14:50:19Z",
+ "creator": "ariff@FreeBSD.org",
+ "text": "\u003e The power penalty seems to be more than slight.  On my nx6325,\n\u003e tz0.temperature is now 50C with cpu_idle_hlt=1 and 75C with\n\u003e cpu_idle_hlt=0, the latter even when on battery power.  I've also\n\u003e noticed this system getting hot while in ddb, and wondered if it\n\u003e would help to use pause() in the spinloops in console i/o routines.\n\u003e \n\nApparently executing HLT on other cores seems fine, as long as we\n_exclude_ at least a single core from doing so. That way, we still\nhave manageable timer interrupt while letting the other cores doing\npower management stuffs. Currently, this is my crude crack on\nmachdep.c (both for i386 and amd64):\n\n## BEGIN ##\nvoid\ncpu_idle(void)\n{\n\n#ifdef SMP\n\tif (mp_grab_cpu_hlt())\n\t\treturn;\n#endif\n\n\tif (cpu_idle_hlt) {\n\t\tdisable_intr();\n  \t\tif (sched_runnable())\n\t\t\tenable_intr();\n\t\telse if (PCPU_GET(cpuid) == 0) \u003c\u003c\u003c\u003c\u003c\n\t\t\tenable_intr();         \u003c\u003c\u003c\u003c\u003c\n\t\telse\n\t\t\t(*cpu_idle_hook)();\n\t}\n}\n## END ##\n\n\nAgain, this only concern where local apic timer is in action for this\ncpu.\n\n\n--\nAriff Abdullah\nFreeBSD\n\n... Recording in stereo is obviously too advanced\n    and confusing for us idiot ***** users :P ........"
+}

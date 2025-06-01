@@ -1,0 +1,8 @@
+{
+ "id": 1284139,
+ "bug_id": 275063,
+ "attachment_id": 0,
+ "creation_time": "2023-11-15T18:00:23Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "Just for information: This condition is triggered reliably as follows:\n- Create a sparse/compressed zvol: zfs create -o compress=on -s -V 20g hal.1/vdisks/903\n- In a VM, slice \u0026 partition it in the old-fashioned way for carrying UFS filesystems: ada0s4a, ada0s4d (for / and /usr)\n- With the VM not running and from the host side, mount one of these filesystems\n- Run dd if=/dev/zero of=\u003cmountpoint\u003e/\u003ctmpfile\u003e until filesystem full; this is done to remove unallocated blocks because the sparse/compressed zvol discards blocks of zeros\n- The dd operation reliably triggers the arc_prune issue.\n\nThe draining of taskq_zone (see PR 274698) is so slow that it would take many hours (on an otherwise completely idle system):\n\n[0]# vmstat -z | egrep '^ITEM|taskq' ; sleep 60 ; vmstat -z | egrep '^ITEM|taskq'\nITEM                   SIZE  LIMIT     USED     FREE      REQ     FAILSLEEP XDOMAIN\ntaskq_zone:             192,      0, 2221547,   28456, 2980856,   0,   0,   0\nITEM                   SIZE  LIMIT     USED     FREE      REQ     FAILSLEEP XDOMAIN\ntaskq_zone:             192,      0, 2218760,   31243, 2980868,   0,   0,   0\n[0]# \n\nA linear extrapolation results in about 13.3 hours.\n\n-- Martin"
+}

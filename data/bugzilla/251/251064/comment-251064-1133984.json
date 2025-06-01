@@ -1,0 +1,8 @@
+{
+ "id": 1133984,
+ "bug_id": 251064,
+ "attachment_id": 0,
+ "creation_time": "2020-11-29T18:07:17Z",
+ "creator": "mikael@FreeBSD.org",
+ "text": "make is too old on 11.4 and AFAIU is not \"jobserver\" compatible: https://github.com/rust-lang/rust/pull/42682#issue-125886139\n\nOn 11.4, you can install gmake and patch cargo-crates/servo-fontconfig-sys-4.0.9/makefile.cargo:\n\n--- ./cargo-crates/servo-fontconfig-sys-4.0.9/makefile.cargo.orig       2020-11-29 19:04:42.745374000 +0100\n+++ ./cargo-crates/servo-fontconfig-sys-4.0.9/makefile.cargo    2020-11-29 19:02:38.491280000 +0100\n@@ -58,7 +58,7 @@ SRC_DIR = $(shell pwd)\n all: $(OUT_DIR)/libfontconfig.a\n \n $(OUT_DIR)/libfontconfig.a: $(OUT_DIR)/Makefile\n-       cd $(OUT_DIR) \u0026\u0026 make -j$(NUM_JOBS)\n+       cd $(OUT_DIR) \u0026\u0026 gmake -j$(NUM_JOBS)\n        cp $(OUT_DIR)/src/.libs/libfontconfig.a $(OUT_DIR)\n \n EXPAT_INCLUDE_DIR ?= $(DEP_EXPAT_OUTDIR)/include\n\n\n\n--- ./cargo-crates/servo-fontconfig-sys-4.0.9/build.rs.orig     2020-11-29 19:06:19.604660000 +0100\n+++ ./cargo-crates/servo-fontconfig-sys-4.0.9/build.rs  2020-11-29 19:06:26.037062000 +0100\n@@ -17,7 +17,7 @@ fn main() {\n         }\n     }\n \n-    assert!(Command::new(\"make\")\n+    assert!(Command::new(\"gmake\")\n         .env(\"MAKEFLAGS\", env::var(\"CARGO_MAKEFLAGS\").unwrap_or_default())\n         .args(\u0026[\"-R\", \"-f\", \"makefile.cargo\"])\n         .status()"
+}

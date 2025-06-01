@@ -1,0 +1,8 @@
+{
+ "id": 566431,
+ "bug_id": 148307,
+ "attachment_id": 0,
+ "creation_time": "2010-07-08T04:17:58Z",
+ "creator": "adrian@freebsd.org",
+ "text": "--- if_arge.c   (revision 209765)\n+++ if_arge.c   (working copy)\n@@ -818,6 +818,28 @@\n }\n\n /*\n+ * Return whether the mbuf chain is correctly aligned\n+ * for the arge TX engine.\n+ *\n+ * The TX engine requires each fragment to be aligned to a\n+ * 4 byte boundary and the size of each fragment except\n+ * the last to be a multiple of 4 bytes.\n+ */\n+static int\n+arge_mbuf_chain_is_tx_aligned(struct mbuf *m0)\n+{\n+       struct mbuf *m;\n+\n+        for (m = m0; m != NULL; m = m-\u003em_next) {\n+               if((mtod(m, intptr_t) \u0026 3) != 0)\n+                       return 0;\n+               if ((m-\u003em_next != NULL) \u0026\u0026 ((m-\u003em_len \u0026 0x03) != 0))\n+                       return 0;\n+       }\n+       return 1;\n+}\n+\n+/*\n  * Encapsulate an mbuf chain in a descriptor by coupling the mbuf data\n  * pointers to the fragment pointers.\n  */\n@@ -837,7 +859,7 @@\n         * even 4 bytes\n         */\n        m = *m_head;\n-       if((mtod(m, intptr_t) \u0026 3) != 0) {\n+       if (! arge_mbuf_chain_is_tx_aligned(m)) {\n                m = m_defrag(*m_head, M_DONTWAIT);\n                if (m == NULL) {\n                        *m_head = NULL;"
+}

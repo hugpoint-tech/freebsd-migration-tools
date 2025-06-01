@@ -1,0 +1,8 @@
+{
+ "id": 462215,
+ "bug_id": 127075,
+ "attachment_id": 0,
+ "creation_time": "2008-09-03T22:10:01Z",
+ "creator": "jfb@mr-happy.com",
+ "text": "When qpage in daemon mode receives a SIGHUP, it frees malloc-ed memory before rereading its configuration file. The problem occurs on line 1410 of config.c, where a pointer to a service declaration is freed. The memory at that address is not a separate allocation for each PAGER struct, and furthermore, the entire service list has been freed by the time free_pagers() is called. Calling free() on a pointer that points to unallocated memory appears to cause a segmentation fault.\n\nFix: attached patch\n\nPatch attached with submission follows:\nHow-To-Repeat: Build and install ports/qpage. No tunables are present in the Makefile. Install a working qpage.cf in /usr/local/etc (perhaps just using the qpage-example.cf provided). It is not necessary to have a modem available as long as the configuration file can be edited to reference an existing /dev/cua* device that is not otherwise in use (\"modem=/dev/XXX\" in qpage.cf). Execute '/usr/local/etc/rc.d/qpage.sh start'. At this point, there should be one qpage process running. Send the process a SIGHUP, wait a moment, and send another SIGHUP. qpage will have exited with a segmentation fault (logged to /var/log/messages by a standard FreeBSD configuration)."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 764298,
+ "bug_id": 189870,
+ "attachment_id": 0,
+ "creation_time": "2014-05-16T21:00:00Z",
+ "creator": "dustinwenz@ebureau.com",
+ "text": "I've been having a difficult time using the new CPU percentage limits\nin FreeBSD 10. It seems that if you specify a limit beyond 110% (say,\n500%), the process (or jail, etc.) that you are trying to control becomes\nunthrottled, and can use the CPU until all logical cores are busy.\n\nFix: \n\nMy workaround is to remove these lines in kern_racct.c from function\nracct_alloc_resource():\n\nif ((resource == RACCT_PCTCPU) \u0026\u0026\n    (racct-\u003er_resources[RACCT_PCTCPU] \u003e 100 * 1000000))\n   racct-\u003er_resources[RACCT_PCTCPU] = 100 * 1000000;\n\nI'm not sure if there needs to really be any cap on the reported %CPU\nfrom the kernel. If so, it should be at least the number of logical cores\navailable * 100 * 1000000.\nHow-To-Repeat: Run a process that uses 20 cores at 100% utilization (2000%) in total.\nAttempt to limit that process to only 1000% using rctl.\n\nrctl -a 'process:PID:pcpu:deny=1000/process'\n\nNote that the process is not throttled."
+}

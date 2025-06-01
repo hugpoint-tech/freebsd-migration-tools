@@ -1,0 +1,8 @@
+{
+ "id": 1330276,
+ "bug_id": 282166,
+ "attachment_id": 0,
+ "creation_time": "2024-10-17T19:18:48Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Clang 19 has become more strict about C23 extensions, which results in\nerrors building devel/bazel5:\n\n  external/upb/upb/upb.c:215:25: error: defining a type within '__builtin_offsetof' is a C23 extension [-Werror,-Wc23-extensions]\n    215 |   n = UPB_ALIGN_DOWN(n, UPB_ALIGN_OF(upb_arena));\n        |                         ^~~~~~~~~~~~~~~~~~~~~~~\n  external/upb/upb/port_def.inc:94:38: note: expanded from macro 'UPB_ALIGN_OF'\n     94 | #define UPB_ALIGN_OF(type) offsetof (struct { char c; type member; }, member)\n        |                                      ^~~~~~\n  /usr/include/stddef.h:64:42: note: expanded from macro 'offsetof'\n     64 | #define offsetof(type, field)   __offsetof(type, field)\n        |                                            ^~~~\n  /usr/include/sys/cdefs.h:324:53: note: expanded from macro '__offsetof'\n    324 | #define __offsetof(type, field)  __builtin_offsetof(type, field)\n        |                                                     ^~~~\n  external/upb/upb/port_def.inc:92:48: note: expanded from macro 'UPB_ALIGN_DOWN'\n     92 | #define UPB_ALIGN_DOWN(size, align) ((size) / (align) * (align))\n        |                                                ^~~~~\n\nTo work around this, amend extra-patch-upb_bazel_build__defs.bzl to also\nadd -Wno-c23-extensions. Alternatively, the -Werror option could be\ntaken out."
+}

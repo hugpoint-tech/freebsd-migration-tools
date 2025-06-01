@@ -1,0 +1,8 @@
+{
+ "id": 858843,
+ "bug_id": 206169,
+ "attachment_id": 0,
+ "creation_time": "2016-01-12T20:14:41Z",
+ "creator": "brnrd@freebsd.org",
+ "text": "Mk/Uses/cmake.mk line 82 adds a CMake argument\n\n\u003e -DTHREADS_HAVE_PTHREAD_ARG:BOOL=YES\n\nThis causes cmake to add -pthread to the depends list in stead of -lpthread.\n\nIf I remove the offending line in cmake.mk I get a proper -lpthread in the CMakeCache.txt\n\nThis was discovered after the build of MariaDB 10.1 review D3953 that uses the dependencies to provide a mysql_config command that can be used by ports depending on the libmysqlclient library to set proper build flags (e.g. mail/dovecot2)\n\nCMakeCache.out original\n\u003e //Dependencies for the target\n\u003e mysqlclient_LIB_DEPENDS:STATIC=general;-pthread;general;-pthread;general;/usr/lib/libz.so;general;m\nCMakeCache.out after removing the line\n\u003e mysqlclient_LIB_DEPENDS:STATIC=general;-lpthread;general;-lpthread;general;/usr/lib/libz.so;general;m\n\nmysql_config output\n\u003e -L/usr/local/lib/mysql  -lmysqlclient -l-pthread -lz -lm -lexecinfo -lssl -lcrypto\n\ndesired output\n\u003e -L/usr/local/lib/mysql  -lmysqlclient -lpthread -lz -lm -lexecinfo -lssl -lcrypto"
+}

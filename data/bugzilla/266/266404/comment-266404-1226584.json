@@ -1,0 +1,8 @@
+{
+ "id": 1226584,
+ "bug_id": 266404,
+ "attachment_id": 0,
+ "creation_time": "2022-09-15T20:22:08Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #3)\n\nLooks like my attempt is wasteful garbage.\n\n/usr/ports/Mk/bsd.gcc.mk has:\n\n# A concrete version has been selected. Set proper ports dependencies,\n# CC, CXX, CPP, and flags.\nV:=                     ${_USE_GCC:S/.//}\n.  if ${V} == 13\n_GCC_PORT:=             gcc${V}-devel\n.  else\n_GCC_PORT:=             gcc${V}\n.  endif\nCC:=                    gcc${V}\nCXX:=                   g++${V}\nCPP:=                   cpp${V}\n_GCC_RUNTIME:=          ${LOCALBASE}/lib/gcc${V}\n.  if ${PORTNAME} == gcc\n# We don't want the rpath stuff while building GCC itself\n# so we do not set the FLAGS as done in the else part.\n# When building a GCC, we want the target libraries to be used and not the\n# host GCC libraries.\n.  else\nCFLAGS+=                -Wl,-rpath=${_GCC_RUNTIME}\nCXXFLAGS+=              -Wl,-rpath=${_GCC_RUNTIME}\nLDFLAGS+=               -Wl,-rpath=${_GCC_RUNTIME} -L${_GCC_RUNTIME}\n.  endif\n.undef V\n\nSo use of either the CFLAGS/CXXFLAGS/LDFLAGS or use of the likes of:\n\n-Wl,-rpath=${_GCC_RUNTIME} -L${_GCC_RUNTIME}\n\nwould autoadjust, allowing :build+ use. I see only about 4 ports\nwith Makefiles directly using _GCC_RUNTIME ."
+}

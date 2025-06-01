@@ -1,0 +1,8 @@
+{
+ "id": 1051376,
+ "bug_id": 238012,
+ "attachment_id": 0,
+ "creation_time": "2019-05-21T19:52:14Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Can you try this one and let me know if it helps?\n\ndiff --git a/sys/netipsec/xform_ipcomp.c b/sys/netipsec/xform_ipcomp.c\nindex df09eb36cfa..553283db2ae 100644\n--- a/sys/netipsec/xform_ipcomp.c\n+++ b/sys/netipsec/xform_ipcomp.c\n@@ -774,3 +774,18 @@ SYSINIT(ipcomp_xform_init, SI_SUB_PROTO_DOMAIN, SI_ORDER_MIDDLE,\n     ipcomp_attach, NULL);\n SYSUNINIT(ipcomp_xform_uninit, SI_SUB_PROTO_DOMAIN, SI_ORDER_MIDDLE,\n     ipcomp_detach, NULL);\n+\n+#ifdef VIMAGE\n+#if defined(__i386__)\n+/*\n+ * XXX This is a hack to work around an absolute relocation outside\n+ * set_vnet by one (on the stop symbol) for carpstats.  Add a dummy variable\n+ * to the end of the file in the hope that the linker will just keep the\n+ * order (as it seems to do at the moment).  It is understood to be fragile.\n+ * See PR 230857 for a longer discussion of the problem and the referenced\n+ * review for possible alternate solutions.  Each is a hack; we just need\n+ * the least intrusive one for the next release.\n+ */\n+VNET_DEFINE(char, xform_ipcomp_zzz) = 0xde;\n+#endif\n+#endif"
+}

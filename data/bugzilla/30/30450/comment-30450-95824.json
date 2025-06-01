@@ -1,0 +1,8 @@
+{
+ "id": 95824,
+ "bug_id": 30450,
+ "attachment_id": 0,
+ "creation_time": "2001-09-09T04:30:01Z",
+ "creator": "dim@xs4all.nl",
+ "text": "If there isn't any /usr/local/etc/sudoers file yet, the sudo port\nwill use the following line from pkg-install to install a default\nfile:\n\n  cp -p ${PKG_PREFIX}/etc/sudoers.sample ${PKG_PREFIX}/etc/sudoers\n\nthus copying the mode of the sudoers.sample file to sudoers. However,\nthe sudoers.sample file is installed with mode 0444 by default, which\nis not the correct mode for the sudoers file itself.\n\nThis causes sudo to complain on its first run with:\n\n  sudo: /usr/local/etc/sudoers is mode 0444, should be 0440\n\nThere are 2 ways to fix the incorrect mode: either install the\nsudoers.sample file with mode 0440 and keep the 'cp -p', or replace\nthe 'cp -p' with, for instance, 'install -m 0440'.\n\nIMO there's nothing wrong with a world-readable sample file, you can\ndownload it anyway. :) So I chose the second solution; a patch\nfollows.\n\nFix: I used the ${INSTALL_DATA} command from /usr/ports/Mk/bsd.port.mk,\nbut replaced the -m ${SHAREMODE} argument with a hardcoded mode.\nI'm unsure if this is the proper way, please correct me if it isn't.\nHow-To-Repeat: Uninstall sudo port.\nMove any existing sudoers file out of the way.\nInstall sudo port.\nRun sudo (with or without arguments).\nSudo will now complain about a bad mode 0444 for the sudoers file."
+}

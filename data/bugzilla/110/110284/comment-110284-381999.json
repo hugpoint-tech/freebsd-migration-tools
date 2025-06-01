@@ -1,0 +1,8 @@
+{
+ "id": 381999,
+ "bug_id": 110284,
+ "attachment_id": 0,
+ "creation_time": "2012-05-17T03:33:31Z",
+ "creator": "devon.odell@gmail.com",
+ "text": "Hi Gavin, freebsd-net,\n\nI submitted this PR when I worked at Coyote Point. I'm no longer\nthere, but I do remember this issue well. The discussion around this\npatch happened on IRC and not the PR, which is unfortunate. If I\nrecall correctly, rwatson's stance was that the real fix was to fix\nthe heinous layer between ioctl and device. As far as I'm aware, this\nis still an issue with current drivers, and this patch still solves\nthe issue. CP ran with it successfully for years. (And unsuccessfully\nfor a time before it was implemented :)).\n\nThe patch is basically (forgive formatting):\n\n--- if_ethersubr.c      2011-09-22 20:51:37.000000000 -0400\n+++ /home/dho/if_ethersubr.c    2012-05-16 22:27:17.000000000 -0400\n@@ -1146,7 +1146,9 @@\n                switch (ifa-\u003eifa_addr-\u003esa_family) {\n #ifdef INET\n                case AF_INET:\n-                       ifp-\u003eif_init(ifp-\u003eif_softc);    /* before arpwhohas */\n+                       if (ifp-\u003eif_flags \u0026 IFF_RUNNING == 0) {\n+                               ifp-\u003eif_init(ifp-\u003eif_softc);    /*\nbefore arpwhohas */\n+                       }\n                        arp_ifinit(ifp, ifa);\n                        break;\n #endif"
+}

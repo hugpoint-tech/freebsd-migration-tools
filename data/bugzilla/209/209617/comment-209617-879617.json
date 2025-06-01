@@ -1,0 +1,8 @@
+{
+ "id": 879617,
+ "bug_id": 209617,
+ "attachment_id": 0,
+ "creation_time": "2016-05-20T16:48:14Z",
+ "creator": "jau@iki.fi",
+ "text": "Right, it was not wctomb() at all that was in fault.\nThe reason for the misbehavior was...\n\nloc = newlocale (LC_CTYPE_MASK, \"fi_FI.UTF-8\", LC_GLOBAL_LOCALE);\n\nOther xlocale manual pages mention LC_GLOBAL_LOCALE\npretty much as a generic handle to the process default\nlocale. The man page for newlocale() doesn't explain\nthe base locale at all. Neither LC_GLOBAL_LOCALE nor\nNULL as the base are explained. It is simply left to\ndepend on the best guess of the programmer.\n\nIt seems that the following modified call works just\nfine and also wctomb() after this change...\n\nloc = newlocale (LC_CTYPE_MASK, \"fi_FI.UTF-8\", NULL);\n\nFirst of all the meaning of NULL and LC_GLOBAL_LOCALE\nshould be documented.\nSecondly I assume that NULL is taken as a reference to\nthe current thread locale, whatever it is, not as the\nglobal locale, unless the current thread locale happens\nto be the global locale. In such a case it would seem\nreasonable to really accept LC_GLOBAL_LOCALE as exactly\nwhat one would expect, the process' global locale\nindependent of what the current thread locale is.\nThe current setup is so confusing that I cannot be the\nonly one getting in trouble with this."
+}

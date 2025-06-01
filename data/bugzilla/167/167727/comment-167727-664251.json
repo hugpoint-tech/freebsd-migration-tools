@@ -1,0 +1,8 @@
+{
+ "id": 664251,
+ "bug_id": 167727,
+ "attachment_id": 0,
+ "creation_time": "2012-05-09T06:10:07Z",
+ "creator": "gjinjun@gmail.com",
+ "text": "In kernel's thread suspend code, maybe miss PROC_UNLOCK call.\nkernel code: sys/kern/kern_kthread.c\n...\n/*\n * Advise a kernel process to suspend (or resume) in its main loop.\n * Participation is voluntary.\n */\nint\nkproc_suspend(struct proc *p, int timo)\n{\n\t/*\n\t * Make sure this is indeed a system process and we can safely\n\t * use the p_siglist field.\n\t */\n\tPROC_LOCK(p);\n\tif ((p-\u003ep_flag \u0026 P_KTHREAD) == 0) {\n\t\tPROC_UNLOCK(p);\n\t\treturn (EINVAL);\n\t}\n\tSIGADDSET(p-\u003ep_siglist, SIGSTOP);\n\twakeup(p);\n\treturn msleep(\u0026p-\u003ep_siglist, \u0026p-\u003ep_mtx, PPAUSE | PDROP, \"suspkp\", timo);\n}\n\nWe should add PROC_UNLOCK(p) after SIGADDSET(p-\u003ep_siglist, SIGSTOP).\n\nFix: \n\nadd PROC_UNLOCK(p) after SIGADDSET(p-\u003ep_siglist, SIGSTOP);\nHow-To-Repeat: You can find these code at kernel source code."
+}

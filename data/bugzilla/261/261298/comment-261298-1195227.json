@@ -1,0 +1,8 @@
+{
+ "id": 1195227,
+ "bug_id": 261298,
+ "attachment_id": 0,
+ "creation_time": "2022-01-18T06:30:46Z",
+ "creator": "martin@waschbuesch.de",
+ "text": "Regularly, /var/db/ntpd.leap-seconds.list ends up being owned by root and permissions of 640.\nOn restart of ntpd this leads to:\n\nJan 18 06:14:56 ns00 ntpd[30173]: leapsecond file ('/var/db/ntpd.leap-seconds.list'): open failed: Permission denied\n\nThe file should either be owned by ntpd (which ntpd runs as) or have permissions of 644.\n\nThis happens because\na) the file is owned by root:wheel and \nb) I changed umask in /etc/login.conf to 027\n\nntpd settings in rc.conf are:\n\nntpd_enable=\"YES\"\nntpd_sync_on_start=\"YES\"\n\nntpd leapfile is checked and fetched daily as specified in\n/etc/periodic/daily/480.leapfile-ntpd\n\nthe logic is contained in the ntpd_fetch_leapfile() function within /etc/rc.d/ntpd\n\nThat function should take care of correct ownership of the file, so I propose to fix ownership to ntpd:ntpd there. However, there may be reasons why ownership root:wheel and permissions 644 is a better idea for some reason I have missed, thus I am not providing a patch."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1305909,
+ "bug_id": 278494,
+ "attachment_id": 0,
+ "creation_time": "2024-04-21T07:39:11Z",
+ "creator": "kyle@ambroffkao.com",
+ "text": "I think I see the bug. Note that this comment says that it skips handling faults on device open *or flush*, but it is checking for IOCTL not FLUSH in that if condition.\n\n--- a/module/zfs/zio_inject.c\n+++ b/module/zfs/zio_inject.c\n@@ -364,10 +364,10 @@ zio_handle_device_injection_impl(vdev_t *vd, zio_t *zio, int err1, int err2)\n        int ret = 0;\n \n        /*\n-        * We skip over faults in the labels unless it's during\n-        * device open (i.e. zio == NULL).\n+        * We skip over faults in the labels unless it's during device open\n+        * (i.e. zio == NULL) or a device flush (offset is meaningless)\n         */\n-       if (zio != NULL) {\n+       if (zio != NULL \u0026\u0026 zio-\u003eio_type != ZIO_TYPE_IOCTL) {\n                uint64_t offset = zio-\u003eio_offset;\n \n                if (offset \u003c VDEV_LABEL_START_SIZE ||\n\nThis is changed upstream in a later change https://github.com/openzfs/zfs/commit/d7605ae77b7ad176e8dbd5649fe4d14f5f4e8b9f\n\nI'll confirm that this is the issue."
+}

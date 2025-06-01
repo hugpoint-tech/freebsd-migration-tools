@@ -1,0 +1,8 @@
+{
+ "id": 654114,
+ "bug_id": 165700,
+ "attachment_id": 0,
+ "creation_time": "2012-03-05T01:10:12Z",
+ "creator": "kazulakm@gmail.com",
+ "text": "pxeboot uses code in libstand to get information from DHCP. libstand in bootp.c contains logic which effectively breaks CIDR on supernets such as 192.168.0.0/23 and causes the network mask to be truncated to the native classfull mask (/24 in this case). This code is present at least since 3.0-RELEASE and is still in HEAD.\n\nSample scenario:\n1. Setup standard FreeBSD network booting on a supernet such as 192.168.0.0/23\n2. Boot a client on the same network via PXE with root on NFS\n3. pxeboot is loaded via TFTP as per dhcpd.conf\n4. pxeboot performs a DHCP request\n5. pxeboot keeps the assigned IP but discards network mask as \"bogus\" and uses /24\n\n(gateway might also be discarded if it ends up being in the other C network)\n\nCase 1 - client and NFS server are on the same class C network\n6. Client boots normally but after boot keeps the wrong netmask of /24\n\nCase 2 - client and NFS server on different class C networks\n6. Client hangs while trying to mount NFS root because it doesn't know how to contact the server\n\nNo errors or warnings are logged unless debugging is enabled in libstand. I find that plainly misleading. Even if I configure wrong network mask in DHCP I still don't expect that a client will silently discard it and use another one.\n\nFix: Expected behavior: pxeboot should respect network mask assigned via DHCP.\n\nProposed patch attached. Successfully tested on 9.0-RELEASE.\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. Setup standard FreeBSD network booting on a supernet such as 192.168.0.0/23\n2. PXE boot any machine on the same network"
+}

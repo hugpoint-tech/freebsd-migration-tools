@@ -1,0 +1,8 @@
+{
+ "id": 15773,
+ "bug_id": 5126,
+ "attachment_id": 0,
+ "creation_time": "1997-11-22T13:50:02Z",
+ "creator": "cagney@tpgi.com.au",
+ "text": "\nFor the program below, when compiled with G++ (-gpic) , produces the\nincorrect assembler:\n\n        .type    _d__Fv,@function\n_d__Fv:\n        pushl %ebp\n        movl %esp,%ebp\n        pushl %ebx\n        call L5\nL5:\n        popl %ebx\n        addl $_GLOBAL_OFFSET_TABLE_+[.-L5],%ebx\n        movl _DefaultHash__Fv@GOT(%ebx),%edx\n        movl %edx,%eax\n        jmp L3\n        .align 2,0x90\n        jmp L4\n        .align 2,0x90\n        jmp L3\n        .align 2,0x90\nL4:\nL3:\n        movl -4(%ebp),%ebx\n        leave\n        ret\n\nNotice that it has generated a ``@GOT'' instead of ``@GOTOFF'' for the\nreference to the static function DefaultHash (which has been both\ndeclared and defined).\n\nIf the declaration is removed, the correct code is generated.  If GCC\nis used, the correct code is generated.\n\nFix: \n\nRe-arrange code so that the static declaration isn't needed.\nHow-To-Repeat: \n$ cat test.cc\nstatic void DefaultHash(void);\nstatic void DefaultHash(void) { }\nvoid *\nd (void)\n{\n  return DefaultHash;\n}\n\n$ gcc -c -fpic test.cc\n/tmp/cc005218.s: Assembler messages:\n/tmp/cc005218.s:45: Warning: GOT relocation burb: `_DefaultHash__Fv' should be global\n\n$ cp test.cc test.c\n$ gcc -c -fpic test.c \n\n$ tail +2 test.cc \u003e t.cc\n$ cat t.cc\nstatic void DefaultHash(void) { }\nvoid *\nd (void)\n{\n  return DefaultHash;\n}\n\n$ gcc -c -fpic t.cc"
+}

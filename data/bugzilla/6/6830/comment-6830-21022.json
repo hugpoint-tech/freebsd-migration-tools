@@ -1,0 +1,8 @@
+{
+ "id": 21022,
+ "bug_id": 6830,
+ "attachment_id": 0,
+ "creation_time": "1998-06-02T12:40:01Z",
+ "creator": "njs3@doc.ic.ac.uk",
+ "text": "\nThe := operator is used to force expansion of all variables on the RHS\nof the operator, for example:\n\nFOO     = bar\nBAR     = ${FOO}\nall:\n \techo ${BAR}\nFOO     = feh\n\n\"make all\" will echo \"feh\" since BAR is assigned ${FOO} and not the\ncontents of ${FOO} on line 2, and the last value assigned to FOO is \"feh\".\nBy using the := operator we can force ${FOO} to be expanded at the\npoint of assignment:\n\nFOO     = bar\nBAR     := ${FOO}\nall:\n \techo ${BAR}\nFOO     = feh\n\n\"make all\" will echo \"bar\" in this case.  However, consider:\n\nBAR     := ${FOO}\nall:\n \techo ${BAR}\nFOO     = feh\n\nContrary to the intuitive behaviour and all other implementation of\nmake, line one assigns ${FOO} to BAR and not the empty string.  This is\na bug, ${FOO} is a variable reference to an undefined variable which\nby definition expands to the empty string.  However FreeBSD make does\nnot honor this behaviour and so \"make all\" prints \"feh\" instead of just\nechoing a blank line.  Even more confusing is that:\n\nFOO     =\nBAR     := ${FOO}\nall:\n \techo ${BAR}\nFOO     = feh\n\nbehaves as expected, because FOO is defined to the empty string.\n\nFix: \n\nI do not have time to provide a patch right now."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1278529,
+ "bug_id": 274298,
+ "attachment_id": 0,
+ "creation_time": "2023-10-06T07:08:45Z",
+ "creator": "dpslavov@hotmail.com",
+ "text": "When setup Debian bookworm debootstrap fails to install required package usr-is-merged which is \"Transitional package to assert a merged-/usr system\". The problem is caused by difference in implementations of \"-k\" option in GNU vs BSD tar, in GNU implementation when it's specified it keeps existing symbolic links while in BSD it has no effect and overrides them. Here is an workaround using GNU version:\n\n--- a/sysutils/debootstrap/Makefile\n+++ b/sysutils/debootstrap/Makefile\n@@ -16,6 +16,7 @@ RUN_DEPENDS=  wget:ftp/wget \\\n                bash:shells/bash \\\n                ${LOCALBASE}/bin/grep:textproc/gnugrep \\\n                gpgv2:security/gnupg \\\n+               gtar:archivers/gtar \\\n                ${LOCALBASE}/share/keyrings/ubuntu-archive-keyring.gpg:security/ubuntu-keyring\n\n USES=          gmake perl5\n@@ -43,6 +44,9 @@ post-patch:\n        @${REINPLACE_CMD} -e 's,grep,${LOCALBASE}/bin/grep,g' \\\n                ${WRKSRC}/functions\n\n+       @${REINPLACE_CMD} -e 's, tar , ${LOCALBASE}/bin/gtar ,g' \\\n+               ${WRKSRC}/functions\n+\n post-install:\n        ${INSTALL_MAN} ${WRKSRC}/debootstrap.8 \\\n                ${STAGEDIR}${MAN8PREFIX}/man/man8/debootstrap.8"
+}

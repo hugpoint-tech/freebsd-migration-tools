@@ -1,0 +1,8 @@
+{
+ "id": 723563,
+ "bug_id": 180496,
+ "attachment_id": 0,
+ "creation_time": "2013-07-12T19:47:43Z",
+ "creator": "kostikbel@gmail.com",
+ "text": "Please try this.  The clock_gettime() call on zombie clock worked\nfor me.\n\nNote that the check for clock_getres() on the reapped process clock\nfailed since we do not check for pid validity, all processes has\nthe same clock.  I do not see much sense in adding the useless check.\n\ndiff --git a/sys/kern/kern_time.c b/sys/kern/kern_time.c\nindex b68c949..9e0cc06 100644\n--- a/sys/kern/kern_time.c\n+++ b/sys/kern/kern_time.c\n@@ -297,14 +297,9 @@ get_cputime(struct thread *td, clockid_t clock_id, struct timespec *ats)\n \t\tPROC_UNLOCK(td2-\u003etd_proc);\n \t} else {\n \t\tpid = clock_id \u0026 CPUCLOCK_ID_MASK;\n-\t\tp2 = pfind(pid);\n-\t\tif (p2 == NULL)\n-\t\t\treturn (EINVAL);\n-\t\terror = p_cansee(td, p2);\n-\t\tif (error) {\n-\t\t\tPROC_UNLOCK(p2);\n+\t\terror = pget(pid, PGET_CANSEE, \u0026p2);\n+\t\tif (error != 0)\n \t\t\treturn (EINVAL);\n-\t\t}\n \t\tget_process_cputime(p2, ats);\n \t\tPROC_UNLOCK(p2);\n \t}"
+}

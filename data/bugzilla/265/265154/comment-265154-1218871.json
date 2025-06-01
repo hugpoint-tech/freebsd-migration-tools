@@ -1,0 +1,8 @@
+{
+ "id": 1218871,
+ "bug_id": 265154,
+ "attachment_id": 0,
+ "creation_time": "2022-07-11T15:51:02Z",
+ "creator": "kp@freebsd.org",
+ "text": "With 'options RSS' set the 'pf:syncookie:forward' test case often fails.\nThe behaviour is not consistent, but it is reproducible at least 50% of the time.\n\nThe failure mode is that the TCP connection is established (full SYN/SYN+ACK/ACK) exchange, but the first data packet receives a RST in response. Up to that point the exchange is identical between working and failing connections. Within the same setup (i.e. without re-creating or re-configuring jails) the connection will sometimes succeed and sometimes fail.\n\nThe test forwards a TCP connection, terminating on a vnet jail on the same host. Because pf's syncookie feature is enabled the code path passes through pf_send(), which calls a swi, transmitting the packet from (potentially) a different CPU.\n\nThis appears to be due to a race condition in syncache_expand(), where we remove the sync cache entry (`TAILQ_REMOVE(\u0026sch-\u003esch_bucket, sc, sc_hash);`) prior to actually opening the connection through syncache_socket() (i.e. inserting the inpcb through in_pcbconnect()).\n\nIf the race condition is triggered, we end up not finding the inpcb for the now open connection, instead trying to look up the connection in the syncache when the first data packet arrives, failing to find it and resetting the entire connection."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 85833,
+ "bug_id": 27457,
+ "attachment_id": 0,
+ "creation_time": "2001-05-19T18:50:01Z",
+ "creator": "Andre.Albsmeier@mchp.siemens.de",
+ "text": "\nWhen updating the NIS databases on the slaves by running yppush\nin /var/yp on the server, the clients get updated properly. However,\nthe calling yppush hangs:\n\nroot@server:/var/yp\u003eyppush -vv -h spoolfix -h printfix amd.host \nyppush: initiating transfer: amd.host -\u003e pr (transid = 990293135)\nyppush: pr has been called\nyppush: checking return status: transaction ID: 990293135\nyppush: transfer of map amd.host to server pr failed\nyppush: status returned by ypxfr: Master's version not newer\nyppush: initiating transfer: amd.host -\u003e spoolfix (transid = 990293136)\nyppush: spoolfix has been called\nyppush: all jobs dispatched\nyppush: spoolfix has not responded\nyppush: pr has responded\nyppush: 1 transfer still pending\n\n[wait 1 to 2 minutes here]\n\nyppush: timed out\nyppush: warning: exiting with transfer to spoolfix (transid = 990293136) still pending\n\n\nIn the logfile of one client we see:\nMay 19 19:25:43 \u003cdaemon.notice\u003e spoolfix ypxfr[4428]: callback failed: RPC: Timed out\nMay 19 19:26:15 \u003cdaemon.notice\u003e spoolfix ypxfr[4429]: callback failed: RPC: Timed out\n\nIt seems that somehow the callback of the second slave doesn't\nmake it through to the server.\n\nThe problem already appeared as described in PR# 12496. It then\nwent away until the recent changes to libexec/rtld-elf/rtld.c\nmade appear it again.\n\nFix: The following patch is no fix. It circumvents the problem but\nI can't explain why :-)\nHow-To-Repeat: \nUse the newest FreeBSD 4.3-STABLE sources. Put two slave servers into\nypservers. Run yppush as above (with any map)."
+}

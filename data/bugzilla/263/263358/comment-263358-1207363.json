@@ -1,0 +1,8 @@
+{
+ "id": 1207363,
+ "bug_id": 263358,
+ "attachment_id": 0,
+ "creation_time": "2022-04-17T04:08:49Z",
+ "creator": "freebsd@kumba.dev",
+ "text": "In commit 0da2c91e6452, the hostapd rc script was modified to down and then up the wireless interface by way of a new hostapd_poststart function:\n\nhostapd_poststart() {\n\tifconfig ${ifn} down\n\tsleep 2\n\tifconfig ${ifn} up\n}\n\nBut this function, which references the variable $ifn, is defined before $ifn is defined.  Thus, when hostapd is started or restarted, the poststart function simply executes 'ifconfig down', sleeps, then 'ifconfig up'.  This results in errors from the ifconfig calls that 'down' and 'up' are not valid interfaces, and the wireless interface is not properly restarted.\n\nI don't follow the logic because I don't know what is supposed to be passed in $2 to $ifn.  Would it be better to define a new var for rc.conf called something like $hostapd_iface that the user can use to identify which interface is the wireless one that hostapd should control?\n\nNote, this first appeared in 13.1-RC2, so a fix should probably be pushed out so it makes it into the final RC before release."
+}

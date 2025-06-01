@@ -1,0 +1,8 @@
+{
+ "id": 886140,
+ "bug_id": 209742,
+ "attachment_id": 0,
+ "creation_time": "2016-07-02T15:24:52Z",
+ "creator": "FreeBSD@ShaneWare.Biz",
+ "text": "(In reply to lightside from comment #42)\n\nThe proc filesystem is optional on FreeBSD, so we can't rely on it being there. If it is there then the /proc path could be used, which would mean checking if it is there and if it isn't, then use sysctl, as the sysctl call has to be there, there is no point of the extra check of whether /proc exists.\n\nhttp://freebsd.1045724.n5.nabble.com/Why-is-procfs-deprecated-in-favor-of-procstat-td4028960.html\nhttps://www.freebsd.org/doc/en/articles/linux-users/procfs.html\n\nThe libexecinfo/backtrace.c example sets the path, if KERN_PROC_PATHNAME exists then it overrides the earlier /proc path definition by calling sysctl.\n\nThe ptrace example is expected to be asking for paths to other executables with many possible outcomes, any situation could arise from that, no permission, process crashes before the path was returned.... so extra checks can be expected.\n\n\n(In reply to lightside from comment #43)\n\nI don't think my earlier change to OS_Unix::execute() should be added back. It was short sighted of me to do that change when I first got godot running, at that time I didn't see it being used outside of initially starting godot. While I think using execvp() is useful, the use of getprogname() would have to be removed. As this change would make FreeBSD act differently to other platforms I don't think leaving it there is a good idea. Let's keep the FreeBSD specific code limited to OS_Unix::get_executable_path()"
+}

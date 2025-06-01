@@ -1,0 +1,8 @@
+{
+ "id": 21445,
+ "bug_id": 6966,
+ "attachment_id": 0,
+ "creation_time": "1998-06-16T16:40:01Z",
+ "creator": "jose@we.lc.ehu.es",
+ "text": "When the AHC driver tries to read the serial EEPROM at startup,\nthe operation fails with a \"checksum error\". The system is based\non an Iwill PIILS mb, which has the AIC7880 controller onboard.\n\nThe source of the problem is in sys/pci/aic7870.c: the SEEPROM\ntype (93c46, c56, c66) is determined from the controller chip\ntype. The Adaptec 2940UW uses the AIC7880 and the 93c46 SEEPROM.\nHowever, this is not the case for the Iwill PIILS mb (and perhaps\nother motherboards with embedded SCSI). The PIILS uses a 93c56\nSEEPROM, so that AHC fails when trying to read a 93c46.\n\nI have assigned a \"serious\" severity to this problem because\nthe AHC driver uses the BIOS defaults when it cannot read the\nSEEPROM, and it just works. However, some features (i.e. Ultra\nspeed) are disabled.\n\nFix: \n\nModify sys/pci/aic7870.c for not associating the SEEPROM type to the\ncontroller chip type. Instead, if the read of a 93c46 fails, then\nit should try to read a 93c56 or 93c66.\n\nI have patched aic7870.c, forcing a 93c56 SEEPROM type and it\nworks fine. However, this is not a general solution; it's only\na workaround for my system.\nHow-To-Repeat: boot -v on any Iwill PIILS-based system."
+}

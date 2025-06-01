@@ -1,0 +1,8 @@
+{
+ "id": 67416,
+ "bug_id": 21658,
+ "attachment_id": 0,
+ "creation_time": "2000-09-30T07:10:01Z",
+ "creator": "mzaki@e-mail.ne.jp",
+ "text": "As servicing DHCP on Windows NT,\ndhclient received the domain name and setting weirdly to /etc/resolv.conf\n\nFor example:\n\nsearch mzaki.nom\\000\nnameserver 192.168.177.2\n\nFix: RFC2132 says:\n\n\tOptions containing NVT ASCII data SHOULD NOT include a trailing NULL;\n\thowever, the receiver of such options MUST be prepared to delete\n\ttrailing nulls if they exist.\n\n\t(RFC2132 2. BOOTP Extension/DHCP Option Field Format)\n\nisc-dhcp 2.0pl5 client seems to violate this.\n\n\nIf server send domain name with a trailing NULL as follows,\n\n0f 0a 6d 7a 61 6b 69 2e 6e 6f 6d 00\n|  |  |\n|  |  value: mzaki.nom\\0 ( this '\\0' stands for NUL character )\n|  length: 10\ntag: Domain Name\n\npretty_print_option() in common/options.c translates this into\n\nmzaki.nom\\000\n\nand turns over to client script.\n\n\nad hoc patch is:\nHow-To-Repeat: setup Windows NT as DHCP server,\nrun dhclient on FreeBSD,\nsee /etc/resolv.conf"
+}

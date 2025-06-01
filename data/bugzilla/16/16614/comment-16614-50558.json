@@ -1,0 +1,8 @@
+{
+ "id": 50558,
+ "bug_id": 16614,
+ "attachment_id": 0,
+ "creation_time": "2000-02-09T16:40:01Z",
+ "creator": "nobutaka@nobutaka.com",
+ "text": " At Wed, 9 Feb 2000 01:04:10 +0100 (CET),\n Stefan `Sec` Zehl \u003csec@42.org\u003e wrote:\n \u003e \n \u003e On a recent 3.4-STABLE:\n \u003e FreeBSD btl 3.4-STABLE FreeBSD 3.4-STABLE #1: Tue Feb  8 18:11:06 CET 2000     root@btl:/usr/src/sys/compile/BTL  i386\n \u003e \n \u003e with this in /etc/make.conf:\n \u003e # If you're resident in the USA, this will help various ports to determine\n \u003e USA_RESIDENT=\t\tNO\n \u003e \n \u003e \u003eDescription: \n \u003e \n \u003e The w3m-ssl build fails with:\n \u003e \n \u003e [...]\n \u003e cc -O -pipe  -I/usr/local/include/openssl -I/usr/local/include -I/usr/local/include -I. -o mktable mktable.o hash.o  -L/usr/local/lib -lssl -lcrypto -lRSAglue -lrsaref -L/usr/local/lib -L. -lindep -lgc -lm  -lncurses\n \u003e /usr/libexec/elf/ld: cannot open -lrsaref: No such file or directory\n \u003e *** Error code 1\n \n Please apply this patch.\n \n \n diff -urN w3m.old/Makefile w3m/Makefile\n --- w3m.old/Makefile\tWed Feb  9 23:10:34 2000\n +++ w3m/Makefile\tThu Feb 10 00:11:59 2000\n @@ -50,9 +50,12 @@\n  SED_CMD+=\t-e \"s,undef USE_SSL,define USE_SSL,g\"\n  .endif\n  \n -EXTRA_SSL_LIBS=\t-lRSAglue -lrsaref -L${LOCALBASE}/lib \n +.if ${USE_OPENSSL} == RSA \u0026\u0026 defined(USA_RESIDENT) \u0026\u0026 ${USA_RESIDENT} == YES\n +EXTRA_SSL_LIBS=\t-lRSAglue -lrsaref\n +.endif\n +\n  MAKE_FLAGS+=\tDEFS=\"${SSL_CFLAGS} -I${LOCALBASE}/include\" \\\n -\t\tLIBS=\"${SSL_LIBS} ${EXTRA_SSL_LIBS}\"\n +\t\tLIBS=\"${SSL_LIBS} ${EXTRA_SSL_LIBS} -L${LOCALBASE}/lib\"\n  \n  post-configure:\n  \t@${CP} ${TARGET} ${TARGET}.in\n \n \n Thanks,\n \n -Nobutaka"
+}

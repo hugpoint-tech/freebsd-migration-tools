@@ -1,0 +1,8 @@
+{
+ "id": 436431,
+ "bug_id": 121827,
+ "attachment_id": 0,
+ "creation_time": "2008-03-18T12:10:03Z",
+ "creator": "hiroto.kagotani@gmail.com",
+ "text": "I created an image jail using ezjail-admin with create -i option and\nattempted to configure the jail by attaching it successfully.\nHowever when I attempted to detach the image jail, ezjail-admin\nshowed an error and couldn't detach it.\n\nThis is caused by mounting /dev/md* directly instead of mounting\n*.device symlink when ezjail-admin is invoked with config -i attach option.\n\nFix: \n\n-      mount /dev/${ezjail_device} ${ezjail_rootdir} || detach_images keep || exerr \"Error: Could not mount /dev/${ezjail_device} to ${ezjail_rootdir}.\"\n       # relink image device\n       ln -s /dev/${ezjail_device} ${ezjail_rootdir}.device\n\n+      mount ${ezjail_rootdir}.device ${ezjail_rootdir} || detach_images keep || exerr \"Error: Could not mount ${ezjail_rootdir}.device to ${ezjail_rootdir}.\"\n+\n       ;;\n     detach)\n       # Check, if image really attached or running--E03V2S8itI5BKckCAULh5sfDaHtqHqLj3rHMPSEhet6Pawks\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- ezjail-admin.orig   2008-03-18 20:51:41.000000000 +0900\n+++ ezjail-admin        2008-03-18 20:54:21.000000000 +0900\n@@ -782,10 +782,11 @@\n       # Clean image\n       fsck -t ufs -p -B /dev/${ezjail_device}\nHow-To-Repeat: # ezjail-admin update\n# ezjail-admin create -i -s 10m foo.example.com 192.168.0.1\n# ezjail-admin config -i attach foo.example.com\n# ezjail-admin config -i detach foo.example.com\nError: Jail image file foo.example.com is not attached"
+}

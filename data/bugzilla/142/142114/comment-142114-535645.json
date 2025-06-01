@@ -1,0 +1,8 @@
+{
+ "id": 535645,
+ "bug_id": 142114,
+ "attachment_id": 0,
+ "creation_time": "2009-12-29T06:00:09Z",
+ "creator": "elakin@infohell.net",
+ "text": "the daily system report that gets run (\"periodic daily\") from cron has a couple varibles that can be used in /etc/periodic.conf to fine-tune what output is seen -- in particular:\n\n% grep daily_show /etc/defaults/periodic.conf\ndaily_show_success=\"YES\"\t\t\t\t# scripts returning 0\ndaily_show_info=\"YES\"\t\t\t\t\t# scripts returning 1\ndaily_show_badconfig=\"NO\"\t\t\t\t# scripts returning 2\n\nOne would expect that the security portion of the daily report would obey these settings -- but it doesn't. The security report gets implemented by running \"periodic security\" which has the effect that it's controlled by security_show_success, security_show_info, and security_show_badconfig.\n\nThese aren't documented in /etc/defaults/periodic.conf.\n\nFix: \n\nI would suggest modifying /etc/periodic/450.status-security to include:\n\n        export security_show_success=${daily_show_success}\n        export security_show_info=${daily_show_info}\n        export security_show_badconfig=${daily_show_badconfig}\n\njust prior to the execution of \"periodic security\". This will cause the security output to inherit the daily output's settings, but if somebody REALLY wants different settings for the security output, putting security_show_* in /etc/periodic.conf will override.\nHow-To-Repeat: # echo 'daily_show_success=\"NO\"' \u003e\u003e /etc/periodic.conf\n# periodic daily\n\nthe security report will include things that it shouldn't by the above setting."
+}

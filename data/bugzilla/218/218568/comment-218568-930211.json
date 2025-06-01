@@ -1,0 +1,8 @@
+{
+ "id": 930211,
+ "bug_id": 218568,
+ "attachment_id": 0,
+ "creation_time": "2017-04-13T15:22:27Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Fixed by r316760\n\n Fix vdev_geom_attach_by_guids for partitioned disks\n\n  When opening a vdev whose path is unknown, vdev_geom must find a geom\n  provider with a label whose guids match the desired vdev. However, due to\n  partitioning, it is possible that two non-synonomous providers will share\n  some labels. For example, if the first partition starts at the beginning of\n  the drive, then ada0 and ada0p1 will share the first label. More troubling,\n  if the last partition runs to the end of the drive, then ada0p3 and ada0\n  will share the last label. If vdev_geom opens ada0 when it should've opened\n  ada0p3, then the pool won't be readable. If it opens ada0 when it should've\n  opened ada0p1, then it will corrupt some other partition when it writes the\n  3rd and 4th labels.\n\n  The easiest way to reproduce this problem is to install a mirrored root pool\n  with the default partition layout, then swap the positions of the two boot\n  drives and reboot.  Whether the bug manifests depends on the order in which\n  geom lists its providers, which is arbitrary.\n\n  Fix this situation by modifying the search algorithm to prefer geom\n  providers that have all four labels intact. If no such provider exists, then\n  open whichever provider has the most.\n\n  Reviewed by:  mav\n  MFC after:    3 weeks\n  Sponsored by: Spectra Logic Corp\n  Differential Revision:        https://reviews.freebsd.org/D10365"
+}

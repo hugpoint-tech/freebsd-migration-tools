@@ -1,0 +1,8 @@
+{
+ "id": 73740,
+ "bug_id": 23643,
+ "attachment_id": 0,
+ "creation_time": "2000-12-19T14:30:03Z",
+ "creator": "blaze@infosec.ru",
+ "text": "\nCall dlopen(..., RTLD_NOW) returns \"Undefined symbol\" when shared object \nuses a symbol from main program.\n\nHow-To-Repeat: \nMakefile\n----------- begin Makefile -----------\n\nprog: lib.so main.c\n        gcc -g -fpic -DPIC -Wall -o prog main.c\n\nlib.so: lib.c\n        gcc -fpic -DPIC -O -pipe -Wall -c lib.c\n        cc -shared -o lib.so lib.o\n\nclean:\n        rm -f prog *.o *.so\n----------- end Makefile ---------------\n\nmain.c\n\n----------- begin main.c ---------------\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cdlfcn.h\u003e\n\nchar *str = \"ok\";\n\nint main() {\n        static void * lib_so;\n        static void (*lib_so_func)();\n\n        lib_so = dlopen(\"./lib.so\", RTLD_NOW | RTLD_GLOBAL);\n        if (!lib_so) {\n                fprintf(stderr, \"dlopen: %s\\n\", dlerror());\n                return 1;\n        }\n        lib_so_func = dlsym(lib_so, \"lib_so_func\");\n        if (!lib_so_func) {\n                fprintf(stderr, \"dlsym: %s\\n\", dlerror());\n                return 1;\n        }\n        lib_so_func();\n        \n        return 0;\n}\n\n----------- end main.c ------------\n\nlib.c\n\n----------- begin lib.c -----------\n#include \u003cstdio.h\u003e\n\nextern char *str;\n\nint lib_so_func() {\n        printf(\"%s\\n\", str);\n        return 1;\n}\n----------- end lib.c -----------\n\n0:xen:test_so$ make\ngcc -fpic -DPIC -O -pipe -Wall -c lib.c\ncc -shared -o lib.so lib.o\ngcc -g -fpic -DPIC -Wall -o prog main.c\n\n0:xen:test_so$ ./prog \ndlopen: ./lib.so: Undefined symbol \"str\""
+}

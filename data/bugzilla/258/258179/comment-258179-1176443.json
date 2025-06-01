@@ -1,0 +1,8 @@
+{
+ "id": 1176443,
+ "bug_id": 258179,
+ "attachment_id": 227583,
+ "creation_time": "2021-09-01T05:16:06Z",
+ "creator": "kevinz5000@gmail.com",
+ "text": "Created attachment 227583\nPatch\n\n(In reply to John Marshall from comment #4)\nI was able to reproduce by compiling the sshguard-2.4.2 from source with CFLAGS=\"-fstack-protector-all -g\" on FreeBSD 13.0-RELEASE GENERIC/i386 running on bhyve.\n\nIt looks like the blocker is crashing in whitelist_add_block6() due to a memset() off-by-one error. The fix is below:\n\ndiff --git a/src/blocker/sshguard_whitelist.c b/src/blocker/sshguard_whitelist.c\nindex 30c6717..555237a 100644\n--- a/src/blocker/sshguard_whitelist.c\n+++ b/src/blocker/sshguard_whitelist.c\n@@ -275,7 +275,7 @@ int whitelist_add_block6(const char *restrict address, int masklen) {\n     bitlen = masklen % 8;\n     bitmask = 0xFF \u003c\u003c (8 - bitlen);\n     ab.address.ip6.mask.s6_addr[bytelen] = bitmask;\n-    memset(\u0026 ab.address.ip6.mask.s6_addr[bytelen+1], 0x00, sizeof(ab.address.ip6.mask.s6_addr) - bytelen);\n+    memset(\u0026 ab.address.ip6.mask.s6_addr[bytelen+1], 0x00, sizeof(ab.address.ip6.mask.s6_addr) - bytelen - 1);\n \n     if (! list_contains(\u0026 whitelist, \u0026ab)) {\n         list_append(\u0026 whitelist, \u0026ab);\n\nThis fix was committed upstream in 50581dba, and a patch suitable for `git am` to the ports tree is attached.\n\nJohn, while this patch makes its way to the ports tree, is it convenient for you to test the patch and confirm that it fixes the crash you're seeing?"
+}

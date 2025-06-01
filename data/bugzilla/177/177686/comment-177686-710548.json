@@ -1,0 +1,8 @@
+{
+ "id": 710548,
+ "bug_id": 177686,
+ "attachment_id": 0,
+ "creation_time": "2013-04-08T07:24:00Z",
+ "creator": "andrew@fubar.geek.nz",
+ "text": "On Sun, 7 Apr 2013 09:15:08 GMT\nRalf Wenk \u003ciz-rpi03@hs-karlsruhe.de\u003e wrote:\n\u003e Invoking telnet with parameters triggers an assertion failure:\n\u003e \n\u003e # telnet www.belwue.de 80\n\u003e ld-elf.so.1: assert\n\u003e failed: /home/rpi/src/libexec/rtldelf/rtld_lock.c:233 Abort (core\n\u003e dumped)\n\nThis is an issue with either llvm or out dynamic linker, I haven't\nyet decided.\n\nNormally llvm aligns the stack to an 8 byte boundary and generates code\nthat relies on this alignment, however for leaf functions the compiler\nis allowed to only align to a 4 byte boundary.\n\nThe problem is when there are functions that, from the C code, appear to\nbe a leaf function however are not due to them calling other functions,\nfor example __aeabi_read_tp(). With a static binary this would not be\nan issue, however with a dynamic libc it means, on the first call, we\nenter the dynamic linker which assumes the stack is aligned.\n\nOne solution is to ensure the stack is aligned in the dynamic linker,\nhowever I'm leaning towards llvm being broken in this case as it should\nhave aligned the stack correctly before calling another function as per\nthe ABI documentation, as the stack pointer must be 8 byte aligned at\nany public interface.\n\nAndrew"
+}

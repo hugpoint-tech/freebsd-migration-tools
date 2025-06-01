@@ -1,0 +1,8 @@
+{
+ "id": 1156945,
+ "bug_id": 213912,
+ "attachment_id": 0,
+ "creation_time": "2021-04-18T12:42:44Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "FWIW, now that vt has the vbe framebuffer mode, which has the same interface as efi framebuffer, switching should work after the following adjustment:\n\n--- src/nvidia/nvidia_os.c.orig\t2021-04-08 21:02:56.000000000 +0300\n+++ src/nvidia/nvidia_os.c\t2021-04-18 15:38:19.188555000 +0300\n@@ -810,6 +810,28 @@\n             *pFbPitch = efifb-\u003efb_stride * (bpp / NBBY);\n             return;\n         }\n+\n+        const struct vbe_fb *vbefb =\n+            (const struct vbe_fb *)preload_search_info(kmdp, MODINFO_METADATA |\n+                                                             MODINFOMD_VBE_FB);\n+\n+        /* Make sure base address is mapped to GPU BAR */\n+        if ((vbefb != NULL) \u0026\u0026\n+            ((vbefb-\u003efb_addr == consoleBar1Address) ||\n+             (vbefb-\u003efb_addr == consoleBar2Address)))\n+        {\n+            int depth = fls(vbefb-\u003efb_mask_red | vbefb-\u003efb_mask_green |\n+                            vbefb-\u003efb_mask_blue | vbefb-\u003efb_mask_reserved);\n+            int bpp = roundup2(depth, NBBY);\n+\n+            *pPhysicalAddress = vbefb-\u003efb_addr;\n+            *pFbWidth = vbefb-\u003efb_width;\n+            *pFbHeight = vbefb-\u003efb_height;\n+            *pFbDepth = depth;\n+            /* fb_stride is in pixels. Convert to bytes */\n+            *pFbPitch = vbefb-\u003efb_stride * (bpp / NBBY);\n+            return;\n+        }\n     }\n     {\n\n(This is a verbatim copy of the preceding code with s/efi/vbe/.)"
+}

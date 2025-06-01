@@ -1,0 +1,8 @@
+{
+ "id": 772199,
+ "bug_id": 191693,
+ "attachment_id": 0,
+ "creation_time": "2014-07-07T12:14:10Z",
+ "creator": "walker.aj325@gmail.com",
+ "text": "My macbook 4.1 panics on boot when SMP enabled. Setting the following in loader.conf fixes the problem: \" smbios.system.product=\"MacBook3,1\" \". This is an ugly work-around.\n\nThere is a high probability the following change to machdep.c will fix the problem permanently:\n\n\t/*\n\t * On MacBooks, we need to disallow the legacy USB circuit to\n\t * generate an SMI# because this can cause several problems,\n\t * namely: incorrect CPU frequency detection and failure to\n\t * start the APs.\n\t * We do this by disabling a bit in the SMI_EN (SMI Control and\n\t * Enable register) of the Intel ICH LPC Interface Bridge. \n\t */\n\tsysenv = getenv(\"smbios.system.product\");\n\tif (sysenv != NULL) {\n\t\tif (strncmp(sysenv, \"MacBook1,1\", 10) == 0 ||\n\t\t    strncmp(sysenv, \"MacBook3,1\", 10) == 0 ||\n\u003e\t\t    strncmp(sysenv, \"MacBook4,1\", 10) == 0 ||\n\t\t    strncmp(sysenv, \"MacBookPro1,1\", 13) == 0 ||\n\t\t    strncmp(sysenv, \"MacBookPro1,2\", 13) == 0 ||\n\t\t    strncmp(sysenv, \"MacBookPro3,1\", 13) == 0 ||\n\t\t    strncmp(sysenv, \"Macmini1,1\", 10) == 0) {\n\t\t\tif (bootverbose)\n\t\t\t\tprintf(\"Disabling LEGACY_USB_EN bit on \"\n\t\t\t\t    \"Intel ICH.\\n\");\n\t\t\toutl(ICH_SMI_EN, inl(ICH_SMI_EN) \u0026 ~0x8);\n\t\t}\n\t\tfreeenv(sysenv);\n\t}\n\nRight now the loader.conf change is serving me just fine, but there may be a few other potential users affected by this bug."
+}

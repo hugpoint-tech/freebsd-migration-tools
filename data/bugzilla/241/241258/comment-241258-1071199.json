@@ -1,0 +1,8 @@
+{
+ "id": 1071199,
+ "bug_id": 241258,
+ "attachment_id": 0,
+ "creation_time": "2019-10-15T08:13:16Z",
+ "creator": "sigsys@gmail.com",
+ "text": "Oops. I made a mistake. Comparing the file it was generating on another 12-STABLE system, I noticed that it was stripping the string wrong. Rewrote the whole function, it was confusing.\n\n\nIndex: lib/libpmc/pmu-events/jevents.c\n===================================================================\n--- lib/libpmc/pmu-events/jevents.c     (revision 353500)\n+++ lib/libpmc/pmu-events/jevents.c     (working copy)\n@@ -117,13 +117,14 @@\n static void fixdesc(char *s)\n {\n        char *e = s + strlen(s);\n-\n        /* Remove trailing dots that look ugly in perf list */\n-       --e;\n-       while (e \u003e= s \u0026\u0026 isspace(*e))\n-               --e;\n-       if (*e == '.')\n-               *e = 0;\n+       while (e-- \u003e s) {\n+               if (isspace(*e))\n+                       continue;\n+               if ('.' == *e)\n+                       *e = '\\0';\n+               break;\n+       }\n }\n\n /* Add escapes for '\\' so they are proper C strings. */\n\n\nTesting by doing this:\n\ncd /usr/src/lib/libpmc/pmu-events\nmake\ncd /usr/obj/usr/src/amd64.amd64/lib/libpmc\ncp libpmc_events.c libpmc_events.c.saved\n./pmu-events/jevents \"x86\" /usr/src/lib/libpmc/pmu-events/arch libpmc_events.c\ndiff -u libpmc_events.c.saved libpmc_events.c"
+}

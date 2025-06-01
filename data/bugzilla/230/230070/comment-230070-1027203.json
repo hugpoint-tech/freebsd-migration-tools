@@ -1,0 +1,8 @@
+{
+ "id": 1027203,
+ "bug_id": 230070,
+ "attachment_id": 0,
+ "creation_time": "2018-12-19T17:17:37Z",
+ "creator": "adridg@freebsd.org",
+ "text": "This is a misunderstanding what CheckLibraryExists does. It takes **one** LOCATION and checks for the given function in that location. You can pass it a list, but in CMake's internals -- see CheckLibraryExists.cmake -- it then gets passed on to try_compile as a string; this loses all the list-ness of LOCATION.\n\nYou can see this for yourself by running cmake --debug-trycompile and then grepping through the resulting CMakeFiles/ directory.\n\nThe correct way (well, **one** working way) to look for XOpenIM is to *first* find the library, then check for the function:\n\n```\nfind_library(_x11forreal X11 HINTS ${X11_LIB_SEARCH_PATH})\nif (_x11forreal)\n  check_library_exists(${_x11forreal} XOpenIM \"\" XIM2_FOUND)\n  if(${XIM2_FOUND})\n    MESSAGE(\"YES XOpenIM is found (2)\")\n  else()\n    MESSAGE(\"NO XOpenIM is NOT found (2)\")\n  endif()\nendif()\n```\n\nThis just leaves out the LOCATION and uses the direct path to the library.\n\nNote, also, that X11_LIB_SEARCH_PATH is an internal variable, not documented, that contains the list of places FindX11.cmake is going to look: it's not a computed value. So another way to do this is to use the X11 library variable that **is** documented:\n\n```\ncheck_library_exists(${X11_X11_LIB} XOpenIM \"\" XIM_FOUND)\n```\n\nI'll grant you that the documentation of check_library_exists could be a lot better."
+}

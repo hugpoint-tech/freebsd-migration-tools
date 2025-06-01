@@ -1,0 +1,8 @@
+{
+ "id": 1077827,
+ "bug_id": 242337,
+ "attachment_id": 0,
+ "creation_time": "2019-12-02T18:35:07Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Hmm, note that one of the callers of iwm_rate2idx() already contains this logic (i.e., maps an unknown rate to the lowest one).\n\nI guess the problem is with the code which programs the fw rate table.  iwm_setrates() already skips over invalid rates... but the code which fills in the rest of the table is wrong.\n\nCan you try this hack instead?  I did not test it.\n\nThere is a larger issue here in that we are ending up with a rate of 0, but we can at least avoid panicking.\n\ndiff --git a/sys/dev/iwm/if_iwm.c b/sys/dev/iwm/if_iwm.c\nindex 06bd66cc3ef6..4bd6547cc57f 100644\n--- a/sys/dev/iwm/if_iwm.c\n+++ b/sys/dev/iwm/if_iwm.c\n@@ -4385,8 +4385,10 @@ iwm_setrates(struct iwm_softc *sc, struct iwm_node *in, int rix)\n \n                /* Map 802.11 rate to HW rate index. */\n                ridx = iwm_rate2ridx(sc, rate);\n-               if (ridx == -1)\n+               if (ridx == -1) {\n+                       nrates--;\n                        continue;\n+               }\n \n #if 0\n                if (txant == 0)"
+}

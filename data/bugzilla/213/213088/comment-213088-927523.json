@@ -1,0 +1,8 @@
+{
+ "id": 927523,
+ "bug_id": 213088,
+ "attachment_id": 0,
+ "creation_time": "2017-03-25T06:20:20Z",
+ "creator": "rezny@freebsd.org",
+ "text": "I have recently started seeing the same failure on my 11-STABLE amd64 system. The root cause of the error is not in openjdk8. Numerous ports that use bash during build now fail with \"redirection error: cannot duplicate fd: Bad file descriptor\". For several ports I was able to simply drop the bash requirement and let /bin/sh be used, but for those that rely on bash syntax, i.e. devel/autogen, I worked around the problem by using zsh instead. zsh is my regular shell and exhibits no problems like bash.\n\nI am not aware of any recent change to bash itself. There was a change I made one week ago that may possibly be related. I removed options COMPAT_LINUX32, LINPROCFS, and LINSYSFS from my kernel config and began loading linux_common.ko, linux.ko, linux64.ko, linprocfs.ko, and linsysfs.ko during boot. So, I now have 64bit Linux emulation and there is a change to the way the 32bit Linux emulation works. I will try reverting the next time I do a kernel build to see if there is any relation. Unfortunately, it is not possible to load linux64.ko when the kernel is built with options COMPAT_LINUX32, and there is no COMPAT_LINUX on amd64, so its either all Linux emu in modules (can't buld LINPROCFS or LINSSYSFS into kernel without LINUX_COMPAT(32)) or 32bit Linux emu only. Fortunately, I don't really need 64bit Linux emulation, I only made the change because Poudriere began refusing to start amd64 jails without loading linux64.ko, but that requirement has been relaxed."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1259548,
+ "bug_id": 271335,
+ "attachment_id": 0,
+ "creation_time": "2023-05-15T02:31:13Z",
+ "creator": "gs-bugs.freebsd.org@gluelogic.com",
+ "text": "\u003e This patch undefines EAI_ADDRFAMILY.\n\nUnconditionally undefining EAI_ADDRFAMILY is not something that would be accepted upstream.\n\nMight one of the following patches work better for FreeBSD?\n\n--- a/src/sock_addr.c\n+++ b/src/sock_addr.c\n@@ -496,7 +496,9 @@ int sock_addr_from_str_hints(sock_addr * const restrict saddr, socklen_t * const\n             if (0 != (rc = getaddrinfo(str, NULL, \u0026hints, \u0026res))) {\n                 hints.ai_family = AF_INET;\n                 if (\n-                  #ifdef EAI_ADDRFAMILY\n+                  #if defined(EAI_ADDRFAMILY) \u0026\u0026 defined(EAI_NODATA)\n+                    (EAI_ADDRFAMILY == rc || EAI_NODATA == rc) \u0026\u0026\n+                  #elif (defined(EAI_ADDRFAMILY)\n                     EAI_ADDRFAMILY == rc \u0026\u0026\n                   #endif\n                     0 == getaddrinfo(str, NULL, \u0026hints, \u0026res)) {\n\nor this?\n\n--- a/src/sock_addr.c\n+++ b/src/sock_addr.c\n@@ -496,7 +496,7 @@ int sock_addr_from_str_hints(sock_addr * const restrict saddr, socklen_t * const\n             if (0 != (rc = getaddrinfo(str, NULL, \u0026hints, \u0026res))) {\n                 hints.ai_family = AF_INET;\n                 if (\n-                  #ifdef EAI_ADDRFAMILY\n+                  #if defined(__GLIBC__) \u0026\u0026 defined(EAI_ADDRFAMILY)\n                     EAI_ADDRFAMILY == rc \u0026\u0026\n                   #endif\n                     0 == getaddrinfo(str, NULL, \u0026hints, \u0026res)) {\n\nI am leaning towards the latter patch."
+}

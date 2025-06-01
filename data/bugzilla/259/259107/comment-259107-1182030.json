@@ -1,0 +1,8 @@
+{
+ "id": 1182030,
+ "bug_id": 259107,
+ "attachment_id": 228630,
+ "creation_time": "2021-10-12T16:21:48Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 228630\nA damaged ext3 disk image that causes a recursive bread lock attempt.\n\nIf a damaged ext2 file system has its e2fs_first_dblock superblock\nfield set to zero instead of 1, ext2_compute_sb_data() will attempt\nto bread() block 1 even though ext2_mount() already has that disk\nblock locked. The panic could be avoided if ext2_compute_sb_data()\nhad another sanity check on e2fs_first_dblock.\n\nI've attached a demo disk image:\n\n# gunzip ext39.img.gz\n# mdconfig -f ext39.img\n# mount -t ext2fs -o ro /dev/md0 /mnt\npanic: lockmgr_xlock_hard: recursing on non recursive lockmgr 0xfffffe00086efc78 @ /usr/src/sys/kern/vfs_bio.c:3962\npanic() at panic+0x43/frame 0xfffffe009bb522c0\nlockmgr_xlock_hard() at lockmgr_xlock_hard+0xee/frame 0xfffffe009bb52370\n__lockmgr_args() at __lockmgr_args+0x1f9/frame 0xfffffe009bb52410\ngetblkx() at getblkx+0x195/frame 0xfffffe009bb524d0\nbreadn_flags() at breadn_flags+0x44/frame 0xfffffe009bb52540\next2_compute_sb_data() at ext2_compute_sb_data+0x80d/frame 0xfffffe009bb525d0\next2_mount() at ext2_mount+0xea9/frame 0xfffffe009bb52770\nvfs_domount() at vfs_domount+0x8d8/frame 0xfffffe009bb529e0\nvfs_donmount() at vfs_donmount+0x880/frame 0xfffffe009bb52a80\nsys_nmount() at sys_nmount+0x69/frame 0xfffffe009bb52ac0\namd64_syscall() at amd64_syscall+0x12e/frame 0xfffffe009bb52bf0\nfast_syscall_common() at fast_syscall_common+0xf8/frame 0xfffffe009bb52bf0"
+}

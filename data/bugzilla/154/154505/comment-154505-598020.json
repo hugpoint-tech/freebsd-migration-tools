@@ -1,0 +1,8 @@
+{
+ "id": 598020,
+ "bug_id": 154505,
+ "attachment_id": 0,
+ "creation_time": "2011-02-04T10:10:09Z",
+ "creator": "simon@comsys.ntu-kpi.kiev.ua",
+ "text": "\nThe libc/rpc/svc_vc.c:write_vc() function calls _write() and sends data\nto opened TCP connection.  For non-blocking socket it has something like\ntimeout in 2 seconds (actually write_vc() can spend more real time for\nsending for non-blocking socket).  The i variable is used for offset in\na buffer and as a counter at the same time.  When _write() fails this\nvariable got the -1 value and this value as added to the buffer address\nand to the counter (the buffer address is decreased and the counter value\nactually is increased).  So we get buffer underflow.\n\nAs a result write_vc() can send data that does not belong to data that\nwere expected to be sent, so this is a security mistake for any program\nthat use RPC with a non-blocking TCP socket.\n\nFix: This this the update (this is the minimal version, without optimization):\nHow-To-Repeat: \nRun any RPC program that transfers big data over non-blocking TCP socket.\nA client will receive truncated data or garbage data, or data that should\nnot be sent to a client (everything depends on how memory blocks were\nallocated in a server)."
+}

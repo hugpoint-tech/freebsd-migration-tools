@@ -1,0 +1,8 @@
+{
+ "id": 1103735,
+ "bug_id": 246615,
+ "attachment_id": 0,
+ "creation_time": "2020-05-20T20:16:14Z",
+ "creator": "jkim@FreeBSD.org",
+ "text": "Test case:\n\n% ls -ld foo\ndrwxr-xr-x  2 jkim  staff  512 May 20 19:43 foo\n% cat bin/foo\n#!/bin/sh\necho This is ~/bin/foo.\necho \\$PATH is \\'$PATH\\'.\n% cat Makefile\nall:\n\tfoo\n\nExpected behavior (before GNU make 4.3):\n\n% env PATH=.:$PATH gmake\nfoo\nThis is /home/jkim/bin/foo.\n$PATH is '.:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/home/jkim/bin'.\n\nCurrent behavior (after GNU make 4.3):\n\n% env PATH=.:$PATH gmake\nfoo\ngmake: foo: Permission denied\ngmake: *** [Makefile:2: all] Error 127\n\nNote GNU make 4.3 uses posix_spawn(3) instead of fork()/exec().\n\nhttp://git.savannah.gnu.org/cgit/make.git/commit/?id=749a54d7a458dc6779936138caf40ce600a80052\n\nNow they implemented a built-in PATH search.\n\nhttp://git.savannah.gnu.org/cgit/make.git/commit/?id=60905a8afb012aa38ac6d56cee24754cc678947c\n\nThis new find_in_given_path() function seems to be the culprit.  A workaround is using \"--diasable-posix-spawn\" configure option."
+}

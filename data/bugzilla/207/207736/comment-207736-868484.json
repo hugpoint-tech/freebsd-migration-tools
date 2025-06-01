@@ -1,0 +1,8 @@
+{
+ "id": 868484,
+ "bug_id": 207736,
+ "attachment_id": 0,
+ "creation_time": "2016-03-06T13:58:17Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "I compiled a .o for TARGET_ARCH=powerpc64 via letting \"buildworld\" get as far as it could and the resultant .o produced has the same sort of r31/frame-pointer problem as powerpc for _Unwind_RaiseException: The problem DOES occur for powerpc64.\n\nA) r31 is stored twice to the same location, with the 2nd store destroying the frame-pointer value that is supposed to be saved and restored for the caller.\n\nB) r31 is restored twice from the same location.\n\nThe FreeBSD TARGET_ARCH=powerpc64 does officially use a stack red-zone on the low-address side with officially \"late\" decrement and \"early\" increment (AIX like). Relative to this:\n\nA) each r31 store is on a different side of the \"late\" r1 decrement\n\nand\n\nB) each r31 restore is on a different side of the \"early\" r1 increment\n\nTARGET_ARCH=powerpc gets that same relationships but the late r1 decrement and early r1 increment are SVR4 ABI violations: SVR4'sABI does not require a \"red-zone\" on the low-address side of the stack.\n\n(To get as far as I have for powerpc \"buildworld\" I had to add signal red-zone handling to my personal FreeBSD builds.)"
+}

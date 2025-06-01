@@ -1,0 +1,8 @@
+{
+ "id": 1110070,
+ "bug_id": 247494,
+ "attachment_id": 0,
+ "creation_time": "2020-06-23T16:04:07Z",
+ "creator": "cem@freebsd.org",
+ "text": "This patch fixes (2), but not (1):\n\n@@ -258,14 +259,28 @@ add_leaf(struct sort_level *sl, struct sort_list_item *item)\n static inline int\n get_wc_index(struct sort_list_item *sli, size_t level)\n {\n+       const size_t wcfact = (MB_CUR_MAX == 1) ? 1 : sizeof(wchar_t);\n        const struct key_value *kv;\n        const struct bwstring *bws;\n\n        kv = get_key_from_keys_array(\u0026sli-\u003eka, 0);\n        bws = kv-\u003ek;\n\n-       if ((BWSLEN(bws) \u003e level))\n-               return (unsigned char) BWS_GET(bws,level);\n+       if ((BWSLEN(bws) * wcfact \u003e level)) {\n+               wchar_t res;\n+\n+               /*\n+                * Sort wchar strings a byte at a time, rather than a single\n+                * byte from each wchar.\n+                */\n+               res = (wchar_t)BWS_GET(bws, level / wcfact);\n+               /* Sort most-significant byte first. */\n+               if (level % wcfact \u003c wcfact - 1)\n+                       res = (res \u003e\u003e (8 * (wcfact - 1 - (level % wcfact))));\n+\n+               return (res \u0026 0xff);\n+       }\n+\n        return (-1);\n }"
+}

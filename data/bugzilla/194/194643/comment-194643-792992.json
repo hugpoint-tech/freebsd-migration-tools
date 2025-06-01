@@ -1,0 +1,8 @@
+{
+ "id": 792992,
+ "bug_id": 194643,
+ "attachment_id": 0,
+ "creation_time": "2014-10-27T21:39:13Z",
+ "creator": "cse.cem@gmail.com",
+ "text": "insmntque and probably other parts of VFS are broken for VFS that do not use lockmgr.\n\nE.g. insmntque_stddtr enters with the vnode locked exclusive, wipes out the v_op table, and then calls vput() which uses VOP_ISLOCKED, VOP_LOCK, VOP_UNLOCK.\n\nFor VFS where vop_lock1, vop_unlock, vop_islocked doesn't use lockmgr, insmntque_stddtr leaks the original lock; then vput tries to upgrade via dead_vnops. This is pretty bogus. Even for VFS that use lockmgr, insmntque_stddtr doesn't reset v_vnlock to \u0026v_lock; it should probably do this (or just let vgone() do it).\n\nAdditionally, since vgonel() wipes out v_op with dead_vnops, anything else that holds a vnode lock over vgone() is bogus. (But, not observably so for lockmgr- / v_lock-using VFS.)"
+}

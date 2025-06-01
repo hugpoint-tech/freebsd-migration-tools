@@ -1,0 +1,8 @@
+{
+ "id": 1065453,
+ "bug_id": 211924,
+ "attachment_id": 0,
+ "creation_time": "2019-09-04T21:36:15Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "I think FreeBSD is wrong here. Reading the mmap page of SUSv4tc2 XSH 3 System Interfaces:\n\n] The system shall always zero-fill any partial page at the end of an\n] object.  Further, the system shall never write out any modified portions\n] of the last page of an object which are beyond its end. References\n] within the address range starting at pa and continuing for len bytes to\n] whole pages following the end of an object shall result in delivery of a\n] SIGBUS signal.\n\nAs far as I understand, SEGV_MAPERR is for the case where no mapping exists for the address, and SEGV_ACCERR is for the case where the access conflicts with the prot parameter passed to mmap() (PROT_READ/PROT_WRITE/PROT_EXEC). The size of the mapping is equal to the len parameter passed to mmap(), whether the underlying object is that long or not.\n\nSo this does not mean that the change mentioned in 118304 is completely wrong. There is only a problem for pages of the mapped region beyond the end of the object.\n\nBy the way, the testcase is not POSIX-compliant either, since the aforementioned mmap page also says:\n\n] If the size of the mapped file changes after the call to mmap() as a\n] result of some other operation on the mapped file, the effect of\n] references to portions of the mapped region that correspond to added or\n] removed portions of the file is unspecified."
+}

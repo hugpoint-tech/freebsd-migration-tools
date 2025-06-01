@@ -1,0 +1,8 @@
+{
+ "id": 916502,
+ "bug_id": 215727,
+ "attachment_id": 0,
+ "creation_time": "2017-01-14T11:15:12Z",
+ "creator": "trasz@FreeBSD.org",
+ "text": "The piece of FreeBSD iSCSI target that assembles the ping requests looks like this:\n\n        bhsni-\u003ebhsni_opcode = ISCSI_BHS_OPCODE_NOP_IN;\n        bhsni-\u003ebhsni_flags = 0x80;\n        bhsni-\u003ebhsni_initiator_task_tag = 0xffffffff;\n\nThe structure is prezeroed, so the target transfer tag will be 0.  The code that responds to ping requests looks like this:\n\n        bhsni-\u003ebhsni_opcode = ISCSI_BHS_OPCODE_NOP_IN;\n        bhsni-\u003ebhsni_flags = 0x80;\n        bhsni-\u003ebhsni_initiator_task_tag = bhsno-\u003ebhsno_initiator_task_tag;\n        bhsni-\u003ebhsni_target_transfer_tag = 0xffffffff;\n\nWhich makes me wonder - are you absolutely sure the PDU in question is the really the request, and not the response?\n\nAlso - could you tell some more about the flip-flop?  Note that FreeBSD target would only send ping requests if it hasn't seen activity (as in, any incoming PDUs) in some time, which means it will send requests if the initiator doesn't; if the initiator does send ping requests, the FreeBSD target will only send responses instead."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1254649,
+ "bug_id": 270736,
+ "attachment_id": 0,
+ "creation_time": "2023-04-10T12:39:00Z",
+ "creator": "kp@freebsd.org",
+ "text": "That's a fun one.\n\nIt looks like the problem is actually on the receive side, in that we don't clear the M_VLANTAG from m-\u003em_flags and end up thinking there's an extra vlan on the RX side.\n\nif_epair already has some code to remove tags and such when handing a packet over to the receive path, but it didn't clear the vlan information. (Arguably we could also clear it on the network stack side, but this is pretty specific to if_epair.)\n\nI'm testing this now:\n\ndiff --git a/sys/net/if_epair.c b/sys/net/if_epair.c\nindex aeed993249f5..21c0c598e8d4 100644\n--- a/sys/net/if_epair.c\n+++ b/sys/net/if_epair.c\n@@ -140,6 +140,11 @@ epair_clear_mbuf(struct mbuf *m)\n                m-\u003em_pkthdr.csum_flags \u0026= ~CSUM_SND_TAG;\n        }\n\n+       /* Clear vlan information. */\n+       m-\u003em_flags \u0026= ~M_VLANTAG;\n+       if (m-\u003em_flags \u0026 M_PKTHDR)\n+               m-\u003em_pkthdr.ether_vtag = 0;\n+\n        m_tag_delete_nonpersistent(m);\n }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 900898,
+ "bug_id": 213315,
+ "attachment_id": 0,
+ "creation_time": "2016-10-08T20:41:02Z",
+ "creator": "cem@freebsd.org",
+ "text": "This seems undesirable.\n\nConsider a kernel object (KO1) that contains two modules, A and B.  If MOD_LOAD succeeds for A and fails for B, KO1 is kept loaded and both A and B appear on kern_linker.c's `found_modules` list.\n\nBecause B failed to load, only A appears on kern_module.c's `modules` list.\n\nAfter this, a second kernel object (KO2) that contains a module C is loaded.  C has a MODULE_DEPEND on B.  Because B is still on `found_modules`, C is allowed to load.  It may fail to probe or panic if it assumes B is actually present.\n\nMaybe that's not the promise MODULE_DEPEND makes.  But it would be nice if it was.\n\nThe common case of one module per ko is already handled by the runtime loader (and proposed patch to do the same in the preload linker is on phabricator: https://reviews.freebsd.org/D8200 ).  (If the linker detects that all modules in a KO failed to MOD_LOAD, the entire KO is unloaded.)\n\nFixing this just for runtime module loading maybe isn't too hard.  Load one module at a time and only put successful modules (already maintained in lf-\u003emodules) on the `found_modules` global list.\n\nSolving this generally for preloaded kernel objects is more difficult, at least without changing how preloaded KO sysinits are run.  I'm not sure changing that is a real problem, though."
+}

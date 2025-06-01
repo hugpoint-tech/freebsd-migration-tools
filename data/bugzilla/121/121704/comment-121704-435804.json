@@ -1,0 +1,8 @@
+{
+ "id": 435804,
+ "bug_id": 121704,
+ "attachment_id": 0,
+ "creation_time": "2008-03-14T15:20:01Z",
+ "creator": "josh@tcbug.org",
+ "text": "\n\nPF appears to mangle packets on the loopback, even with pass all rules\n\nFix: \n\nset skip on lo0 fixes the problem, unfortunately I need that too.\nHow-To-Repeat: \n\nsimple pf.conf\n\npass in all keep state\npass out all keep state\n\nroot@homebase /home/jpaetzel -\u003ecat echoserver.py\n#!/usr/bin/env python\n\n\"\"\"\nA simple echo server\n\"\"\"\n\nimport socket\n\nhost = ''\nport = 50000\nbacklog = 5\nsize = 1024\ns = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\ns.bind((host,port))\ns.listen(backlog)\nwhile 1:\n    client, address = s.accept()\n    data = client.recv(size)\n    if data:\n        client.send(data)\n    client.close()\n\n*********************************************8\n\nroot@homebase /home/jpaetzel -\u003ecat echoclient.py\n#!/usr/bin/env python\n\n\"\"\"\nA simple echo client\n\"\"\"\n\nimport socket , time\n\nhost = '127.0.0.2'\nport = 50000\nsize = 1024\nloop = 1\nwhile 1:\n    loop += 1\n    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n    s.connect((host,port))\n    s.send('Hello, world')\n    data = s.recv(size)\n    s.close()\n    print '#', loop, 'received:', data, time.ctime()\n\nBring up echoserver.py on 127.0.0.2 (in a jail works), start\nechoclient.py on another loopback IP in the host environment or another\njail and watch it go boom.  Disabling pf or set skip on lo0 lets it run\nindefinitely."
+}

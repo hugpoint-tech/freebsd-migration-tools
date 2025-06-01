@@ -1,0 +1,8 @@
+{
+ "id": 946896,
+ "bug_id": 221372,
+ "attachment_id": 0,
+ "creation_time": "2017-08-10T08:59:36Z",
+ "creator": "pgj@FreeBSD.org",
+ "text": "If I recall correctly, the problem with pkg-upgrade is the order of pkg-adds and pkg-deletes.\n\nIn the suggested way, one should first remove all the dependents, that is, the hs- packages, then lang/ghc.  So, on each deinstall they can safely run the gen_contents_index script and ghc-pkg can safely delete them from the package database.  On the contrary, on pkg upgrade, first lang/ghc is replaced, then the hs- ports.  Then, since the path of gen_contents_index has changed and the package database of GHC is wiped, one will get the errors you reported.\n\nFor example, the previous version of the hs-syb package was installed for GHC 7.10.2.  So its DEINSTALL script has the following command:\n\n~~~~\ncd /usr/local/share/doc/ghc-7.10.2/html/libraries \u0026\u0026  /bin/rm -f doc-index*.html \u0026\u0026 ./gen_contents_index\n~~~~\n\nBecause lang/ghc was replaced with version 8.0.2 before running that, the gen_contents_index script cannot be found any more, so it fails.\n\nOne might say that okay, let us hack this problem around the make it independent of the actual version of GHC.  But what if the way of handling the document index has changed between the versions of GHC?  We cannot expect a GHC package installed with version X to properly clean up itself with version Y."
+}

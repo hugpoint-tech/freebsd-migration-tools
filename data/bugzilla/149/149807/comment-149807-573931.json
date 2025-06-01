@@ -1,0 +1,8 @@
+{
+ "id": 573931,
+ "bug_id": 149807,
+ "attachment_id": 0,
+ "creation_time": "2010-08-20T10:49:10Z",
+ "creator": "tejblum@yandex-team.ru",
+ "text": "Obviously I was a bit too quick sending the previous patch. It removed the \npanic, but opened an mbuf leak. A more correct version would be like \nthis:\n\n\n--- sys/netinet/ipfw/ip_fw_log.c.00\t2010-03-23 12:58:59.000000000 +0300\n+++ sys/netinet/ipfw/ip_fw_log.c\t2010-08-20 13:10:51.000000000 +0400\n@@ -103,6 +103,24 @@\n  \treturn EINVAL;\n  }\n\n+static int\n+ipfw_log_output(struct ifnet *ifp, struct mbuf *m,\n+\tstruct sockaddr *dst, struct route *ro)\n+{\n+\tif (m != NULL)\n+\t\tm_freem(m);\n+\treturn EINVAL;\n+}\n+\n+static int\n+ipfw_log_start(struct ifnet* ifp)\n+{\n+\tpanic(\"ipfw_log_start() must not be called\");\n+}\n+\n+static const u_char ipfwbroadcastaddr[6] =\n+                        { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };\n+\n  void\n  ipfw_log_bpf(int onoff)\n  {\n@@ -119,11 +137,12 @@\n  \t\tifp-\u003eif_flags = IFF_UP | IFF_SIMPLEX | IFF_MULTICAST;\n  \t\tifp-\u003eif_init = (void *)log_dummy;\n  \t\tifp-\u003eif_ioctl = log_dummy;\n-\t\tifp-\u003eif_start = (void *)log_dummy;\n-\t\tifp-\u003eif_output = (void *)log_dummy;\n+\t\tifp-\u003eif_start = ipfw_log_start;\n+\t\tifp-\u003eif_output = ipfw_log_output;\n  \t\tifp-\u003eif_addrlen = 6;\n  \t\tifp-\u003eif_hdrlen = 14;\n  \t\tif_attach(ifp);\n+\t\tifp-\u003eif_broadcastaddr = ipfwbroadcastaddr;\n  \t\tifp-\u003eif_baudrate = IF_Mbps(10);\n  \t\tbpfattach(ifp, DLT_EN10MB, 14);\n  \t\tlog_if = ifp;"
+}

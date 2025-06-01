@@ -1,0 +1,8 @@
+{
+ "id": 421961,
+ "bug_id": 118842,
+ "attachment_id": 0,
+ "creation_time": "2008-07-17T10:44:00Z",
+ "creator": "Luoqi.Chen@brion.com",
+ "text": "I've identified the cause: the SATA device in nForce chipset has the HyperT=\nransport MSI mapping capability, and we unconditionally enable the MSI-\u003eHT =\nmapping even though we don't use MSI in our ATA driver, this likely confuse=\nd the device.\n\nJohn, it is unclear to me why we enable the MSI-\u003eHT mapping at all given th=\nat we always allocate MSI addresses from local APIC. To utilize HT interrup=\nt mechanism, shouldn't we be programming MSI with addresses from the HT MSI=\n mapping capability register (the device's or that of a parent bridge)?\n\nFor those who are having the same problem, please try commenting out the MS=\nI mapping enabling code and see if it works for you,\n\nIndex: pci.c\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D\nRCS file: /home/ncvs/src/sys/dev/pci/pci.c,v\nretrieving revision 1.355.2.2\ndiff -u -r1.355.2.2 pci.c\n--- pci.c       12 Feb 2008 20:20:56 -0000      1.355.2.2\n+++ pci.c       17 Jul 2008 09:36:12 -0000\n@@ -564,9 +564,11 @@\n                                                    (long long)addr);\n                                }\n\n+#if 0\n                                /* Enable MSI -\u003e HT mapping. */\n                                val |=3D PCIM_HTCMD_MSI_ENABLE;\n                                WREG(ptr + PCIR_HT_COMMAND, val, 2);\n+#endif\n                                break;\n                        }\n                        break;\n\nThanks\n-lq"
+}

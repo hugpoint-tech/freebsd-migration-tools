@@ -1,0 +1,8 @@
+{
+ "id": 392173,
+ "bug_id": 112558,
+ "attachment_id": 0,
+ "creation_time": "2007-05-10T01:30:03Z",
+ "creator": "ighighi@gmail.com",
+ "text": "The script /etc/periodic/daily/200.backup-passwd (enabled by default in /etc/defaults/periodic.conf) is intended to perform the following function as described in periodic.conf(5):\n\ndaily_backup_passwd_enable\nSet to ``YES'' if you want the /etc/master.passwd and /etc/group files backed up and reported on.\n\nThe offending line in the script (with $bak set to /var/backups by default) is:\nmv $bak/master.passwd.bak $bak/master.passwd.bak2\n\nNo previous handling of master.passwd.bak2 before mv(1) exists so there's no guarantee at all that sensitive data won't be retrieved by malicious users in environments with no disk encryption on the filesystem containing /var or when mounted in RAM with mdmfs(8). The attached patch just adds these 2 lines\nrm -fP $bak/master.passwd.bak2\nrm -fP $bak/group.bak2\nbefore the cp(1) above...  I'm aware of the limitations of rm(1)'s -P but in this case I think it's better than nothing.\n\nI had the temptation to patch etc/defaults/periodic.conf with\n#daily_backup_passwd_enable=\"YES\"\nas etc/periodic/daily/200.backup-passwd seems to me to be too amateur to be enabled by default.\n\nFix: A quick fix would be to run:\necho 'daily_backup_passwd_enable=\"NO\"' \u003e\u003e /etc/periodic.conf\nor use the patch attached.\n\nPatch attached with submission follows:"
+}

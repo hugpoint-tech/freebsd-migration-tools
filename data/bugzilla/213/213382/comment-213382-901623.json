@@ -1,0 +1,8 @@
+{
+ "id": 901623,
+ "bug_id": 213382,
+ "attachment_id": 0,
+ "creation_time": "2016-10-13T14:46:58Z",
+ "creator": "smh@FreeBSD.org",
+ "text": "Correct this is the test in mysql-server mysql_prestart.\n\nThe \"command\" readlink returns the name of the destination file (man STAT(1)) e.g.\nreadlink /usr/local/etc/mysql/my.cnf\n/data/mysql/data/my.cnf\n\nThe lines are patch lines so replace the following in mysql_prestart:\nif [ -f \"${mysql_dbdir}/my.cnf\" ]\nwith:\nif [ -f \"${mysql_dbdir}/my.cnf\" ] \u0026\u0026 [ \"${mysql_dbdir}/my.cnf\" != `readlink ${mysql_confdir}/my.cnf` ]; then\n\nThis will then only moan if ${mysql_dbdir}/my.cnf exists and isn't the target of a symlink ${mysql_confdir}/my.cnf\n\nNot sure what the reasoning behind the change was but this at least provides a simple workaround to constant warnings when the user wants to maintain their existing file layout, which is useful in our case to ensure all mysql related data (config included) is on a single zfs volume."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1200302,
+ "bug_id": 262113,
+ "attachment_id": 0,
+ "creation_time": "2022-02-22T07:49:32Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "The main problem is that the VM is destroyed asynchronously via sysctl:\nhttps://github.com/freebsd/freebsd-src/blob/main/usr.sbin/bhyvectl/bhyvectl.c#L2397\nhttps://github.com/freebsd/freebsd-src/blob/main/lib/libvmmapi/vmmapi.c#L88\nhttps://github.com/freebsd/freebsd-src/blob/main/sys/amd64/vmm/vmm_dev.c#L1080\n\nTherefore, bhyvectl --destroy --vm=test0 completes before the VM is actually destroyed.\n\nMoreover, even the /dev/vmm/test0 device is removed before the actual destruction of the VM occurs.\n\nAnd I don't know of a guaranteed way to check if a VM is destroyed from userspace.\n\nAs workaround you can use:\nbhyvectl --destroy --vm=test0\nsleep [N[\nbhyve -AHP -c 1 -m 1024M ...\n\n\nBut this is not a 100% reliable solution."
+}

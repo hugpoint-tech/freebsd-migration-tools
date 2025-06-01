@@ -1,0 +1,8 @@
+{
+ "id": 467449,
+ "bug_id": 128134,
+ "attachment_id": 0,
+ "creation_time": "2008-10-16T02:10:01Z",
+ "creator": "yehudasa@gmail.com",
+ "text": "\nIt looks like there is some bug in the crc32c calculation at sctp_crc32.c.\nThe update_crc32() does the following:\n   \n    ...\n    offset = ((uintptr_t) buffer) \u0026 0x3;\n    return (sctp_crc32c_sb8_64_bit(crc32c, buffer, length, offset));\n   \nNow, note that it passes the 'offset' parameter. However, the\nsctp_crc32c_sb8_64_bit() treats the 4th parameter as init_bytes. This is\nwrong. Also it does the following:\n   \n   running_length = ((length - init_bytes) / 8) * 8;\n   \nNow, if init_bytes is 3 and length is 1, running_length will overlap.\n   \nThe following patch seems to fix it.\n   \nYehuda\n\nFix: \n\n--- a/src/common/sctp_crc32.c\n+++ b/src/common/sctp_crc32.c\n@@ -518,12 +518,18 @@ static uint32_t sctp_crc32c_sb8_64_bit(uint32_t crc,\n     unsigned char const *p_buf,\n     uint32_t length,\n-    uint32_t init_bytes)\n+    uint32_t offset)\n {\n        uint32_t li;\n        uint32_t term1, term2;\n        uint32_t running_length;\n        uint32_t end_bytes;\n+       uint32_t init_bytes;\n+\n+       init_bytes = (4-offset) \u0026 0x3;\n+\n+       if (init_bytes \u003e length)\n+               init_bytes = length;\n\n        running_length = ((length - init_bytes) / 8) * 8;\n        end_bytes = length - init_bytes - running_length;"
+}

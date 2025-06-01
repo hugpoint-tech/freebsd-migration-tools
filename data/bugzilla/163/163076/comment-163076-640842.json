@@ -1,0 +1,8 @@
+{
+ "id": 640842,
+ "bug_id": 163076,
+ "attachment_id": 0,
+ "creation_time": "2011-12-06T08:38:49Z",
+ "creator": "Petr.Salinger@seznam.cz",
+ "text": "\u003e\u003e\u003e Yes, r222004 changed sbuf_finish() to not clear s-\u003es_error which causes\n\u003e\u003e\u003e the regression. I am not sure if we should blame r222004 or the pseudofs\n\u003e\u003e\u003e code.\n\nThe \"dd testcase\" works for us with change bellow.\nIt also solves the original problem.\nI am unsure whether it is a right way, though.\n\nPetr\n\n\n--- a/sys/fs/pseudofs/pseudofs_vnops.c\n+++ b/sys/fs/pseudofs/pseudofs_vnops.c\n@@ -640,7 +640,7 @@\n         if (buflen \u003e MAXPHYS + 1)\n                 buflen = MAXPHYS + 1;\n\n-       sb = sbuf_new(sb, NULL, buflen, 0);\n+       sb = sbuf_new(sb, NULL, MAXPHYS + 1, 0);\n         if (sb == NULL) {\n                 error = EIO;\n                 goto ret;\n@@ -654,7 +654,12 @@\n         }\n\n         sbuf_finish(sb);\n-       error = uiomove_frombuf(sbuf_data(sb), sbuf_len(sb), uio);\n+\n+       if (buflen \u003e sbuf_len(sb))\n+           buflen = sbuf_len(sb);\n+       else\n+           buflen--;\n+       error = uiomove_frombuf(sbuf_data(sb), buflen, uio);\n         sbuf_delete(sb);\n  ret:\n         vn_lock(vn, locked | LK_RETRY);"
+}

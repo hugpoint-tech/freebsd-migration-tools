@@ -1,0 +1,8 @@
+{
+ "id": 610270,
+ "bug_id": 156978,
+ "attachment_id": 0,
+ "creation_time": "2011-07-07T21:02:22Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: thompsa\nDate: Thu Jul  7 20:02:09 2011\nNew Revision: 223846\nURL: http://svn.freebsd.org/changeset/base/223846\n\nLog:\n  Grab the rlock before checking if our interface is enabled, it could be\n  possible to hit a dead pointer when changing interfaces.\n  \n  PR:\t\tkern/156978\n  Submitted by:\tAndrew Boyer\n  MFC after:\t1 week\n\nModified:\n  head/sys/net/if_lagg.c\n\nModified: head/sys/net/if_lagg.c\n==============================================================================\n--- head/sys/net/if_lagg.c\tThu Jul  7 18:07:03 2011\t(r223845)\n+++ head/sys/net/if_lagg.c\tThu Jul  7 20:02:09 2011\t(r223846)\n@@ -1221,14 +1221,15 @@ lagg_input(struct ifnet *ifp, struct mbu\n \tstruct lagg_softc *sc = lp-\u003elp_softc;\n \tstruct ifnet *scifp = sc-\u003esc_ifp;\n \n+\tLAGG_RLOCK(sc);\n \tif ((scifp-\u003eif_drv_flags \u0026 IFF_DRV_RUNNING) == 0 ||\n \t    (lp-\u003elp_flags \u0026 LAGG_PORT_DISABLED) ||\n \t    sc-\u003esc_proto == LAGG_PROTO_NONE) {\n+\t\tLAGG_RUNLOCK(sc);\n \t\tm_freem(m);\n \t\treturn (NULL);\n \t}\n \n-\tLAGG_RLOCK(sc);\n \tETHER_BPF_MTAP(scifp, m);\n \n \tm = (*sc-\u003esc_input)(sc, lp, m);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

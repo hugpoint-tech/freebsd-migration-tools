@@ -1,0 +1,8 @@
+{
+ "id": 1302506,
+ "bug_id": 277333,
+ "attachment_id": 0,
+ "creation_time": "2024-03-26T16:52:01Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Consumers cannot drop LTO_UNSAFE (to match Cargo.toml) and override CARGO_PROFILE_RELEASE_PANIC due to Mk/Features/lto.mk appending CARGO_ENV after (the last assignment wins) ports' own CARGO_ENV. For example, the following restores the regression (see inline comment) introduced by ports 967022fd812c.\n\n$ make -V CARGO_ENV:M\\*PANIC\\*\nCARGO_PROFILE_RELEASE_PANIC=unwind CARGO_PROFILE_RELEASE_PANIC=\"abort\"\n\ndiff --git a/devel/texlab/Makefile b/devel/texlab/Makefile\nindex 5ae2bf759953..3cc9eab3cd51 100644\n--- a/devel/texlab/Makefile\n+++ b/devel/texlab/Makefile\n@@ -17,7 +17,7 @@ GH_ACCOUNT=\tlatex-lsp\n \n # Fixes: error: the linked panic runtime `panic_unwind` is not compiled with\n # this crate's panic strategy `abort`\n-LTO_UNSAFE=\tyes\n+CARGO_ENV=\tCARGO_PROFILE_RELEASE_PANIC=unwind\n \n PLIST_FILES=\tbin/${PORTNAME} \\\n \t\tshare/man/man1/${PORTNAME}.1.gz"
+}

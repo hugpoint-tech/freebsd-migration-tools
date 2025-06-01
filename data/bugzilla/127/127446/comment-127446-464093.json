@@ -1,0 +1,8 @@
+{
+ "id": 464093,
+ "bug_id": 127446,
+ "attachment_id": 0,
+ "creation_time": "2008-09-17T17:20:02Z",
+ "creator": "rea-fbsd@codelabs.ru",
+ "text": "\nSince kbdmux(4) is not MPSAFE now, its interrupt routines are running\nunder Giant.  But there is kbdmux_read_char() routine that runs unlocked\nand can race with the interrupt handler.  When there is no input data\nin the keyboard queue and kbdmux(4) is in the POLLING mode, routine will\ntry to poll each mux member for the scancode.  And if user presses the\nkey at that time, KBDMUX_READ_CHAR() can race with the interrupt handler\nkbdmux_kbd_event() since we don't lock polling loop.\n\nFix: The following patch fixes the things for me.  It just acquires Giant for\nthe time of polling.  I did a limited testing at my systems and there\nwere no signs of regressions yet.\n\nSeems like in the properly locked situation (with non-dummy KBDMUX_LOCK\nand KBDMUX_UNLOCK) this issue will vanish, so I had conditionalized\nGiant grabbing.\nHow-To-Repeat: \nI see this on my laptop: sometimes during boot, when system asks me for\nthe password of geli(8)-encrypted volume, it doubles the symbols or even\npanics.  I don't see this on the other systems, so perhaps my laptop is\njust so lucky ;))\n\nBut one can try to enable echoing of the input symbols during the geli's\nbootup password dialog (setting g_eli_visible_passphrase to 1\nunconditionally) and maybe symbols will be doubled.  I see this issue\nonly during boot-up phase, but I feel that this is due to the fact that\nfor the rest of the system's operation only interrupt handler is\nworking, at least I see it from the debug printf()s."
+}

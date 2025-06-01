@@ -1,0 +1,8 @@
+{
+ "id": 950765,
+ "bug_id": 222077,
+ "attachment_id": 0,
+ "creation_time": "2017-09-05T19:47:22Z",
+ "creator": "cem@freebsd.org",
+ "text": "It seems like the math in g_eli_auth_run (g_eli_integrity.c) is kind of dubious, even ignoring the data leak.  Does it even work?  I think it is making some invalid assumptions about C division rounding.  It looks like the logic was copied from g_eli_crypto_run (g_eli_privacy.c).\n\nI suspect this change wouldn't hurt, but I don't think it fixes the problem:\n\n--- a/sys/geom/eli/g_eli_integrity.c\n+++ b/sys/geom/eli/g_eli_integrity.c\n@@ -445,7 +445,7 @@ g_eli_auth_run(struct g_eli_worker *wr, struct bio *bp)\n                size += sizeof(*crda) * nsec;\n                size += G_ELI_AUTH_SECKEYLEN * nsec;\n                size += sizeof(uintptr_t);      /* Space for alignment. */\n-               data = malloc(size, M_ELI, M_WAITOK);\n+               data = malloc(size, M_ELI, M_WAITOK | M_ZERO);\n                bp-\u003ebio_driver2 = data;\n                p = data + encr_secsize * nsec;\n        }\n\nI think \"nsec\" is calculated wrong (and differently!) in both g_eli_auth_write_done and g_eli_auth_run.\n\nProbably avoid using geli in integrity mode if you care about privacy, for now."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1110064,
+ "bug_id": 247494,
+ "attachment_id": 0,
+ "creation_time": "2020-06-23T15:10:38Z",
+ "creator": "cem@freebsd.org",
+ "text": "Ok, so radix sort only goes byte-at-a-time; we can't allocate memory for all wchar_t space (4 GB).  Here are the wchar_t representations of the two characters:\n\necho 耳脳 | iconv -f utf-8 -t ucs-4 | hd\n00000000  00 00 80 33 00 00 81 33                           |...3...3....|\n          ^ first     ^ second\n\nIt incorrectly looks at the least significant byte of the wchar_t, observes that 33 == 33 and invokes collate to attempt to differentiate the two strings.  But using radixsort's level is wrong for bwscoll, which expects an offset in wchar_t.  Since radixsort has only processed 1/4 of a wchar_t, this is a bogus offset.\n\nI'm not sure how our radixsort is supposed to work, honestly.  It seems pretty broken, even for ASCII.  It should be able to bucket multiple keys that share a character per level, but it doesn't — it falls back on comparison in that case."
+}

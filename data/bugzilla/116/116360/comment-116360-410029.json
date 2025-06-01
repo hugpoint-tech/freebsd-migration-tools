@@ -1,0 +1,8 @@
+{
+ "id": 410029,
+ "bug_id": 116360,
+ "attachment_id": 0,
+ "creation_time": "2007-09-14T23:20:01Z",
+ "creator": "peter.hunt@nokia.com",
+ "text": "I noticed what I think is a double free problem by code inspection. It appears to be in 6.1 (which I'm using) and HEAD. I have not seen any problem during use.\n\nIn ip6_output.c:copypktopts(), if an error occurs while copying the packet options from src to dst, the routine frees all the fields in dst, but does not set them to NULL. It then returns error status.\n\nSome callers of copypktopts() (via in6_setpktopts()) handle the error by calling in6_clearpktopts() on dst, which will try to free the fields again, as they are not NULL.\n\nSpecifically, raw_ip6.c:rip6_output() and udp_usrreq.c:udp6_output() both call ip6_setpktopts, passing src and dst pktopts pointers, and handle the error by calling in6_clearpktopts.\n\nRegards,\n\nPeter Hunt\nNokia Enterprise Solutions\n\nFix: \n\nI think this problem can be solved by having clearpktopts() zero out the fields after freeing them (or calling ip6_initpktopts on dst)."
+}

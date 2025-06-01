@@ -1,0 +1,8 @@
+{
+ "id": 59781,
+ "bug_id": 19485,
+ "attachment_id": 0,
+ "creation_time": "2000-06-24T13:20:00Z",
+ "creator": "mhenry@speednet.com.au",
+ "text": "\nI'm getting errors when trying to compile the example system\ncall in /usr/share/examples/kld/syscall/module/syscall.c.\nThe version of the file is 1.2.\n\nThe errors are as follows:\n\n*** In file included from syscall.c:35:\n*** /usr/include/sys/systm.h:327: syntax error before `int'\n*** /usr/include/sys/systm.h:328: syntax error before `int'\n*** /usr/include/sys/systm.h:329: syntax error before `('\n\nThe corresponding lines from the header are:\n\n*** int major(dev_t x);\n*** int minor(dev_t x);\n*** dev_t makedev(int x, int y);\n\nThere is a comment above these lines: \"Common `dev_t'\nstuff are declared here to avoid #include poisoning\".\nBut these lines are getting mangled by the following\nmacros defined in \u003csys/types.h\u003e:\n\n*** #define major(x)        ((int)(((u_int)(x) \u003e\u003e 8)\u00260xff)) /* major number */\n*** #define minor(x)        ((int)((x)\u00260xffff00ff))         /* minor number */\n*** #define makedev(x,y)    ((dev_t)(((x) \u003c\u003c 8) | (y)))     /* create dev_t */\n\nwhich, after pre-processing, results in the following:\n\n*** int ((int)(((u_int)( dev_t x ) \u003e\u003e 8)\u00260xff)) ;\n*** int ((int)(( dev_t x )\u00260xffff00ff)) ;\n*** dev_t ((dev_t)((( int x ) \u003c\u003c 8) | (  int y ))) ;\n\nClearly this is nonsense.\n\nFix: \n\nRemove offending lines from \u003csys/systm.h\u003e\nHow-To-Repeat: cd /usr/share/examples/kld/syscall/module/\ngcc -c syscall.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1215865,
+ "bug_id": 263893,
+ "attachment_id": 0,
+ "creation_time": "2022-06-15T07:11:09Z",
+ "creator": "zirias@freebsd.org",
+ "text": "I'll give some more context explaining why it's important to get this fix in the -RELEASE versions.\n\nBackground is that pam_unix.so requires the caller to have root privileges for authentication. LinuxPAM's pam_unix.so contains a workaround specifically for authenticating as yourself, by calling its own suid-root helper. Screen lockers start taking that for granted (so far xscreensaver and kscreenlocker from KDE plasma).\n\nAdding the same kind of workaround to FreeBSD's pam_unix.so was rejected by des@ and others, with des@ specifically recommending to use pam_exec.so instead.\n\nThe clean and correct solution might be some authentication service that could be used by pam_unix.so instead of accessing the passwd database directly, but this is a complex thing to do, it's certainly off the table for a timely solution.\n\nSo, calling a helper with pam_exec.so is the unintrusive way to have a workaround similar to LinuxPAM and make these screenlockers \"just work\" (given a correctly configured PAM service policy is installed for them). A pam_exec.so that might crash when used for authentication blocks that solution.\n\nThe only other option remaining would be to patch in support for external suid-root helpers in the affected screen lockers. That's not sustainable in the longer run, IMHO we shouldn't even start doing that..."
+}

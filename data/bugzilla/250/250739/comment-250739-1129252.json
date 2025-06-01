@@ -1,0 +1,8 @@
+{
+ "id": 1129252,
+ "bug_id": 250739,
+ "attachment_id": 0,
+ "creation_time": "2020-10-30T12:24:42Z",
+ "creator": "amdmi3@FreeBSD.org",
+ "text": "\u003e Replacing files/patch-CMakeLists.txt with USES=localbase:ldflags fixes the build.\n\nThis doesn't seem like the correct solution\n\nFirst, it degrades from the CMake's wonderful way of linking with precise library paths instead of bugprone -L/-l scheme back to the latter, and ignores all CMake machinery of correct opengl library detection, this is absolutely not acceptable.\n\nYou haven't provided any info on what glvnd is and how it is expected to work, but I've got some understanding from code and documentation of CMake's FindOpenGL.cmake (which has all the machinery for glvnd support), and it looks like the CMakeLists.txt patch in widelands should instead be fixed like this\n\n-+  link_libraries(${OpenGL_GL_LIBRARY})\n++  link_libraries(${OPENGL_opengl_LIBRARY})\n\n(which should work for glvnd), or even better (which should work for both cases),\n\n-+  link_libraries(${OpenGL_GL_LIBRARY})\n++  link_libraries(OpenGL::GL)\n\nI've just confirmed that the latter change works fine with the current mesa, so feel free to commit it along with adding glvnd support if it also works for you, or if that's confirmed I can commit it right away.\n\nNote that linking with -lGL is not correct in either case, as it ignores glnvd completely. Also note that similar change of linking with OpenGL::GL may be needed for other CMake using ports, either to fix build or to use glvnd correctly."
+}

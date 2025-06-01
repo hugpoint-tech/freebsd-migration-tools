@@ -1,0 +1,8 @@
+{
+ "id": 1157652,
+ "bug_id": 255309,
+ "attachment_id": 224335,
+ "creation_time": "2021-04-21T17:23:16Z",
+ "creator": "brian90013@gmail.com",
+ "text": "Created attachment 224335\npatch to properly support rss option\n\nHello,\n\nI am testing the Intel E810 NIC using the ice driver on both FreeBSD-12.2 and FreeBSD-13.0. During testing, I enabled the RSS kernel configuration option so the driver would use the system-wide standard RSS key instead of the custom ice key. I was surprised to see even after rebooting, the driver was still using the ice key.\n\nMy debugging led me to ice_lib.h where ice_rss.h is included. However, I don't believe there is a prior include of ice_opts.h, so when ice_rss.h is parsed, RSS is not defined causing ice-specific definitions to be used. I added ice_opts.h to the include list above ice_rss.h and re-compiled.\n\nI hit a second problem within ice_rss.h where ICE_DEFAULT_RSS_HASH_CONFIG is only defined inside the !RSS block. I believe this is an oversight, probably hidden by the previous bug. That variable is used in ice_lib.c so it cannot depend on the state of the RSS option. Therefore, I moved the definition outside of the RSS/!RSS blocks.\n\nWith these two changes, in the included patch file, I observed the ice driver using RSS settings from the kernel, not ice-specific values. Looking at the FreeBSD-13.0 and HEAD branches, it looks like the same problems are present."
+}

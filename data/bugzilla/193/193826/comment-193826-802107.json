@@ -1,0 +1,8 @@
+{
+ "id": 802107,
+ "bug_id": 193826,
+ "attachment_id": 0,
+ "creation_time": "2014-12-23T01:23:57Z",
+ "creator": "adrian@freebsd.org",
+ "text": "ok, this is a different bug. It seems like you hit an interesting corner case:\n\n* the vap was scanning;\n* you hit a firmware crash;\n* the min dwell time was met - so the interface should've moved onto the next scan;\n* .. but since the firmware crashed, ieee80211_scan_next() would never be called as it didn't know it was supposed to be scanning.\n\nSo you would've just kept receiving that beacon over and over again; but if_iwn would've never called ieee80211_scan_next().\n\nIt's odd that the net80211 stack with all of the work I did over the weekend still got stuck without finishing a scan. It should've moved onto the next channel. Odd.\n\nSo, there's two issues:\n\n* iee80211_scan_next() shouldn't be a requirement to move to the next channel - the whole scan framework should just sleep for a while, fire off a timer and then move channels;\n* then the iwn driver restarted OK but it didn't restart the firmware scan or tell net80211 that it was over so it could move to the next channel."
+}

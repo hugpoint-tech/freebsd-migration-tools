@@ -1,0 +1,8 @@
+{
+ "id": 913757,
+ "bug_id": 202420,
+ "attachment_id": 0,
+ "creation_time": "2016-12-27T23:35:27Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "It looks like this situation occurs only with manually added swap devices (including swap files) and not with swap devices added by /etc/rc.d/swap and /etc/rc.d/swaplate, since no writable filesystems are available when /etc/rc.d/swap runs and /etc/rc.d/swaplate removes any \"late\" devices it added when the system is shut down.\n\nNote that swapoff -a looks at /etc/fstab, not at the currently active swap devices (as would be shown by swapinfo).\n\nIf additional logic is desired to turn off (some of the) active swap devices, it should probably be in init(8) (and reboot(8)) or in the kernel, so it executes after all other processes have terminated and the resulting I/O is minimized. It might be useful to non-forcibly unmount tmpfs (or all) mounts first.\n\nThe actual panic with the usual information may be interesting as well. Normally, a failure to read from swap causes the affected process(es) to crash with SIGBUS (but things might be different for pageable kernel memory such as pipe buffers and execve arguments, or if a process has been swapped out and the kernel stack cannot be read back from swap)."
+}

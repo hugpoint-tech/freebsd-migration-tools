@@ -1,0 +1,8 @@
+{
+ "id": 994421,
+ "bug_id": 225128,
+ "attachment_id": 0,
+ "creation_time": "2018-05-28T17:38:21Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Antoine Brodin from comment #23)\nI partially diagnosed the issue with nntpcache (which also seems to occur on amd64). The issue is around the _end symbol, which marks the end of the .bss section. When libc.so is linked with GNU ld, the _end symbol's section index is SHN_ABS (i.e., the symbol value is not affected by relocations). When it's linked with lld, _end's section index is that of .bss. When linking an executable against an lld-linked libc.so, GNU ld does not include _end in the executable's dynamic symbol table. The crash then occurs because the executable uses sbrk(3), curbrk is initialized to \u0026_end, and because the executable does not export _end, libc initializes curbrk to the address of its own internal _end symbol, which is wrong. The problem occurs when linking an executable with ld from binutils 2.30 as well.\n\nI hacked lld to emit _end with a shndx of SHN_ABS, and when using a libc compiled with that hack I can compile news/nntpcache. I have not been able to reproduce the other build failures so far.\n\nI'm having trouble figuring out why GNU ld refuses to emit _end in this scenario. _end is synthesized using the system linker scripts, and I haven't been able to figure out exactly what logic is causing it to be excluded. It seems incorrect that GNU ld using SHN_ABS this way in the first place: obviously the value of _end is going to be modified by a relocation when libc.so is loaded."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1149805,
+ "bug_id": 253992,
+ "attachment_id": 0,
+ "creation_time": "2021-03-03T19:11:03Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Right, UMA has defaulted to the FIRSTTOUCH policy since https://reviews.freebsd.org/D22831 .  Indeed, the policy is kind of questionable.  It is strict first-touch, i.e., always returns local memory.  First-touch policies implemented using domainsets do not have this property unless explicitly requested, so if you allocate a page with e.g., DOMAINSET_PREF(0), we will return memory from other domains if necessary to avoid sleeping.\n\nI am not sure why FIRSTTOUCH has this strict implementation.  Originally it was used for bucket zones, which are always NOWAIT.  And until recently UMA did not have special handling for cross-domain frees.\n\nWe could consider adding a new (default) policy which is not strict.  It is likely necessary for ZFS to work well on NUMA systems, since its buffer cache memory is allocated from UMA.  That is a larger problem though.  In this case though the pressure is apparently caused by a kernel memory leak."
+}

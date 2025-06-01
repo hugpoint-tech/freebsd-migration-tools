@@ -1,0 +1,8 @@
+{
+ "id": 829979,
+ "bug_id": 200210,
+ "attachment_id": 0,
+ "creation_time": "2015-07-01T21:22:06Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kp\nDate: Wed Jul  1 21:21:15 UTC 2015\nNew revision: 285016\nURL: https://svnweb.freebsd.org/changeset/base/285016\n\nLog:\n  MFC r284348: Fix panic when adding vtnet interfaces to a bridge\n\n  vtnet interfaces are always in promiscuous mode (at least if the\n  VIRTIO_NET_F_CTRL_RX feature is not negotiated with the host).  if_promisc() on\n  a vtnet interface returned ENOTSUP although it has IFF_PROMISC set. This\n  confused the bridge code. Instead we now accept all enable/disable promiscuous\n  commands (and always keep IFF_PROMISC set).\n\n  There are also two issues with the if_bridge error handling.\n\n  If if_promisc() fails it uses bridge_delete_member() to clean up. This tries to\n  disable promiscuous mode on the interface. That runs into an assert, because\n  promiscuous mode was never set in the first place. (That's the panic reported in\n  PR 200210.)\n  We can only unset promiscuous mode if the interface actually is promiscuous.\n  This goes against the reference counting done by if_promisc(), but only the\n  first/last if_promic() calls can actually fail, so this is safe.\n\n  A second issue is a double free of bif. It's already freed by\n  bridge_delete_member().\n\n  PR:         200210\n\nChanges:\n_U  stable/10/\n  stable/10/sys/dev/virtio/network/if_vtnet.c\n  stable/10/sys/net/if_bridge.c"
+}

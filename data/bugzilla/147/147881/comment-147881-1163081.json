@@ -1,0 +1,8 @@
+{
+ "id": 1163081,
+ "bug_id": 147881,
+ "attachment_id": 0,
+ "creation_time": "2021-05-25T16:05:56Z",
+ "creator": "dave@daveg.ca",
+ "text": "Before ZFS, sharing filesystems was rare and special.  Before ZFS, you generally wouldn't have a filesystem per user or a filesystem per jail.\n\nSo the current \"idea\" (it's really more idea than method --- or if it's a method, it's a horribly flawed one) in ZFS is to have an attribute per filesystem that controls the share --- which is then implemented by collecting all the attributes into a file (for compatibility).  This is almost required by ZFS.\n\nThe alternative I see is to share a tree of filesystems as a unit --- I have no idea if ZFS inodes could be trivially be combined into one NFS share --- that would be the barrier to this idea --- and understand that I'm not suggesting it --- I'm just exploring the head-space of shares being rare and special again.\n\nMaybe the answer is to have the sharenfs specify an include file for exports (or some future format)?  One in which $PATH is replaced (maybe a few other substitution opportunities --- maybe even using other sharenfs attributes).  Example:\n\n/home's sharenfs=\"/usr/local/etc/shares.d/sharehome\"\n/home's sharenfs_FOO=\"nobody\"\n\n/usr/local/etc/shares.d/sharehome:\n\nPATH -maproot=FOO -network 192.168.0.0/24\nPATH -maproot=FOO -network 2525:2525:1:2:3::/64\n\nand this is injected into /etc/exports (assuming /home/dgilbert exists and inherits):\n\n/home -maproot=nobody -network 192.168.0.0/24\n/home -maproot=nobody -network 2525:2525:1:2:3::/64\n/home/dgilbert -maproot=nobody -network 192.168.0.0/24\n/home/dgilbert -maproot=nobody -network 2525:2525:1:2:3::/64\n\nequally, sharenfs could just specify a label... but y'all get the point."
+}

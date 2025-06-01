@@ -1,0 +1,8 @@
+{
+ "id": 611622,
+ "bug_id": 157239,
+ "attachment_id": 0,
+ "creation_time": "2011-06-04T13:37:56Z",
+ "creator": "mk@neon1.net",
+ "text": "I've been able to reproduce this on a FreeBSD 9.0-CURRENT snapshot dated May 12 as well, but the behavior is a bit different compared to 8.2 with respect to direction and one_pass setting:\r\n\r\nFreeBSD 8.2:\r\n- dummynet on input,  one_pass=0: OK\r\n- dummynet on input,  one_pass=1: broken\r\n- dummynet on output, one_pass=0: broken\r\n- dummynet on output, one_pass=1: broken\r\n\r\nFreeBSD 9:\r\n- dummynet on input,  one_pass=0: OK\r\n- dummynet on input,  one_pass=1: broken\r\n- dummynet on output, one_pass=0: broken\r\n- dummynet on output, one_pass=1: OK\r\n\r\nAlso, I believe I've found the cause: ipfw/dummynet code uses SET_HOST_IPLEN on IPv6 packets in two instances, thus inadvertently swapping the next header and hop limit fields in the IPv6 header, causing the \"Unknown Extension Header\" warnings and dropped packets (or bad packets appearing on the wire if net.inet6.ip6.fw.deny_unknown_exthdrs=0).\r\n\r\nA patch against 8.2-RELEASE that fixes this issue for me is attached - Jan, could you please verify if this fixes the issue for you too?\r\n\r\n- Manuel"
+}

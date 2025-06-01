@@ -1,0 +1,8 @@
+{
+ "id": 954509,
+ "bug_id": 222807,
+ "attachment_id": 0,
+ "creation_time": "2017-10-06T01:24:51Z",
+ "creator": "badfilemagic@gmail.com",
+ "text": "(In reply to Conrad Meyer from comment #3)\n\nThe core of the problem with the pure sources was, in random_harvest_queue and random_harvest_direct, the value hc_source_mask is checked to see whether the source bit is set. If it isn't, the functions bail out before they actually either add an entry to the harvest ring buffer (in the case of random_harvest_queue) or feed into ra_process_event (ie, random_fortuna_process_event).\n\nThus, entropy is being harvested, by virtue of the fact that sources push, rather than having /dev/random pull from them. However, the results of the push were not being mixed in.\n\nAdditionally, there was no way via sysctl or any other means to set the bit for the source.\n\nWe have added code which will ensure the bit gets set on register for sources which do register as entropy sources (which is really just RDRND and VIA Padlock), however many pure sources, such as RANDOM_PURE_BROADCOM, which is the source for the trng in Raspberry Pi devices, don't register. They use random_harvest_queue.\n\nThe point of the patch is to correct that. Additionally, it allows showing the value in sysctl. For sources other than RDRND and VIA, there isn't an additional way beyond the mask to see whether the source is actually turned on or not, since they don't register.  The patch corrects the behavior and allows the operator to ensure that it is set."
+}

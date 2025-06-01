@@ -1,0 +1,8 @@
+{
+ "id": 956732,
+ "bug_id": 222126,
+ "attachment_id": 0,
+ "creation_time": "2017-10-22T20:05:13Z",
+ "creator": "kp@freebsd.org",
+ "text": "I do not understand this at all. There is no reason for the purge thread to get stuck. There's also no reason for it apparently having run 7 times between freezing and when you restart the dtrace. (That's based on the purge_idx value logged by the expired_states probe. 23544 - 21255 == 327 * 7.\n\n(Please just don't stop it at all while you're performing the workaround. There's no reason for it, and stopping it runs the risk of missing interesting information).\n\nIt still looks like we just don't wake up from the sx_sleep(pf_purge_thread, \u0026pf_end_lock, ...) call, but that makes no sense. The only way for that to happen is if someone would be holding the pf_end_lock, but that lock is only taken when the pf module is unloaded (and by the purge thread, obviously).\n\nDo you see other strange behaviour on the system? If there's something wrong with the sleep/lock infrastructure I'd expect to see other strange things."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 918954,
+ "bug_id": 216446,
+ "attachment_id": 0,
+ "creation_time": "2017-01-28T16:23:31Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "I can reproduce it here.  It looks like xDocumentProperties (a member of SfxClassificationHelper::Impl) is simply not initialized properly:\n\n(gdb) print m_xDocumentProperties._pInterface\n$17 = (com::sun::star::uno::XInterface *) 0x800abed48 \u003caImplEmpty_rtl_uString\u003e\n\nE.g. it is a reference to some common \"empty string\" instance, while it looks like it is supposed to be of type css::uno::Reference\u003c css::document::XDocumentProperties \u003e instead.\n\nIt is initialized in SwEditShell::SetClassification() like this:\n\nvoid SwEditShell::SetClassification(const OUString\u0026 rName, SfxClassificationPolicyType eType)\n{\n    SwDocShell* pDocShell = GetDoc()-\u003eGetDocShell();\n    if (!pDocShell)\n        return;\n\n    SfxClassificationHelper aHelper(pDocShell-\u003egetDocProperties());\n\nSo for some reason, pDocShell-\u003egetDocProperties() is returning this \"empty string\" value.\n\nI'm putting office@ on CC, maybe somebody who knows LibreOffice has an idea what is going wrong here?  My assumption is that pDocShell is not initialized properly yet, or some initialization order fiasco is going on."
+}

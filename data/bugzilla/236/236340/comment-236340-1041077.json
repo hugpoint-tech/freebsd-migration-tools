@@ -1,0 +1,8 @@
+{
+ "id": 1041077,
+ "bug_id": 236340,
+ "attachment_id": 0,
+ "creation_time": "2019-03-06T23:07:50Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Currently when you open a fuse-backed file with O_APPEND, the kernel hides the O_APPEND flag from the fuse filesystem and computes write offsets in fuse_write_directbackend.  However, that behavior doesn't work for networked fuse filesystems.  The problem is that two clients both writing to the same file with O_APPEND wouldn't cooperate to update the file size.  Or to put it another way, implementing O_APPEND in-kernel requires cacheing the file size attribute, and cacheing attributes is not generally allowed for networked file systems.\n\nThe libfuse documentation makes it explicit that filesystems must handle the O_APPEND flag as of protocol 7.23.  Implicitly, filesystems should handle it on older protocols as well.\n\nThere are two possible approaches we could take:\n1) Pass O_APPEND to FUSE_OPEN and set the offset of all FUSE_WRITE operations to 0\n2) Pass O_APPEND to FUSE_OPEN but still compute the offset of all FUSE_WRITE operations as we do currently, expecting that compliant fuse filesystems will ignore it.\n\nI don't know how many fuse filesystems correctly handle O_APPEND, but I bet it's less than all of them."
+}

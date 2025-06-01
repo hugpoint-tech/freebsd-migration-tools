@@ -1,0 +1,8 @@
+{
+ "id": 567880,
+ "bug_id": 148605,
+ "attachment_id": 0,
+ "creation_time": "2010-07-14T21:30:02Z",
+ "creator": "jhein@symmetricom.com",
+ "text": "\nThis is a followon for ports/117128.  The fix there doesn't work\non boot when the rc.d/racoon script is sourced in /etc/rc.\n\nThe reason is that on 4.x startup scripts were executed on boot.\nIn 5.x and later in run_rc_script in /etc/rc.subr, it is sourced\non boot.\n\nThis was not detected on my 4.x-based appliance until we updated\nFreeBSD (to something newer than 4.x) recently.\n\nAs a result the racoon_create_dirs=NO in rc.d/racoon is not overridden\nby a 'yes' setting in rc.conf (because _rc_conf_loaded is true and\nthus load_rc_config doesn't override the NO).\n\nAlso (a second problem with rc.d/racoon on 5.x+), on boot rc.d scripts\nare normally invoked with faststart instead of start, so the test at\nthe end fails, too.\n\nFix: 1) Don't set racoon_create_dirs=NO if it's already set.\n2) Create directories on 'faststart' as well as 'start'.\nHow-To-Repeat: \n- install ipsec-tools\n\n- rm -rf /var/db/racoon   (or have /var on an mfs)\n\n- add to /etc/rc.conf:\n racoon_enable=yes\n racoon_create_dirs=yes\n rc_debug=yes\n\n- reboot\n\nObserve that you get ...\n\n/usr/local/etc/rc.d/racoon: WARNING: /var/db/racoon is not a directory.\n\n... and racoon does not start."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 707240,
+ "bug_id": 176989,
+ "attachment_id": 0,
+ "creation_time": "2013-04-25T04:25:35Z",
+ "creator": "chris.dukes.aix@gmail.com",
+ "text": "I meant for this to go to the bug report when I replied to dinoex.\n----\nIt looks like gnu89 is being defined /usr/ports/Mk's\nbsd.gnome.mk:813:USE_CSTD=    gnu89\n\nThat then leaks to CFLAGS at\nbsd.port.mk:2222\nbsd.gnome.mk:811:# Set USE_CSTD for all ports that depend on glib12\nbsd.gnome.mk:813:USE_CSTD=    gnu89\nbsd.port.mk:321:# USE_CSTD        - Override the default C language \nstandard (gnu89, gnu99)\nbsd.port.mk:2221:.if defined(USE_CSTD)\nbsd.port.mk:2222:CFLAGS:=    ${CFLAGS:N-std=*} -std=${USE_CSTD}\n\nAt which point the following from configure infects things with the bad \nflag\nconfigure:21588:                        LUA_INCLUDES=\"$LUA_CFLAGS \n\"`$PKGCONFIG --cflags lua$l`\nconfigure:21594:                   LUA_INCLUDES=\"$LUA_CFLAGS \n\"`$PKGCONFIG --cflags lualib$l`\nconfigure.ac:881:                        LUA_INCLUDES=\"$LUA_CFLAGS \n\"`$PKGCONFIG --cflags lua$l`\nconfigure.ac:887:                   LUA_INCLUDES=\"$LUA_CFLAGS \n\"`$PKGCONFIG --cflags lualib$l`\n\nA patch against configure.ac and autoconf/automake invocation within the \ndirectory should do the right thing, but I don't remember the right way \nto do that.\n\nIt looks to be equally broken on Ubuntu 12.10, so I suspect an email to \nthe upstream maintainer is in order.\n----\nThe proper invocation of $PKGCONFIG for this purpose would be \n--clfags-only-I which should prevent the injection of '-std=gnu89' to \nclang++."
+}

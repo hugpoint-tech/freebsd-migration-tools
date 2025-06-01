@@ -1,0 +1,8 @@
+{
+ "id": 569320,
+ "bug_id": 148859,
+ "attachment_id": 0,
+ "creation_time": "2010-07-23T10:00:13Z",
+ "creator": "ganael.laplanche@martymac.com",
+ "text": "The Alpine port always remove its configuration file on uninstall, making port upgrades leading to unconditionnaly loosing a previously modified configuration.\n\nThis problem occurs because Alpine uses the -conf option to dump a \"fresh\" configuration file. Unfortunately, the configuration file generated with this option always includes variables already set in the system-wide Alpine configuration file (/usr/local/etc/alpine.conf). See pith/conf.c :\n\n[...]\n6029 /*------------------------------------------------------------\n6030     Dump out a global pine.conf on the standard output with fresh\n6031     comments.  Preserves variables currently set in SYSTEM_PINERC, if any.\n6032   ----*/\n6033 void\n6034 dump_global_conf(void)\n6035 {\n[...]\n\nThus, any file generated with the -conf option is *stricly* similar to the current /usr/local/etc/alpine.conf file (except for comments), even if variables have been modified. During uninstall, as those files are similar, the /usr/local/etc/alpine.conf is removed.\n\nThe attached patches include a patch already sent upstream to the University of Washington (via http://www.washington.edu/alpine/commentform.html) to allow Alpine to use the -P option together with the -conf one. Specifying an empty file with -P makes Alpine to produce a *really* clean config file which can be used by the port as a .conf.sample file (as it is usually done in the ports tree).\n\nFix: Patch attached with submission follows:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 982324,
+ "bug_id": 226578,
+ "attachment_id": 0,
+ "creation_time": "2018-03-13T17:38:16Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "OK. XPT is locking the periph lock in xpt_async_process_dev sometimes, but not other times. The following only takes out the lock when we're likely to change the flags. It's an OK workaround for the moment, if it works, so we can validate the funky locking done in xpt_async_process_dev() and stylize the test a bit better...\n\n\n\ndiff --git a/sys/cam/scsi/scsi_da.c b/sys/cam/scsi/scsi_da.c\nindex f5be34f96e0..90045ca3e76 100644\n--- a/sys/cam/scsi/scsi_da.c\n+++ b/sys/cam/scsi/scsi_da.c\n@@ -2039,10 +2039,10 @@ daasync(void *callback_arg, u_int32_t code,\n                 * Handle all UNIT ATTENTIONs except our own,\n                 * as they will be handled by daerror().\n                 */\n-               cam_periph_lock(periph);\n                if (xpt_path_periph(ccb-\u003eccb_h.path) != periph \u0026\u0026\n                    scsi_extract_sense_ccb(ccb,\n                     \u0026error_code, \u0026sense_key, \u0026asc, \u0026ascq)) {\n+                       cam_periph_lock(periph);\n                        if (asc == 0x2A \u0026\u0026 ascq == 0x09) {\n                                xpt_print(ccb-\u003eccb_h.path,\n                                    \"Capacity data has changed\\n\");\n@@ -2057,8 +2057,8 @@ daasync(void *callback_arg, u_int32_t code,\n                                softc-\u003eflags \u0026= ~DA_FLAG_PROBED;\n                                dareprobe(periph);\n                        }\n+                       cam_periph_unlock(periph);\n                }\n-               cam_periph_unlock(periph);\n                break;\n        }\n        case AC_SCSI_AEN:"
+}

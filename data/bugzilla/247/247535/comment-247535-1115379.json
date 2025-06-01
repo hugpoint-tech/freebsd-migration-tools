@@ -1,0 +1,8 @@
+{
+ "id": 1115379,
+ "bug_id": 247535,
+ "attachment_id": 0,
+ "creation_time": "2020-07-25T17:26:33Z",
+ "creator": "r.quakkelaar@quaras.nl",
+ "text": "(In reply to Bernard Spil from comment #14)\nHi Bernard,\n\nI've had another look at this but can only compile with USE_GCC=yes.\n\nBut after having looked more closely at file include/my_atomic.h\nit seems better to slightly change the flags in the makefile to:\n\n.if ${ARCH} == i386\nUSE_GCC=\tyes\nCFLAGS+=\t-latomic -DUSE_NEW_READLINE_INTERFACE\n.endif\n\nThe (purely GCC) -fpermissive is NOT needed, ergo there are NO dodgy constructs\nin the code that need looking away from with fingers crossed...\n\nIt is preferable to drop -DHAVE_GCC_C11_ATOMICS and let the normal decision\ntree take its course which favours -DHAVE_SOLARIS_ATOMICS following the excerpt\nfrom include/my_atomic.h\n\n  We choose implementation as follows: on Windows using Visual C++ the native\n  implementation should be preferable. When using gcc we prefer the Solaris\n  implementation before the gcc because of stability preference, we choose gcc\n  builtins if available.\n*/\n\n#if defined(_MSC_VER)\n#include \"atomic/generic-msvc.h\"\n#elif defined(HAVE_SOLARIS_ATOMIC)\n#include \"atomic/solaris.h\"\n#elif defined(HAVE_GCC_C11_ATOMICS)\n#include \"atomic/gcc_builtins.h\"\n#endif\n\nAs mentioned, have also tried various combinations with clang 10, but\nwithout success. Perhaps someone knows the equivalent for -latomic in clang?"
+}

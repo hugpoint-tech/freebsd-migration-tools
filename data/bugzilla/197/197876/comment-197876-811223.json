@@ -1,0 +1,8 @@
+{
+ "id": 811223,
+ "bug_id": 197876,
+ "attachment_id": 0,
+ "creation_time": "2015-02-21T09:50:35Z",
+ "creator": "jau@iki.fi",
+ "text": "When I set a 16k sector size for a new GEOM gate provider the existing consumers\nhappily use multiples of 16k when tasting the new provider. The sector size is\nnot reflected in the block size of the new device entry as reported by stat(),\nthough.\nThe new device entry is reported as using 4k blocks by stat().\nIf I ignore the block size value reported by stat() and anyhow use what was set\nwhen the new provider was created, everything works. (dd bs=16384 ...)\n\nThe big problem is that usually programs know nothing more of the true block size\nbut what is reported by stat(). Think of e.g. stdio. Any program using stdio to\naccess a device will end up trying to use a wrong block size.\nWhen the user space application (think of e.g. fstyp) tries to use wrong block\nsize to read or write the new device, the request never gets all the way to\nGEOM gate.\nSomething higher up in the chain notices that the block size used by the program\ndoes not match the sector size of the underlying GEOM provider and responds with\nEINVAL to the program.\n\nFor the time being I do not know how and where the device entry gets the faulty\nblock size."
+}

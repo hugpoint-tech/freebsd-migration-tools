@@ -1,0 +1,8 @@
+{
+ "id": 963481,
+ "bug_id": 224250,
+ "attachment_id": 188806,
+ "creation_time": "2017-12-13T21:59:41Z",
+ "creator": "scottl@FreeBSD.org",
+ "text": "Comment on attachment 188806\nC snippet\n\nThe assertion is here:\n\nVirtualBox-4.3.22/src/VBox/Devices/Storage/DevATA.cpp:5293\n                if (s-\u003euTxDir == PDMBLOCKTXDIR_FROM_DEVICE)\n                    AssertRelease(bm-\u003eu8Cmd \u0026 BM_CMD_WRITE);\n\nI'm a bit confused, I believe that the ATA driver sets this bit here:\n\nsrc/sys/dev/ata/ata_all.c\n                if ((ccb-\u003eccb_h.flags \u0026 CAM_DIR_MASK) == CAM_DIR_IN)\n                        request-\u003eflags |= ATA_R_READ;\nand\nsrc/sys/dev/ata/ata_pci.c\n    ATA_IDX_OUTB(ch, ATA_BMCMD_PORT,\n                 (ATA_IDX_INB(ch, ATA_BMCMD_PORT) \u0026 ~ATA_BMCMD_WRITE_READ) |\n                 ((request-\u003eflags \u0026 ATA_R_READ) ? ATA_BMCMD_WRITE_READ : 0)|\n                 ATA_BMCMD_START_STOP);\n\nMaybe this isn't going through ata_pci_dmastart(), or maybe the flags are getting cleared/not copied correctly prior?  I don't have time to look into it further today."
+}

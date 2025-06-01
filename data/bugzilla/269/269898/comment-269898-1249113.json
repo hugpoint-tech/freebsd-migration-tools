@@ -1,0 +1,8 @@
+{
+ "id": 1249113,
+ "bug_id": 269898,
+ "attachment_id": 240508,
+ "creation_time": "2023-03-01T16:03:40Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 240508\nsend an 802.11 mesh packet that causes a panic: no route in mesh_recv_indiv_data_to_fwrd()\n\nIf an 802.11 mesh data packet to be forwarded has addr4/meshSA set to\nff:ff:ff:ff:ff:ff, an INVARIANTS kernel will panic in\nmesh_recv_indiv_data_to_fwrd():\n\n        /* set lifetime of addr4 (meshSA) to initial value */\n        rt_meshsa = ieee80211_mesh_rt_find(vap, qwh-\u003ei_addr4);\n        KASSERT(rt_meshsa != NULL, (\"no route\"));\n\nThe corresponding KASSERT in mesh_recv_indiv_data_to_me() can also be\ntriggered by an incoming packet. These turn into NULL dereferences in\nnon-INVARIANTS kernels.\n\nI've attached a demo, which depends on the wtap kernel module\nand the wtap and vis_map utilities:\n\n# cc wtap30b.c\n# ./a.out\npanic: no route\npanic() at panic+0x2a\nmesh_recv_indiv_data_to_fwrd() at mesh_recv_indiv_data_to_fwrd+0x146\nmesh_input() at mesh_input+0x6d4\n.LBB2_17() at .LBB2_17+0x34\ntaskqueue_run_locked() at taskqueue_run_locked+0x96\ntaskqueue_thread_loop() at taskqueue_thread_loop+0x62\nfork_exit() at fork_exit+0x80\nfork_trampoline() at fork_trampoline+0xa"
+}

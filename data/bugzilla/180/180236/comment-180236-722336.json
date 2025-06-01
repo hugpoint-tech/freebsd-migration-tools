@@ -1,0 +1,8 @@
+{
+ "id": 722336,
+ "bug_id": 180236,
+ "attachment_id": 0,
+ "creation_time": "2013-07-04T00:58:13Z",
+ "creator": "smh@FreeBSD.org",
+ "text": "Looks like nullfs isn't cleaning up correctly in the case\nwhere a rename colides with an existing file hence results\nin an implicit remove.\n\nThis can be seen in the zdb output for the volume in that\nbefore the unmount all the plain file entries still exist\nbut after the unmount of nullfs they are gone.\n\nIn addition to this there may be an issue with the ZFS\ndelete queue as, while after unmounting the nullfs the\nfile entries do disappear the size of the delete queue\ndoesn't seem to clear down properly.\n\nDataset testpool/nullfs [ZPL], ID 40, cr_txg 19, 2.41M, 7 objects\n\n    ZIL header: claim_txg 0, claim_blk_seq 0, claim_lr_seq 0 replay_seq 0, flags 0x0\n\n    Object  lvl   iblk   dblk  dsize  lsize   %full  type\n         0    7    16K    16K  15.0K  32.0M    0.01  DMU dnode\n        -1    1    16K    512     1K    512  100.00  ZFS user/group used\n        -2    1    16K    512     1K    512  100.00  ZFS user/group used\n         1    1    16K     1K     1K     1K  100.00  ZFS master node\n         2    1    16K    512     1K    512  100.00  SA master node\n         3    3    16K    16K  2.38M  7.45M  100.00  ZFS delete queue\n         4    1    16K    512     1K    512  100.00  ZFS directory\n         5    1    16K  1.50K     1K  1.50K  100.00  SA attr registration\n         6    1    16K    16K  7.00K    32K  100.00  SA attr layouts\n         7    1    16K    512     1K    512  100.00  ZFS directory\n\nThis is an area I'm not familiar with yet, so it may be\nthis is expected but it should be checked.\n\n    Regards\n    Steve"
+}

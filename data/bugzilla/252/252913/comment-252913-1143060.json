@@ -1,0 +1,8 @@
+{
+ "id": 1143060,
+ "bug_id": 252913,
+ "attachment_id": 0,
+ "creation_time": "2021-01-23T02:04:21Z",
+ "creator": "iron.udjin@gmail.com",
+ "text": "(In reply to Michael Tuexen from comment #3)\nYou were right. Mbufs leaks caused by using RACK (please rename bug if it's possible)\n\nI have written simple script which show statistic about TCP connections/states and calculates mbuf diff each 10 sec.\n\n#!/usr/local/bin/bash\nOLD=\"0\"\nwhile sleep 10; do\nMBUF=`vmstat -z | grep 'mbuf:' | awk -F\\, '{print $3}' | awk '{print $1}'`\necho -n `date \"+%H:%M:%S\"`: `expr $MBUF - $OLD` mbufs: $MBUF \"| \"\nnetstat -a -n -ptcp | awk '{print $6}' | sort | uniq -c | egrep -v '^   1 $|been|Foreign' | awk '{print $2\": \"$1\" | \"}' | tr -d '\\n'\necho\nOLD=$MBUF\ndone\n\nIn attachments you'll find 4 files with script output:\nno_options.txt - kernel built without the options\nenabled_options.txt - kernel build with options but no RACK enabled\nrack_enabled.txt - when I manualy loaded tcp_rack module and set sysctl net.inet.tcp.functions_default=rack\nrack_enabled_and_restarted.txt - when module set in loader.conf and sysctl net.inet.tcp.functions_default=rack... so all connections used RACK.\n\n\"sockstat -sSPtcp\" contains private data of my server IPs and visitors. I can't share it publicly. I'll send it to your email in two files:\nsockstat.txt - when I enabled rack via sysctl and it used partially.\nsockstat_restart.txt - with restart and RACK enabled in boot time - all connections use RACK.\n\nP.S: at night there is low traffic on the site. In day time with big amount of visitors mbuf leaks 1000/s."
+}

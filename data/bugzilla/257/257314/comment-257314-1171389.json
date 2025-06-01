@@ -1,0 +1,8 @@
+{
+ "id": 1171389,
+ "bug_id": 257314,
+ "attachment_id": 0,
+ "creation_time": "2021-07-22T07:58:08Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Graham Perrin from comment #5)\n\nJust for context . . .\n\nFolks trying buildworld buildkernel on small armv7\nand aarch64 boards with only, say, 1 GiBytes or 2\nGiBytes of RAM, tend to see such kills from long\nrunning, compute/memory-bound llvm compiles and links,\neven when configured with RAM+swap being sufficient\nso that swap does not run out.\n\nThe classic solution for such folks has been the\nuse of something like:\n\nvm.pageout_oom_seq=120\nvm.pfault_oom_attempts=-1\n\nI build my own kernels, with sufficient messaging\nadded to indicate which of the 4 conditions initiated\nthe kill:\n\nSustained low free RAM (via 1 or more stays-runnable processes).\nA sufficiently delayed pageout.\nThe swap blk uma zone was exhausted.\nThe swap pctrie uma zone was exhausted.\n\n(Those are not the messages themselves, just the\nsummaries.)\n\nI do that on everything from small arm boards to\na ThreadRipper 1950X that I have access to. If I\nend up with such a kill, I want to know which\ncondition lead to it in order to figure out what\nto do in the future. I, of course, also check on\nif \"swap_pager: out of swap space\" or\n\"swp_pager_getswapspace(. . .): failed\" messages\nalso happened.\n\nSo far as I know, actually running out of swap space\nand getting the kills involves at least one of the 4\nconditions as well: there is no separate condition\nfor out of swap space that initiates a kill in what I\nfound in the kernel.\n\nHopefully these sorts of notes are of some use to\nMichael in getting control of the problem."
+}

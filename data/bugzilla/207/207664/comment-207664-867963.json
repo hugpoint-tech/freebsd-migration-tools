@@ -1,0 +1,8 @@
+{
+ "id": 867963,
+ "bug_id": 207664,
+ "attachment_id": 167660,
+ "creation_time": "2016-03-03T00:21:32Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 167660\nv1\n\nnet-p2p/transmission-* ports gained WOLFSSL option but it requires security/wolfssl built with --enable-arc4. wolfssl API seems to be inconsistent with its ABI.\n\n  $ make WITH=WOLFSSL WITHOUT=OPENSSL TRYBROKEN= net-p2p/transmission-cli\n  [...]\n  libtransmission/libtransmission.a(crypto-utils-cyassl.o): In function `tr_rc4_set_key':\n  libtransmission/crypto-utils-cyassl.c:176: undefined reference to `wc_Arc4SetKey'\n  libtransmission/libtransmission.a(crypto-utils-cyassl.o): In function `tr_rc4_process':\n  libtransmission/crypto-utils-cyassl.c:193: undefined reference to `wc_Arc4Process'\n  cc: error: linker command failed with exit code 1 (use -v to see invocation)\n\n  $ nm -D /usr/local/lib/libwolfssl.so | fgrep\n  000000000002a630 T wc_Chacha_Process\n\n  $ fgrep -r Process /usr/local/include\n  /usr/local/include/wolfssl/wolfcrypt/arc4.h:WOLFSSL_API void wc_Arc4Process(Arc4*, byte*, const byte*, word32);\n  /usr/local/include/wolfssl/wolfcrypt/hc128.h:WOLFSSL_API int wc_Hc128_Process(HC128*, byte*, const byte*, word32);\n  /usr/local/include/wolfssl/wolfcrypt/chacha.h:WOLFSSL_API int wc_Chacha_Process(ChaCha* ctx, byte* cipher, const byte* plain,\n  /usr/local/include/wolfssl/wolfcrypt/rabbit.h:WOLFSSL_API int wc_RabbitProcess(Rabbit*, byte*, const byte*, word32);"
+}

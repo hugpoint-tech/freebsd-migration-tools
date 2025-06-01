@@ -1,0 +1,8 @@
+{
+ "id": 1334306,
+ "bug_id": 281020,
+ "attachment_id": 255077,
+ "creation_time": "2024-11-10T18:48:35Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "Created attachment 255077\nImplement the CDIOCREADRAW ioctl for raw CD reads\n\nAfter hours of trying to debug the blksize for my mixed-mode CDs, many of which were wasted by the fact you deceptively cannot just replace /boot/kernel/cam.ko with a newly built version and reboot - CAM is statically linked into the kernel so /boot/kernel/kernel must be replaced instead :-/ - I took another approach.\n\nHow do other operating systems do this?\nWindows: DeviceIoControl() with IOCTL_CDROM_RAW_READ and pointer to struct RAW_READ_INFO. Can read multiple sectors. Uses LBA addressing.\nLinux: ioctl() with CDOMREADRAW, and a pointer to a buffer with one MSF address, whose contents are overwritten with 2352 bytes from the sector with that address.\nmacOS: ioctl() with DKIOCCDREAD, and a pointer to dk_cd_read_t. Can read multiple sectors. Uses LBA addressing.\n\nOnly FreeBSD requires a change of blocksize to 2352 and then read(), which I suspect isn't viable for mixed-mode CDs (logging I added to cdstart() never even gets called when block size is 2352).\n\nSo I implemented a new ioctl() for raw CD reads on FreeBSD: CDIOCREADRAW. Taking a LBA address (actually a byte offset currently, but can be changed easily), a buffer, and buffer length, the ioctl just does a blocking raw read. It doesn't care about blksize, and will read (multiples of) 2352 bytes even when the blksize is 2048.\n\nAnd, with VLC also patched to use it, it works like a charm, all the audio tracks from my mixed-mode CDs are playing, and the data track can be mounted and used at the same time :-).\n\nHere is the patch to add that new ioctl."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 99899,
+ "bug_id": 31649,
+ "attachment_id": 0,
+ "creation_time": "2001-10-31T06:17:11Z",
+ "creator": "edwin@mavetju.org",
+ "text": "Some minor further investigations in libpcap showed that the read()\nfunction in /usr/src/contrib/libpcap/pcap-bpf.c:81 looks like it's\nblocking until the buffer is fully filled:\n\n   if (p-\u003ecc == 0) {\n+    fprintf(stderr,\"pcap_read before read (bufsize: %d bytes)\\n\",p-\u003ebufsize);\n     cc = read(p-\u003efd, (char *)p-\u003ebuffer, p-\u003ebufsize);\n+    fprintf(stderr,\"pcap_read after read (read: %d bytes)\\n\",cc);\n     if (cc \u003c 0) {\n\n\nThis is the effect on a version without -pthread:\n[~/bpf] edwin@friet44\u003e./nw_u \npcap_read entered\npcap_read before read (bufsize: 32768 bytes)\npcap_read after read (read: 244 bytes)\n..pcap_read entered\npcap_read before read (bufsize: 32768 bytes)\npcap_read after read (read: 276 bytes)\n..pcap_read entered\n\nThis is the effect on a version with -pthread:\n[~/bpf] edwin@friet44\u003e./nw\npcap_read entered\npcap_read before read bufsize: (32768 bytes)\npcap_read after read (read: 32232 bytes)\n...........................................................pcap_read entered\npcap_read before read (bufsize: 32768 bytes)\npcap_read after read (read: 32160 bytes)\n.........................................................pcap_read entered\npcap_read before read (bufsize: 32768 bytes)\npcap_read after read (read: 31648 bytes)\n\nI have no idea how to solve this...\n\nEdwin\n\n-- \nEdwin Groothuis   |              Personal website: http://www.MavEtJu.org\nedwin@mavetju.org |           Interested in MUDs? Visit Fatal Dimensions:\n------------------+                       http://www.FatalDimensions.org/"
+}

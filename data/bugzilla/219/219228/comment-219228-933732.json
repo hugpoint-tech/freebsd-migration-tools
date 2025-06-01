@@ -1,0 +1,8 @@
+{
+ "id": 933732,
+ "bug_id": 219228,
+ "attachment_id": 0,
+ "creation_time": "2017-05-12T01:04:35Z",
+ "creator": "parakleta@darkreality.org",
+ "text": "I rummaged a bit more in the code, and I might be on the wrong track, but it looks like `reschedule_signals()` is called whenever the mask is changed (such as when a handler is launched) and if the signal is still pending and in the `block` set then `sigtd()` is picks an arbitrary thread if they are all blocked, and then since the process wants to catch the signal (i.e. `SIGISMEMBER(ps-\u003eps_sigcatch, sig)` this calls `tdsigwakeup()` to force a wakeup of the thread even if it is blocked from receiving the signal.\n\nI think either `sigtd()` should default to the main thread rather than the most recent, or else the `SIGISMEMBER` test should also check `!SIGISMEMBER(td-\u003etd_sigmask, sig)` before calling `tdsigwakeup()`.  Or maybe both of these changes."
+}

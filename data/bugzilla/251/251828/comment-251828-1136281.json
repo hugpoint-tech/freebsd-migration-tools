@@ -1,0 +1,8 @@
+{
+ "id": 1136281,
+ "bug_id": 251828,
+ "attachment_id": 0,
+ "creation_time": "2020-12-13T23:29:17Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "zvols have a \"volmode\" property that controls how their device nodes are created: as geom devices (default), as non-geom character devices, or not at all.  At least, it's supposed to do that.  But on 13-CURRENT, the volmode property gets ignored at creation time.  The device always gets created as the default type instead.\n\nThe easiest way to demonstrate the problem is to use gpart on the device node.  It isn't supposed to work if the node is a non-geom device.  But it does!\n\n# zfs create -o volmode=dev -V 64m testpool/vol\n# gpart create -s gpt /dev/zvol/testpool/vol\nzvol/testpool/vol created\n\nHowever, if we change the volmode property after creation, then ZFS destroys and recreates the device node with the correct volmode.\n\n# zfs create -V 64m testpool/vol\n# zfs set volmode=dev testpool/vol\n# gpart create -s gpt /dev/zvol/testpool/vol\ngpart: arg0 'zvol/testpool/vol': Invalid argument"
+}

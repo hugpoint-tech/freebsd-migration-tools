@@ -1,0 +1,8 @@
+{
+ "id": 1031315,
+ "bug_id": 234846,
+ "attachment_id": 0,
+ "creation_time": "2019-01-11T08:26:42Z",
+ "creator": "alexandre.martins@mc2-technologies.com",
+ "text": "Greetings,\n\nI'm facing some random crash when I'm adding a port into an LACP aggregate.\n\nIn the coredump, I found that the crash is due to a race condition when the interface is added to the aggregate.\n\nThe condition is the following:\n\nThe thread 1 (ifconfig lagg0 laggport em0) is adding an interface to an LACP aggregate. The code enter the function lagg_port_create in the file if_lagg.c.\nThat function \"publish\" an update of the interface with the following code:\n\n/* Change the interface type */\nlp-\u003elp_iftype = ifp-\u003eif_type;\nifp-\u003eif_type = IFT_IEEE8023ADLAG;\nifp-\u003eif_lagg = lp;\nlp-\u003elp_ioctl = ifp-\u003eif_ioctl;\nifp-\u003eif_ioctl = lagg_port_ioctl;\nlp-\u003elp_output = ifp-\u003eif_output;\nifp-\u003eif_output = lagg_port_output;\n\nIn the thread 2, thereafter that publication, a packet come on the interface em0, use the new state of the interface, so lagg_input_p is called. Because the setup of the LACP is not finished (the call to lagg_proto_addport is after the publication), the LACP code uses a NULL pointer and the kernel crashes.\n\nCan I change the code of the lagg_port_create function and put the \"publication\" of the new state of the interface at the end of the function ?\n\nBest regards,\n\nAlexandre"
+}

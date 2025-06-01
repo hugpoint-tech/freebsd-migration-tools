@@ -1,0 +1,8 @@
+{
+ "id": 601936,
+ "bug_id": 155321,
+ "attachment_id": 0,
+ "creation_time": "2011-03-06T20:00:18Z",
+ "creator": "devon.odell@gmail.com",
+ "text": "In debugging a problem with Go calling execve(2), it appears that the actual bug is in the FreeBSD kernel implementation in imgact_shell. Specifically, it is entirely valid for argv[0] to be longer than the length of the path (treated as \"fname\" in this function). We have a workaround in Go, but this should be fixed in the kernel.\n\nFix: Patch attached.\n\nPatch attached with submission follows:\nHow-To-Repeat: Russ Cox wrote a quick to demonstrate the issue:\n\n$ cat execve.c\n#include \u003cunistd.h\u003e\n#include \u003cstdio.h\u003e\n\nint\nmain(int argc, char **argv, char **environ)\n{\n       execve(argv[1], argv+2, environ);\n       perror(\"execve\");\n       return 1;\n}\n$ cat shellscript\n#!/bin/echo\n$ gcc execve.c\n$ cp /bin/ls .\n$ ./a.out ls /bogus/ls\na.out           execve.c        ls              shellscript\n$ ./a.out shellscript asdf\nshellscript\n$ ./a.out shellscript /bogus/shellscript\nshellscript\n$ ./a.out shellscript /bin/echo-shellscript\nshellscript\n$ ./a.out shellscript /bin/echo-shellscript1\nexecve: Argument list too long"
+}

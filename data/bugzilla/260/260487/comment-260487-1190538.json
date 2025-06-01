@@ -1,0 +1,8 @@
+{
+ "id": 1190538,
+ "bug_id": 260487,
+ "attachment_id": 0,
+ "creation_time": "2021-12-17T05:21:04Z",
+ "creator": "sigsys@gmail.com",
+ "text": "sched_getaffinity(3)/sched_setaffinity(3) are documented to use PID 0 to refer to the current process, but the underlying cpuset_getaffinity(2)/cpuset_setaffinity(2) only do so with PID -1.\n\nI noticed FFmpeg library code passing PID 0 to sched_getaffinity().\n\ndiff --git a/lib/libc/gen/sched_getaffinity.c b/lib/libc/gen/sched_getaffinity.c\nindex 5557d3d93b47..7fca53e39b4b 100644\n--- a/lib/libc/gen/sched_getaffinity.c\n+++ b/lib/libc/gen/sched_getaffinity.c\n@@ -32,6 +32,6 @@\n int\n sched_getaffinity(pid_t pid, size_t cpusetsz, cpuset_t *cpuset)\n {\n-\treturn (cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,\n-\t    cpusetsz, cpuset));\n+\treturn (cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,\n+\t    pid == 0 ? -1 : pid, cpusetsz, cpuset));\n }\ndiff --git a/lib/libc/gen/sched_setaffinity.c b/lib/libc/gen/sched_setaffinity.c\nindex ad775b5dbce5..1c083b4b108a 100644\n--- a/lib/libc/gen/sched_setaffinity.c\n+++ b/lib/libc/gen/sched_setaffinity.c\n@@ -32,6 +32,6 @@\n int\n sched_setaffinity(pid_t pid, size_t cpusetsz, const cpuset_t *cpuset)\n {\n-\treturn (cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,\n-\t    cpusetsz, cpuset));\n+\treturn (cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,\n+\t    pid == 0 ? -1 : pid, cpusetsz, cpuset));\n }"
+}

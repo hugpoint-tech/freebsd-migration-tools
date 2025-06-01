@@ -1,0 +1,8 @@
+{
+ "id": 583564,
+ "bug_id": 151635,
+ "attachment_id": 0,
+ "creation_time": "2010-10-22T02:00:21Z",
+ "creator": "ben@b1c1l1.com",
+ "text": "When installing the dns/bind97 port using \"make install\", it creates a set of symlinks in /var/named${PREFIX}/etc:\n\nblee@eclipse ~ $ ls -l /var/named/usr/local/etc \ntotal 0K\nlrwxr-xr-x 1 root wheel 22 Oct 21 17:51 named.conf -\u003e /etc/namedb/named.conf\nlrwxr-xr-x 1 root wheel 20 Oct 21 17:51 rndc.key -\u003e /etc/namedb/rndc.key\n\nHowever, these symlinks are created by the \"post-install\" Makefile target:\n\n.if !defined(WITHOUT_LINKS) \u0026\u0026 !defined(WITH_REPLACE_BASE)\n        ${MKDIR} /var/named${PREFIX}/etc\n.for DIR in ${PREFIX}/etc /var/named${PREFIX}/etc\n.for FILE in named.conf rndc.key\n        ${LN} -sf /etc/namedb/${FILE} ${DIR}/${FILE}\n.endfor\n.endfor\n.endif\n\nTherefore, the symlinks are not created when creating a binary package using \"make package\" and using pkg_add(1).\n\nThe dns/bind97 port should provide a pkg-install file so that these symlinks are also created when using binary packages.\n\nFix: \n\nAdd a pkg-install script to the dns/bind97 port that creates the relevant symlinks.\nHow-To-Repeat: Create a binary package:\n\nmake -C /usr/ports/dns/bind97 package clean\n\nThen use pkg_add(1) to install the binary package."
+}

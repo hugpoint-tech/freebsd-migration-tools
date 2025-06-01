@@ -1,0 +1,8 @@
+{
+ "id": 34183,
+ "bug_id": 11282,
+ "attachment_id": 0,
+ "creation_time": "1999-04-22T19:40:01Z",
+ "creator": "marka@metaip.checkpoint.com",
+ "text": "\n\tin client/dchlient.c during the ack sequence of events, the\n\tlease time is converted from the packet structure to the \n\tnew lease structure by calling getULong() (in convert.c)\n\t\n\tgetULong() takes the string value from the packet passed to it,\n\tand uses memcpy to copy the bytes from the string into a\n\tunsigned long integer.\n\n\tthe unsigned long integer is then passed to ntohl() to get the\n\tcorrect network byte order.  Unfortunately this is a time value\n\tin seconds, not a network number.  The call to ntohl() completely\n\tmangles the intended value of the lease time on freebsd.\n\n\talthough this is the primary problem, either the value from the\n\tmemcpy() (unlikely since all the rest of the network address\n\tcalls of 4 bytes work) or the actual value read from the packet\n\tin packet option[51] is wrong earlier on.  ie the value in ibuf\n\tafter the memcpy in getULong() is not the same as the one being\n\tserved and correctly sent by the server (If i remember right it\n\tseems shifted).\n\nFix: \n\n(partial)\t\n\t- use a straight memcpy in dhcpack() to set\n\t  ip -\u003e client -\u003e new -\u003e expiry instead of calling getULong().\nHow-To-Repeat: \n\t- Use a dhcp server with a known lease time\n\t- compile dhclient\n\t- run dhclient\n\t- observe the lease time from the console output and the lease time\n\t  calculated in /var/db/dhclient.leases"
+}

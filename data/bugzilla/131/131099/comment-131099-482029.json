@@ -1,0 +1,8 @@
+{
+ "id": 482029,
+ "bug_id": 131099,
+ "attachment_id": 0,
+ "creation_time": "2009-01-28T23:50:01Z",
+ "creator": "andikies@gmail.com",
+ "text": "The system call readdir does not return any data if a Linux binary is run.\nThe internally calculated space for returning an entry is\nsizeof(struct dirent *), but it should be sizeof(struct dirent).\nPlease consider applying the attached patch.\n\nFix: Apply attached patch.\n\nPatch attached with submission follows:\nHow-To-Repeat: /*Compile the following program */\n\n/* Compile with -fno-stack-protector if you want to run it as a Linux binary\n * on FreeBSD 7.1\n * Assembly part might be broken if optimization is used.\n*/\n\n#include \u003csys/types.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cdirent.h\u003e\n#include \u003cerrno.h\u003e\n\nint myreaddir( int fd, unsigned char *buf, int c)\n{\n int res;\n__asm__ __volatile__ (\"\\\n mov    $0x59,%%eax \\n\\\n int    $0x80 \\n\"\n : \"=a\" (res)  : \"b\" (fd), \"c\" (buf), \"d\" (c)\n);\n return res;\n}\n\nint main()\n{\n        int fd;\n        int i, j;\n        unsigned char inparr[512];\n        DIR *dipo;\n        int respar;\n\n        dipo=opendir(\".\");\n        for (j=0; j \u003c 10; j++) {\n                memset( inparr, 0x55, sizeof(inparr));\n                respar=myreaddir(dirfd(dipo),inparr, 1);\n                if ( respar == 0 )\n                        break;\n                if ( respar != 1 )\n                        printf(\"respar %d\\n\", respar);\n                for (i=0; i \u003c 25; i++)\n                        printf( \"%02x \", inparr[i]);\n                printf( \"\\n\");\n        }\n}"
+}

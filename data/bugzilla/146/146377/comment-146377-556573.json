@@ -1,0 +1,8 @@
+{
+ "id": 556573,
+ "bug_id": 146377,
+ "attachment_id": 0,
+ "creation_time": "2010-05-07T17:00:10Z",
+ "creator": "john.bayly@tipstrade.net",
+ "text": "When using ppp to create an ADSL connection, the addresses for the tun interface aren't removed when either the connection drops (due to LCP/LQM echoes being lost), or when the connection is closed.\n\nThis means that even though a connection has been dropped, using ifconfig to check the state makes it appear as if a connection is still up.\n\nWhen settings \"set log +all\", I've seen that the ioctl calls to remove the address (SIOCDIFADDR) is never called. Calling \"iface clear\" in ppp.linkdown doesn't work either, as it's executed before the connection has closed so the address cannot be removed.\n\nI've confirmed this from looking at the ppp source: iface_Clear is only called from the following places:\n1). ipcp_SetIPaddress \u0026 ipcp_SetIPv6address\n2). IfaceClearCommand ie. the interactive command \"iface clear\"\n3). bundle_destroy, which is in turn called solely from AbortProgram\n\nWould it make sense to add a call to iface_Clear somewhere in bundle_close? Apologies for the vagueness, but I'm still getting my head around the code here.\n\nHow-To-Repeat: 1). Open ppp in interactive mode\n2). ppp\u003e dial\n3). PPP\u003e iface show\n4). PPP\u003e close\n5). ppp\u003e iface show\n6). ppp\u003e iface clear\n7). ppp\u003e iface show"
+}

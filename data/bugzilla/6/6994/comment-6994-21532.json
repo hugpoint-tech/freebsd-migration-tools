@@ -1,0 +1,8 @@
+{
+ "id": 21532,
+ "bug_id": 6994,
+ "attachment_id": 0,
+ "creation_time": "1998-06-19T12:40:01Z",
+ "creator": "zgabor@zg.CoDe.hu",
+ "text": "\n\tThe netstat(1) manual says:\n\t-s: Show per-protocol statistics.  If this option is repeated,\n\tcounters with a value of zero are supressed.\n\tBut the ipx/atalk version is buggy:\n\t$ netstat -s -s\n\t....\n\tipx:\n\t\tgenerate the whole output, doesn't matter the 0 values\n\tspx:\n\t\tgenerate the whole output, doesn't matter the 0 values\n\t....\n\n\t$ netstat -s\n\t....\n\tddp:\n\t\tdoesn't generate statistics with zero values (as it need\n\t\tnetstat -s -s)\n\t....\n\nFix: \n\nIn ipx.c and atalk.c, change the definitionS(!) of the ANY macro from:\n\n/* atalk.c: */\n#define ANY(x,y,z) \\\n\t((x) ? printf(\"\\t%d %s%s%s\\n\",x,y,plural(x),z) : 0)\n\n/* ipx.c: */\n#define ANY(x,y,z)\t(printf(\"\\t%u %s%s%s\\n\",x,y,plural(x),z))\n\n\tto the next:\n#define ANY(x,y,z) \\\n\tif ( (x) || ( sflag \u003c= 1 ) ) printf(\"\\t%u %s%s%s\\n\",x,y,plural(x),z)\n\n\tBy the way, in inet.c, the statistic-printing routines use the\n\tcorresponding p, p2, and the absolutely unnecessary p3 (it isn't\n\tused in inet.c) macro, and in the format string, there is: %ld.\n\tIn ipx.c, the ANY macro uses %u, and in atalk.c, %d.  I don't know\n\tthe current implementation, but %u (maybe %lu) looks better to me.\n\tAnd maybe it would be better, to use the same printing macros\n\t(defined in only one place, eg. netstat.h) in all of the supported\n\tprotocols statistic-printing routines.\nHow-To-Repeat: \n\tGenerate a kernel with option IPX and option ATALK, and type:\n\tnetstat -s -s, and netstat -s"
+}

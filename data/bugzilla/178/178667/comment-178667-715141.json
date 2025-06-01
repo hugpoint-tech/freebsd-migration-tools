@@ -1,0 +1,8 @@
+{
+ "id": 715141,
+ "bug_id": 178667,
+ "attachment_id": 0,
+ "creation_time": "2013-05-15T19:00:00Z",
+ "creator": "priit@cc.ttu.ee",
+ "text": "in sys/security/mac_lomac/mac_lomac.c:\n\nlomac_vnode_associate_extattr() and lomac_vnode_setlabel_extattr() only copy part of the LOMAC label, ignoring the value of the auxiliary grade.\n\nNote that lomac_vnode_create_extattr(), the third function to access the file extended attributes, does already copy the auxiliary grade if it is present.\n\nThe problem has been reported for 9.1-RELEASE but it has been confirmed to be present in stable/9. The same problem is likely to be present in head (-CURRENT) as the relevant code has not been modified.\n\nFix: Apply the patch. Tested with GENERIC kernel on 9.1-RELEASE and stable/9.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. enable mac_lomac policy in kernel\n2. create a multilabel filesystem (newfs -l -U /dev/somedev)\n3. mount the filesystem and set lomac labels\n   mount /dev/somedev /mnt\n   mkdir /mnt/1\n   setfmac lomac/high\\[low\\] /mnt/1 # aux grade\n   touch /mnt/1/2 # inherits grade from directory\n   touch /mnt/1/3\n   setfmac lomac/high\\[low\\] /mnt/1/3 # set manually\n4. use getextattr -x system mac_lomac /mnt/1 /mnt/1/2 /mnt/1/3\n   (only the file that inherited the grade has aux grade in extattr)\n5. note the labels ls -lZa /mnt/1\n6. umount /mnt; mount /dev/somedev /mnt\n7. note the aux grades are missing with ls -lZa /mnt/1"
+}

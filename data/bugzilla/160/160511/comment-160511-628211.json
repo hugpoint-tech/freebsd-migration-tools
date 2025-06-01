@@ -1,0 +1,8 @@
+{
+ "id": 628211,
+ "bug_id": 160511,
+ "attachment_id": 0,
+ "creation_time": "2011-09-06T13:00:02Z",
+ "creator": "freebsd@chillt.de",
+ "text": "The math/py-graphtool port uses gcc 4.5+ to build. The port builds successfully but the resulting Python modules do not work. Any attempt to import the graph_tools module ends up crashing Python.\n\nI have spent many hours investigating the issue. I am still not sure what exactly causes it but it is a boost::any_cast\u003c\u003e that crashes Python. The following testcase shows that, at least on my AMD64 8.2-STABLE machines, g++4.5 miscompiles boost::any_cast\u003c\u003e:\n\n#include \u003cboost/any.hpp\u003e\n#include \u003ciostream\u003e\n\nint main() {\n  try {\n    double d;\n    int i = boost::any_cast\u003cint\u003e(d);\n  } catch(...) {\n    std::cout \u003c\u003c \"OK\" \u003c\u003c std::endl;\n  }\n}\n\nWhen compiled with system g++, the program's output is \"OK\". When compiled with g++4.5, the output is \"Abort\".\n\nFix: The attached patch makes math/py-graphtool build with system g++. There a lot of warnings but the resulting Python modules actually do work. The change to src/graph/graph_bind.cc is a workaround for http://bugs.python.org/issue10910.\n\nPatch attached with submission follows:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 880995,
+ "bug_id": 209842,
+ "attachment_id": 0,
+ "creation_time": "2016-05-29T20:45:28Z",
+ "creator": "phk@FreeBSD.org",
+ "text": "The backtrace(3) function returns size_t which is unsigned:\n\n     size_t\n     backtrace(void **addrlist, size_t len);\n\nAnd is documentet as returning:\n\n   RETURN VALUES\n     The backtrace() function returns the number of elements that were filled\n     in the backtrace. [...]\n\nThe implementation in contrib/libexecinfo/unwind.c clearly knows that the return value can be all-ones:\n\n        if (ctx.n != (size_t)~0 \u0026\u0026 ctx.n \u003e 0)\n                ctx.arr[--ctx.n] = NULL;        /* Skip frame below __start */\n\n        return ctx.n;\n\nThis happens on a BeagleBoneBlack running\n\n    10.3-STABLE FreeBSD 10.3-STABLE #0 r300092\n\nI am not sure what the proper fix is here, nor for that matter what the problem might be that causes it to return the all-ones value in the first place.\n\nBut at the very least ctx.n should be slammed to zero before returning it, so the code calling backtrace(3) doesn't run off the end of the world."
+}

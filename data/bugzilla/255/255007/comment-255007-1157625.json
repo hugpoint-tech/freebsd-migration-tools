@@ -1,0 +1,8 @@
+{
+ "id": 1157625,
+ "bug_id": 255007,
+ "attachment_id": 0,
+ "creation_time": "2021-04-21T15:51:14Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "Commenting out the QMAKEMODULES settings in qt.mk gets this working.  That is, the build for qt5-webengine now sets compile / link flags to look for things (like the locally built libQt5WebEngineCore.so) in the work dir [1].\n\nBased on some early investifation, it looks like if you define QMAKEMODULES, mkspecs/features/qt_build_config.pri the QMAKEMODULES can override the build's decisions for things like library paths (QT_MODULE_LIB_BASE).  What we really wanted for the QMAKEMODULES stuff (I think) is to append to the default search so that it will look in the work dir then LOCALBASE if it doesn't find something.  But it seems that the current qmake infrastructure (at least as used in qt5-webengine) already will look in the work dir if QMAKEMODULES is not set to override that mechanism.  This explanation is a little hand wavy - I am inferring a lot of things I don't quite follow from beginning to end by looking at the end results.\n\nI am investigating removing this from qt.mk altogether (and running a large build in poudriere to test).\n\nLet me know what you think might break as a result, please.  Or any other useful hints / historical perspective.\n\n[1]\n\nbefore commenting out QMAKEMODULES in qt.mk, the link command is:\n\nc++ ... -L/usr/ports/www/qt5-webengine/work/.build/lib -L/usr/local/lib /usr/local/lib/qt5/libQt5WebEngineCore.so   ...\n\nafter:\n\nc++ ... -L/usr/ports/www/qt5-webengine/work/.build/lib -L/usr/local/lib /usr/ports/www/qt5-webengine/work/.build/lib/libQt5WebEngineCore.so  ..."
+}

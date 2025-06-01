@@ -1,0 +1,8 @@
+{
+ "id": 496262,
+ "bug_id": 134050,
+ "attachment_id": 0,
+ "creation_time": "2009-04-28T22:01:02Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bz\nDate: Tue Apr 28 21:00:50 2009\nNew Revision: 191639\nURL: http://svn.freebsd.org/changeset/base/191639\n\nLog:\n  Prevent a superuser inside a jail from modifying the dedicated\n  root cpuset of that jail.\n  Processes inside the jail will still be able to change child sets.\n  A superuser outside of a jail will still be able to change the jail cpuset\n  and thus limit the number of cpus available to the jail.\n  \n  Problem reported by: 000.fbsd@quip.cz (Miroslav Lachman)\n  PR:\t\tkern/134050\n  Reviewed by:\tjeff\n  MFC after:\t3 weeks\n  X-MFC:\t\tbackout r191596\n\nModified:\n  head/sys/kern/kern_cpuset.c\n\nModified: head/sys/kern/kern_cpuset.c\n==============================================================================\n--- head/sys/kern/kern_cpuset.c\tTue Apr 28 20:49:47 2009\t(r191638)\n+++ head/sys/kern/kern_cpuset.c\tTue Apr 28 21:00:50 2009\t(r191639)\n@@ -357,6 +357,15 @@ cpuset_modify(struct cpuset *set, cpuset\n \tif (error)\n \t\treturn (error);\n \t/*\n+\t * In case we are called from within the jail\n+\t * we do not allow modifying the dedicated root\n+\t * cpuset of the jail but may still allow to\n+\t * change child sets.\n+\t */\n+\tif (jailed(curthread-\u003etd_ucred) \u0026\u0026\n+\t    set-\u003ecs_flags \u0026 CPU_SET_ROOT)\n+\t\treturn (EPERM);\n+\t/*\n \t * Verify that we have access to this set of\n \t * cpus.\n \t */\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

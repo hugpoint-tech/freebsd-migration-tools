@@ -1,0 +1,8 @@
+{
+ "id": 39517,
+ "bug_id": 13008,
+ "attachment_id": 0,
+ "creation_time": "1999-08-07T06:20:01Z",
+ "creator": "mark@tgsoft.com",
+ "text": "\nI wrote an application that worked basically like this:\n\nmain:\n   create a socket\n   create 10 threads\n   run for a while, then:\n\n       send each thread a signal with pthread_kill and wait for it in\n\t   pthread_join.\n       when one thread has been waited for, go back and kill the next one\n   exit\n\nEach thread (in a loop):\n\tdoes an accept on the socket\n\tcopies some data\n\tcloses the data socket\n\trepeats\n\nThe problem:\n\n   Waiting in pthread_join was not fruitful. Examination shows that\n   *most* of the threads that are in 'accept' were waiting for \n   the a lock on the socket (state: PS_FDLR_WAIT) and pthread_kill \n   does not do anything to them. One lucky thread would be in PS_FDR_WAIT, \n   and it could be killed... but it is hard for my application to know\n   which thread that is.\n\nFix: \n\npthread_kill probably needs to know how to kill processes that\n   are waiting for file locks.\nHow-To-Repeat: \n   Sorry, no sample code. I have hacked up the application to the\n   point that it is no longer recognizeable."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 53947,
+ "bug_id": 17694,
+ "attachment_id": 0,
+ "creation_time": "2000-03-30T18:50:01Z",
+ "creator": "mikko@dynas.se",
+ "text": "\nLooks like these two functions are supposed to be able to take\na NULL destination pointer (the first one), in which case they\nshould return the length required to do the actual copy.\n\nStubled across this whilst porting code that made use of this feature\nto figure out how much memory to allocate.\n\nC.f.  Solaris man-pages (e.g. at docs.sun.com)\n      and \"Single UNIX Specification\" at\n      \u003chttp://www.opengroup.org/onlinepubs/007908799/xsh/mbstowcs.html\u003e\n\n\"If s is a null pointer, wcstombs() returns the length required to\n convert the entire array regardless of the value of n, but no\n values are stored. function returns the number of bytes required for\n the character array.\"  [\"s\" is the output string]\n\nand\n\n\"If pwcs is a null pointer, mbstowcs() returns the length required to\n convert the entire array regardless of the value of n, but no values\n are stored.\" [\"pwcs\" is the output string]\n\nFix: Suggested patch (actually somewhat tested with different arguments,\nbut not in real multibyte locales, and relies on all flavours of\nsputrune being able to handle NULL args):\nHow-To-Repeat: \n#include \u003cstdlib.h\u003e\n#include \u003clocale.h\u003e\n\nint\nmain(int argc, char **argv)\n{\n   int len;\n\n   setlocale(LC_ALL, \"C\");\n   len = mbstowcs(NULL, \"SE\", 0);\n   printf(\"len = %d (should be 2)\\n\", len);\n}"
+}

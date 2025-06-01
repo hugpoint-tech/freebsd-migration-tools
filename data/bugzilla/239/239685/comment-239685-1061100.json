@@ -1,0 +1,8 @@
+{
+ "id": 1061100,
+ "bug_id": 239685,
+ "attachment_id": 206375,
+ "creation_time": "2019-08-08T18:55:00Z",
+ "creator": "kevans@freebsd.org",
+ "text": "Created attachment 206375\ngit(1) diff for some fixes\n\n(In reply to Mark Johnston from comment #3)\n\nIn that context, I was trying to rewrite a smaller test case that reproduces the results -- that was a mistake.\n\nThere seem to be at least a couple of different problems here:\n\n- fileargs_add_cache can fail, but not communicate that failure to its parent\n- service_message should check nvlout for error state after taking a trip through service-\u003es_command -- if nvlout happens to be an error state, cap_send_nvlist cannot succeed.\n\nThe SIGPIPE failure seems to originate from fileargs_add_cache hitting EMFILE at nvlist_add_nvlist(nvlout, fname, new), which then fails to travel because nvlout's in an error state.\n\nAttached patch tries to clean some of this up, but doesn't do a very good job I don't think. Ultimately service_message should be catching any last-minute errors and trying to recover gracefully so we don't leave the other end in suspense, but the rest of the patch attempts to detect errors earlier and do something sane..."
+}

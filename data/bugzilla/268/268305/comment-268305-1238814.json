@@ -1,0 +1,8 @@
+{
+ "id": 1238814,
+ "bug_id": 268305,
+ "attachment_id": 0,
+ "creation_time": "2022-12-10T21:27:16Z",
+ "creator": "topical@gmx.net",
+ "text": "According to documentation in /usr/include/net/ieee_oui.h ether_gen_addr() should generate OUIs in range 100000..10ffff. In practise, is generates OUIs in range 000000..00ffff or 100000..10ffff. \n\nIn if_ethersubr.c you see\n\n  addr = ((digest[0] \u003c\u003c 16) | (digest[1] \u003c\u003c 8) | digest[2]) \u0026 OUI_FREEBSD_GENERATED_MASK;\n  addr = OUI_FREEBSD(addr);\n\nThe first line generates an address in range 000000..00ffff or 100000..10ffff \n\nIt should be \n\n  addr = ((digest[0] \u003c\u003c 16) | (digest[1] \u003c\u003c 8) | digest[2]) \u0026 0xffff;\n\nProbably, we should define a macro for 0xffff\n\nThe second list uses OUI_FREEBSD which doesn't add 0x100000 to the generated address.\n\nIt should be \n\n  addr = OUI_FREEBSD(addr | 0x100000);\n\nIn general, definitions in ieee_oui.h are a bit misleading. Definition of OUI_FREEBSD_GENERATED_MASK is a mixture of an AND-mask 0xffff and the allocation number 0x10. \n\nIt would be better to separate them, e.g.\n\n  OUI_FREEBSD_GENERATED_BASE 0x100000\n  OUI_FREEBSD_GENERATED_MASK 0xffff\n\n  OUI_FREEBSD_NVME_BASE 0x200000\n  OUI_FREEBSD_NVME_MASK 0xffff\n\nThis way, you can cleanly define e.g. range \"0x41800...0x41fff\"\n\n  OUI_FREEBSD_FOO_BASE 0x41800\n  OUI_FREEBSD_FOO_MASK 0x7ff"
+}

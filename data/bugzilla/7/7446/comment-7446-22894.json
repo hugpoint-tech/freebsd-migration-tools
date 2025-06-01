@@ -1,0 +1,8 @@
+{
+ "id": 22894,
+ "bug_id": 7446,
+ "attachment_id": 0,
+ "creation_time": "1998-07-30T17:20:00Z",
+ "creator": "tshiozak@makino.ise.chuo-u.ac.jp",
+ "text": "When shared object which contains the symbols which cannot be resolved\nis tried to be loaded twice by using dlopen with RTLD_NOW option,\nfirst dlopen call fail (this is correct action), but second dlopen \ncall succeed (this is illegal action).\n\nPerhaps, when dlopen fail to resolve symbols, dlopen doesn't release\nmmap and module handle, does it?\n\nFix: \n\ncorrect dlopen function.\nHow-To-Repeat: input follow files:\n===========================\nfoo.c:\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cdlfcn.h\u003e\n\nint\nmain()\n{\n    void *h;\n    \n    if (NULL == (h=dlopen(\"var.so\", RTLD_NOW))) {\n        puts(dlerror());\n    } else\n        printf(\"success : %p\\n\", dlsym(h, \"_var\"));\n    if (NULL == (h=dlopen(\"var.so\", RTLD_NOW))) {\n        puts(dlerror());\n    } else\n        printf(\"success : %p\\n\", dlsym(h, \"_var\"));\n    return 0;\n}\n==============================\nand var.c:\nextern void hoge(void);\n\nvoid var(void)\n{\n    hoge(); /* undefined symbol */\n}\n===============\nAnd, compile and execute as follow:\n% gcc -o foo foo.c\n% gcc -c -fPIC var.c\n% ld -Bshareable -o var.so var.o\n% ./foo\nUndefined symbol \"_hoge\" in foo:var.so\nsuccess : 0x2001b020\n%"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 589761,
+ "bug_id": 152847,
+ "attachment_id": 0,
+ "creation_time": "2010-12-05T04:40:10Z",
+ "creator": "wollman@FreeBSD.org",
+ "text": "\nWhen one installs buildbot-slave, it is likely that one would like the\ndaemon start automatically once the software is configured.\n\nFix: \n\nHere is a very simple one that I am using successfully.  It can only\nhandle one buildslave environment per machine (I am using one virtual\nmachine per environment).  It will need a few generalizations to make\nit ${PREFIX}-safe and Python-version-independent.  Making buildslave's\nstartup a bit quieter by default would be a nice addition.\n\n#! /bin/sh\n#\n# $FreeBSD$\n#\n\n# PROVIDE: buildslave\n# REQUIRE: LOGIN\n# KEYWORD: shutdown\n\n#\n# Add the following lines to /etc/rc.conf to enable buildslave:\n#\n#buildslave_enable=\"YES\"\n#buildslave_directory=\"/home/buildbot/path/to/slave\"\n\n. /etc/rc.subr\n\nname=\"buildslave\"\nrcvar=`set_rcvar`\n\nload_rc_config $name\n\n: ${buildslave_enable:=NO}\n: ${buildslave_directory:=/nonexistent}\n: ${buildslave_user:=buildbot}\n\ncommand=\"/usr/local/bin/buildslave\"\ncommand_interpreter=\"/usr/local/bin/python2.6\"\npidfile=\"${buildslave_directory}/twistd.pid\"\nrequired_dirs=\"${buildslave_directory}\"\nflags=\"${buildslave_flags:-\"start ${buildslave_directory}\"}\"\nstop_cmd=\"buildslave_stop\"\n\nbuildslave_stop() {\n\tinfo \"Stopping ${name}.\"\n\t${buildslave_program:-$command} stop ${buildslave_directory}\n}\n\nrun_rc_command \"$1\"\nHow-To-Repeat: \nls /usr/ports/devel/buildbot-slave/files.  Note no rc script."
+}

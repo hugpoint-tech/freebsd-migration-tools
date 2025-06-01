@@ -1,0 +1,8 @@
+{
+ "id": 1258521,
+ "bug_id": 271088,
+ "attachment_id": 0,
+ "creation_time": "2023-05-05T23:00:41Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "(In reply to Fernando Apesteguía from comment #4)\n\nFernando, I haven't looked too deep, but I can reproduce this finding.\nIt would seem that something - possibly a package that gets installed on 12.4 - calls ldconfig while the 12.4 build is going on and adds two directories to the search path.\n\nI can reproduce your issue, and the content of said file is:\n% cat -t /var/run/ld-elf.so.hints\nEhnt^A^@^@^@M-^@^@^@^@G^@^@^@^@^@^@^@F^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@/lib:/usr/lib:/usr/lib/compat:/usr/local/lib:/usr/local/lib/compat/pkg^@\n\nThis, by contrast, is the default /var/run/ld-elf.so.hints, if you only launch the jail in poudriere and then run jexec \u003cJID\u003e csh and in csh \n\nEhnt^A^@^@^@M-^@^@^@^@^^^@^@^@^@^@^@^@^]^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@^@/lib:/usr/lib:/usr/lib/compat^@\n\nSo something added /usr/local/lib:/usr/local/lib/compat/pkg to your linker path on 12.4 but not on 13.2. From the diff of my build logs I can't tell what requisite package might be causing it."
+}

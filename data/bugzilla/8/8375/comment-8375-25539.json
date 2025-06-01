@@ -1,0 +1,8 @@
+{
+ "id": 25539,
+ "bug_id": 8375,
+ "attachment_id": 0,
+ "creation_time": "1998-10-24T06:02:14Z",
+ "creator": "jb@cimlogic.com.au",
+ "text": "Daniel Eischen wrote:\n\u003e BTW, pthread_mutex_lock also has the same problem as\n\u003e pthread_cond_wait if thread scheduling comes at an\n\u003e inopportune time:\n[...]\n\u003e \t\t\t\t\t * Join the queue of threads waiting to lock\n\u003e \t\t\t\t\t * the mutex: \n\u003e \t\t\t\t\t */\n\u003e \t\t\t\t\t_thread_queue_enq(\u0026(*mutex)-\u003em_queue, _thread_run);\n\u003e \n\u003e \t\t\t\t\t/* Unlock the mutex structure: */\n\u003e \t\t\t\t\t_SPINUNLOCK(\u0026(*mutex)-\u003elock);\n\u003e \n\u003e \t\t\t\t\t/* Block signals: */\n\u003e \t\t\t\t\t_thread_kern_sched_state(PS_MUTEX_WAIT, __FILE__, __LINE__);\n\u003e \n\u003e If thread scheduling is kicked off right after the last\n\u003e SPINUNLOCK, then you can also have a thread removed\n\u003e from the mutex queue, but it'll never get woken up.\n\nThe simple solution to this is to change the thread state to PS_MUTEX_WAIT\nwhile the mutex is locked, then enter the scheduler without changing the\nstate. I don't think that the problem is one of locking - just the\npossibility that the thread state will be overwritten at an inoportune\ntime (i.e. the thread state may be changed to PS_RUNNING before it\ngets a chance to set it's state to PS_MUTEX_WAIT).\n\n\n-- \nJohn Birrell - jb@cimlogic.com.au; jb@freebsd.org http://www.cimlogic.com.au/\nCIMlogic Pty Ltd, GPO Box 117A, Melbourne Vic 3001, Australia +61 418 353 137"
+}

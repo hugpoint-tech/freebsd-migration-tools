@@ -1,0 +1,8 @@
+{
+ "id": 1088958,
+ "bug_id": 187835,
+ "attachment_id": 0,
+ "creation_time": "2020-02-20T11:29:59Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "(In reply to Vladislav V. Prodan from comment #4)\n\n\u003e # ngctl list\n\u003e ngctl: send msg: No buffer space available\n\nSocket limit exceeded here.\n\nYou can increase this limit using sysctls:\nnet.graph.recvspace=2048000\nnet.graph.maxdgram=2048000\n\nBut, it also can't exceed kern.ipc.maxsockbuf\n\nQuick, example:\n\nmk_ngeth.sh:\n#!/bin/sh\n\nfor i in `jot 1000`\ndo\n        ngctl mkpeer . eiface test ether\ndone\n\n# sh mk_ngeth.sh\n# ifconfig |grep ngeth|wc -l\n    1000\n# sysctl net.graph.recvspace\nnet.graph.recvspace: 20480\n# sysctl net.graph.maxdgram\nnet.graph.maxdgram: 20480\n# sysctl kern.ipc.maxsockbuf\nkern.ipc.maxsockbuf: 2097152\n\n# ngctl ls\nngctl: send msg: No buffer space available\n\n# sysctl kern.ipc.maxsockbuf=32000000\nkern.ipc.maxsockbuf: 2097152 -\u003e 32000000\n# sysctl net.graph.recvspace=24000000\nnet.graph.recvspace: 30000 -\u003e 24000000\n\n# ngctl ls | wc -l\n    1002"
+}

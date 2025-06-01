@@ -1,0 +1,8 @@
+{
+ "id": 530192,
+ "bug_id": 140976,
+ "attachment_id": 0,
+ "creation_time": "2009-11-28T17:00:03Z",
+ "creator": "darcy@NetBSD.org",
+ "text": "If an input file contains tabs it may not be handled correctly.  In fact, the problem would happen with any character that compares lower than newline.\n\nFix: \n\nhttp://cvsweb.netbsd.org/bsdweb.cgi/src/usr.bin/comm/comm.c.diff?r1=1.17\u0026r2=1.18\u0026only_with_tag=MAIN\u0026f=h is how I fixed it on NetBSD but you have a much different version of comm.c.  The basic fix is to not read the newline.  The newline is the separator between lines, not part of the line and including it causes it to be erroneously included in the comparisons.  sort(1) gets this right and that's where the problem occurs.  comm(1) does not agree with the sorting criteria.\n\nIn NetBSD current there is a library function called getline which more or less does what the getline included in comm.c does except that it doesn't return the newline.  Perhaps you should pull that in and use it instead.  Don't forget to change your printf statements to add the newline.\nHow-To-Repeat: Run this script.  The two tests should print the same thing.\n\n#! /bin/sh\n\nTEST=/tmp/$$.test\ntrap \"rm -f $TEST.*\" 0\n\ncat \u003c\u003c MOUSE \u003e $TEST.1a\na b\nc d\ne f\ne f g\nh i\nMOUSE\n\ncat \u003c\u003c MOUSE \u003e $TEST.1b\na b\ne f g\nMOUSE\n\ntr ' ' '\\t' \u003c $TEST.1a \u003e $TEST.2a\ntr ' ' '\\t' \u003c $TEST.1b \u003e $TEST.2b\n\necho \"Test 1 (spaces) output:\"\ncomm -12 $TEST.1a $TEST.1b\n\necho \"\"\necho \"Test 2 (tabs) output:\"\ncomm -12 $TEST.2a $TEST.2b"
+}

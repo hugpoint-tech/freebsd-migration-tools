@@ -1,0 +1,8 @@
+{
+ "id": 1042536,
+ "bug_id": 236546,
+ "attachment_id": 202908,
+ "creation_time": "2019-03-16T12:28:03Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 202908\nForce mprime linking to use BFD ld\n\nThere's definitely something fishy going on:\n\n$ gdb /usr/local/bin/mprime-real\nGNU gdb (GDB) 8.2.1 [GDB v8.2.1 for FreeBSD]\n...\n(gdb) run\nStarting program: /usr/local/bin/mprime-real\ntarget.c:2238: internal-error: void target_mourn_inferior(ptid_t): Assertion `ptid == inferior_ptid' failed.\nA problem internal to GDB has been detected,\nfurther debugging may prove unreliable.\nQuit this debugging session? (y or n) y\n\nThis is a bug, please report it.  For instructions, see:\n\u003chttp://www.gnu.org/software/gdb/bugs/\u003e.\n\ntarget.c:2238: internal-error: void target_mourn_inferior(ptid_t): Assertion `ptid == inferior_ptid' failed.\nA problem internal to GDB has been detected,\nfurther debugging may prove unreliable.\nCreate a core file of GDB? (y or n) n\n\nAnd even worse, the dynamic linker asserts on it:\n\n$ ldd /usr/local/bin/mprime-real\n/usr/local/bin/mprime-real:\n/usr/local/bin/mprime-real: signal 6\n\nIt looks like ld.lld is mangling the executable somehow: when I force the mprime-real executable to be linked with ld.bfd, it does run correctly.  See the force-ld-bfd-1.diff patch."
+}

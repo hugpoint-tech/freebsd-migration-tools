@@ -1,0 +1,8 @@
+{
+ "id": 630177,
+ "bug_id": 160900,
+ "attachment_id": 0,
+ "creation_time": "2011-09-22T10:40:08Z",
+ "creator": "lampa@fit.vutbr.cz",
+ "text": "After upgrade to net-snmp 5.7 counter of TCP connections stopped working:\n\nsnmpget -c public -v2c xxx .1.3.6.1.2.1.6.9.0\nTCP-MIB::tcpCurrEstab.0 = Gauge32: 0\n\nThe reason is this change in net-snmp source ./work/net-snmp-5.7/agent/mibgroup/mibII/tcp.c\n\n#ifdef NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS\n        ret_value = TCP_Count_Connections();\n#else /*  NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS */\n        ret_value = 0;\n#endif /*  NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS */\n\nThe define NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS is not defined. After addition here:\n\n#define NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS\n#ifdef NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS\n        ret_value = TCP_Count_Connections();\n#else /*  NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS */\n        ret_value = 0;\n#endif /*  NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS */\n\ncounter works again:\n\nsnmpget -c public -v2c xxx .1.3.6.1.2.1.6.9.0\nTCP-MIB::tcpCurrEstab.0 = Gauge32: 1094\n\nFix: \n\nDelete #ifdef or #define NETSNMP_FEATURE_HAS_TCP_COUNT_CONNECTIONS in proper place."
+}

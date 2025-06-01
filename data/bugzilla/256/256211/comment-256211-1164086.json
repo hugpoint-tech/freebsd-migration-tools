@@ -1,0 +1,8 @@
+{
+ "id": 1164086,
+ "bug_id": 256211,
+ "attachment_id": 0,
+ "creation_time": "2021-06-01T06:52:17Z",
+ "creator": "pjfloyd@wanadoo.fr",
+ "text": "There is no problem here. If you run Valgrind with -s you will get\n\n--4534-- used_suppression:      1 MEMCHECK-LIBC-REACHABLE /usr/local/libexec/valgrind/default.supp:589 suppressed: 4,096 bytes in 1 blocks\n\nThat means that the 4k still in use is known and suppressed by the system suppressions file\n\nIf you run Valgrind with --defaut-suppressions=no  then you will see\n\n==4537== 4,096 bytes in 1 blocks are still reachable in loss record 1 of 1\n==4537==    at 0x484C8A4: malloc (in /usr/local/libexec/valgrind/vgpreload_memcheck-amd64-freebsd.so)\n==4537==    by 0x4974AA3: ??? (in /lib/libc.so.7)\n==4537==    by 0x4987278: ??? (in /lib/libc.so.7)\n==4537==    by 0x497B012: ??? (in /lib/libc.so.7)\n==4537==    by 0x497AD89: vfprintf_l (in /lib/libc.so.7)\n==4537==    by 0x4975AF3: printf (in /lib/libc.so.7)\n==4537==    by 0x201D48: main (example.c:16)\n\nIn theory it would be possible to remove this suppression by modifying libc. On Linux, GNU libc has a __libc_freeres function, In normal use, Linux GNU libc applications do not call this function. Valgrind does some fiddling on guest application termination and _does_ call thisa function. The advantages of using freeres over suppressions are that\na) it is slighlty cleaner\nb) it is less sensitive (suppressions tend to change over time and libc could add more uses of reachable memory).\n\nIf this really bothers you, open a bugzilla item for libc to add a freeres function and then I can add that to Valgrind."
+}

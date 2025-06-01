@@ -1,0 +1,8 @@
+{
+ "id": 60952,
+ "bug_id": 19809,
+ "attachment_id": 0,
+ "creation_time": "2000-07-09T21:40:01Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "\n\tThe mbstat.m_mtypes[] array, which is used to store mbuf type\n\tstatistics, is declared with type u_short. For most people\n\tthis is large enough, but large systems with more than 64k\n\tmbufs configured are becoming quite common now.\n\n\tOn these systems, overflows can occur, causing meaningless\n\tvalues to appear int the output of \"netstat -m\".\n\n\tA related problem, which looks like it has always existed in\n\tFreeBSD, is that the m_mtypes[MT_FREE] counter is not incremented\n\twhen new mbufs are allocated, so it does not reflect the number\n\tof free mbufs.\n\nFix: Apply the following patch. This fixes both of the above\n\tissues, and removes some assumptions within netstat(1) about\n\tthe size of the m_mtypes[] array.\n\n\tThe patch also reduces the size of the m_mtypes[] array from\n\t256 to 32. Currently there are only 16 mbuf types defined, and\n\tthe definitions of 9 of these are #if 0'd out, so we are unlikely\n\tto reach 32 types anytime soon. This reduces the kernel bss size\n\tby a few hundred bytes.\n\nHow-To-Repeat: \n\tConfigure a system with more than 64k mbufs, and notice that\n\tthe 'XX mbufs allocated to data' output from netstat wraps\n\taround at 64k.\n\n\tThe m_mtypes[MT_FREE] bug can be observed by typing\n\n\t\tprint mbstat.m_mtypes[0]\n\n\tfrom a kgdb session; the number printed will generally be around\n\t65500 on a quiet system with only a few mbufs allocated."
+}

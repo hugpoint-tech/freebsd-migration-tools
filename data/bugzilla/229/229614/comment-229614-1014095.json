@@ -1,0 +1,8 @@
+{
+ "id": 1014095,
+ "bug_id": 229614,
+ "attachment_id": 0,
+ "creation_time": "2018-10-03T06:02:25Z",
+ "creator": "vi@endrift.com",
+ "text": "This is the line that the _sx_xlock_hard call that's hanging is on: https://github.com/freebsd/freebsd/blob/release/11.2.0/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zil.c#L2190 (beginning of zil_commit_writer). That means that the issuer lock is being held by something.\n\nNotably, the issuer lock can be held while waiting on a txg to sync in zil_commit_waiter_timeout (or more precisely, its call to zil_commit_writer_stall). I'm not entirely sure (since I'm unfamiliar with this code), but I think this may be the source of the deadlock. Upon inspection, both the quiesce and sync threads appear to be idle, and I can't find any evidence that there's any other thread that's in that function, so I'm not sure that's what's going on. Plus I have no idea what's going on with the un-ptraceable process as mentioned in comment 9, which I've observed too. It appears to be livelocked on my system (100% of one thread at all times), but I can't inspect it at all--even kgdb can't touch it."
+}

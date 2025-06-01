@@ -1,0 +1,8 @@
+{
+ "id": 1115025,
+ "bug_id": 248223,
+ "attachment_id": 0,
+ "creation_time": "2020-07-23T19:05:50Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "% cat pread.c\n#define _GNU_SOURCE\n\n#include \u003cassert.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003csys/mman.h\u003e\n\nvoid pread_v(int fd, void* buf, size_t nbytes, off64_t offset) {\n  printf(\"pread(_, _, 0x%lx, _) -\u003e \", nbytes);\n  int ret = pread(fd, buf, nbytes, offset);\n  if (ret != -1) {\n    printf(\"0x%x\\n\", ret);\n  } else {\n    printf(\"%s\\n\", strerror(errno));\n  }\n}\n\nint main() {\n\n  int mem = open(\"/proc/self/mem\", O_RDONLY);\n  assert(mem != -1);\n\n  char buf[0x4000];\n\n  pread_v(mem, buf, 0x1000, 0); // should be EIO\n  printf(\"---\\n\");\n\n  void* p1 = mmap(NULL,        0x2000, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,             -1, 0);\n  void* p2 = mmap(p1 + 0x1000, 0x1000, PROT_NONE,              MAP_ANON | MAP_PRIVATE | MAP_FIXED, -1, 0);\n\n  assert(p1 != MAP_FAILED);\n  assert(p2 == p1 + 0x1000);\n\n  assert(munmap(p2, 0x1000) == 0);\n\n  for (int n = sizeof(buf); n \u003e= 0x1000; n /= 2) {\n    pread_v(mem, buf, n, (off64_t)p1); // should return 0x1000\n  }\n\n  return 0;\n}\n% /compat/linux/bin/gcc -std=c99 -Wall pread.c -o pread\n% ./pread\npread(_, _, 0x1000, _) -\u003e Bad address\n---\npread(_, _, 0x4000, _) -\u003e Bad address\npread(_, _, 0x2000, _) -\u003e Bad address\npread(_, _, 0x1000, _) -\u003e 0x1000\n\nOn the other hand, Linux (Xubuntu 18.04.3) prints Input/Output errors and 0x1000, 0x1000, 0x1000 there."
+}

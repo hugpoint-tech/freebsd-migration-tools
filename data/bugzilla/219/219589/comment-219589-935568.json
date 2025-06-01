@@ -1,0 +1,8 @@
+{
+ "id": 935568,
+ "bug_id": 219589,
+ "attachment_id": 0,
+ "creation_time": "2017-05-27T07:37:49Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "TARGET_ARCH=powerpc64 got a fix to\nbugzilla 205458.\n\nIt turns out that TARGET_ARCH=powerpc\nneeds to detect when it is running on\npowerpc64 and do the same thing.\n\nThe issue is that for powerpc64 it is\ninappropriate to restore the sprg0\nvalue to its openfirmware value. This\nis because the FreeBSD real-mode\nhandling is involved instead of the\nopenfirmware's original virtual mode.\n\nQuoting Nathan W. from Comment\n#4 of 205458:\n\nWhere this explodes is if OF uses an unmapped SLB entry. The SLB fault handler runs in real mode and refers to the PCPU pointer in SPRG0, which blows up the kernel. Having a value of SPRG0 that works for the kernel is less fatal than preserving OF's value in this case.\n\nI know that part of the code does detect\nthe powerpc64 context vs. not and does\nthings differently to emulate being powerpc\nlike on powerpc64 (such as limiting\nRAM use as a consequence).\n\nThe powerpc64 vs. not status needs to be\nrecorded and used to control a sprg0\nrestoration choice: avoid restoring\nopenfirmware's value on powerpc64;\notherwise restore it.\n\n\nhttps://lists.freebsd.org/pipermail/freebsd-ppc/2017-May/008891.html\n\nhas details of the periodic/random\npanics that can occur as things are.\n\n(I've other reports on the lists as well\nbut the above has the best details, such\nas backtraces and other information.)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1059761,
+ "bug_id": 233769,
+ "attachment_id": 0,
+ "creation_time": "2019-07-30T20:46:59Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "Just passing through -S in tools/install.sh is not enough.\n1. Maybe this tool is expected to work on Linux where -S does something different.\n2. The symlink/hardlink support call ln(1) which are is atomic for symlinks. It does unlink(2) followed by symlink(2).\n\nReworking the build to avoid double installs here is possible but would be more hackish IMO. We would need to muck with the SUBDIR lists for gnu/lib to fix this specific case so that it only installs during the right phase of\nbuildworld (like we do for llvm kinda). But that's JUST gnu/lib. The same\nproblem could come up for other libraries eventually given enough install-to-worldtmp threads.\n\nMETA_MODE+filemon may eventually learn how to avoid the double installs but it has not yet. DIRDEPS_BUILD learned how. It's not hard to implement just risky\nand needs time devoted to testing. Of course this then requires filemon which\nisn't the solution some people want to hear.\n\nThe double install/relink issue isn't causing a problem beyond this race which is why I think we just need to make the install atomic rather than wack-a-mole with SUBDIR hacks."
+}

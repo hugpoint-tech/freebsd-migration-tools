@@ -1,0 +1,8 @@
+{
+ "id": 1090759,
+ "bug_id": 244563,
+ "attachment_id": 0,
+ "creation_time": "2020-03-03T00:12:27Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "-18446744073709551525 % (1 \u003c\u003c 63) is ~24,000.  Looking at the other mallocs, I see shmfd is pretty close to that.  sys_shm_unlink() calls free(path, M_TEMP), which is wrong since shm_copyin_path() allocates the path buffer with M_SHMFD.  Looks like it was introduced in r354808.\n\ndiff --git a/sys/kern/uipc_shm.c b/sys/kern/uipc_shm.c\nindex b97e75c0e417..886a0bad8746 100644\n--- a/sys/kern/uipc_shm.c\n+++ b/sys/kern/uipc_shm.c\n@@ -961,7 +961,7 @@ sys_shm_unlink(struct thread *td, struct shm_unlink_args *uap)\n        sx_xlock(\u0026shm_dict_lock);\n        error = shm_remove(path, fnv, td-\u003etd_ucred);\n        sx_xunlock(\u0026shm_dict_lock);\n-       free(path, M_TEMP);\n+       free(path, M_SHMFD);\n \n        return (error);\n }"
+}

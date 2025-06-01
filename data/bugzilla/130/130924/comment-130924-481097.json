@@ -1,0 +1,8 @@
+{
+ "id": 481097,
+ "bug_id": 130924,
+ "attachment_id": 0,
+ "creation_time": "2009-01-24T00:50:01Z",
+ "creator": "kurt@intricatesoftware.com",
+ "text": "poll() system call overwrites complete pollfd struct instead of just revents.\n\nThis can cause threaded programs to 'loose' new events set while another thread is blocked and waiting in poll(). For example the JDK allows one thread to change the pollfd events field while a second thread is blocked in poll(). After waking up the blocked thread and returning to poll, the new event is lost by the poll system call overwriting the complete pollfd struct instead of just revents.\n\nFix: \n\nchange the poll system call to copyout just the revents value instead of the full pollfd struct.\nHow-To-Repeat: #include \u003cerr.h\u003e\n#include \u003cpoll.h\u003e\n#include \u003cpthread.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n\nstruct pollfd fds[2];\nint pipefds[2];\n\nstatic void *\nthread(void *arg) {\n  sleep(1);\n  fds[1].events = POLLIN | POLLOUT;\n  write(pipefds[0], \"\", 1);\n  return NULL;\n}\n\nint\nmain(int argc, char *argv[]) {\n  pthread_t tid;\n\n  if (pipe(pipefds) != 0)\n    err(1, \"pipe failed\");\n\n  fds[0].fd = pipefds[0];\n  fds[0].events = POLLIN;\n\n  fds[1].fd = pipefds[1];\n  fds[1].events = POLLIN;\n\n  if (pthread_create(\u0026tid, NULL, thread, NULL) != 0)\n    err(1, \"pthread_create failed\");\n\n  poll(fds, 2, -1);\n\n  if (fds[1].events != (POLLIN | POLLOUT)) {\n    printf(\"events overwritten by kernel!\\n\");\n    return 1;\n  }\n\n  return 0;\n}"
+}

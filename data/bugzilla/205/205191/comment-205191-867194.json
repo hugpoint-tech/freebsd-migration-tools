@@ -1,0 +1,8 @@
+{
+ "id": 867194,
+ "bug_id": 205191,
+ "attachment_id": 0,
+ "creation_time": "2016-02-27T17:01:01Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "I tracked it down.  This program reproduces it:\n\n==================\n% cat foo.c\n#include \u003cstdio.h\u003e\n#include \u003chistedit.h\u003e\n\nstatic EditLine *el_e = 0;\n\nint\nmain(int argc, char **argv)\n{\n        printf(\"start\\n\");\n        el_e = el_init(\"foo\", stdin, stdout, stderr);\n        if (el_e)\n                el_end(el_e);\n        else\n                printf(\"el_init failed\\n\");\n        printf(\"end\\n\");\n        printf(\"end\\n\");\n        return 0;\n}\n====================\n\ncc foo.c /usr/local/lib/libedit.so -o foo \u0026\u0026 ./foo | cat\n\n'stty -a' shows the baud rate at 50.\n\nIf you look in the devel/libedit code, it looks like there's a case where code in el_end() tries to restore the original tty settings.  But if the output is not a tty, the original tty settings were never saved.  So it restores invalid termios settings.\n\nIt's possible cdcc should check for isatty() on the output file descriptor and not used libedit (it currently checks for the input file descriptor).  But libedit should not try to use termios settings for a structure that was never correctly populated.  So that's definitely a bug in libedit.\n\nThe [older] base version of libedit in freebsd just doesn't have the check for isatty() in tty_setup, so it doesn't short circuit the initialization code that populates the original termios settings structure."
+}

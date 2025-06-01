@@ -1,0 +1,8 @@
+{
+ "id": 999611,
+ "bug_id": 229385,
+ "attachment_id": 0,
+ "creation_time": "2018-06-28T16:18:59Z",
+ "creator": "marko.cupac@mimar.rs",
+ "text": "Perhaps it would be worth to try if mesa-libs can be built with base llvm60 instead of port. It is not even on freshports' list of ports that need llvm60, for either build, run, or libraries.\n\nI took a look at www/chromium Makefile, llvm check is different there:\n\n.if ${OPSYS} == FreeBSD \u0026\u0026 ${OSVERSION} \u003c 1101513\nBUILD_DEPENDS+= clang60:devel/llvm60\nCC=             clang60\nCXX=            clang++60\nEXTRA_PATCHES+= ${FILESDIR}/extra-patch-llvm-port\n.else\nBUILD_DEPENDS+= ${LOCALBASE}/bin/ar:devel/binutils\nEXTRA_PATCHES+= ${FILESDIR}/extra-patch-llvm-base\n.endif\n\nPerhaps something like that could be tried for mesa-libs instead of:\n\n# libEGL needs gallium enabled which depends on llvm\n.if \"${MESA_LLVM_VER}\" != \"\"\n.if ${PORT_OPTIONS:MWAYLAND}\nCONFIGURE_ARGS+=\t--with-platforms=x11,drm,wayland\n.else\nCONFIGURE_ARGS+=\t--with-platforms=x11,drm\n.endif\nPLIST_SUB+=\t\tEGL=\"\"\n.else\nCONFIGURE_ARGS+=\t--disable-egl\nPLIST_SUB+=\t\tEGL=\"@comment \"\n.if ${PORT_OPTIONS:MWAYLAND}\nIGNORE=\toption WAYLAND is only valid on platforms with LLVM\n.endif\n.endif"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 92101,
+ "bug_id": 29349,
+ "attachment_id": 0,
+ "creation_time": "2001-07-31T12:40:01Z",
+ "creator": "joshua@roughtrade.net",
+ "text": "pam_wheel, and therefore, su(1) does not allow a user who is a member of group 0 (in /etc/passwd) to 'su root' unless they are also explicitly listed in /etc/group.\n\nFrom 'man group':\n\tA user is automatically in a group if that group was specified\n\tin their /etc/passwd entry and does not need to be added to\n\tthat group in the /etc/group file.\n\nFix: Doesn't this sound very like PR bin/6696?\n\nAdd appropriate gid check? maybe something like the following diff (builds, not tested).\n\n\n\nPAM_LOG(\"Got group: %s\", grp-\u003egr_name);\n\n-\tif (in_list(grp-\u003egr_mem, fromsu)) {\n+\tif (pwd-\u003epw_gid == grp-\u003egr_gid || in_list(grp-\u003egr_mem, fromsu)) {\n\t\tif (pam_test_option(\u0026options, PAM_OPT_DENY, NULL))\n\t\t\tPAM_RETURN(PAM_PERM_DENIED);\n\t\tif (pam_test_option(\u0026options, PAM_OPT_TRUST, NULL))--drD2moExYNlXaXsO9zMDroHT8M6JTeIzgdEe1vWULDQdjW6W\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: pam_wheel.c\n===================================================================\nRCS file: /data/joshua/bsd/src/lib/libpam/modules/pam_wheel/pam_wheel.c,v\nretrieving revision 1.2\ndiff -u -r1.2 pam_wheel.c\n--- pam_wheel.c\t2001/07/14 08:42:39\t1.2\n+++ pam_wheel.c\t2001/07/31 11:21:11\n@@ -122,7 +122,7 @@\nHow-To-Repeat: Add a user to group 0, but don't add them to /etc/group.\nTry to 'su root'."
+}

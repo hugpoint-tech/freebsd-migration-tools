@@ -1,0 +1,8 @@
+{
+ "id": 1152476,
+ "bug_id": 254388,
+ "attachment_id": 223410,
+ "creation_time": "2021-03-19T03:07:27Z",
+ "creator": "lcook@freebsd.org",
+ "text": "Created attachment 223410\nfish-3.2.1.diff\n\nGreat suggestions; those have now been addressed in the latest patch; thanks! One thing I'm unsure about is having MANPAGES glued together with DOCS with my initial thought of this; \n\nDOCS_BUILD_DEPENDS=     sphinx-build:textproc/py-sphinx\nDOCS_CMAKE_BOOL=        BUILD_DOC\nMANPAGES_BUILD_DEPENDS= ${DOCS_BUILD_DEPENDS}\nMANPAGES_CMAKE_BOOL=    ${DOCS_CMAKE_BOOL}\n\nThe problem/peeve is this line[1] (checking for the presence of the sphinx binary); both options (DOCS \u0026 MANPAGES) are mutually inclusive. Therefore, the documentation and manpages are always built, regardless of whether the other option is disabled. Annoyingly unless we patch the file, we can't change that behaviour, but it's not the be-all-end-all of everything.\n\nWhilst it works fine without issue if both options are enabled, as expected, CMAKE_ARGS gets a duplicate entry:\n\n$ make -VCMAKE_ARGS | grep -o '\\-DBUILD_DOC:BOOL=true'\n-DBUILD_DOC:BOOL=true\n-DBUILD_DOC:BOOL=true\n\nSo, instead, I've added a conditional in the pre-stage;\n\n.if ${PORT_OPTIONS:MDOCS} || ${PORT_OPTIONS:MMANPAGES}\nCMAKE_ARGS+=    -DBUILD_DOCS=TRUE\nBUILD_DEPENDS+= sphinx-build:textproc/py-sphinx\n.endif\n\nIf there's a more elegant way, I would love to know. Otherwise, it works OK. For the record, I've taken the courtesy of formatting with portfmt/portclippy.\n\nCheers!\n\n[1] https://github.com/fish-shell/fish-shell/blob/master/cmake/Docs.cmake#L43"
+}

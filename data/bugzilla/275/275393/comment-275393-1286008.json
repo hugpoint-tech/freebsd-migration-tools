@@ -1,0 +1,8 @@
+{
+ "id": 1286008,
+ "bug_id": 275393,
+ "attachment_id": 246617,
+ "creation_time": "2023-11-27T21:42:56Z",
+ "creator": "kevans@freebsd.org",
+ "text": "Created attachment 246617\nMinimal reproducer\n\nConsider the attached example, with a build.sh to build it:\n\nlibutil provides get_value, set_value -- it's built into both libutil.so and libutil2.so, two separate libraries with purposefully conflicting symbols\n\nlibfoo provides print_value (which calls get_value) and links against libutil2\n\napp links against libutil and dlopens $ORIGIN/libfoo.so with RTLD_DEEPBIND and calls set_value(5) to get a different value for get_value()\n\nOn Linux, this prints:\n\n% ./app\napplication value 5\nlibrary value: 10\n\nOn FreeBSD:\n\n$ ./app  \napplication value 5\nlibrary value: 5\n\nSo under glibc, symbol_lookup from the dlopened image prefers symbols from the same chain of objects that were loaded at that dlopen time, not just the same image."
+}

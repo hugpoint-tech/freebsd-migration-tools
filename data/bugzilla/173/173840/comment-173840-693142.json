@@ -1,0 +1,8 @@
+{
+ "id": 693142,
+ "bug_id": 173840,
+ "attachment_id": 0,
+ "creation_time": "2012-11-23T00:52:50Z",
+ "creator": "mav@FreeBSD.org",
+ "text": "Hi.\n\nI can't qualify it is as a driver bug. At most it is behavior change. \nThere are two signal paths from the DACs to the pins in this CODEC: \ndirect and via the mixer. And there is no volume control on the direct \npath. In your specific case it is possible to route signal via the mixer \nand control it there. But present driver is unable to make reasonable \nselection in such cases. Probably previously driver version did the \nright thing by accident.\n\nPatch below should probably help in your case, but it is not universal \nenough to commit it.\n\n--- hdaa_patches.c      (revision 243182)\n+++ hdaa_patches.c      (working copy)\n@@ -442,6 +442,14 @@ hdaa_patch(struct hdaa_devinfo *devinfo)\n                 if (w != NULL)\n                         w-\u003econnsenable[3] = 0;\n                 break;\n+       case HDA_CODEC_AD1984A:\n+               w = hdaa_widget_get(devinfo, 7);\n+               if (w != NULL)\n+                       w-\u003econnsenable[0] = 0;\n+               w = hdaa_widget_get(devinfo, 11);\n+               if (w != NULL)\n+                       w-\u003econnsenable[0] = 0;\n+               break;\n         case HDA_CODEC_AD1986A:\n                 /*\n                  * This CODEC has overcomplicated input mixing.\n\n\n-- \nAlexander Motin"
+}

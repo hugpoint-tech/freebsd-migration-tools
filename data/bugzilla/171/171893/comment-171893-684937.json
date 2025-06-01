@@ -1,0 +1,8 @@
+{
+ "id": 684937,
+ "bug_id": 171893,
+ "attachment_id": 0,
+ "creation_time": "2012-09-23T15:00:26Z",
+ "creator": "matthias@d2ux.net",
+ "text": "The command:\n\n\tezjail_admin update -b\n\nresponds with an error message on my system:\n\n\tError: Cannot find your copy of the FreeBSD source tree in .\n  \t  Consider using 'ezjail-admin install' to create the base jail from\n          an ftp server.\n\nOpposite to the message, the FreeBSD source tree is installed under /usr/src\nand the respective path is set in /usr/local/etc/ezjail.conf (ezjail_sourcetree).\n\nAnother system with ezJail 3.1 works fine with the same settings. I drilled\ndown the problem with diff of ezjail_admin version 3.1 vs. 3.2.2. It looks\nlike that 3.2.2 within the  #### ezjail-admin UPDATE ##### section unsets a\ncouple of variables but never assigns them again. Thats why later in the code: \n\n\t# Bump the user for some of the most common errors\n    [ -d \"${ezjail_sourcetree}\" ] || exerr \"Error: Cannot find your\n    copy of the FreeBSD source tree in ${ezjail_sourcetree}.\\n  \n    Consider using '${ezjail_admin} install' to create the base \n    jail from an ftp server.\"\n\nexits with the error.\n\nThe problem was already reported to ezjail@erdgeist.org (the ezJail\nmailing list). This PR is for informational purpose.\n\nFix: \n\nI could fix the problem in 3.2.2 temporarely by changing the line:\n\tunset ezjail_provideports ezjail_installaction ezjail_osversion_source\n\tezjail_osversion_destination ezjail_sourcetree\nto:\n\tunset ezjail_provideports ezjail_installaction ezjail_osversion_source \n\tezjail_osversion_destination\nHow-To-Repeat: After the installation of ezjail, try to update the basejail with:\n\nezjail_admin update -b"
+}

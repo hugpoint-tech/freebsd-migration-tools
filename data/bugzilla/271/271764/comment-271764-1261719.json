@@ -1,0 +1,8 @@
+{
+ "id": 1261719,
+ "bug_id": 271764,
+ "attachment_id": 0,
+ "creation_time": "2023-06-01T14:23:31Z",
+ "creator": "schakrabarti@microsoft.com",
+ "text": "Hi,\n\nIn our testing in Azure ARM64, if we are running wget in a infinite while loop in a multicore\nVM, then we are hitting a panic because of incorrect  head.\nPlease help on fixing it.\n\nTo repro:\nmulticore Azure / Hyper-V run in a while loop wget\n\n while [ 1 ]\ndo\nwget https://releases.ubuntu.com/focal/ubuntu-20.04.6-desktop-amd64.iso\nrm ubuntu*\ndone\n\nThen we are seeing this panic:\ndb\u003e bt\nTracing pid 0 tid 100090 td 0xffff0000cca37880\ndb_trace_self() at db_trace_self\ndb_stack_trace() at db_stack_trace+0x11c\ndb_command() at db_command+0x2d8\ndb_command_loop() at db_command_loop+0x54\ndb_trap() at db_trap+0xf8\nkdb_trap() at kdb_trap+0x20c\nhandle_el1h_sync() at handle_el1h_sync+0x14\n--- exception, esr 0xf2000000\nkdb_enter() at kdb_enter+0x44\nvpanic() at vpanic+0x178\npanic() at panic+0x44\nhn_txdesc_put() at hn_txdesc_put+0x210\nhn_txpkt_done() at hn_txpkt_done+0x2c\nhn_chan_callback() at hn_chan_callback+0x78\nvmbus_chan_task() at vmbus_chan_task+0x28\ntaskqueue_run_locked() at taskqueue_run_locked+0x17c\ntaskqueue_thread_loop() at taskqueue_thread_loop+0xc8\nfork_exit() at fork_exit+0x74\nfork_trampoline() at fork_trampoline+0x14\n\nThis following assert is hitting\n\n2722 hn_txdesc_put(struct hn_tx_ring *txr, struct hn_txdesc *txd)\n2723 {\n2724\n2725     KASSERT((txd-\u003eflags \u0026 HN_TXD_FLAG_ONLIST) == 0,\n\nThis txd is dequeued from\ntxd = buf_ring_dequeue_sc(txr-\u003ehn_txdesc_br);\n\nand getting enqueued hn_txdesc_put() after txd getting reseted ."
+}

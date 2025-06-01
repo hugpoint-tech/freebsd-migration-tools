@@ -1,0 +1,8 @@
+{
+ "id": 745785,
+ "bug_id": 185487,
+ "attachment_id": 0,
+ "creation_time": "2014-01-05T11:40:00Z",
+ "creator": "anders@halon.se",
+ "text": "We experienced strange problems with the FreeBSD 10 RC, with builds that\nfailed and Postgres databases that got corrupted. We were able to reduce\nthe problem down to:\n\ni=0\nwhile true\n\tdo\n\ti=`expr $i + 1`\n\techo RUN $i\n\tdd if=/dev/random of=disktest bs=1m count=1\n\torig=`md5 -q disktest`\n\tcp disktest disktest2\n\tmd5 -c $orig disktest2\n\t[ $? -ne 0 ] \u0026\u0026 echo fail \u0026\u0026 exit\ndone\n\nwhich failed for us (very randomly, sometimes 10 iterations, sometimes\n10000, sometimes never). The issue disappeared when disabling vfs\nunmapped_buf. We've tested it on different i386 machines, both in VMware\nand Hyper-V. Not bare-metal, though. When examining corrupted data, it\nappeared\"repeated\", as repeated pattern in the file of previously\nread/written data blocks.\n\nFix: \n\nvfs.unmapped_buf_allowed=\"0\" in loader.conf\nHow-To-Repeat: Run the script example above, for us it failed in 10-100000 iterations.\nWe were also able to repeat the problem on real-world, high-traffic\nPostgreSQL databases."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 988423,
+ "bug_id": 227404,
+ "attachment_id": 0,
+ "creation_time": "2018-04-22T16:05:42Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: tijl\nDate: Sun Apr 22 16:05:30 UTC 2018\nNew revision: 332871\nURL: https://svnweb.freebsd.org/changeset/base/332871\n\nLog:\n  Make bufdaemon and bufspacedaemon use kthread_suspend_check instead of\n  kproc_suspend_check.  In r329612 bufspacedaemon was turned into a thread\n  of the bufdaemon process causing both to call kproc_suspend_check with the\n  same proc argument and that function contains the following while loop:\n\n  while (SIGISMEMBER(p-\u003ep_siglist, SIGSTOP)) {\n  \twakeup(\u0026p-\u003ep_siglist);\n  \tmsleep(\u0026p-\u003ep_siglist, \u0026p-\u003ep_mtx, PPAUSE, \"kpsusp\", 0);\n  }\n\n  So one thread wakes up the other and the other wakes up the first again,\n  locking up UP machines on shutdown.\n\n  Also register the shutdown handlers with SHUTDOWN_PRI_LAST + 100 so they\n  run after the syncer has shutdown, because the syncer can cause a\n  situation where bufdaemon help is needed to proceed.\n\n  PR:\t\t227404\n  Reviewed by:\tkib\n  Tested by:\tcy, rmacklem\n\nChanges:\n  head/sys/kern/vfs_bio.c"
+}

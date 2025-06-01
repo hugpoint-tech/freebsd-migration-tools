@@ -1,0 +1,8 @@
+{
+ "id": 57355,
+ "bug_id": 18756,
+ "attachment_id": 0,
+ "creation_time": "2000-05-22T21:30:01Z",
+ "creator": "mike+fbsd@medianstrip.net",
+ "text": "\n\twith the internal fxp device up and running, the machine will\n\tlock up after suspend/resume.  a DDB trace indicates an infinite\n\tloop while waiting for a DMA to complete within the fxp_init\n\tfunction in sys/pci/if_fxp.c at line 1518:\n\n   1511         /*\n   1512          * Start the config command/DMA.\n   1513          */\n   1514         fxp_scb_wait(sc);\n   1515         CSR_WRITE_4(sc, FXP_CSR_SCB_GENERAL, vtophys(\u0026cbp-\u003ecb_status));\n   1516         CSR_WRITE_1(sc, FXP_CSR_SCB_COMMAND, FXP_SCB_COMMAND_CU_START);\n   1517         /* ...and wait for it to complete. */\n   1518         while (!(cbp-\u003ecb_status \u0026 FXP_CB_STATUS_C));\n\nFix: the patch below includes code translated from netbsd to avoid\n\tand log a few infinite loops, including the one above, and to\n\tavoid trying to handle interrupts before the device is resumed,\n\tand from linux to save and restore some necessary PCI data.  it\n\tmakes suspend/resume work for me, but i haven't tested it\n\tanywhere but my laptop.\nHow-To-Repeat: \n\tifconfig fxp0 up, suspend, and resume."
+}

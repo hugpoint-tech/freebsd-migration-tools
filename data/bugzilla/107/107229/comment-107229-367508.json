@@ -1,0 +1,8 @@
+{
+ "id": 367508,
+ "bug_id": 107229,
+ "attachment_id": 0,
+ "creation_time": "2007-07-18T05:09:17Z",
+ "creator": "moonshade@pnhz.kz",
+ "text": "hasi@cskk-sv.co.jp is right.\ncopy_acl() from coreutils assumes acl_set_file() is linux one, which has\nan extension over posix1e to accept zero sized default ACL.\n\nFreeBSD's acl_set_file() doesn't do that (see base cp code).\n\n--- lib/acl.c.orig\tMon Jul 16 11:03:58 2007\n+++ lib/acl.c\tMon Jul 16 11:32:49 2007\n@@ -129,7 +129,14 @@\n \t  return -1;\n \t}\n \n-      if (acl_set_file (dst_name, ACL_TYPE_DEFAULT, acl))\n+      /* From Linux acl_set_file(3) manpage:\n+\t    \" The behavior of acl_set_file() when the acl parameter refers\n+\t    to an empty ACL and the type parameter is ACL_TYPE_DEFAULT\n+\t    is an extension in the Linux implementation, in order that\n+\t    all values returned by acl_get_file() can be passed to\n+\t    acl_set_file(). \"\n+      /* Zero size ACL should be checked, like\nin /usr/src/bin/cp/utils.c:396 */\n+      if (acl-\u003eats_acl.acl_cnt != 0 \u0026\u0026 acl_set_file (dst_name,\nACL_TYPE_DEFAULT, acl))\n \t{\n \t  error (0, errno, _(\"preserving permissions for %s\"),\n \t\t quote (dst_name));"
+}

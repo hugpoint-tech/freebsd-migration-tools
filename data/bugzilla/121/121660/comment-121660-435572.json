@@ -1,0 +1,8 @@
+{
+ "id": 435572,
+ "bug_id": 121660,
+ "attachment_id": 0,
+ "creation_time": "2008-03-19T05:15:42Z",
+ "creator": "jkoshy@FreeBSD.org",
+ "text": "jk\u003e I have a simpler patch to offer, though.  This replaces the test and\njk\u003e branch with two shifts.\n\nAnd here's an even simpler patch that keeps the flow of the code\nin hwpmc_amd.c intact.  It is cleaner to keep the conversion to and\nfrom the perf counter's representation and the MI representation\nwithin these macros instead of partially inside and partially outside\nthem.\n\nIndex: hwpmc_amd.h\n===================================================================\nRCS file: /cvs/FreeBSD/src/sys/dev/hwpmc/hwpmc_amd.h,v\nretrieving revision 1.1\ndiff -u -r1.1 hwpmc_amd.h\n--- hwpmc_amd.h\t9 Jun 2005 19:45:07 -0000\t1.1\n+++ hwpmc_amd.h\t18 Mar 2008 16:22:03 -0000\n@@ -79,8 +79,9 @@\n #define AMD_PMC_IS_STOPPED(evsel) ((rdmsr((evsel)) \u0026 AMD_PMC_ENABLE) == 0)\n #define AMD_PMC_HAS_OVERFLOWED(pmc) ((rdpmc(pmc) \u0026 (1ULL \u003c\u003c 47)) == 0)\n \n-#define\tAMD_RELOAD_COUNT_TO_PERFCTR_VALUE(V)\t(-(V))\n-#define\tAMD_PERFCTR_VALUE_TO_RELOAD_COUNT(P)\t(-(P))\n+#define\tAMD_PERFCTR_LIMIT\t\t\t0x0000FFFFFFFFFFFFULL\n+#define\tAMD_RELOAD_COUNT_TO_PERFCTR_VALUE(V)\t(AMD_PERFCTR_LIMIT - (V) + 1)\n+#define\tAMD_PERFCTR_VALUE_TO_RELOAD_COUNT(P)\t(AMD_PERFCTR_LIMIT - (P) + 1)\n \n struct pmc_md_amd_op_pmcallocate {\n \tuint32_t\tpm_amd_config;\n\n\nCould you let me know if this change works ok?\n\nKoshy"
+}

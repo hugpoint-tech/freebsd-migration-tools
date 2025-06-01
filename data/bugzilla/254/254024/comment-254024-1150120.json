@@ -1,0 +1,8 @@
+{
+ "id": 1150120,
+ "bug_id": 254024,
+ "attachment_id": 0,
+ "creation_time": "2021-03-05T08:14:23Z",
+ "creator": "ehaupt@FreeBSD.org",
+ "text": "I tried to destry a zfs volume:\n\n# zfs destroy -r zroot/foo/bar\ncannot unmount '/foo/bar': unmount failed\n\nfstat sure enough reveals the culprit:\n\n# fstat | grep \"foo/bar\"\nehaupt   gvfsd-trash  1814   25 /foo/bar     34 drwxr-xr-x      23  r\nehaupt   gvfsd-trash  1814   26 /foo/bar     34 drwxr-xr-x      23  r\n\nAttaching truss to the pid I see:\n\n# truss -f -p 1814\n 1814: poll({ 4/POLLIN },1,2504)                 = 0 (0x0)\n 1814: getfsstat(0x0,0,MNT_NOWAIT)               = 41 (0x29)\n 1814: getfsstat(0x80153e140,96104,MNT_NOWAIT)   = 41 (0x29)\n 1814: poll({ 4/POLLIN },1,2992)                 = 0 (0x0)\n 1814: getfsstat(0x0,0,MNT_NOWAIT)               = 41 (0x29)\n 1814: getfsstat(0x80153ee00,96104,MNT_NOWAIT)   = 41 (0x29)\n 1814: poll({ 4/POLLIN },1,2924)                 = 0 (0x0)\n 1814: getfsstat(0x0,0,MNT_NOWAIT)               = 41 (0x29)\n 1814: getfsstat(0x80153e340,96104,MNT_NOWAIT)   = 41 (0x29)\n 1814: poll({ 4/POLLIN },1,2965)                 = 0 (0x0)\n 1814: getfsstat(0x0,0,MNT_NOWAIT)               = 41 (0x29)\n 1814: getfsstat(0x80153e340,96104,MNT_NOWAIT)   = 41 (0x29)\n^C\n\nI am on:\nFreeBSD freebsd.local 13.0-BETA4 FreeBSD 13.0-BETA4 #5 releng/13.0-n244620-3664067ea91: Wed Mar  3 21:05:06 CET 2021     root@freebsd.local:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\n\ngvfs version:\ngvfs-1.46.2"
+}

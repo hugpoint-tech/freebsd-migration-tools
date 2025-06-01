@@ -1,0 +1,8 @@
+{
+ "id": 1165275,
+ "bug_id": 256473,
+ "attachment_id": 0,
+ "creation_time": "2021-06-07T22:58:32Z",
+ "creator": "jwb@freebsd.org",
+ "text": "When running /bin/tcsh or /bin/sh, character ranges of either upper case or lower case also expand to files with the other case:\n\nFreeBSD moray.acadix  bacon ~ 1017: ls -d [A-Z]*\nBiostar/             Grad-school-biosci/  Save/\nBooks/               igv/                 scripts/\nCoral@               Moto/                VirtualBox VMs/\nData/                ncbi/                wpa_supplicant.conf\nDesktop/             Ports/\nDocuments/           Prog/\nFreeBSD moray.acadix  bacon ~ 1018: bash\n\nUsing bash from ports, I do not see this behavior:\n\n[bacon@moray ~]$ ls -d [A-Z]*\nBiostar            Data               Grad-school-biosci Prog\nBooks              Desktop            Moto               Save\nCoral              Documents          Ports              VirtualBox VMs\n\nAlso checked tcsh on a CentOS system and did not see this behavior.\n\nLastly I do NOT see this behavior from glob(3), so it seems to be limited to shells in the FreeBSD base.\n\n#include \u003cstdio.h\u003e\n#include \u003csysexits.h\u003e\n#include \u003cglob.h\u003e\n#include \u003cunistd.h\u003e\n\nint     main(int argc,char *argv[])\n\n{\n    glob_t g;\n    \n    g.gl_offs = 2;\n    glob(\"[A-Z]*\", GLOB_DOOFFS, NULL, \u0026g);\n    g.gl_pathv[0] = \"ls\";\n    g.gl_pathv[1] = \"-d\";\n    execvp(\"ls\", g.gl_pathv);\n\n    return EX_OK;\n}"
+}

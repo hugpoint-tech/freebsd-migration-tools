@@ -1,0 +1,8 @@
+{
+ "id": 37924,
+ "bug_id": 12526,
+ "attachment_id": 0,
+ "creation_time": "1999-07-06T01:10:00Z",
+ "creator": "kientzle@acm.org",
+ "text": "fseek() does not properly handle SEEK_CUR if the resulting\nfile position would exceed 2^31.\n\n(Remember that SEEK_CUR and SEEK_END can both be used to seek\nbeyond 2^31 even though fseek only accepts a 32-bit signed long offset.)\n\nFix: \n\nfseek() correctly uses 64-bit fpos_t arithmetic to compute the new\nfile offset when converting SEEK_CUR to SEEK_SET, but then assigns the\n64-bit result into the 32-bit 'offset' variable.\n\nThis can be fixed by changing the variable 'offset' to a 64-bit fpos_t\ntype, which in turn requires renaming the actual argument to maintain\nthe ANSI-dictated interface.  The three lines marked 'TBKK' below are\nthe necessary changes.\n        \n/usr/src/lib/libc/stdio/fseek.c:\n\nint\nfseek(fp, offset32, whence) /* TBKK: renamed 'offset' to 'offset32' */\n        register FILE *fp;\n        long offset32; /* TBKK: renamed 'offset' to 'offset32' */\n        int whence;\n{\n        register fpos_t (*seekfn) __P((void *, fpos_t, int));\n        fpos_t target, curoff;\n        fpos_t offset = offset32; /* TBKK: added 64-bit offset variable */\nHow-To-Repeat: In a 4gig file, perform:\n\nfseek(f,0x7fffffffL, SEEK_SET);\nfseek(f,0x7fffffffL, SEEK_CUR); /* This seek silently fails */"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 470650,
+ "bug_id": 128790,
+ "attachment_id": 0,
+ "creation_time": "2008-11-11T15:40:01Z",
+ "creator": "nick@foobar.org",
+ "text": "\nThe IP_MINTTL socket option allows implementation of GTSM - RFC 5082.  This\nis useful for BGP session security, and is implemented in OpenBGPD 4.3.\n\nFrom perusing the kernel code, you can set inp-\u003einp_ip_minttl to any value\nbetween 1 and MAXTTL (i.e. 255).  These are permissable TTL values. \nHowever, when setting up the inp structure, inp_ip_minttl will be\ninitialised to zero.  Also, there are various checks in\n/sys/netinet/raw_ip.c, /sys/netinet/tcp_input.c and\n/sys/netinet/udp_usrreq.c which only perform a MINTTL check if\ninp-\u003einp_ip_minttl is set to nonzero.  This suggests that zero is a valid\nvalue for inp_ip_minttl.\n\nHowever, there is a bug in the implementation on {free,open,dragonfly}bsd\nwhich prevents a programmer from calling the setsockopt() IP_MINTTL with a\nvalue of zero.\n\nPatch below to fix this behaviour.\n\nHow-To-Repeat: \n\tint minttl = 0;\n\tret = setsockopt (sock, IPPROTO_IP, IP_MINTTL, \u0026minttl, sizeof(minttl));\n\n\t[expect ret == -1]"
+}

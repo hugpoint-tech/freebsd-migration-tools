@@ -1,0 +1,8 @@
+{
+ "id": 1042492,
+ "bug_id": 236565,
+ "attachment_id": 202895,
+ "creation_time": "2019-03-16T01:37:43Z",
+ "creator": "rozhuk.im@gmail.com",
+ "text": "Created attachment 202895\npatch\n\nI spent some time while debugging math/mprime build, then build:\n...\ncc -O2 -pipe -O2 -DSTRIP_FBSDID -pipe -D_FORTIFY_SOURCE=2 -mretpoline  -fstack-protector-all -fno-strict-aliasing  -O2 -DSTRIP_FBSDID -pipe -D_FORTIFY_SOURCE=2 -mretpoline -I.. -I../sqlite-amalgamation-3180000 -DX86_64 -c gwnum.c\n...\n\nwhere:\n-O2 -pipe - from /usr/share/mk/sys.mk\n-O2 -DSTRIP_FBSDID -pipe -D_FORTIFY_SOURCE=2 -mretpoline - mine /etc/make.conf\n-fstack-protector-all -fno-strict-aliasing - from /usr/ports/Mk/bsd.port.mk, /usr/ports/Mk/bsd.ssp.mk\n-I.. -I../sqlite-amalgamation-3180000 -DX86_64 -c gwnum.c - port makefile\n\nthis options added twice:\n-O2 -DSTRIP_FBSDID -pipe -D_FORTIFY_SOURCE=2 -mretpoline\n\nfirst time then you call make to on make file in ports tree,\nsecond then ports trying to build port.\nIf use gmake to build port then this not happen.\n\nThis can be problem, because ports build system does not control\nCFLAGS and other staff that in /etc/make.conf.\nFor example if you try build mprime using gcc - it fail, because\ngcc does not support -mretpoline.\n/usr/ports/Mk/bsd.gcc.mk - handle this and remove first -mretpoline,\nbut second -mretpoline added after run MAKE_CMD.\n\nTo prevent second include /etc/make.conf this must be done:\n__MAKE_CONF=/dev/null\nIt can be added to /etc/make.conf, /usr/ports/Mk/bsd.port.mk or\nport Makefile.\n\nSome ports already done this.\nI add to /etc/make.conf and buld dozen ports without isses."
+}

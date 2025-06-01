@@ -1,0 +1,8 @@
+{
+ "id": 1091766,
+ "bug_id": 244692,
+ "attachment_id": 0,
+ "creation_time": "2020-03-09T10:47:33Z",
+ "creator": "spy@spy.zp.ua",
+ "text": "# gjournal load\n# gjournal label -vh /dev/gpt/testdata /dev/gpt/testlog\n# newfs -J -t -g 1M /dev/gpt/testdata.journal\n# mount -o \"async,atime=off\" /dev/gpt/testdata.journal /mnt \n# tail -n 3 /var/log/messages\nMar  9 12:22:16 ctl kernel: GEOM_JOURNAL: BIO_FLUSH not supported by gpt/testlog.\nMar  9 12:22:16 ctl kernel: GEOM_JOURNAL: BIO_FLUSH not supported by gpt/testdata.\nMar  9 12:25:40 ctl kernel: WARNING: /mnt: TRIM flag on fs but disk does not confirm that it supports TRIM\n\n# smartctl -a /dev/nvme1 | grep -i utiliz\nNamespace 1 Utilization:            50,589,696 [50.5 MB]\n# dd if=/dev/random of=/mnt/junk bs=1m count=30000\n# smartctl -a /dev/nvme1 | grep -i utiliz\nNamespace 1 Utilization:            36,860,428,288 [36.8 GB]\n# rm /mnt/junk\n… after a couple of time still not free …\n# smartctl -a /dev/nvme1 | grep -i utiliz\nNamespace 1 Utilization:            36,860,428,288 [36.8 GB]\n\nIt seems, gjournal still does not support TRIM in 2020?!.. neither for data device nor for journal device.\n\nAnd really, one more fast proof:\n# trim -f /dev/gpt/testdata.journal\ntrim /dev/gpt/testdata.journal offset 0 length 53687090688\ntrim: /dev/gpt/testdata.journal: TRIM/UNMAP not supported by driver\n\n\nWithout gjournal trim works fine on the same device nvd1.\n# gjournal stop /dev/gpt/testdata\n# trim -f /dev/nvd1\ntrim /dev/nvd1 offset 0 length 960197124096\n# smartctl -a /dev/nvme1 | grep -i utiliz\nNamespace 1 Utilization:            0"
+}

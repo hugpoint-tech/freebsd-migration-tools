@@ -1,0 +1,8 @@
+{
+ "id": 1008003,
+ "bug_id": 230804,
+ "attachment_id": 0,
+ "creation_time": "2018-08-23T13:39:15Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kevans\nDate: Thu Aug 23 13:38:38 UTC 2018\nNew revision: 338250\nURL: https://svnweb.freebsd.org/changeset/base/338250\n\nLog:\n  efiloader: Setup FDT in autoload to fix overlays clobbering kenv\n\n  manu found in the noted PR that overlays seemed to be clobbering the kenv\n  and killing the boot. Further inspection revealed that one can `fdt ls` at\n  the loader prompt for a successful boot, but autoboot breaks it.\n\n  In the autoboot case, first setup of FDT is happening in the middle of\n  bi_load, which triggers loading of the DTBO from /boot.\n\n  This is bad, bad, bad. Files in the loader are loaded somewhere in the\n  middle of the address space one after another. bi_load starts building the\n  needed kernel bootinfo immediately after the highest-addr loaded file. File\n  loads in the middle of bi_load suddenly clobber bootinfo and everything goes\n  off the rails.\n\n  The solution to this is to use take advantage of arch_autoload to setup FDT\n  in efiloader compiled with LOADER_FDT_SUPPORT. This matches how it works in\n  ubldr land, and is how it should have worked when overlay support was added\n  to efiloader since fdt_setup_fdtp now has the potential to load files\n  (courtesy of fdt_platform_load_dtb).\n\n  PR:\t\t230804\n  Discussed with:\timp\n  MFC after:\t1 week\n  Differential Revision:\thttps://reviews.freebsd.org/D16858\n\nChanges:\n  head/stand/efi/loader/autoload.c"
+}

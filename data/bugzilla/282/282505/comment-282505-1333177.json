@@ -1,0 +1,8 @@
+{
+ "id": 1333177,
+ "bug_id": 282505,
+ "attachment_id": 0,
+ "creation_time": "2024-11-03T00:50:14Z",
+ "creator": "jfc@mit.edu",
+ "text": "Short version: vmm might provide a bad value for id_aa64dfr0_el1 on my hardware.\n\nA 13.3 kernel crashes almost immediately running under bhyve on a RockPro64 running 15.0-CURRENT.  Function dbg_monitor_enter accesses an unimplemented watchpoint 4.  The hardware supported range is 0-3.  The A53 and A72 TRMs say 4 watchpoints and dbg_watchpoint_num=4 on the host.  This is all too early to enter the debugger or examine memory.  I have console output and a register dump.  Panic string is\n\npanic: Undefined instruction: d51004e2\n\nThe instruction decodes to\n\nmsr\tdbgwcr4_el1, x2\n\nThis is consistent with the register dump, which shows dbg_wb_write_reg called from this loop in dbg_monitor_enter with i==4:\n\n\t\tfor (i = 0; i \u003c dbg_watchpoint_num; i++) {\n\t\t\tdbg_wb_write_reg(DBG_REG_BASE_WCR, i, 0);\n\t\t\tdbg_wb_write_reg(DBG_REG_BASE_WVR, i, 0);\n\t\t}\n\nThe watchpoint count comes from\n\n\tdbg_watchpoint_num = ((READ_SPECIALREG(id_aa64dfr0_el1) \u003e\u003e 20) \u0026 0xf) + 1;\n\nI do not yet know what the mrs instruction here returns running under bhyve.\n\nThe SOC has 4 Cortex A53 and 2 Cortex A72."
+}

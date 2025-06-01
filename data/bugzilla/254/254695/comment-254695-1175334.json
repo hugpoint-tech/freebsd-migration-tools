@@ -1,0 +1,8 @@
+{
+ "id": 1175334,
+ "bug_id": 254695,
+ "attachment_id": 0,
+ "creation_time": "2021-08-23T12:57:16Z",
+ "creator": "gbe@FreeBSD.org",
+ "text": "I think I have found a way to enable TCP BBR and RACK on Hyper-V again with the following patch, which adds NET_EPOCH{ENTER,EXIT} calls around hn_chan_rollup(), in which the panic is happening.\n\ndiff --git a/sys/dev/hyperv/netvsc/if_hn.c b/sys/dev/hyperv/netvsc/if_hn.c\nindex cd0b5a5fa8b9..fa141adad9f6 100644\n--- a/sys/dev/hyperv/netvsc/if_hn.c\n+++ b/sys/dev/hyperv/netvsc/if_hn.c\n@@ -83,6 +83,7 @@ __FBSDID(\"$FreeBSD$\");\n #include \u003csys/taskqueue.h\u003e\n #include \u003csys/buf_ring.h\u003e\n #include \u003csys/eventhandler.h\u003e\n+#include \u003csys/epoch.h\u003e\n\n #include \u003cmachine/atomic.h\u003e\n #include \u003cmachine/in_cksum.h\u003e\n@@ -2883,7 +2884,10 @@ static void\n hn_chan_rollup(struct hn_rx_ring *rxr, struct hn_tx_ring *txr)\n {\n #if defined(INET) || defined(INET6)\n+       struct epoch_tracker et;\n+       NET_EPOCH_ENTER(et);\n        tcp_lro_flush_all(\u0026rxr-\u003ehn_lro);\n+       NET_EPOCH_EXIT(et);\n #endif\n\n        /*\n\n\nIf have been running with this change for about three days and haven't had a panic since then.\n\nOne question remains before opening a differential for it. Should I place something around these NET_EPOCH_* calls like HAVE_BBR or something?\n\nThe panic within tcp_lro_flush_all() happens only if TCP BBR or RACK are been used."
+}

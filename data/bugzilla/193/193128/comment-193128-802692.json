@@ -1,0 +1,8 @@
+{
+ "id": 802692,
+ "bug_id": 193128,
+ "attachment_id": 0,
+ "creation_time": "2014-12-28T21:28:44Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "After discussion on freebsd-fs@, instead of adding the mount\noption, the pre-FreeBSD9.2 behaviour of using xx_TOSERVER for\nsetting times for the Setattr RPC used on exclusive create\nunconditionally has been done in head via r276347.\nThis patch will be MFC'd to stable/9 and stable/10 in April 2015.\n\nUntil then, the problem can be avoided by applying the patch and\nbuilding a custom kernel or using an NFSv2, since NFSv2 doesn't\nexhibit the problem.\nThe r276347 patch is:\n--- fs/nfsclient/nfs_clport.c.sav\t2014-12-25 12:54:25.000000000 -0500\n+++ fs/nfsclient/nfs_clport.c\t2014-12-25 12:55:49.000000000 -0500\n@@ -1096,9 +1096,16 @@ nfscl_checksattr(struct vattr *vap, stru\n \t * us to do a SETATTR RPC. FreeBSD servers store the verifier\n \t * in atime, but we can't really assume that all servers will\n \t * so we ensure that our SETATTR sets both atime and mtime.\n+\t * Set the VA_UTIMES_NULL flag for this case, so that\n+\t * the server's time will be used.  This is needed to\n+\t * work around a bug in some Solaris servers, where\n+\t * setting the time TOCLIENT causes the Setattr RPC\n+\t * to return NFS_OK, but not set va_mode.\n \t */\n-\tif (vap-\u003eva_mtime.tv_sec == VNOVAL)\n+\tif (vap-\u003eva_mtime.tv_sec == VNOVAL) {\n \t\tvfs_timestamp(\u0026vap-\u003eva_mtime);\n+\t\tvap-\u003eva_vaflags |= VA_UTIMES_NULL;\n+\t}\n \tif (vap-\u003eva_atime.tv_sec == VNOVAL)\n \t\tvap-\u003eva_atime = vap-\u003eva_mtime;\n \treturn (1);"
+}

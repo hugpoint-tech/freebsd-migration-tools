@@ -1,0 +1,8 @@
+{
+ "id": 441249,
+ "bug_id": 122833,
+ "attachment_id": 0,
+ "creation_time": "2008-05-14T22:01:44Z",
+ "creator": "rodrigc@crodrigues.org",
+ "text": "On Wed, May 14, 2008 at 06:56:40PM +0000, Craig Rodrigues wrote:\n\u003e That fix is wrong.  The better fix would be to come up\n\u003e with a function that traverses a vfs_optlist and deletes a string\n\u003e option from the list.  Something like:\n\nActually we have such a function.  We need to do to the \"snapshot\" option\nwhat we do to the \"export\" option in sys/kern/vfs_export.c.\n\n\nIndex: ffs_vfsops.c\n===================================================================\nRCS file: /home/ncvs/src/sys/ufs/ffs/ffs_vfsops.c,v\nretrieving revision 1.340\ndiff -u -r1.340 ffs_vfsops.c\n--- ffs_vfsops.c\t26 Mar 2008 20:48:07 -0000\t1.340\n+++ ffs_vfsops.c\t14 May 2008 21:00:23 -0000\n@@ -183,8 +183,15 @@\n \tif (vfs_getopt(mp-\u003emnt_optnew, \"noclusterw\", NULL, NULL) == 0)\n \t\tmntorflags |= MNT_NOCLUSTERW;\n \n-\tif (vfs_getopt(mp-\u003emnt_optnew, \"snapshot\", NULL, NULL) == 0)\n+\tif (vfs_getopt(mp-\u003emnt_optnew, \"snapshot\", NULL, NULL) == 0) {\n \t\tmntorflags |= MNT_SNAPSHOT;\n+\t\t/*\n+\t\t * Once we have set the MNT_SNAPSHOT flag, do not\n+\t\t * persist \"snapshot\" in the options list.\n+\t\t */\n+\t\tvfs_deleteopt(mp-\u003emnt_optnew, \"snapshot\");\n+\t\tvfs_deleteopt(mp-\u003emnt_opt, \"snapshot\");\n+\t}\n \n \tMNT_ILOCK(mp);\n \tmp-\u003emnt_flag = (mp-\u003emnt_flag | mntorflags) \u0026 ~mntandnotflags;\n\n\n-- \nCraig Rodrigues\nrodrigc@crodrigues.org"
+}

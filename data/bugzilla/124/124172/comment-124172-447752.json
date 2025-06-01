@@ -1,0 +1,8 @@
+{
+ "id": 447752,
+ "bug_id": 124172,
+ "attachment_id": 0,
+ "creation_time": "2008-07-08T04:12:17Z",
+ "creator": "timur@gnu.org",
+ "text": "On Wed, Jul 02, 2008 at 12:49:03AM -0400, Adam McDougall wrote:\n\u003e On Tue, Jul 01, 2008 at 11:16:22PM +0000, timur@FreeBSD.org wrote:\n\u003e\n\u003e   Synopsis: net/Samba3 disk quota support uses hardcoded and wrong blocksize for calculation\n\u003e\n\u003e I expected 4096.  I'm not actually sure how to query it, I thought it might\n\u003e be part of the quota rpc calls but I don't see a field in\n\u003e http://search.cpan.org/~tomzo/Quota-1.6.2/Quota.pm.\n\nOk, seems you got the answer right, just overlooked it :)\n\nThe bug(tm) is actually here, I believe:\n\nif (D.dqb_curblocks == D.dqb_curblocks == 1)\n-               *bsize = DEV_BSIZE;\n+       /*      *bsize = DEV_BSIZE; /*\n+               *bsize = 4096;\n\nAs you spotted, check is meaningless. It's supposed to be a safeguard, but\ndue broken condition overrides correct results.\n\nTry to run Samba with debug level of 10 and quota enabled and you'd see:\n\nDEBUG(10,(\"nfs_quotas: Let`s look at D a bit closer... status \\\"%i\\\"\nbsize \\\"%i\\\"\n\netc.\n\nbsize should be 4096 for you.\n\nThe fix to the code is also trivial:\n\n- if (D.dqb_curblocks == D.dqb_curblocks == 1)\n+ if (D.dqb_curblocks == 1)\n       *bsize = DEV_BSIZE;\n\nPlease, try this and confirm or deny my wild guess :) I hope, that it's ok and\nwe nailed yet another Samba bug :)\n\nWith best regards,\nTimur."
+}

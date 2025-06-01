@@ -1,0 +1,8 @@
+{
+ "id": 1299150,
+ "bug_id": 269072,
+ "attachment_id": 0,
+ "creation_time": "2024-02-29T16:58:35Z",
+ "creator": "se@FreeBSD.org",
+ "text": "It works for me with fstyp from -CURRENT and from 13.3-RC1 on amd64.\n\nI get (identical output on both FreeBSD versions):\n\n$ file -s /dev/md0s1\n/dev/md0s1: DOS/MBR boot sector, code offset 0x3c+2, OEM-ID \"MSWIN4.1\", sectors/cluster 8, root entries 512, Media descriptor 0xf8, sectors/FAT 129, sectors/track 1, heads 1, hidden sectors 1, sectors 262143 (volumes \u003e 32 MB), serial number 0xb37e2, label: \"RPI-RP2    \", FAT (16 bit)\n\n$ fstyp /dev/md0s1\nmsdosfs\n\nIf the problem persists on your system, you may want to run fstyp (with debug info) in a debugger or add print statements at various locations in:\n\n/usr/src/usr.sbin/fstyp/msdosfs.c\n\nI have checked the sources of FreeBSD-13.1 for differences in fstyp/msdosfs.c and there were none that effect the detection. But there were differences between 13.0 and 13.1, especially for RPi images:\n\n+       /* Special case for Raspberry Pi Pico bootloader. */\n+       if (sector0[510] == 0 \u0026\u0026 sector0[511] == 0 \u0026\u0026\n+           sector0[0] == 0xeb \u0026\u0026 sector0[1] == 0x3c \u0026\u0026 sector0[2] == 0x90)\n+               return (true);\n\nBut this special case should be in your version of fstyp, if you are on FreeBSD-13.1 (as indicated in the information your provide in the PR)."
+}

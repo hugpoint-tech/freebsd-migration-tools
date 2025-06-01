@@ -1,0 +1,8 @@
+{
+ "id": 1053228,
+ "bug_id": 238319,
+ "attachment_id": 0,
+ "creation_time": "2019-06-04T15:52:49Z",
+ "creator": "cem@freebsd.org",
+ "text": "Re: (1):\n\ns_login is only modified by setlogin(2), which requires PRIV_PROC_SETLOGIN, which ... is always permitted for the current process on its session.  Each time it is set, it produces an audit record, AUDIT_ARG_LOGIN().\n\nYou could conceivably add a flag to session 'has_login_been_set', set it as appropriate, and check it in priv_check PRIV_PROC_SETLOGIN under securelevel.  But why?\n\nWhat does it mean to restrict setlogin(2) to \"new\" sessions?  Users can always just create a new process and make it the new session leader (setsid() or setpgid()).  The old process gets a new \"login\" on its associated session.\n\nRe: (2):\n\nI don't think this metadata makes much sense in session.  It's out of line with existing session metadata (mostly tracking process group and controlling terminal -- heavily tied to shell login and process groups).  In particular, sessions are a process concept, not a thread one.  There is no guarantee that all httpds follow the model required for this to make sense.\n\nAnd if you have to fix httpds, you might as well just pass the information to the worker in some side channel; either environment variables, or a pipe, or shared memory segment.\n\nI guess the target network daemon is sshd, which is single threaded, and for that it might work?  But it doesn't really generalize, IMO."
+}

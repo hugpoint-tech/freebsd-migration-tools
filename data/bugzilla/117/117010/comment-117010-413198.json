@@ -1,0 +1,8 @@
+{
+ "id": 413198,
+ "bug_id": 117010,
+ "attachment_id": 0,
+ "creation_time": "2008-07-25T07:22:46Z",
+ "creator": "chagin.dmitry@gmail.com",
+ "text": "Please, try a patch below:\n\ndiff --git a/src/sys/compat/linux/linux_file.c b/src/sys/compat/linux/linux_file\nindex 303bc3f..d88f95f 100644\n--- a/src/sys/compat/linux/linux_file.c\n+++ b/src/sys/compat/linux/linux_file.c\n@@ -303,8 +303,8 @@ struct l_dirent64 {\n \tchar            d_name[LINUX_NAME_MAX + 1];\n  };\n\n-#define LINUX_RECLEN(de,namlen) \\\n-    ALIGN((((char *)\u0026(de)-\u003ed_name - (char *)de) + (namlen) + 1))\n+#define LINUX_RECLEN(de,namlen,trail) \\\n+    ALIGN((((char *)\u0026(de)-\u003ed_name - (char *)de) + (namlen) + trail))\n\n  #define        LINUX_DIRBLKSIZ         512\n\n@@ -436,8 +436,8 @@ again:\n \t\t}\n\n \t\tlinuxreclen = (is64bit)\n-                   ? LINUX_RECLEN(\u0026linux_dirent64, bdp-\u003ed_namlen)\n-                   : LINUX_RECLEN(\u0026linux_dirent, bdp-\u003ed_namlen);\n+                   ? LINUX_RECLEN(\u0026linux_dirent64, bdp-\u003ed_namlen, 1)\n+                   : LINUX_RECLEN(\u0026linux_dirent, bdp-\u003ed_namlen, 2);\n\n \t\tif (reclen \u003e len || resid \u003c linuxreclen) {\n \t\t\toutp++;\n\nit solves getdents() problem (at least at x86_64 emulation with \nlinux_base-f8)\n\nps, be not bared, linux really has such features...\nthnx!\n\n-- \nHave fun!\nchd"
+}

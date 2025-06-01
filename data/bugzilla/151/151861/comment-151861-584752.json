@@ -1,0 +1,8 @@
+{
+ "id": 584752,
+ "bug_id": 151861,
+ "attachment_id": 0,
+ "creation_time": "2010-11-03T15:02:24Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "On 2010-11-03, Kostik Belousov wrote:\n\u003e \u003e Why init_dag() should be allowed to be called multiple times for an\n\u003e \u003e object?\n\u003e \n\u003e If already loaded object is dlopened, dlclosed, and then again dlopened,\n\u003e init_dag() will be called twice, one time for each dlopen.\n\nIf the object gets unloaded after dlclose(), this will not happen? I am\nnot sure if I like that it can be called multiple times.\n\n\u003e --- a/libexec/rtld-elf/rtld.c\n\u003e +++ b/libexec/rtld-elf/rtld.c\n\u003e @@ -1275,11 +1275,12 @@ init_dag(Obj_Entry *root)\n\u003e  {\n\u003e      DoneList donelist;\n\u003e  \n\u003e -    if (root-\u003edag_inited)\n\u003e -\t    return;\n\u003e -    donelist_init(\u0026donelist);\n\u003e -    init_dag1(root, root, \u0026donelist);\n\u003e -    root-\u003edag_inited = true;\n\u003e +    if (!root-\u003edag_inited) {\n\u003e +\tdonelist_init(\u0026donelist);\n\u003e +\tinit_dag1(root, root, \u0026donelist);\n\u003e +\troot-\u003edag_inited = true;\n\u003e +    }\n\u003e +    ref_dag(root);\n\u003e  }\n\nIf you are going to take this approach, why not remove init_dag() altogether\nand make ref_dag() to initialize the dag when necessary?\n\nThanks for working on this.\n-- \nJaakko"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1345766,
+ "bug_id": 271300,
+ "attachment_id": 0,
+ "creation_time": "2025-01-24T14:40:12Z",
+ "creator": "emaste@freebsd.org",
+ "text": "commit 62f40433ab47ad4a9694a22a0313d57661502ca1\nAuthor:     Olivier Certner \u003colce@FreeBSD.org\u003e\nAuthorDate: Wed Sep 4 14:38:12 2024 +0000\nCommit:     Ed Maste \u003cemaste@FreeBSD.org\u003e\nCommitDate: Wed Sep 4 14:38:12 2024 +0000\n\n    umtx: shm: Fix use-after-free due to multiple drops of the registry reference\n    \n    umtx_shm_unref_reg_locked() would unconditionally drop the \"registry\"\n    reference, tied to USHMF_LINKED.\n    \n    This is not a problem for caller umtx_shm_object_terminated(), which\n    operates under the 'umtx_shm_lock' lock end-to-end, but it is for\n    indirect caller umtx_shm(), which drops the lock between\n    umtx_shm_find_reg() and the call to umtx_shm_unref_reg(true) that\n    deregisters the umtx shared region (from 'umtx_shm_registry';\n    umtx_shm_find_reg() only finds registered shared mutexes).\n    \n    Thus, two concurrent user-space callers of _umtx_op() with UMTX_OP_SHM\n    and flags UMTX_SHM_DESTROY, both progressing past umtx_shm_find_reg()\n    but before umtx_shm_unref_reg(true), would then decrease twice the\n    reference count for the single reference standing for the shared mutex's\n    registration.\n    \n    Reported by:    Synacktiv\n    Reviewed by:    kib\n    Approved by:    emaste (mentor)\n    Security:       FreeBSD-SA-24:14.umtx\n    Security:       CVE-2024-43102\n    Security:       CAP-01\n    Sponsored by:   The Alpha-Omega Project\n    Sponsored by:   The FreeBSD Foundation\n    Differential Revision:  https://reviews.freebsd.org/D46126"
+}

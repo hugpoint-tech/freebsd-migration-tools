@@ -1,0 +1,8 @@
+{
+ "id": 415265,
+ "bug_id": 117436,
+ "attachment_id": 0,
+ "creation_time": "2007-10-24T01:50:01Z",
+ "creator": "freebsd@spatula.net",
+ "text": "\n\u003e                 \u003e                  \u003e                   \u003e                   \u003e\nThe FreeBSD JDK does not process $JAVA_HOME/jre/lib/security/java.security,\nso any security customizations made by an administrator will be ignored by\nthe JVM; everything will get the compile-time defaults.  One common way this\nmanifests is by InetAddress caching everything forever, despite attempting\nto configure its caching behaviour.\n\nFix: \n\nUnknown at this time.\n\nOne way (albeit very ugly) to get around the InetAddress caching problem\nis to edit j2se/src/share/classes/java/net/InetAddress.java and change\nthese lines:\n\n    private static Cache addressCache =\n        new Cache(InetAddressCachePolicy.get());\n\n    private static Cache negativeCache =\n        new Cache(InetAddressCachePolicy.getNegative());\n\n\nto read:\n\n\n    private static Cache addressCache =\n        new Cache(InetAddressCachePolicy.NEVER);\n\n    private static Cache negativeCache =\n        new Cache(InetAddressCachePolicy.NEVER);\n\nand then recompile.\nHow-To-Repeat: Save this code as Test.java, compile it, and run it with truss.  Grep the\noutput and observe that java.security is never stat'ed or open'ed.\n\n[snip]\n\nimport java.net.*;\n\npublic class Test {\n        public static void main(String[] args) throws Exception {\n                InetAddress address = InetAddress.getByName(\"freebsd.org\");\n                System.out.println(address);\n        }\n}\n\n[snip]\n\nOn other architectures, including Linux and Windows, executing the Test \nprogram will result in a read of java.security."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 973358,
+ "bug_id": 225324,
+ "attachment_id": 0,
+ "creation_time": "2018-01-19T18:52:49Z",
+ "creator": "val@packett.cool",
+ "text": "We do not define the XSI STREAMS errors that are defined in NetBSD, Linux and illumos:\n\nhttps://github.com/IIJ-NetBSD/netbsd-src/blob/9df6a19369157a3aee2c2f9009ce074aab939a16/sys/sys/errno.h#L161-L165\n\nhttps://github.com/torvalds/linux/blob/dda3e15231b35840fe6f0973f803cc70ddb86281/include/uapi/asm-generic/errno.h#L43-L46\n\nhttps://github.com/illumos/illumos-gate/blob/4b8ee424cacf91875c8edca00ba30e7371c5f230/usr/src/uts/common/sys/errno.h#L118-L122\n\nOf course no one cares about XSI STREAMS, but e.g. drivers originating from Linux have (ab)used ETIME to mean whatever arbitrary timeout they wanted.\n\nCurrently, we have #define ETIME ETIMEDOUT in LinuxKPI (and cddl/contrib/opensolaris/uts/common/fs/zfs/zcp.c).\n\nThe most notable drivers that rely on this are DRM/KMS graphics drivers. So currently, Mesa has to do the #define ETIME ETIMEDOUT thing too, e.g.:\n\nhttps://github.com/freebsd/freebsd-ports/blob/d778bff61a11b8062802417099e1d7b34256fb6a/graphics/mesa-dri/files/patch-src_intel_vulkan_anv__gem.c\n\nThis is pretty bad, and Mesa upstream does not want to do that.\n\nWe need to either #define ETIME ETIMEDOUT in errno.h, or define it as a new error number and get rid of #define ETIME ETIMEDOUT everywhere. The latter is more \"proper\" (same distinction between the two as on other systems), but slightly more painful (-CURRENT users would have to upgrade both kernel/drm-next-kmod AND Mesa at the same time once)."
+}

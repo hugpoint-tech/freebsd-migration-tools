@@ -1,0 +1,8 @@
+{
+ "id": 1268315,
+ "bug_id": 272835,
+ "attachment_id": 0,
+ "creation_time": "2023-07-31T07:49:21Z",
+ "creator": "Joerg.Pulz@frm2.tum.de",
+ "text": "kinit(8) segfaults after my recent upgrade to CURRENT with OpenSSL-3.0 - FreeBSD 14.0-CURRENT amd64 1400093 #0 main-n264294-09e5d91069d1\n\nLooking at the core dump it happens here:\n\n   frame #1: 0x000032ea670715c8 libkrb5.so.11`ARCFOUR_string_to_key(context=0x000051189c638000, enctype=KRB5_ENCTYPE_ARCFOUR_HMAC_MD5, password=\u003cunavailable\u003e, salt=krb5_salt @ 0x000032ea64595c30, opaque=\u003cunavailable\u003e, key=0x000051189c6b7fc0) at salt-arcfour.c:84:2\n\nLooking at crypto/heimdal/lib/krb5/salt-arcfour.c it happens when calling openssl's EVP_DigestUpdate():\n\n    /* LE encoding */\n    for (i = 0; i \u003c len; i++) {\n        unsigned char p;\n        p = (s[i] \u0026 0xff);\n-\u003e      EVP_DigestUpdate (m, \u0026p, 1);\n        p = (s[i] \u003e\u003e 8) \u0026 0xff;\n        EVP_DigestUpdate (m, \u0026p, 1);\n    }\n\nRunning from lldb(1) it seems that I end in crypto/openssl/crypto/evp/digest.c in EVP_DigestUpdate() in line 412:\n\n    410     /* Code below to be removed when legacy support is dropped. */\n    411  legacy:\n    412     return ctx-\u003eupdate(ctx, data, count);\n\nHere ctx-\u003eupdate() is causing the segmentation fault.\n\nI'm not an openssl expert and have no clue what ctx-\u003eupdate should be and where it is coming from, so I'm at the end of the road here."
+}

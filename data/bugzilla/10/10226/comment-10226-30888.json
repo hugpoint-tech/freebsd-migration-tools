@@ -1,0 +1,8 @@
+{
+ "id": 30888,
+ "bug_id": 10226,
+ "attachment_id": 0,
+ "creation_time": "1999-02-23T15:30:00Z",
+ "creator": "netch@lucky.net",
+ "text": "\nOn running stress test, filesystem activity stops; no file can be opened,\neach process which try to open file hangs in 'inode' state (seeing 'top'\ncommand output). No memory activity hangs (i.e., bash can print list of its\nvariables ('set' command), top redraws its screen every 1-2 seconds);\nattempt to run 'ps' command from shell hangs the shell.\n\nThe problem seems not to be hardware-related; the same results have been\nobtained on different hardware configurations (either IDE or SCSI, Pentium-100\nor dual Pentium-II, different motherboards).\n\nProblem repeated after cvsup'ing and building stable system (cvsup'ing\non 18th of February).\n\nThis stress test doesn't crash 2.2.8-RELEASE or 3.0-RELEASE.\n\nHow-To-Repeat: \nExecute following to create test files:\n\ncat \u003estress \u003c\u003c\\EOF\n#!/bin/sh\ni=1\nwhile :; do\n  nohup sh -c 'find / -type f | xargs fgrep zukabukafoobar' \\\n\t\u003e/dev/null 2\u003e\u00261 \u0026\n  echo $i\n  i=`expr $i + 1`\ndone\nEOF\nchmod 755 stress\n\nand run it:\n\n./stress\n\nIn this configuration, process can create approx. 30 childs before locking.\n\nIn another variant:\n\ncat \u003e1 \u003c\u003c\\EOF\n#!/bin/sh\nwhile :; do\n  find / -type f | xargs fgrep zukabukafoobar\ndone\nEOF\ncat \u003e2 \u003c\u003c\\EOF\n#!/bin/sh\nnohup ./1 \u003e/dev/null 2\u003e\u00261 \u0026\nEOF\ncat \u003e3 \u003c\u003c\\EOF\n#!/bin/sh\nfor j in 1 2 3 4 5 6 7 8 9 10; do\n  ./2\ndone\nEOF\nchmod 755 1 2 3\n\n(to run, type `./3')\n\nnormally 3-4 childs (./2) can start before locking."
+}

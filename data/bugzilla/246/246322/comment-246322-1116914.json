@@ -1,0 +1,8 @@
+{
+ "id": 1116914,
+ "bug_id": 246322,
+ "attachment_id": 0,
+ "creation_time": "2020-08-05T15:28:04Z",
+ "creator": "cem@freebsd.org",
+ "text": "Could the cflags be more constrained to the specific problematic CUs?  For gcc crt (probably dead now?), the exclusion should only be needed for crtend.o/So.  That could either be a Makefile change, or we could #if 0 these lines from crtstuff.c?\n\n  https://svnweb.freebsd.org/base/head/contrib/gcc/crtstuff.c?revision=169690\u0026view=markup\u0026pathrev=209294#l483  (inside a defined(CRT_END) section starting at line 446).\n\nFor llvm csu, the issue reported was specific to i386 crt1.o; globally disabling unwind seems heavy-handed.  Ideally we get a _start frame on i386, but as a first step we should undisable these frames on !i386.\n\nI don't see any obvious reason llvm csu would actually emit any special last-CIE eh_frame value for i386; unlike the GNU one above, there isn't any eh_frame section symbol with magic zero value in any of the lib/csu code.  The weirdest thing about i386 crt1.o is that it has two DW_TAG_compile_units and also two CIEs.\n\nSupposing that is ld.bfd's problem, could crt1 be a .a?\n\nAlternatively, we could disable the unwind directives in crt1_s.S, keeping unwind directives for the rest of crt1.o (_start1, etc).  We'd lose _start, but still have a _start1 frame below main.\n\n(There is a special __EH_FRAME_LIST_END__ in contrib/llvm-project/compiler-rt/lib/crt/crtend.c, but as far as I can tell we don't build that file into userspace anywhere and it wouldn't be impacted by lib/csu/Makefile.inc CFLAGS.  We use the one in lib/csu/common/crtend.c.)"
+}

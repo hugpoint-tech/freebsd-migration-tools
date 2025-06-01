@@ -1,0 +1,8 @@
+{
+ "id": 840886,
+ "bug_id": 201611,
+ "attachment_id": 0,
+ "creation_time": "2015-09-18T23:44:37Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Would you be open to creating new fd's to describe the resources themselves instead?  That is, if you had a fd directly for the buffer you want to share, you could share the buffer by passing the fd for the buffer rather than having to proxy it via ioctls.  It seems that you are already sort-of doing this, but you are overloading fda so you can use an ioctl to \"bind\" a buffer to it and then send it across.  What if instead you had something like:\n\nprocess A:\n\n   fda_dev = open(\"/dev/nvidiactl\");\n\n   params.handleForResource = resource;\n   ioctl(fda_dev, opcode, \u0026params);\n\n   /* ioctl creates new fd in params.fd for the resource */\n\n   SendFdToProcessB(params.fd);\n   close(params.fd);\n\nprocess B:\n\n   fdb = RecvFdFromProcessA();\n   \n   mmap(..., fdb);\n\nThis is assuming you want to pass memory buffers around without copying.\n\nNote that if all you want is a new file descriptor type that can be mmap'd and references an existing VM object (such as the OBJT_SG objects the nvidia driver already creates internally) then such a file descriptor is probably fairly simple to write (especially in HEAD with the fo_mmap hook in fileops).  shm_open() would serve as a good reference, though we could also help with implementing an API for you to just takes an existing VM object and allocates a new fd for the current process that only permits mmap but nothing else."
+}

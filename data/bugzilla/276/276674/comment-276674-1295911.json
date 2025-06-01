@@ -1,0 +1,8 @@
+{
+ "id": 1295911,
+ "bug_id": 276674,
+ "attachment_id": 0,
+ "creation_time": "2024-02-08T17:38:14Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "Looking at the code in question, a div/0 could happen when cwnd \u003c t_maxseg. \nWhile it's not clear why and how that may happen, addressing the div/0 should be easy by max(maxseg, cwnd)/maxseg so that this term will be at least 1, and a div/0 is avoided.\n\nHTCP is not actively maintained, so tracking why cwnd could end up smaller than maxseg would be more involved (running with active BBLog and extracting the relevant data once another crash happens; running BBlog continously will probably cost some performance.\n\n\ndiff --git a/sys/netinet/cc/cc_htcp.c b/sys/netinet/cc/cc_htcp.c\nindex d31720d0099f..a858558d7aa5 100644\n--- a/sys/netinet/cc/cc_htcp.c\n+++ b/sys/netinet/cc/cc_htcp.c\n@@ -229,9 +229,9 @@ htcp_ack_received(struct cc_var *ccv, uint16_t type)\n                                 * per RTT.\n                                 */\n                                CCV(ccv, snd_cwnd) += (((htcp_data-\u003ealpha \u003c\u003c\n-                                   HTCP_SHIFT) / (CCV(ccv, snd_cwnd) /\n-                                   CCV(ccv, t_maxseg))) * CCV(ccv, t_maxseg))\n-                                   \u003e\u003e HTCP_SHIFT;\n+                                   HTCP_SHIFT) / (max(CCV(ccv, t_maxseg),\n+                                   CCV(ccv, snd_cwnd)) / CCV(ccv, t_maxseg))) *\n+                                   CCV(ccv, t_maxseg))  \u003e\u003e HTCP_SHIFT;\n                }\n        }\n }"
+}

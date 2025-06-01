@@ -1,0 +1,8 @@
+{
+ "id": 771278,
+ "bug_id": 191515,
+ "attachment_id": 0,
+ "creation_time": "2014-06-30T15:33:09Z",
+ "creator": "KOT@MATPOCKuH.Ru",
+ "text": "To receive peer's credentials in scheduler/auth.c uses this code:\nif (getsockopt(con-\u003ehttp.fd, SOL_SOCKET, SO_PEERCRED, \u0026peercred, \u0026peersize))\n\nBut on FreeBSD getsockopt() can't return peer's credentials.\nAs result cupsd can't verify peer's credentials and some applications like cups-browsed will fail to communicate with cupsd.\nIn /var/log/cups/messages I see messages like this:\nE [30/Jun/2014:19:24:32 +0400] [Client 11] Invalid peer credentials for \"root\" - got 556557241, expected 0!\n\nTo fix this problem I used this simple and dumb patch:\n--- scheduler/auth.c.orig       2014-06-30 19:17:02.796524975 +0400\n+++ scheduler/auth.c    2014-06-30 19:18:00.818031410 +0400\n@@ -559,7 +559,7 @@\n #  ifdef __APPLE__\n     if (getsockopt(con-\u003ehttp.fd, 0, LOCAL_PEERCRED, \u0026peercred, \u0026peersize))\n #  else\n-    if (getsockopt(con-\u003ehttp.fd, SOL_SOCKET, SO_PEERCRED, \u0026peercred, \u0026peersize))\n+    if (getpeereid(con-\u003ehttp.fd, \u0026(peercred.cr_uid), \u0026(peercred.cr_groups[0])))\n #  endif /* __APPLE__ */\n     {\n       cupsdLogMessage(CUPSD_LOG_ERROR,\n\nBut this solution may be incomplete.\nAlso required escalation of this problem to Apple."
+}

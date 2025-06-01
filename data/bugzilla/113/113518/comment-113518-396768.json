@@ -1,0 +1,8 @@
+{
+ "id": 396768,
+ "bug_id": 113518,
+ "attachment_id": 0,
+ "creation_time": "2007-06-10T13:00:11Z",
+ "creator": "ed@fxq.nl",
+ "text": "The make(1) source code contains a lot of optimizations to make sure it\ncalls applications like shells as less as possible, so commands without\nspecial characters in them are just splitted by whitespace and executed.\n\nFor some reason, make(1) doesn't have the knowledge that it can just\nskip lines starting with '#' when using sh(1), csh(1) or ksh(1), because\nthey won't have any effect at all.\n\nFix: The following patch adds a new parameter to shell.c called `skipfirst'\nwhich holds a list of characters that mean we can skip this command if\nit's the first character in the string. This patch shouldn't break any\nexotic makefiles, because it only performs this optimization when sh(1),\ncsh(1) or ksh(1) is used.\nHow-To-Repeat: Generate a Makefile like this:\n\n| (echo example:\n| for i in `jot 10000`\n| do\n|         printf '\\t# %d\\n' $i\n| done) \u003e Makefile\n\nWhen using the stock FreeBSD make(1) or gmake(1), it takes a lot of time\nto execute this command:\n\n| $ time make \u003e /dev/null\n| make \u003e /dev/null  14.91s user 18.58s system 95% cpu 34.959 total\n| $ time gmake \u003e /dev/null\n| gmake \u003e /dev/null  13.05s user 19.00s system 98% cpu 32.681 total\n\nWhen we teach make(1) to just ignore lines starting with '#', our\nresults are a lot better:\n\n| $ time make \u003e /dev/null \n| make \u003e /dev/null  0.26s user 0.01s system 99% cpu 0.269 total"
+}

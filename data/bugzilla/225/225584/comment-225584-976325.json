@@ -1,0 +1,8 @@
+{
+ "id": 976325,
+ "bug_id": 225584,
+ "attachment_id": 0,
+ "creation_time": "2018-02-08T18:06:50Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to mike from comment #58)\nLets try a slight variation.\n\ndiff --git a/lib/libc/stdio/_flock_stub.c b/lib/libc/stdio/_flock_stub.c\nindex 069ed64c4e9..935bf18b529 100644\n--- a/lib/libc/stdio/_flock_stub.c\n+++ b/lib/libc/stdio/_flock_stub.c\n@@ -39,12 +39,16 @@\n #include \u003csys/cdefs.h\u003e\n __FBSDID(\"$FreeBSD$\");\n \n+#include \u003csys/types.h\u003e\n+#include \u003cmachine/atomic.h\u003e\n #include \"namespace.h\"\n #include \u003cstdio.h\u003e\n #include \u003cstdlib.h\u003e\n #include \u003cstring.h\u003e\n #include \u003cpthread.h\u003e\n #include \"un-namespace.h\"\n+#include \u003csignal.h\u003e\n+#include \u003cunistd.h\u003e\n \n #include \"local.h\"\n \n@@ -112,11 +116,14 @@ void\n _funlockfile(FILE *fp)\n {\n \tpthread_t\tcurthread = _pthread_self();\n+\tpthread_t fl_owner;\n \n \t/*\n \t * Check if this file is owned by the current thread:\n \t */\n-\tif (fp-\u003e_fl_owner == curthread) {\n+\twhile ((fl_owner = (pthread_t)atomic_load_ptr(\u0026fp-\u003e_fl_owner)) == NULL)\n+\t\t;\n+\tif (fl_owner == curthread) {\n \t\t/*\n \t\t * Check if this thread has locked the FILE\n \t\t * more than once:\n@@ -138,4 +145,11 @@ _funlockfile(FILE *fp)\n \t\t\t_pthread_mutex_unlock(\u0026fp-\u003e_fl_mutex);\n \t\t}\n \t}\n+\telse {\n+\t\tchar x[120];\n+\t\tsnprintf(x, sizeof(x), \"funlockfile %p %p %p %p\\n\", fp,\n+\t\t\t curthread, fl_owner, fp-\u003e_fl_owner);\n+\t\twrite(2, x, strlen(x));\n+\t\traise(SIGBUS);\n+\t}\n }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1216134,
+ "bug_id": 264730,
+ "attachment_id": 0,
+ "creation_time": "2022-06-17T07:08:27Z",
+ "creator": "mgorny@gentoo.org",
+ "text": "While trying to figure out a build failure for an LLDB test, I've noticed a problem with clang++ on FreeBSD.  The minimal reproducer is:\n\n```\n#include \u003ccstdio\u003e\n\nint main() {\n  std::FILE* f = stdout;\n  return 0;\n}\n```\n\nBuilding with -fmodules fails:\n\n```\n$ clang++ -fmodules /tmp/test.cxx \n/tmp/test.cxx:4:18: error: declaration of '__stdoutp' must be imported from module 'std.iosfwd' before it is required\n  std::FILE* f = stdout;\n                 ^\n/usr/include/stdio.h:241:16: note: expanded from macro 'stdout'\n#define stdout  __stdoutp\n                ^\n/usr/include/wchar.h:184:14: note: declaration here is not visible\nextern FILE *__stdoutp;\n             ^\n1 error generated.\n```\n\nThe same sample works on Linux (w/ libc++).  I suspect the problem lies somewhere in FreeBSD headers.\n\nI can also reproduce with git clang (built from 1e67385d28a4462b3badb40373cd05d91f8ebce5) but against system libc++."
+}

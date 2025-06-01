@@ -1,0 +1,8 @@
+{
+ "id": 574831,
+ "bug_id": 149980,
+ "attachment_id": 0,
+ "creation_time": "2010-08-26T07:00:16Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "After some discussion with the POSIX folks, the spec doesn't discuss the tv_sec quantity, partly because the time_t value that gets plugged in for tv_sec can be positive or negative, depending on the implementation in the operating system. In FreeBSD time_t is signed, and in Linux it's unsigned.\n\nSignedness values aside, it doesn't make sense to sleep negative time, because PCs shouldn't be traveling to the past :).\n\nThe patch clearly notes the positive real number requirement and addresses the \u003c 0 quantity issue at the kernel level.\n\n# BEFORE\n$ ./test_nanosleep_negative_time\npassed unexpectedly\n# AFTER\n$ ./test_nanosleep_negative_time\nfailed as expected\n$ echo $?\n0\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: 1. Compile the following program:\n\n#include \u003cerr.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003ctime.h\u003e\n\nint\nmain(void)\n{\n\n\tstruct timespec rqtp;\n\n\trqtp.tv_sec = -1;\n\trqtp.tv_nsec = 0;\n\n\tif (nanosleep(\u0026rqtp, NULL) == -1) {\n\t\tif (errno == EINVAL) {\n\t\t\tprintf(\"failed as expected\\n\");\n\t\t\treturn (0);\n\t\t} else\n\t\t\twarn(\"failed unexpectedly\");\n\t} else\n\t\tprintf(\"passed unexpectedly\\n\");\n\n\treturn (1);\n}\n\n2. Execute the compiled binary."
+}

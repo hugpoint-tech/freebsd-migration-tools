@@ -1,0 +1,8 @@
+{
+ "id": 809546,
+ "bug_id": 197542,
+ "attachment_id": 0,
+ "creation_time": "2015-02-11T23:11:46Z",
+ "creator": "antoine@FreeBSD.org",
+ "text": "Thanks for investigating,  now we know the root cause if another user reports the same issue.\n\nIn Mk/Scripts/actual-package-depends.sh ,  the goal is to find to which package an executable/file/package belongs to.\n\"pkg which\" is ran first on the file/link, and if no package is found, \"pkg which\" is ran on a 1 step symlink resolution of the link.  (we do not use realpath because it could provide a wrong path if /usr/local is a symlink ;  we don't do a full resolution either because some metaports have things like python provided by lang/python -\u003e python2 provided by lang/python2 -\u003e python2.7 provided by lang/python27).\nThe 1 step symlink resolution is just to work around a few buggy ports (mainly gnupg*) that create symlinks that are not registered by the package manager (they are created by some install scripts).\n\nIn Mk/Scripts/find-lib.sh,  this code has been copied,  but I believe it's not necessary to resolve the link (except when file(1) is buggy where it can help a bit).\n\nI switched Uses=iconv to depend on libiconv.so instead of the compat libiconv.so.3, it may help in your case as it changes from a double-symlink to a simple-symlink.\n\nIf other users report the same issue,  we may put a note in UPDATING to remind them about make check-old/make delete-old."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 921706,
+ "bug_id": 217065,
+ "attachment_id": 0,
+ "creation_time": "2017-02-13T20:16:30Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Andrew Turner from comment #1)\n\n\u003e Line 403 will execute if the carry bit is clear, i.e. the result is greater than or equal to zero, so r0 \u003e= r1 (dst \u003e= src).\n\u003e Line 404 will execute if the carry bit is set, i.e. the result is less than zero, so r0 \u003c r1 (src \u003e dst).\n\nThat is not what I get from the arm documentation. . .\n\nhttp://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0473e/CJAJIHAD.html\n\nCC\tCarry clear\tLess than\nCS\tCarry set\tGreater than or equal, or unordered\n\nline                            instruction\n403\t \t \t        subcc   r3, r0, r1      /* if (dst \u003e src) r3 = dst - src */\n404\t \t \t        subcs   r3, r1, r0      /* if (src \u003e dsr) r3 = src - dst */\n\nLine 403 has a less than test to enable its subtraction, not a \"greater than  or equal to\" test.\n\nLine 404 has a greater than or equal test to enable its subtraction, not a less than test.\n\n\nHowever there is a difference in the original and proposed code for when\nr3==r2: the proposed code would jump to memcpy but the original code\nwould not.\n\nThis might bias the implementation. If so then the comments should be\nof a form that explains why the code is as it is (not sticking normal\nnon-negative arithmetic and depending on 2's complement properties with\ntest reversals based on those properties)."
+}

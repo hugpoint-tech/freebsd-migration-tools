@@ -1,0 +1,8 @@
+{
+ "id": 1364033,
+ "bug_id": 262179,
+ "attachment_id": 0,
+ "creation_time": "2025-05-13T14:38:11Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Having multiple jails share a nullfs mount isn't uncommon.  I think it's fairly surprising that two cooperating jails with a writeable shared unix socket can potentially break out of the chroot.  It makes some sense that the parent jail is allowed to pass arbitrary fds to a child jail, but sibling jails should be firewalled.\n\nWhat about the following semantics?\n- When transmitting SCM_RIGHTS, the kernel additionally passes a ucred pointer obtained from the transmitting thread.\n- When externalizing SCM_RIGHTS, the kernel compares the passed ucred with that of the receiving process.  If the transmitter and receiver belong to the same prison, or receiver's prison is a descendant of the transmitter's prison, or the receiver and transmitter prisons have the same root vnode, then file handles for directory vnodes may be passed.  Otherwise any such file handles are replaced with some tombstone.\n\nI suspect this would be good enough to prevent the escape, without breaking compatibility too badly."
+}

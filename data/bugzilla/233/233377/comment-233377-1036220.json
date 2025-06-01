@@ -1,0 +1,8 @@
+{
+ "id": 1036220,
+ "bug_id": 233377,
+ "attachment_id": 0,
+ "creation_time": "2019-02-05T18:52:38Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Leandro Lupori from comment #11)\nPrior to rXXXXXX, zone_alloc_bucket() did:\n\nmax = MIN(bucket-\u003eub_entries, zone-\u003euz_count);\nbucket-\u003eub_cnt = zone-\u003euz_import(zone-\u003euz_arg, bucket-\u003eub_bucket,\n    max, domain, flags);\n\nHowever, the zone lock is not held at this point, so uz_count may change.  In particular, since MIN is a macro that evaluates its arguments twice, I believe it's possible for max to end up being larger than bucket-\u003eub_entries, which would result in a use-after-free.\n\nr343026 fixed this problem as part of some refactoring, so that might explain why you don't see it anymore."
+}

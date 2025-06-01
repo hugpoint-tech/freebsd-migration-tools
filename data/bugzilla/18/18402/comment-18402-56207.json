@@ -1,0 +1,8 @@
+{
+ "id": 56207,
+ "bug_id": 18402,
+ "attachment_id": 0,
+ "creation_time": "2000-05-07T09:10:02Z",
+ "creator": "mdiclaud@cidera.com",
+ "text": "\nthe system panics with fatal trap 12 in aio_process when the file is\nclose(2)'ed and there are outstanding aio requests.\n\nFix: \n\nit works fine if close is called after the loop that is doing the aio_error\nand aio_return calls, which is where it belongs to begin with.\nHow-To-Repeat: \nthe problem occurred in a program i'm developing and the aio is mixed\nin with lots of other stuff.  this code-like sample illustrates what\ni'm doing which is causing the problem.  the code is zeroing the disk.\nif you need the exact code, let me now\n\nstruct aiocb x[100];\nint outstanding[100];\n\nopen(/dev/rda0)\nfor(i=0;i\u003c100;i++)\n{\n  /* setup x[ i ] values */\n  aio_write(\u0026x[i]);\n  outstanding[i]=1;\n}\n\nclose(/dev/rda0);       /* bad thing to do here */\nwhile( requests outstanding )\n for(i=0;i\u003c100;i++)\n {\n   if( aio_error(\u0026x[i]) == EINPROGRESS )\n     continue;\n\n   if( outstanding[i] )\n   {\n     aio_return(\u0026x[i]);\n     outstanding[i]=0;\n     /* setup array for aio_suspend */\n   }\n }\n aio_suspend();\n}\nexit();"
+}

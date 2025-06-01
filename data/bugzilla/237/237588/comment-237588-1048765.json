@@ -1,0 +1,8 @@
+{
+ "id": 1048765,
+ "bug_id": 237588,
+ "attachment_id": 0,
+ "creation_time": "2019-04-26T20:49:16Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "The best solution would probably be to implement true write-through caching.  Here's cem's notes on the subject:\n\nFor WT, you'd want to go back to the biobackend for writes, but be\nsure they are flushed synchronously with the VOP_WRITE, and probably\nin-order.  A simple way to do that would be to bwrite() each buf as we\ngo.  That makes for a lot of serialized IPC latency, though.  With our\nfairly large buf block size (and we pick the maximum — 64kB by default\non amd64 GENERIC), it may not be awful.  But it probably isn't great,\neither.\n\nIt might be worthwhile to use bawrite() / bufwrite + O_ASYNC\n(immediate, but async completion writes) to at least pipeline multiple\nbufs at a time.  We would want to hook b_iodone to override the\ndefault bufdone() handling of async buf writes.  We would also want to\nwait for all async writes we issued to complete before returning.  I'm\nnot sure how we would handle signals.  If /any/ buf write fails, we\nwould return failure (or short write) depending on if it was the first\nbuf or not.  We probably want to evict cache contents of any buf write\nthat fails, and probably also any after it (userspace can't know those\nwere written, and will likely try to rewrite them anyway).\n\nThe next step performance wise beyond bawrite pipelining is attempting\nto do delayed (bdwrite) / clustered (vfs_bio_awrite) writes, but I\ndon't think the locking works there such that we can reliably do that\nwithout allowing dirty data caching, so maybe that's pending 7.23."
+}

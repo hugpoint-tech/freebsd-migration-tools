@@ -1,0 +1,8 @@
+{
+ "id": 1195989,
+ "bug_id": 255072,
+ "attachment_id": 0,
+ "creation_time": "2022-01-23T19:15:57Z",
+ "creator": "spell@itl.ua",
+ "text": "Seems caught it.\n\nThe crash occurs inside bd_edd_io(), wich calls BTX-owned int 31h which in turn calls BIOS-owned int 13h, and it comes this last int is the one who do fail.\nThe matter why this is so difficult to catch it is it crashes randomly. With no obvious differences in environment it may succeed or crash, approximately 99/1.\n\n11.2 loader crashes too, though very rarely.\nThe rule is: more int 13h during loader run - more crash chance.\nBy default 11.2 loader does not enter zfs probing stage and so requests only two or three int 13h per disk. With zfs probing (which is on by default in 12.3) the count of these requests is about a hundred, so the chance to crash is much bigger.\n\nDidn't try all the functions of int 13h but at least CMD_READ_LBA, CMD_READ_CHS and one of CMD_CHECK_EDD, CMD_EXT_PARAM lead to the crash.\n\nThese are my tests that proof this statement:\n\n12.3 loader: I've added for(i=0; i\u003c100; i++) with identical bd_edd_io() calls right after the original bd_edd_io() call, and the crash occurs inside of this bunch of calls (every time on different i value).\n\n11.2 loader: The same with bd_int13probe(). The loader crashes every time on this or that i value."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 554052,
+ "bug_id": 145884,
+ "attachment_id": 0,
+ "creation_time": "2010-04-20T15:10:03Z",
+ "creator": "lwindschuh@gmail.com",
+ "text": "script -qa $some_file $some_cmd is supposed to return the same value that\nthe execution of $some_cmd gave (TODO: This is not mentioned in the man page).\nUnfortunately, script's return value changes randomly between zero and the\nexpected value.\n\nI am a bit uncertain if this is a kernel or userland bug.\n\nAs you see in the proposed patch, waiting for the child process to die\ninstead of simply looking for a dead child solves the issue. So either\nthe child is not dead when script tries to exit or the kernel has not\nyet marked the child dead?\n\nAnother bit: \"ktrace script -qa /tmp/foobar false\" always returns the\nright result: ktrace stops the race, as it seems.\n\nBesides this, I was seeing this problem for quite a while (some months,\nI think). This indicates that it was not introduced by a recent commit.\n\nThis bug made portupgrade hardly usable, as it did not reliably realize\nthat the build process has failed.\n\nFix: See the attached file: Remove WNOHANG. I think that it does the right\nthing as wait3 returns immediately if no child process exists, so that\nfinish() will return after the last child exited, which is exactly the\npoint at which script shall return.\n\nPatch attached with submission follows:\nHow-To-Repeat: Execute this command many times:\n$ script -qa /tmp/foobar false \u0026\u0026 echo \"This should not happen\"\n\nAnd sometimes, you see \"This should not happen\" which, well, should not\nhappen. :-)"
+}

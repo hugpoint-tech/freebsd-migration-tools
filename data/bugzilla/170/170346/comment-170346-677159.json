@@ -1,0 +1,8 @@
+{
+ "id": 677159,
+ "bug_id": 170346,
+ "attachment_id": 0,
+ "creation_time": "2012-08-03T09:52:39Z",
+ "creator": "pluknet@gmail.com",
+ "text": "Hi.\nShouldn't the idtype_t definition be cut from sys/types.h and instead moved\ninto sys/wait.h itself? POSIX specifies for waitid() that you only need to\ninclude sys/wait.h and doesn't mention sys/types.h.\nIt's also probably makes sense to wrap new syscall with __POSIX_VISIBLE\nSomething like this:\n\nIndex: sys/sys/wait.h\n===================================================================\n--- sys/sys/wait.h      (revision 237379)\n+++ sys/sys/wait.h      (working copy)\n@@ -93,8 +93,18 @@\n #define        WAIT_MYPGRP     0       /* any process in my process group */\n #endif /* __BSD_VISIBLE */\n\n+#if __POSIX_VISIBLE \u003e= 200809\n+/* needs for waitid() */\n+typedef enum {\n+       P_ALL,\n+       P_PGID,\n+       P_PID\n+/* other stuff goes here */\n+} idtype_t;\n+#endif\n+\n #ifndef _KERNEL\n #include \u003csys/types.h\u003e\n+#include \u003csys/signal.h\u003e\n\n __BEGIN_DECLS\n pid_t  wait(int *);\n@@ -104,6 +114,9 @@\n pid_t  wait3(int *, int, struct rusage *);\n pid_t  wait4(pid_t, int *, int, struct rusage *);\n #endif\n+#if __POSIX_VISIBLE \u003e= 200809\n+int    waitid(idtype_t, id_t, siginfo_t *, int);\n+#endif\n __END_DECLS\n #endif /* !_KERNEL */\n\nThe remain part of sys/wait.h patch intentionally omitted for clarity.\n\n-- \nwbr,\npluknet"
+}

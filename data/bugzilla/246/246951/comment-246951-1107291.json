@@ -1,0 +1,8 @@
+{
+ "id": 1107291,
+ "bug_id": 246951,
+ "attachment_id": 0,
+ "creation_time": "2020-06-09T15:15:00Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to freebsd-bugzilla from comment #9)\nSo from the panic sites it looks like a linked ifaddr structure has been freed.  (Or zeroed, but I cannot see any code which does that.)  One possible cause that we can try to rule out is a refcount overflow.  You said that the uptime between panics is at least several days - is that consistently the case?  In other words, have you ever seen back-to-back crashes in a short timeframe?\n\nI'm not sure if pfsense enables DTrace, but if so we can try to probe ifa_ref(), which is helpfully not inlined.  Please try this command (you might need to kldload dtraceall first):\n\n# dtrace -n 'fbt::ifa_ref:entry {@[args[0]-\u003eifa_refcnt] = count();} tick-300s {exit(0);}'\n\nIt will sleep for 300s and dump a table of reference counts."
+}

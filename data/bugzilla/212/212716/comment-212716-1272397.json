@@ -1,0 +1,8 @@
+{
+ "id": 1272397,
+ "bug_id": 212716,
+ "attachment_id": 0,
+ "creation_time": "2023-08-30T22:34:59Z",
+ "creator": "greg@codeconcepts.com",
+ "text": "I am also able to repro with 15.0-CURRENT.\n\nThe problem seems to be that we are not rechecking the socket receive buffer for errors or to see if the peer closed after calling pr_rcvd() (around line 2430 in file uipc_socket.c), having dropped the socket receive buffer lock before the call and then reacquiring it after the call.  Which is to say, the socket state can change once the receive buffer lock is dropped, and hence previous assertions made while the lock was held cannot be relied upon...\n\nI've attached an initial patch, but I need to spend more time reviewing the code, as it's not clear to me yet whether we should be exiting the MSG_WAITALL loop at line 2522 if the receive buffer contains valid data.  Perhaps someone more familiar with this code and chime in..."
+}

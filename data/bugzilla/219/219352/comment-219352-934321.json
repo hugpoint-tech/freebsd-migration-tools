@@ -1,0 +1,8 @@
+{
+ "id": 934321,
+ "bug_id": 219352,
+ "attachment_id": 0,
+ "creation_time": "2017-05-17T13:02:57Z",
+ "creator": "prj@rootwyrm.com",
+ "text": "Confirmed on multiple systems and also by kevans91 on IRC, who confirmed the issue is getopt(3) returning 1. This results in tpmd refusing to start under any conditions and only returning the usage error. Failure has 100% reproduction under -CURRENT.\n\nRoot cause is use of signed char for getopt(3) return instead of int which is more correct for all platforms, so patch will need submitted upstream. Testing under 11.0-RELEASE showed no behavior change as expected.\n\nCode demonstrating the issue from kevans91 is available here:\nhttps://gist.github.com/anonymous/2cf21321e011cdf1555a8b174cc23bc4\n\nOn arm64:\n root@skyhorn ~ # uname -a\nFreeBSD skyhorn.SANITIZED 12.0-CURRENT FreeBSD 12.0-CURRENT #0 r313109M: Thu Feb  2 16:16:39 MST 2017     raspberry@hive.raspbsd.org:/usr/home/brd/rpi3/crochet/work/obj/arm64.aarch64/usr/src/sys/GENERIC  arm64\n\n root@skyhorn ~ # cc test.c -o char_c\ntest.c:8:54: warning: comparison of constant -1 with expression of type 'char'\n      is always true [-Wtautological-constant-out-of-range-compare]\n    while ((c = getopt(argc, argv, \"dfs:u:o:g:c:h\")) != -1) {\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^  ~~\n1 warning generated.\n root@skyhorn ~ # ./char_c\n1\nHandling option 255"
+}

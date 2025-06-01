@@ -1,0 +1,8 @@
+{
+ "id": 1259078,
+ "bug_id": 271351,
+ "attachment_id": 242107,
+ "creation_time": "2023-05-10T15:02:25Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 242107\nbroken image that causes fsck_ffs to crash due to fs_size \u003c fs_ncg*fs_fpg\n\nThese two checks in ffs_subr.c's validate_sblock():\n\n                FCHK(fs-\u003efs_size, \u003c=, ((int64_t)fs-\u003efs_ncg - 1) * fs-\u003efs_fpg,\n                    %jd);\n\nand \n\n        FCHK(fs-\u003efs_size, \u003c=, ((int64_t)fs-\u003efs_ncg - 1) * fs-\u003efs_fpg, %jd);\n\nallow fs_size to be smaller than fs_ncg*fs_fpg. For example, if fs_ncg\nis 1, then the test only requires fs_size to be \u003e 0.\n\nvalidate_sblock() checks fs_csaddr against fs_ncg*fs_fpg, and thus\nfs_csaddr can point beyond fs_size.\n\nAs a result, a too-large value of fs_csaddr can cause this code in\nfsck_ffs's pass1() to write beyond the end of blockmap, whose size is\ndetermined by fs_size:\n\n        i = sblock.fs_csaddr;\n        cgd = i + howmany(sblock.fs_cssize, sblock.fs_fsize);\n        for (; i \u003c cgd; i++)\n                setbmap(i);\n\nI've attached a file system image that causes fsck_ffs -y to either\ndump core or fail valgrind."
+}

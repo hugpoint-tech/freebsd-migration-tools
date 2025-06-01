@@ -1,0 +1,8 @@
+{
+ "id": 699434,
+ "bug_id": 175293,
+ "attachment_id": 0,
+ "creation_time": "2013-01-14T16:40:00Z",
+ "creator": "freebsd-bugs-local@be-well.ilk.org",
+ "text": "\nThe \"-u\" option for mtree doesn't kick out an error if the extra contents are a directory rather than a regular file.\n\nThe same problem appears to still be present in the NetBSD version being imported.\n\nFix: \n\n===================================================================\n--- verify.c\t(revision 245177)\n+++ verify.c\t(working copy)\n@@ -134,36 +134,37 @@\n \n \t\tif (ep)\n \t\t\tcontinue;\n extra:\n \t\tif (!eflag) {\n \t\t\t(void)printf(\"%s extra\", RP(p));\n \t\t\tif (rflag) {\n \t\t\t\tif ((S_ISDIR(p-\u003efts_statp-\u003est_mode)\n \t\t\t\t    ? rmdir : unlink)(p-\u003efts_accpath)) {\n \t\t\t\t\t(void)printf(\", not removed: %s\",\n \t\t\t\t\t    strerror(errno));\n \t\t\t\t} else\n \t\t\t\t\t(void)printf(\", removed\");\n \t\t\t}\n \t\t\t(void)putchar('\\n');\n \t\t}\n \t\t(void)fts_set(t, p, FTS_SKIP);\n \t}\n+\trval = MISMATCHEXIT;\n \t(void)fts_close(t);\n \tif (sflag)\n \t\twarnx(\"%s checksum: %lu\", fullpath, (unsigned long)crc_total);\n \treturn (rval);\n }\nHow-To-Repeat: rm -rf *\nmkdir etc home\nmtree -c -d \u003e ../out\nmtree -d \u003c ../out\necho $?\necho \"That was the first: should be 0.\"\nmkdir etc/temp\nmtree -u -d \u003c ../out\necho $?\necho \"That was the second: should be 2.\"\n\nsed -i \"\"  's/^\\(home[ ]*\\)\\(.*\\)$/\\1ignore/' ../out\nmtree -d \u003c ../out\necho $?\necho \"That was the third: should be 0.\""
+}

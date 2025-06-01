@@ -1,0 +1,8 @@
+{
+ "id": 1019535,
+ "bug_id": 232878,
+ "attachment_id": 0,
+ "creation_time": "2018-11-01T07:41:04Z",
+ "creator": "contact@emersion.fr",
+ "text": "File sealing is a Linux-specific safety mechanism that can be used when sharing memory between two processes.\n\nIn this scenario, one process typically calls shm_open(SHM_ANON), mmaps the result in its address space, writes interesting things in this slice of memory, sends the file descriptor over a Unix socket to another process. The other process then mmaps the file descriptor to its own address space and reads the shared memory.\n\nSometimes the two processes don't trust each other, for instance in the case of Wayland. Bad clients may try to crash the compositor.\n\nOne way to crash the compositor is to send a shared memory file descriptor and then shrink the file. When the compositor tries to read the now-unmapped part of the file it'll receive SIGBUS.\n\nWhat the compositor currently does is that it handles SIGBUS and ignores it if it's about a memory slice mmapped from IPC. Apart from being a hack, this makes things complicated because:\n\n* There are multiple Wayland interfaces that need to mmap a file descriptor sent over IPC. Collecting the list of IPC-mmapped regions is currently not possible with libwayland.\n* Since SIGBUS is global state, handling it is difficult. Some other IPC mechanisms might need to add more regions to the list. Threads make this even more annoying.\n\nSee https://gitlab.freedesktop.org/wayland/wayland/issues/53#note_24663\n\nI'd like to know if there are plans to add a feature similar to file sealing (https://lwn.net/Articles/591108/) in FreeBSD."
+}

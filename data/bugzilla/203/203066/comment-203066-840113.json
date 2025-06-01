@@ -1,0 +1,8 @@
+{
+ "id": 840113,
+ "bug_id": 203066,
+ "attachment_id": 0,
+ "creation_time": "2015-09-13T10:55:02Z",
+ "creator": "rakuco@FreeBSD.org",
+ "text": "sys/cdefs.h contains:\n\n    #if !defined(__STDC_VERSION__) || __STDC_VERSION__ \u003c 201112L || defined(lint)\n    ...\n    #if !__has_extension(c_thread_local)\n    ...\n    #if /* (defined(__cplusplus) \u0026\u0026 __cplusplus \u003e= 201103L) || */ \\\n        __has_extension(cxx_thread_local)\n    #define _Thread_local           thread_local\n    #else\n    #define _Thread_local           __thread\n    #endif\n    #endif\n\nHowever, _Thread_local support has only been added to GCC in the 4.9 series, so \"#include \u003crunetype.h\u003e\" fails with both `gcc47 -std=gnu11' and `gcc48 -std=gnu11':\n\n    /usr/include/runetype.h:92:22: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'const'\n    /usr/include/runetype.h: In function '__getCurrentRuneLocale':\n    /usr/include/runetype.h:96:6: error: '_ThreadRuneLocale' undeclared (first use in this function)\n    /usr/include/runetype.h:96:6: note: each undeclared identifier is reported only once for each function it appears in\n\nA consequence of this is that some ports may fail to build; for example, devel/cmake with lang/gcc (bug#200969, comment #11)."
+}

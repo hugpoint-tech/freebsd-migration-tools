@@ -1,0 +1,8 @@
+{
+ "id": 865592,
+ "bug_id": 204999,
+ "attachment_id": 0,
+ "creation_time": "2016-02-16T21:37:28Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: jhb\nDate: Tue Feb 16 21:36:49 UTC 2016\nNew revision: 295674\nURL: https://svnweb.freebsd.org/changeset/base/295674\n\nLog:\n  MFC 295418,295419:\n  Fix hangs or panics when misbehaved kernel threads return from their\n  main function.\n\n  295418:\n  Mark proc0 as a kernel process via the P_KTHREAD flag.\n\n  All other kernel processes have this flag set and all threads in proc0\n  (including thread0) have the similar TDP_KTHREAD flag set.\n\n  295419:\n  Call kthread_exit() rather than kproc_exit() for a premature kthread exit.\n\n  Kernel threads (and processes) are supposed to call kthread_exit() (or\n  kproc_exit()) to terminate.  However, the kernel includes a fallback in\n  fork_exit() to force a kthread exit if a kernel thread's \"main\" routine\n  returns.  This fallback was added back when the kernel only had processes\n  and was not updated to call kthread_exit() instead of kproc_exit() when\n  threads were added to the kernel.\n\n  This mistake was particularly exciting when the errant thread belonged to\n  proc0.  Due to the missing P_KTHREAD flag the fallback did not kick in\n  and instead tried to return to userland via whatever garbage was in the\n  trapframe.  With P_KTHREAD set it tried to terminate proc0 resulting in\n  other amusements.\n\n  PR:\t\t204999\n  Approved by:\tre (glebius)\n\nChanges:\n_U  stable/10/\n  stable/10/sys/kern/init_main.c\n  stable/10/sys/kern/kern_fork.c"
+}

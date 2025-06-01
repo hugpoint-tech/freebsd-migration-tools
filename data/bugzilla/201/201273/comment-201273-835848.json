@@ -1,0 +1,8 @@
+{
+ "id": 835848,
+ "bug_id": 201273,
+ "attachment_id": 158258,
+ "creation_time": "2015-08-11T16:07:06Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Comment on attachment 158258\narmv6 fix\n\n\u003e--- Makefile\t(revision 390884)\n\u003e+++ Makefile\t(working copy)\n\u003e@@ -44,8 +44,12 @@\n\u003e \n\u003e .include \u003cbsd.port.options.mk\u003e\n\u003e \n\u003e+.if ${ARCH} == \"armv6\"\n\u003e+CFLAGS+= -no-integrated-as\n\nWhat is this for? All *.S files are conditionalized by HAVE_NEON.\nNot to mention the flag is Clang-specific, so would break GCC build.\n\n\u003e+.endif\n\u003e+\n\u003e .if ! ${PORT_OPTIONS:MDEBUG}\n\u003e-. if ${ARCH} == amd64 || ${ARCH} == arm || ${ARCH} == i386\n\u003e+. if ${ARCH} == amd64 || ${ARCH} == arm || ${ARCH} == armv6 || ${ARCH} == i386\n\nMy fault. nasm is only used on x86. arm and arm64 use cc(1).\nI'll remove arm from there to avoid confusion.\n\n\u003e BUILD_DEPENDS+=\tnasm:${PORTSDIR}/devel/nasm\n\u003e . endif\n\u003e .endif\n\u003e\n\u003e--- files/patch-build_arch.mk\t(revision 0)\n\u003e+++ files/patch-build_arch.mk\t(working copy)\n\u003e@@ -0,0 +1,10 @@\n\u003e+--- build/arch.mk.orig\t2015-07-01 17:00:32 UTC\n\u003e++++ build/arch.mk\n\u003e+@@ -5,7 +5,6 @@ ifneq ($(filter-out arm64, $(filter arm%\n\u003e+ ifeq ($(USE_ASM), Yes)\n\u003e+ ASM_ARCH = arm\n\u003e+ ASMFLAGS += -I$(SRC_PATH)codec/common/arm/\n\u003e+-CFLAGS += -DHAVE_NEON\n\nDoes FreeBSD not support NEON at all or only on armv6? If the latter\ntry replacing\n\n  ifneq ($(filter-out arm64, $(filter arm%, $(ARCH))),)\n\nwith\n\n  ifneq ($(filter-out armv6 arm64, $(filter arm%, $(ARCH))),)"
+}

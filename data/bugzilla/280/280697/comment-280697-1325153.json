@@ -1,0 +1,8 @@
+{
+ "id": 1325153,
+ "bug_id": 280697,
+ "attachment_id": 0,
+ "creation_time": "2024-09-13T13:26:35Z",
+ "creator": "scf@FreeBSD.org",
+ "text": "This looks like an issue related to the latest ncurses (v6.5) import since this used to work with 14-STABLE and still does on 13.3-RELEASE-p6.  I think this issue belongs to base, but I am hesitant to move it over as I am only an alumni.  :)\n\nWhen Python is built, is relies upon keyname() to determine which KEY_* variables to incorporate. Previously, keyname() would return KEY_RESIZE when the terminal was resized, but now, it returns NULL.\n\nThis is point where Python makes the determination.  If keyname() returns a NULL, then the KEY will not be included.  https://github.com/python/cpython/blob/v3.11.10/Modules/_cursesmodule.c#L4908\n\nI did not dive into ncurses code much, but this has mention of KEY_RESIZE:  https://invisible-island.net/ncurses/NEWS.html#t20240120\n\nHere is a simple program to show what keyname() can return:\n\n#include \u003cncurses.h\u003e\n\nint main(void) {\n    int ch;\n\n    initscr();\n    cbreak();\n    noecho();\n\n    printw(\"KEY_RESIZE: %s\\n\", keyname(KEY_RESIZE));\n    while ((ch = getch()) != ERR) {\n        printw(\"Got: %s\\n\", keyname(ch));\n        refresh();\n    }\n\n    return (endwin());\n}"
+}

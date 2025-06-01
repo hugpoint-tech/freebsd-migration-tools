@@ -1,0 +1,8 @@
+{
+ "id": 6692,
+ "bug_id": 2212,
+ "attachment_id": 0,
+ "creation_time": "1996-12-16T20:46:16Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "This appears to be confusion over whether the address family is in\nhost or network byte order.  The BPF program created by an older libpcap\nto perform \"tcpdump -i lo0 icmp\" is:\n\n(000) ld       [0]\n(001) jeq      #0x2000000       jt 2    jf 5\n(002) ldb      [13]\n(003) jeq      #0x1             jt 4    jf 5\n(004) ret      #68\n(005) ret      #0\n\nand the new libpcap creates:\n\n(000) ld       [0]\n(001) jeq      #0x2             jt 2    jf 5\n(002) ldb      [13]\n(003) jeq      #0x1             jt 4    jf 5\n(004) ret      #68\n(005) ret      #0\n\nNote the difference in byte-order of the constant 2 (==AF_INET) in\ninstruction #1.\n\nThe BPF filter performs all loads in network byte order, so instruction\n0 loads 0x02000000 into A, since the value is in host byte order.\n\nI will check with the LBL folks before doing anything but I think it's a\nstraightforward fix to libpcap/gencode.c .\n\n  Bill"
+}

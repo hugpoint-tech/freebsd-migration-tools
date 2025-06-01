@@ -1,0 +1,8 @@
+{
+ "id": 1051319,
+ "bug_id": 238022,
+ "attachment_id": 204510,
+ "creation_time": "2019-05-21T13:14:52Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "Created attachment 204510\nProposed patch\n\nThere is a buffer overrun vulnerability in function make_request of sbin/dhclient/dhclient.c, which is similar to the vulnerability that was fixed in https://github.com/freebsd/freebsd/commit/16b93d101357f716946014207ddfe9d849f97fc9.\n\n        /* set unique client identifier */\n        char client_ident[sizeof(struct hardware)];\n        if (!options[DHO_DHCP_CLIENT_IDENTIFIER]) {\n                int hwlen = (ip-\u003ehw_address.hlen \u003c sizeof(client_ident)-1) ?\n                                ip-\u003ehw_address.hlen : sizeof(client_ident)-1;\n                client_ident[0] = ip-\u003ehw_address.htype;\n                memcpy(\u0026client_ident[1], ip-\u003ehw_address.haddr, hwlen);\n                options[DHO_DHCP_CLIENT_IDENTIFIER] = \u0026option_elements[DHO_DHCP_CLIENT_IDENTIFIER];\n                options[DHO_DHCP_CLIENT_IDENTIFIER]-\u003evalue = client_ident;\n                options[DHO_DHCP_CLIENT_IDENTIFIER]-\u003elen = hwlen+1;\n                options[DHO_DHCP_CLIENT_IDENTIFIER]-\u003ebuf_size = hwlen+1;\n                options[DHO_DHCP_CLIENT_IDENTIFIER]-\u003etimeout = 0xFFFFFFFF;\n        }\n\nA DHCP client identifier is simply the hardware type (one byte) concatenated with the hardware address.\nWe should set the lengthe of clinet_ident to sizeof(ip-\u003ehw_address.haddr) + 1, instead of sizeof(struct hardware).\n\nThe attachment is the proposed patch."
+}

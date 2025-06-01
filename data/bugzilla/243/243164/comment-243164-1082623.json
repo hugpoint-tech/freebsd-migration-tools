@@ -1,0 +1,8 @@
+{
+ "id": 1082623,
+ "bug_id": 243164,
+ "attachment_id": 0,
+ "creation_time": "2020-01-08T01:45:55Z",
+ "creator": "cem@freebsd.org",
+ "text": "I think the problem is this in contrib/blacklist/bin/conf.c:\n\n   213 static int\n   214 getmask(const char *f, size_t l, bool local, const char **p, int *mask)\n   215 {\n   216         char *d;\n   217         const char *s = *p;\n   218\n   219         if ((d = strchr(s, ':')) != NULL) {\n   220                 *d++ = '\\0';\n   221                 *p = d;\n   222         }\n   223         if ((d = strchr(s, '/')) == NULL) {\n   224                 *mask = FSTAR;\n   225                 return 0;\n\n\nIf there is no /mask, *mask is treated as \"FSTAR\".  In conf_addr_set:\n\n   585         if (c-\u003ec_lmask == FSTAR)\n   586                 c-\u003ec_lmask = (int)(alen * 8);\n\nThat, uh, suggests no mask should indicate /32 or /128 for v6.  I wonder what goes wrong."
+}

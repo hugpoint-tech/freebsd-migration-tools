@@ -1,0 +1,8 @@
+{
+ "id": 1187973,
+ "bug_id": 260011,
+ "attachment_id": 0,
+ "creation_time": "2021-11-25T17:13:59Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Oh, and my comment 2.r.t. don't run the nfscbd may\nnot be good advice. Here's a more complete answer:\n\nThe nfscbd(8) provides callback handling when it\nis running.  Callbacks need to be working for the\nserver to issue delegations or layouts (the latter is\npNFS only).\n\nWhen the nfscbd(8) is not running, the server should\nwork fine and never issue delegations or layouts.\nIt should set a flag in the reply to the Sequence\noperation (the first one in each compound RPC)\ncalled SEQ4_STATUS_CB_PATH_DOWN. This is an FYI\nfor the client.\n\nI found another round of bugs related to delegations\nduring a recent IETF NFSv4 testing event. These are\nfixed in stable/13, but not 13.0.\n--\u003e As such, delegations are problematic and you don't\n    want them being issued.\n    --\u003e Don't run the nfscbd(8) daemon.\nUnfortunately Amazon does not attend these testing\nevents, so what their server does is ??? for me.\n\nHowever, if it is known that the Amazon EFS never\nissues delegations or layouts (I believe cpercival@\nsaid that was the case three years ago), then the\nserver might be broken and get \"perterbed\" by the\ncallbacks not working.\n--\u003e In this case, you should run the nfscbd daemon\n    by setting nfscbd_enable=\"YES\" in your /etc/rc.conf\n    or start it manually.\n\nAnd, given the above, I think you can see why my initial\nadvice was just \"don't run it\"."
+}

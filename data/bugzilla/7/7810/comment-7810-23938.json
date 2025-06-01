@@ -1,0 +1,8 @@
+{
+ "id": 23938,
+ "bug_id": 7810,
+ "attachment_id": 0,
+ "creation_time": "1998-09-02T17:10:00Z",
+ "creator": "wscott@ichips.intel.com",
+ "text": "\nWhen popen() returns a file handle it does not have the close-on-exec\nflag set.  In the example below, I open two output files writing\nto gzip processes to compress the output.\n\nThe program will hang on the first call to pclose() because the\nsecond gzip process inherited the open file handle for the first\ngzip.  When the program closes the filehandle the first gzip process\ndoes not exit because the second gzip process is still holding the\nfile open. Since gzip does not exit we wait() forever.\n\nIf BUGFIX is defined when the example program is compiled then the\nclose-on-exec flag is set and the second gzip does not inherit the\nopen filehandle for the first gzip.\n\nOther implimentations of popen() seem to always to this by default.\n\nFix: \n\nFix this problem by adding the fcntl call to the popen() library function.\nHow-To-Repeat: \n#include \u003cstdio.h\u003e\n#include \u003cfcntl.h\u003e\n\nmain()\n{\n\tFILE *file1;\n\tFILE *file2;\n\n\tfile1 = popen(\"gzip \u003e file1.gz\", \"w\");\n#ifdef BUGFIX\n\tfcntl(fileno(file1), F_SETFD, 1);\n#endif\n\tfile2 = popen(\"gzip \u003e file2.gz\", \"w\");\n#ifdef BUGFIX\n\tfcntl(fileno(file2), F_SETFD, 1);\n#endif\n\n\tfprintf(file1, \"This is a test\\n\");\n\tfprintf(file2, \"This is also a test\\n\");\n\n\tpclose(file1);\n\tpclose(file2);\n}"
+}

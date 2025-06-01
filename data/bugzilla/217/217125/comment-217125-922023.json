@@ -1,0 +1,8 @@
+{
+ "id": 922023,
+ "bug_id": 217125,
+ "attachment_id": 0,
+ "creation_time": "2017-02-16T01:24:33Z",
+ "creator": "dan.krejsa@gmail.com",
+ "text": "This issue was initially found using Coverity on a port to another OS of (a slightly older version of) the FreeBSD version of fts.c.  It was not actually observed in a running system.\n\nTo the best of my understanding, it still applies to the latest (Revision 300341) version that I could find of lib/libc/gen/fts.c.\n\nCaveats: I am not personally a FreeBSD user, nor am not very familiar with fts.c.\nMy intentions are good, please forgive me if I'm mistaken.\n\nThe problem occurs with this code in fts_build():\n\n849         if (descend \u0026\u0026 (type == BCHILD || !nitems) \u0026\u0026\n850 \t            (cur-\u003efts_level == FTS_ROOTLEVEL ?\n851 \t            FCHDIR(sp, sp-\u003efts_rfd) :\n852 \t            fts_safe_changedir(sp, cur-\u003efts_parent, -1, \"..\"))) {\n853 \t                cur-\u003efts_info = FTS_ERR;\n854 \t                SET(FTS_STOP);\n855 \t                return (NULL);\n856 \t        }\n\nIf the function returns at line 855, any memory allocated in the list of FTSENT structures headed by 'head' would be leaked.  As far as I can tell, it would be possible (although probably uncommon, due to the presumed failure of the chdir operation) to get into this code path with a non-empty list (type == BCHILD \u0026\u0026 nitems != 0).\n\nProbably there should be an fts_lfree(head); call in there."
+}

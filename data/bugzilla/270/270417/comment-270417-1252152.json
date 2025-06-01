@@ -1,0 +1,8 @@
+{
+ "id": 1252152,
+ "bug_id": 270417,
+ "attachment_id": 0,
+ "creation_time": "2023-03-23T08:10:01Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "Observed the problem while repeating https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=240106#c28\n\nA minimal script to repeat:\n\n```\n#!/bin/sh\n\nepa=$( ifconfig epair create )\nepb=${epa%a}b\n\nlagg=$( ifconfig lagg create laggport $epa )\n\nifconfig $epa up\nifconfig $lagg up\n\nj0=$( jail -ic vnet persist )\nifconfig $epb vnet $j0\njexec $j0 ifconfig $epb inet 192.168.1.2/24\n\ntmp=$( mktemp )\nnohup tcpdump -nvi $lagg --direction in \u003e $tmp \u0026\n\njexec $j0 ping -t5 -c3 192.168.1.1\n\nkill $!\n\njail -R $j0\nifconfig $lagg destroy\nifconfig $epa destroy\n\ncat $tmp\nrm $tmp\n```\n\nThe output:\n==============\nPING 192.168.1.1 (192.168.1.1): 56 data bytes\n\n--- 192.168.1.1 ping statistics ---\n3 packets transmitted, 0 packets received, 100.0% packet loss\ntcpdump: listening on lagg0, link-type EN10MB (Ethernet), capture size 262144 bytes\n\n0 packets captured\n0 packets received by filter\n0 packets dropped by kernel"
+}

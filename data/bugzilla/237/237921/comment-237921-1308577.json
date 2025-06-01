@@ -1,0 +1,8 @@
+{
+ "id": 1308577,
+ "bug_id": 237921,
+ "attachment_id": 0,
+ "creation_time": "2024-05-11T19:48:41Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "(In reply to Yusuf Khan from comment #8)\n\nI cannot follow the logic.\n\nwpi_free_tx_ring() is called from device detach (ignoring the attach error path);  the mbuf/ring descriptor will not be used beyond that function anymore at that stage so there is no need to set it to NULL anymore.  That would just be a NOP.\n\nIf there's still a reference to a ni at that stage, then other cleanup hasn't worked at the beginning of wpi_detach().  There should be no more ni;  in fact that should also be no more mbuf attached on the TX ring so I would even question if that code path is ever taken.\n\nThis function is basically doing the opposite of wpi_alloc_tx_ring().\n\nwpi_reset_tx_ring() on the contrary leaves all resources in place and only cleans up any outstanding transations and resets the ring to default values;  this happens in wpi_hw_stop().  And then the resources will be re-used again after wpi_parent() goes through the bringup part again (a VAP/wlan interface is brought up again).\n\n\nSo let me ask what lead to the original assumption that there may be a memory leak and a possible use-after-free.\n\nIf you indeed believe that, I would love to know the code path which can trigger it."
+}

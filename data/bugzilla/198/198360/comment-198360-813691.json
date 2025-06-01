@@ -1,0 +1,8 @@
+{
+ "id": 813691,
+ "bug_id": 198360,
+ "attachment_id": 153912,
+ "creation_time": "2015-03-06T16:15:04Z",
+ "creator": "aoyama@peach.ne.jp",
+ "text": "Created attachment 153912\nlocore-v6.diff\n\nIf define SOCDEV_PA/SOCDEV_VA and VA is located at last 63pages, build_pagetables break after L1 table.\nAs a result kernel symbol is broken, and the kernel will crash.\n\nL1 table is overflow by r3 is passed as fixed 64 pages.\n\n/usr/src/sys/arm/arm/locore-v6.S\n    128         /* Map 64MiB, preserved over calls to build_pagetables */\n    129         mov     r3, #64\n\n    137 #if defined(SOCDEV_PA) \u0026\u0026 defined(SOCDEV_VA)\n    138         /* Create the custom map used for early_printf(). */\n    139         ldr     r1, =SOCDEV_PA\n    140         ldr     r2, =SOCDEV_VA\n    141         bl      build_pagetables\n    142 #endif\n\n    342 build_pagetables:\n\n    356         mov     r4, r3\n    357 1:\n    358         str     r1, [r0, r2]\n    359         add     r2, r2, #4\n    360         add     r1, r1, #(PTE1_SIZE)\n    361         adds    r4, r4, #-1\n    362         bhi     1b\n\nAttached patch stop at end of L1 table."
+}

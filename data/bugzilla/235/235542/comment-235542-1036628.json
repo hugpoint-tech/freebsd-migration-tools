@@ -1,0 +1,8 @@
+{
+ "id": 1036628,
+ "bug_id": 235542,
+ "attachment_id": 0,
+ "creation_time": "2019-02-08T07:55:27Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "(In reply to Michal Meloun from comment #20)\n\nmight_bounce() uses this logic right now:\n\n           ((dmat-\u003eflags \u0026 BUS_DMA_EXCL_BOUNCE) ||\n            alignment_bounce(dmat, addr) ||\n            cacheline_bounce(map, addr, size)\n\nWhile you're correct that alignment_bounce() and cacheline_bounce() should never return true for the base buffer address, the BUS_DMA_EXCL_BOUNCE check might.  The tag passed by SDHCI specifies (BUS_SPACE_MAXADDR_32BIT, BUS_SPACE_MAXADDR] as the exclusion zone.  I don't think we'd ever expect a physical page on a 32-bit device like this to be outside that zone, but it's possible that a parent DMA tag has a bigger exclusion zone.  In that case the SDHCI tag will inherit the tighter restriction from its parent.\n\nRegardless of what's really happening with this device, I think the arm busdma code needs to also check against DMAMAP_DMAMEM_ALLOC to cope with cases like that.  That would be the direct equivalent of the check against nobounce_dmamap that gates all bounce tests in the x86 busdma_bounce implementation."
+}

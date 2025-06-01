@@ -1,0 +1,8 @@
+{
+ "id": 1276027,
+ "bug_id": 273956,
+ "attachment_id": 0,
+ "creation_time": "2023-09-20T19:39:25Z",
+ "creator": "pjfloyd@wanadoo.fr",
+ "text": "(In reply to Ed Maste from comment #6)\n\nI know a thing or two about this.\n\nInitially Valgrind would only trigger reading debuginfo when it considered a file to have finished mapping. That used to mean seeing 1 RX and 1 RW section. Then lld 9 started writing 2 RW sections. Gory details here: https://bugs.kde.org/show_bug.cgi?id=452802\n\nSo now Valgrind takes a peak at the binary to count the RW PT_LOADs and then triggers the debuginfo when it has seen 1 RW and the right number of RW PT_LOADs.\n\nPretty much all binaries on FreeBSD now have 1 RC and 2 RW. For instance \n\nreadelf -l /bin/sleep\n\nRO    02     .interp .note.tag .dynsym .gnu.version .gnu.version_r .gnu.hash .hash .dynstr .rela.dyn .rela.plt .rodata .eh_frame_hdr .eh_frame \nRX    03     .text .init .fini .plt \nRW1   04     .ctors .dtors .jcr .init_array .dynamic .got \nRW2   05     .data .got.plt .bss \n\n(I added the 1st column)\n\nThe valgrind tools are totally static so they son't have any segments like got plt \n\n\nreadelf -l .in_place/memcheck-amd64-freebsd\n\nRO   01     .note.tag .rodata .eh_frame_hdr .eh_frame \nRX   02     .text \nRW1   03     .data .bss"
+}

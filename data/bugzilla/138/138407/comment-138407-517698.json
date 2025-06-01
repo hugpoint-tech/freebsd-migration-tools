@@ -1,0 +1,8 @@
+{
+ "id": 517698,
+ "bug_id": 138407,
+ "attachment_id": 0,
+ "creation_time": "2009-08-31T18:30:06Z",
+ "creator": "nkritsky@mail.ru",
+ "text": "GRE interface will not work after reboot.\nFollowing line were added to rc.conf:\n\ncloned_interfaces=\"gre3168\"\nifconfig_gre3168=\"inet 192.168.249.170 192.168.249.169 netmask 255.255.255.254 tunnel 10.166.2.40 195.62.48.25 mtu 1400\"\n\nWhen running \"ifconfig gre3168\" I noticed that interface is missing \"RUNNING\" flag.\nIf I issue \"ifconfig gre3168 up\" the interface becomes operational, and \"RUNNING\" flag is added to \"ifconfig gre3168\" output.\n\nFix: \n\nPossible reason for this lies in /usr/src/sys/net/if_gre.c, line 633:\n\n\nif (gre_compute_route(sc) == 0)\n    ifp-\u003eif_drv_flags |= IFF_DRV_RUNNING;\nelse\n    ifp-\u003eif_drv_flags \u0026= ~IFF_DRV_RUNNING;\n\nIf the system did not install default route before the gre interface initialization, setting up tunnel properties will not trigger RUNNING flag on interface.\n\nMy knowledge of 7.x kernel is not enough to decide if this check is safe to comment out.\nMy quick fix was just adding \"ifconfig gre3168 up\" in rc.local.\nHow-To-Repeat: 1. Create records about GRE interface in rc.conf.\n2. Reboot the server\n3. try ping rhe remote side of GRE tunnel. You should get \"network is down\" error."
+}

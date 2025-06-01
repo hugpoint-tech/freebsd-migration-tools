@@ -1,0 +1,8 @@
+{
+ "id": 1324479,
+ "bug_id": 281279,
+ "attachment_id": 0,
+ "creation_time": "2024-09-08T19:09:41Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I think I've found the source of the problem:\n\nFirstly, my environment is a 15.0 client and a 14.1 server.  The client uses nfs 4.2 for /usr/home and I run nfsuserd on both client and server.  I have no NFS tunables set on the client.\n\nWhat happens is that:\n1) When I run \"whoami\", my shell does an append write to /usr/home/somers/.local/share/fish/fish_history\n2) ncl_writerpc allocate \"struct nfsvattr nfsva\" on the stack, on its first line, but does not initialize it.\n3) The AppendWrite RPC returns from the server.  Wireshark shows that the compound RPC includes SEQUENCE, PUTFH, GETATTR, VERIFY, WRITE, and GETATTR.  But the attr masks for neither GETATTR contain Owner.  \n4) So nfsv4_loadattr returns without initializing nap-\u003ena_uid .  Note that if I insert logic to set na_uid to 666 in step 2, it is still equal to 666 here.\n5) control returns two levels up the stack back to ncl_writerpc\n6) which calls nfscl_loadattrcache.  At line 522 that function calls NFSBCOPY to actually copy the attributes into NFS's attribute cache, and at that point na_uid is still uninitialized.\n\nLater, the shell stat()s the fish_history file.  That reads the uninitialized na_uid attribute from NFS's attribute cache, triggering the MSAN panic above.\n\nBut what can we do about it? I have a patch that sets na_uid=na_gid=VNOVAL in nfsv4_loadattr.  That makes the MSAN warnings go away.  And yet, I'm not convinced that it's the correct solution.  After all, I've never actually seen the wrong uid or gid displayed by \"ls\", which suggests that it's getting set somehow, even if MSAN doesn't know it."
+}

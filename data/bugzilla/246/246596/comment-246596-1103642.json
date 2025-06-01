@@ -1,0 +1,8 @@
+{
+ "id": 1103642,
+ "bug_id": 246596,
+ "attachment_id": 0,
+ "creation_time": "2020-05-20T09:40:11Z",
+ "creator": "patrykkotlowski@gmail.com",
+ "text": "In ucl_parse.c file there is memory leak:\n\nint\nuclparse_conf(struct conf *newconf, const char *path)\n{\n\tstruct ucl_parser *parser;\n\tint error; \n\n\tconf = newconf;\n\tparser = ucl_parser_new(0);\n\n\tif (!ucl_parser_add_file(parser, path)) {\n\t\tlog_warn(\"unable to parse configuration file %s: %s\", path,\n\t\t    ucl_parser_get_error(parser));\n\t\treturn (1);\n\t}\n\n\terror = uclparse_toplevel(ucl_parser_get_object(parser));\n\n\treturn (error);\n}\n\nucl_parser pointer is never freed. \n\nMy fix proposal is following (I tested it in my production environment):\n\n\nint\nuclparse_conf(struct conf *newconf, const char *path)\n{\n\tstruct ucl_parser *parser;\n\tint error; \n\n\tconf = newconf;\n\tparser = ucl_parser_new(0);\n\n\tif (!ucl_parser_add_file(parser, path)) {\n\t\tlog_warn(\"unable to parse configuration file %s: %s\", path,\n\t\t    ucl_parser_get_error(parser));\n\t\treturn (1);\n\t}\n\n\tucl_object_t *p_top = ucl_parser_get_object(parser);\n\terror = uclparse_toplevel(p_top);\n\n\tucl_object_unref(p_top);\n\tucl_parser_free(parser);\n\n\treturn (error);\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 871021,
+ "bug_id": 195796,
+ "attachment_id": 0,
+ "creation_time": "2016-03-20T21:02:39Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "(In reply to Dirk Meyer from comment #58)\n\u003e The port allows Users to switch gratefully to the new version.\n\u003e To allow this work the soversion must higher than base,\n\u003e and should not match upstream.\n\nSoversion doesn't have to be higher at all.  Just try this in an empty directory:\n\ntouch ssl.c\ncc -shared -o libssl.so.0 -Wl,-soname=libssl.so.0 ssl.c\nln -s libssl.so.0 libssl.so\necho 'int main(void) { return 0; }' \u003e test.c\ncc -o test test.c -L. -lssl\nobjdump -p test | grep NEEDED\n\nThe test executable will need libssl.so.0 and not base libssl.so.8.\n\n\u003e Some are caused by changed internal structures,\n\u003e and the sizes uses in binaries does not match.\n\nCan you show me such a struct because both NO_SSL2 and NO_MD2 only affect function declarations in /usr/local/include/openssl as far as I can see.\n\n\u003e The others are caused because rtld can find this missing symbols\n\u003e in the base opessl libs, which leads to a mix of old and new functions.\n\nIf a process links in a second version of libssl or libcrypto via a dependency we want to know about that because then something is obviously very wrong.  It's very likely that the dependency is missing USE_OPENSSL.  This is not supposed to be supported.\n\n(In reply to Mark Felder from comment #60)\n\u003e This is only ~6 weeks away. I think that is a wise strategy.\n\nSo you want to ship the openssl package in a known to be vulnerable state and let all ports compiled against it potentially use SSLv2 because they detect support for it.  What about the quarterly branches?"
+}

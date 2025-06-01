@@ -1,0 +1,8 @@
+{
+ "id": 71963,
+ "bug_id": 23099,
+ "attachment_id": 0,
+ "creation_time": "2000-11-26T22:23:18Z",
+ "creator": "freebsd@spatula.net",
+ "text": "For some reason, trying to fix the trouble by passing in a change with\nEV_CLEAR set doesn't work, but freopen \u0026 re-adding the events seems to\nwork fine:\n\n--- forward.c.orig\tSun Nov 26 13:02:38 2000\n+++ forward.c\tSun Nov 26 14:15:14 2000\n@@ -218,6 +218,18 @@\n \t\t}\n\n \t\tcase USE_KQUEUE:\n+\t\t\tif ((ev-\u003eflags \u0026 EV_EOF) \u003e 0) {\n+\t\t\t\t/* Maybe EOF on a fifo; reopen it\n+\t\t\t\t * the original is closed so the events\n+\t\t\t\t * are deleted\n+\t\t\t\t */\n+\t\t\t\tif ((fp = freopen(fname, \"r\", fp)) == NULL)\n+\t\t\t\t\tierr();\n+\t\t\t\telse\n+\t\t\t\t\taction = ADD_EVENTS;\n+\t\t\t\tbreak;\n+\t\t\t}\n+\n \t\t\tif (kevent(kq, NULL, 0, ev, 1, NULL) \u003c 0)\n \t\t\t\terr(1, \"kevent\");\n\nThere may be a more elegant fix than this of course.\n\n-- \n\"The reasonable man adapts himself to the world; the unreasonable one\npersists in trying to adapt the world to himself.  Therefore all\nprogress depends on the unreasonable man.\"\n\t-- George Bernard Shaw\nNick Johnson, version 2.0b1                   http://www.spatula.net/"
+}

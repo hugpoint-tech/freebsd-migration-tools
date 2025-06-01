@@ -1,0 +1,8 @@
+{
+ "id": 1177182,
+ "bug_id": 258296,
+ "attachment_id": 0,
+ "creation_time": "2021-09-06T21:50:52Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Evgeniy Khramtsov from comment #0)\n\u003e Not sure about a minimal reproducer, maybe delete 'cc'?\n\nStill builds fine here after hiding /usr/bin/cc and /usr/bin/c++. Can you show build log from the affected environment but with v1 patch applied? I'd like to inspect *FLAGS used.\n\nThis port doesn't use pthread-stubs directly (i.e., no references in vendor code) as it comes from libdrm which limits it static linking. However, static linking is unlikely to work because libva.so loads hardware-specific drivers via dlopen(3).\n\n$ rg -l pthread-stubs /usr/local/libdata | xargs pkg which -o\n/usr/local/libdata/pkgconfig/libdrm_radeon.pc was installed by package graphics/libdrm\n/usr/local/libdata/pkgconfig/libdrm_intel.pc was installed by package graphics/libdrm\n/usr/local/libdata/pkgconfig/libdrm_amdgpu.pc was installed by package graphics/libdrm\n/usr/local/libdata/pkgconfig/xcb.pc was installed by package x11/libxcb\n\n(In reply to Evgeniy Khramtsov from comment #2)\n\u003e vainfo seems to complain when trying hybrid driver, but otherwise VA-API works:\n\nHYBRID option exposes VP9 decoder which YouTube uses for resolutions larger than 1080p. SandyBridge is Gen6, so you won't notice if hybrid driver is broken unless it crashes. Adding BUILD_DEPENDS alone isn't enough to regress it because libpthread-stubs is often already installed when building outside of poudriere (non-clean environment).\n\n\u003e Note: MESA_LOADER_DRIVER_OVERRIDE=crocus session, no classic drivers here.\n\nThanks. Can you reproduce https://gitlab.freedesktop.org/mesa/mesa/-/issues/5134 ?"
+}

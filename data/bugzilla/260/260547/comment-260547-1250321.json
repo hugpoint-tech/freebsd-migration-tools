@@ -1,0 +1,8 @@
+{
+ "id": 1250321,
+ "bug_id": 260547,
+ "attachment_id": 0,
+ "creation_time": "2023-03-11T00:37:41Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I hit a different test failure in ctrl-api-test.  The problem is in the \"infinite options\" test.\n\nSince commit 253b2ec199b831cacc022b58cb38c3e3c29c1a8f, nmreq_copyin() does some extra validation of the option linked list, but that appears to break the test and prevents an infinite loop only by accident.\n\nIn particular, if multiple options have the same req type, the loop just skips to the next option.  But after the first iteration, opt-\u003enro_next will be a kernel pointer not a user point, and then the subsequent copyin() fails because netmap is trying to copyin from a kernel address.  This causes the test to fail since the ioctl returns EFAULT instead of EMSGSIZE.  If not for that bug, I think there would be an infinite loop.\n\nThere is a second bug there in that \"error\" is set in some of those error cases, but the next iteration can set \"error\" back to 0.\n\nIf I disable the infinite_options test, everything else passes for me.  So it'd be nice to fix the kernel and re-enable the netmap tests in CI."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1054764,
+ "bug_id": 238670,
+ "attachment_id": 0,
+ "creation_time": "2019-06-17T17:33:13Z",
+ "creator": "ota@j.email.ne.jp",
+ "text": "kvm_getswapinfo() function returns smaller device sizes than the actual swap device sizes configured available.  \"systat -swap\" uses this API and shows problem.  \"sysctl -c\" uses a different API and displays correct sizes.\n\nWhile \"usesd\" swap device sizes are reported correctly, when a swap device is used fully, it looks like system haven overwritten next partition.\n\nThe root of problem is libkvm subtracts vm.dmmax, maximum VOP I/O allowed, form size of device erroneously.\n\nThe following shows that 1 MB swap device is prepared, attached, and then fully used.  Given FreeBSD swap skips 2 4k blocks, 1016 is the correct size available for swapping. \n\n# dd if=/dev/zero of=1MB bs=1M count=1\n1+0 records in\n1+0 records out\n1048576 bytes transferred in 0.035823 secs (29271150 bytes/sec)\n# mdconfig -a -t vnode -f 1MB\nmd0\n# swapon /dev/md0\n# swapctl -l\nDevice:       1024-blocks     Used:\n/dev/ada0s1b    2097144         0\n/dev/md0           1016         0\n# mount -t tmpfs tmpfs /mnt/tmp\n# dd if=/dev/zero of=/mnt/tmp/fill bs=1M count=2000\n2000+0 records in\n2000+0 records out\n2097152000 bytes transferred in 36.267636 secs (57824337 bytes/sec)\n# swapctl -l\nDevice:       1024-blocks     Used:\n/dev/ada0s1b    2097144     144220\n/dev/md0           1016      1016\n# systat -swap\nDisk   1K-blocks   Used /0%  /10  /20  /30  /40  /50  /60  /70  /80  /90  /100\nada0s1b  2097016 144216 XXXX\nmd0          888   1016 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\nXX       2097904 145232 XXXX"
+}

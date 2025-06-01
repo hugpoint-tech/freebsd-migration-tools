@@ -1,0 +1,8 @@
+{
+ "id": 684154,
+ "bug_id": 171726,
+ "attachment_id": 0,
+ "creation_time": "2012-09-18T02:00:14Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "conscontrol mute on/off is supposed to change the RB_MUTE property of a console,\nwhich in turn is supposed to mute all input on the console, but that doesn't appear to work. Executing the attached script results in me being able to execute commands on both the serial and VGA console even after the console has been marked muted.\n\nSimilarly, I poked at the kern.consmute sysctl and it didn't seem to do the right thing when I set it to 0 or 1.\n\nThe only apparent workaround is to call loader with -m and then unset kern.consmute via /etc/sysctl.conf or another point in time before the system console is initialized (I tried doing it via /etc/rc but unfortunately that didn't work).\n\nFix: \n\nThe console needs to change to be `revoked` and reinitialized properly.\nHow-To-Repeat: sh\ncat \u003e muteme.sh \u003c\u003c-EOF\n#!/bin/sh\n\nsysctl kern.consmute=1\nfor i in \\$(jot 10 10 1)\ndo\n    echo -n \"\\$i..\"\n    sleep 1\ndone\nsysctl kern.consmute=0\nEOF\nsh muteme.sh\n\n1. You should be unable to see the above countdown and you should be unable to do anything on the console.\n2. You should be able to see printouts on the console and be able to input on the console after 10 seconds."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 364998,
+ "bug_id": 106703,
+ "attachment_id": 0,
+ "creation_time": "2006-12-15T02:21:16Z",
+ "creator": "loox@e-shell.net",
+ "text": "\u003e \u003e \tOne thing that crosses my mind is that (in my believing) the maximum\n\u003e \u003e \tsize of a file under msdos(fs) was 2gb, which could explain this\n\u003e \u003e \t\"problem\" you are seeing. If that is still accurate,\n\nmsdosfs_vnops.c:#define DOS_FILESIZE_MAX        0xffffffff\n(4294967295) = 2^32 -1\n\ncp works ok, after patching my kernel, the file is correct (md5 match).\n\n\n\n\u003e\n\u003e Hmm, that is an interesting problem, and I'm digging the fix.\n\u003e FAT32 should handle file sizes up to (2^32)-1 bytes (one byte\n\u003e fewer than four gigabytes.  So we should properly handle this\n\u003e for all FAT32 file systems.\n\nI traced the problem down to the getulong() macro (non 386 version).\n\nProblem is not with handling of the file, clusters, dirs. Just that \nmsdosfs_getattr() reports an incorrect (signed) size, and it makes vn_stat() \nfail.\n\nIf it helps, more info:\n\nMAX_OFF:9223372036854775807\n(max size of any file)\n\nsize of the file:\nCorrect (ufs): \n3015487488 0xB3BCB000\n\nmsdosfs_getattr():\nreported by w/o patch: \n18446744072430071808 0xFFFFFFFEB3BCB000\n(this is why it returns EOVERFLOW)\n\nreported with patch:\n3015487488 0xB3BCB000"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 832801,
+ "bug_id": 201695,
+ "attachment_id": 0,
+ "creation_time": "2015-07-19T19:59:55Z",
+ "creator": "Russell.Yount@gmail.com",
+ "text": "The pf.conf syntax '(interface:0)' incorrectly results in IPv6 link-local address rather than route-able IPv6 address. Patch included at end of this description. \n\nPF.CONF(5) should also be updated. It states:\n\nHost names may also have the :0 option appended to restrict the\nname resolution to the first of each v4 and v6 address found.\n\nShould be:\n\nHost names may also have the :0 option appended to restrict the\nname resolution to the first of each v4 and non-link-local v6 address found.\n\nPatch:\n\n--- usr/src/sys/netpfil/pf/pf_if.c.orig 2015-07-19 12:46:23.000000000 -0500\n+++ usr/src/sys/netpfil/pf/pf_if.c      2015-07-19 12:49:01.000000000 -0500\n@@ -522,7 +522,7 @@\n                if ((flags \u0026 PFI_AFLAG_PEER) \u0026\u0026\n                    !(ifp-\u003eif_flags \u0026 IFF_POINTOPOINT))\n                        continue;\n-               if ((flags \u0026 PFI_AFLAG_NETWORK) \u0026\u0026 af == AF_INET6 \u0026\u0026\n+               if ((flags \u0026 (PFI_AFLAG_NETWORK|PFI_AFLAG_NOALIAS)) \u0026\u0026 af == AF_INET6 \u0026\u0026\n                    IN6_IS_ADDR_LINKLOCAL(\n                    \u0026((struct sockaddr_in6 *)ia-\u003eifa_addr)-\u003esin6_addr))\n                        continue;"
+}

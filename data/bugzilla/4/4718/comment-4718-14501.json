@@ -1,0 +1,8 @@
+{
+ "id": 14501,
+ "bug_id": 4718,
+ "attachment_id": 0,
+ "creation_time": "1997-10-07T10:10:01Z",
+ "creator": "ru@ucb.crimea.ua",
+ "text": "\n\tDriver has a bug (see how-to-repeat). As the result,\n\t`slattach -S \u003csome_fixed_unit\u003e' can not be started and\n\tkilled more than \u003cnumber_of_slips_configured\u003e times.\n\nFix: The following patch solves the problem.\n\tIt was applied to 1.45.2.2 version of src/sys/net/if_sl.c.\n\t\n/*********************************************************************/\nHow-To-Repeat: \n\tSuppose, you have 3 slip units configured in your kernel.\n\tWe will start and kill `slattach -S 1 /dev/cuaa0'.\n\n\tFirst run:\n\t\t- slopen() allocates sl_softc[0];\n\t\t- sltioctl() exchanges sl_softc[0] and sl_softc[1];\n\t\t- sl_softc[1] is assigned SC_STATIC flag.\n\tKilling:\n\t\t- sl_softc[1] has SC_STATIC flag set.\n\n\tSecond run:\n\t\t- slopen() allocates sl_softc[0];\n\t\t- sltioctl() exchanges sl_softc[0] and sl_softc[1];\n\t\t- sl_softc[0] due to this exchange gets SC_STATIC (!!! BUG !!!)\n\t\t- sl_softc[1] is assigned SC_STATIC flag.\n\tKilling:\n\t\t- sl_softc[0 and 1] have SC_STATIC flag set.\n\n\tThird run:\n\t\t- slopen() allocates sl_softc[2] (sl_softc[0 and 1]] can't be\n\t\t  allocates - they have SC_STATIC flag set);\n\t\t- sltioctl() exchanges sl_softc[2] and sl_softc[1];\n\t\t- sl_softc[2] due to this exchange gets SC_STATIC (!!! BUG !!!)\n\t\t- sl_softc[1] is assigned SC_STATIC flag.\n\tKilling:\n\t\t- sl_softc[0,1,2] all have SC_STATIC flag set.\n\t\t\n\tFouth run:\n\t\t- slopen() can't allocate any of the sl_softc[0,1,2]\n\t\t  because all they have SC_STATIC flag set.\n\t\t- slopen() returns ENXIO error (device not configured)."
+}

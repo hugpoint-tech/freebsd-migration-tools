@@ -1,0 +1,8 @@
+{
+ "id": 17165,
+ "bug_id": 5596,
+ "attachment_id": 0,
+ "creation_time": "1998-02-01T23:48:21Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "Ah, but it might be nice to change the diagnostic if there were no\nmatching processes owned by you; something like this patch?\n\n  Bill\n\n\n--- killall.pl.orig\tSun Feb  1 15:42:15 1998\n+++ killall.pl\tSun Feb  1 15:45:08 1998\n@@ -85,16 +85,22 @@\n \t    $proc[$PROC_RUID], $proc[$PROC_NAME] if $debug \u003e 1;\n \n \t    if ( # match program name\n-\t        ($proc[$PROC_NAME] eq $program ||\n-\t         ($match \u0026\u0026 $proc[$PROC_NAME] =~ /$programMatch/oi)\n-\t         ) \u0026\u0026\n-\t        # id test\n-\t        ($proc[$PROC_EUID] eq $id || # effective uid\n-\t         $proc[$PROC_RUID] eq $id || # real uid\n-\t         !$id))\t\t\t # root\n+\t        $proc[$PROC_NAME] eq $program ||\n+\t        ($match \u0026\u0026 $proc[$PROC_NAME] =~ /$programMatch/oi)\n+\t         )\n \t    {\n-\t        push(@kill, $pid);\n-\t        $thiskill++;\n+\t        if ( # id test\n+\t\t\t$proc[$PROC_EUID] eq $id || # effective uid\n+\t\t\t$proc[$PROC_RUID] eq $id || # real uid\n+\t\t\t!$id)\t\t\t # root\n+\t\t{\n+\t\t    push(@kill, $pid);\n+\t\t    $thiskill++;\n+\t\t}\n+\t\telse\n+\t\t{\n+\t\t    $noperm++;\n+\t\t}\n \t    }\n         }\n         close STATUS;\n@@ -102,7 +108,13 @@\n     closedir PROCFS;\n \n     # nothing found\n-    warn \"No matching processes ``$program''\\n\" unless $thiskill;\n+    if (!$thiskill) {\n+\tif ($noperm) {\n+\t    warn \"No matching processes ``$program'' belonging to you\\n\";\n+\t} else {\n+\t    warn \"No matching processes ``$program''\\n\";\n+\t}\n+    }\n }\n \n # nothing found"
+}

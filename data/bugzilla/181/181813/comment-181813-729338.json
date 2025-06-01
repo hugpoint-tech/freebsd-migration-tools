@@ -1,0 +1,8 @@
+{
+ "id": 729338,
+ "bug_id": 181813,
+ "attachment_id": 0,
+ "creation_time": "2013-12-23T02:48:47Z",
+ "creator": "sanewo@ba2.so-net.ne.jp",
+ "text": "Hi guys,\n\nI found that it needs some more for portupgrade(-devel) to work with \npkg-devel.\n\nCurrent pkgdb.rb has @pkgng_origin as instance variable, which seems not \nproperly initialized when accessed within the class method (e.g. \nself.command).\n\nFollowing patch makes it a class variable and it seems work as expected.\nI'm not vary sure it won't break anything, though.\n\n===\n--- lib/pkgtools/pkgdb.rb.orig      2013-12-13 03:20:27.000000000 +0900\n+++ lib/pkgtools/pkgdb.rb 2013-12-23 11:32:49.000000000 +0900\n@@ -99,7 +99,7 @@\n      # Use what the port advises to use via PKG_BIN as that will properly\n      # handle upgrades\n      if sym == :pkg\n-      pkg_origin = @pkgng_origin || \"ports-mgmt/pkg\"\n+      pkg_origin = @@pkgng_origin || \"ports-mgmt/pkg\"\n        pkg_dir = \"#{$portsdb.ports_dir}/#{pkg_origin}\"\n\n        if File.directory?(pkg_dir)\n@@ -128,8 +128,8 @@\n         PACKAGESITE=file:///nonexistent \\\n         pkg info -x 'pkg(-devel)?$' \u003e/dev/null 2\u003e\u00261 \u0026\u0026 echo yes`.chomp \n!= \"\"\n        @with_pkgng = false unless @with_pkgng\n-      @pkgng_origin = $portsdb.make_var('PKGNG_ORIGIN')\n-      #STDERR.puts \"USING PKGNG[#{@pkgng_origin}]\" if @with_pkgng\n+      @@pkgng_origin = $portsdb.make_var('PKGNG_ORIGIN')\n+      #STDERR.puts \"USING PKGNG[#{@@pkgng_origin}]\" if @with_pkgng\n      end\n      @with_pkgng\n    end\n\n===\nHappy Hacking!"
+}

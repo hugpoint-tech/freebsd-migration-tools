@@ -1,0 +1,8 @@
+{
+ "id": 764432,
+ "bug_id": 189911,
+ "attachment_id": 0,
+ "creation_time": "2014-05-18T15:10:00Z",
+ "creator": "wjenkner@inode.at",
+ "text": "Mapping a shared library to another - existing or not existing - library\nvia LD_LIBMAP, as described in rtld(1), has no effect (but it does work\nwhen done in libmap.conf).\n\nFix: The following patch is against 10-STABLE, but should apply to HEAD as\nwell.\n\nIt seems that, due to an oversight in HEAD r232862, lmc_parse() was\npassed wrong arguments in the libmap_override case.\nHow-To-Repeat: $ LD_LIBMAP=libncurses.so.8=libncurses.so.5 ldd /bin/ls\n/bin/ls:\n\tlibutil.so.9 =\u003e /lib/libutil.so.9 (0x800823000)\n\tlibncurses.so.8 =\u003e /lib/libncurses.so.8 (0x800a35000)\n\tlibc.so.7 =\u003e /lib/libc.so.7 (0x800c82000)\n\nOn the other hand, with\n\n$ cat /etc/libmap.conf\n[ls]\nlibncurses.so.8 libncurses.so.5\n$ \n\nwe get\n\n$ ldd /bin/ls\n/bin/ls:\n\tlibutil.so.9 =\u003e /lib/libutil.so.9 (0x800823000)\n\tlibncurses.so.8 =\u003e /usr/local/lib/libncurses.so.5 (0x800a35000)\n\tlibc.so.7 =\u003e /lib/libc.so.7 (0x800c53000)\n\tlibtinfo.so.5.9 =\u003e /usr/local/lib/libtinfo.so.5.9 (0x800ffa000)\n$ \n\nif  libncurses.so.5 from the devel/ncurses port exists.\n\nOtherwise, we get\n\n$ ldd /bin/ls\n/bin/ls:\n\tlibutil.so.9 =\u003e /lib/libutil.so.9 (0x800823000)\n\tlibncurses.so.8 =\u003e not found (0)\n\tlibc.so.7 =\u003e /lib/libc.so.7 (0x800a35000)\n$"
+}

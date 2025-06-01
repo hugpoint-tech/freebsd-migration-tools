@@ -1,0 +1,8 @@
+{
+ "id": 701998,
+ "bug_id": 175860,
+ "attachment_id": 0,
+ "creation_time": "2013-02-05T12:00:00Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "ports/166012 improved configuration by automatically attaching webcamd\nto every usb interface a Wacom tablet has. This leads to two issues with\nstatic Xserver configuration (xorg.conf).\n\n- depending on the order of initialization /dev/input/eventN may be\n  assigned to different interface(s) after re-attaching the tablet\n\n- running Xserver prevents webcamd (cuse) from reclaiming old\n  /dev/input/eventN filenames while not picking up new ones\n  when the tablet is re-attached\n\nHAL solves both of them by providing enough information to assign the\nright device type(s) for X11 driver (stylus, cursor, etc) and making\nXserver open/close device file(s) on attach/detach.\n\nNote, the first issue cannot be worked around with devd symlinks because\ncuse events are too scarce to distinguish different interfaces on\ndifferent devices, etc.\n\n  !system=DEVFS subsystem=CDEV type=CREATE cdev=input/event0\n  !system=DEVFS subsystem=CDEV type=CREATE cdev=input/event1\n\nHow-To-Repeat: 1. create xorg.conf for a tablet\n2. startx, xdm, etc\n3. detach the tablet\n4. attach the tablet\n5. notice input from the tablet no longer works"
+}

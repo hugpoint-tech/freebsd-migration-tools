@@ -1,0 +1,8 @@
+{
+ "id": 1124166,
+ "bug_id": 249579,
+ "attachment_id": 218303,
+ "creation_time": "2020-09-26T02:29:45Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 218303\nFix unmount/remount when resuming a receive stream\n\nzfs: Fix resuming receive stream to dataset with mounted clone\n\nMy fix for bug 248606 (zfs receive: Input/output error accessing dataset\nafter resuming interrupted receive), r364412, introduced a regression:\nattempting to resume a receive into a dataset with a mounted clone would\nfail if that clone were in-use.  This change reverts r364412 and fixes it in\na better way.\n\nBackground:\nWhen ZFS receives a stream, it may decide to unmount and remount the\ndestination and all of its children.  However, ever since resumable\nsend/receive was implemented, ZFS has skipped the unmount/remount step when\nresuming a stream.  I don't know why.\n\nThat let to bug 248606.  When resuming the stream, ZFS didn't unmount and\nremount the destination, leaving a destroyed dataset mounted.\n\nMy original fix was to always unmount and remount when resuming a receive,\nbut that caused other problems, like bug 249579.  A better solution is to\nunmount and remount when resuming a receive of a stream that would've\nunmounted and remounted when it was new.\n\nDirect commit to stable/12 because head has moved to OpenZFS.  The bug\nexists there, too, but a change to the OpenZFS code can't be merged to the\nold ZFS code.\n\nPR: 249579\n\nTest Plan: ZFS test suite"
+}

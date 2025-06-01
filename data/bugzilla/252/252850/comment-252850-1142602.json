@@ -1,0 +1,8 @@
+{
+ "id": 1142602,
+ "bug_id": 252850,
+ "attachment_id": 221760,
+ "creation_time": "2021-01-20T08:16:34Z",
+ "creator": "stephan.dewt@yahoo.co.uk",
+ "text": "Created attachment 221760\npatch for the above-described bug\n\nCertain userspace applications might want to keep track of RX/TX bytes and packets, which are fed into the if_mib structure and accessible via the sysctl net.link.generic.ifdata.[IF_INDEX].{general/linkspecific}. The handler for this calls if_data_copy(), which in turn calls a driver-specific function which checks if certain statistics are available in the hardware, such as:\n- IPACKET \n- OPACKETS\n- IBYTES\n- OBYTES\netc.\n\nIf a driver does NOT collect these statistics, such as Intel, the system relies on a default counter which gets incremented as soon as a packet makes its way through the datapath in iflib.\n\nHowever, when the interface is in NETMAP mode, these counters are not incremented. This means that any management entities keeping track of bytes and packets do not see anything coming through.\n\nThe fix for this (unless this was intentionally left out?) has two options in my opinion:\n1. Increase default counters as the system would, right after if_input() is called. This undermines the idea of Netmap though, since userspace applications control whether packets are passed up the host stack.\n2. Increase the default counters right before netmap_{rx/tx}sync has finished executing. This has the effect that ALL packets and bytes which enter the system are recorded, causing the numbers to be representative of the underlying hardware, as is intended through iflib's ifdi_get_counter() function.\n\nPlease find attached a proposed patch for this."
+}

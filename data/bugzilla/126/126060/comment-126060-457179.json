@@ -1,0 +1,8 @@
+{
+ "id": 457179,
+ "bug_id": 126060,
+ "attachment_id": 0,
+ "creation_time": "2008-08-03T17:32:07Z",
+ "creator": "antoine@FreeBSD.org",
+ "text": "I think that this periodic script has a few problems:\n- it should not check rules without \"logamount\"\n- it should not use sysctl net.inet.ip.fw.verbose_limit\n- it should not run if sysctl net.inet.ip.fw.verbose is not 1\n\nThe logging limit for a rule that doesn't have \"logamount\" is set to\nthe value of net.inet.ip.fw.verbose_limit at the time the rule is set,\nand when this rule is showed later it has a logamount:\n\n%%%\n# ipfw -a list\n65535 0 0 deny ip from any to any\n# sysctl net.inet.ip.fw.verbose_limit=0\nnet.inet.ip.fw.verbose_limit: 500 -\u003e 0\n# ipfw add 100 allow log ip from any to any\n00100 allow log ip from any to any\n# sysctl net.inet.ip.fw.verbose_limit=100\nnet.inet.ip.fw.verbose_limit: 0 -\u003e 100\n# ipfw add 200 allow log ip from any to any\n00200 allow log logamount 100 ip from any to any\n# sysctl net.inet.ip.fw.verbose_limit=200\nnet.inet.ip.fw.verbose_limit: 100 -\u003e 200\n# ipfw add 300 allow log ip from any to any\n00300 allow log logamount 200 ip from any to any\n# sysctl net.inet.ip.fw.verbose_limit=300\nnet.inet.ip.fw.verbose_limit: 200 -\u003e 300\n# ipfw add 400 allow log ip from any to any\n00400 allow log logamount 300 ip from any to any\n# ipfw add 500 allow log logamount 0 ip from any to any\n00500 allow log ip from any to any\n# ipfw -a list\n00100 10 1227 allow log ip from any to any\n00200  0    0 allow log logamount 100 ip from any to any\n00300  0    0 allow log logamount 200 ip from any to any\n00400  0    0 allow log logamount 300 ip from any to any\n00500  0    0 allow log ip from any to any\n65535  4  436 deny ip from any to any\n%%%"
+}

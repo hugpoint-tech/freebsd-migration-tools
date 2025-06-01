@@ -1,0 +1,8 @@
+{
+ "id": 1039372,
+ "bug_id": 236043,
+ "attachment_id": 202370,
+ "creation_time": "2019-02-26T00:00:05Z",
+ "creator": "rew@FreeBSD.org",
+ "text": "Created attachment 202370\ndon't check if a dataset is mounted when destroying a snapshot\n\nHow to reproduce:\n\n$ bectl create bootenv\n\n$ bectl list -s | grep -A1 bootenv\nbootenv\n  zroot/ROOT/bootenv                       -      -          8K    2019-02-25 12:45\n    zroot/ROOT/solid@2019-02-25-12:45:25   -      -          0     2019-02-25 12:45\n\n$ bectl destroy -o bootenv\ncannot destroy mounted boot env unless forced\n\n$ bectl list | grep bootenv\n/* no output*/\n\n$ zfs list -t snapshot | grep solid@2019-02-25-12:45:25\nzroot/ROOT/solid@2019-02-25-12:45:25                       0      -  21.7G  -\n\nThe bug is in the libbe library, specifically the 'be_destroy' function. 'be_destroy' can destroy\na boot environment by name or snapshot, in either case 'be_destroy' acquires a zfs handle internally. When\n'be_destroy' is given a boot environment name, the zfs handle will be the boot environment dataset (zroot/ROOT/bootenv).\nWhen 'be_destroy' is given a snapshot name, the zfs handle will be the dataset that the snapshot was\ntaken from (zroot/ROOT/solid). After the zfs handle is acquired, a check is made to see if the dataset\nis mounted and bombs if it is (unless forced). In the above case, 'zroot/ROOT/solid' is the current boot environment.\n\nIn short - when destroying a snapshot, 'be_destroy' tries to unmount the dataset that the snapshot was\ntaken from. The attached fix checks if the dataset is mounted only when that dataset (i.e. boot environment) will\nbe destroyed. In other words, the patch doesn't check if a dataset is mounted when destroying a snapshot."
+}

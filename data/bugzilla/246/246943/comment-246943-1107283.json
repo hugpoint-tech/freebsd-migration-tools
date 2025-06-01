@@ -1,0 +1,8 @@
+{
+ "id": 1107283,
+ "bug_id": 246943,
+ "attachment_id": 0,
+ "creation_time": "2020-06-09T14:26:37Z",
+ "creator": "wcarson.bugzilla@disillusion.net",
+ "text": "I was getting segmentation faults, so I changed some things around based on examples I found in usr.bin/chpass/util.c. It runs as expected now, and it will run twice if the toor user has a shell. I'll see if I can find some examples of keeping a hash of already-processed UIDs I can steal, since I'm not sure I'm clever enough for that.\n\nAlso, I think perhaps a new bug is in order for the getusershell(3) man page, as it seems to suggest the first call should be (void)getusershell(), but that apparently is not the case. The first call should be setusershell(), which the manpage says merely rewinds the pointer.\n\n\n\n--- calendar.c\t2020-06-09 14:19:11.301156000 +0000\n+++ calendar.c.new\t2020-06-09 14:18:58.982708000 +0000\n@@ -215,7 +215,6 @@\n \t}\n\n \tif (doall) {\n-\t\t(void)getusershell();\n \t\twhile ((pw = getpwent()) != NULL) {\n \t\t\tpid_t pid;\n\n@@ -237,7 +236,6 @@\n \t\t\t\texit(0);\n \t\t\t}\n \t\t}\n-\t\tendusershell();\n \t} else {\n #ifdef WITH_ICONV\n \t\t/* Save the information about the encoding used in the terminal. */\n@@ -253,12 +251,15 @@\n static bool\n bad_user_shell(const char *sh)\n {\n-\tconst char *p;\n-\n-\twhile ((sh = getusershell()) != NULL) {\n-\t\tif (strcmp(sh, p) == 0)\n-\t\t\treturn true;\n+\tchar *p;\n+\tsetusershell();\n+\twhile ((p = getusershell()) != NULL) {\n+\t\tif (strcmp(sh, p) == 0) {\n+\t\t\tendusershell();\n+\t\t\treturn false;\n+\t\t}\n \t}\n+\tendusershell();\n \treturn true;\n }"
+}

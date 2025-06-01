@@ -1,0 +1,8 @@
+{
+ "id": 1193757,
+ "bug_id": 260894,
+ "attachment_id": 0,
+ "creation_time": "2022-01-08T17:40:47Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "So it turns out that I can't use VFS_MOUNT the way I thought.  The MNT_EXPORTED flag does not get set during that call if because the user wants to export the file system.  Rather, it is set if the file system is _already_ exported.  The sequence goes like this:\n\n1) mountd calls nmount with MNT_EXPORTED to export the file system\n2) vfs_domount_update calls VFS_MOUNT with the MNT_EXPORTED bit masked out\n3) vfs_domount_update calls vfs_export, which actually sets MNT_EXPORTED in the struct mount.\n4) At some later date, if the user removes the file system from /etc/exports, mountd will call nmount with MNT_EXPORTED unset.\n5) vfs_domount_update calls VFS_MOUNT, which sees MNT_EXPORTED set, and returns an error\n6) As a result, the file system does not get unexported\n\nI guess for now I can't do anything smart in VFS_MOUNT.  Instead, I'll just have to return errors from VOP_VPTOFH.  As an enhancement, it would be nice if the file system could set some flag that would cause vfs_export to fail.  That would produce a more useful error message than just returning errors from VOP_VPTOFH ."
+}

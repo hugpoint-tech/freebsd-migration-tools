@@ -1,0 +1,8 @@
+{
+ "id": 1040559,
+ "bug_id": 236231,
+ "attachment_id": 0,
+ "creation_time": "2019-03-04T22:31:08Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "The bug happens even if the kernel doesn't try to cache negative lookups.  It's not a bug in the cacheing per se; it's a bug in how we handle a cacheable response from the server.  Here's what happens:\n\nNormal case, nameiop == LOOKUP:\n* fuse_vnop_lookup sends a FUSE_LOOKUP request to the server and waits for the\n  answer via fdisp_wait_answ at line 738\n* fdisk_wait_answ returns ENOENT\n* err = ENOENT at line 807, and return\n* some userland syscall gets ENOENT\n\nNormal case, nameiop = CREATE:\n* fuse_vnop_lookup sends a FUSE_LOOKUP request to the server and waits for the\n  answer via fdisp_wait_answ at line 738\n* fdisk_wait_answ returns ENOENT\n* err = EJUSTRETURN at line 786, and return\n* openat or one of its subroutines proceeds to VOP_CREATE\n\nCacheable negative entry case, nameiop == LOOKUP:\n* fuse_vnop_lookup sends a FUSE_LOOKUP request to the server and waits for the\n  answer via fdisp_wait_answ at line 738\n* fdisk_wait_answ returns 0\n* Since fdi.answ_stat == 0, return lookup_err at line 758.  It's the right\n  return code, but for the wrong reason\n* some userland syscall gets ENOENT\n\nCacheable negative entry case, nameiop == CREATE:\n* fuse_vnop_lookup sends a FUSE_LOOKUP request to the server and waits for the\n  answer via fdisp_wait_answ at line 738\n* fdisk_wait_answ returns 0\n* Since fdi.answ_stat is 0, return lookup_err at line 758.  Oh no!\n* openat returns ENOENT, obviously a bogus error code when O_CREAT is set\n\nI haven't tried yet, but setting fdi.answ_stat = ENOENT at line 748 would probably fix the problem."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1291662,
+ "bug_id": 276248,
+ "attachment_id": 0,
+ "creation_time": "2024-01-10T21:10:22Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "nd6_timer() uses network epoch to go through list of IPv6 address:\n\n        CK_STAILQ_FOREACH_SAFE(ia6, \u0026V_in6_ifaddrhead, ia_link, nia6) {\n\nNote that epoch(9) introduction to the kernel this list traversal didn't\nuse any locking, hence comment XXXRW: in6_ifaddrhead locking.\n\nThe epoch locking guarantees safe memory access, but doesn't prevent\nfrom addresses being removed.  Then nd6_timer() may call in6_purgeaddr()\nwhich will try to remove address that already could had been removed,\ne.g. by in6_control().  This race manifests in panic:\n\n#17 0xffffffff80c33c58 in trap_check (frame=0xfffffe000effdb70) at /usr/src/FreeBSD/sys/amd64/amd64/trap.c:662\n#19 0xffffffff8097e623 in in6_unlink_ifa (ia=0xfffff80002520900, ifp=0xfffff8004d72d000) at /usr/src/FreeBSD/sys/netinet6/in6.c:1445\n#20 0xffffffff8097ee0b in in6_purgeaddr (ifa=0xfffff80002520900) at /usr/src/FreeBSD/sys/netinet6/in6.c:1405\n#21 0xffffffff809ad781 in nd6_timer (arg=0xfffff8015064dc00) at /usr/src/FreeBSD/sys/netinet6/nd6.c:961\n#22 0xffffffff80673536 in softclock_call_cc (c=0xfffffe00b98be828, cc=0xffffffff816800c0, direct=0)\n    at /usr/src/FreeBSD/sys/kern/kern_timeout.c:717\n#23 0xffffffff80675e46 in softclock_thread (arg=0xffffffff816800c0) at /usr/src/FreeBSD/sys/kern/kern_timeout.c:856"
+}

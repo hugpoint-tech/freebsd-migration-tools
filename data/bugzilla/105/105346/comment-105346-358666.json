@@ -1,0 +1,8 @@
+{
+ "id": 358666,
+ "bug_id": 105346,
+ "attachment_id": 0,
+ "creation_time": "2006-11-09T22:10:20Z",
+ "creator": "ed@fxq.nl",
+ "text": "The system calls dup() and dup2() allow you to duplicate file\ndescriptors. The fcntl(..., F_DUPFD, ...) function allows you to do\nsomething similar as dup(). The only difference is the errno variable\nthat is returned when the given offset is too high.\n\nThe FreeBSD kernel implements all dup() related functionality through\nthe do_dup() function. The problem is that the kern_fcntl() function\nalmost performs the same tests as the do_dup() call, causing some\nduplicate code and worst of all: more locking.\n\nFix: \n\nThe patch located at http://g-rave.nl/junk/freebsd-kern_descrip.diff\nmakes kern_fcntl() immediately call do_dup() when the request is\nF_DUPFD, causing the FILEDESC_LOCK and PROC_LOCK to be contested only\nonce in do_dup().\n\nIt also changes the errno when the offset is too high to EINVAL instead\nof EMFILE. The dup() and dup2() functions will set it back to EMFILE to\nremain POSIX compliant.\nHow-To-Repeat: n/a"
+}

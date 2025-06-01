@@ -1,0 +1,8 @@
+{
+ "id": 984118,
+ "bug_id": 226907,
+ "attachment_id": 0,
+ "creation_time": "2018-03-25T02:04:20Z",
+ "creator": "0mp@FreeBSD.org",
+ "text": "When I try to start mongod with:\n\n    sudo service mongod onestart\n\nI get the following output:\n\n\u003e Starting mongod.\n\u003e limits: NO: No such file or directory\n\u003e /usr/local/etc/rc.d/mongod: WARNING: failed to start mongod\n\nI've not modified any configuration files yet.\n\nIt looks like it is a problem with the `mongod_limits` knob, which has the following description: \"Set to \"NO\" by default. Set it to yes to run `limits -e -U mongodb`\".\n\nI decided to add `set -x` to /usr/local/etc/rc.d/mongod. It turns out that `mongod_limits` is an unfortunate name because of the line 1078 in /etc/rc.subr:\n\n    _doit=\"$_cd limits -C $_login_class $_limits $_doit\"\n\n`_limits` is a variable set in line 957:\n\n    _limits=\\$${name}_limits    _oomprotect=\\$${name}_oomprotect\n\nwhereas `${name}_limits` is described as follows: \n\n    #\tName\t\tNeeded\tPurpose\n    #\t${name}_limits\tn\tlimits(1) to apply to ${command}.\n\nI believe that we have a name collision here as with `set -x` we can see that following command is executed (resulting in \"limits: NO: No such file or directory\"):\n\n    limits -C daemon NO su -m mongodb -c 'sh -c \"/usr/local/bin/mongod --logpath /var/db/mongodb/mongod.log --logappend --config /usr/local/etc/mongodb.conf --dbpath /var/db/mongodb --fork \u003e/dev/null 2\u003e/dev/null\"'\n\nAfter renaming `mongod_limits` to `mongod_run_limits` in /usr/local/etc/rc.d/mongod the service runs just fine."
+}

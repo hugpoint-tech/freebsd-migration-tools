@@ -1,0 +1,8 @@
+{
+ "id": 741860,
+ "bug_id": 184596,
+ "attachment_id": 0,
+ "creation_time": "2013-12-08T16:20:00Z",
+ "creator": "freebsd@grem.de",
+ "text": "php5-iconv has been changed to use FreeBSD's native iconv implementation where available (read FreeBSD 10). Unfortunately FreeBSD doesn't support GNU iconv's TRANSLIT and IGNORE extensions, which are clearly documented to be supported unconditionally on any platform by the PHP project:\n\nhttp://www.php.net/manual/en/function.iconv.php\n\"out_charset \n\n The output charset. \n\nIf you append the string //TRANSLIT to out_charset transliteration is activated. This means that when a character can't be represented in the target charset, it can be approximated through one or several similarly looking characters. If you append the string //IGNORE, characters that cannot be represented in the target charset are silently discarded. Otherwise, str is cut from the first illegal character and an E_NOTICE is generated.\"\n\nAs a result, PHP code that runs correctly on other operating systems or FreeBSD \u003c 10 will break in subtle ways on 10.\n\nFix: \n\nImplement TRANSLIT/IGNORE extensions in base or make the port use converters/libiconv.\nHow-To-Repeat: Run the following code snippet:\n\ncat t.php \u003c\u003cEOF\n\u003c?php\n\nprint iconv(\"UTF-8\", \"ISO-8859-1//TRANSLIT\", \"T\\xc5\\xbdst\\n\");\n\n?\u003e\nEOF\n\nFreeBSD 9.2:\n$ php t.php\nTZst\n\nFreeBSD 10 BETA3:\n$ php t.php\nT?st"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1011739,
+ "bug_id": 231459,
+ "attachment_id": 0,
+ "creation_time": "2018-09-18T17:30:46Z",
+ "creator": "emaste@freebsd.org",
+ "text": "/usr/bin/ld: error: unknown argument: -Bforcearchive\ncc: error: linker command failed with exit code 1 (use -v to see invocation)\n\nThis happens because OpenSSL tries to detect GNU ld with:\n\n./work/openssl-1.0.2p/Makefile.shared:DETECT_GNU_LD=($(CC) -Wl,-V /dev/null 2\u003e\u00261 | grep '^GNU ld' )\u003e/dev/null\n\nand provides a different link invocation for non-GNU ld, which ends up with the -Bforcearchive flag (which is not supported by GNU ld or lld)\n\nSee https://www.sigbus.info/software-compatibility-and-our-own-user-agent-problem.html for some more info.\n\nA patch like this is probably sufficient:\n\n-./work/openssl-1.0.2p/Makefile.shared:DETECT_GNU_LD=($(CC) -Wl,-V /dev/null 2\u003e\u00261 | grep '^GNU ld' )\u003e/dev/null\n+./work/openssl-1.0.2p/Makefile.shared:DETECT_GNU_LD=($(CC) -Wl,-V /dev/null 2\u003e\u00261 | grep 'GNU' )\u003e/dev/null"
+}

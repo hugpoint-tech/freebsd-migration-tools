@@ -1,0 +1,8 @@
+{
+ "id": 762045,
+ "bug_id": 189268,
+ "attachment_id": 0,
+ "creation_time": "2014-05-03T08:44:57Z",
+ "creator": "dreamcat4@gmail.com",
+ "text": "getaddrinfo() returns a list of results. So I have updated my test program\nto walk the entire list. It now prints two results for PF_UNSPEC\n\ngetaddrinfo ~/ root~# gcc test.c -o test \u0026\u0026 ./test\n0.0.0.0\n127.0.0.1\ngetaddrinfo ~/ root~#\n\nWhere the first result in the list is supposed to be the ipv6's \"::1\" (but\nisn't).\n\nAnyway heres the new version of the test.c\n\ngetaddrinfo ~/ root~# cat test.c\n#include \u003cstring.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetdb.h\u003e\n#include \u003cnetinet/in.h\u003e\n#include \u003carpa/inet.h\u003e\n\n\n/* man getaddrinfo */\n\nint main()\n{\n  struct addrinfo *addrinfo = NULL;\n  struct addrinfo *rp = NULL;\n  struct addrinfo hints;\n  struct addrinfo res;\n  int err;\n\n  memset((void*)\u0026hints, 0, sizeof(hints));\n  hints.ai_family   = PF_UNSPEC;\n  hints.ai_socktype = SOCK_STREAM;\n  hints.ai_flags    = AI_PASSIVE;\n\n  err = getaddrinfo(\"localhost\", \"18083\", \u0026hints, \u0026addrinfo);\n\n  if (addrinfo)\n  {\n    for (rp = addrinfo; rp != NULL; rp = rp-\u003eai_next)\n    {\n      printf(\"%s\\n\", inet_ntoa( ((struct\nsockaddr_in*)rp-\u003eai_addr)-\u003esin_addr ));\n    }\n\n    freeaddrinfo(addrinfo);\n    return(0);\n  }\n\n  if (err || !addrinfo)\n  {\n    printf(\"getaddrinfo failed with code %i.\\n\",err);\n    return(1);\n  }\n\n  printf(\"end_main()\\n\");\n  return (0);\n\n}\n\ngetaddrinfo ~/ root~# gcc test.c -o test \u0026\u0026 ./test\n0.0.0.0\n127.0.0.1\ngetaddrinfo ~/ root~#"
+}

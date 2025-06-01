@@ -1,0 +1,8 @@
+{
+ "id": 721937,
+ "bug_id": 180146,
+ "attachment_id": 0,
+ "creation_time": "2013-10-11T11:44:55Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/180146, you wrote:\n\u003e There appears to be a race condition in /bin/sh where receiving\n\u003e SIGWINCH too early will cause the process to end. Bugs ports/178194\n\u003e and ports/178651, which I filed, are occurrences of this bug.\n\nAlthough I cannot reproduce this bug using the termit reproducer, I can\nimagine libedit contains this kind of bug since it is of a low quality\nin general (see also\nhttp://www.freebsd.org/cgi/query-pr.cgi?pr=bin/169773 ).\n\nPerhaps the below patch will work around your issue (while delaying the\nresponse to a true SIGWINCH until \u003cEnter\u003e is pressed).\n\ncommit 548c429eea82f483d56181115451f70146d9b948\nAuthor: Jilles Tjoelker \u003cjilles@stack.nl\u003e\nDate:   Sun Sep 1 18:22:24 2013 +0200\n\n    sh: Enable system call restart for the default SIGWINCH handler.\n    \n    This makes it apply later than it should but avoids libedit bugs.\n\ndiff --git a/bin/sh/trap.c b/bin/sh/trap.c\nindex 3fc8566..73e156b 100644\n--- a/bin/sh/trap.c\n+++ b/bin/sh/trap.c\n@@ -260,6 +260,7 @@ setsignal(int signo)\n \tstruct sigaction sa;\n \tchar *t;\n \n+\tsa.sa_flags = 0;\n \tif ((t = trap[signo]) == NULL)\n \t\taction = S_DFL;\n \telse if (*t != '\\0')\n@@ -297,6 +298,7 @@ setsignal(int signo)\n \t\tcase SIGWINCH:\n \t\t\tif (rootshell \u0026\u0026 iflag)\n \t\t\t\taction = S_CATCH;\n+\t\t\tsa.sa_flags |= SA_RESTART;\n \t\t\tbreak;\n #endif\n \t\t}\n@@ -334,7 +336,6 @@ setsignal(int signo)\n \t}\n \t*t = action;\n \tsa.sa_handler = sigact;\n-\tsa.sa_flags = 0;\n \tsigemptyset(\u0026sa.sa_mask);\n \tsigaction(signo, \u0026sa, NULL);\n }\n\n-- \nJilles Tjoelker"
+}

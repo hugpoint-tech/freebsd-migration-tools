@@ -1,0 +1,8 @@
+{
+ "id": 93720,
+ "bug_id": 29847,
+ "attachment_id": 0,
+ "creation_time": "2001-08-18T13:50:00Z",
+ "creator": "br@clabsms.de",
+ "text": "\"usbd_probe_and_attach()\" in \"/sys/dev/usb/usb_subr.c\" uses the\nautomatic variable \"uaa\"to store information for probe and attach\nfunctions.\n\nIf an USB module with an active device is unloaded and reloaded,\nthe automatic variable \"uaa\" doesn't contain valid information\nand the USB_MATCH function of the loaded driver (and others)\nmay crash the system.\n\nFix: \n\nUse \"malloc()\" to allocate \"uaa\" in \"usbd_probe_and_attach()\"\nin file \"/sys/dev/usb/usb_subr.c\" and insert a \"free()\"\ninto the appropriate function after the device is removed\n(unplugged) from the system.\nHow-To-Repeat: (1) boot a kernel without USB\n(2) start \"usbd\" (this will load 'usbd.ko')\n(3) load \"ums.ko\"\n(4) attach a USB mouse\n(5) unload \"ums.ko\"\n(6) reload \"ums.ko\"\n(you may use any other driver with a matching USB device in steps 3-6)\n\nNow the USB_MATCH routine of \"ums\" (and \"uhub\") is called with a\npointer to an \"uaa\" which is invalid.\n\nThis causes a crash on my system, because \"uaa-\u003edriver\" is the\nNULL pointer. This may vary on other systems."
+}

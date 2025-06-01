@@ -1,0 +1,8 @@
+{
+ "id": 1280660,
+ "bug_id": 274614,
+ "attachment_id": 0,
+ "creation_time": "2023-10-20T16:57:55Z",
+ "creator": "nreilly@qnx.com",
+ "text": "The retry loop in pfctl_do_ioctl() is problematic.\n\n\"data\" is allocated outside the loop vi nvlist_pack() and then freed inside on the first time through. If ENOSPC is returned from the ioctl() then it goes to the retry and will now attempt to memcpy() the previously freed data before freeing it again.\n\nThere was a recent fix just before the retry loop https://cgit.freebsd.org/src/commit/lib/libpfctl/libpfctl.c?id=6422599e74db4bb8b47cead46760d96601d8396a\nwithout that there are even more problems where the memcpy() of nvlen could be greater than the malloc() of size. This fix means that simply moving the retry label up above the nvlist_pack() will not work as that would then undo the increasing of size on the retry."
+}

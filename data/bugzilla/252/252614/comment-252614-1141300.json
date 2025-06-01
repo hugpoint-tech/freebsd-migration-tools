@@ -1,0 +1,8 @@
+{
+ "id": 1141300,
+ "bug_id": 252614,
+ "attachment_id": 221499,
+ "creation_time": "2021-01-12T16:53:19Z",
+ "creator": "jamie@catflap.org",
+ "text": "Created attachment 221499\npatch to fix diff bug\n\nWhen diff hits certain access errors, function diffreg() shows the error message, and then returns to the calling function, which calls print_status() with the return value.\n\nHowever, in these cases, the return value isn't changed from the initial default value of D_SAME.\n\nNormally, print_status() with a value of D_SAME does nothing, so this works out ok, however, if the \"-s\" flag is set, a message is displayed showing identicality:\n\ncase D_SAME:\n                if (sflag)\n                        printf(\"Files %s%s and %s%s are identical\\n\",                                                                                                       path1, entry, path2, entry);\n                break;\n\nThis then produces such results as:\n\n% diff  -s /COPYRIGHT /var/run/rpcbind.sock\ndiff: /var/run/rpcbind.sock: Operation not supported\nFiles /COPYRIGHT and /var/run/rpcbind.sock are identical\n\n% diff  -s /COPYRIGHT /etc/master.passwd\ndiff: /etc/master.passwd: Permission denied\nFiles /COPYRIGHT and /etc/master.passwd are identical\n\nA quick fix would be to alter the above line:\n\n   if (sflag)\n\nto\n\n   if (sflag \u0026\u0026 status \u0026 2)\n\nA less hacky fix is attached as a patch. It creates a D_ERROR status which is returned in such cases, and print_status() then deals with that status seperately from D_SAME."
+}

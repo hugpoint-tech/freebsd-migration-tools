@@ -1,0 +1,8 @@
+{
+ "id": 394095,
+ "bug_id": 112983,
+ "attachment_id": 0,
+ "creation_time": "2007-05-25T10:00:09Z",
+ "creator": "tate@tateoka.org",
+ "text": "\tXDMCP login from remote host crashs xdm.\n\n\tXdm is crashed because pam_get_item() in \n\tpam_sm_close_session() makes variable \"tty\" as NULL.\n\tFollowing patch makes it clear:\n\n---BEGIN---\n*** /usr/src/lib/libpam/modules/pam_lastlog/pam_lastlog.c.orig\tFri May 25 15:59:00 2007\n--- /usr/src/lib/libpam/modules/pam_lastlog/pam_lastlog.c\tFri May 25 16:14:18 2007\n***************\n*** 173,178 ****\n--- 173,183 ----\n          const void *tty;\n  \n          pam_get_item(pamh, PAM_TTY, (const void **)\u0026tty);\n+ \tif (tty == NULL){\n+ \t\tsyslog(LOG_ERR, \"tty is NULL\");\n+ \t\treturn(PAM_SYSTEM_ERR);\n+ \t}\n+ \t\t\n  \tif (strncmp(tty, _PATH_DEV, strlen(_PATH_DEV)) == 0)\n  \t\ttty = (const char *)tty + strlen(_PATH_DEV);\n  \tif (*(const char *)tty == '\\0')\n---END---\n\n\tWith this patch, xdm logged to /var/log/messages following lines:\n\nMay 25 16:29:53 leaf xdm: tty is NULL\nMay 25 16:29:53 leaf xdm: in _openpam_check_error_code(): pam_sm_close_session()\n: unexpected return value 4\n\nHow-To-Repeat: \t- add LISTEN and remote host IP address to Xaccess file on target host.\n\t- comment out DisplayManager.requestPort in xdm-config file on target host.\n\t- start xdm on target host.\n\t- execute \"X -query targethost\" from remote host.\n\txdm window appears on remote host, but it cause SEGV if login.\n\n\t/var/log/messages on target host says like that:\n\tMay 25 16:05:35 leaf kernel: pid 88443 (xdm), uid 0: exited on signal 11 (core d umped)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 494669,
+ "bug_id": 133712,
+ "attachment_id": 0,
+ "creation_time": "2009-04-13T21:20:02Z",
+ "creator": "paul@tmp.group",
+ "text": "On FreeBSD 7.0+ (and some 6.x versions according to other people on irc.freenode.net) you will get a Kpanic (trap12) when attempting to join a WPA enabled network. Here is the device in question:\n\nural0: \u003cCisco-Linksys Wireless-G USB Network Adapter, class 0/0, rev 2.00/0.04, addr 2\u003e on uhub4\nural0: MAC/BBP RT2570 (rev 0x05), RF RT2526\nural0: WARNING: using obsoleted IFF_NEEDSGIANT flag\nural0: Ethernet address: 00:12:17:84:4d:74\n\n\nNow after some playing around I found out (by adding a few debug lines in the source) the crash occured when the rf autotune was being disabled.. \n\nCount down to the crash RFTUNEa\nCount down to the crash RFTUNEb\nCount down to the crash RFTUNEc\ndisabling RF autotune \u003c-- this message can be found in if_ural.c the rest are added by me\ndisabling RF autotune - ENABLED\n\nnow by adding all this debugging and turning on usb_debug it wont crash, after some investigating and some help from friends - apparently the crash is caused by a race event?  and by adding all this debug information it has slowed down sufficiantly to let the device disable autotuning correctly.. I have not removed the debugging lines YET, but im thinking about swapping some out for sleep lines to try and fix this race issue.. \n\nAnyway.. I thought I best send a PR for if any of you guys know about this.\n\n-- Thank for your time \n-- Paul G Webster\n\nFix: Slow down the driver disabling rf autotune \n\nPatch attached with submission follows:\nHow-To-Repeat: Use \"ural0: MAC/BBP RT2570 (rev 0x05), RF RT2526\" (linksys WUSB54G) [version 4] and use wpa_supplicant to access a wpa1/2 network"
+}

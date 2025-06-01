@@ -1,0 +1,8 @@
+{
+ "id": 859813,
+ "bug_id": 206337,
+ "attachment_id": 165718,
+ "creation_time": "2016-01-17T14:56:08Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 165718\nParenthesize journal_iter_is_removed macro so it doesn't cause warnings\n\nDuring the exp-run in bug 206074, it was found that devel/dee gives errors with a recent clang 3.8.0 snapshot:\n\ndee-transaction.c:1245:17: error: logical not is only applied to the left hand side of this comparison [-Werror,-Wlogical-not-parentheses]\n      g_assert (!journal_iter_is_removed (jiter));\n                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/usr/local/include/glib-2.0/glib/gtestutils.h:106:59: note: expanded from macro 'g_assert'\n                                             if G_LIKELY (expr) ; else \\\n                                                          ^~~~\n/usr/local/include/glib-2.0/glib/gmacros.h:325:59: note: expanded from macro 'G_LIKELY'\n#define G_LIKELY(expr) (__builtin_expect (_G_BOOLEAN_EXPR(expr), 1))\n                                                          ^~~~\n/usr/local/include/glib-2.0/glib/gmacros.h:319:8: note: expanded from macro '_G_BOOLEAN_EXPR'\n   if (expr)                                    \\\n       ^~~~\ndee-transaction.c:1245:17: note: add parentheses after the '!' to evaluate the comparison first\ndee-transaction.c:1245:17: note: add parentheses around left hand side expression to silence this warning\n1 error generated.\n\nThis is because the journal_iter_is_removed() macro does not have parentheses around its expression.  Here is a patch to fix that."
+}

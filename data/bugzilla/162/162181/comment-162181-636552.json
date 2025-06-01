@@ -1,0 +1,8 @@
+{
+ "id": 636552,
+ "bug_id": 162181,
+ "attachment_id": 0,
+ "creation_time": "2011-10-31T05:00:26Z",
+ "creator": "baileygeoff@telus.net",
+ "text": "When you load the emu10k1 sound driver (kldload snd_emu10k1) it prints the   sndstat message \"\u003cCreative EMU10K1\u003e port 0xdf80-0xdf9f irq 9 at device 12.0 on pci2\" then the system hangs and must be powered down to continue.\n\t\nThe hang usually happens in the middle of the emu_init() function while initializing the envelope engine, yet the problem appears not to be related to this section of code.\n\t\t\nThe emu10kx driver works on my box but midi has been disabled in this driver.\n\nFix: 1.  In the \"emu_pci_attach()\" function, move the \"snd_setup_intr()\" call before\n    the call to \"emu_init()\".\n\n2.  Disable hardware midi interrupts in function \"emu_midiattach()\", since the \n    midi2 driver uses software interrupts.\n\n    With Fix-1 above only, the driver continuously sends \"dodgy irq\" messages\n    from the \"emu_intr()\" function and the system hangs again.\n    \n    \nWith these two changes (see attached patch), both audio and midi work as expected.\n\nPatch attached with submission follows:\nHow-To-Repeat: kldload snd_emu10k1"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1058820,
+ "bug_id": 231236,
+ "attachment_id": 0,
+ "creation_time": "2019-07-22T20:30:58Z",
+ "creator": "ncrogers@gmail.com",
+ "text": "I ran into the same problem recently. I think this used to work, but the syslog output changed in 12.0 and ddclient uses the logger(1) CLI tool to log to syslog, which actually has nothing to do with perl.\n\nhttps://reviews.freebsd.org/D14926\nhttps://forums.freebsd.org/threads/logger-output-changed-in-12-0.69460/\n\n\nIn ddclient code:\n\nsub logger {\n    \treturn pipecmd(\"logger -p$facility.$priority -t${program}\\[$$\\]\", @_);\n\n\nIt manually includes the process PID in the tag, and I believe syslog output changed in 12.0 to include this automatically or something like that.  In my case, I end up with what appears like two PIDs in /var/log/messages entries for ddclient. One is for the actual daemon inserted by ddclient and the other is the process of logger(1). For example:\n\nJul 22 12:59:46 testhost ddclient[21473][21481]: FAILED:   updating ...\n\n\nIn any case I believe this has something to do with the problem, as I am also unable to come up with a syslog.conf that successfully logs to another file. I thought I would share this experience in case it helps anyone else."
+}

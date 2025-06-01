@@ -1,0 +1,8 @@
+{
+ "id": 63685,
+ "bug_id": 20611,
+ "attachment_id": 0,
+ "creation_time": "2000-08-15T06:00:01Z",
+ "creator": "peter.jeremy@alcatel.com.au",
+ "text": "\n\tEach network device includes counters for bytes and packets\n\tin and out.  For a physical interface associated with a VLAN\n\tinterface, incoming and outgoing packets, as well as incoming\n\tbytes associated with the VLAN are counted, but outgoing bytes\n\tfrom the VLAN are not counted.  This is inconsistent.\n\n\tThe problem is that output bytes are accumulated by\n\tether_output_frame().  Packets sent to the VLAN go through\n\tthis routine - which calls vlan_start() to process the\n\tpacket.  vlan_start() directly calls the XX_start() routine\n\tassociated with the physical interface.  vlan_start()\n\treplicates the relevant code within ether_output_frame(),\n\tbut does not update the output byte count.  Likewise,\n\tthe number of multicast frames sent via the VLAN are not\n\tcounted.\n\n\t(There's also no support for bridging packets into an 802.1Q\n\tVLAN trunk.  Fixing this looks non-trivial, and I don't need\n\tthis functionality, so I'll skip it).\n\nHow-To-Repeat: \n\tCreate (eg) vlan0 associated with (eg) fxp0 and pass traffic\n\tvia vlan0 (with no traffic addressed directly to fxp0).  A\n\tnetstat shows:\n\nwansim# netstat -I fxp0 1\n            input         (fxp0)           output\n   packets  errs      bytes    packets  errs      bytes colls\n       564     0      78690        586     0          0     0\n       506     0      81024        521     0          0     0\n       504     0      84068        519     0          0     0\n       509     0     100559        530     0          0     0\n       532     0      85011        557     0          0     0\n^C"
+}

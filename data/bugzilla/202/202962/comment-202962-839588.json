@@ -1,0 +1,8 @@
+{
+ "id": 839588,
+ "bug_id": 202962,
+ "attachment_id": 0,
+ "creation_time": "2015-09-08T03:52:09Z",
+ "creator": "henry.hu.sh@gmail.com",
+ "text": "I've got panic twice, but I don't have a coredump. Both times the panics are related to iwn AMPDU TX code. I've got screenshots for the 2nd time, and I've attached them.\n1st:\nhttps://goo.gl/photos/DfBKcERDHTdnYpda6\n2nd:\nhttps://goo.gl/photos/FmuuH7viE2fATpsj8\nhttps://goo.gl/photos/hFqNumEaapkpbHzr5\nhttps://goo.gl/photos/3NHhUrbYH6ugkWM38\n\nsystem:\nFreeBSD pepsi 11.0-CURRENT FreeBSD 11.0-CURRENT #11 r287028M: Sat Aug 22 20:22:32 EDT 2015     root@pepsi:/usr/obj/usr/src/sys/MYKERNEL  amd64\n\nFor the first time, the crash happened in iwn_tx_data()+0x183, at line\n4431\tring = \u0026sc-\u003etxq[ac];\n4432\tif ((seqno % 256) != ring-\u003ecur) {\n\nI don't have the register info that time, but I think that it's mostly the same cause as the 2nd time. Possibly 'ac' is invalid.\n\nThe second crash happened in iwn_ampdu_tx_stop()+0x60, at line\n7419    if (sc-\u003etxq[qid].queued != 0)\n\nDisassemble says:\n0000000000004090 \u003ciwn_ampdu_tx_stop\u003e:\n...\n    40e6:       4c 63 38                movslq (%rax),%r15\n    40e9:       49 69 c7 98 28 00 00    imul   $0x2898,%r15,%rax\n    40f0:       41 83 bc 05 8c 2a 00    cmpl   $0x0,0x2a8c(%r13,%rax,1)\n    40f7:       00 00 \n\nand 0x2898 = sizeof(iwn_tx_ring). %r15 should be qid, and %r15 = 0x42535f5c which is clearly invalid(This happened to be all ASCII chars. Maybe reused?).\n\nIt seems like that someone overwrites tap-\u003etxa_private, and this caused both panics. Or it's possible that it's freed and reused."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 47768,
+ "bug_id": 15691,
+ "attachment_id": 0,
+ "creation_time": "1999-12-25T21:50:01Z",
+ "creator": "marquis@roble.com",
+ "text": "All ssh ports to-date (/usr/ports/security/ssh*) assume that sshd will\nbe running as a standalone daemon and fail to check whether sshd is\nstarted from inetd.  \n\nWhere there is both an inetd and a standalone daemon errors problems\nlogging in from ssh clients can occur which can result in a denial\nof service or lock-out situation when \"make install\" is used to install\nthe deamon on a system where it is already started from inetd.\n\nYes, we've heard the recommendation not to run sshd from inetd.conf \nhowever where inetd is running it makes no sense not to use it.\nThere's also a higher vulnerability to DOS attacks to a standalone\nsshd than to inetd.  Finally, the time to generate a session key is\neffectively zero on systems faster than 250MHz.\n\nFix: \n\nfix the Makefile i.e.,\nif [ \"`grep ssh /etc/inetd.conf|grep -v ^#ssh`\" = \"\" ]; then\n\n\t@if [ ! -f ${PREFIX}/etc/rc.d/sshd.sh ]; then \\\n                ${ECHO} \"Installing ${PREFIX}/etc/rc.d/sshd.sh startup file.\"; \\\n                ${ECHO} \"#!/bin/sh\" \u003e ${PREFIX}/etc/rc.d/sshd.sh; \\\n                ${ECHO} \"[ -x ${PREFIX}/sbin/sshd ] \u0026\u0026 ${PREFIX}/sbin/sshd \u0026\u0026 ${ECHO} -n ' sshd'\" \u003e\u003e ${PREFIX}/etc/rc.d/sshd.sh; \\\n                ${CHMOD} 751 ${PREFIX}/etc/rc.d/sshd.sh; \\\n        fi\n\nfi"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1059362,
+ "bug_id": 239480,
+ "attachment_id": 0,
+ "creation_time": "2019-07-27T20:52:17Z",
+ "creator": "andriys@gmail.com",
+ "text": "I've made an attempt to debug/fix the problem. I failed to fix it, but here's what I've found (if that matters).\n\nBoth pyldb and pyldb-util targets depend on ldb. But since pyldb also depends on pyldb-util (which in turn depends on ldb) WAF eventually removes the ldb dependency from the pyldb target. So ldb does not get builtin into pyldb (i.e. python/..../ldb.so). And pyldb-util (i.e. libpyldb-util.so) has a restricted set of exported symbols, and so even though the ldb lib gets builtin into the pyldb-util, all it's symbols are private, and thus \"Undefined symbol\" at runtime.\n\nA similar problem exists with talloc/pytallog/pytalloc-util.\n\nI tried removing abi_directory and abi_match parameters from the definitions of pyldb-util and pytalloc-util targets. With these changes, it becomes possible to run samba-tool without parameters. However if I attempt to, say, provision a new domain, it fails anyways, this time with some talloc related error."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1010476,
+ "bug_id": 231234,
+ "attachment_id": 0,
+ "creation_time": "2018-09-07T17:11:00Z",
+ "creator": "gray@nxg.name",
+ "text": "When running nslcd in debug mode (`nslcd -d`), I see lines such as\n\n    DEBUG: connection from pid=18446744073709551615 uid=0 gid=0\n\nThis is an implausible pid number.  This originates from a line\n\n    log_log(LOG_DEBUG, \"connection from pid=%lu uid=%lu gid=%lu\",\n          (unsigned long int)pid, (unsigned long int)uid, (unsigned long int)gid);\n\nin nslcd.c (I'm looking at the download of 0.9.10 from https://arthurdejong.org/nss-pam-ldapd/downloads, but I don't imagine the FreeBSD patched version is too different).\n\nThis does look OK to me at first sight -- pid is pid_t, which is __pid_t, which /usr/include/sys/_types.h says is __int32t -- and the explicit cast to (unsigned long int) _should_ be OK and match the %lu; but I always get such promotions wrong first time, and the output above does look suspiciously as if an integer conversion has been bungled somewhere, either in the original or in the port.\n\nThis isn't purely cosmetic, since I'm using this debug mode to try to locate which PID is making a connection to nslcd."
+}

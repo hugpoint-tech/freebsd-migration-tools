@@ -1,0 +1,8 @@
+{
+ "id": 348200,
+ "bug_id": 103127,
+ "attachment_id": 0,
+ "creation_time": "2006-09-16T21:50:44Z",
+ "creator": "gurney_j@resnet.uoregon.edu",
+ "text": "Anders Nordby wrote this message on Wed, Sep 13, 2006 at 20:58 +0200:\n\u003e After talking with Pawel, I tried the attached patch to get some kqueue\n\u003e debug info. I just got it:\n\u003e \n\u003e Sep 13 20:18:56 cache3 kernel: NULL f_event in new kn\n\u003e Sep 13 20:18:56 cache3 kernel: f_event == NULL\n\nThis means that the f_attach method for that event isn't setting f_event\nproperly...  We need to figure out which event this is happening w/...\n\nTry the following modifications:\n\u003e --- sys/kern/kern_event.c.orig\tWed Sep 13 08:44:57 2006\n\u003e +++ sys/kern/kern_event.c\tWed Sep 13 08:51:03 2006\n\u003e @@ -900,6 +900,8 @@\n\u003e  \t\t\t\tgoto done;\n\u003e  \t\t\t}\n\u003e  \t\t\tKN_LIST_LOCK(kn);\n\u003e +\t\t\tif (kn-\u003ekn_fop-\u003ef_event == NULL)\n {\n\u003e +\t\t\t\tprintf(\"NULL f_event in new kn\\n\");\n\t\t\tprintf(\"kn: ident: %d, filter: %d\\n\", kn-\u003ekn_ident, kn-\u003ekn_filter);\n}\n\u003e  \t\t} else {\n\u003e  \t\t\t/*\n\u003e  \t\t\t * The user may change some filter values after the\n\nI have a feeling that this is a similar panic that jhb is seeing...\nWhich means that filter will be EVFILT_VNODE (-4)...\n\n-- \n  John-Mark Gurney\t\t\t\tVoice: +1 415 225 5579\n\n     \"All that I will do, has been done, All that I have, has not.\""
+}

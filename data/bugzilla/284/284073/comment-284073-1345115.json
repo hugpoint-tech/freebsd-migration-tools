@@ -1,0 +1,8 @@
+{
+ "id": 1345115,
+ "bug_id": 284073,
+ "attachment_id": 0,
+ "creation_time": "2025-01-21T09:47:40Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "Update: After carefully reading the disassembled code, I can confirm the fault address is RIP (0xffffffff80b4dee7).\n\nFor `sysctl_handle_string()`, `req` is the last arg which is passed via register %rcx.\n\n```\nffffffff80b4de2e: 48 89 cb             \tmovq\t%rcx, %rbx\n```\n\nIt was saved to callee-saved register %rbx, and the following flow does not touch it. It was `0000000500000005` when passed in. Then indirect memory access\n```\nffffffff80b4dee7: 4c 8b 63 10          \tmovq\t0x10(%rbx), %r12\n```\nwill panic.\n\nPart of disassembled code of if_bnxt.ko,\n```\n$ objdump --disassemble-symbols=bnxt_dcb_list_app -r /boot/kernel/if_bnxt.ko\n...\n   1a5cc: 53                           \tpushq\t%rbx\n   1a5cd: 48 81 ec 28 02 00 00         \tsubq\t$0x228, %rsp            # imm = 0x228, reserve app[128] and other local vars. \n   1a5d4: 48 89 cb                     \tmovq\t%rcx, %rbx # save req\n...\n   1a622: 48 89 5d c8                  \tmovq\t%rbx, -0x38(%rbp)\n...\n   1a6f0: ba 00 10 00 00               \tmovl\t$0x1000, %edx           # imm = 0x1000\n   1a6f5: 4c 89 f7                     \tmovq\t%r14, %rdi\n   1a6f8: 4c 89 fe                     \tmovq\t%r15, %rsi\n   1a6fb: 48 8b 4d c8                  \tmovq\t-0x38(%rbp), %rcx  # previously saved req\n   1a6ff: e8 00 00 00 00               \tcallq\t0x1a704 \u003cbnxt_dcb_list_app+0x144\u003e\n\t\t000000000001a700:  R_X86_64_PLT32\tsysctl_handle_string-0x4\n```\n\nIf `bnxt_dcb_ieee_listapp()` OOB write the on stack variable app[128], then it make sense that we get `%rbx ==  0000000500000005`. We can add asserting for that."
+}

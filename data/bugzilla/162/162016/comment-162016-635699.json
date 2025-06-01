@@ -1,0 +1,8 @@
+{
+ "id": 635699,
+ "bug_id": 162016,
+ "attachment_id": 0,
+ "creation_time": "2011-10-26T00:00:19Z",
+ "creator": "schwern@pobox.com",
+ "text": "See https://rt.cpan.org/Ticket/Display.html?id=70232#txn-991950 for the\nupstream report.\n\nBSDPAN::ExtUtils::Packlist can be put into an infinite loop if write()\nis given a packlist like \"../.packlist\".  This happens in the\nExtUtils-MakeMaker tests, specifically t/INSTALL_BASE.t, and was causing\nhangs.\n\nI have worked around this in MakeMaker's tests by having them set one\nof the magic environment variables it recognizes to disable BSDPAN\nregistration.  It's a bit distressing that test modules were being\nregistered.  Perhaps BDSPAN should check that the module in question\nis being installed into an official location before registering?  I\ndon't know how the BSDPAN stuff works.\n\nFix: \n\nget_dir_list() is the problem.  It's written in an unsafe fashion.\nInstead of hacking off bits of the filepath with a regex and breaking\nout of an infinite loop, it is safer and simpler to pull the filepath\napart into a list with File::Spec-\u003esplitpath and iterate through it.\nHow-To-Repeat: cd Some-CPAN-Module (ExtUtils-MakeMaker works)\nperl Makefile.PL (to generate a Makefile)\n\nThen run the following Perl program.\n\n    use ExtUtils::Packlist;\n    my $packlist = ExtUtils::Packlist-\u003enew;\n    $packlist-\u003e{\"Bar.pm\"} = 1;\n    $packlist-\u003ewrite(\"../.packlist\");\n\nIt will enter an infinite loop."
+}

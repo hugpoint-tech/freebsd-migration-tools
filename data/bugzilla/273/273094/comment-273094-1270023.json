@@ -1,0 +1,8 @@
+{
+ "id": 1270023,
+ "bug_id": 273094,
+ "attachment_id": 0,
+ "creation_time": "2023-08-13T05:45:12Z",
+ "creator": "peterj@FreeBSD.org",
+ "text": "getfsstat(2) states:\n\u003eNormally mode should be specified as MNT_WAIT.  If mode is set to\n\u003eMNT_NOWAIT, getfsstat() will return the information it has available\n\u003ewithout requesting an update from each file system.\n\nHaving looked at getfsstat(..., MNT_NOWAIT) output over time, as well as rummaging around in the FreeBSD kernel sources, it seems that the cached data is basically never updated under normal operations.  This means that, unless something else (like df) invokes getfsstat(2) with MNT_WAIT or statfs(2), the reported data using MNT_NOWAIT will reflect the information from when the filesystem was created or mounted.  This was a surprise to me:  I would have expected that the information was updated fairly regularly - e.g. on TXG flushes for ZFS and on superblock flushes for UFS.\n\nIMO, this is a POLA violation and it presents a problem for monitoring tools that are tracking filesystem usage in order to alert on low free space or similar:\n* Specifying MNT_WAIT could result in the getfsstat(2) call blocking indefinitely if (e.g.) a NFS server isn't responding.\n* Specifying MNT_NOWAIT returns data that is stale to the extent of being meaningless.\n\nThis behaviour has led to (e.g.) https://github.com/prometheus/node_exporter/issues/1498"
+}

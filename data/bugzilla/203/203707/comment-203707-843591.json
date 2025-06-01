@@ -1,0 +1,8 @@
+{
+ "id": 843591,
+ "bug_id": 203707,
+ "attachment_id": 161924,
+ "creation_time": "2015-10-11T19:40:40Z",
+ "creator": "ports@grosbein.net",
+ "text": "Created attachment 161924\nnew option -r roundup\n\nWhile trying to run FreeBSD/mips on some device having very small flash media, one is forced to compress file system with mkulzma(8) utility. It is desirable to specify small UFS block/fragment sizes like 4096/512 bytes for makefs(8) and big compression block size like 65535 bytes to mkulzma at the same time. Then one obtains very good comression ratios (like 75% and more) but faces the following problem.\n\ngeom_uncompress kernel module reports GEOM provider size rounded up to its compression block size. Generally, this changes original media size and now it fails to match the size of embedded UFS file system that leads to other problems, f.e. geom_label kernel module does not like this and skips the file system while tasting the GEOM and looking for UFS label.\n\nThis makes it impossible to refer to the file system using known UFS label instead of something like /dev/map/rootfs.uncompress.\n\nThe following patch introduces new command line option \"-r roundup\" for makefs that makes it round up the image to specified block size. Hence, geom_uncompress does not change GEOM media size for images rounded that way and geom_label accepts such GEOMs just fine.\n\nWith the patch applied, one can use following commands:\n\nmakefs -t ffs -r 65536 -o bsize=4096,fsize=512,label=flash optimization=space fs.img fs\nmkulzma -s 65536 -o fs.img.ulzma fs.img"
+}

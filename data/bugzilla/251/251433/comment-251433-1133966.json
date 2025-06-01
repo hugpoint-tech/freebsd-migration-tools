@@ -1,0 +1,8 @@
+{
+ "id": 1133966,
+ "bug_id": 251433,
+ "attachment_id": 0,
+ "creation_time": "2020-11-29T17:05:09Z",
+ "creator": "raj@gusw.net",
+ "text": "Oh! I get it! I shouldn't have used the \u0026lva but the newly set-up uvap for the VOP_SETATTR. Sure, that makes sense.\n\n        enum   vtype    uva_type_bck;\n        ...\n        if ((error = VOP_GETATTR(lvp, \u0026lva, cred)) != 0)\n                return (error);\n        unionfs_create_uppervattr_core(ump, \u0026lva, uvap, td);\n        ...\n        if ((error = VOP_CREATE(udvp, \u0026vp, \u0026cn, uvap)) != 0) {\n                error |= 0x0600;\n                goto unionfs_vn_create_on_upper_free_out1;\n        }\n\n        /* this is from where VOP_SETATTR was previously done, not sure this is needed\n           uva.va_type = VNON;\n        */\n        uva_type_bck =  uvap-\u003eva_type;\n        uvap-\u003eva_type = VNON;\n        error = VOP_SETATTR(vp, uvap, cred);\n        uvap-\u003eva_type = uva_type_bck;\n        if(error != 0) {\n                error |= 0x0700;\n                goto unionfs_vn_create_on_upper_free_out1;\n        }\n\nNote: there is something I don't understand in this unionfs_vn_create_on_upper, it has VOP_OPEN without a VOP_CLOSE and in the caller there is another VOP_OPEN. Strange.\n\nOK, now to reboot again ...\n\nYES! VICTORY! That was it.\n\nNow to clean up and produce one neat diff."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 687036,
+ "bug_id": 172338,
+ "attachment_id": 0,
+ "creation_time": "2012-10-04T23:20:09Z",
+ "creator": "adrian@freebsd.org",
+ "text": "The driver is responsible for calling ieee80211_crypto_encap() as part of the 802.11 packet assembly and transmission. And for each node there's an RX CCMP counter for each TID but a single TX CCMP counter for all TIDs.\n\nNeither of these are protected by any locks. (Same as TX/RX sequence numbers, but they're per-TID..)\n\nThe ath(4) driver doesn't currently implement a global per-node lock to protect the whole TX path for each node. The -9 and previous driver uses no lock; the -HEAD driver uses a per-TID \"lock\" (which is actually the hardware queue lock that backs the TID. But still, there's a \"per-TID lock\".) This works fine for serialising things such as sequence number allocation but since there is one TX CCMP sequence number space, there's no locking there and no guarantee things will remain in order.\n\nSigh.\n\nFix: \n\nI honestly think at this point the solution should be \"replace the per-TID lock with a per-node lock, and that will serialise the CCMP number allocation.\"\n\nSince sequence numbers get allocated by the stack _before_ they get handed to the driver (except for aggregation, but I digress), there's still a problem there. It's quite likely that the correct behaviour here should be either \"net80211 ensures that there's only one TX path active for a driver at one time\", or \"the actual frame setup is pushed back into the driver and it's up to the driver to implement correct locking.\"\nHow-To-Repeat: Lots of concurrent TX traffic in a WPA2+CCMP session, over multiple TIDs."
+}

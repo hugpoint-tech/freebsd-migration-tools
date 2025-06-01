@@ -1,0 +1,8 @@
+{
+ "id": 708323,
+ "bug_id": 177217,
+ "attachment_id": 0,
+ "creation_time": "2013-03-22T01:20:00Z",
+ "creator": "jdc@koitsu.org",
+ "text": "\tIf a user has ddb_enable=\"yes\" in rc.conf, but their kernel is\n\tlacking \"options DDB\" and friends, then the following message is\n\tshown during boot:\n\n\t/etc/rc.d/ddb: WARNING: failed precmd routine for ddb\n\n\tThe reason is that returning 1 from inside of precmd causes rc.subr\n\tto emit the above warning.  Returning 0 would cause rc.subr to\n\tcontinue on and try to run /sbin/ddb, which emits even more errors.\n\n\tIMO, the simplest way to solve this dillema is to use \"exit 1\" and\n\tbail out of the rc.d script ASAP; some other rc.d scripts use this\n\tmethod as well.\n\n\tTo make this fact clearer to future committers/readers, I added\n\tan explanation comment.  I also added use of $SYSCTL_N to be\n\tconsistent with other scripts.\n\n\tI should note I did try getting rid of the precmd stuff and instead\n\tmaking a ddb_start() routine + doing the necessary magic, but this\n\tinduces all sorts of edge cases/nuances relating to required_files\n\tand command_args and some other things.  exit 1 just seems easier.\n\n\tIf someone has a better/cleaner method, I'm happy to test such.\n\nFix: Patch is below, and will be available at the following URL one I\n\tget a PR number:\n\n\thttp://jdc.koitsu.org/freebsd/{prnum}/\n\n\tVerified as working on stable/9 (r248403).\n\nHow-To-Repeat: \t1. Set ddb_enable=\"yes\" in rc.conf on a system lacking DDB support\n\tin the kernel\n\n\t2. Run \"/etc/rc.d/ddb start\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1193731,
+ "bug_id": 255072,
+ "attachment_id": 0,
+ "creation_time": "2022-01-08T14:22:05Z",
+ "creator": "spell@itl.ua",
+ "text": "(In reply to Toomas Soome from comment #23)\ngpart show /dev/da0\n=\u003e      1  2002941  da0  MBR  (978M)\n        1     1600    1  efi  (800K)\n     1601   803216    2  freebsd  [active]  (392M)\n   804817  1198125       - free -  (585M)\n\nThis is 12.3-RELEASE-amd64 image.\n\ndisk_ioctl() returns the same 2002941 sectors and sector size 512.\n\nAccording to my printf() info, probing disks appears ok.\nThe crash occurs on zfs probing stage, in the last iteration of the cycle:\n\n        for (i = 0; devsw[i] != NULL; i++)\n\nin loader's main.c, when i is 5 and devsw[i]-\u003edv_name is zfs.\n\nThis is my printout with printf()'s in this cycle:\n\nBTX loader 1.00  BTX version is 1.02\nConsoles: internal video/keyboard\nmain.c: dv_name: fd dv_type=5\nmain.c: dv_name: cd dv_type=3\nmain.c: dv_name: disk dv_type=1\nBIOS drive C: is disk0\nBIOS drive D: is disk1\nmain.c: dv_name: net dv_type=2\nmain.c: dv_name: vdisk dv_type=1\nmain.c: dv_name: zfs dv_type=4\n\nZfs probing firstly probes HDD and here always is ok, and then probes Flash drive and crashes on it (if AHCI mode set).\n\n\u003ePossible way to test this guess would be to read 1 sector at a time.\nHow to do this?"
+}

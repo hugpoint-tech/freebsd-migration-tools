@@ -1,0 +1,8 @@
+{
+ "id": 1333110,
+ "bug_id": 282495,
+ "attachment_id": 254879,
+ "creation_time": "2024-11-02T16:27:07Z",
+ "creator": "pieter@krikkit.xyz",
+ "text": "Created attachment 254879\nSimple Go executable that shows an adapted internal Go sendfile wrapper exercising the apparent bug\n\nI'm not currently able to dive deeper, but running a very basic Go HTTP webserver in the Linuxulator on 14.1-RELEASE-p5 gave me corrupted downloads.  I dove into the standard Go libraries and found that ultimately, sendfile is used for such data transfers.\n\nMy test code is a simplified version of the Go code that shows the main issue: the linux_sendfile syscall returns EAGAIN as errno and -1 as result, BUT there's actually data being sent. This is only the case when the TCP socket is marked as non-blocking. At EAGAIN the Go library code retries until success, which in practice means that much more data is sent than expected and pieces of data are repeated. Every time I execute the test, the output is different.\n\nMy attached test code exercises this:\n% go build main.go\n% ./main \u0026 \n% nc -v localhost 4040 \u003e testfile\n\nI'm stopping the loop at EAGAIN directly, but normally it would retry a number of times, every time a bit of data actually being sent, but the sender not knowing about it. \n\nThe Linux sendfile man page indicates that sendfile can return early without having sent all data, but this isn't an error.  So either linux_sendfile should return the amount of bytes sent and no error, OR not actually send any data and return EAGAIN and -1."
+}

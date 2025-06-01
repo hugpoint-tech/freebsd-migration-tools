@@ -1,0 +1,8 @@
+{
+ "id": 652613,
+ "bug_id": 165392,
+ "attachment_id": 0,
+ "creation_time": "2013-05-27T17:53:28Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "fsync certainly helps but not as effectively as you'd want. Some\ncombination of sleeps, fsyncs and mkdir attempts appears to be needed. A\nshell loop like\n  rmdir 8; fsync .; \\\n  until mkdir h 2\u003e/dev/null; do printf .; fsync .; sleep 1; done\ntakes two seconds.\n\nHowever, in\n  rmdir 13; mkdir m; fsync .; \\\n  until mkdir m 2\u003e/dev/null; do printf .; sleep 1; done\nthe fsync is of no benefit. It is just as slow as omitting it (about\nhalf a minute).\n\nI must have taken long enough to type/recall the commands when I tried\nthis earlier. In my earlier experiments I gave the commands separately.\n\n\u003e Does this mean that fsync(2) is broken for directories on softdep\n\u003e enabled UFS?\n\nI don't think fsync(2) has to sync the exact link count to disk, since\nfsck will take care of that. However, it has to sync the timestamps,\npermissions and directory entries.\n\n\u003e I have cc'd Kirk in hope he could shed some light on this.\n\nI'm also interested in whether it is safe to call VOP_FSYNC at that\npoint, especially in the case of a rename where a lock on the source\ndirectory vnode may be held at the same time.\n\n-- \nJilles Tjoelker"
+}

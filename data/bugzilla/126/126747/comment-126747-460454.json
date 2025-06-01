@@ -1,0 +1,8 @@
+{
+ "id": 460454,
+ "bug_id": 126747,
+ "attachment_id": 0,
+ "creation_time": "2008-08-22T22:10:02Z",
+ "creator": "nick@anywi.com",
+ "text": "\tcleandepend in /usr/share/mk/bsd.dep.mk depends on the CTAGS variable in a strange way.\n\tIt does not remove the .depend file unless CTAGS is set to a value it understands.\n\nFix: \n\nChange in /usr/share/mk/bsd.dep.mk\n\n\t.if !target(cleandepend)\n\tcleandepend:\n\t.if defined(SRCS)\n\t.if ${CTAGS:T} == \"ctags\"\n\t\trm -f ${DEPENDFILE} tags\n\t.elif ${CTAGS:T} == \"gtags\"\n\t\trm -f ${DEPENDFILE} GPATH GRTAGS GSYMS GTAGS\n\t.if defined(HTML)\n\t\trm -rf HTML\n\t.endif\n\t.endif\n\t.endif\n\t.endif\n\nto\n\n\t.if !target(cleandepend)\n\tcleandepend:\n\t.if defined(SRCS)\n\t.if ${CTAGS:T} == \"gtags\"\n\t\trm -f ${DEPENDFILE} GPATH GRTAGS GSYMS GTAGS\n\t.if defined(HTML)\n\t\trm -rf HTML\n\t.endif\n\t.else\n\t\trm -f ${DEPENDFILE} tags\n\t.endif\n\t.endif\n\t.endif\n\nwhich deletes .depend and the tags file in all cases.\nHow-To-Repeat: \n\tmake CTAGS=exctags depend\n\tmake CTAGS=exctags cleandepend\n\tmake CTAGS=exctags depend\n\nNotice how the second time round the depend does not execute any commands."
+}

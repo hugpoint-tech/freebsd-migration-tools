@@ -1,0 +1,8 @@
+{
+ "id": 1047054,
+ "bug_id": 237055,
+ "attachment_id": 0,
+ "creation_time": "2019-04-16T20:14:01Z",
+ "creator": "val@packett.cool",
+ "text": "New mail from Ampere engineers (they don't seem to want to sign up for bugzilla, sadly), new very helpful info about PCIe:\n\nThe _DMA objects are for the SMMU, they would make \"virtualization work properly\" (I assume that means PCI passthrough). Since bhyvearm64 is not finished / not upstreamed, no rush for that I guess.\n\nApparently the real problem with just using PCIe is that we're not adding the address base from the \"AddressTranslation - TRA\" field, so e.g.\n\npcib1: failed to allocate initial memory window: 0x30000000-0x301fffff\n\nwe should actually be accessing: _TRA+0x3000_0000 = 0x100_3000_0000\n\nFrom a quick grep, I think acpi_pcib_producer_handler is where we handle this:\n\nmin = res-\u003eData.Address64.Address.Minimum;\nmax = res-\u003eData.Address64.Address.Maximum;\n\nSo I guess it should be something like\n\nmin = res-\u003eData.Address64.Address.Minimum + res-\u003eData.Address64.Address.Translation;\nmax = res-\u003eData.Address64.Address.Maximum + res-\u003eData.Address64.Address.Translation;\n\n(for all widths)\n\n\n(In reply to Ed Maste from comment #4)\n\u003e Your split-out review D19896 is for a /dev/console issue on Amazon EC2 UARTs, might we have a similar issue here?\n\nNah, that one is about connecting the SPCR device with the PCI device (the Amazon UART has different memory addresses in SPCR and PCI).\n\nThe PL011 on the eMAG is not PCI, it's described in ACPI and it *is* picked up as the console, as I posted:\n\nuart0: \u003cPrimeCell UART (PL011)\u003e iomem 0x12600000-0x12600fff irq 1 on acpi0\nuart0: console (115200,n,8,1)"
+}

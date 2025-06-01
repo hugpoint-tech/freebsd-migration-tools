@@ -1,0 +1,8 @@
+{
+ "id": 1255423,
+ "bug_id": 270842,
+ "attachment_id": 0,
+ "creation_time": "2023-04-15T20:17:47Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Well, the default value for acregmax is 60sec.\n(You can see what they are for any mount by doing\n\"nfsstat -m\" on the NFS client.)\n\nThen note that stat(2) and fstat(2) are two very different\nstories.\nFor stat(2):\n- There is a lookup. If there is a miss on the name cache,\n  then this will result in a Lookup RPC, which has up-to-date\n  attributes in the reply.\n  --\u003e So, I suppose you could consider the fact that it might\n      do a Lookup RPC magical, then that might be the magic.\n\nFor fstat(2), there is no lookup, so it is going to return\ncached (possibly stale) attributes until the attribute cache\ntimes out (which could take up to acregmax seconds).\n\nThe NFS client does implement close-\u003eopen consistency, which\nmeans \"once a file is close(2)'s on one client and then open(2)'d\non another client after the close(2) (in a temporal sense), the\nclient that does the open(2) should see all changes done by the\nfirst client before it close(2)'d the file\".\n(This is actually approximately done, based on the NFS server's\ntime resolution for mtime for the file.)\n\nI have no idea what \"git\" or \"cargo\" do, but if it happens to be\nfstat(2) and not stat(2), you can see from the above why the\nsemantics would be different."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1148884,
+ "bug_id": 253862,
+ "attachment_id": 0,
+ "creation_time": "2021-02-26T04:56:21Z",
+ "creator": "devinrsmith@protonmail.com",
+ "text": "It appears that /usr/sbin/prometheus_sysctl_exporter is outputting an invalid prometheus format when used with the \"-d\" option.\n\n$ prometheus_sysctl_exporter -d | grep HELP | awk -F \" \" '{print $3}' | sort | uniq -c | sort | grep -v \" 1 \"\n   2 sysctl_vfs_zfs_arc_max\n   2 sysctl_vfs_zfs_arc_min\n   2 sysctl_vfs_zfs_l2arc_feed_again\n   2 sysctl_vfs_zfs_l2arc_feed_min_ms\n   2 sysctl_vfs_zfs_l2arc_feed_secs\n   2 sysctl_vfs_zfs_l2arc_headroom\n   2 sysctl_vfs_zfs_l2arc_noprefetch\n   2 sysctl_vfs_zfs_l2arc_norw\n   2 sysctl_vfs_zfs_l2arc_write_boost\n   2 sysctl_vfs_zfs_l2arc_write_max\n\n\"Only one HELP line may exist for any given metric name.\" - https://github.com/prometheus/docs/blob/33f891f/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information\n\nThis is causing a downstream consumer to fail during parsing:\n\n$ grep node_exporter /var/log/messages\n\nFeb 25 20:43:51 prometheus node_exporter[46973]: level=error ts=2021-02-26T04:43:51.646Z caller=textfile.go:209 collector=textfile msg=\"failed to collect textfile data\" file=sysctl.prom err=\"failed to parse textfile data from \\\"/var/tmp/node_exporter/sysctl.prom\\\": text format parsing error in line 1974: second HELP line for metric name \\\"sysctl_vfs_zfs_l2arc_norw\\\"\"\n\nIt's easy enough to workaround by just excluding the \"-d\" flag, but it would be nice for prometheus to gather the additional context that \"-d\" provides."
+}

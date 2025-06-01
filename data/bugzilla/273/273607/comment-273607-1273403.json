@@ -1,0 +1,8 @@
+{
+ "id": 1273403,
+ "bug_id": 273607,
+ "attachment_id": 0,
+ "creation_time": "2023-09-06T20:00:08Z",
+ "creator": "yuri@freebsd.org",
+ "text": "I run this code that calls the open(2) system function, and clock_gettime(2) system function:\n\n#include \u003ctime.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n\nint main() {\n        printf(\"--before--\\n\");\n        open(NULL, 0);\n        struct timespec tp;\n        clock_gettime(CLOCK_SECOND, \u0026tp);\n        printf(\"--after--\\n\");\n        return 0;\n}\n\n\nWhen this program is run under ktrace(1) (with -di flags), only openat(2) call appears in the dump, and clock_gettime(2) doesn't appear there:\n\n 83299 a.out    CALL  write(0x1,0x821ac4000,0xb)\n 83299 a.out    GIO   fd 1 wrote 11 bytes\n       \"--before--\n       \"\n 83299 a.out    RET   write 11/0xb\n 83299 a.out    CALL  openat(AT_FDCWD,0,0\u003cO_RDONLY\u003e)\n 83299 a.out    RET   openat -1 errno 14 Bad address\n 83299 a.out    CALL  write(0x1,0x821ac4000,0xa)\n 83299 a.out    GIO   fd 1 wrote 10 bytes\n       \"--after--\n       \"\n 83299 a.out    RET   write 10/0xa\n 83299 a.out    CALL  exit(0)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 18243,
+ "bug_id": 5959,
+ "attachment_id": 0,
+ "creation_time": "1998-03-10T06:52:11Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003eThere seems to be no documented way to set up gettys with clocal in effect.\n\u003eSetting clocal in /dev/ttyid0 seems to be overridden when the getty actually\n\u003estarts, and there is no flag I can find in gettytab that will set clocal.\n\u003eEven setting the appropriate bits in c0, c1 and c2 doesn't seem to work.\n\nThe bug in getty seems to be that you have to specify a complete set of\nflags (as sort of documented in the man page), AND all flags in the set\nmust be nonzero.  The complete sets are {c0, i0, l0, o0}, {c1, i1, l1, o1}, \nand {c2, i2, l2, o2}.  The '1' flags in local.9600 in gettytab don't work,\nbecause some of them are zero.  I think this can be worked around by\nsetting an unused flag bit.\n\nYou can lock clocal in /dev/ttyld0 after setting (or clearing) it in \ndev/ttyid0.  /etc/rc.conf has an example.  This prevents buggy programs\nfrom changing it.  It also prevents non-buggy programs from changing it.\n\n\u003e\u003eHow-To-Repeat:\n\u003e\n\u003eSet up a std.9600 getty on ttyd0, but don't kill -1 1 yet.\n\u003estty clocal \u003c /dev/ttyid0\n\u003ekill -1 1\n\u003estty -a \u003c/dev/ttyd0\n\u003e\n\u003eThe last stty will hang, because ttyd0 is waiting on a carrier\n\u003einappropriately.\n\nThis is working as intended.  The setting of the initial-state device\nonly applies to first opens.  Opens of an already-open tty have no\neffect on the termios state.  Set ttyd0 as well as ttyid0 if you want\nthe changes to take effect immediately, or set ttyid0 in /etc/rc.serial\nor /etc/rc.local if you always want the same settings.\n\nBruce"
+}

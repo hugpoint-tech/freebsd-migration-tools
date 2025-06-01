@@ -1,0 +1,8 @@
+{
+ "id": 1019222,
+ "bug_id": 228768,
+ "attachment_id": 0,
+ "creation_time": "2018-10-30T17:09:52Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Oh, I think I have seen this once before.  The issue is that the mtx_lock_spin() code tries to use DELAY(1) and DELAY() is trying to use the \"clock_lock\" in getit().  In your case, 'tsc_is_invariant' isn't true so DELAY() in sys/x86/x86/delay.c isn't using the TSC.\n\nI think the error is probably that we shouldn't be using DELAY(1) in our mutex code as it is too high level and/or we should special case DELAY(1) (vs DELAY(n)).  Older versions of FreeBSD would map DELAY(1) to just 'inb(0x84)' without talking to the 8254 at all.  It looks like i8254_delay() already does that when inside of KDB.\n\nAlso, checking for tsc_is_invariant in DELAY is probably overly-correct.  We aren't going to change P-states while we are spinning since we are actively spinning on the CPU.  The worst that might happen is that if the CPU were running at a lower clock, we might wait too long.  Given how DELAY is used, that's probably better than falling back to a slow timecounter with locks, etc."
+}

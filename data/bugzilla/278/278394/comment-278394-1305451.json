@@ -1,0 +1,8 @@
+{
+ "id": 1305451,
+ "bug_id": 278394,
+ "attachment_id": 0,
+ "creation_time": "2024-04-18T02:06:45Z",
+ "creator": "gshapiro@FreeBSD.org",
+ "text": "Verified:\n\n#23 ip_output (m=m@entry=0xfffff80007e3e000, opt=opt@entry=0x0, ro=\u003coptimized out\u003e, flags=flags@entry=0, imo=0x0, inp=inp@entry=0x0) at ../../../netinet/ip_output.c:699\n699\t\t\tswitch (ip_output_pfil(\u0026m, ifp, flags, inp, dst, \u0026fibnum,\n(kgdb) print *dst\n$6 = {sin_len = 16 '\\020', sin_family = 2 '\\002', sin_port = 0, sin_addr = {s_addr = 4017795422}, sin_zero = \"\\000\\000\\000\\000\\000\\000\\000\"}\n\ns_addr is 94.177.122.239, which is the vxlanremote IP for vxlan0.\n\nChecking BGP route map:\n\n94.177.122.0/24      unicast [4IXP4RS1 18:24:23.600 from 185.1.125.1] * (100) [AS58057i]\n\tvia 185.1.125.5 on vxlan0\n\nOnce that route was exported to the kernel, routing to 94.177.122.239 went out over vxlan0.\n\nConfiguration wise, I can avoid the crash with a static route for 94.177.122.239/32 out of the default gateway instead of the tunnel.  However, would be good to fix the crash.\n\nMight even be interesting for all of the tunnel interfaces (not just vxlan) to check if they are about to send a packet for the tunnel endpoint inside the tunnel and realize that won't work (e.g., if dst == vxlanremote).  Is that what if_tunnel_check_nesting() does?"
+}

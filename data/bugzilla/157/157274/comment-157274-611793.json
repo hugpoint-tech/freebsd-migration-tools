@@ -1,0 +1,8 @@
+{
+ "id": 611793,
+ "bug_id": 157274,
+ "attachment_id": 0,
+ "creation_time": "2011-05-30T18:46:12Z",
+ "creator": "aehlig@linta.de",
+ "text": "Hi,\n\nfurther investigations (thanks to Helmut Grohne who helped me) on my\n7.3-RELEASE virtual machine showed that gfind does the following sequence\nof libc-calls, which seg faults on 7.3-RELEASE, but not on 8.2-STABLE:\nopen, fdopendir, readdir.\n\nI could construct the following minimal example, which I belive should\nnot cause a segmentation fault, but does on 7.3-RELEASE.\n\n# uname -a\nFreeBSD  7.3-RELEASE FreeBSD 7.3-RELEASE #0: Sun Mar 21 05:25:24 UTC 2010     root@driscoll.cse.buffalo.edu:/usr/obj/usr/src/sys/GENERIC  amd64\n# cat testfdopendir.c \n#include \u003cfcntl.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cdirent.h\u003e\n\nint main(int argc, char **argv) {\n        DIR *dirp;\n        int fd;\n\n        fd = open(\".\",  O_RDONLY);\n        dirp = fdopendir(fd);\n        (void) readdir(dirp);\n\n}\n\n# cc testfdopendir.c \ntestfdopendir.c: In function 'main':\ntestfdopendir.c:10: warning: assignment makes pointer from integer without a cast\n# ./a.out\nSegmentation fault (core dumped)\n# \n\nAlso note the compiler warning, that suggests that including \u003csys/types.h\u003e\nand \u003cdirent.h\u003e does not seem to suffice---as opposed what the man page\ntells---to get the fdopendir prototype. I believe that is a bug in \nRELENG_7_3_0.\n\nEitan: can you please inform the appropriate maintainer about this \nbug (if it is not fixed already in an errata for 7.3-RELEASE)?\n\nUnfortunately, the obvious patch does not yet solve the problem, so I\nhave to investigate further. But I thought, I'd still report back \nthe problem with the libc headers.\n\nBest,\nKlaus"
+}

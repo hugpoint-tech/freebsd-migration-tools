@@ -1,0 +1,8 @@
+{
+ "id": 694982,
+ "bug_id": 174291,
+ "attachment_id": 0,
+ "creation_time": "2012-12-09T17:34:38Z",
+ "creator": "sjg@juniper.net",
+ "text": "If you look at the patch in freefall.freebsd.org:~sjg/ports2bmake.tar.gz\nyou'll see that the dozen or so lines in bsd.port.mk that deal with man\npages, are replaced with a couple of inline loops for bmake (reproduced\nbelow).\n\nThis is because bmake handles the iterator variables quite differently,\nso all the escaping etc done in those .for loops does not work.\n\n\u003e    bapt@ pointed me to this commit on github:\n\u003ehttps://github.com/jrmarino/DPorts/commit/6c4e33ddfebc9645b63e3296e7a03f118cf7\n\u003e7e10\n\u003ewhich will hopefully fix the more generic issue.\n\nGetting rid of $$$$$$$${__lang} will be an improvement.\nbut it may still be better to use the simpler inline loops for bmake:\n\nIndex: Mk/bsd.port.mk\n===================================================================\n--- Mk/bsd.port.mk\t(revision 304584)\n+++ Mk/bsd.port.mk\t(working copy)\n@@ -1143,6 +1143,20 @@\n@@ -2990,6 +3004,14 @@\n .endif\n \n .if (defined(MLINKS) || defined(_MLINKS_PREPEND)) \u0026\u0026 !defined(_MLINKS)\n+\n+.if defined(.PARSEDIR)\n+# inline loops are simpler\n+_MLINKS=    ${_MLINKS_PREPEND} \\\n+\t${MANLANG:S,^,man/,:S,/\"\",,:@m@${MLINKS:@p@${MAN${p:E}PREFIX}/$m/man${p:E}/$p${MANEXT}@}@}\n+\n+.else\n+\n __pmlinks!=\t${ECHO_CMD} '${MLINKS:S/\t/ /}' | ${AWK} \\\n  '{ if (NF % 2 != 0) { print \"broken\"; exit; } \\\n \tfor (i=1; i\u003c=NF; i++) { \\\n@@ -3016,6 +3038,7 @@\n .endfor\n .endfor\n .endif\n+.endif\n _COUNT=0\n .for ___tpmlinks in ${_MLINKS}\n .if ${_COUNT} == \"1\""
+}

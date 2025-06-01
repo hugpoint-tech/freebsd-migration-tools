@@ -1,0 +1,8 @@
+{
+ "id": 1336689,
+ "bug_id": 282982,
+ "attachment_id": 0,
+ "creation_time": "2024-11-26T05:19:54Z",
+ "creator": "quentin.thebault@defenso.fr",
+ "text": "== Setup ==\nUses RFC7404-like addressing (link-local addresses on VNET jail epairs).\n\nHost\n- lo0 alias 192.168.2.1\n- epair0a alias fe80::1\n- route add 192.168.2.2 -6 fe80::1%epair0a\n\nJail\n- VNET enabled\n- lo0 alias 192.168.2.2\n- epair0b alias fe80::2\n- route add default -6 fe80::2%epair0b\n\n== Test ==\nFrom host:\n# ping 192.168.2.2\n-\u003e fails silently, ICMP packets can be seen with 0.0.0.0 source address\n# ping -S 192.168.2.1 192.168.2.2\n-\u003e succeeds\n\nFrom jail:\n# ping 192.168.2.1\n-\u003e fails with error \"no route to host\"\n# ping -S 192.168.2.2 192.168.2.1\n-\u003e succeeds\n\n== Expected output ==\nIn the first case, ping should tell the user it was not able to find an appropriate source address and stop.\n\nIn the second case, the error message could be made more explicit.\n\n== Cause ==\nUnless specified with -S, ping leaves the source address undefined (INADDR_ANY). From my understanding, the kernel will attempt to use the first interface address as a source (https://cgit.freebsd.org/src/tree/sys/netinet/ip_output.c#n640). But if there is no ipv4 set, it will leave the source as 0.0.0.0.\n\n== Affected systems ==\n\nEncountered on 14.1-RELEASE. Most likely affects other releases and CURRENT too."
+}

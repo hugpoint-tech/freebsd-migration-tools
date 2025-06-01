@@ -1,0 +1,8 @@
+{
+ "id": 683996,
+ "bug_id": 171691,
+ "attachment_id": 0,
+ "creation_time": "2012-09-16T21:10:09Z",
+ "creator": "trociny@FreeBSD.org",
+ "text": "Two issues are observed when trying to start mogilefs daemons:\n\n1) When running mogstored or mogilefsd rc.d script the error like below is observed:\n\nStarting mogstored.\n--config=/usr/local/etc/mogstored.conf: not found\n./mogstored: WARNING: failed to start mogstored\n\nIt looks like \"command\" variable is missed in the scripts.\n\n2) While mogstored runs OK in the foreground mode, it fails to start when daemonize option is specified.\n\nThe issue is that Danga::Socket (and its kqueue(2)) is initialized in $httpsrv-\u003estart, before daemonize. After daemonize the mogstored tries to (re)use the kqueue descriptor but kevent(2) fails with \"bad file descriptor\", because kernel event queue is not inherited after fork(2) (see kqueue(2)).\n\nA possible workaround is to run mogstored without '-d' option, using daemon(8).\n\nA possible fix is to deamonize before calling $httpsrv-\u003estart. \n\nI have reported about this issue to mainstream:\n\nhttp://code.google.com/p/mogilefs/issues/detail?id=72\n\nFix: See the attached patch, which adds missed \"command\" variable to rc scripts and adds patch for mogstored.\n\nPatch attached with submission follows:\nHow-To-Repeat: /usr/local/etc/rc.d/mogilefsd onestart\n/usr/local/etc/rc.d/mogstored onestart"
+}

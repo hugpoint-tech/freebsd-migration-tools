@@ -1,0 +1,8 @@
+{
+ "id": 989618,
+ "bug_id": 210316,
+ "attachment_id": 0,
+ "creation_time": "2018-05-01T06:12:45Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "If I add this code snippet (copied from somewhere in the ext2fs driver) so that vinvalbuf() is called before g_vfs_close(), the r/w mount of a r/o geom fails (EPERM), and the panic doesn't happen:\n\ndiff --git a/sys/fs/msdosfs/msdosfs_vfsops.c b/sys/fs/msdosfs/msdosfs_vfsops.c\nindex 76a238c5ff77..7477d5b03a1f 100644\n--- a/sys/fs/msdosfs/msdosfs_vfsops.c\n+++ b/sys/fs/msdosfs/msdosfs_vfsops.c\n@@ -717,6 +717,12 @@ mountmsdosfs(struct vnode *devvp, struct mount *mp)\n error_exit:\n        if (bp)\n                brelse(bp);\n+\n+       vn_lock(devvp, LK_EXCLUSIVE | LK_RETRY);\n+       if (vinvalbuf(devvp, 0, 0, 0) != 0)\n+               panic(\"mountmsdosfs: dirty\");\n+       VOP_UNLOCK(devvp, 0);\n+\n        if (cp != NULL) {\n                g_topology_lock();\n                g_vfs_close(cp);\n\nApart from not really understanding it, I don't like it, because if every filesystem should be calling vinvalbuf() before g_vfs_close(), then shouldn't g_vfs_close() rather be calling vinvalbuf() itself? Also msdosfs_unmount() doesn't call vinvalbuf() before its own g_vfs_close(), but it does call msdosfs_sync() and vflush(). Would those also work, or be even better?\n\nFixing UFS will be a different story, as msdosfs writes to the filesystem during mount [in markvoldirty()], so the panic is almost immediate. I could only crash UFS by trying to write to a file after mounting."
+}

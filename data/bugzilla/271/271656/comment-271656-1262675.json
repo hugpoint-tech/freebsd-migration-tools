@@ -1,0 +1,8 @@
+{
+ "id": 1262675,
+ "bug_id": 271656,
+ "attachment_id": 0,
+ "creation_time": "2023-06-09T10:50:22Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Antoine Brodin from comment #23)\nThe problem is that BN_ULONG is sometimes defined incorrectly on i386; depending on how the openssl config headers are included, it is sometimes \"unsigned long\", and sometimes \"unsigned long long\". For some files it is the former, and then the bignum logic tries to shift right with 32 bits, which is undefined behavior.\n\nIn particular, the part here: https://github.com/khorben/freebsd-src/blob/khorben/openssl-3.0.9/crypto/openssl/include/openssl/configuration.h#L125 :\n\n# if !defined(OPENSSL_SYS_UEFI)\n#  undef BN_LLONG\n/* Only one for the following should be defined */\n#  define SIXTY_FOUR_BIT_LONG\n#  undef SIXTY_FOUR_BIT\n#  undef THIRTY_TWO_BIT\n# endif\n\nSIXTY_FOUR_BIT_LONG should not be defined on i386, it is normally defined in crypto/bn_conf.h, and I have no idea why openssl tries to define it superflously in configuration.h.\n\nIn bn_conf.h, the definition is guarded with __LP64__:\n\n#ifdef __LP64__\n#define SIXTY_FOUR_BIT_LONG\n#undef SIXTY_FOUR_BIT\n#undef THIRTY_TWO_BIT\n#else\n#undef SIXTY_FOUR_BIT_LONG\n#undef SIXTY_FOUR_BIT\n#define THIRTY_TWO_BIT\n#endif\n\nIn both files there is some comment about \"UEFI builds\" so I assume this is our own customization, and this is not upstream in OpenSSL?"
+}

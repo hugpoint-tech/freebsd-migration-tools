@@ -1,0 +1,8 @@
+{
+ "id": 976301,
+ "bug_id": 225584,
+ "attachment_id": 0,
+ "creation_time": "2018-02-08T17:19:00Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to mike from comment #56)\nYes, that was already handled.  And, the hang there is the whole system hang.\n\nPlease apply this debugging patch and try reproduce the issue one more time.\n\ndiff --git a/lib/libc/stdio/_flock_stub.c b/lib/libc/stdio/_flock_stub.c\nindex 069ed64c4e9..99e1af6fbfb 100644\n--- a/lib/libc/stdio/_flock_stub.c\n+++ b/lib/libc/stdio/_flock_stub.c\n@@ -45,6 +45,8 @@ __FBSDID(\"$FreeBSD$\");\n #include \u003cstring.h\u003e\n #include \u003cpthread.h\u003e\n #include \"un-namespace.h\"\n+#include \u003csignal.h\u003e\n+#include \u003cunistd.h\u003e\n \n #include \"local.h\"\n \n@@ -116,6 +118,8 @@ _funlockfile(FILE *fp)\n \t/*\n \t * Check if this file is owned by the current thread:\n \t */\n+\twhile (*(volatile struct thread * volatile *)\u0026fp-\u003e_fl_owner == NULL)\n+\t\t;\n \tif (fp-\u003e_fl_owner == curthread) {\n \t\t/*\n \t\t * Check if this thread has locked the FILE\n@@ -138,4 +142,11 @@ _funlockfile(FILE *fp)\n \t\t\t_pthread_mutex_unlock(\u0026fp-\u003e_fl_mutex);\n \t\t}\n \t}\n+\telse {\n+\t\tchar x[120];\n+\t\tsnprintf(x, sizeof(x), \"funlockfile %p %p %p\\n\", fp,\n+\t\t\t curthread, fp-\u003e_fl_owner);\n+\t\twrite(2, x, strlen(x));\n+\t\traise(SIGBUS);\n+\t}\n }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 576504,
+ "bug_id": 150287,
+ "attachment_id": 0,
+ "creation_time": "2010-09-04T22:00:09Z",
+ "creator": "Pascal.Stumpf@cubes.de",
+ "text": "Spider crashes with a segfault in movelog.c in the record() function after grow_cache() is called from there the first time (i.e. when move_index reaches 50):\n\nrecord(from, dest, num_cards, exposed)\nint     from, dest, num_cards;\nBool    exposed;\n{\nint     val;\n\n        val = 11 * ( 11 * ((exposed ? 1 : 0) * 14 + num_cards) + dest) + from;\n        move_cache[move_index++] = val;\n        if (move_index \u003e= cache_size)\n                grow_cache();\n}\n\nSo there has to be something weird happening in grow_cache(). Ive got no idea what it is. Usage of realloc() seems ok to me. :(\n\ngrow_cache()\n{\nint     *new;\n\n        cache_size += CACHE_SIZE;\n        new = (int *) realloc((char *)move_cache,\n                                (unsigned)(cache_size * sizeof(int)));\n        if (new == (int *) NULL)        {\n                (void)fprintf(stderr,\"realloc failed\\n\");\n                exit(-1);\n        }\n        move_cache = new;\n}\n\n\nAs a dirty workaround, one could just increase the initial CACHE_SIZE."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1267685,
+ "bug_id": 268065,
+ "attachment_id": 243619,
+ "creation_time": "2023-07-26T01:28:33Z",
+ "creator": "freebsd-2024@virtual-estates.net",
+ "text": "Created attachment 243619\nRemove the first -L${PREFIX}/lib from link-lines\n\nThis remains a problem today with 1.22.5 -- the issue should've been reported upstream, when first encountered. Chances are, it would've been fixed by now.\n\nThat UPDATING-entry was an admission of defeat: \"We know of the problem, we cannot fix it\" :-(\n\nThe root cause is that the linker line lists the library directories thus:\n\n-L${WRKSRC}/_build/gst\n-L${LOCALBASE}/lib\n-L${WRKSRC}/_build/libs/gst/base\n-L${WRKSRC}/_build/gst\n-L${LOCALBASE}/lib -L${LOCALBASE}/lib\n\n\nThe ${LOCALBASE}/lib/libgstbase-1.0.so.0.1602.0, which I currently have installed, does NOT have this function defined, but it is picked up first, because ${LOCALBASE}/lib is listed before the ${WRKSRC}/_build/libs/gst/base. Notably, this is not a problem for the compile-stage -- the -I arguments list ${LOCALBASE}/include last. But -L ones are wrong...\n\nThe proposed patch offers one way to solve this -- a hackish way, because I don't know, how meson/ninja are supposed to work. There should be a better way -- and the port's maintainer should have the upstream figure it out.\n\nThe patch also fixes the spaces in a few spots -- replacing them with tabs. Feel free to ignore those hunks, concentrating on just the new post-configure target."
+}

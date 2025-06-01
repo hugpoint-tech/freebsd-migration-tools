@@ -1,0 +1,8 @@
+{
+ "id": 580304,
+ "bug_id": 150988,
+ "attachment_id": 0,
+ "creation_time": "2010-10-22T10:16:57Z",
+ "creator": "ubique@peterhost.ru",
+ "text": "Hello,\n\nadduser is shell script, which runs pw utility with gathered arguments.\nThere is a check for existence of a home directory in pw_user.c, and if\nhomedir does not exist pw will create it with the permissions of target\nuser directory (Set by example with -M option to pw). Should pw always\ncreate homedir with permissions 755 to be accessible by all users?\n\n\n--- pw_user.c\t2010-10-22 12:53:19.000000000 +0400\n+++ pw_user.c\t2010-10-22 12:56:11.000000000 +0400\n@@ -186,7 +186,10 @@\n \t\t\tif (strchr(cnf-\u003ehome+1, '/') == NULL) {\n \t\t\t\tstrcpy(dbuf, \"/usr\");\n \t\t\t\tstrncat(dbuf, cnf-\u003ehome, MAXPATHLEN-5);\n-\t\t\t\tif (mkdir(dbuf, cnf-\u003ehomemode) != -1 || errno == EEXIST) {\n+\t\t\t\t/* Home directory should be accessible by all users,\n+\t\t\t\t * so by default set permissions to 0755\n+\t\t\t\t */\n+\t\t\t\tif (mkdir(dbuf, 0755) != -1 || errno == EEXIST) {\n \t\t\t\t\tchown(dbuf, 0, 0);\n \t\t\t\t\t/*\n \t\t\t\t\t * Skip first \"/\" and create symlink:\n@@ -202,7 +205,7 @@\n \t\t\t\twhile ((p = strchr(++p, '/')) != NULL) {\n \t\t\t\t\t*p = '\\0';\n \t\t\t\t\tif (stat(dbuf, \u0026st) == -1) {\n-\t\t\t\t\t\tif (mkdir(dbuf, cnf-\u003ehomemode) == -1)\n+\t\t\t\t\t\tif (mkdir(dbuf, 0755) == -1)\n \t\t\t\t\t\t\tgoto direrr;\n \t\t\t\t\t\tchown(dbuf, 0, 0);\n \t\t\t\t\t} else if (!S_ISDIR(st.st_mode))\n\n\n-- \n\nDmitry Banshchikov"
+}

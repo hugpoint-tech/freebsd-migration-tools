@@ -1,0 +1,8 @@
+{
+ "id": 79136,
+ "bug_id": 25393,
+ "attachment_id": 0,
+ "creation_time": "2001-02-26T23:20:01Z",
+ "creator": "ak03@gte.com",
+ "text": "\nWhile trying to compile the new ksh93 updated recently by  Steve Price, I've\ndiscovered that this port in its current form causes -CURRENT to panic. The\nproblem is with one of the tests ksh93 build system is running to determine\ntarget system capabilities. Namely, it tries to check if poll functions takes\na pointer to the array of file descriptors as second parameter, i.e. it does\nsomething like:\n\n   poll(1, \u0026fd, 0)\n\nKernel then tries to allocate memory for what it thinks is a very large array\nof fd's and malloc panics machine because of insufficient kernel address space.\nThere are checks in the kernel which are supposed to prevent exactly this\nproblem, but they are not catching bogus 'nfds' value because 'nfds' variable\nis defined as int and is treated as negative for huge values like pointer value.\n\nAttached patch fixes the problem by defining nfds variable as u_int.\n\nHow-To-Repeat: \tmain() {\n            poll(1, \u0026fd, 0);\n        }"
+}

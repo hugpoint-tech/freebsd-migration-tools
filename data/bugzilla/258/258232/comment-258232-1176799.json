@@ -1,0 +1,8 @@
+{
+ "id": 1176799,
+ "bug_id": 258232,
+ "attachment_id": 0,
+ "creation_time": "2021-09-04T08:28:38Z",
+ "creator": "ice@extreme.hu",
+ "text": "I am hit by a similar issue, but the cause is apparently very different.\n\n91.0.4472.164 was fine, the problems started with 92-something, as far as I remember.\n\nOne might call my setup a bit awkward:\n\n/tmp is a separate ZFS dataset, and this is what I have my 'download directory' set to in Chromium\n/usr/home is another ZFS dataset which is where the bulk of my home lives\nhowever ~/.local is a symlink to a directory in yet another ZFS data set\n\nThis setup stopped working in about Chromium 92.\n\nIf I set my 'download directory' to ~/.local/, it starts working again.\n\nIt looks like Chromium wants to create a temp file in ~/.local/:\n\n 14121 chrome   NAMI  \"/home/ice/.local/share/.org.chromium.Chromium.A1I94j\"\n\nand then a bit later\n\n 14121 chrome   NAMI  \"/home/ice/.local/share/.org.chromium.Chromium.A1I94j\"\n 14121 chrome   NAMI  \"/tmp/\u003cfinalname\u003e.crdownload\"\n 14121 chrome   CALL  write(0x1d,0x7fffffffcd3f,0x1)\n 14121 chrome   RET   rename -1 errno 18 Cross-device link\n\nThis made my try pointing Chromium to ~/.local/ as the download directory, and this works (as far as Chromium is now able to produce an actual file).\n\nTo be honest this looks a bit odd - if there is a specific directory to download files into, and Chromium is using rename to get to the final file name from the temp file name, why is the temp file being created in a random directory very distinctly not the same as the download directory?\n\nThat said, this all may be a red herring - the only thing certain is with this filesystem setup and download dir set to /tmp, Chromium isn't downloading things :)"
+}

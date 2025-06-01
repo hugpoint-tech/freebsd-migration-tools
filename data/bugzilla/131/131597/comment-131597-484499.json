@@ -1,0 +1,8 @@
+{
+ "id": 484499,
+ "bug_id": 131597,
+ "attachment_id": 0,
+ "creation_time": "2013-06-28T13:47:55Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Looking at this again, the patch committed in 178807 is just wrong and should \nbe reverted.  There is no state in rtld that needs to be protected via a write \nlock.  GCC is too lazy to use their own locking to protect shared state \nbetween threads and wants the runtime linker to enforce this.  Their \njustification that glibc doesn't allow concurrent execution of this isn't a \nvalid excuse.  For an API like this that just walks a list and invokes a \ncallback, if the callback manipulates shared state owned by the caller, the \ncaller should be responsible for sychronizing access to it, not rtld!\n\nInstead I think we should apply the patch in the original GCC bug to our in-\ntree GCC and to our GCC ports.  This should remove the sigprocmask calls and\nnot penalize other users of dl_iterate_phdr() for GCC's poor behavior.\n\n-- \nJohn Baldwin"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1343593,
+ "bug_id": 283989,
+ "attachment_id": 0,
+ "creation_time": "2025-01-13T07:29:35Z",
+ "creator": "tatsuki_makino@hotmail.com",
+ "text": "My comment #9 is only a workaround, so I did some more research.\n\nRestart pcscd without using pcscd_flags=\"--disable-polkit\".\n# By the way, it is still holding on to the terminal, so I'm restarting it like daemon service pcscd restart.\n\nCreate a file with the contents as described in ${WRKSRC}/doc/README.polkit .\n\nI made /usr/local/etc/polkit-1/rules.d/60-pcsc-lite.rules with the following contents.\n\npolkit.addRule(\n        function (action, subject) {\n                if (action.id == \"org.debian.pcsc-lite.access_card\" \u0026\u0026\n                        subject.user == \"tatsuki\") {\n                        return polkit.Result.YES;\n                }\n        });\npolkit.addRule(\n        function (action, subject) {\n                if (action.id == \"org.debian.pcsc-lite.access_pcsc\" \u0026\u0026\n                        subject.user == \"tatsuki\") {\n                        return polkit.Result.YES;\n                }\n        });\n\npolkitd doesn't have the ability to automatically re-read the file it created, or it doesn't have the ability to force the file to be re-read, so it needs to be terminated once.\nSIGINT is a signal to terminate normally.\n\nkillall -INT polkitd\n\nThese allowed a user named tatsuki to reach the PC/SC interface.\nIt seems that it was important to terminate polkitd once the rule file was rewritten.\npolkitd will be re-booted by dbus."
+}

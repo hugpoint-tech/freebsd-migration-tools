@@ -1,0 +1,8 @@
+{
+ "id": 895082,
+ "bug_id": 212168,
+ "attachment_id": 0,
+ "creation_time": "2016-08-27T19:17:36Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "From an earlier console log that Glen has been capturing:\nStopped at      softdep_disk_io_initiation+0x50:        ldr     x21, [x8, #664]\ndb\u003e set $lines 0\ndb\u003e bt\nTracing pid 44795 tid 101060 td 0xfffffd0027a859c0\ndb_trace_self() at db_stack_trace+0xf0\ndb_stack_trace() at db_command+0x254\ndb_command() at db_command_loop+0x60\ndb_command_loop() at db_trap+0xf0\ndb_trap() at kdb_trap+0x180\nkdb_trap() at data_abort+0x19c\ndata_abort() at handle_el1h_sync+0x68\nhandle_el1h_sync() at ffs_geom_strategy+0x108\nffs_geom_strategy() at ffs_geom_strategy+0x108\nffs_geom_strategy() at bufwrite+0x210\nbufwrite() at softdep_freefile+0x66c\nsoftdep_freefile() at ffs_vfree+0x28\nffs_vfree() at ufs_inactive+0x2a4\nufs_inactive() at VOP_INACTIVE_APV+0xcc\nVOP_INACTIVE_APV() at vinactive+0xb8\nvinactive() at vputx+0x30c\nvputx() at vn_close+0xf0\nvn_close() at vn_closefile+0x58\nvn_closefile() at closef+0x1f8\nclosef() at fdescfree_fds+0x8c\nfdescfree_fds() at fdescfree+0x468\nfdescfree() at exit1+0x48c\nexit1() at sys_sys_exit+0x10\nsys_sys_exit() at do_el0_sync+0x4c0\ndo_el0_sync() at handle_el0_sync+0x64\nhandle_el0_sync() at 0x41b670\ndb\u003e\n\nEvery one of these I've seen has been in the exit-\u003eclose-\u003einactive-\u003efreefile-\u003effs_geom_strategy-\u003esoftdep_disk_io_initiation path, and always at that precise location.  It's always a [0xdeadc0dedeadc0de + offset] memory read.\n\nUnfortunately I can't see any ps output in the console for any of these."
+}

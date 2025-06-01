@@ -1,0 +1,8 @@
+{
+ "id": 383780,
+ "bug_id": 110689,
+ "attachment_id": 0,
+ "creation_time": "2007-03-23T01:10:04Z",
+ "creator": "spork@bway.net",
+ "text": "There is a ifdef in the tcpdump sources (I believe just in /usr/src/contrib/tcpdump/interface.h) that sets the default snaplen for tcpdump.  Running tcpdump without a special snaplen against pflog will drop some data (the last octet of the second ip).\n\nThis breaks things like spamlogd (/usr/ports/mail/spamd).\n\nThe issue is also raised here in the NetBSD bug db:\n\nhttp://www.netbsd.org/cgi-bin/query-pr-single.pl?number=34733\n\nSame issue...\n\nFix: \n\nI rebuilt tcpdump after setting the snaplen to 96 in both cases.  Some would argue that the ifdef is not even really necessary and a snaplen big enough to deal with all our \"new\" interfaces (pflog, carp, etc.) should be the new default.\n\nThis snippet starts at line 87.\n\n/*\n * The default snapshot length.  This value allows most printers to print\n * useful information while keeping the amount of unwanted data down.\n */\n#ifndef INET6\n#define DEFAULT_SNAPLEN 96      /* ether + IPv4 + TCP + 14 */\n#else\n#define DEFAULT_SNAPLEN 96      /* ether + IPv6 + TCP + 22 */\n#endif                           /*   ^^ I upped this */\nHow-To-Repeat: Build a recent spamlogd on FreeBSD, try to run it.  You'll see that the traffic it snarfs from pflog is missing the last octet, which makes it unhappy:\n\nMar 22 03:03:31 slimjim spamlogd[700]: outbound 216.220.96\nMar 22 03:03:31 slimjim spamlogd[700]: invalid ip address 216.220.96"
+}

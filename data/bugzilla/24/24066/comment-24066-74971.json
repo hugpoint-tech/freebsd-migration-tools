@@ -1,0 +1,8 @@
+{
+ "id": 74971,
+ "bug_id": 24066,
+ "attachment_id": 0,
+ "creation_time": "2001-01-04T09:00:01Z",
+ "creator": "mheffner@vt.edu",
+ "text": "Gdb can't detach from a program that's linked with libc_r. It gives the\nmessage \"ptrace: No such process\". The same program linked with libc\ncan be attached/detached fine. The only way to quit gdb is to kill\nit.\n\nBy sprinkling the code with printf()s it looks like variable\n`inferior_pid' (which is passed to ptrace() when detaching) is getting\nchanged. For example, it'll go from say 41694 -\u003e 172766. I tracked\nit down to a location in gnu/usr.bin/binutils/gdb/freebsd-uthread.c\nline 429:\n\tinferior_pid = find_active_thread ();\n\nUnfortunately, after that point it's over my head so I can't really\nfigure out where it's going wrong.\n\nFix: \n\nDon't know.\nHow-To-Repeat: Compile the following program:\n\nmain(){\n\tprintf(\"pid: %d\\n\", getpid());\n\twhile(1)\n\t\tsleep(1);\n}\n\ntwice with:\n\ngcc -o test1 test.c\ngcc -o test2 test.c -pthread\n\nand try attaching/detaching from it, the first one will succeed, the\nsecond won't."
+}

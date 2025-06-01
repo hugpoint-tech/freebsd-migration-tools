@@ -1,0 +1,8 @@
+{
+ "id": 825856,
+ "bug_id": 200493,
+ "attachment_id": 0,
+ "creation_time": "2015-05-29T10:35:24Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #7)\nAnd to express my opinion on the whole stuff.\n\nThe signal delivery to the kernel threads must be opt-in feature.  Kernel thread should explicitely declare the ability to handle signals directed to it.  E.g., nfsd threads check for signal as an indication of exit request.\n\nMost threads do not handle signals at all, and queuing the signal to them causes odd side-effects.  Most innocent consequence is the memory leak due to queued ksiginfo, which is never deleted from the sigqueue.  Or, the priority bump for the idle thread, as you discovered.\n\nCode to prevent even queuing signals to the kernel threads is trivial, but it requires careful examination of each call to kproc/kthread creation to decide should the signalling be allowed.  The patch I provided IMO is good stop-gap measure which fixes the immediate ugly case."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1148984,
+ "bug_id": 253877,
+ "attachment_id": 0,
+ "creation_time": "2021-02-26T17:33:31Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "geom_stats_resync tries to mmap all of /dev/devstat.  But without knowing that device's size, it simply tries to mmap successively larger amounts of memory until it fails.  That means that the entire operation has O(n^2) syscalls, where n is related to the number of geom providers.  On a system with a few thousand providers, running \"mdconfig -l\" can take several minutes.\n\nvoid\ngeom_stats_resync(void)\n{\n        void *p;\n\n        if (statsfd == -1)\n                return;\n        for (;;) {\n                p = mmap(statp, (npages + 1) * pagesize,\n                    PROT_READ, MAP_SHARED, statsfd, 0);\n                if (p == MAP_FAILED)\n                        break;\n                else\n                        statp = p;\n                npages++;\n        }\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1261493,
+ "bug_id": 271573,
+ "attachment_id": 0,
+ "creation_time": "2023-05-30T17:13:17Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/12 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=8fa89d8b190472778ed07db9d8937cb1ce7b44fc\n\ncommit 8fa89d8b190472778ed07db9d8937cb1ce7b44fc\nAuthor:     Eric van Gyzen \u003cvangyzen@FreeBSD.org\u003e\nAuthorDate: 2023-05-23 09:46:42 +0000\nCommit:     Eric van Gyzen \u003cvangyzen@FreeBSD.org\u003e\nCommitDate: 2023-05-30 12:10:03 +0000\n\n    Fix NULL deref in ip_output during route change\n\n    When changing the interface address during a route change,\n    the rtentry's rt_ifa will be NULL briefly.  Some parts of\n    ip_output do not handle that NULL.  In such case, re-validate\n    the rtentry.  That validation does not check the rt_ifa, but\n    it does lock the route, which will synchronize with\n    rtrequest1_fib_change.\n\n    I would prefer to leave the rt_ifa pointer intact during\n    the route change, but ip6_output is not fully protected\n    by the net_epoch, so that could allow a use-after-free.\n    ip6_output already handles a NULL rt_ifa.\n\n    This is a direct commit to stable/12 because later branches\n    have nexthop and do not appear to have this bug.\n\n    PR:             271573\n    Reported by:    Gaurav.Gandhi@dell.com\n    Sponsored by:   Dell EMC Isilon\n    Differential Revision:  https://reviews.freebsd.org/D40236\n\n sys/netinet/ip_output.c | 4 ++++\n 1 file changed, 4 insertions(+)"
+}

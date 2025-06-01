@@ -1,0 +1,8 @@
+{
+ "id": 725209,
+ "bug_id": 180894,
+ "attachment_id": 0,
+ "creation_time": "2013-07-28T06:20:58Z",
+ "creator": "david.i.noel@gmail.com",
+ "text": "From the freebsd-questions mailing list a solution was proposed by\nFrank Leonhardt \u003cfrank2@fjl.co.uk\u003e:\n\nI was going to raise an issue when the discussion had died down to a\nconcensus. I also don't think it's reasonable for the kernel to bomb\nwhen it encounters corruption on a disk.\n\nIf you want to patch it yourself, edit sys/ufs/ufs/ufs_vnops.c at\naround line 2791 change:\n\n        if (dp-\u003ei_effnlink \u003c 3)\n                panic(\"ufs_dirrem: Bad link count %d on parent\",\n                    dp-\u003ei_effnlink);\n\nTo\n\n        if (dp-\u003ei_effnlink \u003c 3) {\n                error = EINVAL;\n                goto out;\n        }\n\nThe ufs_link() call has a similar issue.\n\nI can't see why my mod will break anything, but there's always\nunintended consequences. By returning invalid argument, any code above\nit should already be handling that condition although the user will be\nscratching their head wondering what's wrong with it. Returning ENOENT\nor EACCES or ENOTDIR may be better (\"No such directory\", \"Access\ndenied\" or \"Not a valid directory\").\n\nThe trouble is that it's tricky to test properly without finding a\ngood way to corrupt the link count :-)\n\nRegards, Frank.\n\n----\n\nMaybe something along these lines would be a reasonable fix?\n\n-David"
+}

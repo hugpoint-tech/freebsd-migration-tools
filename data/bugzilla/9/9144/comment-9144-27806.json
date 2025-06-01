@@ -1,0 +1,8 @@
+{
+ "id": 27806,
+ "bug_id": 9144,
+ "attachment_id": 0,
+ "creation_time": "1998-12-20T16:30:00Z",
+ "creator": "voland@plab.ku.dk",
+ "text": "\n\tThere is an inconsistency in acd driver behaviour. As written\nin cdio.h LBA address format uses network byte order to store the\nframe number. But CDIOCREADAUDIO ioctl uses host byte order instead.\n\nHow-To-Repeat: \n#include \u003csys/cdio.h\u003e\n#include \u003csys/ioctl.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n\n/* Commenting out the following line avoids the error. */\n#define NETWORK_ORDER\n\nint\nmain()\n{\n    char buf[ 2352];\n    struct ioc_read_audio ira;\n    int h = open( \"/dev/wcd0a\", O_RDONLY);\n    int rc;\n\n    ira.address_format = CD_LBA_FORMAT;\n#ifdef NETWORK_ORDER\n    ira.address.lba = htonl( 1);\n#else\n    ira.address.lba = 1;\n#endif\n    ira.nframes = 1;\n    ira.buffer = buf;\n    rc = ioctl( h, CDIOCREADAUDIO, \u0026ira);\n    if ( rc == -1) {\n\tperror( \"CDIOCREADAUDIO\");\n    }\n    else {\n\tprintf( \"Ok.\\n\");\n    }\n\n    close( h);\n\n    return 0;\n}"
+}

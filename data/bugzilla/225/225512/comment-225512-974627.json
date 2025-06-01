@@ -1,0 +1,8 @@
+{
+ "id": 974627,
+ "bug_id": 225512,
+ "attachment_id": 0,
+ "creation_time": "2018-01-28T23:03:00Z",
+ "creator": "dave@daveg.ca",
+ "text": "The story to here.  In the beginning, the words were \"recompile the kernel\" and the kernel was good.  No.  I'll stop that now.\n\nAnyways... to use a console other than COM1, you needed to recompile the kernel.  At some point, the PR 169544 applied, that is you set hint.sio.n.flags to determine which port was console.\n\nThis didn't work, so in UTSL fashion, I found (in /sys/dev/uart/uart_subr.c:\n\n        /*\n         * Check the environment variables \"hw.uart.console\" and\n         * \"hw.uart.dbgport\". These variables, when present, specify\n         * which UART port is to be used as serial console or debug\n         * port (resp).\n         */\n        switch (devtype) {\n        case UART_DEV_CONSOLE:\n                cp = kern_getenv(\"hw.uart.console\");\n                break;\n        case UART_DEV_DBGPORT:\n                cp = kern_getenv(\"hw.uart.dbgport\");\n                break;\n        default:\n                cp = NULL;\n                break;\n        }\n\nmeaning that you put \"hw.uart.console=1\" in /boot/loader.conf and you get COM2.  This seems to default to 0 or COM1 (NULL == 0, for the most part).\n\nI have verified that on 11.1-RELEASE, setting either hint.sio.* or hint.uart.* (because, at least as of 11.1-RELEASE, there are no hint.sio anymore) on AMD64 ... DO NOT WORK.\n\nI have also verified hw.uart.console=1 in /boot/loader.conf does work.\n\nThis would all be in reference to the documentation that lives at https://www.freebsd.org/doc/handbook/serialconsole-setup.html"
+}

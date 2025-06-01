@@ -1,0 +1,8 @@
+{
+ "id": 1153654,
+ "bug_id": 254607,
+ "attachment_id": 0,
+ "creation_time": "2021-03-27T17:55:39Z",
+ "creator": "meta@FreeBSD.org",
+ "text": "Hi, \n\nafter recent addition of patch-wg-quick_freebsd.bash-2 broke it. Did you actually test it?\n\n# pkg info|grep wireguard\nwireguard-2,1                  Meta-port for Wireguard\nwireguard-go-0.0.20210323,1    WireGuard implementation in Go\nwireguard-kmod-0.0.20210323    WireGuard implementation for the FreeBSD kernel\nwireguard-tools-1.0.20210315_3 Fast, modern and secure VPN Tunnel\n\n# wg-quick up wg0\n[#] ifconfig wg create name wgs\n[#] wg setconf wg0 /dev/stdin\n[#] ifconfig wg0 inet 192.168.30.235 alias\nifconfig: ioctl (SIOCAIFADDR): Destination address required\n[#] ifconfig wg0 destroy\n\n\nwireguard-tools-1.0.20210315_2 was working properly. \n\nSimple instructions to reproduce:\n1. ifconfig wg create name wg0\n2. ifconfig wg0 inet 192.168.1.2 alias\n3. ifconfig fails with \"ifconfig: ioctl (SIOCAIFADDR): Destination address required\"\n\n\nI think the removed argument \"${1%%/*}\" is necessary. It is the destination address. I haven't test it at FreeBSD 13 but at least patch-wg-quick_freebsd.bash-2 must not be applied on FreeBSD 12.\n\nThis works:\nifconfig \"$INTERFACE\" inet \"$1\" \"${1%%/*}\" alias\n\nbut his doesn't work actually:\nifconfig \"$INTERFACE\" inet \"$1\" alias"
+}

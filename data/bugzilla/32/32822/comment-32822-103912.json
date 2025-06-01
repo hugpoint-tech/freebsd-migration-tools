@@ -1,0 +1,8 @@
+{
+ "id": 103912,
+ "bug_id": 32822,
+ "attachment_id": 0,
+ "creation_time": "2001-12-14T01:40:01Z",
+ "creator": "nakaji@jp.FreeBSD.org",
+ "text": "\n\tIn daily mails from root, I see\n\n\tChecking for passwordless accounts:\n\t[: : out of range\n\t[: : out of range\n\n\tAnd checked the scripts in /etc/periodic/security to find which\n\tone says 'out of range'. They are 550.ipfwlimit and\n\t650.ip6fwlimit.\n\n\tThey use the variable ${IPFW_LOG_LIMIT} or ${IP6FW_LOG_LIMIT} and\n\tcompare it with 0. But on my current system, the variables are\n\tboth null strings because kernel does not have \n\t\"options IPFIREWALL\" nor \"options IPV6FIREWALL\", \n\tso that the 'test' fail.\n\nFix: If you don't have net.inet.ip.fw.verbose_limit or\n\tnet.inet6.ip6.fw.verbose_limit, the variables ${IPFW_LOG_LIMIT}\n\tand ${IP6FW_LOG_LIMIT} should be 0.\n\n\tHere is a diff.\nHow-To-Repeat: \n\t/bin/sh -x /etc/periodic/550.ipfwlimit\n\t[snip]\n\t+ sysctl -n net.inet.ip.fw.verbose_limit\n\t+ IPFW_LOG_LIMIT=\n\t+ [ 1 -eq 0 -a  -ne 0 ]\n\t[: : out of range\n\n\t/bin/sh -x /etc/periodic/650.ip6fwlimit\n\t[snip]\n\t+ sysctl -n net.inet6.ip6.fw.verbose_limit\n\t+ IP6FW_LOG_LIMIT=\n\t+ [ 1 -eq 0 -a  -ne 0 ]\n\t[: : out of range"
+}

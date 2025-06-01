@@ -1,0 +1,8 @@
+{
+ "id": 935021,
+ "bug_id": 219356,
+ "attachment_id": 0,
+ "creation_time": "2017-05-23T09:02:41Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: ae\nDate: Tue May 23 09:01:49 UTC 2017\nNew revision: 318734\nURL: https://svnweb.freebsd.org/changeset/base/318734\n\nLog:\n  Fix possible double releasing for SA reference.\n\n  There are two possible ways how crypto callback are called: directly from\n  caller and deffered from crypto thread.\n\n  For inbound packets the direct call chain is the following:\n   IPSEC_INPUT() method -\u003e ipsec_common_input() -\u003e xform_input() -\u003e\n   -\u003e crypto_dispatch() -\u003e crypto_invoke() -\u003e crypto_done() -\u003e\n   -\u003e xform_input_cb() -\u003e ipsec[46]_common_input_cb() -\u003e netisr_queue().\n\n  The SA reference is held while crypto processing is not finished.\n  The error handling code wrongly expected that crypto callback always called\n  from the crypto thread context, and it did SA reference releasing in\n  xform_input_cb(). But when the crypto callback called directly, in case of\n  error (e.g. data authentification failed) the error handling in\n  ipsec_common_input() also did SA reference releasing.\n\n  To fix this, remove error handling from ipsec_common_input() and do it\n  in xform_input() before crypto_dispatch().\n\n  PR:\t\t219356\n  MFC after:\t10 days\n\nChanges:\n  head/sys/netipsec/ipsec_input.c\n  head/sys/netipsec/xform_ah.c\n  head/sys/netipsec/xform_esp.c\n  head/sys/netipsec/xform_ipcomp.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 25538,
+ "bug_id": 8375,
+ "attachment_id": 0,
+ "creation_time": "1998-10-24T05:46:23Z",
+ "creator": "eischen@vigrid.com",
+ "text": "BTW, pthread_mutex_lock also has the same problem as\npthread_cond_wait if thread scheduling comes at an\ninopportune time:\n\n\t\t_SPINLOCK(\u0026(*mutex)-\u003elock);\n\n\t\t/* Process according to mutex type: */\n\t\tswitch ((*mutex)-\u003em_type) {\n\t\t/* Fast mutexes do not check for any error conditions: */\n\t\tcase MUTEX_TYPE_FAST:\n\t\t\t/*\n\t\t\t * Enter a loop to wait for the mutex to be locked by the\n\t\t\t * current thread: \n\t\t\t */\n\t\t\twhile ((*mutex)-\u003em_owner != _thread_run) {\n\t\t\t\t/* Check if the mutex is not locked: */\n\t\t\t\tif ((*mutex)-\u003em_owner == NULL) {\n\t\t\t\t\t/* Lock the mutex for this thread: */\n\t\t\t\t\t(*mutex)-\u003em_owner = _thread_run;\n\t\t\t\t} else {\n\t\t\t\t\t/*\n\t\t\t\t\t * Join the queue of threads waiting to lock\n\t\t\t\t\t * the mutex: \n\t\t\t\t\t */\n\t\t\t\t\t_thread_queue_enq(\u0026(*mutex)-\u003em_queue, _thread_run);\n\n\t\t\t\t\t/* Unlock the mutex structure: */\n\t\t\t\t\t_SPINUNLOCK(\u0026(*mutex)-\u003elock);\n\n\t\t\t\t\t/* Block signals: */\n\t\t\t\t\t_thread_kern_sched_state(PS_MUTEX_WAIT, __FILE__, __LINE__);\n\nIf thread scheduling is kicked off right after the last\nSPINUNLOCK, then you can also have a thread removed\nfrom the mutex queue, but it'll never get woken up.\n\nDan Eischen\neischen@vigrid.com"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1236375,
+ "bug_id": 263613,
+ "attachment_id": 0,
+ "creation_time": "2022-11-21T14:29:38Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "Working myself thru this material, I come to the conclusion that my bug #266887 might actually be a duplicate of this.\n\nFrom the initial description here, the basic reproducible behaviour is to\n  ifconfig down; ifconfig up\n(after the iface was already up).\n\nAnd this is exactly what I found as my core issue:\nDoing a sequence of ifconfig up/down/up will always crash the system, either immediately or after a few seconds.\n\nIt doesn't matter what is done with the interface, if there is a connection established or dhcp working, or whatever. We can do it in single-user with no networking at all, and get the same result:\n  kldload if_iwlwifi\n  ifconfig create wlan0 wlandev iwlwifi0\n  ifconfig up\n  ifconfig down\n  ifconfig up -\u003e *KAPUTT*\n\nLooking into bug #267029, that also talks about *re*establishing a network - so the underlying cause might also be this same sequence of up/down/up. Possibly some others, too.\n\nAs long as the interface is just brought up and used, it works - which may be misleading to people, because there are system programs (e.g. devd) that may bring the interface down and up on certain conditions, and getting a crash after that might come as a surprise.\n\n@Bjoern: in comment 9 you talk about this being a known issue that will be fixed.\nThat was half a year ago, and my experience is this being still the basic issue (in STABLE-13). What's the state now?"
+}

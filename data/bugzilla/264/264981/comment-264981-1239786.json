@@ -1,0 +1,8 @@
+{
+ "id": 1239786,
+ "bug_id": 264981,
+ "attachment_id": 0,
+ "creation_time": "2022-12-17T14:58:19Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "Non-vnet jails are also affected.\n\nSteps to repeat:\n\n1: root@:~ # ifconfig lo0 inet 172.16.0.1/32 alias\n2: root@:~ # sh test_prison_ref_leak.sh\nlo0: flags=8049\u003cUP,LOOPBACK,RUNNING,MULTICAST\u003e metric 0 mtu 16384\n\toptions=680003\u003cRXCSUM,TXCSUM,LINKSTATE,RXCSUM_IPV6,TXCSUM_IPV6\u003e\n\tinet 172.16.0.1 netmask 0xffffffff\n\tgroups: lo\n   JID  IP Address      Hostname                      Path\njls: jail \"test_ref_leak\" is dying\n\n\nThe content of test_prison_ref_leak.sh:\n\nroot@:~ # cat test_prison_ref_leak.sh \n#!/bin/sh\n\n# test jail name\nn=\"test_ref_leak\"\n\njail -c name=$n path=/ persist ip4.addr=172.16.0.1\n# The following trigger jail pr_ref leak\njexec $n ifconfig lo0\njail -R $n\n\n# wait a moment\nsleep 1\n\njls -j $n"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 963619,
+ "bug_id": 224330,
+ "attachment_id": 0,
+ "creation_time": "2017-12-14T23:12:14Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Jeff Roberson from comment #5)\n\nThis reply is for things I can do without the rpi2\nat the moment. . .\n\naddr2line (on the cross build host since lack\nof booting the rpi2 is part of my context):\n\nI show both the pc and the lr addresses in:\n\n         pc = 0xc0275f28  lr = 0xc052d9f8 (uma_reclaim_locked+0x200)\n\n\n# addr2line -e /usr/obj/DESTDIRs/clang-armv7dbg-installkernel_bisect/usr/lib/debug/boot/kernel/kernel.debug  0xc0275f28\n/usr/src_bisect/sys/kern/kern_synch.c:447\n\nSo:\n\nhead/sys/kern/kern_synch.c 326023\n\nin mi_switch on the if line below:\n\n        /*\n         * If the last thread was exiting, finish cleaning it up.\n         */\n        if ((td = PCPU_GET(deadthread))) {\n                PCPU_SET(deadthread, NULL);\n                thread_stash(td);\n        }\n\n\n# addr2line -e /usr/obj/DESTDIRs/clang-armv7dbg-installkernel_bisect/usr/lib/debug/boot/kernel/kernel.debug  0xc052d9f8\n./machine/pcpu.h:96\n\nSo interpreting that as /usr/src_bisect/sys/arm/include/pcpu.h\nin the source tree used for the build:\n\nhead/sys/arm/include/pcpu.h 326258\n\nin the __asm line in:\n\nstatic inline struct thread *\nget_curthread(void)\n{\n        void *ret;\n\n        __asm __volatile(\"mrc p15, 0, %0, c13, c0, 4\" : \"=r\" (ret));\n        return (ret);\n}\n\nWhen I'm using the rpi2 at a db\u003e prompt I'll try to confirm\nthat the mrc is what I see."
+}

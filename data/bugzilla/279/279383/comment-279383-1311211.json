@@ -1,0 +1,8 @@
+{
+ "id": 1311211,
+ "bug_id": 279383,
+ "attachment_id": 0,
+ "creation_time": "2024-05-29T16:57:43Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "I use an old riscv simulator whose virtio block device doesn't support\nthe VIRTIO_BLK_F_SEG_MAX feature, so FreeBSD's\nvtblk_maximum_segments() decides it supports only three segments. This\nhas worked, but stopped working after a recent update to\nthe riscv busdma_bounce.c.\n\nThe very first read of a virtio block device is 20 bytes (to read the\nlabel?). The riscv bounce_bus_dmamap_load_buffer() decides a bounce\npage is needed. But it rounds up the size from buflen=20 bytes to a\nwhole page (since dmat-\u003ecommon.alignment is 4096):\n\n                sgsize = MIN(buflen, PAGE_SIZE - (curaddr \u0026 PAGE_MASK));\n                if (((dmat-\u003ebounce_flags \u0026 BF_COULD_BOUNCE) != 0) \u0026\u0026\n                    map-\u003epagesneeded != 0 \u0026\u0026\n                    addr_needs_bounce(dmat, curaddr)) {\n                        sgsize = roundup2(sgsize, dmat-\u003ecommon.alignment);\n                        curaddr = add_bounce_page(dmat, map, kvaddr, curaddr,\n                            sgsize);\n\nThe immediate problem is that later the \n\n                buflen -= sgsize;\n\nwraps (since buflen is 20 and sgsize is 4096), so that buflen is huge\nand the while loop incorrectly makes a second iteration. \n\nA potential fix is to restore the bounce_bus_dmamap_load_buffer() code\nfrom a few months ago that limits sgsize to be no more than buflen.\n\nFreeBSD  15.0-CURRENT FreeBSD 15.0-CURRENT #312 main-n250991-01d33dbbb3f8-dirty: Wed May 29 12:49:02 EDT 2024     rtm@zika:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM riscv"
+}

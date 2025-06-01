@@ -1,0 +1,8 @@
+{
+ "id": 843332,
+ "bug_id": 187081,
+ "attachment_id": 161855,
+ "creation_time": "2015-10-09T15:17:24Z",
+ "creator": "c.kworr@gmail.com",
+ "text": "Created attachment 161855\nfix \"swaplate\" to deal only with \"late\" swap devices\n\nHi. I like to join this heated conversation. :)\n\nIt seems to me you are bitten with /etc/rc.d/swaplate which should remove swap partitions that are not directly available. Yet due to bug in the swapon/swapoff logic it rather removes all swap partitions. I'm bored with this too as on my machine swap is used constantly and when rebooting for some weird reason I need to wait while the system gets all my sleepy daemons from swap back to the memory instead of just stopping them.\n\nThe key problem is \"-a\" and \"-L\" options to swapon/swapoff as they give only two choices:\n\n1. Single \"-a\" selects only not \"late\" \"auto\" devices (the ones without \"noauto\" and \"late\") from /etc/fstab.\n2. Both options (\"-aL\") select whole range of \"auto\" devices (only skipping \"noauto\" ones) from /etc/fstab.\n\nThis two choices doesn't give us a possibility to turn off only \"late\" devices, that can really be dependent on some daemons with higher priorities so they MAY fail further down \"shutdown\" sequence and as such they SHOULD be turned off early during \"shutdown\".\n\nThe fix I propose actually breaks compatibility but I don't think this would be an issue as:\n\n * there's not that much consumers of mentioned options in the scripts;\n * the fix brings clarity and usability.\n\nIn this fix:\n\n * single \"-a\" still select only not \"late\" \"auto\" devices;\n * option \"-L\" inverts \"-a\" meaning and selects only \"late\" \"auto\" devices;\n * documentation and starting script are fixed."
+}

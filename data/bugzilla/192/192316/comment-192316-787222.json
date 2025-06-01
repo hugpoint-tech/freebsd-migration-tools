@@ -1,0 +1,8 @@
+{
+ "id": 787222,
+ "bug_id": 192316,
+ "attachment_id": 147407,
+ "creation_time": "2014-09-17T16:15:39Z",
+ "creator": "jan.kokemueller@gmail.com",
+ "text": "Created attachment 147407\nacpidump of a Lenovo SL510\n\nThanks for the detailed analysis. I've had another look at how my laptop (Lenovo SL510) handles C-states. By default the OS queries the _CST method of the firmware and this results in the following C-states:\n\ndev.cpu.0.cx_supported: C1/1/1 C2/2/57\ndev.cpu.1.cx_supported: C1/1/1 C2/2/57\n\nSo this means that cpu_can_deep_sleep does not get set. When I insert a \"return (ENXIO);\" at the start of the acpi_cpu_cx_cst function in sys/dev/acpica/acpi_cpu.c the OS falls back to FADT/P_BLK parsing and I get the following:\n\ndev.cpu.0.cx_supported: C1/1/0 C2/2/1 C3/3/57\ndev.cpu.1.cx_supported: C1/1/0 C2/2/1 C3/3/57\n\n... which looks closer to the actual hardware to me. I've attached the acpidumps. The _CST method is in ssdt5.dsl. My laptop seems to fall into one of the cases at lines 115, 318, or 531. I wonder why they do this weird remapping of C-states?"
+}

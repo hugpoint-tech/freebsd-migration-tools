@@ -1,0 +1,8 @@
+{
+ "id": 1304623,
+ "bug_id": 271675,
+ "attachment_id": 0,
+ "creation_time": "2024-04-10T17:33:30Z",
+ "creator": "rozhuk.im@gmail.com",
+ "text": "I suspect that more correct is ignore EINTR error limited times and only then fallback to generic copy.\n\n\nSo IMHO usage pattern must be one of:\n\nsize_t ntry;\nconst size_t max_ntry = 5;\n\nfor (ntry = 0; ntry \u003c max_ntry;) {\n\tint ret = copy_file_range(...);\n\tif (0 \u003c ret) {\n\t\tntry = 0;\n\t\tcontinue;\n\t}\n\tif (0 == ret)\n\t\tbreak;\n\t/* Err handle. */\n\tif (EINTR != errno)\n\t\tbreak;\n\tntry ++;\n\t/* Probably nanosleep() here. */\n}\n\nif (ntry == max_ntry) {\n\t/* Fail, do fallback code. */\n}\n\n\nOr\n\nint ret;\nfor (;;) {\n\tret = copy_file_range(...);\n\tif (0 == ret || /* Ok, EOF. */\n\t    (0 \u003e ret \u0026\u0026 EINTR != errno)) /* Unhandled error. */\n\t\tbreak;\n}\n\nif (0 != ret) {\n\t/* Fail, do fallback code. */\n}"
+}

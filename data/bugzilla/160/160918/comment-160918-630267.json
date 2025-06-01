@@ -1,0 +1,8 @@
+{
+ "id": 630267,
+ "bug_id": 160918,
+ "attachment_id": 0,
+ "creation_time": "2011-09-22T19:10:10Z",
+ "creator": "ksb@sac.fedex.com",
+ "text": "I got it down to a short repeat-by.  Basically fork and execvp a date command\nthen call a function with a large local frame (\u003e 8192 bytes) and call wait(2)\nwith a (void *)0 to wait for the process started in the parent.\n\nValgrind's memory checker cores.  I don't know why.  But if you\nreduce the size of the stack-frame in the \"burn\" function it doesn't\ncrash.\n\nFix: \n\nI don't know how to fix it.\nHow-To-Repeat: #include \u003csys/types.h\u003e\n#include \u003csys/wait.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cstdlib.h\u003e\n\nburn()\n{\n        auto char accrash[8192];\n        wait((void *)0);\n}\n\nmain(int argc, char **argv, char **envp)\n{\n        if (0 == fork())\n                execve(\"/bin/date\", argv, envp);\n        burn();\n        exit(0);\n}\n\n\n--- output\n\nvalgrind ./a.out +%m:%M:%Y\n==15212== Memcheck, a memory error detector\n==15212== Copyright (C) 2002-2010, and GNU GPL'd, by Julian Seward et al.\n==15212== Using Valgrind-3.6.1 and LibVEX; rerun with -h for copyright info\n==15212== Command: ./a.out +%m:%M:%Y\n==15212== \n09:02:2011\nMemory fault (core dumped) \n\ngdb shows a stack depth of 75, most of which is trash. (0xdeadbeef)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 518811,
+ "bug_id": 138632,
+ "attachment_id": 0,
+ "creation_time": "2009-09-08T14:50:00Z",
+ "creator": "onemda@gmail.com",
+ "text": "Regression introduced with ndisulator being ported to VAP.\nndis_scan function may be started after ndis vap have been destroyed.\n\ndb:0:kdb.enter.unknown\u003e  bt\nTracing pid 11 tid 100005 td 0xc3d07690\nieee80211_scan_done(0,c05e3712,f8,0,c3d07690,...) at ieee80211_scan_done+0xb\nndis_scan(c4642800,0,c061e422,176,c068c974,...) at ndis_scan+0x38d\nsoftclock(c068c940,c3aa7cc8,c049873d,c0690680,c3d03938,...) at softclock+0x242\nintr_event_execute_handlers(c3d05aa0,c3d03900,c06188e0,4fc,c3d03970,...) at intr_event_execute_handlers+0x10f\nithread_loop(c3d49110,c3aa7d38,c0618636,343,c3d05aa0,...) at ithread_loop+0x98\nfork_exit(c0483f41,c3d49110,c3aa7d38) at fork_exit+0xb8\nfork_trampoline() at fork_trampoline+0x8\n--- trap 0, eip = 0, esp = 0xc3aa7d70, ebp = 0 ---\n\nFix: \n\n--- if_ndis.c   (revision 196964)+++ if_ndis.c   (working copy)\n@@ -1012,7 +1012,12 @@\n ndis_vap_delete(struct ieee80211vap *vap)\n {\n        struct ndis_vap *nvp = NDIS_VAP(vap);\n+       struct ieee80211com *ic = vap-\u003eiv_ic;\n+       struct ifnet *ifp = ic-\u003eic_ifp;\n+       struct ndis_softc *sc = ifp-\u003eif_softc;\n\n+       ndis_stop(sc);\n+       callout_drain(\u0026sc-\u003endis_scan_callout);\n        ieee80211_vap_detach(vap);\n        free(nvp, M_80211_VAP); }\nHow-To-Repeat: # ifconfig wlan0 create wlandev ndis0\n# ifconfig wlan0 up \u0026\u0026 ifconfig wlan0 destroy"
+}

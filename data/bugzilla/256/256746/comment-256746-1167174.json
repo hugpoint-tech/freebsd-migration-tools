@@ -1,0 +1,8 @@
+{
+ "id": 1167174,
+ "bug_id": 256746,
+ "attachment_id": 0,
+ "creation_time": "2021-06-21T12:07:54Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "Commit 5cc52631b3b88 completely breaks background fsck by trying to open the device for writing (which is of course disallowed because it is mounted) too early in the process. This affects 13.0 release, 13-stable and current.\n\nTo reproduce: have any filesystem other than / with softupdates enabled but not journalling; force a reboot with for example reboot -qn when the filesystem is mounted and dirty; observe that in /var/log/messages 60 seconds after booting a message like this shows up:\n\nJun 21 11:40:48 hel fsck[784]: /dev/vtbd1: NO WRITE ACCESS\nJun 21 11:40:48 hel fsck[784]: /dev/vtbd1: UNEXPECTED INCONSISTENCY; RUN fsck MANUALLY.\nJun 21 11:40:48 hel fsck[784]: /dev/vtbd1: CANNOT SET FS_NEEDSFSCK FLAG\n\nThe code at fsck_ffs/main.c:298 should probably be inside the FS_GJOURNAL condition, or otherwise refactored; it's obviously completely wrong as it stands. (Note that -p sets ckclean, and skipclean is set by default)."
+}

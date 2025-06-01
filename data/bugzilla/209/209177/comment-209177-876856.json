@@ -1,0 +1,8 @@
+{
+ "id": 876856,
+ "bug_id": 209177,
+ "attachment_id": 169845,
+ "creation_time": "2016-05-01T10:50:57Z",
+ "creator": "vmagerya@gmail.com",
+ "text": "Created attachment 169845\nldns-host-0289cde234a0.diff\n\nCurrent usr/bin/host (coming from contrib/ldns-host and [1]) has two problems with zone transfers:\n\n1) IXFR queries are badly formed; for example:\n\n    $ host -t ixfr x 127.0.0.1\n    Using domain server:\n    Name: 127.0.0.1\n    Address: 127.0.0.1#53\n    Aliases: \n\n    Host x not found: 1(FORMERR)\n\nThis FORMERR comes from the fact that 'host' adds two (instead of one) SOA records to it's IXFR query packets; this started happening after contrib/ldns updated to 1.6.17 due to changes in ldns (I can't tell you precisely which FreeBSD versions ship with ldns 1.6.17 though).\n\n2) Both AXFR and IXFR queries do not support multi-packets responses: 'host' only print the first response packet. In practice this means any zone transfer with zone sizes above 64kb will be silently truncated. While this problem is documented in the man page, it's still unpleasant and I received reports from people burned by it (they had to fix it by installing dns/bind-tools to revert to the old 'host').\n\nThe latest upstream version of ldns-host [2] has both these problems fixed, and I'm attaching a patch to update contrib/ldns-host to that. Ideally it should be eventually imported into both current and stable branches.\n\n[1] https://tx97.net/ldns-host/\n[1] https://hg.tx97.net/ldns-host/file/0289cde234a0"
+}

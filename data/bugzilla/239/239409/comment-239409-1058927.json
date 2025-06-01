@@ -1,0 +1,8 @@
+{
+ "id": 1058927,
+ "bug_id": 239409,
+ "attachment_id": 0,
+ "creation_time": "2019-07-23T18:58:53Z",
+ "creator": "ws@au.dyndns.ws",
+ "text": "The \"standard\" method of enabling SMTP Authentication for Sendmail includes adding the following to /etc/make.conf:\n\nSENDMAIL_CFLAGS=-I/usr/local/include -DSASL\nSENDMAIL_LDFLAGS=-L/usr/local/lib\nSENDMAIL_LDADD=-lsasl2\n\nRefer:\nhttps://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/SMTP-Auth.html\nhttps://svnweb.freebsd.org/ports/head/security/cyrus-sasl2/files/Sendmail.README?view=markup\n\nThis configuration causes poudriere builds of milter-greylist to fail, and also local builds via /usr/ports if cyrus-sasl2 is not already installed.\n\nSince enabling SMTP Authentication in Sendmail seems to be essentially a \"supported\" configuration it would be better if that configuration did not hinder compilation of related ports unnecessarily. A solution for milter-greylist is to add a conditional dependency on security/cyrus-sasl2, such as:\n\n--- Makefile.1  2019-07-23 03:50:02.878890000 +0000\n+++ Makefile    2019-07-24 00:02:07.740684000 +0000\n@@ -57,6 +57,10 @@\n \n .include \u003cbsd.port.options.mk\u003e\n \n+.if ${SENDMAIL_CFLAGS:M-DSASL}\n+LIB_DEPENDS+=  libsasl2.so:security/cyrus-sasl2\n+.endif\n+\n LIBS+=         -lpthread\n \n GNU_CONFIGURE= yes"
+}

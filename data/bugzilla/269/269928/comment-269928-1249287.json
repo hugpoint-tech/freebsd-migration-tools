@@ -1,0 +1,8 @@
+{
+ "id": 1249287,
+ "bug_id": 269928,
+ "attachment_id": 0,
+ "creation_time": "2023-03-03T02:05:39Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "ctfconvert has long contained a FreeBSD-specific hack to downgrade various errors into warnings.  CTFv3 has eliminated much of the need for this hack, so it should be revisited since it causes problems when cross-building FreeBSD on MacOS and Linux.\n\nFor instance, in a riscv kernel objdir:\n\nmarkj@nuc\u003e readelf -S exception.o | grep -A1 debug_info\n  [ 7] .debug_info       PROGBITS         0000000000000000  00000288\n       0000000000000185  0000000000000000           0     0     1\n  [ 8] .rela.debug_info  RELA             0000000000000000  00000a80\n       00000000000000d8  0000000000000018   I      14     7     8\nmarkj@nuc\u003e ctfconvert -L VERSION -g exception.o \nERROR: ctfconvert: failed to get offset for die: Invalid argument [dwarf_dieoffset(261)]\nmarkj@nuc\u003e readelf -wi exception.o\n\nDump of debug contents of section .debug_info:\nreadelf: could not find DW_TAG_compile_unit die\nreadelf: could not find DW_TAG_compile_unit die\nreadelf: could not find DW_TAG_compile_unit die\nreadelf: could not find DW_TAG_compile_unit die\nreadelf: could not find DW_TAG_compile_unit die\n\nbut binutils readelf can handle it fine, so this is some bug or missing functionality in libdwarf.  Such a problem should cause a build failure."
+}

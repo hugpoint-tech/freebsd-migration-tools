@@ -1,0 +1,8 @@
+{
+ "id": 1146769,
+ "bug_id": 253158,
+ "attachment_id": 0,
+ "creation_time": "2021-02-15T09:47:44Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Cy Schubert from comment #44)\nYes, the vfs_vnops.c patch might leave error uninitialized.  Fixed commit below.\n\ncommit 04822fadd7b1d7d20373cf3fa8e7fdd5a26e7da9\nAuthor: Konstantin Belousov \u003ckib@FreeBSD.org\u003e\nDate:   Mon Feb 15 05:34:06 2021 +0200\n\n    pgcache read: protect against reads past end of the vm object size\n    \n    If uio_offset is past end of the object size, calculated resid is negative.\n    Delegate handling this case to the locked read, as any other non-trivial\n    situation.\n    \n    PR:     253158\n\ndiff --git a/sys/kern/vfs_vnops.c b/sys/kern/vfs_vnops.c\nindex 46b333b2261f..3e6abb01bfd7 100644\n--- a/sys/kern/vfs_vnops.c\n+++ b/sys/kern/vfs_vnops.c\n@@ -967,6 +967,10 @@ vn_read_from_obj(struct vnode *vp, struct uio *uio)\n #else\n \tvsz = atomic_load_64(\u0026obj-\u003eun_pager.vnp.vnp_size);\n #endif\n+\tif (uio-\u003euio_offset \u003e= vsz) {\n+\t\terror = EJUSTRETURN;\n+\t\tgoto out;\n+\t}\n \tif (uio-\u003euio_offset + resid \u003e vsz)\n \t\tresid = vsz - uio-\u003euio_offset;"
+}

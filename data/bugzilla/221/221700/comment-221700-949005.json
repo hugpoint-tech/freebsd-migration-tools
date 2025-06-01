@@ -1,0 +1,8 @@
+{
+ "id": 949005,
+ "bug_id": 221700,
+ "attachment_id": 0,
+ "creation_time": "2017-08-22T15:08:13Z",
+ "creator": "cem@freebsd.org",
+ "text": "You might also consider closefrom() in posix_closerange() of Modules/posixmodule.c:\n\n--- ./Modules/posixmodule.c\t2015-05-23 09:09:20.000000000 -0700\n+++ ./Modules/posixmodule.c\t2015-07-17 15:00:38.784909475 -0700\n@@ -6668,9 +6668,12 @@\n     if (!PyArg_ParseTuple(args, \"ii:closerange\", \u0026fd_from, \u0026fd_to))\n         return NULL;\n     Py_BEGIN_ALLOW_THREADS\n-    for (i = fd_from; i \u003c fd_to; i++)\n-        if (_PyVerify_fd(i))\n-            close(i);\n+    if (fd_to \u003e= sysconf(_SC_OPEN_MAX)) {\n+        closefrom(fd_from);\n+    } else\n+        for (i = fd_from; i \u003c fd_to; i++)\n+            if (_PyVerify_fd(i))\n+                close(i);\n     Py_END_ALLOW_THREADS\n     Py_RETURN_NONE;\n }"
+}

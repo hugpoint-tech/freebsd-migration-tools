@@ -1,0 +1,8 @@
+{
+ "id": 26294,
+ "bug_id": 8629,
+ "attachment_id": 0,
+ "creation_time": "1998-11-13T18:41:23Z",
+ "creator": "n@nectar.com",
+ "text": "[WS1995] Wright, Gary R. and Richard W. Stevens. TCP/IP Illustrated,\n         Volume 2. Addison-Wesley Publishing Company, Inc., 1995.\n\nThe man pages for several UNIX operating systems (at least BSD 4.4 Lite,\nFreeBSD 3.0, and SunOS 5.5.1]) indicate that if accept is called with\na socket of type SOCK_DGRAM, that the error returned will be EOPNOTSUPP.\n\nHowever, studying the implementation of the accept system call in\nBSD 4.4 Lite and FreeBSD 3.0, and the implementation discussed in \n[WS1995], accept returns EINVAL when called with a socket of type\nSOCK_DGRAM.  This is because accept returns EINVAL for any socket\nthat has not had listen() called on it, as these code fragments \nshow.\n\n\t#define SO_ACCEPTCONN   0x0002 /* socket has had listen() */\n\n\tif ((so-\u003eso_options \u0026 SO_ACCEPTCONN) == 0) {\n\t\tsplx(s);\n\t\treturn (EINVAL);\n\t}\n\nIn fact, listen returns EOPNOTSUPP when called with a socket of type\nSOCK_DGRAM.\n\nThe accept(2) man page should be updated to reflect reality.\n\n--- accept.2    1998/01/11 17:07:20     1.5\n+++ accept.2    1998/11/13 18:37:09\n@@ -171,9 +171,9 @@\n The system file table is full.\n .It Bq Er ENOTSOCK\n The descriptor references a file, not a socket.\n-.It Bq Er EOPNOTSUPP\n-The referenced socket is not of type\n-.Dv SOCK_STREAM . \n+.It Bq Er EINVAL\n+.Xr listen 2 \n+has not been called on the socket descriptor.\n .It Bq Er EFAULT\n The\n .Fa addr\n\n-- \nJacques Vidrine / n@nectar.com / nectar@FreeBSD.org"
+}

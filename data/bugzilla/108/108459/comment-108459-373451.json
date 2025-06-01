@@ -1,0 +1,8 @@
+{
+ "id": 373451,
+ "bug_id": 108459,
+ "attachment_id": 0,
+ "creation_time": "2007-01-28T00:30:29Z",
+ "creator": "tech@askold.net",
+ "text": "Perl compiled with its internal malloc (which is default option) consuming all process address space (512MB) \nwith programs which doing many allocations (for example mayb programs from POE framework).\n\nFor example if to run this sample stress test:\n-------[cut]---------\n#! /usr/bin/perl\n\nuse strict;\nuse warnings;\n\nmy $d = [];\n\nfor (;;) {\n  if (@$d \u003e 10) {\n    shift @$d;\n  }\n  push @$d, '';\n  while (length($d-\u003e[-1]) \u003c 100000) {\n    $d-\u003e[-1] .= 'Z' x 50;\n  }\n  $d-\u003e[-1] = '';\n}\n-------[cut]---------\n\nperl compiled with usemymalloc=y, in several seconds consume all process space and drops with error like:\n\nOut of memory during \"large\" request for 69632 bytes, total sbrk() is 536791040 bytes at ./leak.pl line 14\n\nHowever perl compiled with usemymalloc=n (WITHOUT_PERL_MALLOC=yes) running well, and memory consumption does not grow above 5MB.\n\nFix: \n\nworkaround is to add WITHOUT_PERL_MALLOC=yes to /etc/make.conf"
+}

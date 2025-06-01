@@ -1,0 +1,8 @@
+{
+ "id": 350788,
+ "bug_id": 103664,
+ "attachment_id": 0,
+ "creation_time": "2006-09-27T04:42:46Z",
+ "creator": "2igosha@gmail.com",
+ "text": "I found out that it was ipfw that caused the memory leak and lead to the panic.\nAnd I found the fix in version 1.141 of file ip_fw2.c\n\n3944,3945c3944\n\u003c rule = layer3_chain.reap;\n\u003c layer3_chain.reap = NULL;\n---\n\u003e rule = layer3_chain.reap, layer3_chain.reap = NULL;\n3947c3946\n\u003c if (rule != NULL)\n---\n\u003e if (layer3_chain.reap != NULL)\n\nSeems that there are no leaks now.\n\n+Warning: memory type IpFw/IpAcct leaked memory on destroy (108606\nallocations, 6993216 bytes leaked).\n\nOn 9/27/06, Ed Maste \u003cemaste@phaedrus.sandvine.ca\u003e wrote:\n\u003e \u003e I am running 6.1-RELEASE on a two-xeon machine with 2GB ram, acpi and HT disabled. The system is running the SMP kernel and each week it panics with \"kmem_map too small\" error.\n\u003e\n\u003e You can have a look at vmstat -m output over time, to see if one\n\u003e particular allocation type is constantly growing.  If that's the\n\u003e case it might suggest the location of a leak.  You can also run\n\u003e vmstat -m on a core file to examine the malloc statistics.\n\u003e\n\n\n-- \nIgor Soumenkov."
+}

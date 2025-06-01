@@ -1,0 +1,8 @@
+{
+ "id": 887403,
+ "bug_id": 210943,
+ "attachment_id": 0,
+ "creation_time": "2016-07-10T16:10:16Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Bisection shows this was introduced by r271396 [1].  Specifically, this part that was added:\n\n  2572                  if (ifp != NULL \u0026\u0026 (\n  2573                      ND_IFINFO(ifp)-\u003eflags \u0026 ND6_IFF_IFDISABLED))\n  2574                          return (ENETDOWN);\n\nThe problem is that ND_IFINFO(ifp) dereferences ifp-\u003eif_afdata[AF_INET6] unconditionally, so if that is NULL, a page fault occurs.\n\nMaybe a good fix is just the following?\n\nIndex: sys/netinet6/ip6_output.c\n===================================================================\n--- sys/netinet6/ip6_output.c\t(revision 271396)\n+++ sys/netinet6/ip6_output.c\t(working copy)\n@@ -2569,7 +2569,7 @@\n \t\t\tif (ifp == NULL)\n \t\t\t\treturn (ENXIO);\n \t\t}\n-\t\tif (ifp != NULL \u0026\u0026 (\n+\t\tif (ifp != NULL \u0026\u0026 ifp-\u003eif_afdata[AF_INET6] != NULL \u0026\u0026 (\n \t\t    ND_IFINFO(ifp)-\u003eflags \u0026 ND6_IFF_IFDISABLED))\n \t\t\treturn (ENETDOWN);\n\n\n[1] https://svnweb.freebsd.org/base?view=revision\u0026revision=271396"
+}

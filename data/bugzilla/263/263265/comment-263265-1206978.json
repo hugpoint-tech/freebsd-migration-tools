@@ -1,0 +1,8 @@
+{
+ "id": 1206978,
+ "bug_id": 263265,
+ "attachment_id": 0,
+ "creation_time": "2022-04-13T20:51:26Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "It looks like Dexed.so is being linked with -Wl,--no-undefined. So then the linker will complain about undefined symbols, of which environ is a special case. (I think it's supposed to be filled in by rtld at runtime.)\n\nIf I remove -Wl,--no-undefined, the program links just fine. I can't really say anything about what happens at runtime though. :)\n\nIn any case, there are two places in dexed where environ is used:\n\n1) libs/JUCE/modules/juce_core/native/juce_linux_Files.cpp retrieves environ, then passes it unmodified to execve(2). It could simply use execv(3) instead, then it would not have to mess with environ at all.\n\n2) libs/vst3sdk/vstgui4/vstgui/lib/platform/linux/x11fileselector.cpp is using environ for a hand-rolled way of removing LD_LIBRARY_PATH from the environment before forking. It would be much easier and safer if it used unsetenv(3) instead."
+}

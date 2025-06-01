@@ -1,0 +1,8 @@
+{
+ "id": 1256607,
+ "bug_id": 271038,
+ "attachment_id": 0,
+ "creation_time": "2023-04-23T23:07:56Z",
+ "creator": "rau8344@gmail.com",
+ "text": "\"posixshmcontrol ls\" gets an error when another user restricts some shared memory, meaning the current user does not have access to it. The return code of the command is also 1, indicating the command failed, which could cause problems in certain scripting scenarios. Within the output table, a line for the inaccessible shared memory path is output: \"posixshmcontrol: open \u003cpath\u003e: Permission denied\".\n\nRunning as user1, output is like:\nMODE            OWNER   GROUP   SIZE    PATH\nrw-r--r--       user1   group1  1000    \u003csome_path_a\u003e\nposixshmcontrol: open \u003csome_path_b\u003e: Permission denied\nrw-r--r--       user1   group1  1000    \u003csome_path_c\u003e\n\nRunning with sudo, output is like:\nMODE            OWNER   GROUP   SIZE    PATH\nrw-r--r--       user1   group1  1000    \u003csome_path_a\u003e\nrw-------       user2   group2  1000    \u003csome_path_b\u003e\nrw-r--r--       user1   group1  1000    \u003csome_path_c\u003e\n\nThe posixshmcontrol(1) docs say that the ls subcommand should \"List all\tlinked named shared memory segments visible to the caller.\" Since path owned by other user does NOT appear to be visible to the caller, the ls subcommand should probably ignore it completely.\nMODE            OWNER   GROUP   SIZE    PATH\nrw-r--r--       user1   group1  1000    \u003csome_path_a\u003e\nrw-r--r--       user1   group1  1000    \u003csome_path_c\u003e\n\nAn alternative would be to add additional switches to control this behavior and allow suppressing this error."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 349601,
+ "bug_id": 103428,
+ "attachment_id": 0,
+ "creation_time": "2006-09-20T20:38:47Z",
+ "creator": "brooks@one-eyed-alien.net",
+ "text": "I'm a bit confused by this one.  It's true devd now starts earlier and\ncould start before network_ipv6, but it starts after netif and you\nhave an IPv4 address configured so it should be up by the time devd\nstarts up.  One possible issue is that the current check is bypased if\ngrep isn't available (say if /usr is an nfs mount).  If that's the case\nfor you, the following patch may fix things.\n\nThe other thing I can think of is that there's a delay in the interface\ntransitioning to the UP state.  If that's the case I'm not sure what\nthe answer is.  We might need to use something else to de-bounce\nthe interface configuration.  It might be worth a try to modify\netc/rc.d/devd to run after network_ipv6.\n\n-- Brooks\n\nIndex: pccard_ether\n===================================================================\nRCS file: /home/ncvs/src/etc/pccard_ether,v\nretrieving revision 1.50\ndiff -u -p -r1.50 pccard_ether\n--- pccard_ether\t18 Aug 2006 13:19:45 -0000\t1.50\n+++ pccard_ether\t20 Sep 2006 19:34:13 -0000\n@@ -69,11 +69,13 @@ pccard_ether_start()\n {\n \tifexists $ifn || exit 1\n \n-\tif [ -z \"$rc_force\" -a -x /usr/bin/grep ]; then\n-\t\tif ifconfig $ifn | grep -s '[\u003c,]UP[,\u003e]' \u003e /dev/null 2\u003e\u00261; then\n-\t\t    # Interface is already up, so ignore it.\n-\t\t    exit 0\n-\t\tfi\n+\tif [ -z \"$rc_force\" ]; then\n+\t\tfor uif in `ifconfig -ul`; do\n+\t\t\tif [ \"${uif}\" = \"${ifn}\" ]; then\n+\t\t\t\t# Interface is already up, so ignore it.\n+\t\t\t\texit 0\n+\t\t\tfi\n+\t\tdone\n \tfi\n \n \t/etc/rc.d/netif start $ifn"
+}

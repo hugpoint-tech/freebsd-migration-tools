@@ -1,0 +1,8 @@
+{
+ "id": 1092063,
+ "bug_id": 227100,
+ "attachment_id": 0,
+ "creation_time": "2020-03-11T21:09:08Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "I just posted https://reviews.freebsd.org/D24033\n\nThe problems so far identified in the no longer compiled code:\n- queuing the drain for the wrong cpuid in a multi-thread netisr setup\n- not always (re-)adding the ifp for drain when needed\n- not checking the epair_start_locked() results (code has no way currently) to properly decide if we did successfully queue another packet.  If we did not we have to free the packets as the netisr callback will only happen if there is another active interface on the CPU which will netisr_queue() a packet successfully or we'll be stuck.\n\nI have a local work in progress to mitigate these shortcomings but I am still seeing callbacks not always happening so there's yet at least one more case I haven't caught.\nI am not sure if it will make sense to keep fixing this properly.\n\nIf there are people with a lot of queue drops (netisr -Q) or OErrors on the epair interfaces then it might make sense.\n\nThe alternative is to spend a few days and rework epair for the 2020s..."
+}

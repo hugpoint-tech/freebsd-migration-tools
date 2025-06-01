@@ -1,0 +1,8 @@
+{
+ "id": 605564,
+ "bug_id": 156039,
+ "attachment_id": 0,
+ "creation_time": "2011-03-29T14:30:11Z",
+ "creator": "John.Giacomoni@LineRateSystems.com",
+ "text": "using unionfs to mount a nullfs mounted directory on top of a 3rd directory causes a panic inside vfs.\n\nI am trying to build an appliance with the ability to easily load different versions at boot time based on read-only boot images.\n\nbriefly what I have is a partion with 4 directories\n/boot\n/images\n/persist\n/running\n\n1. Mount read-only file backed memory disk image, /images/ver1.img, onto /running\n2. mount_nullfs /persist /running/persist\n3. mount_unionfs /running/persist/usr /running/usr\n\nthe problem manifests at boot (during init) as a unlocking unheld lock and it seems to be while the system is launching getty (parallel access race?).\n\nThis problem manifests identically whether the mounting is done by an init_script (loader.conf) or an rc.d script.\n\nHow-To-Repeat: I created a simplified rc.d to demonstrate the problem.\n\necho over_enable=\"YES\" \u003e\u003e /etc/rc,conf\nmkdir -p /over\nmkdir -p /null\n\nthen add the following script as /etc/rc.d/over\n\n\n#!/bin/sh\n\n# PROVIDE: over\n# BEFORE: dumpon\n\n. /etc/rc.subr\n\nname=\"over\"\nstart_cmd=\"over_start\"\nstop_cmd=\":\"\n\nover_start()\n{\n\t#\n\t# Make sure /over and /null exist on root fs\n\t#\n\n\techo load_kld nullfs.ko\n\tload_kld nullfs.ko\n\n\techo mount_nullfs /null /over\n\tmount_nullfs /null /over\n\n\techo load_kld unionfs.ko\n\tload_kld unionfs.ko\n\n\techo mount_unionfs -ocopymode=transparent /over /usr\n\tmount_unionfs -ocopymode=transparent /over /usr\n}\n\nload_rc_config $name\nrun_rc_command \"$1\""
+}

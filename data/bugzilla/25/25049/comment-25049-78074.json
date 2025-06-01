@@ -1,0 +1,8 @@
+{
+ "id": 78074,
+ "bug_id": 25049,
+ "attachment_id": 0,
+ "creation_time": "2001-04-15T17:41:46Z",
+ "creator": "maxim@macomnet.ru",
+ "text": "Hello,\n\nIMHO it is still a bit incorrect. How about this one:\n\n--- rc.conf.orig\tSun Apr 15 20:25:26 2001\n+++ rc.conf\tSun Apr 15 20:27:07 2001\n@@ -114,6 +114,7 @@\n named_program=\"named\"\t\t# path to named, if you want a different one.\n named_flags=\"\"\t\t\t# Flags for named\n #named_flags=\"-u bind -g bind\"\t# Flags for named\n+named_socket=\"/var/run/ndc\"\t# path to named control socket\n\n kerberos_server_enable=\"NO\"\t# Run a kerberos master server (or NO).\n kadmind_server_enable=\"NO\"\t# Run kadmind (or NO) -- do not run on\n\n--- named.reload.sh.orig\tSun Apr 15 20:30:55 2001\n+++ named.reload.sh\tSun Apr 15 20:34:16 2001\n@@ -4,4 +4,12 @@\n # $FreeBSD: src/usr.sbin/named.reload/named.reload.sh,v 1.2 1999/08/28 01:17:23 peter Exp $\n #\n\n-exec %DESTSBIN%/%INDOT%ndc reload\n+if [ -r /etc/defaults/rc.conf ]; then\n+\t. /etc/defaults/rc.conf\n+\tsource_rc_confs\n+elif [ -r /etc/rc.conf ]; then\n+\t. /etc/rc.conf\n+fi\n+\n+if [\n+exec %DESTSBIN%/%INDOT%ndc -c ${named_socket:-/var/run/ndc} reload\n\n--- named.restart.sh.orig\tSun Apr 15 20:28:15 2001\n+++ named.restart.sh\tSun Apr 15 20:35:52 2001\n@@ -10,4 +10,4 @@\n elif [ -r /etc/rc.conf ]; then\n         . /etc/rc.conf\n fi\n-exec %DESTSBIN%/%INDOT%ndc restart ${named_flags}\n+exec %DESTSBIN%/%INDOT%ndc -c ${named_socket:-/var/run/ndc} -n {named_program} restart ${named_flags}\n\n- -maxim\n\n-- \nMaxim Konovalov, MAcomnet, Internet-Intranet Dept., system engineer\nphone: +7 (095) 796-9079, mailto: maxim@macomnet.ru"
+}

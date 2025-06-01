@@ -1,0 +1,8 @@
+{
+ "id": 1264380,
+ "bug_id": 272151,
+ "attachment_id": 0,
+ "creation_time": "2023-06-25T23:39:13Z",
+ "creator": "rew@FreeBSD.org",
+ "text": "The issue seems to be caused by knlist_clear() with the way it sets up the knote with EV_ONESHOT. The event for the knote is triggered after the TTY is revoked and the thread no longer holds the TTY lock when the knote event is called.\n\nI'd halfway assume that knotes shouldn't be triggered if the TTY was revoked, which might look something like: https://people.freebsd.org/~rew/tf-revoke.patch\n\nor maybe it makes sense to delete the knotes when the TTY is not opened? something like: https://people.freebsd.org/~rew/tty-knote.patch\n\nor...some other behavior is expected? either way, both of the patches above prevented the panic from occurring.\n\nTo reproduce, spin up a vm and execute the following:\n\n- launch nvim\n- suspend nvim (ctrl-z)\n- poweroff (panic)"
+}

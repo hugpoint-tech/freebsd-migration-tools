@@ -1,0 +1,8 @@
+{
+ "id": 408473,
+ "bug_id": 116034,
+ "attachment_id": 0,
+ "creation_time": "2007-12-04T16:26:26Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "On Mon, 3 Sep 2007, Dan Lukes wrote:\n\n\u003e add NET_LOCK_GIANT() / NET_UNLOCK_GIANT() into tcp_drain() unless someone \n\u003e smarter than me claim that Giant is NOT required here\n\nThere's actually a slightly more general problem here--could you try this more \ngeneral patch?  I've requested to merge this to 6.3.\n\nRobert N M Watson\nComputer Laboratory\nUniversity of Cambridge\n\nIndex: kern_mbuf.c\n===================================================================\nRCS file: /home/ncvs/src/sys/kern/kern_mbuf.c,v\nretrieving revision 1.9.2.9\ndiff -u -r1.9.2.9 kern_mbuf.c\n--- kern_mbuf.c\t11 Feb 2007 03:31:18 -0000\t1.9.2.9\n+++ kern_mbuf.c\t4 Dec 2007 15:53:52 -0000\n@@ -550,9 +550,11 @@\n  \tWITNESS_WARN(WARN_GIANTOK | WARN_SLEEPOK | WARN_PANIC, NULL,\n  \t    \"mb_reclaim()\");\n\n+\tNET_LOCK_GIANT();\n  \tmbstat.m_drain++;\n  \tfor (dp = domains; dp != NULL; dp = dp-\u003edom_next)\n  \t\tfor (pr = dp-\u003edom_protosw; pr \u003c dp-\u003edom_protoswNPROTOSW; pr++)\n  \t\t\tif (pr-\u003epr_drain != NULL)\n  \t\t\t\t(*pr-\u003epr_drain)();\n+\tNET_UNLOCK_GIANT();\n  }"
+}

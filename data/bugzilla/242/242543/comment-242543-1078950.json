@@ -1,0 +1,8 @@
+{
+ "id": 1078950,
+ "bug_id": 242543,
+ "attachment_id": 0,
+ "creation_time": "2019-12-10T15:51:30Z",
+ "creator": "antoine@FreeBSD.org",
+ "text": "This patch seems to help:\n\n--- psutil/_psutil_bsd.c.orig   2019-11-20 08:39:49 UTC\n+++ psutil/_psutil_bsd.c\n@@ -271,7 +271,11 @@ psutil_proc_oneshot_info(PyObject *self, PyObject *arg\n\n     // Return a single big tuple with all process info.\n     py_retlist = Py_BuildValue(\n+#if defined(__FreeBSD_version) \u0026\u0026 __FreeBSD_version \u003e= 1200031\n+        \"(lillllllLdllllddddlllllbO)\",\n+#else\n         \"(lillllllidllllddddlllllbO)\",\n+#endif\n #ifdef PSUTIL_FREEBSD\n         //\n         (long)kp.ki_ppid,                // (long) ppid\n@@ -285,7 +289,7 @@ psutil_proc_oneshot_info(PyObject *self, PyObject *arg\n         (long)kp.ki_groups[0],           // (long) effective gid\n         (long)kp.ki_svuid,               // (long) saved gid\n         //\n-        kp.ki_tdev,                      // (int) tty nr\n+        kp.ki_tdev,                      // (int or long long) tty nr\n         PSUTIL_TV2DOUBLE(kp.ki_start),   // (double) create time\n         // ctx switches\n         kp.ki_rusage.ru_nvcsw,           // (long) ctx switches (voluntary)"
+}

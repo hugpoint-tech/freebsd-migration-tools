@@ -1,0 +1,8 @@
+{
+ "id": 1293298,
+ "bug_id": 276251,
+ "attachment_id": 0,
+ "creation_time": "2024-01-21T04:33:55Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "Normally, cdstrategy only gets called after cdopen and cdclose won't get called until the I/O is complete.\n\nHowever, cdstrategy queues the I/O and calls cdmediacheck. If the drive is invalidated while that's running, we'll fail all the queued I/O, triggering cdclose which drops that reference.\n\nSo for the async case, we need another periph_acquire / release pair to cope with this. I think we only need it from cdstrategy (the only async case). The other places we call it are covered by other acquired references (though always acquiring it and dropping it wouldn't hurt and might help if my analysis of the synchronous cases is incorrect somehow). But I think it's a property of the cdstrategy context needing a reference to do extra things, rather than it being checked asynchronously.\n\nOther comments I've left in the review."
+}

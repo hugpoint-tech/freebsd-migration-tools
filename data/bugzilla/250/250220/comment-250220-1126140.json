@@ -1,0 +1,8 @@
+{
+ "id": 1126140,
+ "bug_id": 250220,
+ "attachment_id": 0,
+ "creation_time": "2020-10-09T13:25:14Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Reported by: Christopher Krah of Fraunhofer FKIE\n\n*Description of vulnerability*: The syscall sys_mknodat is vulnerable to a Kernel Denial of Service when a specially crafted EXT2 filesystem is loaded. It seems that this behavior was already anticipated as of right now in function ext2_search_dirblockin /usr/src/sys/fs/ext2fs/ext2_lookup.c in line 727:\n\nif(ep-\u003ee2d_reclen == 0 || \n    (dirchk \u0026\u0026 ext2_dirbadentry(vdp, ep, offset)) {\n        int i;\n        ext2_dirbad(ip, *offp, \"mangled entry\");\n\nThe panic is finally thrown in the same file in line 807 after another if condition in a  function called ext2_dirbad:\n\nif ((mp-\u003emnt_flag \u0026 MNT_RDONLY) == 0)\n    panic(\"ext2_dirbad: %s: bad dir ino%ju at offset %ld: %s\\n\",\n        mp-\u003emnt_stat.f_mntonname, (uintmax_t)ip-\u003ei_number,\n        (long)offset, how);\n\nOur corrupted file system pokes exactly 1 of the 2 occurrences of the function call to ext2_dirbad (made in /usr/src/sys/fs/ext2fs/ext2_lookup.c) , with the other being in line 535:\n\next2_dirbad(dp, i_offset, \"i_size too small\")\n\n*Affected versions*: Tested on FreeBSD 12.0 Release AMD64\n\n*Workaround*: Do not load ext2fs"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 715126,
+ "bug_id": 178664,
+ "attachment_id": 0,
+ "creation_time": "2013-05-19T13:09:32Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/178664, you wrote:\n\u003e [attaching truss(1) may terminate sleep(1) early]\n\nWhat actually happens is that the nanosleep(2) system call fails with\n[EINTR] immediately when the debugger (ptrace(2)) attaches. You can\nverify this using ktrace(1).\n\nThis is really a longstanding known bug, although I don't know where it\nis documented. It is longstanding because it is very hard to fix. The\nkernel wants threads to return to the kernel-userspace boundary when a\ndebugger attaches, and this causes the state of the in-progress system\ncall to be lost. The effect is much like a signal with SA_RESTART set.\n\nIf you care about sleep(1) itself, that is easy to fix. It already\ncontinues the sleep when nanosleep(2) was interrupted by SIGINFO; this\ncan be extended to any [EINTR] error.\n\nA workaround is to use ktrace(1) instead of truss(1) or strace(1) from\nports. ktrace(1) generally affects the traced program much less.\n\n-- \nJilles Tjoelker"
+}

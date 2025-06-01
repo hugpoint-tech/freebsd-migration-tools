@@ -1,0 +1,8 @@
+{
+ "id": 1295294,
+ "bug_id": 276809,
+ "attachment_id": 0,
+ "creation_time": "2024-02-03T17:53:03Z",
+ "creator": "freebsd-bugs@aliases.systohc.net",
+ "text": "I'm constantly getting SEGFAULTs using libjail from C as well as from Python.\nIs it my fault or am I triggering a bug?\n\n=== listjailparams.c ===\n#include \u003cstdio.h\u003e\n#include \u003cjail.h\u003e\n\nint main(int argc, char *argv[])\n{\n\tstruct jailparam *params;\n\tint nparams = jailparam_all(\u0026params);\n\tprintf(\"number of params: %d\\n\", nparams);\n\tfor (int i=0; i\u003cnparams; i++) {   \n\t\tprintf(\"jailparam: %s\\n\", jailparam_export(\u0026params[i]));\n\t}\n\tjailparam_free(params, nparams);\n\treturn 0;\n}\n=== listjailparams.c ===\n\n=== listjailparams.py ===\n#!/usr/local/bin/python3\n\nfrom ctypes import Structure, c_char_p, CDLL, POINTER, c_int, byref\n\nclass JailParam(Structure):\n\t_fields_ = [ \n\t\t(\"name\", c_char_p),\n\t\t(\"value\", c_char_p),\n\t] \nJailParam_PTR = POINTER(JailParam)\n\nlib = CDLL(\"libjail.so\")\n\njailparam_all = lib.jailparam_all\njailparam_all.argtypes = [POINTER(JailParam_PTR)]\njailparam_all.restype = c_int\n\njailparam_free = lib.jailparam_free\njailparam_free.argtypes = [JailParam_PTR, c_int]\n\n\nparams = JailParam_PTR()\nnparams = jailparam_all(byref(params))\nprint(f'nparams: {nparams}')\nfor i in range(nparams):\n\tparam = params[i]\n\tname = param.name.decode('utf-8')\n\tvalue = param.value if param.value is None else param.value.decode('utf-8')\n\tprint(f'Name: {name}, Value: {value}')\njailparam_free(params, nparams)\n=== listjailparams.py ==="
+}

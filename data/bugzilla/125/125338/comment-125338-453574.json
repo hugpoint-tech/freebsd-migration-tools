@@ -1,0 +1,8 @@
+{
+ "id": 453574,
+ "bug_id": 125338,
+ "attachment_id": 0,
+ "creation_time": "2008-07-06T18:40:02Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "On i386, if the numeric part of the string passed to expand_number(3) does\nnot fit in 32 bits, e.g. \"5368709120k\" it is truncated.\n\nFix: The problem occurs because src/lib/libutil/expand_number.c does not include\nthe necessary header \u003cinttypes.h\u003e for calling strtoimax(3). The file is\ncompiled without compiler warnings, so the bug shows up as wrong\nbehaviour.\n\nAdding #include \u003cinttypes.h\u003e fixes it.\n\nThe file is slightly changed in CURRENT but the same patch should apply.\nHow-To-Repeat: Detailed how-to-repeat from Alexandre Sunny Kovalenko:\n\nsunny:RabbitsDen\u003e./expand_number 5368709120k\nResult is 1099511627776\nsunny:RabbitsDen\u003e./expand_number 5120G\nResult is 5497558138880\nsunny:RabbitsDen\u003e\n\nThe expected result is 5497558138880 for both.\n\ntest program (needs to be linked with -lutil)\n\n#include \u003cctype.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cinttypes.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003clibutil.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n\nint main(int argc, char *argv[])\n{\n  if(argc != 2)\n  {\n    fprintf(stderr, \"Usage: %s \u003cnumber\u003e\\n\", argv[0]);\n    exit(1);\n  }\n\n  errno = 0;\n  intmax_t result;\n  if(expand_number(argv[1], \u0026result) || errno)\n  {\n    perror(\"Expand number\");\n    exit(1);\n  }\n\n  printf(\"Result is %jd\\n\", result);\n  exit(0);\n}"
+}

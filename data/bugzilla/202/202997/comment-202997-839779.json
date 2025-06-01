@@ -1,0 +1,8 @@
+{
+ "id": 839779,
+ "bug_id": 202997,
+ "attachment_id": 0,
+ "creation_time": "2015-09-09T17:14:28Z",
+ "creator": "yonas@fizk.net",
+ "text": "Hi,\n\nBooting FreeBSD 10.2 crashes with error message:\n\n\"Mounting from zfs:zroot/ROOT/default failed with error 2: unknown file system\"\n\nI captured all the boot messages and found this hint:\n\n\"KLD file zfs.ko is missing dependencies\"\n\n\nThe fix this error, I needed to add this:\n\nkfreebsd_module_elf /ROOT/default/@/boot/kernel/opensolaris.ko\n\nafter:\nkfreebsd_module_elf /ROOT/default/@/boot/kernel/zfs.ko\n\nin /boot/grub/grub.cfg\n\n\nFor example:\n\nsubmenu \"TrueOS (default) - 2015-09-08 15:56\" {\n  menuentry \"Normal Bootup\" {\n    insmod zfs\n    search --no-floppy -s -l zroot\n    kfreebsd /ROOT/default/@/boot/kernel/kernel\n    kfreebsd_loadenv /ROOT/default@/boot/device.hints\n    kfreebsd_module /ROOT/default/@/boot/zfs/zpool.cache type=/boot/zfs/zpool.cache\n    set kFreeBSD.vfs.root.mountfrom=zfs:zroot/ROOT/default\n    kfreebsd_module_elf /ROOT/default/@/boot/kernel/zfs.ko\n    kfreebsd_module_elf /ROOT/default/@/boot/kernel/opensolaris.ko\n    kfreebsd_module_elf /ROOT/default/@/boot/kernel/vesa.ko\n    ...\n\n\nI think this package should automatically add the opensolaris.ko line instead of requiring users to add it manually.\n\nCheers,\nYonas"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1245872,
+ "bug_id": 260160,
+ "attachment_id": 0,
+ "creation_time": "2023-02-06T18:47:35Z",
+ "creator": "freebsd-bugzilla@umpquanet.com",
+ "text": "Well, no luck yet, but I think the first obstacle I have is:\n\n# cat /etc/jail.conf\npath    = \"/jail/$name\";\n\ntest {\n        host.hostname = \"test.example.com\";\n        ip4.addr = \"vlan3|192.168.1.50/32\";\n        allow.raw_sockets = 1;\n        exec.clean;\n        exec.system_user = \"root\";\n        exec.jail_user = \"root\";\n        exec.start += \"/bin/sh /etc/rc\";\n        exec.stop = \"/bin/sh /etc/rc.shutdown\";\n        exec.consolelog = \"/var/log/jail_test.log\";\n        mount.devfs;\n# When this is supported, that likely means the jail vs. snapshot bug has\n# been fixed:\n        zfs.mount_snapshot=1;\n        allow.set_hostname = 0;\n        allow.sysvipc = 0;\n}\n\n\nBut the jail is not seeing the mount_snapshot attribute:\n\n# service jail restart; jexec test sysctl -a | grep zfs\\.mount\nStopping jails: test.\nStarting jails: test.\nsecurity.jail.param.zfs.mount_snapshot: 0\n\n\nWithout that attribute set, then of course:\n\n# jexec test ls -l /.zfs/snapshot/prior-to-installkernel\nls: /.zfs/snapshot/prior-to-installkernel: Operation not permitted\n\nWhat am I overlooking?"
+}

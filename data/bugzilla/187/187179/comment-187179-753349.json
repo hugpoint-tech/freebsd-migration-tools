@@ -1,0 +1,8 @@
+{
+ "id": 753349,
+ "bug_id": 187179,
+ "attachment_id": 0,
+ "creation_time": "2014-03-08T14:58:50Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: hrs\nDate: Sat Mar  8 14:58:39 2014\nNew Revision: 262929\nURL: http://svnweb.freebsd.org/changeset/base/262929\n\nLog:\n  Fix another bug in multicast filtering.  i.MX uses 6 bits from MSB in\n  LE CRC32 for the hash value, not the lowest 6 bits in BE CRC32.\n  \n  Tested by:\tTakanori Sawada\n  PR:\t\tarm/187179\n\nModified:\n  head/sys/dev/ffec/if_ffec.c\n\nModified: head/sys/dev/ffec/if_ffec.c\n==============================================================================\n--- head/sys/dev/ffec/if_ffec.c\tSat Mar  8 12:26:17 2014\t(r262928)\n+++ head/sys/dev/ffec/if_ffec.c\tSat Mar  8 14:58:39 2014\t(r262929)\n@@ -959,9 +959,10 @@ ffec_setup_rxfilter(struct ffec_softc *s\n \t\tTAILQ_FOREACH(ifma, \u0026sc-\u003eifp-\u003eif_multiaddrs, ifma_link) {\n \t\t\tif (ifma-\u003eifma_addr-\u003esa_family != AF_LINK)\n \t\t\t\tcontinue;\n-\t\t\tcrc = ether_crc32_be(LLADDR((struct sockaddr_dl *)\n+\t\t\t/* 6 bits from MSB in LE CRC32 are used for hash. */\n+\t\t\tcrc = ether_crc32_le(LLADDR((struct sockaddr_dl *)\n \t\t\t    ifma-\u003eifma_addr), ETHER_ADDR_LEN);\n-\t\t\tghash |= 1LLU \u003c\u003c (crc \u0026 0x3f);\n+\t\t\tghash |= 1LLU \u003c\u003c (((uint8_t *)\u0026crc)[3] \u003e\u003e 2);\n \t\t}\n \t\tif_maddr_runlock(ifp);\n \t}\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 493924,
+ "bug_id": 133564,
+ "attachment_id": 0,
+ "creation_time": "2009-04-10T14:50:01Z",
+ "creator": "oleg.ginzburg@nevosoft.ru",
+ "text": "If execute cdplay -d \u003cpath_to_device\u003e with empty cd-drive, system come to unstable\nfor \"kern.maxfiles limit exceeded by uid NNNN, please see tuning(7)\" reason.\n\nIf looks at this time through lsof(8) -p \u003cPID_OF_CDPLAY\u003e i see many repeating \n\ncdplay  27171 root *116r  VCHR   0,86              0t0       86 /dev/acd0\n\nif connect to PID with truss:\ntruss -o /usr/out3.txt -p 27087\n\nthen examining /usr/out3.txt give looped messages:\n\n..\nnanosleep({2.000000000 })                        = 0 (0x0)\nopen(\"/dev/acd0\",O_RDONLY,00)                    ERR#23 'Too many open files in system'\nnanosleep({2.000000000 })                        = 0 (0x0)\nopen(\"/dev/acd0\",O_RDONLY,00)                    ERR#23 'Too many open files in system'\nnanosleep({2.000000000 })                        = 0 (0x0)\n..\n\nMy CD-ROM hardware/vendor: DVDR \u003cNEC DVD RW ND-3520A/1.04\u003e\n\nFix: \n\nIMHO needs some interval of seconds for attempts to open CD (if cdrom starts slowly) or error count and exit where num of errors overflow. Somewhere close to  69 strings of cd.c\n\n\n..\n/* Used to initalise cd */\nvoid init_cd(void)\n{\n  struct ioc_read_toc_entry read_entry;\n  struct cd_toc_entry toc_buffer[100];\n  int i;\n\n69:  while((cd_fd=open(cd_device,O_RDONLY))\u003c0) sleep(2);\n\n  cdinfo.eject=0;\n..\nHow-To-Repeat: Eject cdrom drive and remove any disc\ncdplay -f /dev/acd (if acd0 - is correct cd drive) and watching."
+}

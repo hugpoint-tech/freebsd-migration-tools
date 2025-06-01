@@ -1,0 +1,8 @@
+{
+ "id": 677483,
+ "bug_id": 170411,
+ "attachment_id": 0,
+ "creation_time": "2012-08-06T09:30:05Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "I'm busy with importing a new clang snapshot into head. This version\nhas a bunch of interesting new warnings, and I got the following one\nduring building of ath:\n\n  sys/dev/ath/if_ath.c:4337:6: error: variable 'isCalDone' is used uninitialized whenever 'if' condition is false [-Werror,-Wsometimes-uninitialized]\n\t  if (shortCal || longCal) {\n\t      ^~~~~~~~~~~~~~~~~~~\n  sys/dev/ath/if_ath.c:4354:7: note: uninitialized use occurs here\n\t  if (!isCalDone) {\n\t       ^~~~~~~~~\n  sys/dev/ath/if_ath.c:4337:2: note: remove the 'if' if its condition is always true\n\t  if (shortCal || longCal) {\n\t  ^~~~~~~~~~~~~~~~~~~~~~~~~\n  sys/dev/ath/if_ath.c:4288:2: note: variable 'isCalDone' is declared here\n\t  HAL_BOOL longCal, isCalDone;\n\t  ^\n\nIt's because isCalDone is never initialized, if shortCal and longCal are\nboth false.  In that case, the next test for isCalDone will have an\nunpredictable result.\n\nLooking at the code in the various ar5xxxPerCalibrationN() functions,\nthey only seem to set isCalDone to AH_TRUE in the explicit case\ncalibration succeeded, so initializing isCalDone to AH_FALSE at the\nstart of ath_calibrate() looks like the safest thing to do.\n\nPlease see the attached patch.\n\nFix: Patch attached with submission follows:"
+}

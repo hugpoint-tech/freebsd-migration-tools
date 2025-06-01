@@ -1,0 +1,8 @@
+{
+ "id": 5376,
+ "bug_id": 1791,
+ "attachment_id": 0,
+ "creation_time": "1996-10-14T09:37:04Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\tIt is not possible to specify an alternative value of ARG_MAX\n\u003e\tin the kernel config file, since /usr/src/sys/sys/syslimits.h \n\u003e\tdefines ARG_MAX even if it was defined.\n\nThis isn't a bug.  Defining ARG_MAX in \u003climits.h\u003e advertises to\napplications that ARG_MAX is a constant with the given value.  The\nonly correct way to change it is to change the header and recompile\nall applications that depend on it (ps, xargs and who-knows-what\nelse).\n\nThe best way to fix the problem is to remove the definition of\nARG_MAX from \u003climits.h\u003e and then fix everything that (bogusly)\ndepends on it.  Non-bogus dependencies on it look like this:\n\n#ifdef ARG_MAX\n\tchar buf[ARG_MAX];\n#else\n\tlong arg_max;\n\tchar *buf;\n\n\targ_max = sysconf(_SC_ARG_MAX);\n\tif (arg_max == -1)\n\t\tbarf(\"sysconf\");\n\tst_arg_max = (size_t)arg_max;\n\tif (st_arg_max != arg_max);\n\t\tbarf(\"unrepresentable arg_max\");\n\tbuf = malloc(st_arg_max);\n\tif (buf == NULL)\n\t\tbarf(\"malloc\");\n#endif\n\nThe kernel should use some other name for ARG_MAX to avoid confusion.\n\nI have fixed most the corresponding problems for OPEN_MAX and CHILD_MAX.\nThey are now named PROC0_RLIMIT_NOFILE and PROC0_RLIMIT_NPROC in my\nkernel sources.\n\nBruce"
+}

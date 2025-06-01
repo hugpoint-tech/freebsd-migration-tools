@@ -1,0 +1,8 @@
+{
+ "id": 44883,
+ "bug_id": 14749,
+ "attachment_id": 0,
+ "creation_time": "1999-11-06T19:40:00Z",
+ "creator": "gnats-admin@FreeBSD.org",
+ "text": "There appears to be an exploitable buffer-overrun in the SSH 1.2.27 version in ports, with the RSAREF implementation.  SSH 1.2.27 is seemingly no longer supported. \n\nIt goes like that...\n  sshd.c, do_connection at line 1513 gets a long number from the\nremote side.  It proceeds to pass it into rsa_private_decrypt. \nrsa_private_decrypt (in rsaglue.c) has a ~200 byte buffer which can \nbe overflowed, giving a SIGBUS or SIG 11.  It might take some talent\nto overflow this because of the conversions.\n\nFix: \n\ndon't use static buffers here, or do a simple bounds check.\nHow-To-Repeat: \nIn ssh-1.2.27, modify your sshconnect.c, do_login, change every instance of SSH_SESSION_KEY_LENGTH to SSH_SESSION_KEY_LENGTH+500, and\ncomment out the call to a_public_encrypt (otherwise, you'd crash yourself). \nA true exploit would probably only encrypt some of the buffer, leaving\nthe rest to cause problems."
+}

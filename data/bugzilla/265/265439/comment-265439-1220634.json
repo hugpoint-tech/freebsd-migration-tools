@@ -1,0 +1,8 @@
+{
+ "id": 1220634,
+ "bug_id": 265439,
+ "attachment_id": 0,
+ "creation_time": "2022-07-25T23:05:50Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "FreeBSD-CURRENT on qemu 6.2.0's riscv64 emulation can disagree with\nthe \"hardware\" about whether upper bits of SV39 virtual addresses\nare significant. copyin() will get a page fault from the hardware if a\nuser-supplied address has a few bits higher than the 39th set, but the\npmap.c pmap_xx_index() macros ignore those high bits, so pmap_fault()\nmay treat it as a valid user address. So the trap may return to\ncopyin(), which will fault again on the same address...\n\nHere's a program that does that for me.\n\nint\nmain()\n{\n  char buf[512];\n  write(1, 0x500000000000ULL | (unsigned long) buf, 1);\n}\n\nHere's a typical ddb backtrace:\n\npmap_fault() at pmap_fault+0xc0\npage_fault_handler() at page_fault_handler+0x11c\ndo_trap_supervisor() at do_trap_supervisor+0x76\ncpu_exception_handler_supervisor() at cpu_exception_handler_supervisor+0x70\n--- exception 13, tval = 0x500080e1f230\ncopyin() at copyin+0x68\nuiomove() at uiomove+0xe\nlog_console() at log_console+0x60\nttyconsdev_write() at ttyconsdev_write+0x1a\ndevfs_write_f() at devfs_write_f+0xa6\nfo_write() at fo_write+0xa\ndofilewrite() at dofilewrite+0x66\nkern_writev() at kern_writev+0x40\nsys_write() at sys_write+0x54\nsyscallenter() at syscallenter+0xec\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xea\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72"
+}

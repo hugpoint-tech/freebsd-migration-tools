@@ -1,0 +1,8 @@
+{
+ "id": 1304150,
+ "bug_id": 278232,
+ "attachment_id": 0,
+ "creation_time": "2024-04-07T12:56:34Z",
+ "creator": "dinoex@FreeBSD.org",
+ "text": "Jail IPv4 source address selection inside a jail not working\nafter upgrade from FreeBSD-13.2 to FreeBSD-14.0.\n\nThere seems something wrong about source address selection on plain jails.\n\nigb0: flags=1008943\u003cUP,BROADCAST,RUNNING,PROMISC,SIMPLEX,MULTICAST,LOWER_UP\u003e metric 0 mtu 1500\n        options=48104b8\u003cVLAN_MTU,VLAN_HWTAGGING,JUMBO_MTU,VLAN_HWCSUM,LRO,VLAN_HWFILTER,HWSTATS,MEXTPG\u003e\n        ether ac:1f:6b:47:83:8a\n        inet 194.XXX.XXX.43 netmask 0xffffffff broadcast 194.XXX.XXX.43\n        inet 192.168.22.43 netmask 0xffffffff broadcast 192.168.22.43\n        media: Ethernet autoselect (1000baseT \u003cfull-duplex\u003e)\n        status: active\n        nd6 options=21\u003cPERFORMNUD,AUTO_LINKLOCAL\u003e\n\n/etc/jail.conf:\n\nservice {\n        ip4.addr = 194.XXX.XXX.43, 192.168.22.43;\n        ip4.saddrsel;\n        interface = \"igb0\";\n        exec.fib = 0;\n        devfs_ruleset = 9;\n        allow.sysvipc;\n        allow.raw_sockets;\n}\n\nworks:\n# ping -S 192.168.22.43 192.168.22.16\n\nworking with FreeBSD-13.2\n# ping 192.168.22.16\n\nfailed with FreeBSD-14.0\n# ping 192.168.22.16\n\nusing tcpdump on the host I see:\nwith FreeBSD-13.2, the ping uses source \"192.168.22.43\"\nwith FreeBSD-14.0, the ping uses source \"194.XXX.XXX.43\""
+}

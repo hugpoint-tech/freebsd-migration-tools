@@ -1,0 +1,8 @@
+{
+ "id": 53462,
+ "bug_id": 17552,
+ "attachment_id": 0,
+ "creation_time": "2000-03-22T17:40:01Z",
+ "creator": "sam@enst.fr",
+ "text": "\nWhen developing an toy application using divert(4), I was surprised to see\nthat it was working only if the PF_INET/SOCK_RAW/IPPROTO_DIVERT socket,\nat bind() time, has a *valid* interface address (such as INADDR_ANY).\n\ndivert(4) manpage says:\n\n                                                                   The IP ad-\n     dress in the bind is ignored; only the port number is significant.  A di-\n     vert socket bound to a divert port will receive all packets diverted to\n     that port by some (here unspecified) kernel mechanism(s).\n\nThis is false, as the bind() operation for a divert socket will call\nin_pcbbind() which makes use of the interface address.\n\nFix: \n\nTwo possible immediate fixes:\n\n  (1) Doc fix: change divert(4) manpage\n\n  (2) Code fix: when entering div_bind, change the nam-\u003esin_addr field\n      if nam-\u003esin_family is AF_INET so that it contains INADDR_ANY. It may\n      break things that would depend on the fact that a diverted socket\n      can be bound to a particular interface though (natd does use\n      INADDR_ANY explicitely).\nHow-To-Repeat: \nBuild a PF_INET/SOCK_RAW/IPPROTO_DIVERT socket, bind it with a sockaddr_in\nstructure which has an invalid sin_addr field. Diverted packets will not be\navailable on the socket and will be silently dropped by the kernel as if\nno diverted socket was listening."
+}

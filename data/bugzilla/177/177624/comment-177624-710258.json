@@ -1,0 +1,8 @@
+{
+ "id": 710258,
+ "bug_id": 177624,
+ "attachment_id": 0,
+ "creation_time": "2013-04-04T16:16:02Z",
+ "creator": "bde@FreeBSD.org",
+ "text": "On Fri, 5 Apr 2013, Bruce Evans wrote:\r\n\r\n\u003e The bug seems to be in setcontext().  It must preserve the callee-saved\r\n\u003e registers, not restore them.  This would happen automatically if more\r\n\u003e were written in C.  But setcontext() can't be written entirely in C,\r\n\u003e since it must save all callee-saved registers including ones not used\r\n\u003e and therefore not normally saved by any C function that it might be in,\r\n\u003e and possibly also including callee-saved registers for nonstandard or\r\n\u003e non-C ABIs.  In FreeBSD, it is apparently always a syscall.\r\n\r\nThis is more than a little wrong.  When setcontext() succeeds, it\r\ndoesn't return here.  Then it acts like longjmp() and must restore all\r\nthe callee-saved to whatever they were when getcontext() was called.\r\nOtherwise, it must not clobber any callee-saved registers (then it\r\ndiffers from longjmp().  longjmp() just can't fail).\r\n\r\nNow I don't see any bug here.  If the saved state is returned to, then\r\nit is as if getcontext() returned, and the intermediately-saved %rbx\r\nis correct (we will restore the orginal %rbx if we return).  If\r\nsetcontext() fails, then it should preserve all callee-saved registers.\r\nIn the tail-call case, we have already restored the orginal %rbx and\r\nthe failing setcontext() should preserve that.\r\n\r\nBruce"
+}

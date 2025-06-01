@@ -1,0 +1,8 @@
+{
+ "id": 1261877,
+ "bug_id": 271785,
+ "attachment_id": 0,
+ "creation_time": "2023-06-02T13:12:46Z",
+ "creator": "michalx.gulbicki@intel.com",
+ "text": "During VF hotplug handling, the following routine is executed.\n\n\tpci_add_map() at pci_add_map+0x81/frame 0xfffffe00e50a6c70\n\tpci_add_resources() at pci_add_resources+0x31d/frame 0xfffffe00e50a6cf0\n\tpci_add_child() at pci_add_child+0x71/frame 0xfffffe00e50a6d40\n\tpci_rescan_method() at pci_rescan_method+0x454/frame 0xfffffe00e50a6dc0\n\tacpi_pci_device_notify_handler() at acpi_pci_device_notify_handler+0x63/frame 0xfffffe00e50a6e00\n\tAcpiEvNotifyDispatch() at AcpiEvNotifyDispatch+0x40/frame 0xfffffe00e50a6e20\n\t\nFunction pci_add_map calls pci_read_bar to get base and mapsize. While procedure \n(based on PCI Local Bus Specification Revision 3.0 - section 6.2.5.1. Address Maps) of extracting map size gives the same results as during system boot, base map is not set (during system both base and size are set correctly). lspci shows incorrect bar mappings:\n\n        Memory at \u003cunassigned\u003e (64-bit, non-prefetchable) [disabled]\n        Memory at \u003cunassigned\u003e (64-bit, non-prefetchable) [disabled]\n        Memory at \u003cunassigned\u003e (64-bit, non-prefetchable) [disabled]\n\nSome experiments have shown that hardwiring from zeros to \"1\" and re-reading BAR in case of empty base (in pci_read_bar) results in restoring the base to the correct value, and hotplug succeeds. lspci shows correct bar mappings:\n\n        Memory at fe600000 (64-bit, non-prefetchable)\n        Memory at fe608000 (64-bit, non-prefetchable)\n        Memory at fe610000 (64-bit, non-prefetchable)"
+}

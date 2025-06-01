@@ -1,0 +1,8 @@
+{
+ "id": 1215653,
+ "bug_id": 264570,
+ "attachment_id": 0,
+ "creation_time": "2022-06-12T22:43:18Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "A few comments...\n- If you are using nfsuserd, both sysctls should be 0.\n  vfs.nfs.enable_uidtostring=0\n  vfs.nfsd.enable_stringtouid=0\non the server. On the client, vfs.nfsd.stringtouid is\nnot used.\n\n- Since you are using AUTH_SYS (sec=sys), then the credentials\n  in the RPC requests header are numeric uids. That is the\n  \"user\" doing the create and, therefore, that \"uid\" is going\n  to be the owner. nfsuserd or \"numbers in user/group strings\"\n  only affects the entries in Getattr/Setattr for Owner and OwnerGroup\n  and does not affect the RPC request's user credentials in the RPC\n  header.\n  (The only time there are no numeric uids in the RPC request's\n   credential is when Kerberized mounts are being used. For that\n   case, the credential refers to a Kerberos principal, which is\n   normally \"user@REALM\".)\n\n- In \"man nfsv4\" it states...\n     Although uid/gid numbers are no longer used in the NFSv4 protocol except\n     optionally in the above strings, they will still be in the RPC\n     authentication fields when using AUTH_SYS (sec=sys), which is the\n     default.  As such, in this case both the user/group name and number\n     spaces must be consistent between the client and server.\n  To do otherwise, simply breaks things, as you have demonstrated."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1297995,
+ "bug_id": 259585,
+ "attachment_id": 0,
+ "creation_time": "2024-02-21T00:33:32Z",
+ "creator": "matt@tnpi.net",
+ "text": "I run clamav inside a jail and use a custom DB dir that persists across rebuilds of the clamav jail. Easy peasy. I modify clamd.conf and freshclam.conf to point at the correct path with rc.conf flags:\n\n    clamav_clamd_enable=\"YES\"\n    clamav_clamd_flags=\"-c /data/etc/clamd.conf\"\n    clamav_freshclam_enable=\"YES\"\n    clamav_freshclam_flags=\"--config-file=/data/etc/freshclam.conf\"\n\nAs of version 1.3.0, the rc.d scripts have the DB directory hard coded:\n\n    # grep 'var/db' /usr/local/etc/rc.d/clamav-*\n    /usr/local/etc/rc.d/clamav-    clamd:required_dirs=/var/db/clamav\n    /usr/local/etc/rc.d/clamav-clamd:\tif [ ! -f /var/db/clamav/main.cvd -a ! -f     /var/db/clamav/main.cld ];then\n    /usr/local/etc/rc.d/clamav-clamd:\t\techo \"Missing /var/db/clamav/*.cvd or *.cld files.  You must run freshclam first\"\n    /usr/local/etc/rc.d/clamav-freshclam:required_dirs=/var/db/clamav\n    /usr/local/etc/rc.d/clamav-milter:required_dirs=/var/db/clamav\n\nThe sanity checks in the rc.d script are useful but they shouldn't stomp all over the ability to use the DatabaseDirectory config settings in clamd.conf and freshclam.conf. A straight forward solution would solve this with a rc.d like this:\n\n    sysrc clamav_db_dir=/data/db\n\nIt would be good to also similarly make the run directory a config setting."
+}

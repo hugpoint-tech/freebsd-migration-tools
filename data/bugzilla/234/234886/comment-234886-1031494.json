@@ -1,0 +1,8 @@
+{
+ "id": 1031494,
+ "bug_id": 234886,
+ "attachment_id": 0,
+ "creation_time": "2019-01-11T20:45:40Z",
+ "creator": "emaste@freebsd.org",
+ "text": "As reported by kmoore in https://lists.freebsd.org/pipermail/freebsd-pkgbase/2017-December/000350.html:\n\n\u003e Anybody else noticed a recent regression (say past month or so) where\n\u003e pkg base of latest HEAD is now failing to throw setuid on some files? We\n\u003e saw it at first because /sbin/shutdown lost its setuid bit, so users\n\u003e can't shutdown the box.\n\nI investigated and found that it appears to be due to the way install(1) handles links with -M (https://lists.freebsd.org/pipermail/freebsd-pkgbase/2017-December/000361.html):\n\nFor regular installs we invoke:\n    install -l h \u003cprog\u003e \u003clink\u003e\nand the link then has the same permissions via the existing inode.\n\nWith -M install produces a metalog containing\n./\u003clink\u003e type=file mode=0755 size=0\n(i.e., permissions not explicitly set) and we end up with two entries\nin the metalog referencing two names for the same inode, but with\ndifferent permissions.\n\nIf we passed in the mode when invoking install for a hardlink we\nshould have the expected permissions, regardless of sorting:\n# install -M METALOG -m4554 -l h \u003cprog\u003e \u003clink\u003e\n./\u003clink\u003e type=file mode=04554 size=0\n\nOn a positive note there are only a few Makefiles with LINKS as well\nas BINOWN, BINMODE, or BINGRP. As far as I can tell:\n\nrelease/picobsd/tinyware/passwd/Makefile\nsbin/shutdown/Makefile\nusr.bin/at/Makefile\nusr.sbin/authpf/Makefile\n\nAnd after that email was sent, also stand/efi/loader/Makefile and stand/i386/loader/Makefile"
+}

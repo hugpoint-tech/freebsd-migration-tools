@@ -1,0 +1,8 @@
+{
+ "id": 1232382,
+ "bug_id": 267270,
+ "attachment_id": 237527,
+ "creation_time": "2022-10-22T15:17:26Z",
+ "creator": "lab+bsd@thinkum.space",
+ "text": "Created attachment 237527\nAdding an option for gvfsd-trash\n\nAfter discovering that gvfsd-trash had more than 10,000 file descriptors open - visible in 'fstat -p' - I'd developed a workaround for disabling gvfsd-trash locally. \n\n~~~~\nmkdir -p /usr/local/etc/gvfs/mounts\nfor F in /usr/local/share/gvfs/mounts/*.mount; do\n    install -l rs $F /usr/local/etc/gvfs/mounts/$(basename $F);\ndone\nrm /usr/local/etc/gvfs/mounts/trash.mount\n~~~~\n\nthen in /etc/profile\n~~~~\nif [ -e /usr/local/etc/gvfs/mounts ]; then\n  export GVFS_MOUNTABLE_DIR=/usr/local/etc/gvfs/mounts\nfi\n~~~~\n\nThis workaround would not ensure that /usr/local/etc/gvfs/mounts would stay in sync with /usr/local/share/gvfs/mounts/\n\nThe attached patch would provide a way to disable gvfsd-trash in the port build. \n\nThe patch will add an option to devel/gvfs for not installing gvfsd-trash.\n\nThis first patch is provided in assuming that nothing will break with libexec/gvfsd-trash not installed. In the patched port, the main idea was to make it optional to install ${DATADIR}/mounts/trash.mount. When the TRASH option is not active, both of those files will be removed during post-install.\n\nConsidering the approximate number of concerns that users may have experienced with gvfsd-trash at the desktop - e.g in relation to zfs unmount, in regards to process utilization, and in regards to number of open file descriptors - the option is disabled by default, in the patched port"
+}

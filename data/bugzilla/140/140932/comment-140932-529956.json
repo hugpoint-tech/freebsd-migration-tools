@@ -1,0 +1,8 @@
+{
+ "id": 529956,
+ "bug_id": 140932,
+ "attachment_id": 0,
+ "creation_time": "2009-11-27T10:10:00Z",
+ "creator": "welch@panasas.com",
+ "text": " Regarding bug 101323, we're seeing either crashes or hangs,\n on occasion, when our multi-threaded process nanny does a\n fork+exec sequence.  We are using FreeBSD 7.2 and libthr\n \n We are super careful with signal masks,\n and do the bare minimum between fork and exec.  However, due\n to various libraries that we use, we have a bunch of threads\n running in the main process.  We've been using this code \n on 4.6.2 and uniprocessors for years w/out issue.\n We are using 7.2 on 64-bit multi-core platforms. We do:\n \n         m_pid = fork();\n         if (m_pid == 0 {\n            /* pseudo code */\n            fstat() and close() file descriptors 3 and above\n            setuid() if necessary\n            restore signal masks\n            setpgid()\n            creat() a log file and dup to stdout and stderr\n            execve()\n         }\n \n Is this approach doomed to failure, or should we be able to get\n this working?  It doesn't look like Daniel's patch is in our\n libthr/thread/thr_fork.c\n So, I can do the obvious and try that.  I'm curious about just\n running __sys_fork() instead, however, as the process is\n going to obliterate itself with execve() anyway.\n \n --\n Brent Welch\n Director, Software Architecture, Panasas Inc\n The Leader in Parallel Storage\n \n www.panasas.com\n welch@panasas.com"
+}

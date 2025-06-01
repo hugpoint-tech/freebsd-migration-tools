@@ -1,0 +1,8 @@
+{
+ "id": 76722,
+ "bug_id": 24629,
+ "attachment_id": 0,
+ "creation_time": "2001-01-25T09:00:00Z",
+ "creator": "brandt@fokus.gmd.de",
+ "text": "According to the ng_socket man page it should be possible to use naive\nprograms with ng_socket data sockets. This requires, that read() and\nwrite() should work on these sockets. When using write(), the error\ncode EDESTADDRREQ is returned.\n\nAn inspection of the libnetgraph code shows, that connect() is called on\nthe data socket. That means the kernel should know the destination.\nThere are only two places in /sys/kern and /sys/netgraph where the \nEDESTADDRREQ is retured: in the generic sosend() and in ng_socket. A\nfurther inspection shows, that the error in this case is returned by\nthe generic layer, because it thinks, that the socket is not connected.\n\nFix: \n\nng_connect_data should set the SS_CONNECTED flag on the socket. Either\nby calling soisconnected() or by directly setting the flag.\nHow-To-Repeat: Create a socket node and connected it to ONE arbitrary netgraph hook, that\naccepts data. Use write(2) to write to the data socket. Observe the \nreturned error code."
+}

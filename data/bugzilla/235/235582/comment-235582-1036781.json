@@ -1,0 +1,8 @@
+{
+ "id": 1036781,
+ "bug_id": 235582,
+ "attachment_id": 201862,
+ "creation_time": "2019-02-09T05:18:36Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 201862\nupdated fix for srv side rpcsec_gss NULL client principal\n\nThis is an update to the 201858 patch which does a couple\nof printf()s and no KASSERT().\nIt uses a local clname instead of the one in client-\u003ecl_cname\nso that any race caused by multiple RPC requests with the same\nhandle and GSS_S_CONTINUE_INIT will be handled.\n(gss_release_name() sets client-\u003ecl_cname NULL and that could\n have resulted in the crash if multiple RPCs were received and\n handled concurrently as above.)\n\nI didn't think that gss_accept_sec_context() ever returned\nGSS_S_CONTINUE_INIT for Kerberos mechanism, but I could be\nwrong on this and if this does happen and the client erroneously\nsends the next token RPC twice, it could try to use client-\u003ecl_cname\nafter it is set NULL by the gss_release_name() for the previous\nRPC message.\n\nThe printf()s should tell us more about how the NULL cname happens."
+}

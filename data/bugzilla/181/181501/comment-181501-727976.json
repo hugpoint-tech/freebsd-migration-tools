@@ -1,0 +1,8 @@
+{
+ "id": 727976,
+ "bug_id": 181501,
+ "attachment_id": 0,
+ "creation_time": "2013-08-24T13:40:00Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Recent math.h cleanup made c++ inconsistent in how it treats an integer\nargument for float functions between different standard libraries.\n\ncf. http://lists.cs.uiuc.edu/pipermail/cfe-dev/2013-January/027280.html\n\nFix: either !defined(__cplusplus) or !defined(__GLIBCXX__)\nHow-To-Repeat: $ cat a.cc\n#include \u003ccmath\u003e\n\nint main()\n{\n  std::isfinite(5);\n\n  return 0;\n}\n\n$ c++ -stdlib=libc++ a.cc\n$ c++ -stdlib=libstdc++ a.cc\nIn file included from a.cc:1:\n/usr/include/c++/4.2/cmath:472:51: error: controlling expression type 'int' not compatible with any generic association type\n    __capture_isfinite(_Tp __f) { return isfinite(__f); }\n                                                  ^~~\n/usr/include/math.h:115:38: note: expanded from macro 'isfinite'\n#define isfinite(x) __fp_type_select(x, __isfinitef, __isfinite, __isfinitel)\n                                     ^\n/usr/include/math.h:86:49: note: expanded from macro '__fp_type_select'\n#define __fp_type_select(x, f, d, ld) _Generic((x),                     \\\n                                                ^\n/usr/include/c++/4.2/cmath:543:45: note: in instantiation of function template specialization '__gnu_cxx::__capture_isfinite\u003cint\u003e' requested here\n    isfinite(_Tp __f) { return ::__gnu_cxx::__capture_isfinite(__f); }\n                                            ^\na.cc:5:8: note: in instantiation of function template specialization 'std::isfinite\u003cint\u003e' requested here\n  std::isfinite(5);\n       ^\n1 error generated."
+}

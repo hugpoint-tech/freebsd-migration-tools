@@ -1,0 +1,8 @@
+{
+ "id": 997520,
+ "bug_id": 229003,
+ "attachment_id": 0,
+ "creation_time": "2018-06-13T22:21:59Z",
+ "creator": "jeff+freebsd@wagsky.com",
+ "text": "After much debugging, it was found that large packets (over 4k) were silently dropped by the in-kernel NAT used by ipfw and ng_ipfw. This is not documented on the man page for ipfw or ng_ipfw\n\nSuggested resolution:\n* Update the two man pages to document the limitation\n* Suggest on those man pages that, if large packets are potentially to be NAT-ed, reassembled or from \"jumbo frames\", natd be used rather than in-kernel NAT\n\n\nAs revealed by Andrey V. Elsukov on freebsd-net and freebsd-ipfw on 2018-06-13:\n\n\"The kernel version of libalias uses m_megapullup() function to make\nsingle contiguous buffer. m_megapullup() uses m_get2() function to\nallocate mbuf of appropriate size. If size of packet greater than 4k it\nwill fail. So, if you use MTU greater than 4k or if after fragments\nreassembly you get a packet with length greater than 4k, ipfw_nat()\nfunction will drop this packet.\"\n\n\nExamining the code in /usr/src/sys/netinet/libalias/alias.c\n\n#ifdef _KERNEL\n/*\n* m_megapullup() - this function is a big hack.\n* Thankfully, it's only used in ng_nat and ipfw+nat."
+}

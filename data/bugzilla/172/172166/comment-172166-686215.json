@@ -1,0 +1,8 @@
+{
+ "id": 686215,
+ "bug_id": 172166,
+ "attachment_id": 0,
+ "creation_time": "2012-09-30T14:42:53Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "on 30/09/2012 14:54 Andriy Gapon said the following:\n\u003e \n\u003e It looks like CPUs 0 - 4 are idle, but CPU 5 has load of three.\n\u003e One of those threads is the syslogd thread that holds the lock, but the\n\u003e currently running thread is 'ipmi0: kcs' thread with tid 100118.\n\u003e It would interesting to examine what it is doing.\n\u003e \n\nLooks like the kcs busy loops in here: kcs_loop -\u003e kcs_read_byte -\u003e\nkcs_wait_for_obf.\nSince this is a 6-CPU machine, steal threshold is set to 3 so other CPUs don't\ntry to take any work from CPU5. Not sure if this is smart actually.  Maybe it\nwould make sense to have a lower threshold or to allow stealing of real-time\nthreads at a lower threshold.\n\nSince the kcs thread is a kernel thread with real-time priority (68) it doesn't\nallow any other lower priority thread to run while it's not sleeping.\n\nAlso, it looks like rwlock does not take care to propagate waiters' priorities\nin all cases.  Maybe priority propagation could have helped here, but not sure...\n\n-- \nAndriy Gapon"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 593734,
+ "bug_id": 153619,
+ "attachment_id": 0,
+ "creation_time": "2011-01-02T08:20:10Z",
+ "creator": "rea@FreeBSD.org",
+ "text": "\nI had an empty \"Makefile,v\" and csup choked on it, entering\nthe infinite cycle and grabbing memory.  The problem is that\nthe 'ID' was defined as 0 and the built-in YY_NULL that tells\nthe caller that EOF was found is 0 too.  So, the following\ncycle on the empty file will be infinite:\n{{{\n        /* access {id]*; */\n        assert(token == KEYWORD);\n        token = rcslex(*sp);\n        while (token == ID) {\n                id = duptext(sp, NULL);\n                rcsfile_addaccess(rf, id);\n                free(id);\n                token = rcslex(*sp);\n        }\n}}}\n\nFix: The following patch fixes the problem for me.  Now csup reports the\nfile in question as broken and stops.  I will try to work on adding\nthat file to the list of fixups to enable the full retransfer.\nHow-To-Repeat: \nTruncate any \",v\" file in your full CVS repository that is updated by\ncsup and watch it choking on that entry, grabbing more and more memory\nand being killed at the out-of-swap-space condition."
+}

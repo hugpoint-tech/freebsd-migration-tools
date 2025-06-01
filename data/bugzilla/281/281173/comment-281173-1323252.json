@@ -1,0 +1,8 @@
+{
+ "id": 1323252,
+ "bug_id": 281173,
+ "attachment_id": 253226,
+ "creation_time": "2024-08-31T18:40:11Z",
+ "creator": "rhurlin@FreeBSD.org",
+ "text": "Created attachment 253226\nPatch to fix WXRC_CMD for versions \u003e 3.0\n\nThere are currently two versions of the wxWidgets in the ports, 3.0 and 3.2. Both versions contain a wxrc binary for compiling binary resource files, which is named differently in the versions:\n\n#pkg info -l wx30-gtk3-3.0.5.1_5 wx32-gtk3-3.2.4_2  | grep wxrc\n        /usr/local/bin/wxrc-gtk3u-3.0\n        /usr/local/bin/wxrc-3.2\n\n\nIn Mk/bsd.wx.mk there is a logic to query the path and file name of the WX compiler and pass it in WXRC_CMD. However, Mk/bsd.wx.mk only determines the correct file for wx 3.0, for wx 3.2 the naming of the file is incorrect:\n\n#cd databases/pgadmin3\n#make -V WXRC_CMD\n/usr/local/bin/wxrc-gtk3u-3.0\n\n#cd cad/kicad-devel\n#make -V WXRC_CMD\n/usr/local/bin/wxrc-gtk3u-3.2\n\nIn the latter case, the correct designation should be /usr/local/bin/wxrc-3.2.\n\nAttached is a patch for Mk/bsd.wx.mk, which returns the correct naming for wx 3.2.\n\n\nIt would actually be nice if this value were returned via wx-config. But even this does not work as expected between the wx versions, so that it cannot be used in Mk/bsd.wx.mk:\n\n#wxgtk3u-3.0-config --utility=wxrc\n[returns no value]\n\n#wxgtk3u-3.2-config --utility=wxrc\n/usr/local/bin/wxrc-3.2"
+}

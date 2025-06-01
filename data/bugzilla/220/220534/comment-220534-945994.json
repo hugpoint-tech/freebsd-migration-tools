@@ -1,0 +1,8 @@
+{
+ "id": 945994,
+ "bug_id": 220534,
+ "attachment_id": 0,
+ "creation_time": "2017-08-05T00:14:14Z",
+ "creator": "mp@FreeBSD.org",
+ "text": "I compiled a recent 12.0-current (r322037) from last night and then compiled open-vm-tools-nox11 from ports. Both vmblock.ko and vmxnet.ko load without a panic for me. However, I do see a panic when vmmemctl.ko is loaded with this panic:\n\nVMware memory control driver initialized\nsuspending ithread with the following locks held:\nexclusive rw vm object (vm object) r = 0 (0xfffff8001f1d0c30) locked @ os.c:522\npanic: witness_warn\ncpuid = 0\ntime = 1501868737\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x2b/frame 0xfffffe011b6e0880\nvpanic() at vpanic+0x19c/frame 0xfffffe011b6e0900\nkassert_panic() at kassert_panic+0x126/frame 0xfffffe011b6e0970\nwitness_warn() at witness_warn+0x415/frame 0xfffffe011b6e0a20\nithread_loop() at ithread_loop+0x175/frame 0xfffffe011b6e0a70\nfork_exit() at fork_exit+0x84/frame 0xfffffe011b6e0ab0\nfork_trampoline() at fork_trampoline+0xe/frame 0xfffffe011b6e0ab0\n--- trap 0, rip = 0, rsp = 0, rbp = 0 ---\nKDB: enter: panic\n\nThe os.c:522 is inside open-vm-tools os_kmem_alloc():\n...\n#if __FreeBSD_version \u003e 1000029\n      VM_OBJECT_WUNLOCK(state-\u003evmobject); \u003c====== line 522\n#else\n      VM_OBJECT_UNLOCK(state-\u003evmobject);\n#endif\n\n\nCan you confirm whether you had compiled open-vm-tools after updating your kernel? Also, does the above panic look the same as the one you are seeing?"
+}

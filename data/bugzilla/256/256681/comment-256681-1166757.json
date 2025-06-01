@@ -1,0 +1,8 @@
+{
+ "id": 1166757,
+ "bug_id": 256681,
+ "attachment_id": 0,
+ "creation_time": "2021-06-18T02:52:58Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "Observed this regression on stable/13 and current/14.\n\nSteps to repeat:\n\n# ifconfig tap0 create inet 192.0.2.1/24\n# ifconfig tap0 inet 192.0.2.2/32 alias\n\nTo verify the route table:\n\n# netstat -4rnW\n---------------------------------------\nDestination        Gateway            Flags   Nhop#    Mtu      Netif Expire\n...\n192.0.2.0/24       link#4             U           5   1500       tap0\n192.0.2.1          link#4             UHS         6  16384        lo0\n192.0.2.2          link#4             UH          7   1500       tap0\n...\n---------------------------------------\n\nSee the loopback route for alias IP address 192.0.2.2 is incorrect.\n\nTo verify the impact:\n# ping 192.0.2.2\nPING 192.0.2.2 (192.0.2.2): 56 data bytes\nping: sendto: No route to host\nping: sendto: No route to host\n\n\nExpected route table:\n192.0.2.2          link#4             UHS         7  16384       lo0\n\nThe Mtu should be 16384 and Netif should be lo0. The Flags should contains `S`, ie. should be same with 192.0.2.1\n\nExpected behavior:\nping alias IP address with success"
+}

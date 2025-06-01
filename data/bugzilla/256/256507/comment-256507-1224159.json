@@ -1,0 +1,8 @@
+{
+ "id": 1224159,
+ "bug_id": 256507,
+ "attachment_id": 0,
+ "creation_time": "2022-08-25T16:16:14Z",
+ "creator": "dave@jetcafe.org",
+ "text": "So...stopping -all- running services to me is an effective reboot. :)\n\nNevertheless, on my machine with the most minimal service deployment that has the memory issue, I stopped the biggest memory consumers:\n\n  unbound\n  node_exporter\n  blackbox_exporter\n\nStopping them did not return the memory, as measured by this script:\n\n--Begin script\n#!/usr/local/bin/perl\nuse strict;\nuse warnings;\n\nmy $pagesize = `sysctl -n vm.stats.vm.v_page_size`; chomp($pagesize);\n\nmy %db = ();\nopen(STATS,\"sysctl vm.stats.vm |\") || die \"Can't open sysctl: $!\\n\";\nwhile(\u003cSTATS\u003e) {\n  if (/v_(\\S+)_count:\\s(\\d+)/) {\n     $db{$1} = $2;\n  }\n}\nclose(STATS);\n\nmy $total = $db{'page'};\nforeach my $k (keys %db) {\n   next if ($k eq 'page');\n   $total -= $db{$k};\n}\n\nmy $totalmemMB = ($pagesize * $total) / (1024 * 1024);\nprintf(\"Lost memory: %d %d-byte pages (%.f MB)\\n\", $total, $pagesize, $totalmemMB);\n--- End script\n\nThis printed out roughly the same numbers as reported by prometheus after services were stopped.\n\nOf course, I have superpages enabled and yet vm.stats.vm.v_page_size reports 4096 still. I've no idea if this is the correct way to calculate actual memory lost, but it looks correct."
+}

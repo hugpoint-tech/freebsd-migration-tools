@@ -1,0 +1,8 @@
+{
+ "id": 1338333,
+ "bug_id": 283163,
+ "attachment_id": 0,
+ "creation_time": "2024-12-09T09:23:29Z",
+ "creator": "vova@fbsd.ru",
+ "text": "(In reply to Konstantin Belousov from comment #8)\n\nYes, I understand it, but, prison0 is different from other jails, \n\ni.e. `ps ax` in prison0 - shows processes from all jails, and normaly kill from prison0 will successfuly send a signal to process in other jail.\n\n# sysctl security.jail.param.jid\nsecurity.jail.param.jid: 0\n\n# ps axJ4 -o jid,pid,tty,state,command\nJID   PID TTY STAT COMMAND\n  4 10800 -   SNsJ /usr/sbin/syslogd -ss -c\n  4 10833 -   INsJ /usr/sbin/cron -s\n  4 10869 -   INsJ nginx: master process /usr/local/sbin/nginx\n  4 55913 -   INJ  nginx: worker process (nginx)\n  4 55914 -   INJ  nginx: worker process (nginx)\n  4 55915 -   INJ  nginx: worker process (nginx)\n  4 55916 -   INJ  nginx: worker process (nginx)\n  4 55917 -   INJ  nginx: worker process (nginx)\n  4 55918 -   INJ  nginx: worker process (nginx)\n  4 55919 -   INJ  nginx: worker process (nginx)\n  4 55920 -   INJ  nginx: worker process (nginx)\n\n# kill -15 10869\n\n# ps axJ4 -o jid,pid,tty,state,command\nJID   PID TTY STAT COMMAND\n  4 10800 -   INsJ /usr/sbin/syslogd -ss -c\n  4 10833 -   SNsJ /usr/sbin/cron -s\n#\n\nso, for prison0, prison_proc_iterate() will go only through processes of prison0 or through all system processes?\n\nif the first, then kill(sig, -1) will not sent signal to processes in other jails, \nif the second, then I've confused with name prison_proc_iterate()\n\n(that is why I am askin)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 706190,
+ "bug_id": 176771,
+ "attachment_id": 0,
+ "creation_time": "2013-03-08T23:30:00Z",
+ "creator": "keith.reynolds@tidalscale.com",
+ "text": "When a netgraph client calls NgSendReplyMsg() to reply to a netgraph\ncontrol message that is marked as having a reply\n(msg-\u003eheader.cmd \u0026 NGM_HASREPLY), the library blocks waiting for a\nreply that will never come, because the message that's being sent *IS*\nthe reply. It doesn't account for the possibility that the user-mode\nclient is replying to a netgraph control message rather than originating\none.\n\nFix: See the attached patch to lib/libnetgraph/msg.c. The change checks\nmsg-\u003eheader.flags \u0026 NGF_RESP to determine if the message being sent is\nthe expected reply before blocking to wait for one.\n\nPatch attached with submission follows:\nHow-To-Repeat: Write a user-mode netgraph client that responds to the\nNGM_GENERIC_COOKIE/NGM_TEXT_STATUS control message, which is marked as\nNGM_HASREPLY, and use \"ngctl status \u003cnode_path\u003e\" to query it. The call\nto NgSendReplyMsg() will block until another control message comes in,\nwhich won't happen until you use ngctl to send another request."
+}

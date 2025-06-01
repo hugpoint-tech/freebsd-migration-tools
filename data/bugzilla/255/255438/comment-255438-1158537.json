@@ -1,0 +1,8 @@
+{
+ "id": 1158537,
+ "bug_id": 255438,
+ "attachment_id": 0,
+ "creation_time": "2021-04-27T09:48:02Z",
+ "creator": "topical@gmx.net",
+ "text": "Since 13.0-RELEASE long running idle TCP connections are silently terminated without notice. So, the endpoints encounter transmission timeouts later on and bad things happen.\n\nIt seems that net.inet.ip.fw.dyn_keepalive doesn't work anymore.\n\nDue to the nature of the problem (_long running_ and _idle_), it's hard to pin down. Further, I have the following rule for egress packets:\n\nallow ip from any to any out keep-state\n\nSo, if ipfw really forgets a connection, it gets recreated automatically if the next packet is egress.\n\nA simple verification is to compare TCP connection known to tcp stack and states known to ipfw, e.g.\n\n# sockstat -6 | grep 636\npostfix  smtpd      96270 19 tcp6   XXX:15743 YYY:636\npostfix  smtpd      95918 19 tcp6   XXX:41957 YYY:636\nroot     saslauthd  91056 8  tcp6   XXX:43828 YYY:636\nroot     saslauthd  91055 8  tcp6   XXX:43830 YYY:636\nroot     saslauthd  91054 8  tcp6   XXX:43826 YYY:636\nroot     saslauthd  91053 8  tcp6   XXX:43825 YYY:636\nroot     saslauthd  91052 8  tcp6   XXX:17216 YYY:636\n\nversus:\nipfw -d show | grep 636\n61005        81        26938 (169s) STATE tcp XXX::13 41957 \u003c-\u003e YYY::10 636 :default\n61005        58        19762 (113s) STATE tcp XXX::13 15743 \u003c-\u003e YYY::10 636 :default\n\nYou see that all connections of saslauthd got lost. \n\nNormally, ipfw should send keepalive packets some seconds before removing dynamic states, but when doing a packet capture, no keepalives of affected connections could be found."
+}

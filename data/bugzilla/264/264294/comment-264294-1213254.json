@@ -1,0 +1,8 @@
+{
+ "id": 1213254,
+ "bug_id": 264294,
+ "attachment_id": 0,
+ "creation_time": "2022-05-27T16:43:24Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "The second union in Bhyve's struct pci_xhci_dev_ep causes these two\nfields to occupy the same memory:\n\n#define ep_ringaddr     _ep_trb_rings._epu_trb.ringaddr\n#define ep_sctx_trbs    _ep_trb_rings._epu_sctx_trbs\n\nWhich of the two bhyve's pci_xhci.c uses depends on whether the guest\nconfigures the number of streams to be non-zero. Bhyve interprets one\nas a guest address that must be checked and mapped before each use,\nand the other as a host address that can be used directly with no\nchecking. In the former case, the guest provides the value; in the\nlatter, Bhyve.\n\nThe number of streams is determined by bits in ep_ctx-\u003edwEpCtx0, which\nlives in guest memory. So it's possible for the guest to tell byhve's\nxhci to configure an endpoint with the number of streams set to zero,\nwhich causes pci_xhci_init_ep() to set devep-\u003eep_ringaddr to a\nguest-provided value XYZ (assumed to be an address in guest memory,\nbut can be anything the guest wants). Later, the guest can change\nep_ctx-\u003edwEpCtx0 to indicate multiple streams, and write to an xhci\ndoorbell register, causing Byhyve's pci_xhci_device_doorbell() to\nexecute:\n\n                sctx_tr = \u0026devep-\u003eep_sctx_trbs[streamid];\n                ringaddr = sctx_tr-\u003eringaddr;\n\nwhich interprets devep-\u003eep_sctx_trbs as a *host* pointer. But those\nbits contain the guest-provided value XYZ previously written there by\npci_xhci_init_ep(). So \"sctx_tr-\u003eringaddr\" will dereference a pointer\nprovided by the guest, without any checks.\n\nI have a modified FreeBSD guest that makes Bhyve crash due to this\nbug."
+}

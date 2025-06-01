@@ -1,0 +1,8 @@
+{
+ "id": 518239,
+ "bug_id": 138516,
+ "attachment_id": 0,
+ "creation_time": "2009-09-04T00:50:04Z",
+ "creator": "kazuaki@aliceblue.jp",
+ "text": "I think current em(4) driver has the problem that the driver leaks 4k (page size) mbuf clusters, which are used to transmit packets, when em_xmit() fails with ENOBUFS.\nem_mq_start_locked() calls em_xmit() repeatedly to transmit queued packets.  But, when em_xmit() fails, the dequeued packet is left alone and not requeued, so the mbuf cluster which is used for the packet leaks.\n\nFix: Apply the attached patch.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: 1) Install Apache2 and PHP5.\n2) Modify httpd.conf to enable PHP5.\n3) Put large size (more than 100KB) .php file under DocumentRoot.\n4) Start up Apache2.\n5) Make many concurrent requests to the .php file, which you put at #3, from a remote machine.  For example, run ab (Apache Bench) as the following:\n   $ ab -n 100000 -c 100 -k http://host_name_of_the_server/test.php\n6) Check the number of allocated 4K mbuf clusters with \"netstat -m\"."
+}

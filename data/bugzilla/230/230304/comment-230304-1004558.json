@@ -1,0 +1,8 @@
+{
+ "id": 1004558,
+ "bug_id": 230304,
+ "attachment_id": 0,
+ "creation_time": "2018-08-02T20:50:16Z",
+ "creator": "cem@freebsd.org",
+ "text": "The issue is that crypto_newsession() holds the normal mutex (\"Crypto\ndriver table\" / CRYPTO_DRIVER_LOCK()) over the CRYPTODEV_NEWSESSION()\ncall, and the cryptosoft driver allocates extra memory with M_WAITOK.\n\nThe short term solution is to change crypto driver allocations back to\nM_NOWAIT unconditionally and be sure to check all error paths for bugs\nand memory leaks.\n\nBut I don't think that's a reasonable long term approach.  I think we\nprobably want to pass a flags argument from crypto_newsession all the\nway down into individual driver newsessions to fix this right.  That\nwill take a decent amount of churn.  crypto_newsession() also needs to\nbe fixed to avoid deadlock when the caller allows M_WAITOK by dropping\nthe lock over the call."
+}

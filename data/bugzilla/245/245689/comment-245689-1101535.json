@@ -1,0 +1,8 @@
+{
+ "id": 1101535,
+ "bug_id": 245689,
+ "attachment_id": 214294,
+ "creation_time": "2020-05-08T22:46:53Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 214294\nFix issues with FUSE_ACCESS when default_permissions is disabled\n\nThis patch fixes two issues relating to FUSE_ACCESS when the default_permissions mount option is disabled:\n\n* VOP_ACCESS() calls with VADMIN set should never be sent to a fuse server in the form of FUSE_ACCESS operations.  The FUSE protocol has no equivalent of VADMIN, so we must evaluate such things kernel-side, regardless of the default_permissions setting.\n\n* The FUSE protocol only requires FUSE_ACCESS to be sent for two purposes: for the access(2) syscall and to check directory permissions for searchability during lookup.  FreeBSD sends it much more frequently, due to differences between our VFS and Linux's, for which FUSE was designed.  But this patch does eliminate several cases not required by the FUSE protocol:\n  - for any FUSE_*XATTR operation\n  - when creating a new file\n  - when deleting a file\n  - when setting timestamps, such as by utimensat(2).\n\n* Additionally, when default_permissions is disabled, this patch removes one FUSE_GETATTR operation when deleting a file."
+}

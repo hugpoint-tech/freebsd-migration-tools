@@ -1,0 +1,8 @@
+{
+ "id": 972486,
+ "bug_id": 225200,
+ "attachment_id": 0,
+ "creation_time": "2018-01-16T00:26:01Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "A \"zfs promote\" operation renames the snapshot that was the basis for the cloned dataset.  If that dataset is a zvol, then the snapshot has an associated device node.  That device node should be renamed by \"zfs promote\", but it doesn't.\n\nSteps to reproduce:\n[alans@tom ~]$ sudo zpool create -f foo da1\n[alans@tom ~]$ sudo zfs create -V 100m foo/vol0\n[alans@tom ~]$ sudo zfs snapshot foo/vol0@snap\n[alans@tom ~]$ sudo zfs clone foo/vol0@snap foo/vol1\n[alans@tom ~]$ ls -l /dev/zvol/foo/\ntotal 0\ncrw-r-----  1 root  operator   0x85 Jan 15 17:24 vol0\ncrw-r-----  1 root  operator  0x130 Jan 15 17:24 vol0@snap\ncrw-r-----  1 root  operator  0x131 Jan 15 17:24 vol1\n[alans@tom ~]$ sudo zfs promote foo/vol1\n[alans@tom ~]$ ls -l /dev/zvol/foo/\ntotal 0\ncrw-r-----  1 root  operator   0x85 Jan 15 17:24 vol0\ncrw-r-----  1 root  operator  0x130 Jan 15 17:24 vol0@snap\ncrw-r-----  1 root  operator  0x131 Jan 15 17:24 vol1\n\nThe \"vol0@snap\" node should've been renamed to \"vol1@snap\".  After a reboot, it does get the correct name."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1051897,
+ "bug_id": 238112,
+ "attachment_id": 0,
+ "creation_time": "2019-05-25T00:38:09Z",
+ "creator": "eugen@freebsd.org",
+ "text": "A colleague of mine is testing his set of virtual machines under FreeBSD 11.2-STABLE using bhyve (sysutils/vm-bhyve specifically) over GELI-encrypted non-boot ZFS pool with multiple ZVOLs and faced a problem.\n\nAfter GELI attached the pool, kernel part of ZFS tastes its internals and writes to dmesg:\n\nZFS WARNING: Unable to create ZVOL sata/vm/ws2019tmplENhalts/C@20190524-225700-before-1st-reboot (error=63).\n\nThe dataset has recommended volmode=dev.\n\nIn sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zvol.c the function zvol_create_minor() prepends mentioned long name of dataset with prefix \"zvol/\" and calls make_dev_s() from sys/kern/kern_conf.c that is a wrapper for make_dev_sv() failing with ENAMETOOLONG (63).\n\nmake_dev_sv() uses prep_devname() that returns this error if total length is more than sizeof(dev-\u003esi_name) - 1 that equals to SPECNAMELEN defined to 63. So ZVOL name length is effectively limited to 58 octets due to \"zvol/\" prefix.\n\nWarning message quoted above is too cryptic for user and this limit is obscure and seems to be FreeBSD-specific. Please change the code to test for ENAMETOOLONG  and issue a warning describing the problem more clearly.\n\nAlso, consider replacing kernel printf() with more useful logging like log() so the warning would hit syslog and get to /var/log/console.log (if enabled) and not dmesg buffer only."
+}

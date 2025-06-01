@@ -1,0 +1,8 @@
+{
+ "id": 987959,
+ "bug_id": 227404,
+ "attachment_id": 0,
+ "creation_time": "2018-04-18T09:31:20Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "I ran into this a couple of times now on a UP machine.  The problem is that base r329612 (jeff) turned the bufspace daemon process into a thread of the buf daemon process.  Now both threads call kproc_suspend_check with the same proc argument and it contains the following while loop:\n\nwhile (SIGISMEMBER(p-\u003ep_siglist, SIGSTOP)) {\n\twakeup(\u0026p-\u003ep_siglist);\n\tmsleep(\u0026p-\u003ep_siglist, \u0026p-\u003ep_mtx, PPAUSE, \"kpsusp\", 0);\n}\n\nSo one thread wakes up the other and the other wakes up the first again, starving other processes like the syncer.  On an SMP system other processes can still run on another CPU.  I suspect one or both daemons need to be converted to use kthread_suspend and kthread_suspend_check instead, but I cannot reboot this machine right now to test this."
+}

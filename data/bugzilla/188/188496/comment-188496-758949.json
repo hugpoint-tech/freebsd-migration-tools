@@ -1,0 +1,8 @@
+{
+ "id": 758949,
+ "bug_id": 188496,
+ "attachment_id": 0,
+ "creation_time": "2014-04-12T08:50:00Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "When building multiple ports simultaineously, the Makefile's strip command fails due to other non-binary files present in usr/local/bin/.\nReplacing \n${STRIP_CMD} ${STAGEDIR}${PREFIX}/bin/*\nwith the long winded\n${FIND} ${STAGEDIR}${PREFIX}/bin/* -type f | ${XARGS} ${FILE} | \\\n+               ${EGREP} -v 'ASCII text|Unicode text' | ${CUT} -d: -f1 | ${XARGS} ${STRIP_CMD}\nreduces the ambiguity.\n\nI'd speculate that the cause is either portmaster or a command to clear the staging usr/local/bin may be disabled.\n\nFix: \n\n# gcc from ports is in use\n .if defined(NDCC)--pWCV5cSOuVEl64McjE5LuCvO5U06LenlQG1Wjt96OjI8QZj8\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: /usr/ports/security/nmap/Makefile\n===================================================================\n--- /usr/ports/security/nmap/Makefile   (revision 351038)\n+++ /usr/ports/security/nmap/Makefile   (working copy)\n@@ -83,7 +83,8 @@\n post-install:\n        @${MKDIR} ${STAGEDIR}${DOCSDIR}\n        ${INSTALL_DATA} ${PORTDOCS:S|^|${WRKSRC}/|} ${STAGEDIR}${DOCSDIR}\n-       ${STRIP_CMD} ${STAGEDIR}${PREFIX}/bin/*\n+       ${FIND} ${STAGEDIR}${PREFIX}/bin/* -type f | ${XARGS} ${FILE} | \\\n+               ${EGREP} -v 'ASCII text|Unicode text' | ${CUT} -d: -f1 | ${XARGS} ${STRIP_CMD}\nHow-To-Repeat: Occurs when building multiple ports. When there are other files in $STAGING/usr/local/bin that are \"text\" the build stops, as one would expect."
+}

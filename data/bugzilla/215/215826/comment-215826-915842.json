@@ -1,0 +1,8 @@
+{
+ "id": 915842,
+ "bug_id": 215826,
+ "attachment_id": 0,
+ "creation_time": "2017-01-10T19:27:12Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kib\nDate: Tue Jan 10 19:26:55 UTC 2017\nNew revision: 311886\nURL: https://svnweb.freebsd.org/changeset/base/311886\n\nLog:\n  Fix acquisition of nested write compat rtld locks.\n\n  Obtaining compat rtld lock in write mode sets process signal mask to\n  block all signals.  Previous mask is stored in the global variable\n  oldsigmask.  If a lock is write-locked while another lock is already\n  write-locked, oldsigmask is overwritten by the total mask and on the\n  last unlock, all signals except traps appear to be blocked.\n\n  Fix this by counting the write-lock nested level, and only storing to\n  oldsigmask/restoring from it at the outermost level.\n\n  Masking signals disables involuntary preemption for libc_r, and there\n  could be no voluntary context switches in the locked code\n  (dl_iterate_phdr(3) keeps a lock around user callback, but it was\n  added long after libc_r was renounced).  Due to this, remembering the\n  level in the global variable after the lock is obtained should be\n  safe, because no two libc_r threads can acquire different write locks\n  in parallel.\n\n  PR:\t215826\n  Reported by:\tkami\n  Tested by:\tyamagi@yamagi.org (previous version)\n  To be reviewed by:\tkan\n  Sponsored by:\tThe FreeBSD Foundation\n  MFC after:\t2 weeks\n\nChanges:\n  head/libexec/rtld-elf/rtld_lock.c"
+}

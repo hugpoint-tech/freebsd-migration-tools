@@ -1,0 +1,8 @@
+{
+ "id": 1199563,
+ "bug_id": 253038,
+ "attachment_id": 0,
+ "creation_time": "2022-02-16T20:44:14Z",
+ "creator": "mi@FreeBSD.org",
+ "text": "(In reply to VVD from comment #2)\n\u003e Is it still issue with current version of the LibreOffice?\n\nYes, it is an issue, depending on the OPTIONS selected. You don't see it in the cluster-built packages, because of the defaults there.\n\nOn this desktop, for example, with options defined as:\n\n_OPTIONS_READ=libreoffice-7.2.5.2\n_FILE_COMPLETE_OPTIONS_LIST=COINMP CUPS DOCS GNOME GTK3 GTK4 JAVA KF5 LTO MARIADB MMEDIA PGSQL QT5 SDK TEST WEBDAV\nOPTIONS_FILE_UNSET+=COINMP\nOPTIONS_FILE_SET+=CUPS\nOPTIONS_FILE_UNSET+=DOCS\nOPTIONS_FILE_SET+=GNOME\nOPTIONS_FILE_SET+=GTK3\nOPTIONS_FILE_UNSET+=GTK4\nOPTIONS_FILE_UNSET+=JAVA\nOPTIONS_FILE_UNSET+=KF5\nOPTIONS_FILE_SET+=LTO\nOPTIONS_FILE_UNSET+=MARIADB\nOPTIONS_FILE_SET+=MMEDIA\nOPTIONS_FILE_UNSET+=PGSQL\nOPTIONS_FILE_UNSET+=QT5\nOPTIONS_FILE_UNSET+=SDK\nOPTIONS_FILE_UNSET+=TEST\nOPTIONS_FILE_SET+=WEBDAV\n\nthere is no ${PREFIX}/share at all in the output of `pkg info --list-files libreoffice`.\n\nOf course, I had to patch the port's Makefile as below to make it stage:\n\n```patch\n@@ -333,8 +333,10 @@ post-install:\n        @cd ${STAGEDIR}${PREFIX} \u0026\u0026 \\\n        ${FIND} -s bin lib man -not -type d \u003e\u003e ${TMPPLIST}\n .for subdir in applications bash-completion icons metainfo mime\n+.      if exists(${STAGEDIR}${PREFIX}/${subdir})\n        @cd ${STAGEDIR}${PREFIX} \u0026\u0026 \\\n        ${FIND} -s share/${subdir} -not -type d \u003e\u003e ${TMPPLIST}\n+.      endif\n .endfor\n \n post-install-SDK-on:\n```"
+}

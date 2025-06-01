@@ -1,0 +1,8 @@
+{
+ "id": 530872,
+ "bug_id": 141130,
+ "attachment_id": 0,
+ "creation_time": "2009-12-03T15:14:45Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: jhb\nDate: Thu Dec  3 15:14:30 2009\nNew Revision: 200061\nURL: http://svn.freebsd.org/changeset/base/200061\n\nLog:\n  The fd_mask type is an unsigned long, not an int, so treat the mask as a\n  long instead of an int when examining the results of select() to look for\n  RPC requests.  Previously this routine would ignore RPC requests to sockets\n  whose file descriptor mod 64 was greater than 31 on a 64-bit platform.\n  \n  PR:\t\tamd64/141130\n  Submitted by:\tliujb of array networks\n  MFC after:\t3 days\n\nModified:\n  head/lib/libc/rpc/svc.c\n\nModified: head/lib/libc/rpc/svc.c\n==============================================================================\n--- head/lib/libc/rpc/svc.c\tThu Dec  3 14:59:42 2009\t(r200060)\n+++ head/lib/libc/rpc/svc.c\tThu Dec  3 15:14:30 2009\t(r200061)\n@@ -627,8 +627,8 @@ svc_getreqset(readfds)\n \n \tmaskp = readfds-\u003efds_bits;\n \tfor (sock = 0; sock \u003c FD_SETSIZE; sock += NFDBITS) {\n-\t    for (mask = *maskp++; (bit = ffs(mask)) != 0;\n-\t\tmask ^= (1 \u003c\u003c (bit - 1))) {\n+\t    for (mask = *maskp++; (bit = ffsl(mask)) != 0;\n+\t\tmask ^= (1ul \u003c\u003c (bit - 1))) {\n \t\t/* sock has input waiting */\n \t\tfd = sock + bit - 1;\n \t\tsvc_getreq_common(fd);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

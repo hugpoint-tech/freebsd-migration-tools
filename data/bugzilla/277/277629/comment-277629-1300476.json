@@ -1,0 +1,8 @@
+{
+ "id": 1300476,
+ "bug_id": 277629,
+ "attachment_id": 249091,
+ "creation_time": "2024-03-11T13:57:27Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 249091\ncorrupt elf file that causes ldd to crash due to its use of p_vaddr\n\nWhen ldd calls dlopen(..., RTLD_TRACE), ld-elf.so.1's map_object()\nsets obj-\u003edynamic from a p_vaddr without checking:\n\n        case PT_DYNAMIC:\n            phdyn = phdr;\n    ...;\n    obj-\u003edynamic = (const Elf_Dyn *)(obj-\u003erelocbase + phdyn-\u003ep_vaddr);\n\nand digest_dynamic1() dereferences it:\n\n    dynp = obj-\u003edynamic;\n    ...;\n    for (;  dynp-\u003ed_tag != DT_NULL;  dynp++) {\n\nI've attached a corrupt elf file with the relevant p_vaddr set to\n0x7ffffffff9699fff. This example happens to cause ldd to crash only on\na riscv machine (not amd64).\n\n# uname -a\nFreeBSD  15.0-CURRENT FreeBSD 15.0-CURRENT #270 main-n250982-48b12cb79520-dirty: Sat Mar  9 08:36:40 EST 2024     rtm@zika:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM riscv\n# objdump -x ./ldd7a.exe | grep 0x7fff\n DYNAMIC off    0x0000000000000000 vaddr 0x7ffffffff9699fff paddr 0x0000000000000000 align 2**64\n# ldd ./ldd7a.exe \n./ldd7a.exe:\npid 136 (ldd), jid 0, uid 0: exited on signal 11 (core dumped)"
+}

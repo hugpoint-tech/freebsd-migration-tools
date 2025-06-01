@@ -1,0 +1,8 @@
+{
+ "id": 841291,
+ "bug_id": 201611,
+ "attachment_id": 0,
+ "creation_time": "2015-09-22T20:43:03Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "It's a bit hackish to abuse another file descriptor to pass an unrelated resource.  As you noted, now you have to have extra checks in place to know if the cdevpriv you are looking at is safe for you to examine.  It's not clear to me how you can really do that safely (perhaps you can check the cdevsw pointer of the fd but that's pretty gross).\n\nI think my suggestion is more in line with the existing UNIX way of doing things in that you use file descriptors as handles on resources (the same way you would use a handle on Windows for these sorts of things).  You can create whatever kind of file descriptor you want and it will be self-contained as it will have its assigned file ops which will always be correct (and thus not be subject to the race you mentioned previously) when passed across a UNIX domain socket.\n\nHaving a file descriptor for a VM object is a fairly simple thing to do (it is how shm_open() is implemented in FreeBSD).  I (and possibly Konstantin) can help with creating helper routines if needed (e.g. something like create_memobject_file() that takes a VM object and some flags (e.g. if it's read-only or not, supports changing size or not) and creates a new file descriptor in the current process that can be returned via a member in a structure from an ioctl, etc.).  It is of course possible to define other file descriptor types if you need something besides just memory."
+}

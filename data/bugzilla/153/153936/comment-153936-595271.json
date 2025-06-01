@@ -1,0 +1,8 @@
+{
+ "id": 595271,
+ "bug_id": 153936,
+ "attachment_id": 0,
+ "creation_time": "2011-01-12T19:40:04Z",
+ "creator": "aboyer@averesystems.com",
+ "text": "ixgbe_update_stats_counters() used a workaround for the MPC register described in the Intel 82598 sightings list.  This workaround (subtracting bprc from mprc) is always used, even on 82599 hardware where it is not applicable.\n\nThe result is an incorrect (sometimes negative) multicast packets received count on 82599 interfaces.\n\nFix: \n\nMake this conditional on the MAC type:\n\n\t/*\n\t * Workaround: mprc hardware is incorrectly counting\n\t * broadcasts, so for now we subtract those.\n\t */\n\tbprc = IXGBE_READ_REG(hw, IXGBE_BPRC);\n\tadapter-\u003estats.bprc += bprc;\n\tadapter-\u003estats.mprc += IXGBE_READ_REG(hw, IXGBE_MPRC);\n\tadapter-\u003estats.mprc -= bprc;\nHow-To-Repeat: \"sysctl dev.ix.0\" on an 82599 controller, soon after boot:\ndev.ix.0.mac_stats.good_pkts_rcvd: 97\ndev.ix.0.mac_stats.mcast_pkts_rcvd: -64\ndev.ix.0.mac_stats.bcast_pkts_rcvd: 79"
+}

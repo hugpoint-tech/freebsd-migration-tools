@@ -1,0 +1,8 @@
+{
+ "id": 375954,
+ "bug_id": 108990,
+ "attachment_id": 0,
+ "creation_time": "2007-02-09T20:40:27Z",
+ "creator": "andrew+pr2@supernews.net",
+ "text": "tar aborts early with a meaningless error message if any file being archived grows in size between the initial stat() call and completing the archive write.\n\nThe error message is \"tar: (Empty error message)\"\n\nThe problem is caused by incorrect handling of the return value from archive_write_data called in write_file_data in write.c. This error was not visible until this commit:\n\nhttp://www.freebsd.org/cgi/cvsweb.cgi/src/usr.bin/tar/write.c.diff?r1=1.47\u0026r2=1.48\n\nwhich adds an exit(1) call in the event of the incorrectly handled condition.\n\nFix: \n\nThis code in write_file_data (in write.c) appears to be incorrect:\n\nbytes_written = archive_write_data(a, buff, bytes_read);\nif (bytes_written \u003c= 0) {\n    /* Write failed; this is bad */\n    bsdtar_warnc(bsdtar, 0, \"%s\", archive_error_string(a));\n    return (-1);\n}\n\narchive_write_data will correctly return 0 if the original size of the file to be archived has already been reached. Unless I'm badly misunderstanding the libarchive code, this call will return \u003c 0, and not == 0, in the event of a real error in writing to the output archive. My suggested fix is therefore simply:\n\nif (bytes_written \u003c 0) {\n\nwe are testing this fix locally, and so far it seems to be correct.\nHow-To-Repeat: Arrange for a file to grow continuously (assuming the use of an sh-type shell here):\n\n$ (while true; do echo a; done) \u003e\u003etestfile \u0026\n\nThen try and archive it:\n\n$ tar cf test.tar testfile\ntar: (Empty error message)"
+}

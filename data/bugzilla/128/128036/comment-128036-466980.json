@@ -1,0 +1,8 @@
+{
+ "id": 466980,
+ "bug_id": 128036,
+ "attachment_id": 0,
+ "creation_time": "2008-10-13T02:00:01Z",
+ "creator": "arthur.hartwig@nokia.com",
+ "text": "System with serial console.\n\nIf the system is shutdown by \"shutdown -h ...\" the following prompt is displayed on the console:\n\n\"The operating system has halted.\nPlease press any key to reboot.\"\n\nOften a single keypress is not recognised; multiple keypresses are often required for the system to reboot.\n\nFix: \n\nIn sys/dev/sio.c, function siocnclose() change\n\n    outb(iobase + com_mcr, sp-\u003emcr | MCR_DTR | MCR_RTS);\n    outb(iobase + com_ier, sp-\u003eier);\nto\n    outb(iobase + com_mcr, sp-\u003emcr | MCR_DTR | MCR_RTS);\n    if (rebooting == 0) {\n        /*\n         * Only restore the interrupt enables if not rebooting. If \n\t * rebooting leave interrupts disabled, else a key press might be \n\t * swallowed by the interrupt handler and not seen by the shutdown code.\n\t */\n        outb(iobase + com_ier, sp-\u003eier);\n    }\n\nThe problem is that the shutdown code looking for a keypress on the console (loop in sys/kern/kern_shutdown.c function shutdown_halt) runs with console interrupts enabled. If the keypress generates a console interrupt then the keypress is swallowed by the console interrupt handler and not seen by the code polling for a keypress.\nHow-To-Repeat: On system with serial console, issue \n\n# shutdown -h now \n\ncommand"
+}

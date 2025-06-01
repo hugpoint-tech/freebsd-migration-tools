@@ -1,0 +1,8 @@
+{
+ "id": 1204911,
+ "bug_id": 240106,
+ "attachment_id": 0,
+ "creation_time": "2022-03-30T15:32:39Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Bjoern A. Zeeb from comment #12)\nNote that the issue described in #10 is a configuration problem more than a bug.\n\nIn this configuration the bridge will grab all packets, including those with a vlan tag and nothing will be passed to the vlan interfaces. That's expected. After all, the system has been configured to bridge all packets arriving on em0 to the members of vm-sw1, and that includes those with ETHERTYPE_VLAN.\n\nThis patch should make it do what the user wants, but I'm not convinced that's actually appropriate:\n\ndiff --git a/sys/net/if_bridge.c b/sys/net/if_bridge.c\nindex 12c807fe2009..98c79764bc69 100644\n--- a/sys/net/if_bridge.c\n+++ b/sys/net/if_bridge.c\n@@ -2467,6 +2467,11 @@ bridge_input(struct ifnet *ifp, struct mbuf *m)\n\n        eh = mtod(m, struct ether_header *);\n\n+       if (ntohs(eh-\u003eether_type) == ETHERTYPE_VLAN ||\n+           ntohs(eh-\u003eether_type) == ETHERTYPE_QINQ) {\n+               return (m);\n+       }\n+\n        bridge_span(sc, m);\n\n        if (m-\u003em_flags \u0026 (M_BCAST|M_MCAST)) {"
+}

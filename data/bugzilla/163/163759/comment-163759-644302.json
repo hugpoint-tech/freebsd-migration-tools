@@ -1,0 +1,8 @@
+{
+ "id": 644302,
+ "bug_id": 163759,
+ "attachment_id": 0,
+ "creation_time": "2012-01-02T06:16:21Z",
+ "creator": "adrian@freebsd.org",
+ "text": "A little more digging has shown at least one source of these: software\nretries are sneaking onto the list.\n\nIe:\n\n* force 11n aggregation up - do a whole bunch of traffic;\n* enabled debugging - sysctl dev.ath.1.debug=0x7c002000 - that's the\nSW TX handling bits and the TX_PROC debugging;\n* ping -i 0.3 \u003cip\u003e in one screen\n* scan in the other (ifconfig wlan1 scan)\n* notice the tid_drain things being logged.\n\nWhat I've seen:\n\n* frame is queued via ath_start() or ath_raw_xmit()\n* .. it makes it out to the hardware\n* ath_tx_processq() is called in the flush routine, with dosched=0\n* .. and it requires a retry, for reasons I haven't yet figured out.\nSince aggregation is up, the frame is retried in software.\n* .. so the frame is replaced on the software queue, but sched isn't\ncalled for it, so it sits on the software queue.\n* .. then drain is called, with a software-queued frame in the queue.\n\nSo now, what should I do here? Hum.\n\n\nadrian"
+}

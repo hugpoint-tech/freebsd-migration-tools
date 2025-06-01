@@ -1,0 +1,8 @@
+{
+ "id": 879167,
+ "bug_id": 209427,
+ "attachment_id": 170409,
+ "creation_time": "2016-05-17T15:14:49Z",
+ "creator": "novel@FreeBSD.org",
+ "text": "Created attachment 170409\nproposed fix, v2\n\nAttaching a new patch that's slightly less dirty than the previous one.\n\nSpecifically, it does not change vtnet_is_link_up() behavior, but extends vtnet_update_link_status() event triggering.\n\nSpecifically, if link is here and IFF_DRV_RUNNING is set, but interface was not active, we mark it active and trigger notification. If there is no link or IFF_DRV_RUNNING, then we consider interface down.\n\nAlso, add a call to vtnet_update_link_status() on mtu change to trigger events as well like other if drivers usually do.\n\nSo, a pair of ifconfig vtnet0 down/up followed by ifconfig vtnet0 mtu 1496 look like this in devd:\n\n!system=IFNET subsystem=vtnet0 type=LINK_DOWN\n!system=IFNET subsystem=vtnet0 type=LINK_UP\n!system=IFNET subsystem=vtnet0 type=LINK_DOWN\n!system=IFNET subsystem=vtnet0 type=LINK_UP\n!system=IFNET subsystem=vtnet0 type=LINK_DOWN\n!system=IFNET subsystem=vtnet0 type=LINK_UP\n\nI'm yet to figure out how I can test link status change in bhyve so vtnet_is_link_up() returned something other that 1."
+}

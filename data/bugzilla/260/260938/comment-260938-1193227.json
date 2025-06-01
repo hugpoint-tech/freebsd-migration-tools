@@ -1,0 +1,8 @@
+{
+ "id": 1193227,
+ "bug_id": 260938,
+ "attachment_id": 230710,
+ "creation_time": "2022-01-04T20:25:14Z",
+ "creator": "nabijaczleweli@nabijaczleweli.xyz",
+ "text": "Created attachment 230710\nAbove core dump, zstd compressed\n\nIf there's enough input and the child doesn't read it in fast enough, script(1) deadlocks on stdin to the child against the child writing to its stdout.\n\nThis is a regression from 4.4BSD-Lite, brought on by replacing the 2-process model (i.e.\n  leader:       stdin -\u003e master pty\n    child:      master pty -\u003e stdout/fscript\n      subchild: the command\n) with a single process and select(2); writes to the master pty don't seem to shard, and block forever; the child cannot continue because it's blocked on writing its own data.\n\nThis is the same bug as in util-linux's implementation (though that uses poll(2)), so please see this Debian bug for more words on the topic: https://bugs.debian.org/1003095\n\nAttaching core I got after ^\\ing and trace from \n  ktrace script /dev/null sh -c 'for i in $(seq 10); do echo $i; done; read -r a; echo a=$a' \u003c lc\nwherein lc is\n  b64encode /lib/libc.so.7 /lib/libc.so.7  \u003e lc\nuname -a says \"FreeBSD build 13.0-RELEASE-p4 FreeBSD 13.0-RELEASE-p4 #0: Tue Aug 24 07:33:27 UTC 2021     root@amd64-builder.daemonology.net:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\""
+}

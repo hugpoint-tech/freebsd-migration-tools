@@ -1,0 +1,8 @@
+{
+ "id": 828534,
+ "bug_id": 200992,
+ "attachment_id": 0,
+ "creation_time": "2015-06-21T06:31:11Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "The issue is that callout_stop() call in the sleepq_check_timeout() returned zero, which made the thread to (in)voluntarily relinguish the CPU.  But apparently the thread sleep callout was not really run, which means that there is nobody to make the thread runnable again.\n\nThe situation was already fixed once, it is the reason for the CALLOUT_DFRMIGRATION existence.\n\nFor me, it looks as if the r278469 could be a cause.  The added block which calculates the not_on_a_list means that sometimes previously pending callout is not longer pending, but also that we return 0 in this case.I think that in case not_on_a_list == 1, we _must_ return 1 from callout_stop().\n\nI am attaching the non-tested proof of concept patch to try."
+}

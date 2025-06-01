@@ -1,0 +1,8 @@
+{
+ "id": 1127507,
+ "bug_id": 250454,
+ "attachment_id": 0,
+ "creation_time": "2020-10-19T09:45:47Z",
+ "creator": "mgorny@gentoo.org",
+ "text": "The current code for translating FXSAVE area into FSAVE-alike struct for PT_GETFPREGS on i386 is oversimplifying the translation of FPU Tag Word (.en_tw).  The code maps all non-empty registers into 00 (i.e. normalized value) without distinguishing between normalized values, zeroes and specials like FSAVE does.\n\n\nSimple reproducer (works with -m32 on amd64):\n\n#include \u003cassert.h\u003e\n#include \u003cpthread.h\u003e\n#include \u003csignal.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003csys/ptrace.h\u003e\n#include \u003csys/wait.h\u003e\n#include \u003cmachine/reg.h\u003e\n\nint main() {\n\tint ret;\n\tint pid = fork();\n\tassert(pid != -1);\n\tif (pid == 0) {\n\t\tint i;\n\t\tpthread_t t2, t3;\n\n\t\tret = ptrace(PT_TRACE_ME, 0, NULL, 0);\n\t\tassert(ret != -1);\n\n\t\t__asm__ __volatile__ (\n\t\t\t\"finit\\n\\t\"\n\t\t\t\"fldz\\n\\t\"\n\t\t\t\"fld1\\n\\t\"\n\t\t\t\"fdiv %st(1),%st(0) \\n\\t\"\n\t\t\t\"fld1\\n\\t\"\n\t\t\t\"int3\\n\\t\"\n\t\t);\n\n\t\treturn 0;\n\t}\n\n\tpid_t waited = waitpid(pid, \u0026ret, 0);\n\tassert(waited == pid);\n\tprintf(\"wait: %d\\n\", ret);\n\n\tstruct fpreg fpr;\n\n\tret = ptrace(PT_GETFPREGS, pid, \u0026fpr, 0);\n\tassert (ret == 0);\n\tprintf(\"ftw = 0x%04x\\n\", fpr.fpr_env[2]);\n\n\tret = ptrace(PT_CONTINUE, pid, (void*)1, 0);\n\tassert(ret == 0);\n\n\twaited = waitpid(pid, \u0026ret, 0);\n\tassert(waited == pid);\n\tprintf(\"wait: %d\\n\", ret);\n\n\treturn 0;\n}"
+}

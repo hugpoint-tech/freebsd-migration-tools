@@ -1,0 +1,8 @@
+{
+ "id": 1221905,
+ "bug_id": 264729,
+ "attachment_id": 235719,
+ "creation_time": "2022-08-06T10:18:50Z",
+ "creator": "crahman@gmail.com",
+ "text": "Created attachment 235719\nPatch to correct problem\n\nTo provide a more precise description of the problem:\n\nAfter ntp is synced and ntp_is_time_error() returns true, when periodic_resettodr() is run every 1800 or so seconds as a callout, it saves the current system time to the RTC clocks.\n\nDuring a resume, after a suspend, it runs immediately, before inittodr().  inittodr() sets the system time based upon the RTC clocks.  But because periodic_resettodr() runs first, it puts the uninitialized system time into the RTC, which is then used to initialize the system time.\n\nAs a result, if a suspend/resume is done while ntp is synced, the time will be incorrect.\n\nThe problem may be solved by writing the system time to the RTC before the suspend, and cancelling the callout.  Upon wakeup, after the RTC clock is read, the callout can be started again."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1136927,
+ "bug_id": 251915,
+ "attachment_id": 0,
+ "creation_time": "2020-12-17T19:22:20Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Jakub Piecuch from comment #4)\nYou talked about a race with zeroing s_leader, but comment now mention t_session.\n\nI reformulated the comment, and also read t_session into local, just to\nshorten the lines and make this fragment easier to read.\n\nAlso, atomics come from sys/systm.h already.\n\ndiff --git a/sys/kern/tty.c b/sys/kern/tty.c\nindex 7526638b921..8d4d25a4ac0 100644\n--- a/sys/kern/tty.c\n+++ b/sys/kern/tty.c\n@@ -1474,6 +1474,7 @@ void\n tty_signal_sessleader(struct tty *tp, int sig)\n {\n \tstruct proc *p;\n+\tstruct session *s;\n \n \ttty_assert_locked(tp);\n \tMPASS(sig \u003e= 1 \u0026\u0026 sig \u003c NSIG);\n@@ -1482,8 +1483,14 @@ tty_signal_sessleader(struct tty *tp, int sig)\n \ttp-\u003et_flags \u0026= ~TF_STOPPED;\n \ttp-\u003et_termios.c_lflag \u0026= ~FLUSHO;\n \n-\tif (tp-\u003et_session != NULL \u0026\u0026 tp-\u003et_session-\u003es_leader != NULL) {\n-\t\tp = tp-\u003et_session-\u003es_leader;\n+\t/*\n+\t * Load s_leader exactly once to avoid race where s_leader is\n+\t * set to NULL by a concurrent invocation of killjobc() by the\n+\t * session leader.  Note that we are not holding t_session's\n+\t * lock for the read.\n+\t */\n+\tif ((s = tp-\u003et_session) != NULL \u0026\u0026\n+\t    (p = atomic_load_ptr(\u0026s-\u003es_leader)) != NULL) {\n \t\tPROC_LOCK(p);\n \t\tkern_psignal(p, sig);\n \t\tPROC_UNLOCK(p);"
+}

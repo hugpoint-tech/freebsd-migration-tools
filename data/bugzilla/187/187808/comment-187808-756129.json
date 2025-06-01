@@ -1,0 +1,8 @@
+{
+ "id": 756129,
+ "bug_id": 187808,
+ "attachment_id": 0,
+ "creation_time": "2014-03-21T09:30:00Z",
+ "creator": "pho@FreeBSD.org",
+ "text": "If first argument to gettimeofday() is an invalid pointer the call does not return EFAULT.\n\nHow-To-Repeat: $ cat -n gettimeofday.c\n     1  #include \u003cerr.h\u003e\n     2  #include \u003cstdio.h\u003e\n     3  #include \u003csys/time.h\u003e\n     4  #include \u003csys/syscall.h\u003e\n     5  #include \u003cunistd.h\u003e\n     6\n     7  int\n     8  main(void)\n     9  {\n    10          if (syscall(SYS_gettimeofday, (void *)-1, NULL) == -1)\n    11                  warn(\"syscall()\");\n    12\n    13          /* broken by r237434 */\n    14          if (gettimeofday((void *)-1, NULL) == -1)\n    15                  warn(\"gettimeofday()\");\n    16\n    17          return (0);\n    18  }\n$ cc -o gettimeofday -Wall -Wextra -O2 -g gettimeofday.c\n$ ./gettimeofday                                        \ngettimeofday: syscall(): Bad address\nSegmentation fault (core dumped)\n$"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1206123,
+ "bug_id": 263124,
+ "attachment_id": 233034,
+ "creation_time": "2022-04-07T16:52:08Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "Created attachment 233034\nconfig file for non-SMP build\n\nScenario:\n- FreeBSD 13.0 latest\n- Checking out releng/13.1 (= RC1) into /usr/src\n- Building a non-SMP kernel with a custom config previously used for 13.0 (\"XYZZY\")\n\nResult:\n- The build fails when linking the kernel with\n\nlinking kernel.full\nld: error: undefined symbol: apic_ops\n\u003e\u003e\u003e referenced by apicvar.h:386 (/net/hal/z/SRC/FreeBSD/src/MBi/releng/13.1/sys/x86/include/apicvar.h:386)\n\u003e\u003e\u003e               clock.o:(cpu_initclocks)\n*** Error code 1\n\nExpected result:\n- The build should succeed even without \"options SMP\" and \"device apic\" being defined in the kernel configuration file\n\nNote: Diffing sys/x86/isa/clock.c between 13.0 and 13.1 yields:\n\n68a69\n\u003e #include \u003cx86/apicvar.h\u003e\n413a415,417\n\u003e \n\u003e       tsc_calibrate();\n\u003e       lapic_calibrate_timer();\n427a432,433\n\u003e       tsc_calibrate();\n\u003e       lapic_calibrate_timer();\n457c463\n\u003c     CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_NEEDGIANT,\n---\n\u003e     CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_MPSAFE,\n\nIt seems the calls to lapic_calibrate_timer() should be made conditional on the SMP case.\n\nThe config file is attached.\n\n-- Martin"
+}

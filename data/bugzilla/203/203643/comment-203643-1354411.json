@@ -1,0 +1,8 @@
+{
+ "id": 1354411,
+ "bug_id": 203643,
+ "attachment_id": 0,
+ "creation_time": "2025-03-12T18:41:16Z",
+ "creator": "mp@FreeBSD.org",
+ "text": "Booting and installing NetBSD on an AMD Ryzen 7 7840U worked fine.\n\nLooking at the error being returned:\nexitcode 0x7b shows it was an IO exit\n\nexitinfo1 can be decoded from the AMD Programmers Manual Volume 2 Chapter 15.10.2\n0x3f8021c shows REP OUTS to port 0x3f8 (COM1 serial port)\n\nexitinfo2 is the address of the instruction following the OUTS\n\nThe IO is handled in svm_handle_io()\nhttps://github.com/freebsd/freebsd-src/blob/main/sys/amd64/vmm/amd/svm.c#L785\n\nThere is a check for the SVM DecodeAssist feature here:\nhttps://github.com/freebsd/freebsd-src/blob/main/sys/amd64/vmm/amd/svm.c#L808\n\nThe system information listed in this bug report do not have DecodeAssist listed.\nThe 7840U I used shows these SVM features:\nSVM: NP,NRIP,VClean,AFlush,DAssist,NAsids=32768\n\nBy stubbing that call to decode_assist() to return 0, I was able to get the same error to occur on my hardware.\n\nLooking back in the history, the check svm_handlt_io() was put in via this commit and commit message:\nhttps://github.com/freebsd/freebsd-src/commit/bbadcde418c29fe312a1d9d39b768735f285efbd\n\n\"Don't attempt to handle INS/OUTS VM-exits unless the DecodeAssist capabilityis available. The effective segment field in EXITINFO1 is not valid withoutthis capability.\"\n\nYou could try modifying the code to not do the decode_assist() check and see if it works on your system. Or try turning on graphics for the VM to see if it will boot using a graphics console."
+}

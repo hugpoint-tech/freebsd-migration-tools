@@ -1,0 +1,8 @@
+{
+ "id": 1139148,
+ "bug_id": 252307,
+ "attachment_id": 0,
+ "creation_time": "2020-12-31T16:08:30Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "See the comment at https://bugs.winehq.org/show_bug.cgi?id=50257#c20 for context.\n\n% cat weak_sym_override_test.c \n#include \u003cassert.h\u003e\n#include \u003cdlfcn.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstdio.h\u003e\n\n#if SHLIB\nvoid* calloc(size_t number, size_t size) {\n  printf(\"libc called\\n\");\n  exit(1);\n}\n#else\nint main() {\n  assert(dlopen(\"override.so\", RTLD_NOW) != NULL);\n  setenv(\"WHATEVER\", \"1\", 0); // uses calloc internally\n  return 0;\n}\n#endif\n% cc -shared -fPIC -DSHLIB weak_sym_override_test.c -o override.so \u0026\u0026 cc weak_sym_override_test.c -Wl,-rpath,. -o test\n% ./test \nlibc called\n\nDoesn't happen with LD_BIND_NOW=1. No idea how that works on Linux, glibc consistently avoids calling weak symbols it exports, preferring internal versions prefixed with with __ (two underscores) instead, thus there is no obvious way to test it."
+}

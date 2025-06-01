@@ -1,0 +1,8 @@
+{
+ "id": 960169,
+ "bug_id": 217555,
+ "attachment_id": 0,
+ "creation_time": "2017-11-20T10:22:12Z",
+ "creator": "tobik@freebsd.org",
+ "text": "Hi,\n\nI don't know if this is still relevant, but here is a quick review.\nI'm sure the port could use an update to a newer commit too now :)\n\nXPORTVERSION=\t0.0.1\n...\nXGH_TAGNAME=\t8703f30\n\nPlease don't invent version numbers like this.  If the project has no\ntagged release yet use a version with a date like g20171120.\n\nXLICENSE_NAME=\tUNLICENSE\nXLICENSE_PERMS=\tdist-mirror dist-sell pkg-mirror pkg-sell auto-accept\n\nThese can go away.  We have it in bsd.licenses.db.mk now.\n\nX.if (${OSVERSION} \u003c 1100000)\nXBUILD_DEPENDS+=\t${LOCALBASE}/bin/clang++38:lang/clang38\nX\nXCXX=\tclang++38\nX.endif\n\nWhy is this necessary?\n\nX.include \u003cbsd.port.pre.mk\u003e\n...\nXUSES=\tgmake ncurses\n\nUSES cannot be set after including bsd.port.pre.mk.  It has no effect\nthen.  This is probably also why gmake was added to BUILD_DEPENDS\nmanually.\n\nXDATADIR=\t${PREFIX}/share/kak\nXDOCSDIR=\t${PREFIX}/share/doc/kak\n\nCan the build be changed to install files into ${PREFIX}/share/kakoune\ninstead?\n\nXdo-build:\nX\tcd ${WRKSRC}/src \u0026\u0026 CXX=${CXX} ${GMAKE} \u0026\u0026 ${GMAKE} doc\nX\tcd ${WRKSRC}/doc \u0026\u0026 a2x --no-xmllint -f manpage kak.1.txt \u0026\u0026 ${GZIP_CMD} kak.1\n\nThis is wrong.  To build something after the regular build a\npost-build target can be added and to build multiple targets\n\nALL_TARGET=\tall doc\n\nTo pass environment variables to gmake set MAKE_ENV.\n\nXpost-install:\nX\t${LN} -Fs rc ${STAGEDIR}${DATADIR}/autoload\n\n${RLN} seems like a better choice here.\n\nPlease confirm that it passes QA checks like poudriere testport and\nportlint too. \n\nThanks!"
+}

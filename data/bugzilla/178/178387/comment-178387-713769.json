@@ -1,0 +1,8 @@
+{
+ "id": 713769,
+ "bug_id": 178387,
+ "attachment_id": 0,
+ "creation_time": "2013-05-07T10:00:00Z",
+ "creator": "nowak@tepeserwery.pl",
+ "text": "Sparse files in ZFS are slow. Default behavior is to allocate a temporary dbuf, zero it and destroy on return. There is no caching. Bandwidth is limited by cpu time bzeroing temporary dbufs.\n\nThe attached patch avoids creating temporary dbufs.\n\n4k reads are important for mmapped files.\n\nwithout the patch:\n\nzfs recordsize=128k, 4k reads:\n104857600 bytes transferred in 1.178753 secs (88956388 bytes/sec)\n\nzfs recordsize=8M, 4k reads:\n8388608 bytes transferred in 9.134382 secs (918355 bytes/sec)\n\nwith the patch:\n\nzfs recordsize=128k, 4k reads: (13x improvement)\n1048576000 bytes transferred in 0.904384 secs (1159436525 bytes/sec)\n\nzfs recordsize=8M, 4k reads: (over 1000x improvement)\n1048576000 bytes transferred in 0.909877 secs (1152437009 bytes/sec)\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: # truncate -s 1000m testfile\n# time dd if=testfile of=/dev/null bs=4k"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 21598,
+ "bug_id": 7019,
+ "attachment_id": 0,
+ "creation_time": "1998-06-22T15:00:00Z",
+ "creator": "lx@hosix.ntu-kpi.kiev.ua",
+ "text": "\n\tpwd.db created by pwd_mkdb almost always contains the whole or the part of /etc/shells. It's usually ok unless pwd.db is going to be placed in ftp_root:/etc. It seems that calls to (dp-\u003eput)(dp, \u0026key, \u0026data, method) in pwd_mkdb.c while writing legal pwd records to hash database get memory malloced in /usr/src/lib/libc/gen/getusershell.c: initshells() in some manner written too. This memory is malloced in the call to setusershell() in /usr/src/usr.sbin/pwd_mkdb/pw_scan.c while checking the shell entry of the user \"root\".\n\nFix: \n\n1) rename /etc/shells while building pwd.db for ftp_root:/etc\n\t2) do not include \"root\" user in master.passwd\n\t3) set username with uid 0 to \"Root\" :-) in master.passwd\n\t3) use native ftpd built with -DINTERNAL_LS\n\t4) do not put pwd.db in ftp_root:/etc at all - let ftp_root:/bin/ls produce numeric uids.\n\t5) fix pwd_mkdb to prevent such behavior\nHow-To-Repeat: \n\t# cat \u003e master.passwd\n\troot:*:0:0::0:0::/nowhere:/nowhere\n\tftpown:*:101:101::0:0::/nowhere:/nowhere\n\t^D\n\t# pwd_mkdb -d . master.passwd\n\tpwd_mkdb: warning, unknown root shell\n\t# strings pwd.db | more"
+}

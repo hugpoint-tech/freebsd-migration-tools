@@ -1,0 +1,8 @@
+{
+ "id": 74289,
+ "bug_id": 23823,
+ "attachment_id": 0,
+ "creation_time": "2000-12-25T10:50:01Z",
+ "creator": "arensb@ooblick.com",
+ "text": "\n\tThe man page for gethostbyname2(3) says:\n\n     The gethostbyname2() function is an evolution of gethostbyname() which is\n     intended to allow lookups in address families other than AF_INET, for ex-\n     ample AF_INET6. Currently the af argument must be specified as AF_INET\n     else the function will return NULL after having set h_errno to\n     NETDB_INTERNAL\n\nThis appears to be inaccurate: gethostbyname2(\"myhost6\", AF_INET6)\nreturns valid results. From looking at the source, it would appear\nthat the manual is correct only when the resolver looks the name up in\nNIS. However, I don't have an NIS server and have not tested this.\n\nFix: Suggestion: apply the following patch to\n/usr/src/lib/libc/net/gethostbyname.3 :\nHow-To-Repeat: \n* /etc/host.conf should contain:\n\n\thosts\n\n  (and optionally \"bind\", either before or after \"hosts\")\n\n* /etc/hosts should contain:\n\n\tfec0::a:b:c:d   myhost6 myhost6.my.domain\n\n* Compile ('cc -o foo foo.c') and run the following program:\n\t#include \u003cstdio.h\u003e\n\t#include \u003cnetdb.h\u003e\n\t#include \u003csys/socket.h\u003e\n\n\tmain()\n\t{\n\t\tstruct hostent *he;\n\t\tchar buf[256];\n\n\t\the = gethostbyname2(\"myhost6\", AF_INET6);\n\t\tif (he == NULL)\n\t\t{\n\t\t\tperror(\"gethostbyname2\");\n\t\t\texit(1);\n\t\t}\n\t\tif (he-\u003eh_addrtype != AF_INET6)\n\t\t\tfprintf(stderr, \"h_addrtype != AF_INET6 (%d)\\n\",\n\t\t\t\the-\u003eh_addrtype);\n\n\t\tprintf(\"address is [%s]\\n\",\n\t\t       inet_ntop(AF_INET6, he-\u003eh_addr_list[0], buf, 256));\n\t}\n\n  This program prints\n\taddress is [fec0::a:b:c:d]"
+}

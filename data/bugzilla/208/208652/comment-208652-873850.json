@@ -1,0 +1,8 @@
+{
+ "id": 873850,
+ "bug_id": 208652,
+ "attachment_id": 169123,
+ "creation_time": "2016-04-09T11:57:58Z",
+ "creator": "johan@stromnet.se",
+ "text": "Created attachment 169123\nPatch to fix interface binding \u0026 error messages on FreeBSD.\n\nThe net/mdns-repeater port is supposed to read one mDNS multicast packet from one interface, and forward it to one or more interfaces.\n\nOn FreeBSD it does not properly bind each sending socket to their corresponding interface, instead it just sends to multi-cast IP 244.0.0.251, which is emitted on the interface found via the default route (at least that was the case here). In my case this was my internet interface, resulting in all packets getting blocked by my firewall (and not sent at all to the proper interfaces).\nNot sure if this have ever worked on a multi-homed machine, but perhaps all the users have wanted it to forward to the interface with the default route, and assumed it was fine.\n\nThe existing code solves this with the Linux-specific SO_BINDTODEVICE opt, if it exists. It doesn't on FreeBSD.\nThe attached patch fixes this by using the IP_MULTICAST_IF socket option instead.\n\nThe patch also replaces the use of GNU-specific %m formatter (expands to strerror(errno)). While this works on FreeBSD syslog(3), it does not work on FreeBSD printf(3).\n\nPatch built with make makepatch."
+}

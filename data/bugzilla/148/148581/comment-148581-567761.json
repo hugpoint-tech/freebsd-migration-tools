@@ -1,0 +1,8 @@
+{
+ "id": 567761,
+ "bug_id": 148581,
+ "attachment_id": 0,
+ "creation_time": "2010-07-17T13:06:00Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "Strictly speaking, your very dirty supposedly safe fix breaks binary\ncompatibility because fileno() (in non-threaded programs only) and\nfileno_unlocked() are macros that hard-code the location and size of the\n_file field into binaries. If you have code compiled before the change\nin the same process as code compiled after the change, it might happen\nthat data is read/written from/to the wrong descriptor.\n\nWhat may work is extending FILE (although I'm not entirely sure that\nthere is noone that allocates their own FILE) with a 32-bit file\ndescriptor field. If the file descriptor exceeds 32767, the 16-bit field\nthen contains -1 and fileno() in old binaries will return that. This\nwill at least fail safely although fileno() is not defined to return\nerror conditions (but it has always returned -1 if the FILE is not\nassociated with a file descriptor).\n\n-- \nJilles Tjoelker"
+}

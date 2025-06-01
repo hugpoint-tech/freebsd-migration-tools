@@ -1,0 +1,8 @@
+{
+ "id": 603677,
+ "bug_id": 155658,
+ "attachment_id": 0,
+ "creation_time": "2012-09-19T12:58:02Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "On Wednesday, September 19, 2012 6:13:33 am Andreas Longwitz wrote:\n\u003e The last update of amr.c (SVN rev 236319) needs a correction, because\n\u003e the controller should see the length of the buffer of the userland program:\n\u003e \n\u003e @@ -919,7 +919,7 @@\n\u003e \n\u003e      /* build the command */\n\u003e      ac-\u003eac_data = dp;\n\u003e -    ac-\u003eac_length = real_length;\n\u003e +    ac-\u003eac_length = au_length;\n\u003e      ac-\u003eac_flags |= AMR_CMD_DATAIN|AMR_CMD_DATAOUT;\n\u003e \n\u003e      /* run the command */\n\u003e \n\u003e Without this patch some busy controllers only return zeros on every\n\u003e amr_ioctl.\n\nHmm.  We pass in the real_length in the Linux ioctl path as well.  If we want \nto fix that we should fix it in both places.  Also, I don't see how this can \nwork properly for a size of zero.  bus_dma won't populate the S/G list in that \ncase and you are back to the original buggy case for a size of 0.  Are you \nsure that you need this patch and not just the fix for commands with a size of \nzero?\n\n\u003e To do what is described in the comment \"Bug-for-bug compatibility ..\"\n\u003e we should allocate a buffer in the case of userland length 0 too:\n\nI've committed a slightly modified version of this (no need to check for\nNULL from a M_WAITOK malloc(), they always succeed).\n\n-- \nJohn Baldwin"
+}

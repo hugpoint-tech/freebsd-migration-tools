@@ -1,0 +1,8 @@
+{
+ "id": 835851,
+ "bug_id": 202247,
+ "attachment_id": 159773,
+ "creation_time": "2015-08-11T17:28:03Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Created attachment 159773\ni3status_eth.patch\n\nA few months back, the media status word for Ethernet was adjusted to use several high bits to extend the subtype field.  Ever since this, i3status has reported a media status string of \"10GBase-KX4\" when my laptop's Ethernet was unplugged.\n\nThe root bug is that the loop looking for a matching subtype uses the IFM macros against the subtype's word.  This is incorrect.  The description tables only contain a single field in the raw word.  (Note that the corresponding code in ifconfig only applies the IFM macros to the value from ifm_active.)  Previously this bug didn't matter as IFM_SUBTYPE() against the values in the table was a no-op.  However, with the extended types in the table, the IFM_SUBTYPE() chopped off the upper bits.  This is why the first extended type (10GBase-KX4) matched a status of 0 when the interface is down.\n\nNote that I also removed the IFM_TYPE check as it was bogus.  The entries in the table only have the subtype, so the IFM_TYPE is always clear.  This was why IFM_TYPE_MATCH in the original source had to be hacked to permit 0 which at that point meant it was always true and a no-op.\n\nWhile here, I fixed a few other things:\n\n1) added support for fetching extended media types\n2) return an unknown status if the ioctl fails instead of garbage\n3) return an unknown status if the type is not Ethernet\n4) explicitly handle no carrier instead of falling through to returning \"?\"\n\nThis should probably go upstream as well if possible.\n\n(I just have the patch for the port, I did not bump portrevision)"
+}

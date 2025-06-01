@@ -1,0 +1,8 @@
+{
+ "id": 1057546,
+ "bug_id": 239168,
+ "attachment_id": 0,
+ "creation_time": "2019-07-12T16:27:25Z",
+ "creator": "johan@stromnet.se",
+ "text": "With nagios-plugins 2.2.1_8,1 the check_procs plugin fails to match arguments on processes with long titles, when executed by ngios.\n\nWhen running the plugin manually from terminal, it works, but when nagios runs it the check fails.\n\nI was able to reproduce it in terminal when giving /dev/null as stdin:\n\n$ /usr/local/libexec/nagios//check_procs -w 1: -c 1: -a'python -m pyowmaster owmaster-dev.yaml' -vv\nCMD: /bin/ps -axwo 'stat uid pid ppid jid vsz rss pcpu comm args'\nMatched: uid=1001 vsz=18364 rss=5272 pid=4700 ppid=4680 jid=0 pcpu=0.00 stat=I+ etime= prog=python3.6 args=/home/johan/dev/pyowmaster/venv/bin/python -m pyowmaster owmaster-dev.yaml (python3.6)\n\nPROCS OK: 1 process with args 'python -m pyowmaster owmaster-dev.yaml' | procs=1;1:;1:;0;\n$ /usr/local/libexec/nagios//check_procs -w 1: -c 1: -a'python -m pyowmaster owmaster-dev.yaml' \u003c /dev/null\nCMD: /bin/ps -axwo 'stat uid pid ppid jid vsz rss pcpu comm args'\nPROCS CRITICAL: 0 processes with args 'python -m pyowmaster owmaster-dev.yaml' | procs=0;1:;1:;0;\n$\n\nI believe the problem is this patch:\nhttps://svnweb.freebsd.org/ports/head/net-mgmt/nagios-plugins/files/patch-configure?view=markup\nIt uses \"-axwo\" but it should be \"-axwwo\" to ensure ps does not care about terminal width. Altering the patch to use use -axwwo resolves the issue.\n\n(In HEAD version of ps this has actually been altered, but this is not in 11.x or even 12.x it seem): https://svnweb.freebsd.org/base?view=revision\u0026revision=330712"
+}

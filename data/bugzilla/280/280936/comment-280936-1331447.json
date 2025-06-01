@@ -1,0 +1,8 @@
+{
+ "id": 1331447,
+ "bug_id": 280936,
+ "attachment_id": 0,
+ "creation_time": "2024-10-25T15:55:20Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Right, I knew I had seen this before:\nhttps://github.com/llvm/llvm-project/issues/87923 [After 7740565f56ce, \"Assertion failed: (isa\u003cFunction\u003e(Callee) || isa\u003cGlobalAlias\u003e(Callee)), function analyzeAllUses\" with -asan-use-stack-safety]\n\nThis looks like the same sort of thing. The minimized test case I arrived at now was slightly different:\n\ntypedef int uint32_t;\nvoid sysarch(int, void *);\n#define DEFINE_UIFUNC(qual, ret_type, name, args)                              \\\n  ret_type name args __attribute__((ifunc(#name \"_resolver\")));                \\\n  ret_type(*name##_resolver(uint32_t cpu_feature2)) args\nint __fillcontextx2_xfpu() {\n  int xfpu;\n  sysarch(2, \u0026xfpu);\n  return 0;\n}\nint __fillcontextx2_noxfpu();\nDEFINE_UIFUNC(, int, __fillcontextx2, (char *)) {\n  return cpu_feature2 ? __fillcontextx2_xfpu : __fillcontextx2_noxfpu;\n}\nvoid __fillcontextx(char *ctx) { __fillcontextx2(ctx); }\n\nI'll need do ping the assignee of the upstream bug again."
+}

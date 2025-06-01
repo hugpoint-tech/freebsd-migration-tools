@@ -1,0 +1,8 @@
+{
+ "id": 809854,
+ "bug_id": 197605,
+ "attachment_id": 0,
+ "creation_time": "2015-02-13T23:52:47Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Ports of Cube-based games all build libenet, newer version of which is available as net/enet port. It maybe worth to investigate API difference[1] with bundled versions, convert to system one and check interoperability with existing servers/clients doesn't degrade.\n\ngames/cube switched a long time ago (see ports r173704). It no longer uses static library since net/libenet started providing shared one.\n\ngames/tesseract (in bug 189829) switched by me. It only required the following:\n\n  LIB_DEPENDS=          libenet.so:${PORTSDIR}/net/enet\n\n  USES+=                pkgconfig\n  EXTRACT_AFTER_ARGS=   --exclude src/enet\n\n  post-patch:\n          @${REINPLACE_CMD} \\\n                  -e 's,-Ienet/include,`pkg-config --cflags libenet`,' \\\n                  -e 's,-Lenet -lenet,`pkg-config --libs libenet`,' \\\n                  -e 's,enet/libenet.a,${LOCALBASE}/lib/libenet.so,' \\\n                  ${BUILD_WRKSRC}/Makefile\n\nwith the following intent:\n- do not extract src/enet to avoid accidentally picking up its headers\n- replace flags with whatever pkg-config knows about libenet\n- force make target to believe libenet was already built\n\n[1] http://upstream.rosalinux.ru/versions/enet.html"
+}

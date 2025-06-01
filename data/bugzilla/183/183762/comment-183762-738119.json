@@ -1,0 +1,8 @@
+{
+ "id": 738119,
+ "bug_id": 183762,
+ "attachment_id": 0,
+ "creation_time": "2013-11-07T20:20:00Z",
+ "creator": "julio@meroh.net",
+ "text": "\tThe .undef directive of make(1) does not seem to work on a\n\tvariable that has been defined to a value (even if empty) either\n\tvia the environment or a command-line argument to make.  However\n\t.undef works on variables that have been defined using make's\n\t-D flag and variables defined in the same Makefile.\n\n\tI have found this while debugging build issues in bsd.own.mk.\n\tMakefile.inc1 has to pass -DNO_* to make in order to explicitly\n\tdisable some features during the build bootstrap.  However, if\n\tthe user explicitly sets WITH_* from the command line (without\n\tusing -D), the build fails because it finds both WITH_* and\n\tWITHOUT_* defined.\n\n\tI believe .undef is buggy and hence the reason for this PR.  And\n\tif it is not a bug, make(1) probably deserves some note about\n\tthis as well as the build documentation (maybe in src.conf(5))\n\tto warn about this.\n\nHow-To-Repeat: \tSample Makefile:\n\n-----\n.if defined(DEFINE_VAR_IN_MAKEFILE)\nVAR=foo\n.endif\n\n.undef VAR\n\nall:\n.if defined(VAR)\n\t@echo defined\n.else\n\t@echo undefined\n.endif\n-----\n\n\tAnd sample invocations:\n\n-----\n$ make\nundefined\n$ make -DVAR\nundefined\n$ make -DDEFINE_VAR_IN_MAKEFILE\nundefined\n$ make VAR=\ndefined\n$ VAR= make\ndefined\n-----\n\n\tThe last two cases shown above are unexpected behavior to me.\n\tI would expect the \".undef VAR\" to take effect at all times."
+}

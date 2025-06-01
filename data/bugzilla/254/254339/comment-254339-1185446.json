@@ -1,0 +1,8 @@
+{
+ "id": 1185446,
+ "bug_id": 254339,
+ "attachment_id": 0,
+ "creation_time": "2021-11-05T18:15:47Z",
+ "creator": "emaste@freebsd.org",
+ "text": "It looks like this is unconditional and would break Linux?:\n\n-from cloudinit.distros import rhel_util\n+from cloudinit.distros import bsd_utils\n\nShould it instead be this?\n\ndiff --git a/cloudinit/config/cc_salt_minion.py b/cloudinit/config/cc_salt_minion.py\nindex b61876aa..379ea800 100644\n--- a/cloudinit/config/cc_salt_minion.py\n+++ b/cloudinit/config/cc_salt_minion.py\n@@ -46,6 +46,7 @@ specify them with ``pkg_name``, ``service_name`` and ``config_dir``.\n import os\n \n from cloudinit import safeyaml, subp, util\n+from cloudinit.distros import bsd_utils\n from cloudinit.distros import rhel_util\n \n \n@@ -125,8 +126,7 @@ def handle(name, cfg, cloud, log, _args):\n     # we need to have the salt minion service enabled in rc in order to be\n     # able to start the service. this does only apply on FreeBSD servers.\n     if cloud.distro.osfamily == 'freebsd':\n-        rhel_util.update_sysconfig_file(\n-            '/etc/rc.conf', {'salt_minion_enable': 'YES'})\n+        bsd_utils.set_rc_config_value('salt_minion_enable', 'YES')\n \n     # restart salt-minion. 'service' will start even if not started. if it\n     # was started, it needs to be restarted for config change."
+}

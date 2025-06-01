@@ -1,0 +1,8 @@
+{
+ "id": 892620,
+ "bug_id": 211802,
+ "attachment_id": 0,
+ "creation_time": "2016-08-13T04:38:38Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "One of the new NetBSD tests initializes a pthread_mutexattr, then tests out priority ceiling manipulation via pthread_mutexattr_getprioceiling/pthread_mutexattr_setprioceiling . Unfortunately the test fails with EINVAL because of a check made in lib/libthr/thr_mutexattr.c:\n\n230 int\n231 _pthread_mutexattr_getprioceiling(pthread_mutexattr_t *mattr, int *prioceiling)\n232 {\n233         int ret = 0;\n234 \n235         if (mattr == NULL || *mattr == NULL)\n236                 ret = EINVAL;\n237         else if ((*mattr)-\u003em_protocol != PTHREAD_PRIO_PROTECT)\n238                 ret = EINVAL;\n239         else\n240                 *prioceiling = (*mattr)-\u003em_ceiling;\n241 \n242         return (ret);\n243 }\n244 \n245 int\n246 _pthread_mutexattr_setprioceiling(pthread_mutexattr_t *mattr, int prioceiling)\n247 {\n248         int ret = 0;\n249 \n250         if (mattr == NULL || *mattr == NULL)\n251                 ret = EINVAL;\n252         else if ((*mattr)-\u003em_protocol != PTHREAD_PRIO_PROTECT)\n253                 ret = EINVAL;\n254         else\n255                 (*mattr)-\u003em_ceiling = prioceiling;\n256 \n257         return (ret);\n258 }\n\nopengroup.org [1] and the pthread*(3) [2] manages don't state why m_protocol being set to PTHREAD_PRIO_PROTECT would cause the functions to return EINVAL.\n\n1. https://www.freebsd.org/cgi/man.cgi?apropos=0\u0026sektion=3\u0026query=pthread_mutexattr\u0026manpath=FreeBSD+7.0-current\u0026format=html\n2. http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_mutexattr_getprioceiling.html"
+}

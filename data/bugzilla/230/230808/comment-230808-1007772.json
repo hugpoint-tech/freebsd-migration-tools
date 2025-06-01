@@ -1,0 +1,8 @@
+{
+ "id": 1007772,
+ "bug_id": 230808,
+ "attachment_id": 0,
+ "creation_time": "2018-08-22T04:37:47Z",
+ "creator": "cem@freebsd.org",
+ "text": "(At least) one other oddity here:\n\nrandom_fortuna_pre_read attempts to limit reseeds to once every 100ms (per Fortuna paper).  However, it grabs the current time in sbintime_t units and compares against hz/10.  hz is one second in units of ticks, which are a function of softclock frequency...\n\nThe right comparison would be:\n\n    (now - fortuna_state.fs_lasttime \u003e SBT_1S/10)\n\nSince hz is commonly 1000 and SBT_1S/10 is ~400 million, this check will nearly always pass when it should not (~99.99998% false positive).  That's more or less broken."
+}

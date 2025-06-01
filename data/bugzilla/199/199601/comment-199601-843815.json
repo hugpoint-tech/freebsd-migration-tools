@@ -1,0 +1,8 @@
+{
+ "id": 843815,
+ "bug_id": 199601,
+ "attachment_id": 0,
+ "creation_time": "2015-10-13T16:45:12Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "In the case of libe-book, the problem isn't caused a change in BOOST_NO_LONG_LONG vs. BOOST_HAS_LONG_LONG between 1.55 and 1.58.  Both of these versions of boost always define BOOST_HAS_LONG_LONG whenever they are built with either gcc or clang.  The libe-book build failure is triggered by the 1.58 version of boost::unordered, which tries to use \"long long\" if BOOST_HAS_LONG_LONG is defined, which causes a compilation error because the libe-book build passes the -pedantic flag to gcc.\n\nUnfortunately there does not seem to be a way of detecting the use of -pedantic\nwhen compiling with gcc.  The __LONG_LONG_SUPPORTED logic in \u003csys/cdefs.h\u003e attempts to handle this by checking __STRICT_ANSI__, but that is controlled by the -ansi compiler flag, not the -pedantic flag.  Adding a check for __STRICT_ANSI__ to boost would not fix libe-book because it does not specify the -ansi flag.\n\nIt is possible to fix the libe-book build by patching boost to only enable BOOST_HAS_LONG_LONG when compiling with -std=c++11 (or c99), but this breaks boost on i386 because it is unable to figure out how to handle 64-bit integral types without BOOST_HAS_LONG_LONG.  That can also be fixed, and I was able to build libe-book on FreeBSD 9.3 and 10.1 on both amd64 and i386.\n\nMy concern is that there could be considerable fallout by ripping boost \"long long\" support from under ports that expect it but are not using the appropriate -std setting, and were not previously experiencing build failures because they were not building with -pedantic."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1313280,
+ "bug_id": 277783,
+ "attachment_id": 251489,
+ "creation_time": "2024-06-16T02:26:01Z",
+ "creator": "kargl@FreeBSD.org",
+ "text": "Created attachment 251489\nNew patch\n\nThe code for fma() and fmal() contain a special case when the addends sum to zero, but it seems that it mishandles small low order bits especially if a subnormal condition occurs.  One of the testcases in msun/tests (that I broke with the original patch) is fma(-1.,1.,1.) with the intermediate results\n\n(x,y,z): -0x1p+0  0x1p+0  0x1p+0\nxy = {-0x1p-2, 0x0p+0}\nr  = {0x0p+0, 0x0p+0}\nspread = 2\nzs = 0x1p-2\n\nfma returns (xy.hi + zs +ldexp(xy.lo,spread)), which is fine.\n\nFor the case that Victor submitted one has\n\n(x,y,z):  0x1.ffffffffffff8p-501  0x1.0000000000004p-500 -0x1p-1000\nxy = {5.000000e-01, -3.944305e-31}\nr  = {0.000000e+00 0.000000e+00}\nspread = -999 \nzs = -5.000000e-01\n\nFor the original code, the special leads to ldexp(xy.lo,spread)=ldexp(-3.944305e-31,-999), is not good.\n\nThe new patch skips the special case if xy.lo != 0.  This then allows fma() to call its add_and_denormalize() function."
+}

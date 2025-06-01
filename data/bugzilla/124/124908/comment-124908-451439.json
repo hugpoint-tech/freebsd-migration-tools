@@ -1,0 +1,8 @@
+{
+ "id": 451439,
+ "bug_id": 124908,
+ "attachment_id": 0,
+ "creation_time": "2008-06-23T16:50:00Z",
+ "creator": "campbell@mumble.net",
+ "text": "In src/kern/sys/uipc_usrreq.c (rev 1.214), the function unp_internalize does not adequately check that the lengths in control message headers are correct, and as a consequence may calculate a negative number of file descriptors in the user-supplied buffer, leading potentially to disaster later on.\n\n(Thanks to Michael van Elst and Martin Husemann for alerting me to this issue in NetBSD.)\n\nFix: \n\nAdd the following test to the list of conditions in unp_internalize for which it will return EINVAL:\n\n   cm-\u003ecmsg_len \u003c CMSG_ALIGN(sizeof(struct cmsghdr))\nHow-To-Repeat: Download the program\n\n   \u003chttp://mumble.net/~campbell/tmp/fbsd-fail.c\u003e\n\nCompile it with\n\n   gcc -DFAIL -g -Wall fbsd-fail.c -o fbsd-fail\n\nRun it with\n\n   ./fbsd-fail foobar\n\nsendmsg(2) should return EINVAL, but it doesn't; instead it has random effects, such as returning EBADF, which suggests that the kernel might be examining and passing to other processes file descriptors that the user did not request."
+}

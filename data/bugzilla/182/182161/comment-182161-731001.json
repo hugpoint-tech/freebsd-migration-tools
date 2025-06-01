@@ -1,0 +1,8 @@
+{
+ "id": 731001,
+ "bug_id": 182161,
+ "attachment_id": 0,
+ "creation_time": "2013-09-24T13:24:55Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kib\nDate: Tue Sep 24 12:24:48 2013\nNew Revision: 255844\nURL: http://svnweb.freebsd.org/changeset/base/255844\n\nLog:\n  Ensure that the ERESTART return from the syscall reloads the\n  registers, to make the restarted syscall instruction pass the correct\n  arguments.\n  \n  PR:\tkern/182161\n  Reported by:\tRuss Cox \u003crsc@swtch.com\u003e\n  Sponsored by:\tThe FreeBSD Foundation\n  MFC after:\t3 days\n  Approved by:\tre (marius)\n\nModified:\n  head/sys/amd64/amd64/vm_machdep.c\n\nModified: head/sys/amd64/amd64/vm_machdep.c\n==============================================================================\n--- head/sys/amd64/amd64/vm_machdep.c\tTue Sep 24 11:49:04 2013\t(r255843)\n+++ head/sys/amd64/amd64/vm_machdep.c\tTue Sep 24 12:24:48 2013\t(r255844)\n@@ -400,9 +400,13 @@ cpu_set_syscall_retval(struct thread *td\n \t\t * for the next iteration.\n \t\t * %r10 restore is only required for freebsd/amd64 processes,\n \t\t * but shall be innocent for any ia32 ABI.\n+\t\t *\n+\t\t * Require full context restore to get the arguments\n+\t\t * in the registers reloaded at return to usermode.\n \t\t */\n \t\ttd-\u003etd_frame-\u003etf_rip -= td-\u003etd_frame-\u003etf_err;\n \t\ttd-\u003etd_frame-\u003etf_r10 = td-\u003etd_frame-\u003etf_rcx;\n+\t\tset_pcb_flags(td-\u003etd_pcb, PCB_FULL_IRET);\n \t\tbreak;\n \n \tcase EJUSTRETURN:\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

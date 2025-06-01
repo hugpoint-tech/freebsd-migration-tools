@@ -1,0 +1,8 @@
+{
+ "id": 1147248,
+ "bug_id": 253593,
+ "attachment_id": 0,
+ "creation_time": "2021-02-17T18:24:56Z",
+ "creator": "elogin41@gmail.com",
+ "text": "Overview:\nMoving a current working directory of a chrooted/jailed process, which is accessed via nullfs mount, to the outside of chroot/jail will hang the process in R state with CPU maxed out. The process cannot be killed. Whether mount is rw or ro makes no difference.\n\nSteps to reproduce:\nSetup directories\n/test/mounted/subdir\n/test/outside\n/test/jail  \u003c--- minimum chroot environment, or static shell\n\nWith nullfs mount:\nhost# mount\n/test/inside on /test/jail/mnt (nullfs, local, soft-updates)\n\nProcedure:\n[terminal1]\nhost# chroot /test/jail /bin/sh\njail# cd /mnt/subdir\n[terminal2]\nhost# mv /test/mounted/subdir /test/outside\n! at this point we have:\n! /test/mounted\n! /test/outside/subdir\n[terminal1]\njail# pwd\n/mnt/subdir\njail# cd .\n\nActual result:\nShell process hangs w/ CPU utilization maxed and cannot be killed (R state). Nullfs mount cannot be unmounted, results in D state.\nReturn to normal operation requires reboot.\n\nExpected result:\nGraceful failure.\n\nTested on:\n12.2-RELEASE-p1, 12.2-RELEASE-p3, physical and virtual (virtualbox).\n14.0-CURRENT will panic the kernel."
+}

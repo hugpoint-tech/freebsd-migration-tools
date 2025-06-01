@@ -1,0 +1,8 @@
+{
+ "id": 1348060,
+ "bug_id": 280546,
+ "attachment_id": 0,
+ "creation_time": "2025-02-04T18:02:15Z",
+ "creator": "robin.haberkorn@googlemail.com",
+ "text": "Well except, that it doesn't. Because it's obviously a memory corruption issue:\n\n(kgdb) f 8\n#8  iwl_mvm_bt_notif_per_link (mvm=0xfffffe00f1bb2508, vif=0xfffffe00f33cde80, data=0xfffffe00c294bd40, link_id=0) at /usr/src/sys/contrib/dev/iwlwifi/mvm/coex.c:292\n292                  chanctx_conf-\u003edef.chan-\u003eband != NL80211_BAND_2GHZ)) {\n(kgdb) f 8\n#8  iwl_mvm_bt_notif_per_link (mvm=0xfffffe00f1bb2508, vif=0xfffffe00f33cde80, data=0xfffffe00c294bd40, link_id=0) at /usr/src/sys/contrib/dev/iwlwifi/mvm/coex.c:292\n292                  chanctx_conf-\u003edef.chan-\u003eband != NL80211_BAND_2GHZ)) {\n(kgdb) p chanctx_conf-\u003edef.chan\n$1 = (struct linuxkpi_ieee80211_channel *) 0x8086b85b\n(kgdb) p *chanctx_conf-\u003edef.chan\nCannot access memory at address 0x8086b85b\n\nIt's only sometimes resulting in unexpected NULL pointers.\n\nbz@FreeBSD.org, perhaps it would be worth to pull in upstream patches? The last update was in May of 2023. Actually, considering that this driver is supposed to be synced with the Linux kernel version, shouldn't that be the first thing we try?"
+}

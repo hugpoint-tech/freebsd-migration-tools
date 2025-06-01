@@ -1,0 +1,8 @@
+{
+ "id": 1281081,
+ "bug_id": 274389,
+ "attachment_id": 0,
+ "creation_time": "2023-10-23T20:29:01Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I still don't fully understand the problem yet.  What's happening is:\n- virtio-blk0 has an I/O bar, initially at 0x2000.\n- something maps it at 0xc000 early during boot, I speculate it's edk2.  This happens before any I/O is done.\n- OpenBSD's boot loader loads the kernel, kernel boots.\n- OpenBSD enumerates devices, tries to enable virtio-blk0.  It sees that the BAR has address 0xc000, and because this apparently conflicts with an existing resource, it disables the BAR by setting its address to 0, but that conflicts with an I/O port owned by atkbd  That triggers the assertion failure.\n\nI spent quite some time trying to understand what it's conflicting with, the boot logs don't make it clear.\n\nI did notice that edk2-bhyve was upgraded recently; I tried downgrading to edk2-bhyve-g202202_10 and the problem went away.  Corvin, do you have any idea what's going on here?"
+}

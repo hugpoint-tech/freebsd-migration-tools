@@ -1,0 +1,8 @@
+{
+ "id": 1356912,
+ "bug_id": 262180,
+ "attachment_id": 0,
+ "creation_time": "2025-03-28T11:22:36Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "This is a consequence of the way nullfs handles dotdot lookups.  Here, a proc's cwd is a nullfs vnode, and behind the scenes the corresponding lower vnode is moved out of the exported directory.  Then, successive dotdot lookups instantiate nullfs vnodes outside of the nullfs mountpoint.  These get returned and effectively \"cover\" the jail's root dir, so the pointer equality check in vfs_lookup() against ni_rootdir doesn't work because it's comparing the returned nullfs vnode with a lower vnode.\n\nThere is a hack in null_lookup() to handle this kind of situation, and this is enough to prevent the problem if the process root is also a mountpoint.\n\nTo fix this, I think vfs_lookup() either has to compare ni_topdir/ni_rootdir with \"dp\" and its aliases, using a VOP implemented by nullfs.  Or, we can start passing the ndp to VOP_LOOKUP somehow and modify nullfs to perform this check internally."
+}

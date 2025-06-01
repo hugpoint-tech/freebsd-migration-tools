@@ -1,0 +1,8 @@
+{
+ "id": 746469,
+ "bug_id": 185628,
+ "attachment_id": 0,
+ "creation_time": "2014-01-10T07:38:13Z",
+ "creator": "hps@bitfrost.no",
+ "text": "Hi,\n\nCan you give some more details? Are these in some kind of enclosure?\n\nWhat USB speed are they connected at?\n\nIf you are using an XHCI controller and the drives are connected at \nSuper Speed (5.0 GBit), there has been a change in the XHCI driver which \nchange how short packets are handled for transfers larger than 64K. The \nfollowing patch will revert to the old behaviour from a class-driver \npoint of view:\n\n==================================================================\n--- umass.c\t(revision 260392)\n+++ umass.c\t(local)\n@@ -1362,7 +1362,11 @@\n  \t\tsc-\u003esc_transfer.data_ptr += actlen;\n  \t\tsc-\u003esc_transfer.actlen += actlen;\n\n-\t\tif (actlen \u003c sumlen) {\n+\t\t/*\n+\t\t * Filter out devices sending a short packet\n+\t\t * when they shouldn't:\n+\t\t */\n+\t\tif ((actlen % 512) != 0 \u0026\u0026 (actlen \u003c sumlen)) {\n  \t\t\t/* short transfer */\n  \t\t\tsc-\u003esc_transfer.data_rem = 0;\n  \t\t}\n\nDo other USB devices connected to the same USB host controller continue \nto work?\n\n--HPS"
+}

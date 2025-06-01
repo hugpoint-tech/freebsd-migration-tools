@@ -1,0 +1,8 @@
+{
+ "id": 1009995,
+ "bug_id": 188829,
+ "attachment_id": 196858,
+ "creation_time": "2018-09-04T14:29:23Z",
+ "creator": "jwb@freebsd.org",
+ "text": "Created attachment 196858\nUnified diff\n\nThe author of the atp driver pointed me to this patch some time ago and I was surprised to see that the problem still exists in 11.1-RELEASE.\n\nIt has to do with recalibrating the touchpad as temperature rises.\n\nThe patch still applies cleanly and solves the problem on my MacBook Pro.\n\nFrom dmidecode:\n\nSystem Information\n        Manufacturer: Apple Computer, Inc.\n        Product Name: MacBookPro2,2\n        Version: 1.0\n\nThere's another small problem now, though.  \"make install\" places the module in /boot/modules, and kldload still grabs the old one from /boot/kernel.\n\nHere's what I do in total to make this problem go away:\n\ncd /usr/src/sys/dev/usb/input\nfetch http://acadix.biz/atp.patch\nif [ ! -e atp.c.save ]; then\n    cp atp.c atp.c.save\nfi\nif [ ! -e atp.c.orig ]; then\n    patch \u003c atp.patch\nfi\nif [ ! -e /boot/kernel/atp.ko.save ]; then\n    cp /boot/kernel/atp.ko /boot/kernel/atp.ko.save\nfi\ncd /usr/src/sys/modules/usb/atp\nmake\nkldunload atp\nmake install\ncp /boot/modules/atp.ko /boot/kernel\n# protect filesystem in case kld[un]load causes problems. Hasn't happened for\n# me with atp, but it's a general habit based on a few bad experiences.\nsync\nkldunload atp\nkldload atp"
+}

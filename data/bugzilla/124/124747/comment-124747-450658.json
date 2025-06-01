@@ -1,0 +1,8 @@
+{
+ "id": 450658,
+ "bug_id": 124747,
+ "attachment_id": 0,
+ "creation_time": "2008-06-19T07:50:01Z",
+ "creator": "gk@FreeBSD.org",
+ "text": "Issue was mentioned recently on stable@\nhttp://docs.freebsd.org/cgi/mid.cgi?47F548D9.8060905\n\nThe problem is in order of rc.d scripts.  After encswap finishes it's\nimpossible to open original (not encrypted) swap device for write so\nsavecore fails.\n\nFix: The following patch adds 'encswap' target to be run after 'disks' but\nbefore 'swap1'. With the patch order of scripts becomes:\ndumpon\ngeli\nsavecore\nencswap\nswap1\n\ninstead of:\ndumpon\ngeli\nencswap\nswap1\nsavecore\n\nThe problem is that savecore looses ability to log to syslog. You still get\nmessages on console. The only solution I see is to use some hackery\nmagic to inject log messages into kern.msgbuf with the help of\n/dev/console. I'm not sure it's really needed.\n\nI use this patch since apr 2008. It works for me.\n\n\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. enable swap encryption\n\n/dev/ad0s3b.eli         none            swap    sw              0       0\n\n2. setup dumpdev. in /etc/rc.conf\n\ndumpdev=\"/dev/ad0s3b\"\n\n3. force panic.\n\n4. savecore can't read dump because dumpdev is already open for write."
+}

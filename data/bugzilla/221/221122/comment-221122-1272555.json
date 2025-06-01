@@ -1,0 +1,8 @@
+{
+ "id": 1272555,
+ "bug_id": 221122,
+ "attachment_id": 0,
+ "creation_time": "2023-09-01T02:40:09Z",
+ "creator": "spork@bway.net",
+ "text": "The answer to \"when did interface capabilities get restored when a member is removed\" is \"back in 2008\".\n\nThis commit altered how interface flags were dealt with: \n\nhttps://cgit.freebsd.org/src/commit/sys/net/if_bridge.c?id=ec29c623005ca6a32d44fb59bc2a759a96dc75e4\n\nYou can see a variable \"bif_savedcaps\" was added so that the bridge now tracks what the original interface flags were.\n\nThen when a member is removed, it looks like all of a bridge's interfaces are looped through and the original flags are restored (in bridge_delete_member()):\n\n+\t\t/* reneable any interface capabilities */\n+\t\tbridge_set_ifcap(sc, bif, bif-\u003ebif_savedcaps);\n\nNot sure where, but this kind of feels like it could be a tunable, like \"net.link.bridge.restore_caps\" or similar, given a) jails will trigger this with lots of NICs b) these days 5 seconds of downtime is actually not a minor issue in many environments and c) it need not change any defaults, but rc.d/jail and 3rd party jail scripts could opt to set it d) jails are kind of a big reason people come to FreeBSD.\n\nI'm not much of a coder, but I could get that sysctl like 80% there I think after looking at the other \"net.link.bridge\" tunables... any takers on helping? Any thoughts on whether this makes sense?"
+}

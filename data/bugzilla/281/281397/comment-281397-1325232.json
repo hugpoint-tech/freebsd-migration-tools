@@ -1,0 +1,8 @@
+{
+ "id": 1325232,
+ "bug_id": 281397,
+ "attachment_id": 0,
+ "creation_time": "2024-09-13T18:27:32Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Also thank you for reporting this one.\n\nBefore trying to replicate this issue locally, I checked the linked resources and at least one of the comments[0] mentions that they're running a virtualized OPNsense on proxmox.\n\nSo maybe you could double-check that this isn't caused by the bridge issue identified in bug #281395 (MLD snooping doing something to icmp6).\n\nSo that would basically mean:\n\n- Turn MLD snooping back on\n- Enable pf on your test host:\n\n    (echo \"set debug misc\"; echo pass) \u003e/etc/pf.conf\n    service pf onestart\n\n- Turn on some traffic (iperf3, like you mentioned)\n- Check /var/log/messages if it complains about short ICMP packages\n- If yes, turn off MLD snooping and see if it continues\n\nYou might need to configure your instance as a gateway though:\n\n    sysctl net.inet.ip.forwarding=1\n    sysctl net.inet6.ip6.forwarding=1\n\n\nI *think* that this config should be enough to have pf debug output end up in /var/log.\n\nIf it turns out this is not caused by proxmox's default bridge setting, I'll try to dig into it a bit more and see if I can reproduce it in one of my vms.\n\n[0] https://forum.opnsense.org/index.php?topic=42632.msg211497#msg211497"
+}

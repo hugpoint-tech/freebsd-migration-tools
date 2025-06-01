@@ -1,0 +1,8 @@
+{
+ "id": 925698,
+ "bug_id": 217750,
+ "attachment_id": 0,
+ "creation_time": "2017-03-13T12:42:04Z",
+ "creator": "as@cmplx.uk",
+ "text": "With non-default GCC in /etc/make.conf,\ne.g. DEFAULT_VERSIONS=gcc=6 there is an anomaly\nbetween net/mpich, net/openmpi and net/openmpi2.\n\n$ /usr/local/bin/mpif90 --version\nGNU Fortran (FreeBSD Ports Collection) 6.3.1 20161229\n$ /usr/local/bin/mpif90 z.f90\n$ /usr/local/bin/mpirun -np 3 ./a.out\n node           1 : Hello world\n node           2 : Hello world\n node           0 : Hello world\n\nHowever, with openmpi (same with net/openmpi2):\n\n$ /usr/local/mpi/openmpi/bin/mpif90 --version\nGNU Fortran (FreeBSD Ports Collection) 6.3.1 20161229\n$ /usr/local/mpi/openmpi/bin/mpif90 z.f90\n$ /usr/local/mpi/openmpi/bin/mpirun -np 3 ./a.out\n-------------------------------------------------------\nPrimary job  terminated normally, but 1 process returned\na non-zero exit code.. Per user-direction, the job has been aborted.\n-------------------------------------------------------\n/lib/libgcc_s.so.1: version GCC_4.6.0 required by /usr/local/lib/gcc49/libgfortran.so.3 not found\n/lib/libgcc_s.so.1: version GCC_4.6.0 required by /usr/local/lib/gcc49/libgfortran.so.3 not found\n\nso I need to pass -rpath to mpif90:\n\n$ /usr/local/mpi/openmpi/bin/mpif90 -Wl,-rpath=\"/usr/local/lib/gcc6\" z.f90\n$ /usr/local/mpi/openmpi/bin/mpirun -np 3 ./a.out\n node           0 : Hello world\n node           1 : Hello world\n node           2 : Hello world\n\nI'd prefer openmpi and openmpi2 to behave as mpich.\n\nThis helps ports such as lang/opencoarrays, which can be\nbuilt with a selection of MPI ports."
+}

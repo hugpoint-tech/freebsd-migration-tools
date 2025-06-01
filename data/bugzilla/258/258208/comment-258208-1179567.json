@@ -1,0 +1,8 @@
+{
+ "id": 1179567,
+ "bug_id": 258208,
+ "attachment_id": 0,
+ "creation_time": "2021-09-25T15:19:50Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I am not sure how best to fix this.  To elaborate a bit more, the deadlock occurs because a rollback does a suspend/resume of the target fs.  This involves taking the teardown write lock; one thing we do with the lock held is call zfs_rezget() on all vnodes associated with the filesystem, which among other things throws away all data cached in the page cache.  This requires pages to be busied with the ZFS write lock held, so I am inclined to think that zfs_freebsd_getpages() should be responsible for breaking the deadlock as it does in https://cgit.freebsd.org/src/commit/?id=cd32b4f5b79c97b293f7be3fe9ddfc9024f7d734 .\n\nzfs_freebsd_getpages() could perhaps trylock and upon failure return some EAGAIN-like status to ask the fault handler to retry, but I don't see a way to do that - vm_fault_getpages() squashes the error and does not allow the pager to return KERN_RESOURCE_SHORTAGE.\n\nAlternately, zfs_freebsd_getpages() could perhaps wire and unbusy the page upon a trylock failure.  Once it successfully acquires the teardown read lock, it could re-lookup the fault page and compare or re-insert the wired page if necessary.\n\nOTOH I cannot see how this is handled on Linux.  In particular, I do not see how their zfs_rezget() invalidates the page cache."
+}

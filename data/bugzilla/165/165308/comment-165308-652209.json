@@ -1,0 +1,8 @@
+{
+ "id": 652209,
+ "bug_id": 165308,
+ "attachment_id": 0,
+ "creation_time": "2012-02-20T03:30:12Z",
+ "creator": "aspoon@gmail.com",
+ "text": "It appears to be a problem with the name \"packages-9-release\", as the folder available on FTP is actually \"packages-9.0-release\". (note the .0 in the version) \n\nIt seems to affect RELEASE builds only -- once the system switches to STABLE or CURRENT, the corresponding folder on FTP (such as \"packages-9-stable\") does not include the .x version, and the script should work fine.\n\nFix: \n\nThe problem is found in /usr/local/sbin/uma, line 76 onwards:\n\n71 # Logic from src/usr.sbin/pkg_install/add/main.c, plus the\npossibility to\n72 # override the architecture with ARCH.\n73 : ${PACKAGEROOT=\"ftp://ftp.freebsd.org\"}\n74 : ${ARCH=\"$(uname -m)\"}\n75 branch=\"$(uname -r | tr '[:upper:]' '[:lower:]')\"\n76 number=\"${branch%%.*}\"\n77 branch=\"${branch##*-}\"\n78 case \"$branch\" in\n79 release)\n80 branch=$number-$branch\n81 ;;\n82 stable|current)\n83 branch=${number%%.*}-$branch\n84 ;;\n85 *)\n86 # Fallback to stable for prerelease and the like.\n87 branch=${number%%.*}-stable\n88 ;;\n89 esac\n\nOn line 76, it arbitrarily removed the .x minor version from the number. It\nshould have been \"number=${branch%%-*}\", since the minor version is\nfurther stripped off in the following case statements depending on the\nrelease:\n\nChange line 76 from\n\n    number=\"${branch%%.*}\"\n\nto\n\n    number=\"${branch%%-*}\"\nHow-To-Repeat: On a FreeBSD 9.0-RELEASE system:\n\n# pkg_upgrade -aC\nfetch: ftp://ftp.freebsd.org/pub/FreeBSD/ports/amd64/packages-9-release/INDEX:\nFile unavailable (e.g., file not found, no access)\n#"
+}

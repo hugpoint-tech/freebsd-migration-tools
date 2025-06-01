@@ -1,0 +1,8 @@
+{
+ "id": 1073169,
+ "bug_id": 207854,
+ "attachment_id": 0,
+ "creation_time": "2019-10-31T15:07:18Z",
+ "creator": "arrowd@FreeBSD.org",
+ "text": "Not sure how UL would help here, since unsigned long is also 32-bits. The proper fix is to use tmpN modulo 32 as shift operand. Verified this on standalone example:\n\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n\nint main(int argc, char* argv[])\n{\n    uint32_t tmpN;\n    int tmp;\n    for (tmpN=7 ; tmpN\u003c64; tmpN++ )\n    {\n        //tmp = (1\u003c\u003c(tmpN%32));\n        tmp = (1UL\u003c\u003c(tmpN%32));\n        printf(\"%d\\n\", tmp);\n    }\n    return 0;\n}\n\n\nPatch for the problem:\n\nIndex: sys/contrib/ncsw/Peripherals/QM/qm_portal_fqr.c\n===================================================================\n--- sys/contrib/ncsw/Peripherals/QM/qm_portal_fqr.c     (revision 353638)\n+++ sys/contrib/ncsw/Peripherals/QM/qm_portal_fqr.c     (working copy)\n@@ -1468,7 +1468,7 @@\n     for (tmpA=(uint32_t)(64*pres) ; tmpA\u003c128*pres; tmpA += pres )\n         for (tmpN=7 ; tmpN\u003c64; tmpN++ )\n         {\n-            tmp = ABS((int)(slope - tmpA/(1\u003c\u003ctmpN)));\n+            tmp = ABS((int)(slope - tmpA/(1UL\u003c\u003c(tmpN%32))));\n             if (tmp \u003c gap)\n             {\n                sa = tmpA;"
+}

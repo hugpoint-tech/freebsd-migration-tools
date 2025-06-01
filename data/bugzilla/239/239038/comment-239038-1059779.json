@@ -1,0 +1,8 @@
+{
+ "id": 1059779,
+ "bug_id": 239038,
+ "attachment_id": 0,
+ "creation_time": "2019-07-31T01:52:23Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "Spoke too soon. This is a disagreement between libstdc++'s std::thread and libc pthread_stubs:\n\nstd::thread::id is defined as a value that can be either the id of a thread, or a distinguished value that does not correspond to any thread (the implementation uses 0 for this).\n\nThe operator== for std::thread::id is just a call to pthread_equal.\n\nBut pthread_equal takes pthread_t values as input, which do _not_, per spec, allow for any distinguished \"no thread\" value. Accordingly, the stub implementation of pthread_equal thinks it's OK to just return \"true\" unconditionally, because in a non-threaded process there is only one legal pthread_t value, and comparing against illegal values is undefined.\n\nClearly this is wrong, and either the stub pthread_equal should actually do the comparison (easiest fix) or std::thread::id should avoid calling pthread_equal if one of the arguments is 0 (since doing so violates the pthread spec).\n\nI don't think the std::thread issue is specific to 11.x; the fact that the mosh port works on 12+ is probably just down to the fact that it pulls in libthr.so from somewhere else (openssl most likely)."
+}

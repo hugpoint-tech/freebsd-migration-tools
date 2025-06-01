@@ -1,0 +1,8 @@
+{
+ "id": 443893,
+ "bug_id": 123369,
+ "attachment_id": 0,
+ "creation_time": "2008-05-03T17:00:07Z",
+ "creator": "cokane@FreeBSD.org",
+ "text": "\tWhen using git-fetch (or via git-pull), the program git-fetch crashes\nwith a Bus Error. I tracked it down to the following GDB trace:\n\n(gdb) bt\n#0  0x0000000800e65103 in malloc_usable_size () from /lib/libc.so.7\n#1  0x0000000800e65727 in free () from /lib/libc.so.7\n#2  0x00000000004adff3 in transport_unlock_pack (transport=0x70f080)\n    at transport.c:811\n#3  0x00000000004241ac in unlock_pack () at builtin-fetch.c:56\n#4  0x0000000800eb65a9 in __cxa_finalize () from /lib/libc.so.7\n#5  0x0000000800e69567 in exit () from /lib/libc.so.7\n#6  0x0000000000404bf4 in handle_internal_command (argc=2,\nargv=0x7fffffffe5b8)\n    at git.c:379\n#7  0x0000000000404cb9 in main (argc=2, argv=0x7fffffffe5b8) at git.c:414\n\nIt seems that transport_unlock_pack is trying to re-free the argument being\npassed to free().\n\nFix: \n\nThe fix has already hit the git tree (but was not in 1.5.5.1):\nhttp://repo.or.cz/w/git.git?a=commit;h=7b7f39eae6ab0bbcc68d3c42a5b23595880e528f\nHow-To-Repeat:    1) Install the latest devel/git.\n   2) Try using git-fetch or git-pull to update a git."
+}

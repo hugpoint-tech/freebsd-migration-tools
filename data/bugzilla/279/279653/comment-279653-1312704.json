@@ -1,0 +1,8 @@
+{
+ "id": 1312704,
+ "bug_id": 279653,
+ "attachment_id": 0,
+ "creation_time": "2024-06-11T01:51:22Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to Daniel Ponte from comment #0)\nThe stack trace is weird. The caller `sys/netinet/tcp_output.c`\n```\n1444                 ip6-\u003eip6_hlim = in6_selecthlim(inp, NULL);\n```\n\nThe callee, `sys/netinet6/in6_src.c`:\n\n```\n843 int\n844 in6_selecthlim(struct inpcb *inp, struct ifnet *ifp)\n845 {\n846 \n847         if (inp \u0026\u0026 inp-\u003ein6p_hops \u003e= 0)\n848                 return (inp-\u003ein6p_hops);\n849         else if (ifp)\n850                 return (ND_IFINFO(ifp)-\u003echlim);\n851         else if (inp \u0026\u0026 !IN6_IS_ADDR_UNSPECIFIED(\u0026inp-\u003ein6p_faddr)) {\n...\n    }\n```\n\nThe line 850 of should never hit as `ifp` is NULL, the backtrace also shows that clearly.\n\nThat is quite odd ... Is it possible that kgdb report the wrong line number ?"
+}

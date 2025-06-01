@@ -1,0 +1,8 @@
+{
+ "id": 753543,
+ "bug_id": 187221,
+ "attachment_id": 0,
+ "creation_time": "2014-03-10T11:43:11Z",
+ "creator": "lampa@fit.vutbr.cz",
+ "text": "Simple fix, fsck -p runs without sigsegv now:\n\n--- fsutil.c    2013-07-10 17:04:10.000000000 +0200\n+++ fsutil.c.my 2014-03-10 12:33:55.000000000 +0100\n@@ -414,13 +414,15 @@\n        }\n        if (numbufs != cnt)\n                errx(EEXIT, \"panic: lost %d buffers\", numbufs - cnt);\n-       for (cnt = 0; cnt \u003c sblock.fs_ncg; cnt++) {\n-               if (cgbufs[cnt].b_un.b_cg == NULL)\n-                       continue;\n-               flush(fswritefd, \u0026cgbufs[cnt]);\n-               free(cgbufs[cnt].b_un.b_cg);\n+       if (cgbufs) {\n+               for (cnt = 0; cnt \u003c sblock.fs_ncg; cnt++) {\n+                       if (cgbufs[cnt].b_un.b_cg == NULL)\n+                               continue;\n+                       flush(fswritefd, \u0026cgbufs[cnt]);\n+                       free(cgbufs[cnt].b_un.b_cg);\n+               }\n+               free(cgbufs);\n        }\n-       free(cgbufs);\n        pbp = pdirbp = (struct bufarea *)0;\n        if (cursnapshot == 0 \u0026\u0026 sblock.fs_clean != markclean) {\n                if ((sblock.fs_clean = markclean) != 0) {\n\nPetr Lampa\n\n-- \nComputer Centre                             E-mail: lampa@fit.vutbr.cz\nFaculty of Information Technology           Web: http://www.fit.vutbr.cz/\nBrno University of Technology               Fax:  +420 54114-1270\nBozetechova 2, 612 66 Brno, Czech Republic  Phone: +420 54114-1225"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 4108,
+ "bug_id": 1421,
+ "attachment_id": 0,
+ "creation_time": "1996-07-23T21:00:00Z",
+ "creator": "wollman@khavrinen.lcs.mit.edu",
+ "text": "\n\tWhile in the process of re-working sosend() for TCP, I noticed\n\tthis odd bit of code:\n\n\tif (resid \u003c 0)\n\t\treturn (EINVAL);\n\n\tThis is preceded by a comment explaining why resid is signed\n\tin the first place.  BUT, note that this code exits\n\timmediately without freeing `control', which it does in all\n\tother error cases.  (It also doesn't free `top' but that case\n\tis not relevant here.)\n\n\tHaving noticed this, I then attempted to demonstrate the memory\n\tleak.  However, I determined that it was impossible to do so,\n\tbecause all of the possible entry points where a user program\n\tmight set up its own `iovec' check for overflow when computing\n\t`uio-\u003euio_resid' and trap the error before sosend() ever sees\n\tit.  This is true in particular of sendmsg(2), which is the\n\tonly system call resulting in anything in `control' to begin\n\twith.  So, the entire test is a logical error and should be\n\teliminated (or at least hidden under #ifdef DIAGNOSTIC).\n\n\tI seem to recall a time when this test was actually necessary.\n\nFix: \n\nWell, it doesn't matter much, but it would not be a bad thing\n\tto #ifdef out the test.\nHow-To-Repeat: \n\tInspect the code."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 773237,
+ "bug_id": 191786,
+ "attachment_id": 144650,
+ "creation_time": "2014-07-14T12:18:24Z",
+ "creator": "vegeta@tuxpowered.net",
+ "text": "Comment on attachment 144650\nCheck for proper phy messages, never check phy status in bce_tick()\n\nI've checked what Linux bce driver does and what the NIC really sends. This patch changes the following things:\n\n- Remove handling of PHY state from bce_tick() as this function might catch some not fully \"stable\" state changes (like IFM_ETHER|IFM_NONE) and set interface up before link reaches full link state (IFM_ETHER|IFM_FDX|IFM_1000_T|rxpause|txpause) making the link unusable for lagg.\n\n- sc-\u003estatus_block-\u003estatus_attn_bits(_ack) are not really link status. Those bits can change from down to up and then from down to up again without going from up to down. Call if_link_state_change() only on changes of sc-\u003ebce_link_up which is set only via bce_ifmedia_sts_rphy().\n\n- Distinguish between STATUS_ATTN_BITS_LINK_STATE and STATUS_ATTN_BITS_TIMER_ABORT. Timer abort messages are in fact sent even if only link state is subscribed for. The old code would then put the link up with IFM_ETHER|IFM_NONE state making the link unusable in lagg.\n\n- Sent bce_pulse when on STATUS_ATTN_BITS_TIMER_ABORT with event_code == BCE_FW_EVT_CODE_SW_TIMER_EXPIRE_EVENT and also on normal remote PHY events. Without this a message \"Warning: bootcode thinks driver is absent.\" was seen on system boot."
+}

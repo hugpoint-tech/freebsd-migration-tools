@@ -1,0 +1,8 @@
+{
+ "id": 1034766,
+ "bug_id": 235289,
+ "attachment_id": 0,
+ "creation_time": "2019-01-29T11:24:16Z",
+ "creator": "pkubaj@FreeBSD.org",
+ "text": "(In reply to Vinícius Zavam from comment #2)\nWe could try matching ARCH, but since GCC architectures may move to Clang in the future, this would need to be changed.\n\nChecking for libstdc++ is safe against future errors. Bumping PORTREVISION is not necessary, because there's no change for Clang architectures and it's a build fix for GCC architectures (this port currently doesn't build on them).\n\nI used svn to generate this diff:\nroot@talos:$/usr/ports/comms/ncid$ svnlite diff\nIndex: Makefile\n===================================================================\n--- Makefile    (revision 491546)\n+++ Makefile    (working copy)\n@@ -59,6 +59,10 @@\n                -e 's|$$(prefix)/share|$${PREFIX}/share|g' \\\n                -e 's|$$(SHARE)/man|$${MANPREFIX}/man/|g' \\\n                -e 's|$$(SHARE)/ncid|$${DATADIR}|g' ${WRKSRC}/Makefile\n+.if exists(/usr/lib/libstdc++.so)\n+       @${REINPLACE_CMD} -e 's|-Wno-stringop-truncation||g' \\\n+               ${WRKSRC}/Makefile ${WRKSRC}/server/Makefile\n+.endif\n\n do-install:\n        @${MKDIR} ${STAGEDIR}${ETCDIR}"
+}

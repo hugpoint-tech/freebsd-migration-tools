@@ -1,0 +1,8 @@
+{
+ "id": 1314574,
+ "bug_id": 273198,
+ "attachment_id": 0,
+ "creation_time": "2024-06-26T13:39:31Z",
+ "creator": "igoro@FreeBSD.org",
+ "text": "(In reply to Alfa from comment #0)\n\u003e When remote peer's server (192.168.250.100) tries to send data to me,\n\u003e PF recognizes it as coming from WAN (em0)\n\nAs an idea, \"sysctl net.inet.ipsec.filtertunnel=1\" could be the reason. It reveals the payload on the same interface ESP came on. For example, a single \"pass log all no state\" pf rule provides the following sequence of matches for a single ping roundtrip:\n\nCase 1:\nsysctl net.inet.ipsec.filtertunnel=0   # off\nsysctl net.enc.in.ipsec_filter_mask=2  # after IPsec\nsysctl net.enc.out.ipsec_filter_mask=1 # before IPsec\npflog:\npass in on wan: ESP\npass in on enc0: ICMP echo request\npass out on enc0: ICMP echo reply\npass out on wan: ESP\n\nCase 2:\nsysctl net.inet.ipsec.filtertunnel=1   # on\nsysctl net.enc.in.ipsec_filter_mask=2  # after IPsec\nsysctl net.enc.out.ipsec_filter_mask=1 # before IPsec\npflog:\npass in on wan: ESP\npass in on enc0: ICMP echo request\npass in on wan: ICMP echo request      # this is the diff\npass out on enc0: ICMP echo reply\npass out on wan: ESP"
+}

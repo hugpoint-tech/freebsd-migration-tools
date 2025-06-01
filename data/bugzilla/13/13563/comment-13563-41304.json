@@ -1,0 +1,8 @@
+{
+ "id": 41304,
+ "bug_id": 13563,
+ "attachment_id": 0,
+ "creation_time": "1999-09-04T01:10:01Z",
+ "creator": "ivan@desktop.com",
+ "text": "\n\nWriting to a mmap() region that is larger than the amount of physical\nRAM in the machine causes a hang. System no longer responds and a\nreboot is needed to restore the system.\n\nHow-To-Repeat: \n\nCompile the following program. Run it with a mmap() size that is\nlarger than the amount of physucal RAM in the machine.\n\n\n#include \u003cunistd.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003csys/mman.h\u003e\n\nint main(int argc, char * argv[])\n{\n  int fd = -1, x = 0;\n  char * map = NULL;\n  off_t size = 0;\n\n  if (argc \u003c 3)\n    {\n      fprintf(stderr, \"Usage: %s file size_in_megabytes\\n\", argv[0]);\n      return -1;\n    }\n\n  if ((fd = open(argv[1], O_CREAT|O_RDWR, 0664)) == -1)\n    {\n      fprintf(stderr, \"Could not open %s\\n\", argv[1]);\n      return -1;\n    }\n\n  size = atoi(argv[2]);\n  size = size * 1024 * 1024;\n\n  if (lseek(fd, size, SEEK_SET) != size)\n    {\n      fprintf(stderr, \"Could not seek\\n\");\n      return -1;\n    }\n\n  write(fd, \u0026size, 1);\n\n  if ((map = mmap(0, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)) == NULL)\n    {\n      fprintf(stderr, \"Could not mmap\\n\");\n      return -1;\n    }\n\n  fprintf(stdout, \"Writing:\");\n  for (x=0; x\u003csize; x++)\n    {\n      map[x] = 1;\n\n      if ((x % (1024*1024)) == 0)\n\t{\n\t  fprintf(stdout, \".\");\n\t  fflush(stdout);\n\t}\n    }\n  fprintf(stdout, \"done\\n\");\n\n  munmap(map, size);\n\n  return 0;\n\n}"
+}

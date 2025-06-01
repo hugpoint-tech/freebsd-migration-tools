@@ -1,0 +1,8 @@
+{
+ "id": 1285834,
+ "bug_id": 268603,
+ "attachment_id": 0,
+ "creation_time": "2023-11-26T23:57:27Z",
+ "creator": "ssb22@cam.ac.uk",
+ "text": "FYI I found I had to do the following hack to make virtualbox-ose-additions-legacy compile on freebsd 14.0-RELEASE (my /usr/ports is on branch 2023Q4):\n\n    cd /usr/ports/emulators/virtualbox-ose-additions-legacy\n    make install || true\n    for Type in int uint unsigned PK KA PC RT; do for F in $(grep -lr \"register $Type\" work); do sed -e \"s/register $Type/$Type/g\" \u003c $F \u003e n \u0026\u0026 mv n $F ; done; done\n    for F in $(grep -lr \"enum vtype\" work); do sed -e \"s/enum vtype/int/g\" \u003c $F \u003e n \u0026\u0026 mv n $F ; done\n    make install\n\nThis is because the source still uses the \"register\" keyword which is disallowed in C++17 (it doesn't do anything anyway); I tried setting CXXFLAGS=-Dregister but that was ignored.  Also there's an unused(?) enum in the filesystem that seems to have been written to an older C++ standard.\n\nNot sure if it's related to this bug or is a new bug.  I suppose the correct way to work around it would be to add in a patch rather than a load of sed commands, but the above is what I did and it worked...."
+}

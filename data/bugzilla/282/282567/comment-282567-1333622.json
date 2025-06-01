@@ -1,0 +1,8 @@
+{
+ "id": 1333622,
+ "bug_id": 282567,
+ "attachment_id": 0,
+ "creation_time": "2024-11-05T16:46:21Z",
+ "creator": "nork@FreeBSD.org",
+ "text": "I tested following case as a bug of \"geli setkey\":\n\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n# truncate -s 1M testfile\n# # mdconfig -f testfile\nmd0\n# geli init -e AES-XTS -l 256 -B none -s 4096 md0\nEnter new passphrase:\nReenter new passphrase:\n# geli attach md0\nEnter passphrase:\n# geli setkey -i $((65536*65536-1)) md0\nEnter new passphrase:\nReenter new passphrase:\nNote, that the master key encrypted with old keys and/or passphrase may still exist in a metadata backup file.\n# geli detach md0\n# geli attach md0\ngeli: Missing -p flag.\ngeli: There was an error with at least one provider.\n# geli attach -p md0\ngeli: No key components given.\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\nI found this issue because I tried reset passphrase key like \"geli setkey -k keyfile -P md0\".\nBut I couldn't reset passphrase, so I noticed that the \"md_iterations\" doesn't reset to -1 (= 2^32-1 = 65536*65536-1).\n\nSEE ALSO: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=196834\n\nSo there is a bug of \"geli setkey -P doesn't reset md_iterations\" yet.\n\nTo reset iterations, \"geli setkey -P\" should reset the md_iteratitons, or describe how to reset passphrase by setting iterations and save no key compoents status."
+}

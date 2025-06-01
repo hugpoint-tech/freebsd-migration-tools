@@ -1,0 +1,8 @@
+{
+ "id": 1146090,
+ "bug_id": 253158,
+ "attachment_id": 222359,
+ "creation_time": "2021-02-11T07:27:46Z",
+ "creator": "mckusick@FreeBSD.org",
+ "text": "Created attachment 222359\ncorrect fix for bug\n\nThe previous fix masked the problem but had other unintended side effects.\n\nThe reported panic arises because the /mnt/.snap/.factory snapshot allocated the last block in the filesystem. The snapshot code allocates the last block in the filesystem as a way of setting its length to be the size of the filesystem. Part of taking a snapshot is to remove all the earlier snapshots from the image of the newest snapshot so that newer snapshots will not claim the blocks of the earlier snapshots. The panic occurs when the new snapshot finds that both it and an earlier snapshot claim the same block.\n\nThe fix is to set the size of the snapshot to be one block after the last block in the filesystem. This block can never be allocated since it is not a valid block in the filesystem. This extra block is used as a place to store the initial list of blocks that the snapshot has already copied and is used to avoid a deadlock in and speed up the copyonwrite() function."
+}

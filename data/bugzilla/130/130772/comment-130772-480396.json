@@ -1,0 +1,8 @@
+{
+ "id": 480396,
+ "bug_id": 130772,
+ "attachment_id": 0,
+ "creation_time": "2009-01-21T21:00:35Z",
+ "creator": "trashcan@ellael.org",
+ "text": "Hi -\n\nThis bug can be solved by applying the following patch:\n\n--- inn-2.4.5/lib/perl.c        2008-06-29 19:56:57.000000000 +0200\n+++ inn-2.4.5-1/lib/perl.c      2009-01-21 19:36:03.000000000 +0100\n@@ -110,14 +110,18 @@\n      if (PerlCode =3D=3D NULL) {\n          /* Perl waits on standard input if not called with '-e'. */\n          int argc =3D 3;\n-        const char *argv[] =3D { \"innd\", \"-e\", \"0\", NULL };\n-        char *env[]  =3D { NULL };\n+        const char *argv_innd[] =3D { \"innd\", \"-e\", \"0\", NULL };\n+        char **argv =3D (char **)argv_innd; /* Cast required by Perl =20=\n\n5.10. */\n+        char **env  =3D { NULL };\n  #ifdef PERL_SYS_INIT3\n          PERL_SYS_INIT3(\u0026argc, \u0026argv, \u0026env);\n  #endif\n          PerlCode =3D perl_alloc();\n          perl_construct(PerlCode);\n-        perl_parse(PerlCode, xs_init, argc, (char **)argv, env) ;\n+#ifdef PERL_EXIT_DESTRUCT_END\n+        PL_exit_flags |=3D PERL_EXIT_DESTRUCT_END;\n+#endif\n+        perl_parse(PerlCode, xs_init, argc, argv, env) ;\n      }\n\n      if (startupfile !=3D NULL \u0026\u0026 filterfile !=3D NULL) {\n\nThis patch has been proposed by the current main developer of INN =20\n(Julien =C9lie),\nsee Usenet thread at:\n\n=\nhttp://groups.google.com/group/news.software.nntp/browse_frm/thread/42238d=\nc9237b5a81?q=3D\n\nIt did work for me after applying this patch to inn's vanilla tarfile, =20=\n\nputting the\npatches tarfile into /usr/ports/distfiles/, modifying news/inn/=20\ndistinfo to cover\nthe new size and checksums, and re-installing with portmaster.\n\nRegards,\nMichael"
+}

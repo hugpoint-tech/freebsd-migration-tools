@@ -1,0 +1,8 @@
+{
+ "id": 1171565,
+ "bug_id": 257314,
+ "attachment_id": 0,
+ "creation_time": "2021-07-23T22:14:42Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #16)\n\nI guessed wrong, in swap_pager_getpages_locked there is:\n\n        while ((ma[0]-\u003eoflags \u0026 VPO_SWAPINPROG) != 0) {\n                ma[0]-\u003eoflags |= VPO_SWAPSLEEP;\n                VM_CNT_INC(v_intrans);\n                if (VM_OBJECT_SLEEP(object, \u0026object-\u003ehandle, PSWP,\n                    \"swread\", hz * 20)) {\n                        printf(\n\"swap_pager: indefinite wait buffer: bufobj: %p, blkno: %jd, size: %ld\\n\",\n                            bp-\u003eb_bufobj, (intmax_t)bp-\u003eb_blkno, bp-\u003eb_bcount);\n                }\n        }\n\nSo the \"swap_pager: indefinite wait buffer:\" are only for\nreads and not for writes.\n\nIt also looks like the time is 20 seconds before such a\nmessage is reported, not the 30 sec that I'd been told.\n\nPart of the issue might be if write activity delays\npending read activity in the queue."
+}

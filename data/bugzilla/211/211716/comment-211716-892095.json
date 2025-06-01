@@ -1,0 +1,8 @@
+{
+ "id": 892095,
+ "bug_id": 211716,
+ "attachment_id": 0,
+ "creation_time": "2016-08-10T07:10:45Z",
+ "creator": "howard0su@gmail.com",
+ "text": "One I-O Data USB Flash Disk cannot get the right size. the dmesg shows\numass0: \u003cI-O DATA USB Flash Disk, class 0/0, rev 2.10/0.01, addr 2\u003e on usbus7\numass0:  SCSI over Bulk-Only; quirks = 0x8100\numass0:6:0: Attached to scbus6\nda0 at umass-sim0 bus 0 scbus6 target 0 lun 0\nda0: \u003cI-O DATA USB Flash Disk 1.00\u003e Removable Direct Access SPC-4 SCSI device\nda0: Serial Number 137161312223005B\nda0: 40.000MB/s transfers\nda0: 0MB (1 512 byte sectors)\nda0: quirks=0x2\u003cNO_6_BYTE\u003e\n\nThe following patch solves the problem:\ndiff --git a/sys/cam/scsi/scsi_da.c b/sys/cam/scsi/scsi_da.c\nindex b869467..0614b28 100644\n--- a/sys/cam/scsi/scsi_da.c\n+++ b/sys/cam/scsi/scsi_da.c\n@@ -1295,6 +1295,13 @@ static struct da_quirk_entry da_quirk_table[] =\n                { T_DIRECT, SIP_MEDIA_REMOVABLE, \"MX\", \"MXUB3*\", \"*\"},\n                /*quirks*/DA_Q_NO_RC16\n        },\n+       {\n+               /*\n+                * I-O Data USB Flash Disk\n+                */\n+               { T_DIRECT, SIP_MEDIA_REMOVABLE, \"I-O DATA\", \"USB Flash Disk*\", \"*\"},\n+               /*quirks*/DA_Q_NO_RC16\n+       },\n };\n \n static disk_strategy_t dastrategy;\n\nAfter the patch the size is correctly detected."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 878731,
+ "bug_id": 209509,
+ "attachment_id": 0,
+ "creation_time": "2016-05-14T22:01:52Z",
+ "creator": "phk@FreeBSD.org",
+ "text": "I have a pretty trivial program here, which quite reliably will receive EAGAIN on stdout/stderr when these are a shell created pipe.\n\nThe command is run as:\n\n aardwarc stow |\u0026 tee /tmp/__\n\nIt does two popens, and chats with those two programs (ssh and mtree).\n\nHere is from a ktrace:\n\nFirst, checking that stderr \u0026 stdout are not O_NONBLOCK:\n\n 16131 aardwarc CALL  fcntl(0x1,F_GETFL,0xffffe5bc)\n 16131 aardwarc RET   fcntl 2\n [...]\n 16131 aardwarc CALL  fcntl(0x2,F_GETFL,0xffffe5bc)\n 16131 aardwarc RET   fcntl 2\n\nThen after a lot of output on stdout/stderr:\n\n 16131 aardwarc CALL  write(0x1,0x7fffffffdd80,0x7e)\n 16131 aardwarc RET   write -1 errno 35 Resource temporarily unavailable\n [...]\n 16131 aardwarc CALL  write(0x2,0x7fffffffde90,0x16)\n 16131 aardwarc GIO   fd 2 wrote 22 bytes\n [...]\n 16131 aardwarc CALL  write(0x2,0x7fffffffddb0,0x9)\n 16131 aardwarc GIO   fd 2 wrote 9 bytes\n [...]\n 16131 aardwarc CALL  write(0x2,0x7fffffffdd70,0x44)\n 16131 aardwarc RET   write -1 errno 35 Resource temporarily unavailable\n\nPresumably these are the same struct file, so it notable that stdout gets EAGAIN, the stderr manages two writes, then stderr also gets EAGAIN.\n\nAMD64, CURRENT, r297556"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 80160,
+ "bug_id": 25699,
+ "attachment_id": 0,
+ "creation_time": "2001-03-11T13:19:23Z",
+ "creator": "des@ofug.org",
+ "text": "Yoshihiro Koya \u003cYoshihiro.Koya@math.yokohama-cu.ac.jp\u003e writes:\n\u003e \u003eFix:\n\u003e --- /usr/src/libexec/ftpd/ftpd.c.orig\tSun Mar 11 20:19:53 2001\n\u003e +++ /usr/src/libexec/ftpd/ftpd.c\tSun Mar 11 20:46:15 2001\n\u003e @@ -1756,10 +1756,12 @@\n\u003e  \t\t\t\t\tif (!cnt)\n\u003e  \t\t\t\t\t\tgoto oldway;\n\u003e  \n\u003e +\t\t\t\t\tbyte_count = offset;\n\u003e  \t\t\t\t\tgoto data_err;\n\u003e  \t\t\t\t}\n\u003e  \t\t\t}\n\u003e  \n\u003e +\t\t\tbyte_count = offset;\n\u003e  \t\t\treply(226, \"Transfer complete.\");\n\u003e  \t\t\treturn;\n\u003e  \t\t}\n\nWrong patch. You set byte_count to offset, so if the transfer was\nrestarted in mid-file you also count bytes that *weren't* transferred.\nThe correct fix is:\n\nIndex: ftpd.c\n===================================================================\nRCS file: /home/ncvs/src/libexec/ftpd/ftpd.c,v\nretrieving revision 1.72\ndiff -u -r1.72 ftpd.c\n--- ftpd.c      2000/12/20 03:34:54     1.72\n+++ ftpd.c      2001/03/11 13:16:57\n@@ -1749,6 +1749,7 @@\n                        while (err != -1 \u0026\u0026 cnt \u003c filesize) {\n                                err = sendfile(filefd, netfd, offset, len,\n                                        (struct sf_hdtr *) NULL, \u0026cnt, 0);\n+                               byte_count += cnt;\n                                offset += cnt;\n                                len -= cnt;\n\n\n(apply with 'patch -l' due to cut\u0026paste corruption)\n\nDES\n-- \nDag-Erling Smorgrav - des@ofug.org"
+}

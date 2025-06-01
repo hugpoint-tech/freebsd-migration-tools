@@ -1,0 +1,8 @@
+{
+ "id": 825749,
+ "bug_id": 200472,
+ "attachment_id": 0,
+ "creation_time": "2015-05-28T12:27:50Z",
+ "creator": "olivier@cochard.me",
+ "text": "If I unload aesni module on \"encrypter\" side, the problem disappear: Then how can the packet being corrupted after decryption ?\n\nNew test without aesni module loaded on the \"encrypter side\" (srv1), but still loaded on \"decrypter side\" (srv2):\n\nEncrypter:\n\n[root@srv1]~# kldstat\nId Refs Address            Size     Name\n 1    8 0xffffffff80200000 17dc0f0  kernel\n 2    1 0xffffffff81c11000 2dd6     ichsmb.ko\n 3    1 0xffffffff81c14000 e7e      smbus.ko\n 4    1 0xffffffff81c15000 2a16     coretemp.ko\n\nDecrypter:\n\n[root@srv2]~# kldstat\nId Refs Address            Size     Name\n 1   11 0xffffffff80200000 17dc0f0  kernel\n 2    1 0xffffffff81c11000 7fe8     aesni.ko\n 3    1 0xffffffff81c19000 2dd6     ichsmb.ko\n 4    1 0xffffffff81c1c000 e7e      smbus.ko\n 5    1 0xffffffff81c1d000 2a16     coretemp.ko\n\nThen, again, generating exactly 100 000 packets in a low-rate of 1000 paquet-per-second using netmap's pktgen crossing these 2 FreeBSD IPSec gateway.\n\nStat on \"decrypter side\" (srv2):\n[root@srv2]~# sysctl dev.igb.2.mac_stats.rx_frames_512_1023\ndev.igb.2.mac_stats.rx_frames_512_1023: 100000\n[root@srv2]~# sysctl dev.igb.3.mac_stats.tx_frames_512_1023\ndev.igb.3.mac_stats.tx_frames_512_1023: 100000\n\n=\u003e All packets are correctly decrypted AND forwarded\n\nNo more \"bad ip packet\" errors on decrypter side:\n[root@srv2]~# netstat -ssp ip\nip:\n        200064 total packets received\n        100064 packets for this host\n        100000 packets forwarded\n        69 packets sent from this host\n\nThen, should I still do a new test in Transport mode ?"
+}

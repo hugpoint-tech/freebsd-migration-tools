@@ -1,0 +1,8 @@
+{
+ "id": 934105,
+ "bug_id": 219124,
+ "attachment_id": 0,
+ "creation_time": "2017-05-15T18:05:30Z",
+ "creator": "sbruno@FreeBSD.org",
+ "text": "I'm guessing that this is an initialization problem.  The hash is being setup to handle way more elements than is really needed in here.\n\n% wc -l /etc/services \n    2495 /etc/services\n\n\nHASHINFO hinfo = {\n        .bsize = 256,\n        .ffactor = 4,\n        .nelem = 32768,\n        .cachesize = 1024,\n        .hash = NULL,\n        .lorder = 0\n};\n\n\n\nIf I change the HASHINFO to be slightly less over engineered (and less future proof), I can get the *empty* services file down to 260k, but that's not really a huge improvement for a basically empty file.  Should it be that big?  I didn't really think I was going to have to go and learn berkley DB this week.  :-)\n\n\nIndex: services_mkdb.c\n===================================================================\n--- services_mkdb.c     (revision 318297)\n+++ services_mkdb.c     (working copy)\n@@ -68,10 +68,10 @@\n static void    usage(void);\n \n HASHINFO hinfo = {\n-       .bsize = 256,\n-       .ffactor = 4,\n-       .nelem = 32768,\n-       .cachesize = 1024,\n+       .bsize = 48,\n+       .ffactor = 1,\n+       .nelem = 4096,\n+       .cachesize = 256,\n        .hash = NULL,\n        .lorder = 0\n };\n\n\n-rw-r--r--  1 sbruno  sbruno  262720 May 15 12:04 services.db"
+}

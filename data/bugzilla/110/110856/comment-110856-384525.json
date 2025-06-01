@@ -1,0 +1,8 @@
+{
+ "id": 384525,
+ "bug_id": 110856,
+ "attachment_id": 0,
+ "creation_time": "2007-03-26T15:30:13Z",
+ "creator": "m.henschel@bally-wulff.de",
+ "text": "We use ugen for some user space drivers. When an interrupt in endpoint\nis used ugen creates a queue that is filled by the kernel. The user\nspace driver is responsible for reading data from the device file. If\nthis happens too slow the queue is full and new msgs arriving from the\nusb device are lost. This behavior is OK. \n\nThe problem is that the queue is not a multiple of the interrupt in\nendpoints msgs size. So it is possible that the last msg in the queue\nis truncated. This is very hard to detect for a user space driver. The\ndata stream seen by the user space driver will contain an incomplete\nmsgs directly followed by the next message without knowing truncation\nhappened (except when using some data corruption detection mechanism).\n\nIt would be much better if ugen would fill the queues of interrupt in\nendpoints until there is no more space for a complete msg. This way the\nuser space driver will not loose sync with the incoming msgs.\n\nFix: I use the attached patch in our company and it works as expected.\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. Attach a device served by the ugen driver\n2. Open an interrupt in endpoint\n3. read data in chunk equivalent to the endpoints msg size\n4. pause the reading to fill the ugen kernel msg queue\n5. resume reading chunks, the last chunk that comes from the queue will\n    probably be truncated directly followed by the next new chunk\n\n(tested with a msgs size of the interrupt in endpoint of 16)"
+}

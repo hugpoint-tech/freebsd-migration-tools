@@ -1,0 +1,8 @@
+{
+ "id": 871185,
+ "bug_id": 208188,
+ "attachment_id": 168466,
+ "creation_time": "2016-03-21T20:38:30Z",
+ "creator": "joss.upton@yahoo.com",
+ "text": "Created attachment 168466\nwaitx2.c demonstrate the multiple / identical wait4() results.\n\nWhen ptrace'n a process, wait4() returns the same pid/status multiple times.  This is when a process is ptrace'd, it gets a new parent and saves its old parent (in my case both the new parent and the old are the same process).  Then, in proc_reap() called from, e.g. wait4(), the ptrace'd process is reparented back to its \"real\" parent and an additional SIGCHLD is generated.\n\nThe attached program demonstrates the problem... On 10.2 it produces output like:\n0: pid=1348 stopped(5)\n1: pid=1348 exited(0)\n2: pid=1348 exited(0)\n\nIt's impossible to differentiate between 1 \u0026 2 unless I go out of my way to remember that I've already seen process 1348 WIFEXITED or WIFSIGNALED before.\n\nThe fix is to catch the superfluous SIGCHLD (when the realparent is the process currently waiting on the process) and stub it out.  Patch and example program attached."
+}

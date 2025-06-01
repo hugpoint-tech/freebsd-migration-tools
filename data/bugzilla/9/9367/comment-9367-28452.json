@@ -1,0 +1,8 @@
+{
+ "id": 28452,
+ "bug_id": 9367,
+ "attachment_id": 0,
+ "creation_time": "1999-01-07T15:50:00Z",
+ "creator": "mtaylor@cybernet.com",
+ "text": "During probe, the page lockdown code in dpt_control.c does some\nbad math: it does not handle page-boundary conditions, and will not\nend up mapping all of the requested addresses.  This will cause a panic:\npage fault during probe on some systems.\n\nFix: Always allocate/deallocate an extra page.\nThere is also a bonus splx() fix on an early error return.\n\nsrc/sys/dev/dpt/dpt_control.c:\n+       req_size += PAGE_SIZE;\n        size = (req_size / PAGE_SIZE + 1) * PAGE_SIZE;\n        paddr = req_paddr \u0026 0xfffff000;\n***************\n+       size += PAGE_SIZE;\n        for (ndx = 0; ndx \u003c size; ndx += PAGE_SIZE) {\n                pmap_kremove((vm_offset_t) vaddr + ndx);\n***************\nHow-To-Repeat: I have a machine that will panic every time (when using the dpt driver)\non kernel probe when there are 5 drives installed.  When there are 4\ndrives, it is fine."
+}

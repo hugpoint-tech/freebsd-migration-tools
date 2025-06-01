@@ -1,0 +1,8 @@
+{
+ "id": 810179,
+ "bug_id": 197696,
+ "attachment_id": 0,
+ "creation_time": "2015-02-16T01:39:38Z",
+ "creator": "s_bugzilla@nedprod.com",
+ "text": "Linux kernel 3.15 adds support for file private advisory locks which are essentially POSIX byte range advisory locks without the unfortunate per-process first-close unlocking semantics as required by POSIX. Much more info is available at http://lwn.net/Articles/586904/, but in essence the API is simply new flags for fcntl():\n\n* F_OFD_SETLK\n* F_OFD_SETLKW\n* F_OFD_GETLK\n\nThese still take a struct flock as before. The Linux man page describing these is available at http://man7.org/linux/man-pages/man2/fcntl.2.html.\n\nBSD flock() becomes a wrapper for F_ORD_SETLK with a struct flock length set to 0 (i.e. the whole file).\n\nI'd also suggest, seeing as this is BSD, that you add asynchronous lock notification support to kqueues.\n\nThe naive approach ought to be trivial if not hugely efficient: to EVFILT_VNODE add a NOTE_LOCK and a NOTE_UNLOCK where kevent_data.ident is set to the fd used to register the kevent and kevent_data.data is a pointer to a struct flock (not sure how to bundle this through, maybe embedded via a null subsequent kevent? I suppose the struct flock isn't absolutely needed). When the process receives a NODE_UNLOCK kevent, it can try fcntl(F_OFD_SETLK) which if it succeeds it initiates the changes to the file, else it goes back to waiting for the next NODE_UNLOCK kevent to arrive.\n\nThe more sophisticated approach is to add an extra F_OFD_SETLKQ which models EVFILT_AIO using a new EVFILT_LOCK filter. One issues F_OFD_SETLKQ with a target kqueue to notify when the lock becomes granted. This would be a much more efficient solution, but probably not trivial to implement.\n\nNiall"
+}

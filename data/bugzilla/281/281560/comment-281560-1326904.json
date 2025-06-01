@@ -1,0 +1,8 @@
+{
+ "id": 1326904,
+ "bug_id": 281560,
+ "attachment_id": 253834,
+ "creation_time": "2024-09-26T22:37:43Z",
+ "creator": "gallatin@FreeBSD.org",
+ "text": "Comment on attachment 253834\nprocstat_kka\n\nAre we absolutely certain that this is a deadlock and not a livelock?  If you look at network counters, etc, seconds apart do you see any movement at all?  Is that iperf killable?\n\nI'm asking this because while most of the uma locks are in the allocation path, but some are in the free path (0 100421 kernel              gve0 rxq 8          mi_switch+0x171 __mtx_lock_sleep+0x1ba __mtx_lock_flags+0xe1 zone_put_bucket+0x75 cache_free+0x2da uma_zfree_arg+0x21c mb_free_ext+0x126 m_free+0xda m_freem+0x48 tcp_do_segment+0x1e6b tcp_input_with_port+0x1135 tcp_input+0xb ip_input+0x2ae netisr_dispatch_src+0xad ether_demux+0x17a ether_nh_input+0x3f8 netisr_dispatch_src+0xad ether_input+0xe5),  and it appears that the iperf thread that holds that zone lock is actually doing something.\n\nI've seen degenerate, live-locking, behavior in the past when allocations and frees overwhelm the per-cpu caches and there is contention for the zone lock.  Throughput drops by 80% or more, and the system becomes incredibly sluggish and its easy to think it is a deadlock."
+}

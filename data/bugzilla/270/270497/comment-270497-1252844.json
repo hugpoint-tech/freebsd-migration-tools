@@ -1,0 +1,8 @@
+{
+ "id": 1252844,
+ "bug_id": 270497,
+ "attachment_id": 0,
+ "creation_time": "2023-03-28T15:22:09Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "I was not happy with the output format of syslogd events since the time resolution was not enough and not sortable. I did set in my rc.conf:\n$ sysrc -n syslogd_flags\n-N -ss -O rfc5424\n\nThese periodics are then rendered useless:\n$ grep -r \"date \" /etc/periodic\n/etc/periodic/daily/460.status-mail-rejects:        yesterday=$(date -v-1d '+%b %e')\n/etc/periodic/daily/460.status-mail-rejects:        today=$(date '+%b %e')\n/etc/periodic/security/900.tcpwrap:yesterday=`date -v-1d \"+%b %e \"`\n/etc/periodic/security/800.loginfail:yesterday=`date -v-1d \"+%b %e \"`\n\nThey rely on the old style formats and miss everything highres timestamps.\n\nSo a possible solution is to query \"sysrc -n syslogd_flags\" and use the appropriate format:\ntoday=$(date -I)\nyesterday=$(date -v-1d -I)\nor old style\n\nto filter out events.\n\nManpage of syslogd says:\n     -O format\n             Select the output format of generated log messages.  The values\n             bsd and rfc3164 are used to generate RFC 3164 log messages.  The\n             values syslog and rfc5424 are used to generate RFC 5424 log\n             messages, having RFC 3339 timestamps with microsecond precision.\n             The default is to generate RFC 3164 log messages.\n\nSo it is '-O bsd|rfc3164' or '-O syslog|rfc5424'. This could be done with grep or sed."
+}

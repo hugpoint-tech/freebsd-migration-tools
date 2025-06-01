@@ -1,0 +1,8 @@
+{
+ "id": 1112809,
+ "bug_id": 224218,
+ "attachment_id": 0,
+ "creation_time": "2020-07-10T17:08:50Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Closing since the default stack size was increased on i386.\n\nThe two major offenders in SCTP, sctp_auth_get_cookie_params() and sctp_load_addresses_from_init() are still there.  They both allocate 3 512-byte buffers on the stack.  I can't see an easy way to fix that; all three buffers are used to temporarily store data until we know the combined size of the data, at which point a buffer to store all of it is allocated.\n\nIt might be possible to avoid the temporary buffers by using m_pulldown() to ensure that the parameter headers are contiguous, and then use m_copydata() to copy data into the key buffer once we know the combined length.  This is a bit tricky to get right and I have no setup to test such a change.  However, it would shave 1536 bytes off the stack frame and avoid some extra copying."
+}

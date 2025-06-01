@@ -1,0 +1,8 @@
+{
+ "id": 396901,
+ "bug_id": 113548,
+ "attachment_id": 0,
+ "creation_time": "2007-06-11T21:35:21Z",
+ "creator": "cristi@net.utcluj.ro",
+ "text": "I think the problem occurs because you use ipfw tags. As far as I know,\nipfw tags are stored as mbuf_tags(9). Dummynet uses mbuf tags too to\nmark it's own packets. However, I suspect that in dn_tag_get(), dummynet\nincorrectly assumes it is the only one using mbuf_tags(9).\n\nCould you please apply the following patch? Also, could you test whether\nremoving \"tag 1\" from ipfw rules has any impact?\n\n--- ip_dummynet.c.orig  Sat Jul 29 11:24:12 2006\n+++ ip_dummynet.c       Mon Jun 11 23:27:34 2007\n@@ -412,7 +412,7 @@\n static struct dn_pkt_tag *\n dn_tag_get(struct mbuf *m)\n {\n-    struct m_tag *mtag = m_tag_first(m);\n+    struct m_tag *mtag = m_tag_find(m, PACKET_TAG_DUMMYNET, NULL);\n     KASSERT(mtag != NULL \u0026\u0026\n            mtag-\u003em_tag_cookie == MTAG_ABI_COMPAT \u0026\u0026\n            mtag-\u003em_tag_id == PACKET_TAG_DUMMYNET,\n\n-- \n+-------------------------------------+\n| Cristian KLEIN                      |\n| Network Engineer                    |\n| Communication Center                |\n| Technical University of Cluj-Napoca |\n+-------------------------------------+\n| Tel: +40-264-401247, int. 247       |\n| WWW: http://www.cc.utcluj.ro        |\n+-------------------------------------+"
+}

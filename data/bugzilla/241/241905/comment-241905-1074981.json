@@ -1,0 +1,8 @@
+{
+ "id": 1074981,
+ "bug_id": 241905,
+ "attachment_id": 0,
+ "creation_time": "2019-11-12T05:20:40Z",
+ "creator": "kevans@freebsd.org",
+ "text": "I think this is what it boils down to- qemu creates detached threads in __constructor__ functions. When compiled statically with clang, maybe 40% of the time I hit an SSP failure in one of these threads.\n\nMy current theory is that these threads spawn and race against __guard_setup. I suspect that the SSP cookie is setup as the default, then later compared after __guard_setup has run and the cookie has actually been initialized, then we get a \"failure\" and qemu dies.\n\nLLVM does a load from __stack_chk_guard, and that seems to just be a plain ol' global, so the race seems plausible."
+}

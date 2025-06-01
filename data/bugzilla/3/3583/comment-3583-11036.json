@@ -1,0 +1,8 @@
+{
+ "id": 11036,
+ "bug_id": 3583,
+ "attachment_id": 0,
+ "creation_time": "1997-05-13T04:30:16Z",
+ "creator": "dg@root.com",
+ "text": "\u003e\tsysctl kern works fine within the first few minutes after a reboot.\n\u003e\tSoon, it begins dumping core when attempting to print/retreive \n\u003e\tkern.clockrate. I've reported this in the past, but I cannot find it \n\u003e\tin the gnats DB. It is possible that it was mistakenly closed when I \n\u003e\tthought it had been fixed since it works right after rebooting.\n\n\u003e! \ti = sysctl(oid, nlen, 0, \u0026j, 0, 0);\n\u003e! \tj += j; /* we want to be sure :-) */\n\u003e! \n\u003e  \tval = alloca(j);\n\u003e  \tlen = j;\n\u003e  \ti = sysctl(oid, nlen, val, \u0026len, 0, 0);\n\u003e--- 341,347 ----\n\u003e  \n\u003e  \t/* find an estimate of how much we need for this var */\n\u003e  \tj = 0;\n\u003e! \ti = sysctl(oid, nlen, NULL, \u0026j, 0, 0);\n\u003e  \tval = alloca(j);\n\u003e  \tlen = j;\n\n   The problem is caused by the proc structs being too large to fit on\nyour stack - thus causing an rlimit violation. This is actually an\narchitectural flaw in the sysctl mechanism since the information returned\nfrom reading the struct procs is actually later discarded. The code needs\nto be re-written to only retrieve sysctl variables that are actually needed.\nYou can temporarily work around the problem by increasing your stack rlimit\nto something larger than 8MB.\n\n-DG\n\nDavid Greenman\nCore-team/Principal Architect, The FreeBSD Project"
+}

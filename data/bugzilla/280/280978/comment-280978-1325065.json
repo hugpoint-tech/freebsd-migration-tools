@@ -1,0 +1,8 @@
+{
+ "id": 1325065,
+ "bug_id": 280978,
+ "attachment_id": 253528,
+ "creation_time": "2024-09-12T21:44:59Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 253528\nFix close handling when vfs.nfsd.enable_locallocks=1\n\nI think this patch might fix the problem.\n\nnfsrv_freeopen() was being called after the mutex\nlock was released, making it possible for other\nkernel threads to change the lists while nfsrv_freeopen()\ntook the nfsstateid out of the lists.\n\nThis patch moves the code around\n\"if (nfsrv_freeopen(stp, vp, 1 p) == 0) {\"\ninto nfsrv_freeopen(), so that it can remove the nfsstateid\nstructure from all lists before unlocking the mutex.\nThis should avoid any race between CLOSE and other nfsd threads\nupdating the NFSv4 state.\n\nThe patch does not affect the semantics when vfs.nfsd.enable_locallocks=0.\n\nIf the reporter can test this patch, that would be great."
+}

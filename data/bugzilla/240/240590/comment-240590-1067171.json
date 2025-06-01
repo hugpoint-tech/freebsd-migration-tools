@@ -1,0 +1,8 @@
+{
+ "id": 1067171,
+ "bug_id": 240590,
+ "attachment_id": 0,
+ "creation_time": "2019-09-15T07:46:38Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "Here's a reproducer:\n\n#include \u003cassert.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003csys/epoll.h\u003e\n\nint main() {\n\n  int epfd = epoll_create(8);\n  assert(epfd);\n\n  struct epoll_event event = {\n    .events = EPOLLOUT | EPOLLONESHOT,\n    .data   = 0\n  };\n\n  int err1 = epoll_ctl(epfd, EPOLL_CTL_ADD, STDIN_FILENO, \u0026event);\n  assert(err1 == 0);\n\n  struct epoll_event events[1];\n  int n = epoll_wait(epfd, events, 1, -1);\n  assert(n \u003e 0);\n\n  int err2 = epoll_ctl(epfd, EPOLL_CTL_MOD, STDIN_FILENO, \u0026event);\n  if (err2 == 0) {\n    printf(\"ok\\n\");\n  } else {\n    perror(\"EPOLL_CTL_MOD failed\");\n  }\n\n  return 0;\n}\n\nThis program runs fine on Linux, while on FreeBSD it prints \"EPOLL_CTL_MOD failed: No such file or directory\". The man page on kevent says about EV_ONESHOT \"After the user retrieves the event from the kqueue, it is deleted\", so presumably that's why."
+}

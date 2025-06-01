@@ -1,0 +1,8 @@
+{
+ "id": 1038353,
+ "bug_id": 235640,
+ "attachment_id": 0,
+ "creation_time": "2019-02-19T15:46:54Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: markj\nDate: Tue Feb 19 15:46:43 UTC 2019\nNew revision: 344278\nURL: https://svnweb.freebsd.org/changeset/base/344278\n\nLog:\n  Move a racy assertion in filt_pipewrite().\n\n  EVFILT_WRITE knotes for pipes live on the knlist for the other end of the\n  pipe.  Since they do not hold a reference on the corresponding file\n  structure, they may be removed from the knlist by pipeclose() while still\n  remaining active.  In this case, there is no knlist lock acquired before\n  filt_pipewrite() is called, so the assertion fails.\n\n  Fix the problem by first checking whether that end of the pipe has been\n  closed.  These checks are memory safe since the knote holds a reference\n  on one end of the pipe, and the pipe structure is not freed until both\n  ends are closed.  The checks are not racy since PIPE_EOF is never cleared\n  after being set, and pipe_present is never set back to PIPE_ACTIVE after\n  pipeclose() has been called.\n\n  PR:\t\t235640\n  Reported and tested by:\tpho\n  Reviewed by:\tkib\n  MFC after:\t2 weeks\n  Sponsored by:\tThe FreeBSD Foundation\n  Differential Revision:\thttps://reviews.freebsd.org/D19224\n\nChanges:\n  head/sys/kern/sys_pipe.c"
+}

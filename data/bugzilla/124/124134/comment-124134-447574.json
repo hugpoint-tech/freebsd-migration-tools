@@ -1,0 +1,8 @@
+{
+ "id": 447574,
+ "bug_id": 124134,
+ "attachment_id": 0,
+ "creation_time": "2010-12-05T17:24:55Z",
+ "creator": "kostikbel@gmail.com",
+ "text": "On Sun, Dec 05, 2010 at 07:08:07AM -0800, pfgshield-freebsd@yahoo.com wrote:\r\n\u003e The code has certainly changed a lot  ...\r\n\u003e \r\n\u003e Reading the posting on the link with a possible fix:\r\n\u003e \r\n\u003e \"...\r\n\u003e Can you try to add to kernel sources, into file sys/amd64/amd64/machdep.c\r\n\u003e function exec_setregs(td, entry, stack, ps_strings)\r\n\u003e somewhere at the end\r\n\u003e \r\n\u003e \tpcb-\u003epcb_flags |= PCB_FULLCTX;\r\n\u003e ... \"\r\n\u003e \r\n\u003e We don't have anything similar to this in exec_setregs(), and from my understanding the issue could not be easily fixed without breaking binary compatibility so I would think the issue is still there.\r\n\u003e \r\n\u003e This PR was only for reference though as it doesn't cause trouble for us: I'm OK with the PR being closed.\r\n\u003e \r\n\r\nI looked at the PR before. Looking again now, I have the same conclusion,\r\nthat is I do not understand what is the issue.\r\n\r\nOn the first return into usermode after the successfull execve(2), kernel\r\nsets the following registers:\r\n- %rsp (properly aligned)\r\n- %rdi (1st parameter in usermode ABI; contains the pointer to startup\r\n  frame, i.e. \u0026argc)\r\n- all other GP registers are zeroed.\r\n\r\nABI rev. 0.99 requires the following setup:\r\n- %rsp properly aligned and has the value \u0026argc\r\n- %rdx points to a function to be registered with atexit(3), or NULL.\r\n\r\nWe do satisfy the ABI requirement for %rdx content in the trivial way,\r\nby passing 0.\r\n\r\nThe layout of the startup frame also seems conforming."
+}

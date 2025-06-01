@@ -1,0 +1,8 @@
+{
+ "id": 464517,
+ "bug_id": 127528,
+ "attachment_id": 0,
+ "creation_time": "2008-09-21T21:20:01Z",
+ "creator": "seth.mos@xs4all.nl",
+ "text": "When running simultaneous ping processes from the host to the same target on a FreeBSD host where 2 different processes ping the same host, one process will see the echo replies from the other process and fail.\n\nWe came to see this on pfSense 1.2.1 which is based on FreeBSD 7.0p4 and is using fping to monitor the gateways.\n\nPeople in our forum started complaining that gateways were invalidly marked as down. More investigation from the users led to the discovery that out of sequence replies were causing fping to fail.\n\nFix: \n\nWould the network stack not keep unique icmp streams apart?\nHow-To-Repeat: This can be demonstrated in a number of ways. When running apinger in the foreground with apinger -c /var/etc/apinger.conf -df it is pinging a gateway once a second it works fine.\nStart up a seperate ping process in another terminal and apinger will start logging \"Alien icmp echo replies\". These replies belong to the other process.\n\nAnother example is where the icmp replies are received out of sequence. This can be demonstrated using fping. When using fping to monitor the gateway we use a initial timeout value of 400ms. When a reply is received after 400ms the reply upsets the fping socket and starts failing replies.\n\nThis was previously never a issue on FreeBSD 6(1,2,3).\n\nA tcpdump on the wire confirms that both processes are actively sending out icmp requests and receiving icmp echo replies.\n\nIt also shows that both echo requests have different identifiers in the id field which should keep the icmp streams seperated."
+}

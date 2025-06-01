@@ -1,0 +1,8 @@
+{
+ "id": 855920,
+ "bug_id": 205651,
+ "attachment_id": 0,
+ "creation_time": "2015-12-28T15:09:43Z",
+ "creator": "woodsb02@freebsd.org",
+ "text": "This is typically because tor runs as the unprivileged user \"_tor\" and does not have permissions to create a file within the /var/run/ folder. Creating the folder /var/run/tor which is owned by the _tor user is one way to solve this.\n\nAnother way to solve it, is to get the rc.d script (which is executed as root) to manage the creation and deletion of the pid file and datadir folder. Something like this:\n\nstart_precmd=%%RC_NAME%%_precmd\n%%RC_NAME%%_precmd()\n{\n        if [ ! -e \"${pidfile}\" ]; then\n                install -g ${%%RC_NAME%%_group} -o ${%%RC_NAME%%_user} -- /dev/null \"${pidfile}\";\n        fi\n\n        if [ ! -d \"${%%RC_NAME%%_datadir}\" ]; then\n                install -d -g ${%%RC_NAME%%_group} -o ${%%RC_NAME%%_user} -- \"${%%RC_NAME%%_datadir}\";\n        fi\n}\n\nstop_postcmd=%%RC_NAME%%_postcmd\n%%RC_NAME%%_postcmd()\n{\n        rm -f -- \"${pidfile}\"\n}"
+}

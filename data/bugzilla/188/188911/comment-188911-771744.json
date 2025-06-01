@@ -1,0 +1,8 @@
+{
+ "id": 771744,
+ "bug_id": 188911,
+ "attachment_id": 144398,
+ "creation_time": "2014-07-04T09:55:23Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "Created attachment 144398\nsuggested change\n\nThe existing calculation of the resident page count in kern_proc_vmmap_out() does not make sense.  It counts the number of installed pte's in the specified range, which can be less than the number of resident pages, if the pages are not faulted on yet (i.e. softfault case).\n\nThe patch does two things:\n1. it adds a tunable to disable the calculation of the resident count at all. sysctl kern.proc_vmmap_skip_resident_count;\n2. it changes the algorithm for calculation to count the number of pages\nwhich are resident for the read fault, the COW copy allocations are counted\nas resident, while they are really not.\n\nI am on the edge WRT disabling the calculation by default, the patch does disable.\n\nOne interesting consequence of the new algorithm is that the provided test case is executed in zero time even with the residency count calculation enabled.  The reason is that there is no backing object for the mapping which was never faulted on.  As result, the loop is not executed at all.\n\nIf I change the test case to access at least one page in the mmaped range before\ncalling sysctl, I get around 30 sec runtime on my i7 2600K."
+}

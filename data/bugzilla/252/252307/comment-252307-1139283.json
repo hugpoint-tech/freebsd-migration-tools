@@ -1,0 +1,8 @@
+{
+ "id": 1139283,
+ "bug_id": 252307,
+ "attachment_id": 0,
+ "creation_time": "2020-12-31T22:24:17Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "\u003e OTOH for malloc(3) related functions, I suspect the decision was deliberate\nto make it possible to interpose system implementation with any other user\nprovided with LD_PRELOAD.\n\nWell, I tested (before filling the bug) whether this works in general and, as expected, it doesn't:\n\n% cat weak_sym_override_test2.c \n#include \u003cassert.h\u003e\n#include \u003cdlfcn.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstdio.h\u003e\n\n#if defined(ORIG)\nvoid __attribute__((weak)) test() {\n  printf(\"original\\n\");\n}\nvoid wrapper() {\n  test();\n}\n#elif defined(OVERRIDE)\nvoid test() {\n  printf(\"override\\n\");\n}\n#else\nextern void wrapper();\nint main() {\n  assert(dlopen(\"override.so\", RTLD_NOW) != NULL);\n  wrapper();\n  return 0;\n}\n#endif\n\n% cc -shared -fPIC -DORIG weak_sym_override_test2.c -o orig.so\n% cc -shared -fPIC -DOVERRIDE weak_sym_override_test2.c -o override.so\n% cc weak_sym_override_test2.c orig.so -Wl,-rpath,. -o test\n% ./test \noriginal\n\nDid I miss some compilation flags or something? How do I deliberately get this effect?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 395387,
+ "bug_id": 113239,
+ "attachment_id": 0,
+ "creation_time": "2013-06-11T19:43:54Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: ghelmer\nDate: Tue Jun 11 18:43:27 2013\nNew Revision: 251625\nURL: http://svnweb.freebsd.org/changeset/base/251625\n\nLog:\n  Prevent races running the queue by serializing access to the\n  queue directory.\n  \n  PR:\t\tbin/113239\n\nModified:\n  head/libexec/atrun/atrun.c\n\nModified: head/libexec/atrun/atrun.c\n==============================================================================\n--- head/libexec/atrun/atrun.c\tTue Jun 11 18:43:25 2013\t(r251624)\n+++ head/libexec/atrun/atrun.c\tTue Jun 11 18:43:27 2013\t(r251625)\n@@ -31,6 +31,7 @@ static const char rcsid[] =\n /* System Headers */\n \n #include \u003csys/fcntl.h\u003e\n+#include \u003csys/file.h\u003e\n #include \u003csys/types.h\u003e\n #include \u003csys/stat.h\u003e\n #ifdef __FreeBSD__\n@@ -521,6 +522,9 @@ main(int argc, char *argv[])\n     if ((spool = opendir(\".\")) == NULL)\n \tperr(\"cannot read %s\", ATJOB_DIR);\n \n+    if (flock(dirfd(spool), LOCK_EX) == -1)\n+\tperr(\"cannot lock %s\", ATJOB_DIR);\n+\n     now = time(NULL);\n     run_batch = 0;\n     batch_uid = (uid_t) -1;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

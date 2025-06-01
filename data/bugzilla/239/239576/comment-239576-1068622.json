@@ -1,0 +1,8 @@
+{
+ "id": 1068622,
+ "bug_id": 239576,
+ "attachment_id": 0,
+ "creation_time": "2019-09-25T10:22:50Z",
+ "creator": "kai@FreeBSD.org",
+ "text": "(In reply to vladimir.chukharev from comment #11)\n\nThank you for the detailed steps and info. By looking at the following lines\n\n\u003e [120Ramd64-default] Installing py36-qt5-opengl-5.12.2...\n\u003e pkg-static: Missing dependency 'qt5-opengl'\n\u003e\n\u003e Failed to install the following 1 package(s):\n\u003e /packages/All/py36-qt5-opengl-5.12.2.txz\n\u003e *** Error code 70\n\nit seems that the dependency chain for py36-qt5-opengl is still broken at the moment (as like with multimedia/gstreamer1 from comment #5). This can happen due stale entries in pkg's database.\n\nYou should be able to reproduce the error from above by issuing the following commands:\n\n# poudriere testport -i -j 120Ramd64 -o devel/py-pyface\nroot@120Ramd64-default:~ # pkg install -y py36-qt-opengl\n\nCan you please try following steps:\n\n- Remove \"graphics/qt5-opengl\" from TEST_DEPENDS.\n- Rebuild the TEST_DEPENDS with the following command:\n\n\u003e poudriere bulk -t -j 120Ramd64 -C `make -C /path/of/your/portstree/devel/py-pyface test-depends-list | awk -F '/' '{ print $(NF-1)\"/\"$NF }'`\n\n- Once the rebuild is finished, give it another try with:\n\n# poudriere testport -i -j 120Ramd64 -o devel/py-pyface\nroot@120Ramd64-default:~ # make -C /usr/ports/devel/py-pyface test"
+}

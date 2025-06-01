@@ -1,0 +1,8 @@
+{
+ "id": 1145559,
+ "bug_id": 253278,
+ "attachment_id": 0,
+ "creation_time": "2021-02-08T16:39:44Z",
+ "creator": "olce@FreeBSD.org",
+ "text": "Hi, sorry for not having stated the high-level use case here:\n- Launch X with \"startx\", specifying '/usr/local/bin/Xorg' as the server.\nE.g.: \"startx -- /usr/local/bin/Xorg :1\"\nYou'll get an immediate crash saying \"Can't read lock file /tmp/.X1-lock\". Although no lock file exists at all under '/tmp'.\n\nThe error comes from the fact that some lock file is prepared under another name (e.g., for display :1, under name '/tmp/.tX1-lock'), and this file is then hardlink to the final lock name using link(2), which improperly fails. \n\n\nThe point of fixes 2 and 3 is to respectively better report on this problem and solve it. 3 is a simplification of the existing code (no functional change intended), which has the effect of working around a FreeBSD bug in link(2) that I'm going to submit as a separate bug with patch. Fix 1 is unrelated, done while I was looking at this code, and its usefulness is debatable, especially once bug #253277 is fixed.\n\nEven with this patch, pursuing with:\n\"startx -- /usr/local/bin/Xorg :1\"\nstill doesn't work, because Xorg must be run as root. Substitution with:\n\"startx -- /usr/local/bin/X :1\"\nor\n\"startx -- /usr/local/bin/Xorg.wrap :1\"\nmakes it work, but then the fixes are not needed, since link(2) works.\n\nGiven all that, here is a path I find reasonable:\n1. Focus should be #253277, this one is secondary.\n2. I'll submit these fixes upstream.\n\nMaybe should we keep this PR open and I'll link the upstream bug here. Or I/you can close it. Don't know what's the policy in such cases.\n\nThanks."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 76669,
+ "bug_id": 24608,
+ "attachment_id": 0,
+ "creation_time": "2001-02-12T12:23:37Z",
+ "creator": "stask@tiger.unisquad.com",
+ "text": "Hi.\n\nUsing gdb a bit more, I've found that actually crashes occur not on\nlines it says:\n\n    at ../../kern/uipc_mbuf2.c:270\n    at ../../pci/if_rl.c:1314 (this one originally reported in this PR)\n    at ../../kern/uipc_socket.c:558\n    at ../../kern/uipc_mbuf.c:621\n\nbut in MGET() and MGETHDR() preceeding these lines at sys/mbuf.h lines\n287 and 317. Commented assembly code proving that are at\nhttp://tiger.unisquad.com/~stask/rl/typescript.detailed.44-46\nBTW, there are other typescripts.\n\nMGET()/MGETHDR() deal with 0x5aXXXXXX and 0x5bXXXXXX instead of 0xc0XXXXXX\n(other valid mbufs are at 0xc0XXXXXX). I've added some logging to the\nkernel (m_mballoc()) to check which addresses are usually used in the kernel\nfor mbufs. I'll report results.\n\nIt looks like m_mballoc() puts wrong value into mmbfree. Looking at it\n(kern/uipc_mbuf.c) I came to conclusion that it is kern_malloc() returning\nwrong value.\nIt looks like I should stop here, because I am not familiar with kernel\nand I don't understand kern_malloc()'s comment at all :(\nBut I'll try to makecouple of guesses :) There are many restrictions in\nuse of kern_malloc(), and probably it may not be used here.\nGuess 1. kern_malloc() should work at splhigh, while MGET()/MGETHDR() use\n         splimp.\nGuess 2. kern_malloc() should be only called from kern/kern_malloc.c.\n\nPS. When searching for a quick fix yesterday, I've tried to use old version\nof if_rl.c (from 4.1-RELEASE), but this didn't help, of course.\n\n\\bye\nStas"
+}

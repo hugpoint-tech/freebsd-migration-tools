@@ -1,0 +1,8 @@
+{
+ "id": 514554,
+ "bug_id": 137764,
+ "attachment_id": 0,
+ "creation_time": "2009-08-16T14:08:11Z",
+ "creator": "anatoly.borodin@gmail.com",
+ "text": "I've found the reason: I use ZFS.\n\nThe error message is produced by the shutil.copystat function.\n\n#cat /usr/local/lib/python2.6/shutil.py\n...\ndef copystat(src, dst):\n    \"\"\"Copy all stat info (mode bits, atime, mtime, flags) from src to dst\"\"\"\n    st = os.stat(src)\n    mode = stat.S_IMODE(st.st_mode)\n    if hasattr(os, 'utime'):\n        os.utime(dst, (st.st_atime, st.st_mtime))\n    if hasattr(os, 'chmod'):\n        os.chmod(dst, mode)\n    if hasattr(os, 'chflags') and hasattr(st, 'st_flags'):\n        os.chflags(dst, st.st_flags)\n...\n\nFreeBSD has flags, but ZFS where /usr/local resides doesn't support them.\n\nIt may be related to one of the recent update to the code ZFS - at\nsome point mv started to give messages like\n\n# rm -f /var/tmp/t ; touch /tmp/t ; mv /tmp/t /var/tmp\nmv: /var/tmp/t: set flags (was: 00000000): Invalid argument\n\nSee also http://www.google.com.ua/search?q=zfs+%22set+flags+(was%3A%22+%22Invalid+argument%22"
+}

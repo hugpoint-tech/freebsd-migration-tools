@@ -1,0 +1,8 @@
+{
+ "id": 672760,
+ "bug_id": 169471,
+ "attachment_id": 0,
+ "creation_time": "2012-06-27T00:20:06Z",
+ "creator": "dteske@FreeBSD.org",
+ "text": "When performing \"pw userdel USERNAME\", pw(8) will delete a group by the same name regardless of association (or lack thereof) between a group and a user by the same name.\n\nNOTE: Imagine if you had created a user named \"wheel\" and then executed \"pw userdel wheel\". The \"wheel\" group was just deleted silently without warning. No [simple] mechanism is provided to prevent the deletion of the group when deleting a user by the same name.\n\nFix: \n\nI see a couple solutions, such as:\n1. patch pw(8) to not touch groups during userdel (this requires scripts to adjust if they were relying on this feature), or...\n2. patch pw(8) to check that the primary gid of the user being deleted is that of the group sharing the same name as the user.\nHow-To-Repeat: pw useradd foo -g wheel\n# This creates user \"foo\" with primary gid of existing wheel group (0)\npw groupadd foo\n# This adds a group with the same name\npw userdel foo\n# This deletes both the user and the group (despite the fact that they are unrelated to each other -- read: user foo was not a member of group foo, nor did it have group foo as its primary gid)."
+}

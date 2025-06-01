@@ -1,0 +1,8 @@
+{
+ "id": 20036,
+ "bug_id": 6529,
+ "attachment_id": 0,
+ "creation_time": "1998-05-06T01:20:01Z",
+ "creator": "dan@obluda.cz",
+ "text": "\n/usr.sbin/login/login.c:\n\nThe variable \"backoff\" is initialized (source line 267) from login-backoff tag\nof login capabilities database or (source line 272) from DEFAULT_BACKOFF\n(=3, see line 123). \n\nImagine than an user give a bad password and see source line 513.\nIf \"cnt\" variable (number of attempts) is greater than \"backoff\" then \nsleep is called. The problem is with sleep argument. ((cnt - 3) * 5) can \nbe negative number if \"backoff\" is less than 2. If login capabilities\ndatabase/login-backoff tag is set to less than 2 by administrator and user\ngive bad password then sleep on line 518 cause to sleep until login\ntimeout-ed (or SIGINT or SIGQUIT).\n\nSimilar situation occur if the #define DEFAULT_BACKOFF (line 272) will be\nchanged to 1 or less and apropriate tag isn't present or login capabilities \nfunctions aren't compiled in.\n\nIMHO, this inconsistence is related to adding of login_capabilities_database\nsupport to login program, but this part of program remain intact with\nold coded-in constants.\n\nFix: \n\nChange line 518 of login.c from\n                        sleep((u_int)((cnt - 3) * 5));\nto\n                        sleep((u_int)((cnt - backoff) * 5));\n\nRecompile and reinstall login program.\n\nThe workaround is set the login-backoff tag to 3 or more or remove this tag\nfrom login.conf database.\nHow-To-Repeat: \nAdd :login-backoff=1: tag to /etc/login.conf, class default, (re)start \nlogin program on a tty and try login with bad password (two attempts).\nlogin will sleep until SIGINT, SIGQUIT or login timeout."
+}

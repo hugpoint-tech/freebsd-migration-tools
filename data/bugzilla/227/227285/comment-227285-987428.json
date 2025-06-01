@@ -1,0 +1,8 @@
+{
+ "id": 987428,
+ "bug_id": 227285,
+ "attachment_id": 192514,
+ "creation_time": "2018-04-14T19:42:45Z",
+ "creator": "jan.kokemueller@gmail.com",
+ "text": "Created attachment 192514\ntest program (faster reproduction)\n\nHere is a better test program that should uncover the race in a few seconds at most. Compile with \"cc fdpass-race-fast.c -pthread -lnv\". I'm spawning another thread that just creates and closes socketpairs. This triggers the unp garbage collector constantly.\n\nI believe the race is in soreceive_generic() in sys/kern/uipc_socket.c. The \"in flight\" domain socket is taken off the so_rcv sockbuf, but it is not externalized yet (dom_externalize() hasn't been called). This leads to the GC thinking that the socket is still \"in flight\" but it doesn't actually get marked because it is off the so_rcv sockbuf. Now the GC thinks this socket is unreachable and closes it."
+}

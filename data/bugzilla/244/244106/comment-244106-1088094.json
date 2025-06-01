@@ -1,0 +1,8 @@
+{
+ "id": 1088094,
+ "bug_id": 244106,
+ "attachment_id": 0,
+ "creation_time": "2020-02-13T21:30:24Z",
+ "creator": "jan.kokemueller@gmail.com",
+ "text": "Sorry for the breakage. In the latest epoll-shim code, \"epoll_create\" returns a handle to an internal context object which manages some state, and therefore needs to be closed with \"epoll_shim_close\". But the worst that can happen with a normal \"close\" is a memory leak. This may or may not be tolerable, depending on the use case.\n\nI guess the most robust workaround is something like this:\n\n\n+#ifdef SHIM_SYS_SHIM_HELPERS\n+#undef close\n+#endif\n        return fid-\u003eops-\u003eclose(fid);\n+#ifdef SHIM_SYS_SHIM_HELPERS\n+#define close epoll_shim_close\n+#endif\n\n... i.e. redefining \"close\" after a problematic line back to \"epoll_shim_close\".\n\nIs it possible to script something like this in the post-patch section with REINPLACE_CMD maybe?"
+}

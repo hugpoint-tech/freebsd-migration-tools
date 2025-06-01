@@ -1,0 +1,8 @@
+{
+ "id": 952211,
+ "bug_id": 221317,
+ "attachment_id": 0,
+ "creation_time": "2017-09-16T16:30:01Z",
+ "creator": "v.maffione@gmail.com",
+ "text": "Hi,\n  For the moment being, unfortunately, netmap needs to do bring the interface down in order to put the NIC in \"netmap mode\" (nm_register method in the code). At the end of the registration, the interface is brought up again.\nWe bring the interface down because we need to detach the mbufs from the NIC rings and attach the netmap buffers as a replacement. Currently we can't do this while the interface is up, becuse the driver may be concurrently receiving/transmitting mbufs. The link flapping comes as a result of the IFF_DOWN+IFF_UP cycle.\nIn the long term we would like to get rid of this, but for now we haven't found yet a reasonable way to avoid the down/up cycle on register.\n\nThis said, the only piece of code in netmap that I think it may cause the issue is the nm_register method (called to put the NIC in netmap mode):\n\nhttp://fxr.watson.org/fxr/source/dev/netmap/ixgbe_netmap.h#L118\n\nThe rest of netmap never touches NIC configuration/control registers, but only the registers involved in receive/transmit operation (and the hardware rings).\nI don't know why this bug shows up, but I can guess it may be some race condition triggered by repeated IFF_DOWN+IFF_UP cycles.\nNote that the nm_register method runs under IFNET_RLOCK()."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 462020,
+ "bug_id": 127033,
+ "attachment_id": 0,
+ "creation_time": "2008-09-02T01:10:02Z",
+ "creator": "bp@barryp.org",
+ "text": "I've noticed a couple things in installation of the net/rabbitmq port that don't seem quite right...\n\nThe port Makefile contains this line:\n\n----\nMAKE_ENV+=      TARGET_DIR=\"${PREFIX}/lib/erlang/lib/rabbitmq-${PORTVERSION}\" SBIN_DIR=\"${PREFIX}/sbin/\"\n----\n\nbut I believe the TARGET_DIR should end with \"rabbitmq_server-${PORTVERSION}\", having the \"_server\" bit gives you something that matches what the rabbitmq install docs recommend, and allow you to build the rabbitmq-erlang-client more easily.\n\nThe other issue is that the rabbitmq daemon doesn't start automatically when a jail that it's installed in starts (or presumably a machine boots) - it seems that \"/usr/local\" is not in the path at this point, so the rc.d/rabbitmq script doesn't find the \"/usr/local/sbin/rabbitmq-server\" script, which also doesn't find \"/usr/local/bin/erl\"\n\nFix: I've attached a patch to the port that seems to fix these problems.\n\nPatch attached with submission follows:\nHow-To-Repeat: Try building the RabbitMQ erlang client, it errors out with\n\n----\nsrc/amqp_channel.erl:28: can't find include lib \"rabbitmq_server/include/rabbit.hrl\"\nsrc/amqp_channel.erl:29: can't find include lib \"rabbitmq_server/include/rabbit_framing.hrl\"\n----\n\nInstall rabbitmq and enable in your rc.conf, reboot machine or jail and see that it doesn't start automatically.  It starts fine by hand though because when you're logged into a shell, you usually have /usr/local/s?bin in your path."
+}

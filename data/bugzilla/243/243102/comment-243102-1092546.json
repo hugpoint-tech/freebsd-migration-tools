@@ -1,0 +1,8 @@
+{
+ "id": 1092546,
+ "bug_id": 243102,
+ "attachment_id": 0,
+ "creation_time": "2020-03-16T07:14:52Z",
+ "creator": "ewhac@ewhac.org",
+ "text": "I bumped in to a relative of this today while setting up a new install.  My setup is using postgresql, and the log message read:\n\n15-Mar 22:14 xxxxx JobId 5: BeforeJob: sh: pg_dump: not found\n\n`pg_dump` was definitely installed.  I spent a few hours diagnosing it.  Essentially the problem is that rc.d launches bareos-dir with the PATH set to \"/sbin:/bin:/usr/sbin:/usr/bin\".  However, the postgresql11-client package installs all the utilities in /usr/local/bin, so job scripts launched from bareos-dir won't find it.\n\nI'm not sure what the Correct Way to fix this is.  I managed to work around the issue by adding the following line to /etc/rc.conf:\n\nbareos_dir_env=\"PATH=$PATH:/usr/local/sbin:/usr/local/bin\"\n\nAnd then restarting bareos-dir.  I then ran the catalog backup job manually from `bconsole`, which completed successfully.\n\nNote that this trick only appears to work from within `run_rc_command` itself.  If you use `sysrc -A` to check the setting, the \"$PATH\" part won't be expanded correctly, instead displaying as:\n\nbareos_dir_env: PATH=:/usr/local/sbin:/usr/local/bin"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1300319,
+ "bug_id": 272732,
+ "attachment_id": 0,
+ "creation_time": "2024-03-09T19:31:11Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Given it's USB you get the information with\n\nusbconfig -d 2.4 dump_device_desc\n\nbut the sysctl has most of that.\n\nThe problem seems to be:\n\nrtwn_tx_beacon_check: cannot push beacon into chip, error 60!\n\nwhich comes from sys/dev/rtwn/if_rtwn_beacon.c\n\nI would try to start enabling debug in the driver (and you need to re-compile your kernel again and install it afterwards):\n\ndiff --git sys/dev/rtwn/if_rtwn_debug.h sys/dev/rtwn/if_rtwn_debug.h\nindex fa1b50b551b5..67d4ed1c60b9 100644\n--- sys/dev/rtwn/if_rtwn_debug.h\n+++ sys/dev/rtwn/if_rtwn_debug.h\n@@ -23,6 +23,7 @@\n \n #include \"opt_rtwn.h\"\n \n+#define RTWN_DEBUG\n #ifdef RTWN_DEBUG\n enum {\n        RTWN_DEBUG_XMIT         = 0x00000001,   /* basic xmit operation */\n\n\n\nWith that a sysctl dev.rtwn.0.debug should show up which one can set according to the values in the  if_rtwn_debug.h file to gather more data;  I would start with\n\nsysctl dev.rtwn.0.debug=0x101   # BEACON | TX"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1110368,
+ "bug_id": 247329,
+ "attachment_id": 0,
+ "creation_time": "2020-06-25T14:56:35Z",
+ "creator": "ashish@FreeBSD.org",
+ "text": "I believe this commit[1] broke Firefox on Wayland:\n\nshm_open(\"/wayland.mozilla.ipc.0\",O_RDWR|O_CREAT|O_EXCL,0600) = 31 (0x1f)\nshm_unlink(\"/wayland.mozilla.ipc.0\")             = 0 (0x0)\nmprotect(0x91c3c818000,4096,PROT_READ|PROT_WRITE) = 0 (0x0)\nposix_fallocate(0x1f,0x0,0x4)                    = 19 (0x13)\nclose(31)                                        = 0 (0x0)\nSIGNAL 11 (SIGSEGV) code=SEGV_MAPERR trapno=12 addr=0x0\nmprotect(0x91c3c818000,4096,PROT_READ|PROT_EXEC) = 0 (0x0)\nsigprocmask(SIG_SETMASK,{ },0x0)                 = 0 (0x0)\nunlink(\"/tmp/firefox/lock\")                      = 0 (0x0)\nclose(13)                                        = 0 (0x0)\n\n\nIt segfaults at the startup due to posix_fallocate on a ZFS root (/wayland.mozilla.ipc.0), which seems to be the change in the referenced commit.\n\nI'm on 12.1-RELEASE, and downgraded back to 77.0.1_1,1 for now, which works fine.\n\nThanks!\n\nReferences:\n[1] https://hg.mozilla.org/mozilla-central/rev/594ac84515dc7eeddd1d09071e4d6591524d8910"
+}

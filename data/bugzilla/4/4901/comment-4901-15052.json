@@ -1,0 +1,8 @@
+{
+ "id": 15052,
+ "bug_id": 4901,
+ "attachment_id": 0,
+ "creation_time": "1997-10-30T21:50:01Z",
+ "creator": "mini@d198-232.uoregon.edu",
+ "text": "\n  usr.sbin/mkdosfs/bootcode.asm attempts to set ds to 0x0040, but misses and\nsets dx. oops. bootcode.asm will set a random segment's offset 0x72 to 0x1234.\n\nFix: \n\nApply this diff to usr.sbin/mkdosfs/bootcode.asm :\n\n69c69\n\u003c       pop     dx\n---\n\u003e       pop     ds\nHow-To-Repeat: \n $ cvs co mkdosfs\n $ cd mkdosfs\n $ more bootcode.asm\n\n At line 90 he source will read :\n\n        mov     ax, *0x40       ; write 0x1234 to address 0x472 --\n        push    ax              ; tell the BIOS that this is a warm boot\n        pop     dx\n        mov     0x72, *0x1234\n        jmpf    0xfff0,0xf000   ; jump to CPU initialization code\n\n  note the 'pop dx'. Oops"
+}

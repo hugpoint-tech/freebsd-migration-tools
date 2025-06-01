@@ -1,0 +1,8 @@
+{
+ "id": 1259488,
+ "bug_id": 271414,
+ "attachment_id": 242168,
+ "creation_time": "2023-05-14T14:13:49Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 242168\nsu+j ffs image with negative length for root i-node, causes fsck_ffs to crash\n\nThe attached file system image has a root inode with length that has\nthe high bit set. This causes howmany() in the iblock() code here\nto be negative, but nif (being 32 bits) ends up positive and big, so the\n\"for (i = nif\" passes a too-large i to IBLK().\n\n        if (howmany(isize, sizepb) \u003e NINDIR(\u0026sblock))\n                nif = NINDIR(\u0026sblock);\n        else\n                nif = howmany(isize, sizepb);\n        if (idesc-\u003eid_func == pass1check \u0026\u0026 nif \u003c NINDIR(\u0026sblock)) {\n                for (i = nif; i \u003c NINDIR(\u0026sblock); i++) {\n                        if (IBLK(bp, i) == 0)\n\nHere's a backtrace from fsck -y on the attached gzipped image:\n\nProgram received signal SIGSEGV, Segmentation fault.\nAddress not mapped to object.\n0x0000000000213ddc in iblock (idesc=0x7fffffffe7d0, isize=-9142367621260355008, type=4) at inode.c:213\n213                     if (IBLK(bp, i)) {\n(gdb) where\n#0  0x0000000000213ddc in iblock (idesc=0x7fffffffe7d0, \n    isize=-9142367621260355008, type=4) at inode.c:213\n#1  0x000000000021333b in ckinode (dp=0x800a63b80, idesc=0x7fffffffe7d0)\n    at inode.c:138\n#2  0x000000000022526d in suj_check (filesys=0x7fffffffed74 \"junk\")\n    at suj.c:2415\n#3  0x00000000002195c6 in checkfilesys (filesys=0x7fffffffed74 \"junk\")\n    at main.c:356\n#4  0x0000000000218f72 in main (argc=1, argv=0x7fffffffea20) at main.c:210"
+}

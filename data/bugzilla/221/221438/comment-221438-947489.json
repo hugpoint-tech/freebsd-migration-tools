@@ -1,0 +1,8 @@
+{
+ "id": 947489,
+ "bug_id": 221438,
+ "attachment_id": 0,
+ "creation_time": "2017-08-13T20:07:48Z",
+ "creator": "ohauer@FreeBSD.org",
+ "text": "I've just build the mail/postfix with sqllite3 on a fresh 11.1(amd) system and don't see the issue there.\n\nIf I look at your log and grep in the sqlite3 sources, then I suspect this is a sqlite3 issue since fdatasync is not used by postfix.\n\n\u003e postfix/cleanup[1912]: fatal: load_library_symbols: dlopen failure loading /usr/local/lib/postfix/postfix-sqlite.so: /usr/local/lib/libsqlite3.so.0: Undefined symbol \"fdatasync\"\n\nOne of the reasons could be a patch level difference (libc) between the pouderoe jail and the OS where postfix is installed (fdatasync is not available on 10.x)\n\nCould you try the following script? (I hope the issue will also pop up, then we know it is not a postfix issue)\n\n\n#!/bin/sh\n{\ncat\u003c\u003c _EOF\ncreate table t1( one varchar(10), two integer );\ninsert into t1 values( 'FreeBSD', 1 );\ninsert into t1 values( 'postfix', 2 );\ninsert into t1 values( 'sqlite3', 3 );\nselect * from t1\n_EOF\n} | sqlite3 /tmp/PR221438.sqlite"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 787313,
+ "bug_id": 193723,
+ "attachment_id": 147416,
+ "creation_time": "2014-09-17T21:32:30Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "Created attachment 147416\npatch to unbreak x11-toolkits/swt-devel on FreeBSD 8.x\n\nThe extract phase for x11-toolkits/swt-devel (swt-devel-3.7.1_2,1) fails on FreeBSD 8.x unless the ports version of unzip is already installed.  This\nis guaranteed to happen when building with poudriere because archivers/unzip is not listed as a dependency.\n\n=======================\u003cphase: extract        \u003e============================\n===\u003e  License EPL accepted by the user\n===\u003e Fetching all distfiles required by swt-devel-3.7.1_2,1 for building\n===\u003e  Extracting for swt-devel-3.7.1_2,1\n=\u003e SHA256 Checksum OK for swt-3.7.1-gtk-linux-x86.zip.\n/usr/local/bin/unzip: not found\n*** Error code 127\n\nStop in /usr/ports/x11-toolkits/swt-devel.\n\n\nThe Makefile contains the following:\npost-extract:\n.if ${OSVERSION} \u003e 900044\n        @(cd ${WRKSRC} \u0026\u0026 /usr/bin/unzip -qo *.zip)\n.else\n        @(cd ${WRKSRC} \u0026\u0026 ${UNZIP_CMD} -qo *.zip)\n.endif\n        @${RM} -f ${WRKSRC}/*.o ${WRKSRC}/*.so ${WRKSRC}/*.jar\n\nApparently the base version of unzip in older versions of FreeBSD has issues with this port, so unzip from ports, ${UNZIP_CMD} is used instead, but the\nports version of unzip is not listed as a dependency.\n\nThe attached patch fixes this problem.  It also fixes two portlint\nwarnings."
+}

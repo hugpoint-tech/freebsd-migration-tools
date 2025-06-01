@@ -1,0 +1,8 @@
+{
+ "id": 60830,
+ "bug_id": 19773,
+ "attachment_id": 0,
+ "creation_time": "2006-09-10T20:48:08Z",
+ "creator": "Andy_Nissen@securecomputing.com",
+ "text": "I ran into this problem recently with a similar script:\n\ncat \u003c\u003c __EOF__ \u003e telnet_spin.py\n#! /usr/contrib/bin/python\nimport os\n\n# Change IP and port to suit needs - This happens to work in my\nconfiguration.\nCMD =3D ['/usr/bin/telnet', '10.69.181.121', '80']\nGET =3D 'GET http://www.example.com HTTP/1.0\\n\\n'\n\nstdin, stdout, stderr =3D os.popen3(CMD)\nstdin.write(GET)\n__EOF__\n\nThis is on FreeBSD 6.0-RELEASE.  My fix is comparable, but also catches =\nthe\nlongjmp from netflush.\n\n__FBSDID(\"$FreeBSD: src/contrib/telnet/telnet/commands.c,v 1.35 =\n2005/02/28\n12:46:52 tobez Exp $\");\n\n***************\n\n*** 2494,2499 ****\n--- 2494,2507 ----\n      if (setjmp(peerdied) =3D=3D 0)\n        telnet(user);\n      (void) NetClose(net);\n+=20\n+     /*\n+      *  Since ExitString does a write, if SIGPIPE is left going to\ndeadpeer, we\n+      *  may end up in a loop.   Since longjump restores the signal =\nmask,\nwe break\n+      *  the tie here.\n+      */\n+     signal(SIGPIPE, SIG_IGN);\n+=20\n      ExitString(\"Connection closed by foreign host.\\n\",1);\n      /*NOTREACHED*/\n   fail:\n\nAndy"
+}

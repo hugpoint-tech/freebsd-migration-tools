@@ -1,0 +1,8 @@
+{
+ "id": 769819,
+ "bug_id": 191218,
+ "attachment_id": 0,
+ "creation_time": "2014-06-20T18:13:17Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "If I have more than one V3 entry in /etc/exports with the same hostname, mountd is spitting out the following error on /dev/console with the default syslog.conf, for example:\n\n% service mountd reload\nmountd: can't change attributes for /tmp/bar: Invalid radix node head, rn: 0 0xfffff80035180300\n% showmount -e\nExports list on localhost:\n/scratch                     192.168.137.0\n/tmp/foo                     localhost\n% ls /mnt/hello_world\nls: /mnt/hello_world: No such file or directory\n% touch /tmp/bar/hello_world\n% ls /mnt/hello_world\n/mnt/hello_world\n% umount /mnt\n% uname -a\nFreeBSD freebsd-10-x64.localdomain 10.0-STABLE FreeBSD 10.0-STABLE #0 7905925(stable/10): Wed Jun 11 14:10:17 PDT 2014    root@freebsd-x86.localdomain:/usr/obj/usr/src/sys/GENERIC-WITHOUT-WITNESS  amd64\n%\n\nAs shown above, /tmp/bar doesn't show up via showmount -e for the list of exports but the path is mountable and I created /tmp/hello_world, and it appeared in the mount location as expected because the path was mounted.\n\nThis issue occurs on vanilla FreeBSD 10-STABLE and 11-CURRENT.\n\nReproduction steps:\n\nmkdir /tmp/foo /tmp/bar\n\ncat \u003e /etc/exports \u003c\u003cEOF\n/tmp/bar -alldirs localhost\n/tmp/foo -alldirs localhost\nEOF\ncat \u003e /etc/rc.conf.local \u003c\u003cEOF\nmountd_enable=\"YES\"\nnfs_server_enable=\"YES\"\nEOF\nservice nfsd start\nservice mountd start\n\nExpected Result:\n\n- showmount -e should show the list of exported paths. /tmp/bar and /tmp/foo should be exported.\n- Both paths should be mountable."
+}

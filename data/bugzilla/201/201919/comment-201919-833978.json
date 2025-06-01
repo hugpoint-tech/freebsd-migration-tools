@@ -1,0 +1,8 @@
+{
+ "id": 833978,
+ "bug_id": 201919,
+ "attachment_id": 0,
+ "creation_time": "2015-07-27T12:51:35Z",
+ "creator": "sirdice@gmail.com",
+ "text": "We use sysutils/monit (and M/Monit) to control several services. Since version 5.12.2 there's a delay of several minutes when shutting down a service.\n\nFor example, we have the following in monitrc:\ncheck process apache with pidfile  /var/run/httpd.pid\n  start program = \"/usr/local/etc/rc.d/apache22 start\" with timeout 60 seconds\n  stop program  = \"/usr/local/etc/rc.d/apache22 stop\"\n  if cpu \u003e 60% for 2 cycles then alert\n  if cpu \u003e 80% for 5 cycles then alert\n  if cpu \u003e 90% for 6 cycles then restart\n  if totalmem \u003e 14000.0 MB for 5 cycles then alert\n  if totalmem \u003e 15000.0 MB for 5 cycles then restart\n  if children \u003e 750 then alert\n  if failed host 172.17.40.104 port 80 protocol http\n                     and request \"/system/\"\n                     for 2 cycles then restart\n  if 3 restarts within 15 cycles then timeout\n  group server\n\nA \"monit stop apache\" takes several minutes for Apache to actually start shutting down. This causes problems with our automated deployment scripts. With previous versions the shutdown happened immediately after issuing \"monit stop apache\". A normal '/usr/local/etc/rc.d/apache22 stop' stops the service almost immediately. \n\nVersion 5.12.1 did not exhibit this behavior, all versions (5.12.2, 5.13 and 5.14) after it do. \n\nFor the time being I've downgraded to Monit 5.12.1. \n\n(This may need to be fixed upstream)"
+}

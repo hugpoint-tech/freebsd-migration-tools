@@ -1,0 +1,8 @@
+{
+ "id": 818405,
+ "bug_id": 199150,
+ "attachment_id": 155195,
+ "creation_time": "2015-04-05T11:48:15Z",
+ "creator": "junovitch@freebsd.org",
+ "text": "Created attachment 155195\nNonrecursive Pflog -- Broken in restart case\n\n2. \nThe recursive call case's justification is best shown with the restart command (shown below).  I've attached my original diff that kept the non-recursive behavior as a demo but the only way to make all rc commands work is by removing the comment on _rc_restart_done=false shown in the patch.  Line 1102 of /etc/rc.subr explains that gets set to prevent being called more than once by any given script.  So that works... but working and right thing to do aren't necessarily the same thing.\n\nThe recursive call gives the ability to do individual devices via `service pflog restart pflog1`.  This is similar in concept to /etc/rc.d/wpa_supplicant using the $2 for interface and it's similar in implementation to /etc/rc.d/netif looping through each interface and calling `/etc/rc.d/routing start any $_if`.\n\nFinally, it's worth mentioning that `service pflog restart` is broken in the current version for the reason above.\n\n===== CURRENT PFLOG =====\nroot@myrtr:/etc/rc.d # service pflog restart\nStarting pflogd: pflog0 pflog1 pflog2\nStopping pflog.\nWaiting for PIDS: 16977.\nStarting pflog.\n\n===== ATTACHED PFLOG =====\nroot@myrtr:/etc/rc.d # service pflog restart\nStopping pflog0.\nWaiting for PIDS: 52490.\nStarting pflog0.\n\n===== ATTACHED PFLOG, comment removed on _rc_restart_done=false =====\nroot@myrtr:/etc/rc.d # service pflog restart\nStopping pflog0.\nWaiting for PIDS: 55852.\nStarting pflog0.\nStopping pflog1.\nWaiting for PIDS: 12762.\nStarting pflog1.\nStopping pflog2.\nWaiting for PIDS: 13809.\nStarting pflog2."
+}

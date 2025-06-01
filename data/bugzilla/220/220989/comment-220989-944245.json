@@ -1,0 +1,8 @@
+{
+ "id": 944245,
+ "bug_id": 220989,
+ "attachment_id": 0,
+ "creation_time": "2017-07-25T21:00:30Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "I tried adding a bit of debug info, and with a \"good\" libm, the first result is:\n\nDBG: ld_pi_odd[0] = 1.18918869603738415962e+101,\n     sinl() = 2.47267281071058784804e-22,\n     fabsl() = 2.47267281071058784804e-22,\n     LDBL_EPSILON = 1.08420217248550443401e-19\n\nWith a \"bad\" libm (compiled by clang 5.0.0), it becomes:\n\nDBG: ld_pi_odd[0] = 1.18918869603738415962e+101,\n     sinl() = 6.81892800593498228635e-01,\n     fabsl() = 6.81892800593498228635e-01,\n     LDBL_EPSILON = 1.08420217248550443401e-19\n\nE.g. the sinl() result is completely off.  I did some bisection, and it seems to have regressed with this upstream commit:\n\n  https://reviews.llvm.org/rL307529\n  (\"This patch completely replaces the scheduling information for the SandyBridge architecture target by modifying the file X86SchedSandyBridge.td located under the X86 Target\")\n\nI am not entirely sure why such a commit would influence the operation of e.g. sinl() on generic amd64, since it does not use any Sandy Bridge specific assembly or the like.  Maybe it exposes some other bug in the X86 code generation for long doubles?  Or maybe there is some sort of undefined behavior in our sinl() implementation that is now being over-optimized?\n\nThe challenge here is to come up with a good minimized test case for upstream, so we can submit this as a concrete bug.  Maybe it is easiest to just copy paste all of the sinl() implementation plus the relevant part of trig_test.c into one big .c file, and make it print and/or check the end result."
+}

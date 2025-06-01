@@ -1,0 +1,8 @@
+{
+ "id": 509768,
+ "bug_id": 136781,
+ "attachment_id": 0,
+ "creation_time": "2009-07-15T11:00:08Z",
+ "creator": "shawkris@hotmail.com",
+ "text": "FreeBSD is configured as a firewall/traffic shaping bridge.\n\nFragmented packets are intermittantly dropped when using pf with if_bridge. If pf's scrub function is used then fragments appear to be silently dropped.\n\nTesting with the Windows XP ping -l function to a machine on the other side of the bridge:\n\nping -l \u003c1472 = works\nping -l 1473\u003c-\u003e1497 = dropped packets\nping -l \u003e1498 = works\n\nBelow is the loud output when ping x.x.1.4 -l 1473 is executed.\n\nkernel: pf_normalize_ip: reass frag 17581 @ 0-1480\ntrafficshaper kernel: pf_normalize_ip: reass frag 17581 @ 1480-1481\ntrafficshaper kernel: pf_reassemble: 1481 \u003c 1481?\ntrafficshaper kernel: pf_reassemble: complete: 0xc15ba700(1501)\n\nFix: \n\nIf scrub fragment reassemble is not used then packets are passed OK.\nIf fragment drop-ovl is used the packets are passed OK.\nHow-To-Repeat: rc.conf\n*******\ncloned_interfaces=\"bridge0\"\nautobridge_interfaces=\"bridge0\"\nautobridge_bridge0=\"vr0 vr1\"\nipv4_addrs_bridge0=\"x.x.8.11/24\"\ndefaultrouter=\"x.x.8.1\"\nifconfig_vr0=\"up\"\nifconfig_vr1=\"up\"\n\nsysctl\n******\nnet.link.bridge.ipfw: 0\nnet.link.bridge.log_stp: 0\nnet.link.bridge.pfil_local_phys: 1\nnet.link.bridge.pfil_member: 1\nnet.link.bridge.pfil_bridge: 0\nnet.link.bridge.ipfw_arp: 0\nnet.link.bridge.pfil_onlyip: 1\n\npf.conf\n*******\nscrub in all fragment reassemble"
+}

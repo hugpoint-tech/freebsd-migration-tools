@@ -1,0 +1,8 @@
+{
+ "id": 876820,
+ "bug_id": 209006,
+ "attachment_id": 0,
+ "creation_time": "2016-04-30T22:46:38Z",
+ "creator": "dpejesh@yahoo.com",
+ "text": "This seems to be threading related.  The build only fails in an 11 poudriere jail, though builds fine in an 10.3 poudriere jail and on an 11 virtual machine.  What's really peculiar though is it looks like libqb uses PTHREAD_PROCESS_SHARED pthread spin locks, which according to the pthread_spin_init man page aren't supported at all on FreeBSD.  I would have expected to see threading problems show up before this if that's really the problem.\n\nRunning the following code on a combination of 10/11 host and virtual machines also shows something kind of interesting.\n\n#include \u003cerr.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cpthread.h\u003e\n\nint main() {\n  pthread_spinlock_t lock;\n  int r;\n\n  r = pthread_spin_init(\u0026lock, PTHREAD_PROCESS_SHARED);\n  if (r != 0)\n    err(1, \"pthread_spin_init(%i)\", errno);\n\n  err(0, \"pthread_spin_init(0)\");\n}\n\n10-amd64-jail: test: pthread_spin_init(2): No such file or directory\n10-amd64-host: test: pthread_spin_init(2): No such file or directory\n11-amd64-jail: test: pthread_spin_init(22): Invalid argument\n11-amd64-host: test: pthread_spin_init(0): No error: 0\n\nThe fact that this problem only seems to show up in an 11 jail and doesn't segfault anywhere else except there makes me curious if the problem isn't related to FreeBSD 11 and not libqb/pacemaker.  I can submit a patch for libqb to use mutexes instead of spinlocks which fixes the segfault, but that might just be more of a workaround for whatever is causing pthread_spin_init() to act differently inside of a jail."
+}

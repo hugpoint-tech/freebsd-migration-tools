@@ -1,0 +1,8 @@
+{
+ "id": 921614,
+ "bug_id": 217065,
+ "attachment_id": 0,
+ "creation_time": "2017-02-13T10:51:06Z",
+ "creator": "alexandre.martins@mc2-technologies.com",
+ "text": "Hello,\n\nDuring the optimization phase of our project on an Armada 380, I have see that an optimization on bcopy/memmove is broken.\n\nhttps://svnweb.freebsd.org/base/head/sys/arm/arm/support.S?view=annotate#l403\n\nThe condition on the following line are reserved:\n\n\u003e subcc r3, r0, r1 /* if (dst \u003e src) r3 = dst - src */\n\u003e subcs r3, r1, r0 /* if (src \u003e dsr) r3 = src - dst */\n\u003e cmp r3, r2 /* if (r3 \u003c len) we have an overlap */\n\u003e bcc PIC_SYM(_C_LABEL(memcpy), PLT)\n\nShould be:\n\n\u003e subcs r3, r0, r1 /* if (dst \u003e src) r3 = dst - src */\n\u003e subcc r3, r1, r0 /* if (src \u003e dsr) r3 = src - dst */\n\u003e cmp r3, r2 /* if (r3 \u003c len) we have an overlap */\n\u003e bcs PIC_SYM(_C_LABEL(memcpy), PLT)\n\nThis code may produce bugs if an unlikely copy of more that 2Gb is done (I don't see how).\n\nI have already reported that on the mailling list:\n\nhttps://docs.freebsd.org/cgi/getmsg.cgi?fetch=462567+0+archive/2017/freebsd-arm/20170212.freebsd-arm\n\nBest regards,\n\nAlexandre Martins"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1177485,
+ "bug_id": 258384,
+ "attachment_id": 0,
+ "creation_time": "2021-09-09T11:21:02Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "Hi,\n\nI am trying to update my system to latest head (commit 4ccbbe5f0689513de4399d6dad43e85d97ad9cde) and upon updating the system I'm seeing a new issue.\n\nI use pam_ssh when logging in via display manager (lightdm) to login using the ssh key phrase and automatically load the ssh key:\n\n(from /etc/pam.d/xdm, included by light pam.d file)\n\nauth\t\tsufficient\tpam_ssh.so\t\tno_warn try_first_pass\nauth\t\trequired\tpam_unix.so\t\tno_warn try_first_pass\n\nAfter updating I get this error:\n\nSep  9 10:27:56 tommy lightdm[1362]: in try_dlopen(): /usr/lib/pam_ssh.so.6: /usr/lib/libprivatessh.so.5: Undefined symbol \"sshsk_sign\"\nSep  9 10:27:56 tommy lightdm[1362]: in openpam_load_module(): no pam_ssh.so found\n\nLooks like pam_ssh is somehow trying to call a function not available, due to our openssh being compiled without U2F support.\n\nI noticed that some ifdefs where added [1] and then removed [2] upstream. I tried adding back the ifdefs in [1] but it is not making any difference.\n\nUnluckily I don't know how this actually works in code and am failing to identify the code path which is causing pam_ssh to call the undefined function. (still trying)\n\nIn the while I thought I'd report the issue.\n\nIf any further info is necessary please ask.\n\n\n\n[1] https://github.com/openssh/openssh-portable/commit/1e0b248d47c96be944868a735553af8482300a07\n\n[2] https://github.com/openssh/openssh-portable/commit/9244990ecdcfa36bb9371058111685b05f201c1e"
+}

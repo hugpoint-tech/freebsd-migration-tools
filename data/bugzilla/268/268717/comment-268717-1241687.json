@@ -1,0 +1,8 @@
+{
+ "id": 1241687,
+ "bug_id": 268717,
+ "attachment_id": 239212,
+ "creation_time": "2023-01-02T13:28:53Z",
+ "creator": "dfr@rabson.org",
+ "text": "Created attachment 239212\nScript to setup a test. Run this, then try 'telnet 10.123.0.1 8080'\n\nI am using rules that look like this:\n\nrdr log (all) inet proto tcp from any to ! 10.123.0.2 port = 8080 -\u003e 10.123.0.2 port 80\n\nto allow access to workloads running in jails/containers which is a common pattern for container runtimes like containerd or podman. Typically, a workload (e.g. nginx) runs in a container on its usual port and is 'published' to the host by mapping a host port to the container's address and port. In the example above, the container is in a vnet jail with address 10.123.0.2 and the intention is to publish the container's port 80 as the host's port 8080.\n\nThis type of rule works well for traffic originating on some other machine with destination set to the host's IP and port 8080 but when traffic originates on the host itself, the rule matches but traffic doesn't flow. As far as I can tell, the pf rule matches outgoing packets (e.g. SYN for new connections) as being 'received' by lo0 where the packet is rewritten to the container IP/port and travels to the container. The return packet (e.g. SYN+ACK) is not received and packet traces show the host rejecting with RST.\n\nMy hypothesis is that a state entry is created for the outgoing packet and registed with lo0 but the reply is received on a different interface (in my case a bridge) and the reverse translation is not performed."
+}

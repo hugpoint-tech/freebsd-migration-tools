@@ -1,0 +1,8 @@
+{
+ "id": 2856,
+ "bug_id": 1049,
+ "attachment_id": 0,
+ "creation_time": "1996-04-03T19:42:51Z",
+ "creator": "fenner@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eanalyzed\n\nThis is caused by a host route with the host itself as the destination. \nThese routes have two known causes: \n\n- gated/routed installs them.  This is bogus behavoir on their part. \n- A host route to a host on your own subnet via a gateway that sends \nredirects.  The gateway will send a redirect pointing at the host itself. \n\nThis behavior changed from a potential race condition to a common occurrence \nwhen my fix for some other ARP behavior was committed.  IP routes with the \ndestination == the gateway must not be allowed in the routing table because \nthey interfere with the creation of ARP entries.  The original add is easy \nenough to prevent in in_addroute(), but the second case is not so \nstraightforward.  Also, there may be other ways to create these routes. \n\nIt may be that the proper solution is for the ARP code to check if it's \none of these bogus routes that is in the way of adding the ARP entry and \nto delete it if so.  The problem with that solution is that gated and ARP \nwill probably fight and keep overwriting each other's routing table entries. \n"
+}

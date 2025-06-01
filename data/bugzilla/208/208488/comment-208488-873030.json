@@ -1,0 +1,8 @@
+{
+ "id": 873030,
+ "bug_id": 208488,
+ "attachment_id": 168938,
+ "creation_time": "2016-04-03T18:56:19Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 168938\nRename atomic_init to db_atomic_init to prevent C++ \u003catomic\u003e collisions\n\nDuring the exp-run in bug 208158, it was found that databases/db48 gives errors with libc++ 3.8.0 [1]:\n\nIn file included from ./../dist/../cxx/cxx_db.cpp:13:\nIn file included from ./db_cxx.h:55:\nIn file included from /usr/include/c++/v1/iostream:38:\nIn file included from /usr/include/c++/v1/ios:216:\nIn file included from /usr/include/c++/v1/__locale:15:\nIn file included from /usr/include/c++/v1/string:439:\nIn file included from /usr/include/c++/v1/algorithm:628:\nIn file included from /usr/include/c++/v1/memory:616:\n/usr/include/c++/v1/atomic:1107:13: error: expected unqualified-id\natomic_init(volatile atomic\u003c_Tp\u003e* __o, _Tp __d) _NOEXCEPT\n            ^\n/usr/include/c++/v1/atomic:1107:13: error: expected ')'\n/usr/include/c++/v1/atomic:1107:1: note: to match this '('\natomic_init(volatile atomic\u003c_Tp\u003e* __o, _Tp __d) _NOEXCEPT\n^\n./../dist/../dbinc/atomic.h:73:30: note: expanded from macro 'atomic_init'\n#define atomic_init(p, val)     ((p)-\u003evalue = (val))\n                                 ^\n\nThis is because dbinc/atomic.h redefines atomic_init, a function from C++'s \u003catomic\u003e header, as a macro.  Similar to the databases/db5 port, add a post-patch REINPLACE_CMD line to rename those instances to db_atomic_init.\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR208158-default/2016-03-22_18h30m05s/logs/errors/db48-4.8.30.0_2.log"
+}

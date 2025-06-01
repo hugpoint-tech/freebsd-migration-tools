@@ -1,0 +1,8 @@
+{
+ "id": 925118,
+ "bug_id": 217651,
+ "attachment_id": 0,
+ "creation_time": "2017-03-09T00:27:16Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Repro:\n\nRun the following commands as root:\n\n1. Add a bogus ruleset with improperly quoted paths for \"/dev/pass*\" and \"/dev/xpt*\" (change 20/21 to another ruleset that's not currently taken):\n\n# cat \u003e\u003e /etc/devfs.rules \u003c\u003c'EOF'\n[devfsrules_modify_perms_for_wheel=20]\nadd path pass* mode 660 group wheel\nadd path xpt* mode 660 group wheel\n\n[devfsrules_modify_perms_for_wheel=21]\nadd path \"pass*\" mode 660 group wheel\nadd path \"xpt*\" mode 660 group wheel\nEOF\n\n2. Run /etc/rc.d/devfs, e.g., \"service devfs start\".\n3. Verify that the ruleset has been added:\n\n# devfs rule showsets | egrep '^2[01]$'\n20\n21\n#\n\n4. Try deleting the newly added rulesets, e.g.,\n\n# devfs rule -s 20 delset\n# devfs rule -s 21 delset\n\n5. Verify that they've been deleted by rerunning the command in 3.\n\nExpected results:\n\nBoth rulesets should be deleted.\n\nActual results:\n\nRuleset 20 remains:\n\n# devfs rule showsets | egrep '^2[01]$'\n20"
+}

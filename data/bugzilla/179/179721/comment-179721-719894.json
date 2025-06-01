@@ -1,0 +1,8 @@
+{
+ "id": 719894,
+ "bug_id": 179721,
+ "attachment_id": 0,
+ "creation_time": "2013-06-19T16:20:00Z",
+ "creator": "vinschen@redhat.com",
+ "text": "Hi,\n\nIt seems there's a mismatch between char and wchar_t in the glob(3)\nfunctionality.  I stumbled over this problem, because Cygwin is using\nFreeBSD's glob, fnmatch, and regcomp code.\n\nAll three functions convert input strings to wide character and do\ntest and comparisons on the wide char representation.  All three\nfunctions call the __collate_range_cmp function in some scenario\n(glob ,for instance, in match() when a range pattern is handled).\n\nHowever, while all three functions operate on wchar_t chars, the\n__collate_range_cmp function in locale/collcmp.c converts the\ncharacters to char and calls strcoll_l on them.  This results in a\ncomparison which only works with ASCII chars, but not with the full\nUNICODE character range.\n\nAn easy solution might be to call wcscoll_l from __collate_range_cmp,\nbut __collate_range_cmp is also called from other places, namely\nfrom vfscanf, with char input.  Therefore the best way out might be\nto introduce something along the lines of a __wcollate_range_cmp\nfunction, as outlined below.\n\nFix: See attached patch for a suggestion\n\nPatch attached with submission follows:"
+}

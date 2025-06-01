@@ -1,0 +1,8 @@
+{
+ "id": 1194746,
+ "bug_id": 260503,
+ "attachment_id": 0,
+ "creation_time": "2022-01-15T01:27:54Z",
+ "creator": "tcovert+freebsd@sahuagin.net",
+ "text": "I'm getting identical failure and log file output. Here due to failure. I can upload logs or other information if it'll help.\n\nThis is how I just resolved the issue for myself.\nFirst I tried using 'MAKE_JOBS_UNSAFE=yes make`, but that didn't work.\nThen, I ran the command below, first with MAKE_JOBS_UNSAFE, and then without. The results were the same for both versions.\n\n[root@host /usr/ports/devel/doxygen]# for i in `seq 1 3`;do make;done\n\nIt then proceeds to fail 2x and succeed the third time.\n\nBased on this I then went to my /etc/make.conf and ensured that it would not use multiple threads to build.\n\n---\n# some ports don't like -j8, so we can undo the MAKE_ARGS addition for those\n.if ${.CURDIR:M*/multimedia/mplayer} || ${.CURDIR:M*/devel/llvm13} || ${.CURDIR:M*/devel/doxygen}\nMAKE_ARGS:=${MAKE_ARGS:C/-j8//}\nMAKE_ARGS:=${MAKE_ARGS:C/-j32//}\n.endif\n---\n\nAfter this, I was able to run the make, and make install on the first attempt.\nNOTE: The Makefile in the port has MAKE_JOBS_UNSAFE=yes set in it already. This leads me to believe that it's not being honored in some fashion."
+}

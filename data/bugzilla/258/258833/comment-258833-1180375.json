@@ -1,0 +1,8 @@
+{
+ "id": 1180375,
+ "bug_id": 258833,
+ "attachment_id": 228310,
+ "creation_time": "2021-10-01T09:49:31Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 228310\ndisk image that causes g_label_ntfs_taste to hang the kernel\n\nThe attached disk image causes g_label_ntfs_taste to freeze\nmy kernel. To see this:\n\n% gunzip ntx1.img.gz\n% sudo mdconfig -f ntx1.img\n\nOr I can write ntx1.img to a USB memory stick with\n\n% dd bs=512 if=ntx1.img of=/dev/da0 conv=sync\n\nand it will hang my system as soon as I insert it. Here's what\nI'm running:\n\nFreeBSD xxx 13.0-RELEASE-p4 FreeBSD 13.0-RELEASE-p4 #0: Tue Aug 24 07:33:27 UTC 2021     root@amd64-builder.daemonology.net:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\n\nThe problem is that these lines in g_label_ntfs_taste() can\ngenerate negative values if the disk content is bad, which\ng_read_data() \u0026c don't handle well:\n\n    recsize = (mftrecsz \u003e 0) ? (mftrecsz * bf-\u003ebf_bps * bf-\u003ebf_spc) : (1 \u003c\u003c -mft\n\n    voloff = bf-\u003ebf_mftcn * bf-\u003ebf_spc * bf-\u003ebf_bps +\n        recsize * NTFS_VOLUMEINO;"
+}

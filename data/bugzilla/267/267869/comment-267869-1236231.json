@@ -1,0 +1,8 @@
+{
+ "id": 1236231,
+ "bug_id": 267869,
+ "attachment_id": 238184,
+ "creation_time": "2022-11-19T21:12:42Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "Created attachment 238184\nwait for completion without resetting condition\n\nWhen trying to kldunload if_iwlwifi, the command will not succeed and neither fail. It will instead hang forever in the \"completi\" wchan.\n\nThe exact location is in the first line of iwl-drv.c:iwl_drv_stop():\n    wait_for_completion(\u0026drv-\u003erequest_firmware_complete);\n\nThis behaviour was introduced by change f808c43ad9234670 \n    \"iwlwifi: enforce FreeBSD specific (expected) behaviour\" \nwhich now does another wait_for_completion() already in iwl_drv_start().\n\nThe problem is that wait_for_completion() apparently does not only wait for the condition, but also reset the condition, and so the now second invocation in iwl_drv_stop does wait forever for a condition that will not appear again.\n\nI created a quick workaround patch - without bothering to understand the intended use of the completion, or the use of the sleepq, so this should be rewritten more nicely - but it works for now so we can focus on the other issues."
+}

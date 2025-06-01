@@ -1,0 +1,8 @@
+{
+ "id": 998557,
+ "bug_id": 228967,
+ "attachment_id": 0,
+ "creation_time": "2018-06-21T12:49:34Z",
+ "creator": "dweimer@dweimer.net",
+ "text": "(In reply to w.schwarzenfeld from comment #6)\n\nThat worked for me as well with libressl, built in test environment. in process of rebuilding actual running jail with libressl to try it in use.\n\nIt did fail when I tried to rebuild under opnessl though.\n\nlibtool: link: ( cd \".libs\" \u0026\u0026 rm -f \"libsslutil.la\" \u0026\u0026 ln -s \"../libsslutil.la\" \"libsslutil.la\" )\n--- bio.lo ---\nbio.cc:86:28: error: use of undeclared identifier 'useMethod'\n    if (BIO *bio = BIO_new(useMethod)) {\n                           ^\n1 error generated.\n*** [bio.lo] Error code 1\n\n\nAdded this to original patch:\nsquid-devel/files/patch-src_ssl_bio.cc\n\n--- src/ssl/bio.cc.orig      2018-06-21 07:21:44.684311000 -0500\n+++ src/ssl/bio.cc   2018-06-21 07:25:50.930483000 -0500\n@@ -76,9 +76,11 @@\n         BIO_meth_set_create(SquidMethods, squid_bio_create);\n         BIO_meth_set_destroy(SquidMethods, squid_bio_destroy);\n     }\n-    const BIO_METHOD *useMethod = SquidMethods;\n-#else\n-    BIO_METHOD *useMethod = \u0026SquidMethods;\n+    #if defined(LIBRESSL_VERSION_NUMBER)\n+        BIO_METHOD *useMethod = SquidMethods;\n+    #else\n+        const BIO_METHOD *useMethod = SquidMethods;\n+    #endif\n #endif\n\n     if (BIO *bio = BIO_new(useMethod)) {"
+}

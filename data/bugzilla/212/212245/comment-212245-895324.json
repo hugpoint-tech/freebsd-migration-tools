@@ -1,0 +1,8 @@
+{
+ "id": 895324,
+ "bug_id": 212245,
+ "attachment_id": 174200,
+ "creation_time": "2016-08-29T18:24:19Z",
+ "creator": "lordcrc@gmail.com",
+ "text": "Created attachment 174200\nProgram used to reproduce the issue\n\nIt seems that ZFS does not honor fsync() done on zvols.\n\nThis issue affects iSCSI targets backed by ZFS volumes, which are forced to run with sync=always to ensure consistency. Running sync=always has a drastic performance impact.\n\nTo reproduce:\n- Log in via remote SSH console (important).\n- Create a ZFS pool and a zvol.\n- Format zvol with UFS.\n- Mount zvol UFS partition.\n- Cd into mount point.\n- Compile and run the attached program.\n- Physically remove power to the computer.\n- Write down the last number shown in the SSH console window.\n- Reboot computer and log in.\n- Mount zvol partition if needed.\n- Cd into mount point.\n- Display contents of \"output.txt\"\n- Compare last line of \"output.txt\" with last line shown in SSH console.\n\nExpected output:\nIf the SSH console's last number was 11291, the last number in \"output.txt\" should be 11291 or 11292.\n\nActual output:\nThe last line in \"output.txt\" is a lot further behind the output in the SSH console.\n\n\n\nHere's the commands I used to set up the UFS partition:\n\nHistory for 'tank0':\n2016-08-29.19:39:35 zpool create tank0 /dev/ada0s2\n2016-08-29.19:43:57 zpool import tank0\n2016-08-29.19:44:50 zfs create -V 500M tank0/testvol\n\ngpart add -t freebsd-ufs -a 1M /dev/zvol/tank0/testvol\n\nnewfs -U /dev/zvol/tank0/testvolp1\n\nmkdir test\n\nmount /dev/zvol/tank0/testvolp1 test\n\n\n\nThe supplied program shows the expected output if run directly on a \"native\" UFS partition, as well as when run on a zvol using ZFS-on-Linux (on a Debian machine)."
+}

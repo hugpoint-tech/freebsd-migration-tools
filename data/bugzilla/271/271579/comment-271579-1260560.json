@@ -1,0 +1,8 @@
+{
+ "id": 1260560,
+ "bug_id": 271579,
+ "attachment_id": 0,
+ "creation_time": "2023-05-23T10:07:02Z",
+ "creator": "KOT@MATPOCKuH.Ru",
+ "text": "I want to limit a per user memory usage for every running jail.\nI'm tried to set a limits like this:\njail:pg198:vmemoryuse:deny=17179869184/user\njail:pg199:vmemoryuse:deny=17179869184/user\n\nI have users with same uid in there jails, resulting a memory allocation for user in jail pg198, makes impossible to use this limit for same user in jail pg199.\n\nTo check I used this simple code:\n#include \u003cstdlib.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n\nint\nmain(int argc, char *argv[]) {\n        long size = atol(argv[1]);\n        void *buf = malloc(size);\n\n        if (buf == NULL) {\n                fprintf(stderr, \"malloc(%li) failed: %s\\n\", size, strerror(errno));\n                return 1;\n        }\n\n        fgets(buf, size \u003c 1024 ? size : 1024, stdin);\n        return 0;\n}\n\nAnd when a user in one jail is running a command:\n./alloc $((10*1024*1024*1024))\nUser in a different jail can't allocate memory:\nmalloc(10737418240) failed: Cannot allocate memory\n\nA limits like jail:jailname:vmemoryuse:deny=limit/user should limit a allocated memory per user for each jail, but not for user in all jails."
+}

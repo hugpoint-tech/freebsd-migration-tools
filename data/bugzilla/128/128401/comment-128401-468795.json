@@ -1,0 +1,8 @@
+{
+ "id": 468795,
+ "bug_id": 128401,
+ "attachment_id": 0,
+ "creation_time": "2008-10-26T19:20:01Z",
+ "creator": "mgb.fbsd@gmail.com",
+ "text": "On freebsd7 with hz=2000 dummynet stops shaping traffic after 25 days\nuptime.  I have tracked down the problem in dummynet io fast code at\nip_dummynet.c:1353\n\n        if (q-\u003eq_time \u003c curr_time)\n                q-\u003enumbytes = io_fast ? fs-\u003epipe-\u003ebandwidth : 0;\n\nThis comparision is incorrect. q-\u003eq_time is u_int32_t and curr_time is\nu_int64_t.  After (1\u003c\u003c32) / hz seconds (~24days when hz=2000) q-\u003eq_time\nis always smaller than curr_time.\n\nThis is long standing bug, which also affects on RED.\n\nFix: \n\n1) workaround: disable io fast\n   sysctl net.inet.ip.dummynet.io_fast=0\n\n2) change q_time type to dn_key in ip_dummynet.h. ipfw userland program\n   needs to be recompiled.\n\n3) compare q_time with (curr_time \u0026 0xffffffff). RED code (red_drops())\n   also should be revised."
+}

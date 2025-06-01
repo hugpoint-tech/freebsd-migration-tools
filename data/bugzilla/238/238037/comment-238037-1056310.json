@@ -1,0 +1,8 @@
+{
+ "id": 1056310,
+ "bug_id": 238037,
+ "attachment_id": 0,
+ "creation_time": "2019-07-01T12:11:24Z",
+ "creator": "ashafer@badland.io",
+ "text": "(In reply to J.R. Oldroyd from comment #7)\n\nI remember running into this problem while working on this patch. I think I know what's causing it, but couldn't find a way to fix it. I also don't think it's related to this bug's patch, as it would happen to me when first booting.\n\nBasically because of the way that the iichid attaches, I think it is possible for the iichid device to be initialized before the i2c bus. The iichid will try to read interrupts before they are available and find no data until things are reset.\n\nFrom D16698:\n\"I tried a few approaches to identify and attach an iichid device by querying ACPI directly from the iichid module. That failed on two details: parent association (in general HID over I2C devices appear below ACPI0 in NewBus but it is necessary to have them below the iicbus*/iic* nodes, moving these node in NewBus failed for me with a panic) and also interrupt handling (apparently, interrupts must be handled by the nodes the IRQs are assigned to (i.e. the node below ACPI0). Trying to attach to an IRQ from another node (i.e. a node below iicbus*/i2c*) fails)\"\n\nSo the iichid is below ACPI0, and I think that gets attached before iicbus. I have a vague memory of adding printf's to show that this was happening. I'll try to dig around and see if I have any patches of what I was trying to do to fix this.\n\nI'm no expert on newbus device ordering, so if I'm wrong I'd love an explanation."
+}

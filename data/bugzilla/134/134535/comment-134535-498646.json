@@ -1,0 +1,8 @@
+{
+ "id": 498646,
+ "bug_id": 134535,
+ "attachment_id": 0,
+ "creation_time": "2009-05-14T12:10:01Z",
+ "creator": "Mark_Andrews@isc.org",
+ "text": "\n\tuuidd can clobber it's operating socket when invoked from\n\tlibuuid.  libuuid closes all the descriptors and uuidd\n\tdoesn't ensure that the socket descriptor is not one that\n\twill be closes when it becomes a daemon.\n\nHow-To-Repeat: \n\tTry to build misc/e2fsprogs-libuuid with the existing\n\tversion installed.  See also ports/134526 for related\n\tfix.\n\nFix:\n\n--- a/misc/uuidd.c\t2009-04-16 02:59:57.000000000 +1000\n+++ b/misc/uuidd.c\t2009-05-14 20:33:49.000000000 +1000\n@@ -419,6 +419,18 @@\n \t}\n }\n \n+void devnull() {\n+\tint i, fd;\n+\n+\tfor (i = 0; i \u003c 3; i++) {\n+\t\tfd = open(\"/dev/null\", O_RDWR);\n+\t\tif (fd \u003e= 3) {\n+\t\t\tclose(fd);\n+\t\t\treturn;\n+\t\t}\n+\t}\n+}\n+\n int main(int argc, char **argv)\n {\n \tconst char\t*socket_path = UUIDD_SOCKET_PATH;\n@@ -486,6 +498,9 @@\n \t\t\tusage(argv[0]);\n \t\t}\n \t}\n+\n+\tdevnull();\n+\n \tuid = getuid();\n \tif (uid \u0026\u0026 drop_privs) {\n \t\tgid = getgid();"
+}

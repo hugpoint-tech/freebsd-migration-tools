@@ -1,0 +1,8 @@
+{
+ "id": 1153886,
+ "bug_id": 254639,
+ "attachment_id": 0,
+ "creation_time": "2021-03-29T15:26:17Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "How much RAM do you have?  Hopefully more than 100GB.\n\nI suspect that we're spending a lot of time in pmap_copy(), which copies page tables into the child process.  It only copies referenced PTEs, but in this case we'll copy all of the page tables backing some_str.\n\nYou can try something like this to confirm:\n\n# dtrace -q -n 'fbt::pmap_copy:entry /pid == $target/{self-\u003ets = timestamp} fbt::pmap_copy:return /self-\u003ets/{@ = sum(timestamp - self-\u003ets); self-\u003ets = 0;} tick-1s {printa(\"spent %@dns copying\\n\", @); clear(@);}' -c \"python test.py\""
+}

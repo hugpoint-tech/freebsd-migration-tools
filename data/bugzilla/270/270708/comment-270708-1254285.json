@@ -1,0 +1,8 @@
+{
+ "id": 1254285,
+ "bug_id": 270708,
+ "attachment_id": 0,
+ "creation_time": "2023-04-08T17:56:50Z",
+ "creator": "naddy@FreeBSD.org",
+ "text": "The \"makesum\" target fails to work correctly for MASTER_SITE_OSDN.\n\nOSDN interposes an HTML page for downloads unless it recognizes the client as wget, curl, or such.  fetch(1) is not recognized.  To circumvent that, bsd.sites.mk has this:\n\n.if !empty(MASTER_SITES:M*OSDN*) || !empty(PATCH_SITES:M*OSDN*)\nFETCH_ARGS+=    --user-agent=curl/7.68.0\n.endif\n\nUnfortunately, when \"makesum\" in bsd.port.mk recursively calls \"fetch\", MASTER_SITES has already been expanded and the above .if is skipped, which means FETCH_ARGS isn't modified, which means the download gets the HTML page instead of the distfile.\n\nAs an example port, you an use shells/yash.\n\n$ make distclean\n$ make checksum\n# ok\n$ make distclean\n$ make makesum\n# distinfo is changed and the new distfile is an HTML page"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 993449,
+ "bug_id": 228418,
+ "attachment_id": 0,
+ "creation_time": "2018-05-22T09:03:02Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "The start_precmd with the setenv.sh has no effect and shall be dropped for these reasons:\n\n1. It has been designed to be sourced by catalina.sh, we aren't using it. We use jsvc (which could probably have been done with daemon(8))\n2. None of the variables are available to the jsvc process when started with service(8) verified with:\n\n\u003e @Override\n\u003e protected void doGet(HttpServletRequest req, HttpServletResponse resp)\n\u003e \t\tthrows ServletException, IOException {\n\u003e \n\u003e \tPrintWriter w = resp.getWriter();\n\u003e \n\u003e \tfor (Map.Entry\u003cString, String\u003e prop : System.getenv().entrySet()) {\n\u003e \t\tw.print(prop.getKey());\n\u003e \t\tw.print(\" = \");\n\u003e \t\tw.println(prop.getValue());\n\u003e \t}\n\u003e \n\u003e \tfor (Map.Entry\u003cObject, Object\u003e prop : System.getProperties().entrySet()) {\n\u003e \t\tw.print(prop.getKey());\n\u003e \t\tw.print(\" = \");\n\u003e \t\tw.println(prop.getValue());\n\u003e \t}\n\u003e \n\u003e }\n\nFor service(8) it must be exported first, this isn't required by catalina.sh and not documented by pkg-message.\n\nAt best, the start_precmd is dropped altogether. Users can always use ${name}_env to pass vars. This works for me.\n\nThis issue likely applies to all other Tomcat ports."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1340228,
+ "bug_id": 283101,
+ "attachment_id": 0,
+ "creation_time": "2024-12-21T18:43:20Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to vedad from comment #18)\nHm, no, this case is not interesting: there is THR_LOCK() call in the thread\nexit path, and the debugging patch was too rough to avoid this case.  When\nthe victim exiting, the deadlock cannot occur, since we are already past\nthe pause()/sigsuspend() sleep.\n\nI slightly improved the detector part of the patch.  Also, it is available\nat https://kib.kiev.ua/git/deviant3.git branch cancel.  Lets try again.\n\ndiff --git a/lib/libthr/thread/thr_sig.c b/lib/libthr/thread/thr_sig.c\nindex b953c430158c..a393e51b746a 100644\n--- a/lib/libthr/thread/thr_sig.c\n+++ b/lib/libthr/thread/thr_sig.c\n@@ -191,8 +191,15 @@ sigcancel_handler(int sig __unused,\n \tstruct pthread *curthread = _get_curthread();\n \tint err;\n \n-\tif (THR_IN_CRITICAL(curthread))\n+\tif (THR_IN_CRITICAL(curthread)) {\n+\t\tif (!curthread-\u003ecancelling) {\n+\t\t\tvoid *p[1];\n+\t\t\t\n+\t\t\tp[0] = curthread;\n+\t\t\tabort2(\"thr_in_critical %p\", 1, p);\n+\t\t}\n \t\treturn;\n+\t}\n \terr = errno;\n \tcheck_suspend(curthread);\n \tcheck_cancel(curthread, ucp);"
+}

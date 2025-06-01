@@ -1,0 +1,8 @@
+{
+ "id": 1157079,
+ "bug_id": 254995,
+ "attachment_id": 0,
+ "creation_time": "2021-04-19T07:24:39Z",
+ "creator": "nkoch@demig.de",
+ "text": "Yes, that is the thread that dead locks.\n\nI do not stop the process (to my knowledge).\n\nI am having a simple producer-consumer queue with 2 conds not_empty and not_full and one mutex (process local, PTHREAD_MUTEX_ERRORCHECK, PTHREAD_PRIO_INHERIT).\nEDEADLK comes from the consumer waiting for anything with timeout.\nThe timeout is 100ms only as there is a regular keep alive check of\nthis thread.\nThe producer never waits.\n\nSo its basically this:\n\nconsumer thread:\n  for(;;) {\n    pthread_mutex_lock()\n    if queue_empty()\n      phtread_cond_timedwait() // \u003c-- EDEADLK once in a month\n    if !queue_empty() {\n      read from queue\n      pthread_cond_signal(not_full)\n    }\n    pthread_mutex_unlock()\n    signal_alive()\n    do_something()\n  }\n\n\nproducer thread:\n  ...\n  pthread_mutex_lock()\n  if !queue_full() {\n    write to queue\n    pthread_cond_signal(not_empty)\n  }\n  pthread_mutex_unlock()\n  ...\n\n    \nBTW, there are about 32 threads with different realtime priorities and the programs very often forks/execs other programs.\n\nI have never seen this under FreeBSD 10.3 and 9.1 with the same software, but that may of course mean that there were other effects I did not see so far."
+}

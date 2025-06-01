@@ -1,0 +1,8 @@
+{
+ "id": 1049495,
+ "bug_id": 237718,
+ "attachment_id": 0,
+ "creation_time": "2019-05-03T00:23:37Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "head -r346588 accidentally added use of cmpb that is not\nsupported on old PPC970's, such as on old PowerMac G5s.\n\nThis turns out to provide a good test case for the handling\nof such invalid instruction encodings and it exposed a\nlocking problem reported by the debug kernel.\n\nI used https://artifact.ci.freebsd.org/snapshot/head/r346589/powerpc/powerpc64/\nand some later ones in testing something else and ran into the issue\nbelow. (-r346588 was not present for powerpc64.) The below is from a\nlater one:\n\npanic: mtx_lock of spin mutex WWV @ /mnt/usr/src/sys/powerpc/aim/mmu_oea64.c:2812\n\nFor reference, line 2812 is: PMAP_LOCK(pm);\n\npanic is reached via the following call chain,\nshown as part of a backtrace (typed from screen\npictures):\n\n.__mtx_lock_flags+0xd4\n.moea64_sync_icache+0x48\n.pmap_sync_icache+0x90\n.ppc_instr_emulate+0x1b4\n.trap+0x10fc\n.powerpc_interrupt+0x2cc\nuser PGM trap by 0x810053bb4: srr1=0x900000000008d032\nr1=0x3ffffffffffffcc00 cr=0x20002024 xer=0 ctr=0x1 r2=0x81007bdd0 frame=0xe000000070ca9810\n\nIt was thread pid 28 tid 100097\n\nActually r346589 was at line :2811 and had the following differences:\n\n.ppc_intr_emulate+0x19c\n.trap+0x1004\n\nframe=0xe000000070ca9848\n\n\nI will note that -r346670 has notes on the lists for running into:\n\nmtx_lock of spin mutex(null) in .../kern/subr_bus.c:620\n\nand being isolated by a bisect for being the first exposure in\nthat context.\n\nThis was not a powerpc64 context and may be completely unrelated.\nBut folks seemed confused about how -r346670 might lead to such\na panic."
+}

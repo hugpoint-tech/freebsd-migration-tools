@@ -1,0 +1,8 @@
+{
+ "id": 1300241,
+ "bug_id": 264115,
+ "attachment_id": 0,
+ "creation_time": "2024-03-09T01:15:29Z",
+ "creator": "kevans@freebsd.org",
+ "text": "With the following reproducer:\n\n```\n#!/bin/sh\n\nreport() {\n        1\u003e\u00262 echo \"\u003e\u003e ITERATION $iter DONE\"\n}\n\ntrap 'report' EXIT\n\niter=0\nwhile true; do\n        iperf3 -Zc 10.9.0.1 -p 5201 \u0026\n        sleep 1\n        iperf3 -Zc 10.9.0.1 -p 9070 \u0026\n        wait\n        iter=$((iter + 1))\n        report\ndone\n```\n\nI can reliably hit this assertion within ~25-30 iterations, unpatched:\n\n```\npanic: ip_output: no mbuf packet header!\ncpuid = 78\ntime = 1709946250\nKDB: stack backtrace:\ndb_trace_self() at db_trace_self\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x38\nvpanic() at vpanic+0x1a4\npanic() at panic+0x48\nip_output() at ip_output+0x13a8\nudp_send() at udp_send+0x9dc\nsosend_dgram() at sosend_dgram+0x30c\nsosend() at sosend+0x48\nwg_send() at wg_send+0x104\nwg_deliver_out() at wg_deliver_out+0x20c\ngtaskqueue_run_locked() at gtaskqueue_run_locked+0x16c\ngtaskqueue_thread_loop() at gtaskqueue_thread_loop+0xcc\nfork_exit() at fork_exit+0x78\nfork_trampoline() at fork_trampoline+0x18\nKDB: enter: panic\n```\n\nThis would support the theory of something going wrong back in wg_deliver_out() and dequeuing, likely insufficient barriers.  With the attached patch, I can push at least 125 with no problem; I'll go ahead and push this patch to phabricator for some review."
+}

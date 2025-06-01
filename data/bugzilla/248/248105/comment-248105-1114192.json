@@ -1,0 +1,8 @@
+{
+ "id": 1114192,
+ "bug_id": 248105,
+ "attachment_id": 0,
+ "creation_time": "2020-07-19T13:44:44Z",
+ "creator": "bsdpr@phoe.frmug.org",
+ "text": "On a host running 12-STABLE (rev 360207) I observe an inconsistent behavior from zfs when attempting to destroy snapshots. From a zfs channel program, a call to zfs.sync.destroy() fails and return EBUSY. That is extremely strange as the affected snapshot is not a clone source and can be destroyed without error with the 'zfs destroy' command.\n\nI observed that the ZCP I'm using stopped functioning correctly due to this bug after I accessed the contents of another (more recent) snapshot via the .zfs/snapshot facility. Snapshots created after accessing .zfs/snapshot are not deemed busy while all snapshots created before the access are busy from the ZCP domain. By accessing .zfs/snapshot I mean listing the contents of .zfs/snapshot, listing the contents of a given snapshot, and eventually copying a file from that same snapshot.\n\nAs a summary, please consider the following layout:\n\npool/fs@snapA\npool/fs@snapB\npool/fs@snapC\npool/fs@snapD\n\non which the following actions are applied (with their outcome):\n\nzfs.sync.destroy(\"pool/fs@snapA\")  -- will succeed\n$ ls pool/fs/.zfs/snapC\n$ ls pool/fs/.zfs/snapC/\n$ cp pool/fs/.zfs/snapC/file /tmp/discard\nzfs.sync.destroy(\"pool/fs@snapB\")  -- will fail\n$ zfs destroy pool/fs@snapB        #  will succeed\n$ zfs snapshot pool/fs@snapE\nzfs.sync.destroy(\"pool/fs@snapE\")  -- will succeed\nzfs.sync.destroy(\"pool/fs@snapD\")  -- will fail\n$ zfs destroy pool/fs@snapD        #  will succeed"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 884906,
+ "bug_id": 210543,
+ "attachment_id": 0,
+ "creation_time": "2016-06-24T22:12:54Z",
+ "creator": "heikki@suonsivu.net",
+ "text": "This is likely present in 10.2 and earlier.\n\ntip/cu busyloops when stdin is redirected to /dev/null.  Using cu this way is a simple way of logging data from serial ports, so this is not completely uncommon thing to do.\n\nThe problem seems to be that this has never been written in, just a comment which says:\n\n\"XXX does not check for EOF\"\n\ntipin function is not intended to exit, however, by a quick glance, it does not seem to be that there is any harm done doing so.  As there is no input for commands, the tipout will not exit until killed or until it encounters some sort of error, so simply exiting from tipin seems workable solution.  It will simply return to main function and exit normally, and the tipout will continue to run.  The other alternative could be waiting for tipout, but I have not figured out any reason to do that, as the input process is useless without input.\n\nA quick patch:\n\n--- tip.c.orig  2015-08-12 17:22:33.000000000 +0300\n+++ tip.c       2016-06-25 00:49:36.812976000 +0300\n@@ -400,8 +400,11 @@\n        }\n\n        while (1) {\n-               gch = getchar()\u0026STRIP_PAR;\n-               /* XXX does not check for EOF */\n+               gch = getchar();\n+               if (gch == EOF)\n+                       break;\n+\n+               gch = gch\u0026STRIP_PAR;\n                if ((gch == character(value(ESCAPE))) \u0026\u0026 bol) {\n                        if (!noesc) {\n                                if (!(gch = escape()))"
+}

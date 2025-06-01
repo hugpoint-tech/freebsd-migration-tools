@@ -1,0 +1,8 @@
+{
+ "id": 841303,
+ "bug_id": 202607,
+ "attachment_id": 0,
+ "creation_time": "2015-09-22T22:57:37Z",
+ "creator": "gibbs@FreeBSD.org",
+ "text": "The stack traces indicate that the dataset being destroyed was referenced earlier, creating a separate copy of its in-core state (dsl_dataset_t). This other copy is still being evicted at the time that the dataset is being destroyed on disk, which is why there is still a reference on the dbuf for the deadlist for the dataset. This harmless except that this dbuf will hang around longer than necessary.\n\nImmediate eviction in the same way as for bonus buffers could be added to dbuf_rele_and_unlock(), but it cannot be exact without acquiring locks. Dnodes cannot transition from free to allocated until after their last hold is released, so it should be safe to perform a \"best effort\" check that the dnode is still allocated without locks held, but I'm not sure it is worth it."
+}

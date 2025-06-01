@@ -1,0 +1,8 @@
+{
+ "id": 16447,
+ "bug_id": 5355,
+ "attachment_id": 0,
+ "creation_time": "1997-12-21T17:41:45Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\u003eFix:\n\u003ecwsys# cat /opt/archives-3/usermods/nullfs_panic_fix.usermod \n\u003e--- src/sys/vm/vnode_pager.c.orig2      Sun Dec  7 13:11:03 1997\n\u003e+++ src/sys/vm/vnode_pager.c    Fri Dec 19 06:30:27 1997\n\u003e@@ -231,10 +231,12 @@\n\u003e        blocksperpage = 0;\n\u003e        if (pagesperblock \u003e 0) {\n\u003e                reqblock = pindex / pagesperblock;\n\u003e-       } else {\n\u003e+       } else if (bsize \u003e 0)  {\n\u003e                blocksperpage = (PAGE_SIZE / bsize);\n\u003e                reqblock = pindex * blocksperpage;\n\u003e-       }\n\u003e+       } else\n\u003e+               return FALSE;\n\u003e+\n\nI think bsize is supposed to be \u003e 0 here.  Lots of other places depend\non vp-\u003ev_mount-\u003emnt_stat.f_iosize being reasonable.  nullfs and some\nother file systems (portal and umapfs at least) just don't initialize\nmost of mnt_stat (except by bzeroing it).  This untested fix for nullfs\nwas obtained from union[fs].\n\ndiff -c2 null_vfsops.c~ null_vfsops.c\n*** null_vfsops.c~\tMon Oct 13 21:46:00 1997\n--- null_vfsops.c\tMon Dec 22 04:32:11 1997\n***************\n*** 199,202 ****\n--- 199,203 ----\n  \t    \u0026size);\n  \tbzero(mp-\u003emnt_stat.f_mntfromname + size, MNAMELEN - size);\n+ \t(void)nullfs_statfs(mp, \u0026mp-\u003emnt_stat, p);\n  #ifdef NULLFS_DIAGNOSTIC\n  \tprintf(\"nullfs_mount: lower %s, alias at %s\\n\",\n\nBruce"
+}

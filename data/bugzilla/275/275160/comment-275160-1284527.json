@@ -1,0 +1,8 @@
+{
+ "id": 1284527,
+ "bug_id": 275160,
+ "attachment_id": 0,
+ "creation_time": "2023-11-18T15:02:43Z",
+ "creator": "sirn@ogsite.net",
+ "text": "(In reply to Robert Clausecker from comment #1)\n\nThe package should be the most recent versions. I've also tried to build tcl86 and tcltls from ports, but I'm seeing the same result.\n\nJust to make sure, I ran:\n\n    $ doas pkg-static update\n    $ doas pkg-static upgrade -f\n\nAnd imported tcltls again, but the issue persists.\n\nI've done some more debugging, and it looks like the background of the issue is that:\n\n1. tcltls generates a dh_param.h using gen_dh_params script during build\n2. gen_dh_params script depends on the \"openssl dhparam -C\" for this purpose\n3. the \"openssl dhparam -C\" was removed in openssl 3.0[1]\n4. FreeBSD tcltls patched gen_dh_params to disable other fallback generation method\n5. since 14.0-RELEASE shipped with OpenSSL 3.0, this has caused gen_dh_params script to silently fail \n6. sadly, the compilation went through[2], and tcltls imploded on runtime as a result\n\n[1]: https://github.com/openssl/openssl/pull/13384\n\n[2]: and due to this, it was never flagged in bug #258413"
+}

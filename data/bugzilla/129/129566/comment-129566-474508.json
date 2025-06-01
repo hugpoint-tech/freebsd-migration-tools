@@ -1,0 +1,8 @@
+{
+ "id": 474508,
+ "bug_id": 129566,
+ "attachment_id": 0,
+ "creation_time": "2009-03-08T19:03:37Z",
+ "creator": "ed@80386.nl",
+ "text": "Hi,\r\n\r\nAs Jilles pointed out, the new TTY layer does not perform any\r\npost-processing before returning data to userspace. This makes the\r\ndesign of the TTY layer a lot more simple, while still complying to the\r\nstandards.\r\n\r\nThis means sh(1)'s behaviour it not correct, because it calls select()\r\nwith ICRNL disabled. The following patch should fix this:\r\n\r\nIndex: miscbltin.c\r\n===================================================================\r\n--- miscbltin.c\t(revision 189489)\r\n+++ miscbltin.c\t(working copy)\r\n@@ -147,6 +147,7 @@\r\n \t\tif (tcgetattr(0, \u0026told) == 0) {\r\n \t\t\tmemcpy(\u0026tnew, \u0026told, sizeof(told));\r\n \t\t\tcfmakeraw(\u0026tnew);\r\n+\t\t\ttnew.c_iflag |= ICRNL;\r\n \t\t\ttcsetattr(0, TCSANOW, \u0026tnew);\r\n \t\t\ttsaved = 1;\r\n \t\t}\r\n\r\nPlease let me know if it fixes your issue. If it does, I'll commit it to\r\nSVN and MFC it as well.\r\n\r\n-- \r\n Ed Schouten \u003ced@80386.nl\u003e\r\n WWW: http://80386.nl/"
+}

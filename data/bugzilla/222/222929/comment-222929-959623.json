@@ -1,0 +1,8 @@
+{
+ "id": 959623,
+ "bug_id": 222929,
+ "attachment_id": 0,
+ "creation_time": "2017-11-15T06:56:24Z",
+ "creator": "allanjude@FreeBSD.org",
+ "text": "I have confirmed the impact you are seeing, but also confirmed that is not a major bug.\n\nIf you run: zpool iostat 1\n\nYou'll see that running your ruby script will not actually result in any reads from the disk.\n\nThere is a small issue with the stats accounting in ZFS, where if the metadata being read, happens to be stored in an \"Embedded Block Pointer\" (so instead of being stored as a data block, the data is embedded in the parent block, to save an entire sector, and to save an I/O to read that sector), then it is incorrectly counted as a miss.\n\nThis is because to read the embedded block pointer, it has to create a read zio and go through most of the process of doing a read, but then ends up copying the data out of the block pointer instead of from disk.\n\n\nAnyway, I am investigating a quick fixes to account for the cache hit correctly, instead of as a cache miss.\n\nI am also looking to see if it would be relatively simple to optimize the case and return the data more directly in arc_read() instead of creating a zio and going the currently more complicated path. This path mostly exists because it makes it possible for other functions to not need to know about the embedded block pointer feature."
+}

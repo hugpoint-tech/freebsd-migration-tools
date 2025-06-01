@@ -1,0 +1,8 @@
+{
+ "id": 1213726,
+ "bug_id": 264372,
+ "attachment_id": 0,
+ "creation_time": "2022-05-31T13:42:17Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "A Bhyve guest can cause e82545_transmit() to follow a path in which\niovb[] and thus *iov are not initialized, but the code executes\n\n                        memcpy(hdrp, iov-\u003eiov_base, now);\n\nThe guest can do this by creating a transmit descriptor with\nthe following content:\n\nbuffer_addr = (anything)\nlower.data = 0x21f00000 = CMD_DEXT | TXD_MASK | CMD_EOP\nupper.data = 0x00000100 = POPTS_IXSM\n\nThis causes the descriptor type to be 0x20f00000 (i.e. not TYP_L) and\nthe data length to be zero. As a result of the zero length, iov-\u003e* are\nnever assigned to. Because of the EOP and IXSM, ckinfo[0].ck* are set,\ncausing hdrlen to be 2, which causes e82545_transmit() to execute the\ncode to prepend a header, which causes the memcpy() shown above to\nexecute.\n\nThis sequence also depends on what's on the stack in iovb[] (i.e.\n*iov), but often when I run it, iov-\u003eiov_len is a huge number.\nSometimes iov-\u003eiov_base is an illegal pointer, sometimes a valid\npointer to somewhere."
+}

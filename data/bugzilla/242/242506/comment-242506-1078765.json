@@ -1,0 +1,8 @@
+{
+ "id": 1078765,
+ "bug_id": 242506,
+ "attachment_id": 0,
+ "creation_time": "2019-12-09T12:46:17Z",
+ "creator": "gustavo.romero@protonmail.com",
+ "text": "(In reply to canardo from comment #0)\n\nHello, canardo,\n\nThis is a segfault in gcc9 selftest framework due to a wrong use o singleton dump_context get() method.\n\nThis is the fix I intend to send upstream for review:\n\ncommit e02cbe3668cc63c8da1fed404c306c1ed50235f3\nAuthor: Gustavo Romero \u003cgromero@linux.vnet.ibm.com\u003e\nDate:   Mon Dec 9 07:37:49 2019 -0500\n\n    devel/gcc9: Fix ICE due to wrong singleton get() use\n    \n    Currently get() method of singleton is being used in a way a new class is\n    instantiated, which call singleton dtor's freeing memory that is referenced\n    after free() is called generating an internal compiler error.\n    \n    Fix is simply call get() appropriately, i.e. call it directly since it's in\n    fact an static method, just as usually any get method in a singleton is by\n    design.\n\ndiff --git a/gcc/dumpfile.c b/gcc/dumpfile.c\nindex 7ea8f85..fc17fe9 100644\n--- a/gcc/dumpfile.c\n+++ b/gcc/dumpfile.c\n@@ -2076,7 +2076,7 @@ temp_dump_context::temp_dump_context (bool forcibly_enable_optinfo,\n                                      bool forcibly_enable_dumping,\n                                      dump_flags_t test_pp_flags)\n : m_context (),\n-  m_saved (\u0026dump_context ().get ())\n+  m_saved(\u0026dump_context::get())\n {\n   dump_context::s_current = \u0026m_context;\n   if (forcibly_enable_optinfo)\n\n\nCould you please try and check if it fixes the error you've posted?\n\nThanks."
+}

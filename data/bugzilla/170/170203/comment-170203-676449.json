@@ -1,0 +1,8 @@
+{
+ "id": 676449,
+ "bug_id": 170203,
+ "attachment_id": 0,
+ "creation_time": "2012-07-27T00:00:21Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Creating a fifo and then dd'ing across the fifo using /dev/zero doesn't seem to yield the behavior one would expect to have; dd should either exit thanks to SIGPIPE being sent or the count being completed.\n\nFurthermore, the count is bogus:\n\nTerminal 1:\n\n$ dd if=fifo bs=512k count=4\n0+4 records in\n0+4 records out\n32768 bytes transferred in 0.002121 secs (15449523 bytes/sec)\n$ dd if=fifo bs=512k count=4\n0+4 records in\n0+4 records out\n32768 bytes transferred in 0.001483 secs (22096295 bytes/sec)\n$ dd if=fifo bs=512M count=4\n0+4 records in\n0+4 records out\n32768 bytes transferred in 0.003908 secs (8384514 bytes/sec)\n\nTerminal 2:\n\n$ dd if=/dev/zero bs=512k count=4 of=fifo\n^T\nload: 0.40  cmd: dd 1779 [sbwait] 2.63r 0.00u 0.00s 0% 1800k\n1+0 records in\n0+0 records out\n0 bytes transferred in 2.639078 secs (0 bytes/sec)\n^T\nload: 0.37  cmd: dd 1779 [sbwait] 8.19r 0.00u 0.00s 0% 1804k\n1+0 records in\n0+1 records out\n40960 bytes transferred in 8.191172 secs (5001 bytes/sec)\n\nHow-To-Repeat: mkfifo fifo\n\nTerminal 1:\n\ndd if=fifo bs=512k count=4\n\nTerminal 2:\n\ndd if=/dev/zero bs=512k count=4 of=fifo"
+}

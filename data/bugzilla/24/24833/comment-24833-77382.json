@@ -1,0 +1,8 @@
+{
+ "id": 77382,
+ "bug_id": 24833,
+ "attachment_id": 0,
+ "creation_time": "2001-02-04T01:29:15Z",
+ "creator": "bdluevel@heitec.net",
+ "text": "I'm not familiar with the FreeBSD sources so I might be wrong, but\nthis is how I understand it:\n\nIt's the change in /usr/src/sys/netinet/ip_fw.c from version\n1.131.2.12 to 1.131.2.13, around line 1221.\n if (((f-\u003efw_tcpf != f-\u003efw_tcpnf) ||\n    (f-\u003efw_ipflg \u0026 IP_FW_IF_TCPEST))  \u0026\u0026\n    !tcpflg_match(tcp, f))\nwas replaced by\n if (f-\u003efw_tcpf != f-\u003efw_tcpnf \u0026\u0026 !tcpflg_match(tcp, f))\n\nThe 'established' flag is in fw_ipflg. It's handled in tcpflg_match(),\nbut since the test for fw_ipflg is gone, tcpflg_match() doesn't get\na chance anymore to do the established-thing if fw_tcpf==fw_tcpnf ,\nwhich (I assume) indicates TCP-flags are not used in the particular\nrule.\nThe problem is IMHO that 'established' is a TCP property but not a\nTCP flag.\n\nRe-inserting the previous condition seems to work for me. This is a\npatch against 1.131.2.13:\n--- .vimbk/ip_fw.c.vimbk        Fri Feb  2 15:05:48 2001\n+++ ip_fw.c     Sun Feb  4 02:07:53 2001\n@@ -1222,7 +1222,9 @@\n\n                        if (f-\u003efw_tcpopt != f-\u003efw_tcpnopt \u0026\u0026 !tcpopts_match(tcp, f))\n                                continue;\n-                       if (f-\u003efw_tcpf != f-\u003efw_tcpnf \u0026\u0026 !tcpflg_match(tcp, f))\n+            if (((f-\u003efw_tcpf != f-\u003efw_tcpnf) ||\n+                        (f-\u003efw_ipflg \u0026 IP_FW_IF_TCPEST))  \u0026\u0026\n+                    !tcpflg_match(tcp, f))\n                                continue;\n                        goto check_ports;\n                    }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 16326,
+ "bug_id": 5313,
+ "attachment_id": 0,
+ "creation_time": "1997-12-16T09:53:06Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e#9  0xf011329a in panic (fmt=0xf010fca7 \"free: multiple frees\")\n\u003e    at ../../kern/kern_shutdown.c:388\n\u003e#10 0xf010fd87 in free (addr=0xf5dbd000, type=0x4a)\n\u003e    at ../../kern/kern_malloc.c:342\n\nThere is one obvious problem.  imgp-\u003eimage_header needs to be cleared\nin both arms of the if statement since it is always set).  This fix has\nnot been tested.\n\nBruce\n\ndiff -c2 kern_exec.c~ kern_exec.c\n*** kern_exec.c~\tMon Dec  8 06:07:52 1997\n--- kern_exec.c\tTue Dec 16 20:47:32 1997\n***************\n*** 219,226 ****\n  \t\t\t\tbrelse(bp);\n  \t\t\t\tbp = NULL;\n! \t\t\t} else {\n  \t\t\t\tfree((void *)imgp-\u003eimage_header, M_TEMP);\n! \t\t\t\timgp-\u003eimage_header = NULL;\n! \t\t\t}\n  \t\t\t/* free old vnode and name buffer */\n  \t\t\tvrele(ndp-\u003eni_vp);\n--- 218,224 ----\n  \t\t\t\tbrelse(bp);\n  \t\t\t\tbp = NULL;\n! \t\t\t} else\n  \t\t\t\tfree((void *)imgp-\u003eimage_header, M_TEMP);\n! \t\t\timgp-\u003eimage_header = NULL;\n  \t\t\t/* free old vnode and name buffer */\n  \t\t\tvrele(ndp-\u003eni_vp);"
+}

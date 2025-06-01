@@ -1,0 +1,8 @@
+{
+ "id": 1253734,
+ "bug_id": 270632,
+ "attachment_id": 0,
+ "creation_time": "2023-04-04T02:18:42Z",
+ "creator": "rajeev_v_pillai@yahoo.com",
+ "text": "Files smaller than 4096 bytes (probably the ext4 block-size?) get corrupted when\nthey're written to if the filesystem is ext4. ext2 and ext3 FSes look OK.\n\n$ uname -a\nFreeBSD  13.2-RC6 FreeBSD 13.2-RC6 releng/13.2-n254616-a92e3fa2ade5 GENERIC amd64\n\n# Create an ext4 FS somewhere--here on an USB thumb drive (problem first noticed\n# on an existing ext4 FS on a HDD).\n\ngpart destroy -F da0\ngpart create -s GPT da0\ngpart add -t linux-data da0\nmke2fs -L thumbdrive -t ext4 /dev/da0p1\n\n# Copy/create a file \u003c= 4096 bytes on FS (files \u003e4096 bytes are unaffected).\nmount -t ext2fs /dev/da0p1 /mnt\necho 'hello world' \u003e/mnt/a.txt\n\n# Without unmounting and remounting the FS, edit the file, making a trivial change,\n# eg. replacing any char. with the same one.\n# The issue does not occur if you unmount and remount the FS first before editing\n# the file.\ned -s /mnt/a.txt \u003c\u003c\\EoF\n1s/./\u0026/\nwq\nEoF\n\n# Check file\ncat /mnt/a.txt\numount /mnt\n\n# Remount \u0026 check file again.\nmount -r -t ext2fs /dev/da0p1 /mnt\n\n# File contents are replaced with NULs. File size is unchanged. e2fsck shows\n# no problems.\nhexdump -C /mnt/a.txt\numount /mnt"
+}

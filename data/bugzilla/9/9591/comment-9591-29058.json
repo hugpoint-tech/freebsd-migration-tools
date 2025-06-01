@@ -1,0 +1,8 @@
+{
+ "id": 29058,
+ "bug_id": 9591,
+ "attachment_id": 0,
+ "creation_time": "1999-01-21T00:10:01Z",
+ "creator": "jplevyak@inktomi.com",
+ "text": "On Linux RLIMIT_NOFILE is 7,  On FreeBSD it is 8.\nin /usr/src/sys/i386/linux there is no translation, and\nthe values are passed through, resulting in the wrong\nlimit being set/got.\n\nFix: \n\nPut in a jump function with the appropriate translation.\nI can provide a patch.\nHow-To-Repeat: #include \u003cstdio.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/time.h\u003e\n#include \u003csys/resource.h\u003e\n#include \u003csys/socket.h\u003e\n\nmain() {\n  struct rlimit rl;\n  int i;\n  printf(\"%d\\n\", getrlimit(RLIMIT_NOFILE, \u0026rl));\n  printf(\"%d %d\\n\", (int)rl.rlim_cur, (int)rl.rlim_max);\n  for (i=1;i\u003c30000;i++) {\n    if (!(i%1000)) printf(\"%d\\n\", i);\n    if (socket(PF_INET,SOCK_STREAM,0)\u003c0) break;\n  }\n  printf(\"%d %d\\n\", i, errno);\n}\n\n\ncompiled on linux and run on FreeBSD\nwith 16386 max files results in:\n\n% ./a.out\n0\n531 531\n1000\n2000\n3000\n4000\n5000\n6000\n7000\n8000\n9000\n10000\n11000\n12000\n13000\n14000\n15000\n16000\n16382 24\n\n% sysctl kern.maxfilesperproc\nkern.maxfilesperproc: 16384"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1260148,
+ "bug_id": 271490,
+ "attachment_id": 0,
+ "creation_time": "2023-05-19T11:24:49Z",
+ "creator": "kj@kjtsanaktsidis.id.au",
+ "text": "I did make a bit more progress debugging the issue though - I don't think the problem has anything to do with jemalloc at all - it's _just_ an RTLD issue.\n\nI captured a different backtrace of the problem and attached it. In this one thread #2 is just sitting there chilling on an unrelated mutex; it is _not_ doing any jemalloc things. So, thread #1 manages to get deadlocked during `_rtld_atfork_pre` all by itself.\n\nIn particular, it's blocked acquiring the `rtld_bind_lock` in write mode, and the lock appears to already be held in write mode (by who??):\n\n```\n(gdb) print *((struct rtld_lock *)lock)\n\n$21 = {lock = {rw_state = -1610612736, rw_flags = 2, rw_blocked_readers = 1, rw_blocked_writers = 0, rw_spare = {0, 0, 0, 0}},\n  _pad = '\\000' \u003crepeats 31 times\u003e}\n# bitmask against URWLOCK constants, from https://github.com/freebsd/freebsd-src/blob/1377eb268a5a8a5573bda33a651963259c43c3ed/sys/sys/umtx.h#L62\n(gdb) print /x ((struct rtld_lock *)lock)-\u003elock.rw_state \u0026 0x80000000U\n\n$22 = 0x80000000\n(gdb) print /x ((struct rtld_lock *)lock)-\u003elock.rw_state \u0026 0x40000000U\n\n$23 = 0x0\n(gdb) print /x ((struct rtld_lock *)lock)-\u003elock.rw_state \u0026 0x1FFFFFFFU\n\n$24 = 0x0\n(gdb)\n```\n\nAlso also, I'm not 100% sure yet that this wasn't just luck so far, but it _seems_ I can avoid the deadlock by setting `LD_BIND_NOW`...\n\nAnyway I'll keep hunting for an isolated reproduction. If you have a stab in the dark though I'm happy to try a patch as well."
+}

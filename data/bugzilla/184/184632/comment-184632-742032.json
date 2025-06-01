@@ -1,0 +1,8 @@
+{
+ "id": 742032,
+ "bug_id": 184632,
+ "attachment_id": 0,
+ "creation_time": "2013-12-09T15:00:00Z",
+ "creator": "naddy@FreeBSD.org",
+ "text": "\nI don't know how to test this functionality, but the conversion\nfrom UNIX V8 \u003cregexp.h\u003e to POSIX \u003cregex.h\u003e in patch-regex.txt cannot\npossibly be correct.\n\nYou may want to compare the regex(3) and old regexp(3) man pages.\nhttp://svnweb.freebsd.org/base/stable/8/lib/libcompat/regexp/regexp.3?revision=196045\u0026view=markup\n\nThe most obvious problem is in translate.c, where changes like this\n \n-               if (!regexec(t-\u003eattpair[a].rex, atval)) match = 0;\n+               if (!regexec(\u0026t-\u003eattpair[a].rex, atval, 0, NULL, 0)) match = 0;\n \nignore that V8 regexec() and POSIX regexec() have inverted result\ncodes.  V8 regexec() returns 0 for failure, POSIX regexec() returns\n0 for success.\n\nThe problems in traninit.c are more subtle:\n\n-       if (!(T.var_RE_value=regcomp(buf)))     {\n+       if (regcomp(\u0026T.var_RE_value, buf, 0) != 0) {\n\nWhat happens in the error case?  When POSIX regcomp() returns an\nerror, the value of var_RE_value will be undefined.  However, in\ntranslate.c, regexec() is blindly called with this value.\n\nAlso, V8 regcomp() uses extended regular expressions.\n\nI have attached a replacement patch that reimplements the conversion\nfrom regexp to regex.  It uses two simple wrapper functions that\nmap the required V8 regcomp/regexec functionality onto POSIX\nregcomp/regexec.  In particular, this allows us to still use\n(regex_t *)NULL to indicate an invalid/nonexistent regular expression.\n\nAgain, I can't actually test this."
+}

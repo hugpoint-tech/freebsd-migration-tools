@@ -1,0 +1,8 @@
+{
+ "id": 27929,
+ "bug_id": 9188,
+ "attachment_id": 0,
+ "creation_time": "1998-12-25T10:04:54Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e 11573 telnet   CALL  write(0x1,0x8058c20,0x174)\n\u003e 11573 telnet   RET   write -1 errno 5 Input/output error\n\u003e 11573 telnet   CALL  ioctl(0,TIOCSETAW,0xefbfd8c8)\n\u003e 11573 telnet   RET   ioctl -1 errno 9 Bad file descriptor\n\u003e 11573 telnet   CALL  write(0x1,0x8058c20,0x174)\n\u003e 11573 telnet   RET   write -1 errno 5 Input/output error\n\u003e 11573 telnet   CALL  ioctl(0,TIOCSETAW,0xefbfd8c8)\n\u003e 11573 telnet   RET   ioctl -1 errno 9 Bad file descriptor\n\u003e 11573 telnet   CALL  write(0x1,0x8058c20,0x174)\n\u003e 11573 telnet   RET   write -1 errno 5 Input/output error\n\u003e 11573 telnet   CALL  ioctl(0,TIOCSETAW,0xefbfd8c8)\n\u003e 11573 telnet   RET   ioctl -1 errno 9 Bad file descriptor\n\u003e\n\u003eWhich appears to be in sys_bsd.c:ttydrain\n\u003e\n\u003ePerhaps that while loop should check for fatal errors rather than retrying\n\u003eeverything? Or is this a case that it should never have gotten this far with\n\u003ethe FD being closed?\n\nThe tty appears to be revoked, not closed.  write() would set errno\nto EBADF if the FD were closed.  ioctl() shouldn't return EBADF for\nopen revoked FDs, but it was broken until a month or two after 3.0R.\nNow it returns ENOTTY.  This won't help telnet.\n\nThe loop seems to be actually in sys_bsd.c:TerminalNewMode.  ttydrain\ndoesn't exist.\n\nTelnet shouldn't retry after an error unless it knows that this is OK\n(perhaps it is OK for EAGAIN).\n\nBruce"
+}

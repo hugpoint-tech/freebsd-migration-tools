@@ -1,0 +1,8 @@
+{
+ "id": 48197,
+ "bug_id": 15838,
+ "attachment_id": 0,
+ "creation_time": "2000-01-02T15:00:01Z",
+ "creator": "cejkar@dcse.fee.vutbr.cz",
+ "text": "\nIn msdosfs_conv.c there are several implicit conversion tables\nwhich should do conversions between ISO-8859-1 (Unix) and IBM850\n(DOS and Windows) character sets.\n\nPatch #1:\n\n0xA0 in Latin1 / 0xFF in CP850 is NO-BREAK SPACE character.\nThis character is allowed in both DOS and Windows names so mapping\n0xA0 -\u003e 0 should be changed to 0xA0 -\u003e 0xFF in unix2dos table\n(Latin1 -\u003e CP850) and mapping 0xFF -\u003e 0x3F should be changed to\n0xFF -\u003e 0xA0 in dos2unix table (CP850 -\u003e Latin1).\n\n0xB4 in Latin1 / 0xEF in CP850 is ACUTE ACCENT character.\nMapping 0xB4 -\u003e 0xEF in unix2dos table is correct, but mapping\n0xEF -\u003e 0x3F should be changed to 0xEF -\u003e 0xB4 in dos2unix table.\n\nPatch #2:\n\nThis is fix to possible source of problems with tolower() / toupper()\nconversions. Currently table l2u is implemented as tolower() instead\nof toupper() (l2u is the same as u2l table) and table unix2dos is\nimplemented as toupper(L1to850()). The only usage of l2u and unix2dos\ntables is consequently in order src -\u003e l2u -\u003e unix2dos -\u003e dst\nso conversions work. But if user use in mount_msdos -W parameter\nwithout -L parameter and tables without implicit toupper() conversions, \nhe is in troubles. So I think it should be better to implement implicit\ntables in more natural form: l2u table as toupper() and unix2dos table\nas L1to850() without implicit toupper() conversion - see patch #2.\nIf removing of implicit toupper() conversion in unix2dos is not\ndesirable, table l2u should be patched at least.\n\nFix: Patch #1:\n\nPatch #2:"
+}

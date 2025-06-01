@@ -1,0 +1,8 @@
+{
+ "id": 45490,
+ "bug_id": 14950,
+ "attachment_id": 0,
+ "creation_time": "1999-11-17T15:18:37Z",
+ "creator": "gibbs@FreeBSD.org",
+ "text": "\u003e\u003eSynopsis:       queue(3) STAILQ_INSERT_TAIL is suprising when the queue is \nempty\n\n...\n\n\u003eThe handy STAILQ macro collection's STAILQ_INSERT_TAIL is broken\n\u003efor empty queue (fails to initialize the queue head's stqh_first field).\n\u003eIf the code is not broken then the docs should probably point out\n\u003ethe STAILQ_INSERT_TAIL's dependancy on !STAILQ_EMPTY\n\nWhen an STAILQ is empty, head-\u003estqh_last = \u0026(head)-\u003estqh_first.\nThus, STAILQ_INSERT_TAIL initializes head-\u003estqh_first through the\nstqh_last member:\n\n#define STAILQ_INSERT_TAIL(head, elm, field) do {                       \\\n        (elm)-\u003efield.stqe_next = NULL;                                  \\\n        *(head)-\u003estqh_last = (elm);                                     \\\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        (head)-\u003estqh_last = \u0026(elm)-\u003efield.stqe_next;                    \\\n} while (0)\n\nOf course if you fail to properly initialize an STAILQ, this assumption\nwill fail and the macro will not do the right thing. Do you have a\ncode example that displays a problem with the macros?  From inspection,\nthe macros look correct.\n\n--\nJustin"
+}

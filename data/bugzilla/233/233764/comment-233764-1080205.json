@@ -1,0 +1,8 @@
+{
+ "id": 1080205,
+ "bug_id": 233764,
+ "attachment_id": 0,
+ "creation_time": "2019-12-20T08:09:23Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "Unfortunately, our amdtemp(4) driver is doing the best it can according to the spec.  Starting with the Phenoms, AMD's digital sensor no longer reports an absolute temperature value anymore, but a reading with a certain offset, which isn't really known; it might not even be constant per CPU type.\n\nI believe that some proprietary tools employ certain tricks or use undocumented pieces of knowledge to make up for this, but e.g. Open Hardware Monitor uses the same formula as FreeBSD plus allows to specify configurable \"offset\" which is zero by default: ((Tctl \u003e\u003e 21) \u0026 0x7FF) / 8.0f.\n\nThat is, Tctl is a non-physical temperature on an arbitrary scale (confusingly) measured in degrees Celsius with a resolution of 1/8th degree.  AMD designed this equation to accurately read load temperatures (45°C+).  It has an equational offset to determine them which equalizes at 45́°C.  Since it's designed for peak values and is a non-physical temperature it cannot read idle temperatures or account for ambient temperature correctly.\n\nThat's why popular tools like HWinfo64, MWmonitor, or Aida64 usually report two values: one for the socket and another for the core temperature.  The socket value is what you should look at if you want an idea of idle temperature and the core one for the CPU temperature under load.\n\nI understand that it's somewhat frustrating to see BIOS and AMD Overdrive reporting seemingly sane temperatures across the entire spectrum, but it is most likely a cumulative reading from a number of different sensors, most of which are out of scope of amdtemp(4) or even undocumented at all."
+}

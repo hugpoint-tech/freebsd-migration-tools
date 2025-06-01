@@ -1,0 +1,8 @@
+{
+ "id": 1005493,
+ "bug_id": 226059,
+ "attachment_id": 0,
+ "creation_time": "2018-08-08T15:18:41Z",
+ "creator": "cem@freebsd.org",
+ "text": "(In reply to Gleb Popov from comment #7)\nPlease note that the upstream GHC fix is incorrect and continue to follow-up with them about that.\n\nTheir change c6cc93bca only aligns the array to W_ aka StgWord aka StgWord64 aka unsigned long (8 bytes).\n\nThis is insufficient for AVX2 alignment[1] (16 bytes for xmm, 32 for ymm) and still violates the guarantee attached to the gen_workspace structure (64 byte alignment).  They need to remove the 64-byte gen_workspace alignment or add 64-byte alignment to the array to remove their UB.  (They could align both to the smaller 32 bytes and still allow the compiler to take advantage of AVX2.)\n\nI don't know what lead them to believe an 8-byte alignment would fix an unaligned 32-byte AVX access.\n\n[1]: https://www.felixcloutier.com/x86/MOVAPS.html"
+}

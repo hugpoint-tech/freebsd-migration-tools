@@ -1,0 +1,8 @@
+{
+ "id": 338544,
+ "bug_id": 100726,
+ "attachment_id": 0,
+ "creation_time": "2006-07-22T19:40:22Z",
+ "creator": "samm@FreeBSD.org",
+ "text": "\n\n(c) Rong-En Fan's, http://rafan.infor.org/patch/sshit.diff\n\nIn the code, the author uses two level hash, and IPC::Shareable\nwill create a share memory for those anonymouse object (the second\nlevel hash). Those share memory will not be removed when sshit exists\nor when the rule is removed. Running sshit for a period of time,\nthe number of share memory and semaphore will reach the limit for\none process, then sshit.pl can not get more share memory, thus it\nquits. The only solution is to manually remove all share memory and\nsemaphore.                              \n\nThis is somehow the limitation of using IPC::Shareable. To workaround\nthis problem. The patch will removes associated firewall rules when\nsyslogd closes the fd [1], and use IPC::Shareable-\u003eclean_up\nto remove all shm/sem created by this process. I also set 'destroy'\nto 1 so the shm tied to %list can be removed.\n\nThe second hunk is to fix a typo for ipfw2. Due to this typo,\nip in ipfw2's table cat not be removed. That means once blocked,\nthe client is blocked until reboot or admin cleanup the table.                                                     \n                                                                                \n[1] if any log files are rotated, newsyslog sends a HUP to syslogd,\n    syslogd will close *all* current open fd and reopen them. At\n    that time, the sshit.pl's stdin will be closed, thus the main\n    program will exit.\n\nHow-To-Repeat: \n\nRestart syslogd 10-15 times and see result..."
+}

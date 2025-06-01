@@ -1,0 +1,8 @@
+{
+ "id": 651468,
+ "bug_id": 165155,
+ "attachment_id": 0,
+ "creation_time": "2012-02-14T22:10:05Z",
+ "creator": "matthewstory@gmail.com",
+ "text": "Per POSIX (IEEE Std 1003.1-2008):\n\nIf a command line meeting the specified requirements cannot be assembled, the utility cannot be invoked, an invocation of the utility is terminated by a signal, or an invocation of the utility exits with exit status 255, the xargs utility shall write a diagnostic message and exit without processing any remaining input.\n(via: http://pubs.opengroup.org/onlinepubs/9699919799/utilities/xargs.html)\n\nFreeBSD xargs does exit without processing any remaining input if an invocation of utility terminates as a result of a signal, or if an invocation of utility exits with exit status 255, but it does not write a diagnostic message as required by the spec.\n\nFix: apply patch, result is:\n\n$ jot - 1 10 | xargs -n1 sh -c 'kill $$'\nxargs: sh: terminated with signal 15, aborting\n$ jot - 1 10 | xargs -n1 sh -c 'exit 255'\nxargs: sh: exited with status 255, aborting\n\n\n\nPatch attached with submission follows:\nHow-To-Repeat: $ jot - 1 10 | xargs -n1 sh -c 'kill $$'\n$ # note no output\n$ jot - 1 10 | xargs -n1 sh -c 'exit 255;'\n$ # note no output"
+}

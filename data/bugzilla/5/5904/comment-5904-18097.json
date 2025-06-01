@@ -1,0 +1,8 @@
+{
+ "id": 18097,
+ "bug_id": 5904,
+ "attachment_id": 0,
+ "creation_time": "1998-03-03T12:36:08Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\u003eDescription:\n\u003eWhen newfs a drive with:\n\u003esu-2.01#umount /dev/wd3c\n\u003esu-2.01#newfs -b 8192 -f 1024 /dev/wd3c\n\u003e\n\u003ethe system panics with:\n\u003epanic: bremfree removing a buffer whan not on a queue\n\nI think there is already a PR for this.\n\nIt is caused by stale objects for the vnode of the device.  Mounting a\nufs file system provides an object, normally with a block size of 8K.\nThe object doesn't go away on unmount, and a too-small block size of\n2K is used for block devices, and either the different block sizes\nor the existence of the object cause the panic.\n\nPossible workaround: don't newfs the block device.  (Never newfs a block\ndevice anyway.  Block devices are normally slower (normally much slower\nfor newfs) and always give worse error reporting.)  I'm not sure if this\nactually avoids the problem.  There may be a coherency problem when the\nnew file system is mounted, or the block size of the new file system\nmay be different\n\nA related problem:\n\n\t# mount -t msdosfs /dev/wd3c ...\n\t# umount /dev/wd3c\t# device containing an msdosfs file system\n\t\t\t\t# vnode doesn't have an object\n\t# mount -t ufs /dev/wd3c ...\t# oops\n\t\t\t\t# vnode now has an object\n\t# mount -t msdosfs /dev/wd3c ...\t# panic\n\nHere the existence of the object causes the panic.  msdosfs requests\nmisaligned blocks, and allocbuf() can't handle this.\n\nBruce"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 640327,
+ "bug_id": 162976,
+ "attachment_id": 0,
+ "creation_time": "2011-11-30T20:40:11Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "One can use active directory usernames in crontab like so and most of\nthe system is happy working with these long usernames:\n\n*       *       *       *       *       STOUT\\administrator     PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/root/bin true \u003e/dev/null 2\u003e\u00261\n\nThe problem is that cron gets unhappy when trying to run setlogin(2),\nwhich ends up spewing out errors in syslog and cron exits:\n\nNov 30 07:44:00 truenas cron[25967]: setlogin(STOUT\\administrator): Invalid argument\n\nThis limitation appears to still be present in 10-CURRENT though.\n\nFix: \n\nThe only fix (which would be invasive) would be to honor (and exceed)\nthe limits set by other operating systems so that setlogin(2) wouldn't\nfail. According to this KB article via MS, the username limit is 104\ncharacters (although the recommend not going over 64 characters).\n\nOther infrastructure pieces might need to be taught to honor this limit\n(like utmp*).\nHow-To-Repeat: 1. Hook machine into AD/LDAP realm (the above example uses the STOUT AD\n   realm).\n2. Create something like the following entry:\n\n*       *       *       *       *       STOUT\\administrator     PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:/root/bin true \u003e/dev/null 2\u003e\u00261"
+}

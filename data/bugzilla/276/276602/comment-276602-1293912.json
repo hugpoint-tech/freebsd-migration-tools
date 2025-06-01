@@ -1,0 +1,8 @@
+{
+ "id": 1293912,
+ "bug_id": 276602,
+ "attachment_id": 0,
+ "creation_time": "2024-01-25T01:06:26Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "If a file system's on-disk format does not support st_birthtime, it isn't clear what value it should return in stat(2).  Neither our man page nor the OpenGroup specifies.  But our convention is to return { .tv_sec = -1, .tv_nsec = 0 }.  fusefs is different.  It returns { .tv_sec = -1, .tv_nsec = -1 }.  It's done that ever since the initial import in SVN r241519.\n\nMost software apparently handles this just fine.  It must, because we've had no complaints.  But the Rust standard library will panic when reading such a timestamp during std::fs::metadata, even if the caller doesn't care about that particular value.  That's a bug, and should be fixed.  But we can help out by never returning such values.\n\nhttps://github.com/rust-lang/rust/issues/108277"
+}

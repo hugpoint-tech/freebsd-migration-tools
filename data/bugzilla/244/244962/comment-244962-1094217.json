@@ -1,0 +1,8 @@
+{
+ "id": 1094217,
+ "bug_id": 244962,
+ "attachment_id": 0,
+ "creation_time": "2020-03-27T21:32:33Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "There is no bcmp symbol on amd64 for almost 2 years now. In sys/systm.h there is:\n\nint     bcmp(const void *b1, const void *b2, size_t len);\n[..]\n#define bcmp(b1, b2, len) __builtin_memcmp((b1), (b2), (len))\n\nThe first line should probably get removed, but it should not be affecting vbox.\n\nvbox likes to *disable* several warnings. Thus what most likely happens is that some place using bcmp *fails* to include the systm.h header, due to warns disabled nobody is even told and the compiler ends up generating a call to bcmp (instead of memcmp, or no call in the first place).\n\nThus someone(tm) should make sure the header is included in files which end up doing bcmp. Also will not hurt to make sure the build environment is clean and up to date -- if thep ort pulls in *OLD* files it will only see bcmp declared, but no macro telling it to use __builtin_memcmp and then it will stick to generating the call."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 953695,
+ "bug_id": 222665,
+ "attachment_id": 0,
+ "creation_time": "2017-09-28T12:46:36Z",
+ "creator": "nkoch@demig.de",
+ "text": "In an embedded system we use an ftdi chip FT4232HL for serial communication.\nChannels 1 and 2 are unused, channel 3 is RS485, channel 4 is RS232.\n\nThe system is a kind of terminal which responds to messages\ncoming in via serial communication.\n\nWe previously used FreeBSD 8.2 without any problems.\nWith FreeBSD 10.3 we found the following situation:\n\n1. Turn on power.\n2. Wait until BIOS finishes and boot loader starts.\n3. Immediately begin transmitting messages via RS485 to this device.\n4. Application starts and opens /dev/cuaU2.\n5. Application sees message and posts answer, but answer is not being sent.\n6. Close application and outstanding characters are being sent.\n7. Reopen application and all works fine.\n\nThis problem seems to only occur with RS485 at cuaU2,\n*not* with RS232 at cuaU3.\n\nIf nothing is being sent before step 4 all seems ok.\n\nWith hw.usb.ucom.debug=1 I can see that ucom_outwakeup()\nseems never being called in error case. The first ucom_outwakeup()\nI then see comes from close().\n\nHaving put additional debug messages in ucom_get_data() and\nucom_put_data() I can see that my application tries to send\nthe expected response.\n\nioctl(UFTDIIOC_RESET_IO) after open() seems to solve that problem for me.\nBut I am unsure if this is a fix of a chip problem or a workaround\nfor a kernel/driver/locking problem (which could also come from\nthe upper tty layer)."
+}

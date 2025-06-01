@@ -1,0 +1,8 @@
+{
+ "id": 880283,
+ "bug_id": 207598,
+ "attachment_id": 0,
+ "creation_time": "2016-05-25T18:54:47Z",
+ "creator": "maximos@als.nnov.ru",
+ "text": "I've never read FreeBSD sources, except pf's last week... probably I'm wrong.\nip_input()-\u003eip_forward()-\u003eip_output()-\u003eip_output_pfil()-\u003epfil_run_hooks()-\u003epf_test().\nIf ip_output() returns any error, then in ip_forward():\n\terror = ip_output(...);\n\t...\n\tswitch (error) {\n\tcase 0:\t\t\t\t/* forwarded, but need redirect */\n\t\t/* type, code set above */\n\t\tbreak;\n\t...\n\tdefault:\n\t\ttype = ICMP_UNREACH;\n\t\tcode = ICMP_UNREACH_HOST;\n\t\tbreak;\n\t...\n\ticmp_error(...);\nSo, we have incoming fragment of echo request. There are two options:\n1. pf returns PF_PASS -\u003e ip_output() returns 0 -\u003e everything is OK\n2. pf returns PF_DROP -\u003e ip_output() returns nonzero value -\u003e we have icmp-unreach message.\npf returns PF_DROP when we have (implicit) \"scrub out on...\".\n\nPlease, correct me if I missing something."
+}

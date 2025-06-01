@@ -1,0 +1,8 @@
+{
+ "id": 867190,
+ "bug_id": 207544,
+ "attachment_id": 167481,
+ "creation_time": "2016-02-27T14:59:59Z",
+ "creator": "schwarze@usta.de",
+ "text": "Created attachment 167481\npatch against lib/libc/locale/mbtowc.c to fix errno handling\n\nIf an incomplete character is passed to mbtowc(3), it fails to set errno to EILSEQ, even though that is unambiguously required by POSIX.\n\nSetting errno in that case makes a lot of sense because having a function that can fail and that sets errno in some failure modes but does not set errno in other failure modes would be a terrible idea.  Such a function would be ridiculously complicated to use.  To detect the reason for failure, you would have to:\n\n - save errno\n - reset errno to zero\n - call the function\n - inspect the return value to detect failure\n - inspect errno to decide about the reason for failure\n - if errno is zero, restore the saved errno\n\nThat is completely unreasonable, in particular for a seemingly innocous function like mbtowc(3).  Next to no programmer would get that right in any real-world program.\n\nNote that this bug is very widespread, it also affects Solaris 11 and glibc, and also OpenBSD until i fixed it today.  I will also send a note around to the other systems.\n\nThe OpenBSD commit will soon show up here:\nhttp://cvsweb.openbsd.org/cgi-bin/cvsweb/src/lib/libc/locale/mbtowc.c\n\nThe attachment contains a patch against FreeBSD-current, mainly to make it even clearer what exactly i mean.  Note that i did not test the patch since i don't have a FreeBSD system - so please test before commit!  Thanks."
+}

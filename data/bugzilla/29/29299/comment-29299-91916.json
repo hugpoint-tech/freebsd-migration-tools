@@ -1,0 +1,8 @@
+{
+ "id": 91916,
+ "bug_id": 29299,
+ "attachment_id": 0,
+ "creation_time": "2001-07-29T15:40:00Z",
+ "creator": "Thomas.Pornin@ens.fr",
+ "text": "\nThe GENERIC kernel does not include support for the Tekram SCSI adapter.\nI recompiled a kernel with the 'device amd' line. At the end of the SCSI\ndelay (set to 8 seconds in my setup), the kernel enters a fatal trap\nrelated to memory management. I tried with a debug kernel, the trap\nis triggered by the line 455 in alpha/alpha/busdma_machdep.c, function\nbus_dmamap_load():\n\n\tif (map-\u003epagesneeded != 0) {\n\napparently, at that point, \"map\" is equal to NULL, and the memory acces\ntriggers the trap.\n\nI tried to replace that line with the following:\n\n\tif (map \u0026\u0026 map-\u003epagesneeded != 0) {\n\n(and something similar for another access to map-\u003epagesneeded line 491),\nbut then the machine crashes later with an \"unexpected machine check\"\n(mces = 0x1, vector = 0x660, param = 0xfffffc0000006068). I believe\nit is not standard behaviour that bus_dmamap_load() is called with\na NULL map.\n\nThe very same kernel, without the 'amd' support, boots and runs fine.\nThe Tekram card and Zip drive are functionnal (they work on the same\nmachine under Linux).\n\nFix: \n\nNone included. I guess the amd driver requires some tweekings. I have\nsome spare time for the next three weeks, and am willing to help; but I\ndo not know where to begin.\nHow-To-Repeat: \nJust try to boot an Alpha machine with a Tekram adapter and support\ncompiled in the kernel. Maybe the fact that there is no disk in the\nZip drive is important."
+}

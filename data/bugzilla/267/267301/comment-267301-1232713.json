@@ -1,0 +1,8 @@
+{
+ "id": 1232713,
+ "bug_id": 267301,
+ "attachment_id": 0,
+ "creation_time": "2022-10-24T23:12:46Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Well, here's what the code in rpcb_getaddr(), found in\nlib/libc/rpc/rpcb_clnt.c looks like:\n\t\t/*\n\t\t * Try UDP only - there are some portmappers out\n\t\t * there that use UDP only.\n\t\t */\n\t\tif (strcmp(nconf-\u003enc_proto, NC_TCP) == 0) {\n\t\t\tstruct netconfig *newnconf;\n\n\t\t\tif ((newnconf = getnetconfigent(\"udp\")) == NULL) {\n\t\t\t\trpc_createerr.cf_stat = RPC_UNKNOWNPROTO;\n\t\t\t\treturn (NULL);\n\t\t\t}\n\t\t\tclient = getclnthandle(host, newnconf, \u0026parms.r_addr);\n\t\t\tfreenetconfigent(newnconf);\n\t\t} else {\n\t\t\tclient = getclnthandle(host, nconf, \u0026parms.r_addr);\n\t\t}\nPretty obvious why it uses UDP.\nNow, this code is only compiled into rpcb_clnt.c when PORTMAP is defined.\nIt is defined in lib/libc/rpc/Makefile.inc.\n(I suspect taking -DPORTMAP out of this Makefile.inc would make it\n use TCP, once you rebuild libc from the sources and link mount_nfs\n to that.)\n\nI may try this, but I do not have an easy way to do so, since my\nsystems are old laptops with very little storage (ok for building\na kernel, but not for \"make buildworld\", etc).\n\nThen the problem is that this change affects everyone. I do not\nsee a way to only enable it based on a new mount option.\nSo what happens if this breaks a mount for someone else?\nThat would be a POLA violation, since the code has been like this\nfor decades, I suspect?\n\nIt would be best for you to patch this for youyr local systems,\nalthough I will ask on the freebsd-fs@ mailing list, to see what\nothers think of making this change?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 551125,
+ "bug_id": 145231,
+ "attachment_id": 0,
+ "creation_time": "2010-03-31T09:00:18Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "There's a missing dependency rule for sys/boot/ficl/libficl.a when\nbuilding the loader code directly from sys/boot/\u003ctarget\u003e/ ; example:\n\n$ make -C /usr/src/sys/boot/i386/ -DLOADER_BZIP2_SUPPORT -DLOADER_GZIP_SUPPORT clean depend all\n# ...\ncc -O2 -pipe -fno-strict-aliasing -pipe -O2 -march=nocona -DLOADER_NFS_SUPPORT -DBOOT_FORTH -I/usr/src/sys/boot/i386/loader/../../ficl -I/usr/src/sys/boot/i386/loader/../../ficl/i386 -DLOADER_BZIP2_SUPPORT -DLOADER_GZIP_SUPPORT -DLOADER_GPT_SUPPORT -I/usr/src/sys/boot/i386/loader/../../common -I. -Wall -I/usr/src/sys/boot/i386/loader/.. -I/usr/src/sys/boot/i386/loader/../btx/lib -ffreestanding -mpreferred-stack-boundary=2  -mno-mmx -mno-3dnow -mno-sse -mno-sse2 -mno-sse3 -m32 -march=i386 -std=gnu99  -c /usr/src/sys/boot/i386/loader/../../common/interp_forth.c\nmake: don't know how to make /usr/obj/usr/src/sys/boot/i386/loader/../../ficl/libficl.a. Stop\n*** Error code 2\n\nThe workaround of course being:\n\nfor i in sys/boot/ficl sys/boot/\u003ctarget\u003e; do\n    make -C $i clean depend all || break\ndone\n\nI didn't attach a fix for this because this does seem like this should\nbe done in an .mk file, not localized to the \u003ctarget\u003e specific Makefile\n(like an easy solution would do).\n\nThis issue also occurs in a 8-STABLE svn based off r204443 .\n\nHow-To-Repeat: make -C sys/boot/ficl clean\nmake -C sys/boot/\u003ctarget\u003e clean depend all"
+}

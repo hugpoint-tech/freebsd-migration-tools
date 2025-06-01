@@ -1,0 +1,8 @@
+{
+ "id": 345888,
+ "bug_id": 102595,
+ "attachment_id": 0,
+ "creation_time": "2006-08-28T09:20:17Z",
+ "creator": "u@netbeisser.de",
+ "text": "Well, I missed a way to let the System do snapshots \nin an automated way.\n\nI try to add snapshots to /etc/periodic/daily/311.snapshots.\n(I have no clue if one needs to order a number)\n\nAt current state I ask if it is a good a Idea to build\n*daily* snapshots of a partition. According to some backup\nstrategies, I would say no.\n\n(Well, some time ago, I submitted some simpler stuff for\nsecurity reasons, and It looks like no-one cares. :/\n\nhttp://www.freebsd.org/cgi/query-pr.cgi?pr=82823\n\nI conformed myself with the Idea that this patch simply\ndid not fit into the philosophy of freebsd. Maybe it is\na kind of freedom not to configure the Base System.)\n\nFix: \n\nFirst raw stuff that works for me:\n\ncase \"$daily_snapshots_enable\" in\n    [Yy][Ee][Ss])\n        echo \"\"\n        echo \"Doing daily snapshot:\"\n        enabled_snaps=\"/ /usr /home /nonexistant /var\"\n        date=\"$(date +%Y-%m-%d.%H_%M)\"\n        for s in $enabled_snaps; do\n               if ! test -d $s/.snap ; then\n                    echo \"failed chdir() to $s\";\n                     else\n                         cd $s/.snap;\n                         mksnap_ffs $s `basename $s`-$date; cd /;\n                  fi;\n               done || rc=3\n        echo done. || rc=3\n        echo \"\"\n        echo \"Listing current snapshots:\"\n        snapinfo -a -v; ;;\n\n    *)  rc=0;;\nesac\n\nexit $rc\nHow-To-Repeat: man mksnap_ffs\n\n/.snap\n/usr/.snap\n/home/.snap\n\nWatch empty .snap directories.\nWatching at the .plan9 machine :)"
+}

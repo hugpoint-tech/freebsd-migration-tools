@@ -1,0 +1,8 @@
+{
+ "id": 1333941,
+ "bug_id": 282614,
+ "attachment_id": 0,
+ "creation_time": "2024-11-07T19:59:44Z",
+ "creator": "freebsd@oldach.net",
+ "text": "Fresh install from FreeBSD-14.2-PRERELEASE-amd64-20241031-25ad37c9532b-269367-disc1.iso:\n\ntoor@t:/ # cd /usr/local\ntoor@t:/usr/local/etc # mkdir -p etc/periodic/test\ntoor@t:/usr/local/etc # cat \u003eetc/periodic/test/test \u003c\u003cEOF\n#!/bin/sh\n\nif [ -r /etc/defaults/periodic.conf ]; then\n        . /etc/defaults/periodic.conf\n        source_periodic_confs\nfi\n\necho \"_localbase=\\\"\\${_localbase}\\\"\"\necho \"periodic_conf_files=\\\"\\${periodic_conf_files}\\\"\"\nEOF\ntoor@t:/usr/local/etc # chmod +x etc/periodic/test/test\ntoor@t:/usr/local/etc # periodic test\n_localbase=\"\"\nperiodic_conf_files=\"/etc/periodic.conf /etc/periodic.conf.local /etc/periodic.conf\"\ntoor@t:/usr/local/etc # \n\n${LOCALBASE}/etc/periodic.conf is not read as it is not mentioned in ${periodic_conf_files}. Result is, one cannot define variables for local periodic scripts in the local periodic.conf but they have to go into the global /etc/periodic.conf, which isn't desireable and collides with documentation.\n\nWe can make it work by tweaking the scope of _localbase (defined by /usr/sbin/periodic):\n\ntoor@t:/usr/local/etc # echo export _localbase \u003eetc/periodic.conf\ntoor@t:/usr/local/etc # periodic test\n_localbase=\"/usr/local\"\nperiodic_conf_files=\"/etc/periodic.conf /etc/periodic.conf.local /usr/local/etc/periodic.conf\"\ntoor@t:/usr/local/etc # \n\n_localbase should be exported from /usr/sbin/periodic?"
+}

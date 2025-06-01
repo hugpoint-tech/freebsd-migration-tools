@@ -1,0 +1,8 @@
+{
+ "id": 908397,
+ "bug_id": 214338,
+ "attachment_id": 0,
+ "creation_time": "2016-11-21T13:34:50Z",
+ "creator": "wulf@freebsd.org",
+ "text": "(In reply to rozhuk.im from comment #10)\n\u003e 2. If file deleted it will reported.\nIt seems that I did not explain well what i meant.\n\nWe are watching for directory with hardlinked childs \"1\" and \"2\". They are sharing same inode number as it is one file with 2 links to parent dir.\n\nThan we rename \"1\" to \"3\" triggering NOTE_WRITE for parent directory filedesc\n\ngio handler for NOTE_WRITE calls your code and at some point of time readdir() loop reads entry for file \"3\" and find it as \"new file\".\n\nNext step it tries to find out if this file has been renamed and after some looping over previous directory content with 50% probability it stops at file \"2\" with the same inode number and decides that \"2\" is the filename before rename\nBut that is wrong as you would send 3 events in that case: '\"1\" is deleted', '\"2\" is renamed to \"3\"' and '\"2\" is created'.\n\n\u003e 3. Im not sure about it. Code compare current files/subdirs metadata in dir with previous and report if changed.\n\u003e But if no event from kqueue() received for dir then no compare/report for files/subdirs.\n\nIIRC, if directory is watched, file monitor should report child files attribute changes and modifications. In kqueue() case it means that you should open() every child file and watch for NOTE_ATTRIB, NOTE_WRITE and NOTE_CLOSE_WRITE (and maybe NOTE_DELETE as it mapped to attribute changes sometimes) events."
+}

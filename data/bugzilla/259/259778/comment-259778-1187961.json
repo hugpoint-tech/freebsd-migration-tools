@@ -1,0 +1,8 @@
+{
+ "id": 1187961,
+ "bug_id": 259778,
+ "attachment_id": 0,
+ "creation_time": "2021-11-25T13:05:06Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "I have:\n\n1. Added a new `procctl` verb `PROC_SIGCAP_CTL` that sets a bit in `p_flag2`.\n2. Added a SIGCAP that will be delivered on Capsicum violations.\n3. Delivered SIGCAP if this bit is set, *after* delivering `SIGTRAP` (so that the debugger can see the failure and then the process can catch it).\n\nI am not sure if (3) is the correct sequence.  When I'm debugging these things I probably actually want to get the SIGTRAP after the SIGCAP, and only if the SIGCAP doesn't handle the failure, but I have no mechanism for signalling this to the kernel, so I'd most likely just stick a breakpoint at the end of my signal handler and ignore SIGTRAP entirely.\n\nUnfortunately, it turns out that I don't understand the signal delivery logic.  Calling `trapsignal` twice does not appear to work: If I request either signal, everything works fine in my test program, but if I request both then my test fails.  Unfortunately, the child process fails in startup with gdb attached on -CURRENT.\n\nIn a reduced test case, where I set both flags, then do `cap_enter` and `open` with trivial signal handlers that just print the signal that's delivered, I see SIGTRAP arriving *before* SIGCAP.  This is my modification to the syscall return path:\n\nhttps://github.com/davidchisnall/freebsd-src/blob/5329f8fc0bb881f9172c790097c975f3429f6d67/sys/kern/subr_syscall.c#L225\n\n\nI believe I need to do more to deliver two signals, synchronously, which is why I didn't want to allow both mechanisms to exist, but I don't know what the extra work I need to do is and the `trapsignal` man page is not illuminating."
+}

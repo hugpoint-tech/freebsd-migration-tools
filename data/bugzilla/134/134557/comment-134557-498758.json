@@ -1,0 +1,8 @@
+{
+ "id": 498758,
+ "bug_id": 134557,
+ "attachment_id": 0,
+ "creation_time": "2009-07-04T07:01:15Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: mav\nDate: Sat Jul  4 06:00:57 2009\nNew Revision: 195336\nURL: http://svn.freebsd.org/changeset/base/195336\n\nLog:\n  MFC rev.195335:\n  Fix infinite loop in ng_iface, that happens when packet passes out via\n  two different ng interfaces sequentially due to tunnelling.\n  \n  PR:\t\tkern/134557\n  Submitted by:\tMikolaj Golub\n\nModified:\n  stable/7/sys/   (props changed)\n  stable/7/sys/contrib/pf/   (props changed)\n  stable/7/sys/netgraph/ng_iface.c\n\nModified: stable/7/sys/netgraph/ng_iface.c\n==============================================================================\n--- stable/7/sys/netgraph/ng_iface.c\tSat Jul  4 05:07:52 2009\t(r195335)\n+++ stable/7/sys/netgraph/ng_iface.c\tSat Jul  4 06:00:57 2009\t(r195336)\n@@ -365,7 +365,8 @@ ng_iface_output(struct ifnet *ifp, struc\n \t}\n \n \t/* Protect from deadly infinite recursion. */\n-\twhile ((mtag = m_tag_locate(m, MTAG_NGIF, MTAG_NGIF_CALLED, NULL))) {\n+\tmtag = NULL;\n+\twhile ((mtag = m_tag_locate(m, MTAG_NGIF, MTAG_NGIF_CALLED, mtag))) {\n \t\tif (*(struct ifnet **)(mtag + 1) == ifp) {\n \t\t\tlog(LOG_NOTICE, \"Loop detected on %s\\n\", ifp-\u003eif_xname);\n \t\t\tm_freem(m);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

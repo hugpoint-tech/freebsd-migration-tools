@@ -1,0 +1,8 @@
+{
+ "id": 1300902,
+ "bug_id": 277704,
+ "attachment_id": 0,
+ "creation_time": "2024-03-14T19:54:30Z",
+ "creator": "sr@genyosha.net",
+ "text": "Installed net-mgmt/nrpe 4.1.0 pkg. Using /usr/local/etc/nrpe.cfg.sample as a template for the running nrpe.cfg gives this pidfile setting:\n\npid_file=/var/nrpe.pid\n\nWith the included rc.d/nrpe startup script this results in /var/ directory getting chown'd to the nagios user.\n\nPresumably it happens due to this command in rc.d/nrpe nrpe_prestart()\n\n        install -d -o ${nrpe_user:-nagios} ${pidfile%/*}\n\nWhich results in:\n\n$ ls -lad /var\ndrwxr-xr-x  26 nagios wheel 1024 Mar 14 11:39 var\n$ ls -la /var/nrpe.pid \n-rw-r--r--  1 root wheel 5 Mar 14 11:39 /var/nrpe.pid\n\nThe /var/ ownership change seems bad, and the pidfile location may not be optimal. A couple ideas for a fix:\n\n1) comment-out pid_file from nrpe.cfg and let rc.d/nrpe pidfile logic choose the location\n2) set a different path for pid_file in nrpe.cfg, e.g. /var/run/nrpe/nrpe.pid\n\nI'm presently using option #1 and it does avoid the /var/ ownership change."
+}

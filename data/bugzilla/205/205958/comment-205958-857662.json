@@ -1,0 +1,8 @@
+{
+ "id": 857662,
+ "bug_id": 205958,
+ "attachment_id": 0,
+ "creation_time": "2016-01-07T03:47:34Z",
+ "creator": "otacilio.neto@bsd.com.br",
+ "text": "On i386 I have found that the problem is related with libx264. \nUsing gdb:\n\nProgram received signal SIGBUS, Bus error.\n0x29671740 in x264_add8x8_idct_avx2.skip_prologue () from /usr/local/lib/libx264.so.144\n(gdb) \n\n\nAnd this is the source code where the problem occurs:\n\nlibavcodec/libx264.c:283\n\n 283 ===\u003e     if (x264_encoder_encode(x4-\u003eenc, \u0026nal, \u0026nnal, frame? \u0026x4-\u003epic: NULL, \u0026pic_out) \u003c 0)\n 284             return AVERROR_EXTERNAL;\n\nAnd this is the asm code where the problem occurs:\n\nDump of assembler code from 0x29671740 to 0x29671840:\n===\u003e0x29671740 \u003cx264_add8x8_idct_avx2.skip_prologue+12488\u003e: lds    (bad),%edi\n    0x29671741 \u003cx264_add8x8_idct_avx2.skip_prologue+12489\u003e: stc    \n    0x29671742 \u003cx264_add8x8_idct_avx2.skip_prologue+12490\u003e: outsl  %ds:(%esi),(%dx)\n    0x29671743 \u003cx264_add8x8_idct_avx2.skip_prologue+12491\u003e: add    $0xe,%al\n\n\nSomeone can help me to fix it?"
+}

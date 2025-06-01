@@ -1,0 +1,8 @@
+{
+ "id": 1327409,
+ "bug_id": 281751,
+ "attachment_id": 0,
+ "creation_time": "2024-09-30T11:20:24Z",
+ "creator": "olce@FreeBSD.org",
+ "text": "@kib, @kevans:\nToo early to tell for this case, but the only failures of jail_attach(2) with EPERM I've seen so far were caused by an outstanding open directory in the root shell launching jail(8) or jexec(8).\n\nThis is how I recently discovered the pam_xdg() file descriptor leak, fixed in -CURRENT on 08/30 (06986e899972) and MFCed to 14-STABLE on 09/03 (9e8d504bb5a1) (13-STABLE not concerned).  Given the tests performed by Alex, this is not the exact problem here (else he wouldn't be able to reproduce it on a recent snapshot of -CURRENT), but might be the same kind of problem.\n\n@Alex\nI'd suggest a couple of things:\n1. Report the output of 'fstat -p $$' from the shells used to launch the jail(8) or jexec(8) commands, both in the succeeding and failing cases.\n2. Launch and keep running this dtrace script, then launch a failing 'jexec':\ndtrace -n 'fbt::mac_vnode_check_chroot:return,fbt::change_dir:return,fbt::pwd_chroot_chdir:return /(int)arg1 == EPERM/ { stack(); }'\nYou shouldn't get much output from it, so you can keep it running for a while.  Try to correlate its new outputs with your actions (particular launches), and post all that here.\n\nThanks and regards."
+}

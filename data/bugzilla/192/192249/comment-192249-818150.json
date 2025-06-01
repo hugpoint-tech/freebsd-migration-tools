@@ -1,0 +1,8 @@
+{
+ "id": 818150,
+ "bug_id": 192249,
+ "attachment_id": 0,
+ "creation_time": "2015-04-02T20:23:40Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "Author: kib\nDate: Thu Apr  2 20:14:51 2015\nNew Revision: 281003\nURL: https://svnweb.freebsd.org/changeset/base/281003\n\nLog:\n  Speed up symbol lookup for the amd64 kernel modules.\n  \n  Amd64 uses relocatable object files as the modules format.  It is good\n  WRT not having unneeded overhead for PIC code, in particular, due to\n  absence of useless GOT and PLT.  But the cost is that the module\n  linking process cannot use hash to speed up the symbol lookup, and\n  that each reference to the symbol requiring a relocation, instead of\n  single-place relocation in GOT.\n  \n  Cache the successfull symbol lookup results in the module symbol\n  table, using the newly allocated SHN_FBSD_CACHED value from\n  SHN_LOOS-HIOS range as an indicator.  The SHN_FBSD_CACHED together\n  with the non-existent definition of the found symbol are reverted\n  after successfull relocations, which is done under kld_sx lock, so it\n  should not be visible to other consumers of the symbol table.\n  \n  Submitted by:\tConrad Meyer\n  Differential Revision:  https://reviews.freebsd.org/D1718\n  MFC after:\t3 weeks\n\nModified:\n  head/sys/kern/link_elf_obj.c\n  head/sys/sys/elf_common.h"
+}

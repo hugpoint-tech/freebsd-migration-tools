@@ -1,0 +1,8 @@
+{
+ "id": 1205845,
+ "bug_id": 263073,
+ "attachment_id": 232981,
+ "creation_time": "2022-04-05T20:53:56Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 232981\nTest case demonstrating the bug, and a solution\n\nThe Xstosbt functions all contain an integer overflow for input values of 2 seconds or greater.  The cause is a comparison against the SBT_1S constant, which was probably intended precisely to prevent such an overflow, but it's the wrong constant.  Instead of \"one second in sbintime units\", it should be \"one second in the input type's units\".\n\nA visible symptom of this bug is the ZFS's write throttle.  On a very heavily loaded system ZFS will sometimes decide to delay a thread by over 2 seconds.  dmu_tx_delay will trigger the overflow in ustosbt, resulting in a delay of over 4000 seconds instead.  Very frustrating!  The bug was present in FreeBSD 12, too.  But there ZFS's logic was different, so the symptom was that any delay of \u003e 2 seconds would turn into a delay of \u003c 2 seconds.  Not as noticeable.\n\nThe bug was introduced in revision 68f57679d66016ba4625f5bf8a99447bbae84fda (SVN r340664).  Before that there was a different overflow bug."
+}

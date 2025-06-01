@@ -1,0 +1,8 @@
+{
+ "id": 1137730,
+ "bug_id": 248516,
+ "attachment_id": 0,
+ "creation_time": "2020-12-23T02:31:18Z",
+ "creator": "jrtc27@freebsd.org",
+ "text": "Did you try loading the final linux64 module? It looks from your diff like llvm-objcopy hasn't created the _binary_$file symbols in the first place and so the symbol table doesn't exist (hence the error). I expect you will get an error like `link_elf: symbol _binary_linux_locore_o_end undefined` when trying to load the resulting module, something which I see downstream in CheriBSD built with LLVM for Morello.\n\nso I think there are two bugs in play:\n\n1. elftoolchain's strip doesn't like being fed an ELF with no .symtab\n\n2. llvm-objcopy isn't creating the _binary_$file symbols\n\nLooking more closely at 2, it appears that llvm-objcopy erroneously applies -S to the output file when using -I binary; it's meant to skip copying relocation and symbol information from the source file, but presumably it gets confused and forgets that the relocation and symbol information it's generating is self-constructed."
+}

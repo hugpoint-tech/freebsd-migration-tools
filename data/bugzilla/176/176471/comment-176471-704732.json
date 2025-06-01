@@ -1,0 +1,8 @@
+{
+ "id": 704732,
+ "bug_id": 176471,
+ "attachment_id": 0,
+ "creation_time": "2013-05-22T18:13:21Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: gibbs\nDate: Wed May 22 17:13:03 2013\nNew Revision: 250913\nURL: http://svnweb.freebsd.org/changeset/base/250913\n\nLog:\n  Correct panic on detach of Xen PV network interfaces.\n  \n  dev/xen/netfront:\n      In netif_free(), properly stop the interface and drain any pending\n      timers prior to disconnecting from the backend device.\n  \n      Remove all media and detach our interface object from the system\n      prior to deleting it.\n  \n  PR:\t\tkern/176471\n  Submitted by:\tRoger Pau Monne \u003croger.pau@citrix.com\u003e\n  Reviewed by:\tgibbs\n  MFC after:\t1 week\n\nModified:\n  head/sys/dev/xen/netfront/netfront.c\n\nModified: head/sys/dev/xen/netfront/netfront.c\n==============================================================================\n--- head/sys/dev/xen/netfront/netfront.c\tWed May 22 16:33:28 2013\t(r250912)\n+++ head/sys/dev/xen/netfront/netfront.c\tWed May 22 17:13:03 2013\t(r250913)\n@@ -2171,10 +2171,14 @@ netfront_detach(device_t dev)\n static void\n netif_free(struct netfront_info *info)\n {\n+\tXN_LOCK(info);\n+\txn_stop(info);\n+\tXN_UNLOCK(info);\n+\tcallout_drain(\u0026info-\u003exn_stat_ch);\n \tnetif_disconnect_backend(info);\n-#if 0\n-\tclose_netdev(info);\n-#endif\n+\tifmedia_removeall(\u0026info-\u003esc_media);\n+\tether_ifdetach(info-\u003exn_ifp);\n+\tif_free(info-\u003exn_ifp);\n }\n \n static void\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

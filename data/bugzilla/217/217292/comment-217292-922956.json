@@ -1,0 +1,8 @@
+{
+ "id": 922956,
+ "bug_id": 217292,
+ "attachment_id": 0,
+ "creation_time": "2017-02-22T12:03:11Z",
+ "creator": "crest@bultmann.eu",
+ "text": "The ipfw lookup action allows ipfw to match the specified field in a packet against a table. I wanted to use this to dynamically allow/deny TCP and UDP ports without changing the ruleset itself.\n\nA reduced version of the ipfw script looks like this:\n\n    # Create the table\n    ipfw table tcp_open create type number algo number:array\n    \n    # Apply existing state\n    ipfw add check-state\n    \n    # Establish new state\n    ipfw add allow tcp from any to any lookup dst-port tcp_open keep-state setup\n\n    # Open port 22/tcp\n    ipfw table tcp_open add 22\n\nThis works as expected for IPv4, but the IPv6 code path in sys/netpfil/ipfw/ip_fw2.c:1517 can't deal with anything other than lookups on the source/destination IPv6 address yet neither does the ipfw manpage mention this limitation nor does ipfw refuse to load rules which can match IPv6 packets against lookup actions on fields other than the IP addresses.\n\nIn my ruleset this \"just\" blocked all incoming IPv6 connections, but in other rulesets it could just as easily expose IPv6 services to attackers."
+}

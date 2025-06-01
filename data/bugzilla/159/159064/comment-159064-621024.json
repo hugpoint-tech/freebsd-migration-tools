@@ -1,0 +1,8 @@
+{
+ "id": 621024,
+ "bug_id": 159064,
+ "attachment_id": 0,
+ "creation_time": "2011-07-20T20:10:10Z",
+ "creator": "samm@FreeBSD.org",
+ "text": "I found that my dtrace scripts perfectly running on -CURRENT failing with strange messages on -STABLE. This is example:\n\nbsd# dtrace -n 'device_get_softc:entry{printf(\"%s\",stringof(args[0]-\u003enameunit))}'\ndtrace: invalid probe specifier device_get_softc:entry{printf(\"%s\",stringof(args[0]-\u003enameunit))}: in action list: failed to resolve translated type for args[0]\n\n\nargs[0] should be \"struct device\" type. After debugging i found that it fail in libdrace and fix is already commited to the the HEAD.\n\nSee http://svnweb.freebsd.org/base/head/cddl/contrib/opensolaris/lib/libdtrace/common/dt_lex.l?r1=209305\u0026r2=209358 for the actual fix. After applying the patch system resolving symbol correctly:\n\nbsd# dtrace -n 'device_get_softc:entry{printf(\"%s\",stringof(args[0]-\u003enameunit))}'\ndtrace: description 'device_get_softc:entry' matched 1 probe\ndtrace: buffer size lowered to 2m\n^C\nCPU     ID                    FUNCTION:NAME\n  0  19594           device_get_softc:entry est0\n  7  19594           device_get_softc:entry cpufreq0\n  7  19594           device_get_softc:entry cpufreq0\n\nFix: bsd# diff -u dt_lex.l.orig dt_lex.l.new \nHow-To-Repeat: Run dtrace -n 'device_get_softc:entry{printf(\"%s\",stringof(args[0]-\u003enameunit))}'\non 8-STABLE with dtrace enabled kernel"
+}

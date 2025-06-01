@@ -1,0 +1,8 @@
+{
+ "id": 923609,
+ "bug_id": 217247,
+ "attachment_id": 0,
+ "creation_time": "2017-02-27T19:15:58Z",
+ "creator": "stephane_freebsd@lesimple.fr",
+ "text": "(In reply to Adrian Chadd from comment #2)\n\nCompiled HEAD this morning, namely base r314326 and booted it.\nIt does behave differently: at boot I couldn't observe the slowdown.\n\nHowever after some digging, I found out that HEAD's /etc/default/rc.conf is different and now contains:\n\n\u003e performance_cx_lowest=\"NONE\"\n\nWhere 11.0R contained\n\n\u003e performance_cx_lowest=\"Cmax\"\n\n(introduced by base r265474)\n\nOn my system, NONE translates to C1, as shown by sysctl -a, so that's why it behaves properly: it never tries to use C2 or C3.\n\nI tried to manually set dev.cpu.X.cx_lowest to C2, and see if the slowdown was still there, but it wasn't. However sysctl indicates that my setting is completely ignored and the system always uses C1, as seen by cx_usage:\n\ndev.cpu.0.cx_method: C1/hlt C2/io C3/io\ndev.cpu.0.cx_usage_counters: 4617 0 0\ndev.cpu.0.cx_usage: 100.00% 0.00% 0.00% last 49467us\ndev.cpu.0.cx_lowest: C2\ndev.cpu.0.cx_supported: C1/1/0 C2/2/1 C3/3/85\ndev.cpu.0.%parent: acpi0\ndev.cpu.0.%pnpinfo: _HID=none _UID=0\ndev.cpu.0.%location: handle=\\_PR_.P001\ndev.cpu.0.%driver: cpu\ndev.cpu.0.%desc: ACPI CPU\n\nSo this *is* indeed different from 11.0R. For some reason the kernel now chooses to keep C1 at all times, even if I tell it that C2 is okay. If you want me to try anything, just ask, I'm keeping HEAD's memstick.img around just in case."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 892980,
+ "bug_id": 211836,
+ "attachment_id": 0,
+ "creation_time": "2016-08-15T13:44:41Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "So, it looks like this is enough to fix the panic:\n\nIndex: sys/net/netisr.c\n===================================================================\n--- sys/net/netisr.c\t(revision 304101)\n+++ sys/net/netisr.c\t(working copy)\n@@ -1014,7 +1014,7 @@ netisr_queue_internal(u_int proto, struct mbuf *m,\n \n \tdosignal = 0;\n \terror = 0;\n-\tnwsp = DPCPU_ID_PTR(cpuid, nws);\n+\tnwsp = DPCPU_ID_PTR(nws_array[cpuid % nws_count], nws);\n \tnpwp = \u0026nwsp-\u003enws_work[proto];\n \tNWS_LOCK(nwsp);\n \terror = netisr_queue_workstream(nwsp, proto, npwp, m, \u0026dosignal);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 40418,
+ "bug_id": 13293,
+ "attachment_id": 0,
+ "creation_time": "1999-08-21T17:50:00Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "\nSigaction is supposed to check if you change the handler of SIGKILL\nor SIGSTOP to anything but SIG_DFL.  In revision 1.57 one instance\ntoo many of sa-\u003esa_handler got replaced by ps-\u003eps_sigact[signum].\nResultingly it checks if the current handler is SIG_DFL instead of\nthe new handler being SIG_DFL. This means you can create un-killable\nun-stoppable processes.\n\nFix: \n\n--- kern_sig.c\t1999/08/16 18:13:38\t1.60\n+++ kern_sig.c\t1999/08/21 16:06:30\n@@ -155,11 +155,11 @@\n \tif (uap-\u003ensa) {\n \t\tif ((error = copyin((caddr_t)uap-\u003ensa, (caddr_t)sa,\n \t\t    sizeof (vec))))\n \t\t\treturn (error);\n \t\tif ((signum == SIGKILL || signum == SIGSTOP) \u0026\u0026\n-\t\t    ps-\u003eps_sigact[signum] != SIG_DFL)\n+\t\t    sa-\u003esa_handler != SIG_DFL)\n \t\t\treturn (EINVAL);\n \t\tsetsigvec(p, signum, sa);\n \t}\n \treturn (0);\n }\nHow-To-Repeat: \nThe following program is unkillable.\n\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csignal.h\u003e\n\nvoid sighand(int sig)\n{\n        printf(\"Caught signal %d\\n\",sig);\n}\n\nint main(int argc,char **argv)\n{\n        int i;\n\n        for( i = 0 ; i \u003c 32 ; i++ )\n                signal(i,sighand);\n\n        while(1);\n\n        exit(0);\n}"
+}

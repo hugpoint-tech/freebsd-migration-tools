@@ -1,0 +1,8 @@
+{
+ "id": 1055360,
+ "bug_id": 238781,
+ "attachment_id": 0,
+ "creation_time": "2019-06-23T19:26:15Z",
+ "creator": "lwhsu@FreeBSD.org",
+ "text": "sys.netinet.socket_afinet.socket_afinet_bind_zero does not work when mac_portacl(4) loaded, while mac_portacl is needed for tests under /usr/tests/sys/mac/portacl.\n\nFor this simplified program:\n\n#include \u003csys/errno.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetinet/in.h\u003e\n\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n\nint main(int argc, const char *argv[])\n{\n        int sd, rc;\n        struct sockaddr_in sin;\n\n        sd = socket(PF_INET, SOCK_DGRAM, 0);\n        bzero(\u0026sin, sizeof(sin));\n        //sin.sin_family = AF_INET;\n        rc = bind(sd, (struct sockaddr *)\u0026sin, sizeof(sin));\n        if (rc \u003c 0) {\n                perror(\"bind failed\");\n        } else {\n                printf(\"bind ok.\\n\");\n        }\n        close(sd);\n        return 0;\n}\n\n\nWhen mac_portacl(4) is loaded, it outputs:\n\nbind failed: Invalid argument\n\nAnd we found that uncomment line 16, sin.sin_family = AF_INET, will make bind(2) work. \n\nFrom bz:\n\nit could be that portacl enforces the error because of the missing sin_family which we by policy do not enforce for AF_INET (per comment in in_pcb.c [1]).\n\n[1] https://svnweb.freebsd.org/base/head/sys/netinet/in_pcb.c?annotate=346677#l816"
+}

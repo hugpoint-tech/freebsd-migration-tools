@@ -1,0 +1,8 @@
+{
+ "id": 888160,
+ "bug_id": 210884,
+ "attachment_id": 0,
+ "creation_time": "2016-07-14T19:22:42Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "(In reply to Gleb Smirnoff from comment #46)\n\nLook at this piece of code:\n\n        if (tick \u003c 0) {\n                ln-\u003ela_expire = 0;\n                ln-\u003eln_ntick = 0;\n                canceled = callout_stop(\u0026ln-\u003elle_timer);\n        } else {\n                ln-\u003ela_expire = time_uptime + tick / hz;\n                LLE_ADDREF(ln);\n                if (tick \u003e INT_MAX) {\n                        ln-\u003eln_ntick = tick - INT_MAX;\n                        canceled = callout_reset(\u0026ln-\u003elle_timer, INT_MAX,\n                            nd6_llinfo_timer, ln);\n                } else {\n                        ln-\u003eln_ntick = 0;\n                        canceled = callout_reset(\u0026ln-\u003elle_timer, tick,\n                            nd6_llinfo_timer, ln);\n                }\n        }\n        if (canceled \u003e 0)\n                LLE_REMREF(ln);\n\nIt expects both callout_stop() and callout_reset() to return 1, in case the callout was scheduled, regardless of being serviced or not ????\n\n--HPS"
+}

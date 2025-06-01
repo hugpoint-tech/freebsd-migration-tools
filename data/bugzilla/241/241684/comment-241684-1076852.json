@@ -1,0 +1,8 @@
+{
+ "id": 1076852,
+ "bug_id": 241684,
+ "attachment_id": 0,
+ "creation_time": "2019-11-25T13:50:08Z",
+ "creator": "trasz@FreeBSD.org",
+ "text": "When you mount a filesystem, permissions on a mountpoint are taken from permissions from the mounted filesystem root directory.  Basically:\n\n% ll\ntotal 6\ndrwxr-xr-x   3 root  wheel   512 Nov 25 13:04 .\ndrwxr-xr-x  23 root  wheel  1024 Nov 25 13:04 ..\ndrwxr-xr-x   3 root  wheel   512 Nov 25 13:44 md0\ntrasz@v2:/media % ll\ntotal 6\ndrwxr-xr-x   3 root  wheel   512 Nov 25 13:04 .\ndrwxr-xr-x  23 root  wheel  1024 Nov 25 13:04 ..\ndrwxr-xr-x   3 root  wheel   512 Nov 25 13:44 md0\ntrasz@v2:/media % cd md0 \ntrasz@v2:/media/md0 % ls -al\ntotal 9\ndrwxrwxrwx  3 root  wheel     512 Nov 25 13:47 .\ndrwxr-xr-x  3 root  wheel     512 Nov 25 13:04 ..\ndrwxrwxr-x  2 root  operator  512 Nov 25 13:46 .snap\ntrasz@v2:/media/md0 % cd ..\ntrasz@v2:/media % ls -al\ntotal 9\ndrwxr-xr-x   3 root  wheel   512 Nov 25 13:04 .\ndrwxr-xr-x  23 root  wheel  1024 Nov 25 13:04 ..\ndrwxrwxrwx   3 root  wheel   512 Nov 25 13:47 md0\n\nIn this case, \"ls -al\" triggered mounting an UFS-formatted md0, which, before the experiment, had \"chmod 0777 .\" done to its root inode.\n\nWhat I'm getting at - the permissions on autofs nodes shouldn't matter at all; it's the mounted filesystem's permissions that's being used for the access checks.  Could you tell me some more about your scenario?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1154557,
+ "bug_id": 254774,
+ "attachment_id": 0,
+ "creation_time": "2021-04-05T03:13:20Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Brandon Bergren from comment #2)\nThe drv reallocation should not affect dl_iterate_phdr() result.\n\nThat said, for dl_iterate_phdr() for dynamic binary, the fix is indeed simple:\ndiff --git a/libexec/rtld-elf/rtld.c b/libexec/rtld-elf/rtld.c\nindex 733c3c80b70f..0ded117b1019 100644\n--- a/libexec/rtld-elf/rtld.c\n+++ b/libexec/rtld-elf/rtld.c\n@@ -3909,13 +3909,16 @@ dlinfo(void *handle, int request, void *p)\n static void\n rtld_fill_dl_phdr_info(const Obj_Entry *obj, struct dl_phdr_info *phdr_info)\n {\n+\ttls_index ti;\n \n \tphdr_info-\u003edlpi_addr = (Elf_Addr)obj-\u003erelocbase;\n \tphdr_info-\u003edlpi_name = obj-\u003epath;\n \tphdr_info-\u003edlpi_phdr = obj-\u003ephdr;\n \tphdr_info-\u003edlpi_phnum = obj-\u003ephsize / sizeof(obj-\u003ephdr[0]);\n \tphdr_info-\u003edlpi_tls_modid = obj-\u003etlsindex;\n-\tphdr_info-\u003edlpi_tls_data = obj-\u003etlsinit;\n+\tti.ti_module = obj-\u003etlsindex;\n+\tti.ti_offset = 0;\n+\tphdr_info-\u003edlpi_tls_data = __tls_get_addr(\u0026ti);\n \tphdr_info-\u003edlpi_adds = obj_loads;\n \tphdr_info-\u003edlpi_subs = obj_loads - obj_count;\n }\n\nBut for static binary where libc TLS implementation is used, we do not provide\nworking __tls_get_addr().  Do you need this for static binaries, or it would\nbe only the consistency that is hurt if libc implementation is provided later?"
+}

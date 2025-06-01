@@ -1,0 +1,8 @@
+{
+ "id": 554136,
+ "bug_id": 145904,
+ "attachment_id": 0,
+ "creation_time": "2010-04-21T06:30:01Z",
+ "creator": "jrm@darktide.net",
+ "text": "During the 'precmd' phase of /etc/rc.d/named, the 'named-checkconf' call doesn't take into account the $named_chrootdir variable and due to that, it doesn't called named-checkconf with a chroot set. This can cause issues if you are running a chroot'd named, and your configurations will not verify without the chroot.\n\nIf this were to behave correctly, the variable $named_chrootdir should be checked to see whether it's set and 'named-checkconf' called appropriately:\n\nSomething like:\n\n        if [ -n \"$named_chrootdir\" ];; then\n                ${command%/named}/named-checkconf -t $named_chrootdir $named_conf || err 3 'named-checkconf for $named_conf failed'\n        else\n                ${command%/named}/named-checkconf $named_conf || err 3 'named-checkconf for $named_conf failed'\n        fi\n\nAs my named.conf is setup in a specific way, due to these bad checks, I've had to modify my /etc/rc.d/named in the above way so that the config checks pass as they wouldn't otherwise.\n\nFix: \n\nA suggested fix is provided above, wherein the $named_chrootdir variable is checked before calling named-checkconf in an appropriate way.\nHow-To-Repeat: Set your named.conf to reference something that's absolute to the named chroot, and watch the init script fail."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 701167,
+ "bug_id": 175674,
+ "attachment_id": 0,
+ "creation_time": "2013-02-03T05:25:25Z",
+ "creator": "keramida@FreeBSD.org",
+ "text": "On 2013-01-29 18:03, Jukka Ukkonen \u003cjau@iki.fi\u003e wrote:\n\u003e \u003eNumber:         175674\n\u003e \u003eCategory:       kern\n\u003e \u003eSynopsis:       sem_open() should use O_EXLOCK with open() instead of a separate flock() call\n\n\u003e \u003eEnvironment:\n\u003e FreeBSD sleipnir 9.1-STABLE FreeBSD 9.1-STABLE #2 r246056M: Tue Jan 29 07:33:01 EET 2013     root@sleipnir:/usr/obj/usr/src/sys/Sleipnir  amd64\n\u003e \u003eDescription:\n\u003e sem_open() is calling flock() to set a lock on a newly created file descriptor.\n\u003e That is pointless. The open() call a few lines before the flock() could, and\n\u003e in my opinion should, be done with the O_EXLOCK flag set.\n\nIt's also a bit safer to obtain the exclusive lock atomically before\nopen() returns. Waiting for open() to complete and then calling flock()\nhas a race condition.\n\nJilles and David, do you think this patch looks ok for libc?\n\n\u003e \u003e \n\u003e --- lib/libc/gen/sem_new.c.flock\t2012-11-09 18:50:05.000000000 +0200\n\u003e +++ lib/libc/gen/sem_new.c\t2012-11-09 18:44:59.000000000 +0200\n\u003e @@ -198,11 +198,13 @@\n\u003e  \t\tgoto error;\n\u003e  \t}\n\u003e  \n\u003e -\tfd = _open(path, flags|O_RDWR|O_CLOEXEC, mode);\n\u003e +\tfd = _open(path, flags|O_RDWR|O_CLOEXEC|O_EXLOCK, mode);\n\u003e  \tif (fd == -1)\n\u003e  \t\tgoto error;\n\u003e +#if 0\n\u003e  \tif (flock(fd, LOCK_EX) == -1)\n\u003e  \t\tgoto error;\n\u003e +#endif\n\u003e  \tif (_fstat(fd, \u0026sb)) {\n\u003e  \t\tflock(fd, LOCK_UN);\n\u003e  \t\tgoto error;"
+}

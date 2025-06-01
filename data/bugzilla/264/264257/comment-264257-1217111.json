@@ -1,0 +1,8 @@
+{
+ "id": 1217111,
+ "bug_id": 264257,
+ "attachment_id": 0,
+ "creation_time": "2022-06-24T14:35:21Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "The offending TCP sessions we've seen so far all seem to be regular https sessions. For (yet unknown) reasons, rarely the FIN bit seems to get accounted more than once - up to 6 times, from one of the logging patched kernels.\n\nWith SACK rescue retransmissions, that can lead to having the sequence number of one or more FIN bits included in the block which is to be retransmitted - and the panic happens, when the data byte at the sequence number of the FIN bit is tried to be retranmitted...\n\nIn your case, even though you didn't have SACK rescue retransmissions enabled, the client of the offending session appears to have SACK'ed the 2nd retransmission of the (and empty) FIN packet with a \"too high\" sequence number, in effect resulting in the same issue. This should be happening much less frequently than with the SACK rescue retransmissions.\n\nAt the same time, it appears, that double-counting of FIN bits happens quite frequently, but is not easy to reproduce. Thus we are currently working on a patch which exposes this (in INVARIANTS kernels with panics, in production kernels by logging that unexpected state, and clearing it \"on the fly\").\n\nSee D35446"
+}

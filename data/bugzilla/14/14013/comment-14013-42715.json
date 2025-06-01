@@ -1,0 +1,8 @@
+{
+ "id": 42715,
+ "bug_id": 14013,
+ "attachment_id": 0,
+ "creation_time": "1999-09-28T15:30:00Z",
+ "creator": "dr@domix.de",
+ "text": "\n\tWhen you try to compile the bounce-1.0 port (/usr/ports/net/bounce),\n\tyou'll get two compiler warnings:\n\n\tbounce.c:186: warning: passing arg 2 of \n\t`bind' from incompatible pointer type\n\n\tbounce.c:206: warning: passing arg 2 of \n\t`accept' from incompatible pointer type\n\nFix: \n\nI've done a little patch which changes bounce.c:186\n\t'if (bind(srv_fd,\u0026srv_addr,sizeof(srv_addr))==-1) {' to\n\t'if (bind(srv_fd,(struct sockaddr *)\u0026srv_addr,sizeof(srv_addr))==-1) {'\n\tand bounce.c:206 'rem_fd=accept(srv_fd,\u0026rem_addr,\u0026len);' to\n\t'rem_fd=accept(srv_fd,(struct sockaddr *)\u0026rem_addr,\u0026len);' \n\n\there's the patch: \n\n\t--- bounce.c.orig       Tue Sep 28 16:01:01 1999\n\t+++ bounce.c    Tue Sep 28 16:01:40 1999\n\t@@ -183,7 +183,7 @@\n\t\t srv_addr.sin_addr.s_addr=htonl(INADDR_ANY);\n\t\t srv_addr.sin_port=htons(myport);\n\t\t srv_fd=socket(PF_INET,SOCK_STREAM,0);\n\t-    if (bind(srv_fd,\u0026srv_addr,sizeof(srv_addr))==-1) {\n\t+    if (bind(srv_fd,(struct sockaddr *)\u0026srv_addr,sizeof(srv_addr))==-1) {\n\t\tperror(\"bind\");\n\t\t\t exit(-1);\n\t\t}\n\t@@ -203,7 +203,7 @@\n\t\t if (fork()) exit(0);\n\t\t while (1) {\n\t\tlen=sizeof(rem_addr);\n\t-   rem_fd=accept(srv_fd,\u0026rem_addr,\u0026len);\n\t+   rem_fd=accept(srv_fd,(struct sockaddr *)\u0026rem_addr,\u0026len);\n\t\tif (rem_fd\u003c0) {\n\t\t  if (errno==EINTR) continue;\n\t\t  exit(-1);\nHow-To-Repeat: \n\tcd /usr/ports/net/bounce ; make"
+}

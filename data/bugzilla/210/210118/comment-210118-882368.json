@@ -1,0 +1,8 @@
+{
+ "id": 882368,
+ "bug_id": 210118,
+ "attachment_id": 0,
+ "creation_time": "2016-06-07T19:00:38Z",
+ "creator": "freebsd@cod3r.com",
+ "text": "First discovered on FreeNAS 9.10 and reproduced on FreeBSD 10.3 with Samba 4.3.8.  Tested on Ubuntu 14.04 with Samba 4.3.9 and it does not exhibit this problem:\n\nUsing Samba with `vfs objects = fruit` and `fruit:encoding = native` allows Mac clients to see files with illegal characters as far as SMB is concerned.  For example, a file with a `:` character in it is normally mangled to an 8.3 over SMB, but the above options allow Mac clients to see the original filename.  However, any attempt to access such a file or directory results in a File Not Found kind of error on the client.  Testing the same smb.conf file on a Ubuntu linux 14.04 system resulted in the files being visible with the original filenames as well as normal access to these files.\n\nSteps to reproduce:\nInstall Samba and put the following in smb4.conf:\nvfs objects = catia fruit\nfruit:encoding = native\n\nOn the server in the share:\necho \"This is a test\" \u003e \"A name with a : in it.txt\"\n\nOn the mac client, connect to the share and cd to it:\nmore \"A name with a : in it.txt\"\n\nYou will see `A\\ name\\ with\\ a\\ :\\ in\\ it.txt: No such file or directory`\n\nOn the mac client:\ntouch \"Another name with a : in it.txt\"\necho \"This is a test\" \u003e \"A Third name with a : in it.txt\"\n\nNotice that in both cases the file creation succeeds and the file with the correct name is visible both on the client and server, but the client still cannot read it.  In the last case, the file's contents are visible on the server."
+}

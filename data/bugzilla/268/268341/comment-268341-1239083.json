@@ -1,0 +1,8 @@
+{
+ "id": 1239083,
+ "bug_id": 268341,
+ "attachment_id": 0,
+ "creation_time": "2022-12-12T20:35:04Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "During an exp-run for llvm 15 (see bug 265425), it turned out that archivers/rpm4 failed to build with clang 15:\n\n  tools/rpmuncompress.c:101:23: warning: call to undeclared function 'basename'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]\n              const char *bn = basename(fn);\n                               ^\n  tools/rpmuncompress.c:101:18: error: incompatible integer to pointer conversion initializing 'const char *' with an expression of type 'int' [-Wint-conversion]\n              const char *bn = basename(fn);\n                          ^    ~~~~~~~~~~~~\n\nThis is because basename(3) is defined in \u003clibgen.h\u003e. After this include is added to rpmuncompress.c, link errors still occur:\n\n  ld: error: undefined symbol: WIFEXITED\n  \u003e\u003e\u003e referenced by rpmuncompress.c\n  \u003e\u003e\u003e               tools/rpmuncompress.o:(main)\n\n  ld: error: undefined symbol: WEXITSTATUS\n  \u003e\u003e\u003e referenced by rpmuncompress.c\n  \u003e\u003e\u003e               tools/rpmuncompress.o:(main)\n\nThis is because WIFEXITED() and WEXITSTATUS() are macros defined in \u003csys/wait.h\u003e."
+}

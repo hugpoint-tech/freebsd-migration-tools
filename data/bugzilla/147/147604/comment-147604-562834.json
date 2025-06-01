@@ -1,0 +1,8 @@
+{
+ "id": 562834,
+ "bug_id": 147604,
+ "attachment_id": 0,
+ "creation_time": "2010-06-07T01:10:02Z",
+ "creator": "jimmy@mammothcheese.ca",
+ "text": "Timer events set with kevent() do not get deleted when the associated descriptor is\nclosed.  If this behavior is intentional, then the manual page should be modified to\nreflect this.\n\nHow-To-Repeat: --- test.c begins here ---\n#include \u003csys/types.h\u003e\n#include \u003csys/event.h\u003e\n#include \u003csys/time.h\u003e\n\n#include \u003cstdlib.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cerrno.h\u003e\n\nint main( int argc, char **argv )\n{\n   struct kevent inqueue[ 1 ], outqueue[ 1 ];\n   int kq, inq;\n\n   if (( kq = kqueue()) \u003c 0 )\n   {\n      fprintf( stderr, \"kqueue(): %s\", strerror( errno ));\n      exit( 1 );\n   }\n\n   inqueue[ 0 ].ident = 0;\n   inqueue[ 0 ].filter = EVFILT_TIMER;\n   inqueue[ 0 ].fflags = 0;\n   inqueue[ 0 ].data = 1000;\n   inqueue[ 0 ].flags = EV_ADD | EV_ENABLE;\n   inqueue[ 0 ].udata = NULL;\n\n   for( inq = 1; ; inq = 0 )\n   {\n      if ( kevent( kq, inqueue, inq, outqueue, 1, NULL ) \u003e 0 \u0026\u0026\n           outqueue[ 0 ].filter == EVFILT_TIMER )\n      {\n         write( 1, \"TIMEOUT\\n\", 8 );\n\n         if ( inq )\n            close( 0 );\n      }\n   }\n}\n--- test.c ends here ---"
+}

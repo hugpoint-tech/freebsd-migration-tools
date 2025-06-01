@@ -1,0 +1,8 @@
+{
+ "id": 566375,
+ "bug_id": 148296,
+ "attachment_id": 0,
+ "creation_time": "2010-07-14T15:15:49Z",
+ "creator": "olgeni@FreeBSD.org",
+ "text": "Hello,\n\nThis should do it, but I don't have the right configuration to test it \nnow. However, the \"else continue\" should bail out of the loop if a \nvdev was spotted in the top level device.\n\n--- zfs.c.orig\t2010-06-14 04:09:06.000000000 +0200\n+++ zfs.c\t2010-07-14 16:04:49.808159404 +0200\n@@ -412,16 +412,23 @@\n  \t\t */\n  \t\tif (vdev_probe(vdev_read, (void*) (uintptr_t) fd, 0))\n  \t\t\tclose(fd);\n+\t\telse\n+\t\t\tcontinue;\n+\n+\t\tfor (slice = 1; slice \u003c= 4; slice++) {\n+\t\t\tsprintf(devname, \"disk%ds%d:\", unit, slice);\n+\t\t\tfd = open(devname, O_RDONLY);\n+\t\t\tif (fd == -1)\n+\t\t\t\tcontinue;\n+\t\t\tif (vdev_probe(vdev_read, (void*) (uintptr_t) fd, 0))\n+\t\t\t\tclose(fd);\n+\t\t}\n\n  \t\tfor (slice = 1; slice \u003c= 128; slice++) {\n  \t\t\tsprintf(devname, \"disk%dp%d:\", unit, slice);\n  \t\t\tfd = open(devname, O_RDONLY);\n-\t\t\tif (fd == -1) {\n-\t\t\t\tsprintf(devname, \"disk%ds%d:\", unit, slice);\n-\t\t\t\tfd = open(devname, O_RDONLY);\n-\t\t\t\tif (fd == -1)\n-\t\t\t\t\tcontinue;\n-\t\t\t}\n+\t\t\tif (fd == -1)\n+\t\t\t\tbreak;\n  \t\t\tif (vdev_probe(vdev_read, (void*) (uintptr_t) fd, 0))\n  \t\t\t\tclose(fd);\n  \t\t}\n\n-- \njimmy"
+}

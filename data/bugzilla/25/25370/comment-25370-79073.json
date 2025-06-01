@@ -1,0 +1,8 @@
+{
+ "id": 79073,
+ "bug_id": 25370,
+ "attachment_id": 0,
+ "creation_time": "2001-03-19T20:56:20Z",
+ "creator": "sos@freebsd.dk",
+ "text": "It seems Matthew Emmerton wrote:\n\u003e After considerable time learning the ata code, I've created an updated patch\n\u003e which should fix the problem.\n\u003e \n\u003e \u003cPATCH\u003e\n\u003e --- sys/dev/ata/atapi-all.c.orig        Mon Mar 19 14:48:51 2001\n\u003e +++ sys/dev/ata/atapi-all.c     Mon Mar 19 14:49:00 2001\n\u003e @@ -391,7 +391,7 @@\n\u003e                 atapi_read(request, length);\n\u003e             else\n\u003e                 atapi_write(request, length);\n\u003e -           /* FALLTHROUGH */\n\u003e +           return ATA_OP_CONTINUES;\n\u003e \n\u003e         case ATAPI_P_ABORT:\n\u003e         case ATAPI_P_DONE:\n\u003e \u003c/PATCH\u003e\n\u003e boot output:\n\u003e (null): MODE_SENSE_BIG command timeout - resetting\n\u003e ata0: resetting devices .. done\n\u003e (null): MODE_SENSE_BIG DONEDRQ\n\u003e (null): read data overrun 65526/1\n\u003e (null): MODE_SENSE_BIG command timeout - resetting\n\u003e ata0: resetting devices .. done\n\u003e (null): read data overrun 29/0\n\u003e acd0: CDROM \u003cMATSHITA CR-581\u003e at ata0-slave using BIOSPIO\n\nHmm, well it still sortof fails, and it breaks devices that actually\nuse ATAPI_P_DONEDRQ (which by the way is another abuse of the spec),\nsince it is meant for devices that return the DONE part of the\nprotocol together with the last part of the data. Now if you \nreturn ATA_OP_CONTINUES the driver will wait for a new interrupt \nwhich wont occur..\n\n-Søren"
+}

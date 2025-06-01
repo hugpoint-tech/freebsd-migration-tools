@@ -1,0 +1,8 @@
+{
+ "id": 46221,
+ "bug_id": 15175,
+ "attachment_id": 0,
+ "creation_time": "1999-11-30T01:50:01Z",
+ "creator": "archie@whistle.com",
+ "text": "\nSee sys/netinet/tcp_input.c, line 376:\n\n        /*\n         * Drop TCP, IP headers and TCP options.\n         */\n        m-\u003em_data += sizeof(struct tcpiphdr)+off-sizeof(struct tcphdr);\n        m-\u003em_len  -= sizeof(struct tcpiphdr)+off-sizeof(struct tcphdr);\n\nNotice that m-\u003em_pkthdr.len is not updated, and therefore the mbuf\nbecomes inconsistent.  Apparently this doesn't matter much in normal\nuse.  However, netgraph(4) is strict about checking the consistency\nof mbufs and the above omission causes a panic later on.\n\nFix: \n\nif ((m-\u003em_flags \u0026 M_PKTHDR) != 0)\n\tm-\u003em_pkthdr.len -= sizeof(struct tcpiphdr)+off-sizeof(struct tcphdr);\n\n   [ Can we always assume ((m-\u003em_flags \u0026 M_PKTHDR) != 0) here?? ]\nHow-To-Repeat: \n\tInput TCP data"
+}

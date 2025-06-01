@@ -1,0 +1,8 @@
+{
+ "id": 1113683,
+ "bug_id": 248008,
+ "attachment_id": 0,
+ "creation_time": "2020-07-16T02:43:37Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Sorry, the comments got messed up. I guess I shouldn't have done the\nattachment before submitting or something..\n\nAnyhow, here is what has gone on.\nPost r358097 (it took a while to bisect to this commit), running a kernel\nbuild over NFS on an i386 system (I also got it once doing the build on\nUFS), I've gotten hangs with many processes sleeping on \"btalloc\".\n\nRyan Libby made the following suggestions and I implemented #2, which\nfixed the hangs.\n\n   I think the patch is not complete.  It looks like the problem is that\n   for systems that do not have UMA_MD_SMALL_ALLOC, we do\n        uma_zone_set_allocf(vmem_bt_zone, vmem_bt_alloc);\n   but we haven't set an appropriate free function.  This is probably why\n   UMA_ZONE_NOFREE was originally there.  When NOFREE was removed, it was\n   appropriate for systems with uma_small_alloc.\n\n   So by default we get page_free as our free function.  That calls\n   kmem_free, which calls vmem_free ... but we do our allocs with\n   vmem_xalloc.  I'm not positive, but I think the problem is that in\n   effect we vmem_xalloc -\u003e vmem_free, not vmem_xfree.\n\n   Three possible fixes:\n    1: The one you tested, but this is not best for systems with\n    uma_small_alloc.\n    2: Pass UMA_ZONE_NOFREE conditional on UMA_MD_SMALL_ALLOC.\n    3: Actually provide an appropriate vmem_bt_free function.\n\n   I think we should just do option 2 with a comment, it's simple and it's\n   what we used to do.  I'm not sure how much benefit we would see from\n   option 3, but it's more work."
+}

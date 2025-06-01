@@ -1,0 +1,8 @@
+{
+ "id": 41624,
+ "bug_id": 13667,
+ "attachment_id": 0,
+ "creation_time": "1999-09-09T18:40:03Z",
+ "creator": "parag@cgt.com",
+ "text": " Here's a better fix.  Turns out that this 4xPPro box has two \"Orion\"\n chips in it, and the code that picks off the number of subordinate buses\n returns 255 for whatever reason.  The fix is copied from the\n fixbushigh_450nx() routine into the fixbushigh_orion() routine, which\n appears to have the same problem.\n \n The fix could be made generic and moved out of both bushigh routines if\n there are no systems out there with 255 subordinate buses.  The magic\n number 255 may mean different things to different chipsets so I settled\n for this Orion-specific fix.\n \n \n \t-- Parag Patel\n \n \n \n *** /sys/pci/pcisupport.c       Sat Sep  4 04:02:49 1999\n - --- pcisupport.c        Wed Sep  8 12:03:00 1999\n ***************\n *** 129,134 ****\n - --- 129,149 ----\n   {\n         tag-\u003esecondarybus = pci_cfgread(tag, 0x4a, 1);\n         tag-\u003esubordinatebus = pci_cfgread(tag, 0x4b, 1);\n +\n +       if (tag-\u003esubordinatebus == 255) {\n +               printf(\"fixbushigh_orion: bogus highest PCI bus %d\",\n +                      tag-\u003esubordinatebus);\n + #ifdef NBUS\n +               tag-\u003esubordinatebus = NBUS - 2;\n + #else\n +               tag-\u003esubordinatebus = 10;\n + #endif\n +               printf(\", reduced to %d\\n\", tag-\u003esubordinatebus);\n +       }\n +\n +       if (bootverbose)\n +               printf(\"fixbushigh_orion: subordinatebus is %d\\n\",\n +                       tag-\u003esubordinatebus);\n   }\n \n   static void"
+}

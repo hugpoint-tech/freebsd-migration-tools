@@ -1,0 +1,8 @@
+{
+ "id": 759280,
+ "bug_id": 188576,
+ "attachment_id": 0,
+ "creation_time": "2014-04-14T00:30:00Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Whenever an ath(4) 11n station reassociates or downgrades from aggregation to no aggregation, there's a chance that it'll hang and refuse to queue more frames.\n\nThe session needs to be fully torn down (eg ifconfig wlanX down) for things to go back to normal.\n\nFix: \n\nI actually have debugged this a little already.\n\nSo the problem seems to be that there's more than one entry point into ath_tx_tid_cleanup(). It's likely a couple of calls into the reassociation path or one into reassociate and one into aggregation teardown. I'll go figure that bit out soon.\n\nBut what it leads to is thus:\n\n* the caller causes ath_tx_tid_pause();\n* ath_tx_tid_cleanup() is called;\n* the first time this happens it sees there's 1 or more frames to cleanup, so it sets tid-\u003ecleanup_inprogress;\n* the caller then checks if that's set to 1 - if so, it assumes that it should wait until the cleanup is finished;\n* otherwise it calls ath_tx_tid_resume().\n\nIf tid-\u003ecleanup_inprogress is set to 1 then the normal TX completion path will eventually call ath_tx_comp_cleanup_unaggr() or ath_tx_comp_cleanup_aggr() which will clear the flag and resume the TID.\n\nIf a second path through ath_tx_tid_cleanup() occurs, then:\n\n* the caller pauses;\n* ath_tx_tid_cleanup() is called;\n* tid-\u003ecleanup_inprogress is set to 1, but there's no code to check whether this call actually set it or not - so it doesn't call ath_tx_tid_resume().\n\nSo once the frames complete and ath_tx_tid_resume() is called, there's still a pending paused reference and thus traffic never continues flowing."
+}

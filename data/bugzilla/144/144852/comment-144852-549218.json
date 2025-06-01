@@ -1,0 +1,8 @@
+{
+ "id": 549218,
+ "bug_id": 144852,
+ "attachment_id": 0,
+ "creation_time": "2010-03-18T11:10:04Z",
+ "creator": "faust64@gmail.com",
+ "text": "mkntfs do not work, whatever FreeBSD version.\n\nbadly ported from Linux, it wants block devices, and infinite loop when\nforcing on character device (if using libublio).\n\nalso, the libntfs uses bad defines to get disk geometry.\n\nFix: I made these two patches (for libntfs, and mkntfs)\n\nAlso:\nwith the patch mkntfs, I correct the infinite loop using libublio.\nThe problem is that ublio reads out of disk, because of UBLIO_BLOCK_SIZE defined to 262144. When reading on a entire drive, there's no problem, but when working on parts, ublio returns a negative value, not handled by mkntfs.\nbut, my patch only avoid the infinite loop. the problem is still that mkntfs failed writing the end boot sector. user would have to chkdsk under windows to repair its partition.\nI think a way to avoid that may be, for example, UBLIO_BLOCK_SIZE=`expr 63 '*' 255` mkntfs $dev.\nAnyway, without libublio support, the partition is just fine.\n\nThere's still a thing I didn't fixed: when chkdsk on 'correct' partition, it says that the $UpCase file is invalid.\nIndeed, a few differences.\nI'll make an other patch to get rid of it (it's at my office, I don't work every day)\n\n\nPatch attached with submission follows:\nHow-To-Repeat: mkntfs /dev/ad0s1\n\u003e not block device\nmkntfs /dev/ad0s1\n\u003e infinite loop\nalso, warning about bad geometry (and using pointless default values)"
+}

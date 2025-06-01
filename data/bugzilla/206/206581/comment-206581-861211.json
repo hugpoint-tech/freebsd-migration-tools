@@ -1,0 +1,8 @@
+{
+ "id": 861211,
+ "bug_id": 206581,
+ "attachment_id": 0,
+ "creation_time": "2016-01-24T16:31:43Z",
+ "creator": "ecturt@gmail.com",
+ "text": "Take a look at the start of `bxe_ioctl_nvram` from `sys/dev/bxe/bxe.c`:\n\nstatic int\nbxe_ioctl_nvram(struct bxe_softc *sc,\n                uint32_t         priv_op,\n                struct ifreq     *ifr)\n{\n    struct bxe_nvram_data nvdata_base;\n    struct bxe_nvram_data *nvdata;\n    int len;\n    int error = 0;\n\n    copyin(ifr-\u003eifr_data, \u0026nvdata_base, sizeof(nvdata_base));\n\n    len = (sizeof(struct bxe_nvram_data) +\n           nvdata_base.len -\n           sizeof(uint32_t));\n\n    if (len \u003e sizeof(struct bxe_nvram_data)) {\n        if ((nvdata = (struct bxe_nvram_data *)\n                 malloc(len, M_DEVBUF,\n                        (M_NOWAIT | M_ZERO))) == NULL) {\n            BLOGE(sc, \"BXE_IOC_RD_NVRAM malloc failed\\n\");\n            return (1);\n        }\n        memcpy(nvdata, \u0026nvdata_base, sizeof(struct bxe_nvram_data));\n    } else {\n        nvdata = \u0026nvdata_base;\n    }\n    \n    ...\n}\n\nFirstly, the result from `copyin` isn't even checked here...\n\nSecondly, no bound checks on user supplied `nvdata_base.len`, means we can get `len` to overflow (since it is a `signed int`). For example, give an input length of `0x80000000 + sizeof(uint32_t)) - (sizeof(struct bxe_nvram_data)` to get an allocation of 0 bytes, and then boom, we have heap overflow straight after:\n\n    memcpy(nvdata, \u0026nvdata_base, sizeof(struct bxe_nvram_data));"
+}

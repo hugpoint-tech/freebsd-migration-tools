@@ -1,0 +1,8 @@
+{
+ "id": 655315,
+ "bug_id": 165928,
+ "attachment_id": 0,
+ "creation_time": "2012-03-11T11:20:10Z",
+ "creator": "matt@chronos.org.uk",
+ "text": "On a machine with remote NFS mounts and ipfw *without* DEFAULT_TO_ACCEPT\n[1] compiled into the kernel, the saned and subversion rc scripts affect\nthe loading of ipfw's rules, demoting it to way down the order and the\nNETWORKING placeholder never seems to be reached. This has the effect\nof blocking mountcritremote from loading any NFS filesystems in fstab,\nhalting the boot and dropping to single user. rcorder reports many\ncircular dependencies.\n\nThis makes no sense:\n\n# $FreeBSD: ports/graphics/sane-backends/files/saned.in,v 1.3 2012/02/19 01:34:56 fjoe Exp $\n#\n# PROVIDE: saned\n# REQUIRE: LOGIN netif routing mountcritlocal\n# BEFORE: NETWORKING\n\nBefore NETWORKING but requiring LOGIN? And saned is a network daemon,\nfor goodness' sake!\n\nNot sure exactly what's wrong with svnserve, since I needed this box\nback soonest and simply deleted it as I don't run a subversion server\non this client. Other scripts may be similarly broken. svnserve also\naffects yp startup on my NIS master, breaking yp completely.\n\n[1] Potential security implications with IPFIREWALL_DEFAULT_TO_ACCEPT\noption in kernel as there's now a window of opportunity for an open\nfirewall for a length of time after the network comes up.\n\nFix: \n\nFix the rc scripts in these ports to not affect base's rcorder. In the\ncase of sane-backends' saned, just remove the # BEFORE: NETWORKING line.\nHow-To-Repeat: Install graphics/sane-backends or devel/subversion on a machine with\nipfw enabled and ipfw set to default deny."
+}

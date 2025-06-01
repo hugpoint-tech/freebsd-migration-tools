@@ -1,0 +1,8 @@
+{
+ "id": 1101664,
+ "bug_id": 246279,
+ "attachment_id": 0,
+ "creation_time": "2020-05-09T16:45:01Z",
+ "creator": "pen@lysator.liu.se",
+ "text": "Ok, with some bits of printf-debugging I found some suspect code in sys/dev/ciss/ciss.c:ciss_cam_action() at the \"case XPT_PATH_INQ\" section:\n\n  cpi-\u003emax_target = sc-\u003eciss_cfg-\u003emax_logical_supported;\n\nNotice the \"max logical logical volumes: 64\" below?\n\nciss0: PERFORMANT Transport\nciss0:   0 logical drives configured\nciss0:   firmware 5.04\nciss0:   1 SCSI channels\nciss0:   signature 'CISS'\nciss0:   valence 3\nciss0:   supported I/O methods 0x7e000147\u003cREADY,simple,performant\u003e\nciss0:   active I/O method 0x5\u003cperformant\u003e\nciss0:   4G page base 0x00000000\nciss0:   interrupt coalesce delay 0us\nciss0:   interrupt coalesce count 16\nciss0:   max outstanding commands 1024\nciss0:   bus types 0x200000\nciss0:   server name 'CZ3729EX3D'\nciss0:   heartbeat 0xc0\nciss0:   max logical logical volumes: 64\nciss0:   max physical disks supported: 384\nciss0:   max physical disks per logical volume: 128\nciss0:   JBOD Support is Available\nciss0:   JBOD Mode is Enabled\nciss0: 72 physical devices\n\n(72 is 2 too many, but I guess the two extra are the storage drawers)\n\nIf I change that line to:\n\n  cpi-\u003emax_target = sc-\u003eciss_cfg-\u003emax_physical_supported;\n\nthen \"camcontrol devlist\" now show 69 of 70 drives... Better but not 100% there."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1032323,
+ "bug_id": 234903,
+ "attachment_id": 0,
+ "creation_time": "2019-01-16T17:30:53Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Using your settings:\n\n  #### /usr/local/etc/poudriere.d/current-make.conf ####\n  OPTIONS_SET=\tDEBUG\n  OPTIONS_UNSET=\tNLS DOCS EXAMPLES TEST MANPAGES\n  ... \n\nI was able to reproduce the issue.\n\nThe underlying problem is that debug builds end up in a different directory (\"-debug\" is appended to PHP_EXT_DIR in Mk/Uses/php.mk). So php72-xml ends up in /usr/local/lib/php/20170718-debug/xml.so, while the build of devel/libphutil looks for it in /usr/local/lib/php/20170718/xml.so.\n\nOther ports that rely on PHP extensions (like devel/phpsh or devel/rth) show the same behavior/breakage (poudriere testport devel/phpsh).\n\nNow, the interesting part is that this only happens when building using poudriere. Local builds or building within a poudriere interactive shell (like the one you get when running \"poudriere testport -i devel/libphutil\") work just fine.\n\nI didn't have the time to figure out why exactly this is happening (RAW_DEPENDS is set like that in bsd.port.mk). As a workaround I tried setting \"WITH_DEBUG\" in make.conf, which got the job done, so if you alter /usr/local/etc/poudriere.d/current-make.conf so it contains:\n\n  WITH_DEBUG=1\n\nyour debug builds should work out okay."
+}

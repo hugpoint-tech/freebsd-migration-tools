@@ -1,0 +1,8 @@
+{
+ "id": 411905,
+ "bug_id": 116748,
+ "attachment_id": 0,
+ "creation_time": "2007-09-29T19:20:03Z",
+ "creator": "meconlen@obfuscated.net",
+ "text": "When setting \n\nkern.ipc.nmbclusters=0\n\nin /boot/loader.conf, which to my understanding means \"unlimited\", and attempting to mount a NFS file system (used version 3) using UDP the mount works however read operations fail. The traffic goes across the network, the server responds, the packets make it in to the client (as seen in tcpdump) but the NFS client code never returns the data to the user app. \n\nWhen using a TCP mount the NFS system operates as expected with two issues. \n1) regular nfs send error 32 reported on the server\n2) regular impossible packet length from nfs server on the server\n\nIn order to use UDP I found that I needed to set\n\nkern.ipc.nmbclusters=65535\n\nI tested two otherwise identically configured machines against the same NFS server (also FreeBSD though somewhat older since non critical security patches have not been applied, it is, after all, the production NFS server for a web cluster.) and found this one configuration change to be the critical one.\n\nFix: \n\nworkaround is to not use nmbclusters=0. Solution unknown. I can provide system in my environment for debugging with ssh and root access.\nHow-To-Repeat: Setup an NFS server\nSetup an NFS client\nadd \n\nkern.ipc.nmbclusters=0\n\nin the file /boot/loader.conf on the client. \n\nmount an NFS file system from the server on the client using options\n\n\nrw,nfsv3\n\nattempt to read the directories on the client."
+}

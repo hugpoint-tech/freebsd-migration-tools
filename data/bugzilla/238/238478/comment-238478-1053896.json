@@ -1,0 +1,8 @@
+{
+ "id": 1053896,
+ "bug_id": 238478,
+ "attachment_id": 0,
+ "creation_time": "2019-06-10T22:21:09Z",
+ "creator": "Goel.vidhi07@gmail.com",
+ "text": "I am not sure if this is the right way to file a code audit issue. Recently I was referring to TCP Cubic source code and found one problem in function  cubic_ack_received.\n1. The first condition checks whether the computed cubic window is less than TCP friendly window and sets accordingly\n2. Else, it checks whether the current cwnd is less than the computed cubic window. This is the concave region but the freebsd code considers this as concave or convex.\nThis is incorrect as it would fail to set cwnd when (cwnd \u003e w_cubic_next)\n\nAccording to the draft, cwnd should be set to (W_cubic_next - cwnd)/cwnd in both concave and convex region. So the code should look like this:\n\n\nif (w_cubic_next \u003c w_tf) {\n    set cwnd \u003c- w_tf\n} else if (cwnd \u003c w_cubic_next) {\n// This is concave region\n    set cwnd \u003c- (W_cubic_next - cwnd)/cwnd\n} else {\n// This is convex region\n    set cwnd \u003c- (W_cubic_next - cwnd)/cwnd\n}\n\n\nOr\n\nif (w_cubic_next \u003c w_tf) {\n    set cwnd \u003c- w_tf\n} else {\n    set cwnd \u003c- (W_cubic_next - cwnd)/cwnd\n}"
+}

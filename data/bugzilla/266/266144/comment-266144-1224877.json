@@ -1,0 +1,8 @@
+{
+ "id": 1224877,
+ "bug_id": 266144,
+ "attachment_id": 0,
+ "creation_time": "2022-08-31T20:54:03Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "In this code in sndstat_unpack_user_nvlbuf() in sys/dev/sound/pcm/sndstat.c:\n\n        *nvl = nvlist_unpack(nvlbuf, nbytes, 0);\n        free(nvlbuf, M_DEVBUF);\n        if (nvl == NULL) {\n                return (EINVAL);\n        }\n\nI believe it should be\n\n        if (*nvl == NULL) {\n\nWithout this fix, if nvlist_unpack() returns NULL, subsequent code\nwill panic when it tries to use a NULL *nvl.\n\nA demo:\n\nint main() {\n  char *dev = \"/dev/sndstat\";\n  int fd = open(dev, 2);\n  if(fd \u003c 0) { perror(dev); exit(1); }\n  char buf2[64];\n  memset(buf2, 0, sizeof(buf2));\n  char buf1[128];\n  memset(buf1, 0, sizeof(buf1));\n  *(int*)(buf1+0) = sizeof(buf2);\n  *(char**)(buf1+8) = buf2;\n  ioctl(fd, 0xc0104466, buf1); // SNDSTIOC_ADD_USER_DEVS\n}\n\npanic: Assertion (nvl) != ((void *)0) failed at /usr/rtm/symbsd/src/sys/contrib/libnv/nvlist.c:387           \npanic() at panic+0x2a\nnvlist_find() at nvlist_find+0xd4\nnvlist_exists_nvlist_array() at nvlist_exists_nvlist_array+0x10\nsndstat_add_user_devs() at sndstat_add_user_devs+0x4e\nsndstat_ioctl() at sndstat_ioctl+0x9e\ndevfs_ioctl() at devfs_ioctl+0xbe\nVOP_IOCTL_APV() at VOP_IOCTL_APV+0x30\nVOP_IOCTL() at VOP_IOCTL+0x36\nvn_ioctl() at vn_ioctl+0xba\ndevfs_ioctl_f() at devfs_ioctl_f+0x20\nfo_ioctl() at fo_ioctl+0xa\nkern_ioctl() at kern_ioctl+0x242\nsys_ioctl() at sys_ioctl+0x120\nsyscallenter() at syscallenter+0xec\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xea\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72"
+}

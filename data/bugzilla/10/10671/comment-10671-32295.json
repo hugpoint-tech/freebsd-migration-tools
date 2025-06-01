@@ -1,0 +1,8 @@
+{
+ "id": 32295,
+ "bug_id": 10671,
+ "attachment_id": 0,
+ "creation_time": "1999-03-19T10:00:00Z",
+ "creator": "tolik@sibptus.tomsk.ru",
+ "text": "\nCalling setlogin(2) return EINVAL for length of name param greather than MAXLOGNAME - 2\n\n/sys/kern/kern_prot.c:\nint\nsetlogin(p, uap, retval)\n        struct proc *p;\n        struct setlogin_args *uap;\n        int *retval;\n{\n        int error;\n\n        if ((error = suser(p-\u003ep_ucred, \u0026p-\u003ep_acflag)))\n                return (error);\n        error = copyinstr((caddr_t) uap-\u003enamebuf,\n            (caddr_t) p-\u003ep_pgrp-\u003epg_session-\u003es_login,\n            sizeof (p-\u003ep_pgrp-\u003epg_session-\u003es_login) - 1, (u_int *)0);\n        if (error == ENAMETOOLONG)\n                error = EINVAL;\n        return (error);\n}\n\nHere is :\ncalling copyinstr with maxlen = MAXLOGNAME - 1. Such setlogin(2) returned EINVAL\nfor maxlen \u003e MAXLOGNAME - 2. Manpage of setlogin(2) talk nothing about it.\nIs this correct ?\n\nFix: \n\nEither correct manpage of setlogin(2), or correct kern_prot.c.\nHow-To-Repeat: \na.c:\n#include \u003cunistd.h\u003e\n#include \u003csys/param.h\u003e\n#include \u003cstdio.h\u003e\n\nmain(){\n\nchar name[MAXLOGNAME] = \"0123456789a\"; /* 11 chars without '\\0' \u003c MAXLOGNAME - 1*/\n\nif (setlogin(name)) {\n\tperror(\"setlogin\");\n\texit(1);\n}\n\nexit(0);\n}\n\n# cc a.c\n# ./a.out; echo \"Exitcode $?\"\nsetlogin: Invalid argument\nExitcode 1"
+}

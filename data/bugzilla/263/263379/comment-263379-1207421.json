@@ -1,0 +1,8 @@
+{
+ "id": 1207421,
+ "bug_id": 263379,
+ "attachment_id": 0,
+ "creation_time": "2022-04-17T18:44:59Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Hi!\n\nAssume we have the following in the /etc/ipsec.conf:\n\nadd 1.1.1.1 2.2.2.2 esp 7888 -m transport\n  -E aes-gcm-16 \"3#\u0026*f738@?\u003e=_fOH\u003cD30z%WV\u0026*^\u003e@0D+n1{c\"\n  -A hmac-sha2-512 \"M@-#@k9?NWiuj4f04jJE(dm{4/B=p9d5@7v}naW,[3!_1}4.]n-t;99L0+/14004\";\n\nExact key values do not matter but their lenght do matter.\n\"/sbin/setkey -f /etc/ipsec.conf\" parses this just fine for both of stable/12 and stable/13 and sends a message over a socket to the kernel to add new SA.\n\nstable/12 kernel accepts it (and then it works)\nbut stable/13 of 17 April 2022 rejects with EINVAL.\n\nNote that stock stable/13 kernel accepts it if you change hmac-sha2-512 to hmac-sha2-256 and halve the length of the key.\n\nHere is some preliminary and incomplete patch for stable/13 opencrypto that makes stable/13 to accept this and install new SA:\nhttp://www.grosbein.net/freebsd/opencrypto/opencrypto.diff\n\nStill, the patch does not solve the problem completely as ESP packets sent from patched stable/13 system get dropped by stable/12 increasing error counter \"packets dropped; no transform\" in the output of \"netstat -sp esp\".\n\nNote again, that stable/12 system has another stable/12 peer with same configuration and encrypted traffic flows just fine. There is no IKE daemon in the picture intentionally, to simplify debugging."
+}

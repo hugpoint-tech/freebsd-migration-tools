@@ -1,0 +1,8 @@
+{
+ "id": 1036972,
+ "bug_id": 235647,
+ "attachment_id": 0,
+ "creation_time": "2019-02-10T17:59:51Z",
+ "creator": "hoomanfazaeli@gmail.com",
+ "text": "The pam_verror may cause segmentation fault.\n\nConsider the following scenario:\n\n1. A service module (for instance, pam_unix) calls PAM_VERBOSE_ERROR.\n   That macro expands to _pam_verbose_error call.\n\n2. _pam_verbose_error calls pam_verror if the PAM_SILENT flag is not \n  set on the PAM handle and no_warn option is not set for the service \n  module.\n\n3. pam_verror allocates 'char *rsp' on stack w/o initializing it to NULL,\n   (a dangling pointer), and makes \n   pam_vprompt(pamh, PAM_ERROR_MSG, \u0026rsp, fmt, ap) call. \n\n4. Now if the the PAM conversation is NULL, pam_vprompt soon returns \n   w/ PAM_SYSTEM_ERR and __does not__ set *rsp. \n\n5. pam_verror then does FREE(rsp) and if rsp happens to be anything other \n   than NULL, a segmentation fault happens."
+}

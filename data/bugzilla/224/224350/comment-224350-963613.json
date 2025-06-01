@@ -1,0 +1,8 @@
+{
+ "id": 963613,
+ "bug_id": 224350,
+ "attachment_id": 188843,
+ "creation_time": "2017-12-14T22:29:28Z",
+ "creator": "gromero@br.ibm.com",
+ "text": "Created attachment 188843\nPatch for this bug\n\nCurrently Facility Unavailable is absent and once an application\ntries to use or access a register from a feature disabled in the\nCPU it causes a kernel panic. \n\nA simple test-case is:\n\n#include \u003cstdio.h\u003e\n\nint main() { asm volatile (\"tbegin.;\"); }\n\nwhich will use TM (Hardware Transactional Memory) feature\nwhich is not supported by the kernel and so I'll trigger\nthe following panic:\n\nfatal user trap:\n\n   exception       = 0xf60 (unknown)\n   srr0            = 0x10000890\n   srr1            = 0x800000000000f032\n   lr              = 0x100004e4\n   curthread       = 0x5f93000\n          pid = 1021, comm = htm\n\npanic: unknown trap\ncpuid = 40\nKDB: stack backtrace:\n#0 0x59d1c8 at ??+0\n#1 0x59d264 at ??+0\n#2 0x959490 at ??+0\n#3 0x95a94c at ??+0\n#4 0x94ea4c at ??+0\nUptime: 3m18s\nDumping 10 MB (3 chunks)\n  chunk 0: 11MB (2648 pages) ... ok\n  chunk 1: 1MB (24 pages) ... ok\n  chunk 2: 1MB (2 pages)panic: IOMMU mapping error: -4\n\ncpuid = 40\nUptime: 3m18s\n\nThis commit fixes that state by adding a handler for\nFacility Unavailable exception (0xF60), treating\nthe instruction that trigged the exception as an\nillegal instruction."
+}

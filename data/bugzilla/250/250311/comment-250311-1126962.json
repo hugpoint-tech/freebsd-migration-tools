@@ -1,0 +1,8 @@
+{
+ "id": 1126962,
+ "bug_id": 250311,
+ "attachment_id": 0,
+ "creation_time": "2020-10-15T17:16:15Z",
+ "creator": "sigsys@gmail.com",
+ "text": "(In reply to Tijl Coosemans from comment #2)\nOops you're right.\n\nBetter to move the call down while at it? No need to protect the sysctls.\n\n--- gio/gunixmounts.c.orig\t2020-10-01 09:17:53.138733000 -0400\n+++ gio/gunixmounts.c\t2020-10-15 13:05:40.628175000 -0400\n@@ -1389,6 +1389,8 @@\n \n #elif (defined(HAVE_GETVFSSTAT) || defined(HAVE_GETFSSTAT)) \u0026\u0026 defined(HAVE_FSTAB_H) \u0026\u0026 defined(HAVE_SYS_MOUNT_H)\n \n+G_LOCK_DEFINE_STATIC(getfsent);\n+\n static GList *\n _g_get_unix_mount_points (void)\n {\n@@ -1400,9 +1402,6 @@\n   struct stat sb;\n #endif\n   \n-  if (!setfsent ())\n-    return NULL;\n-\n   return_list = NULL;\n   \n #ifdef HAVE_SYS_SYSCTL_H\n@@ -1433,6 +1432,11 @@\n #endif\n #endif\n   \n+  G_LOCK (getfsent);\n+  if (!setfsent ()) {\n+    G_UNLOCK (getfsent);\n+    return NULL;\n+  }\n   while ((fstab = getfsent ()) != NULL)\n     {\n       gboolean is_read_only = FALSE;\n@@ -1468,6 +1472,7 @@\n     }\n   \n   endfsent ();\n+  G_UNLOCK (getfsent);\n   \n   return g_list_reverse (return_list);\n }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1289212,
+ "bug_id": 275905,
+ "attachment_id": 0,
+ "creation_time": "2023-12-24T15:24:52Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "You haven't used the \"intr\" and/or \"soft\"\nmount options by any chance?\n\nThese are guaranteed to break NFSv4 mounts.\n\nThe renewthread is stuck in nfsv4_sequencelookup()\nbecause there are no session slots available.\n- This can happen for \"soft\" or \"intr\" mounts\n  because the RPC reply does not get processed\n  properly to release the session slot.\n- If the mount does not use \"soft\" nor \"intr\",\n  then there is some other reason that the replies\n  are not being processed.\n  --\u003e I'll think about this. It might be a side effect\n      of a RPCSEC_GSS session being expired so the client\n      cannot de-encrypt the RPC reply, or something like\n      that. Typically, the RPCSEC_GSS session (not the same\n      thing as a NFSv4 session, just to make the terminology\n      confusing) expires when the TGT used to acquire it\n      expires. It will be re-created upon the next RPC\n      if there is a valid TGT, but that might be too\n      late for processing of an RPC reply. (With sec=krb5p\n      the reply is encrypted, so it cannot be processed\n      without a valid RPCSEC_GSS session.\n\n\nOnce all session slots are in use and no RPC reply is\nprocessed to release one, the mount is hung and the\nonly fix is to \"umount -N \u003cmnt-path\u003e\" or reboot the\nclient machine."
+}

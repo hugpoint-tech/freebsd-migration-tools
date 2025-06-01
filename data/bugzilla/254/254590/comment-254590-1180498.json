@@ -1,0 +1,8 @@
+{
+ "id": 1180498,
+ "bug_id": 254590,
+ "attachment_id": 0,
+ "creation_time": "2021-10-02T02:37:36Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "When the client is hung, you need to collect some information\non the NFS server for the client connection.\n# netstat -a\n--\u003e See what state the TCP connection is in and whether or not\n    RecQ is 0.\n    If state == CLOSE_WAIT, you need the first oatch here.\n    If state == ESTABLISHED and the RevQ is non-empty, then\n    you either need to revert r367492 or upgrade the a\n    stable/13 kernel (see PR#256280).\n\nIf the TCP connection for the client is ESTABLISHED and RecQ == 0,\nthen it is some other issue. Issues I am aware of are related to\ndelegations, so make sure delegations are not enabled on the server.\n(sysctl vfs.nfsd.issue_delegations = 0, which should be the default.)\n\nIf delegations are not enabled, along with the TCP connection being in\nESTABLISHED state and Recq == 0, then I don't know what your problem is.\n--\u003e If you can capture packets \"tcpdump -s 0 -w out.pcap host \u003cclient\u003e\"\n    done on the server and then reproduce the hang, I can look at out.pcap\n    to try and see what is going on.\n\nAnd always use \"hard\" mounts on the clients and never \"soft\".\n(That is in the BUGS section of \"man mount_nfs\".)\n--\u003e Your first example of an fstab line in your post on PR178231.\n    I assume you meant either/or and you don't have both lines in /etc/fstab.\n    That would be weird and incorrect.\n\nFinally, if your clients are new enough \"umount -N /mnt/path\" is the\nway to get rid of a hung NFS mount point. \"umount -f /mnt/path\" won't\never work."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1191922,
+ "bug_id": 260700,
+ "attachment_id": 230423,
+ "creation_time": "2021-12-26T15:22:51Z",
+ "creator": "freebsd@oldach.net",
+ "text": "Created attachment 230423\nRemove '+' and suffix from local part\n\nCurrently, milter-greylist unconditionally strips sender addresses up to and including the first '=' before checking against the database. This is done to ensure mailing list sender addresses are handled correctly.\n\nHowever mlmmj generates mailing list sender addresses in a different style: the common '+' format. That yields a basically wrong mungling of sender addresses:\n\nDec 26 06:34:34 nuc milter-greylist[56938]: 1BQ5YQ5a068146: addr 96.47.72.81 from \u003coldach.net@FreeBSD.org\u003e rcpt \u003cfreebsd@oldach.net\u003e: autowhitelisted for another 8760:00:00\nDec 26 06:34:34 nuc sm-mta[68146]: 1BQ5YQ5a068146: from=\u003cfreebsd-stable+bounces-424-freebsd=oldach.net@FreeBSD.org\u003e, size=6340, class=0, nrcpts=1, msgid=\u003c80df9457-886a-d5ad-23c4-98d54c4b4dcb@world.com\u003e, bodytype=8BITMIME, proto=ESMTPS, daemon=MTA, relay=mx2.freebsd.org [96.47.72.81]\n\nHere, \u003cfreebsd-stable+bounces-424-freebsd=oldach.net@FreeBSD.org\u003e is cut down to just \u003coldach.net@FreeBSD.org\u003e (which is OK in my case as I'm the owner of oldach.net). Actually that should better be stripped by removing the '+' part from the local part, yielding \u003cfreebsd-stable@FreeBSD.org\u003e.\n\nThe attached patch facilitates that (but keeps the '=' logic in place).\n\nNB: Probably a more general sender rewriting should be implemented, e.g. by using regex replacement."
+}

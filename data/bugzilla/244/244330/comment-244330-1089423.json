@@ -1,0 +1,8 @@
+{
+ "id": 1089423,
+ "bug_id": 244330,
+ "attachment_id": 0,
+ "creation_time": "2020-02-23T07:03:53Z",
+ "creator": "peter@libassi.se",
+ "text": "local wg interface does not respond due to the wg-quick script sets up the interface by reusing the local address as the remote address in the ifconfig command:\n\nroot@bsd2:~ # wg-quick up wg0\n[#] wireguard-go wg0\nINFO: (wg0) 2020/02/20 09:45:16 Starting wireguard-go version 0.0.20200121\n[#] wg setconf wg0 /tmp/tmp.87viEAsK/sh-np.YdRfI6\n[#] ifconfig wg0 inet 192.168.2.2 192.168.2.2 alias\n\nOn linux setting up an IP address on a tun interface does not require a remote address:\n[root@vpn2 wireguard]# wg-quick up wg0\n[#] ip link add wg0 type wireguard\n[#] wg setconf wg0 /dev/fd/63\n[#] ip -4 address add 192.168.2.2/24 dev wg0\n\nIn the wg-quick script function add_addr() is where the assignment is made:\n \n cmd ifconfig \"$INTERFACE\" inet \"$1\" \"${1%%/*}\" alias\n\nI verifed this by replacing remote address with localhost:\n\n cmd ifconfig \"$INTERFACE\" inet \"$1\" \"127.0.0.1\" alias\n\nNow local ping works. You can give any address I suppose since the ”remote address” of the ifconfig of a tun interface is not really used by wireguard."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1059780,
+ "bug_id": 239550,
+ "attachment_id": 206172,
+ "creation_time": "2019-07-31T02:27:18Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "Created attachment 206172\ntestcase (c++)\n\nstd::thread::id defines a distinguished \"not equal to any actual thread\" value (the implementation uses 0).\n\nBut it feels entitled to pass this value to pthread_equal, whose own spec has no such distinguished value. (Per the pthread spec this gives an undefined result.)\n\nIf libthr is linked in, this isn't a problem because 0 doesn't actually compare equal to any thread. But the _pthread_stubs implementation of pthread_equal returns true unconditionally, which is valid by the pthread spec (since there is no distinguished pthread_t value).\n\nThe attached test program demonstrates the failure; it runs successfully if linked with -pthread, asserts out if not.\n\nThe simplest fix would be to do an actual comparison in the stub version of pthread_equal. A more correct fix would be for std::thread::id not to assume it can pass its 0 value to pthread_equal, but I think this would be unnecessary overhead."
+}

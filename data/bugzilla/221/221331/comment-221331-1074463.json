@@ -1,0 +1,8 @@
+{
+ "id": 1074463,
+ "bug_id": 221331,
+ "attachment_id": 0,
+ "creation_time": "2019-11-08T09:17:22Z",
+ "creator": "msl0000023508@gmail.com",
+ "text": "There was a case that unlink(2) may return EISDIR.\n\nFunction kern_unlinkat calls namei(9) to find the parent directory of the file; it will return EISDIR if the requested path was '/'.\n\nSince '/' isn't a real link (but '/.' and '/..'), it can't be unlinked anyways.\n\nTest:\n\n# cat unlink.c \n#include \u003cunistd.h\u003e\n#include \u003cstdio.h\u003e\n\nint main(int argc, char **argv) {\n        if(argc != 2) {\n                fprintf(stderr, \"Usage: %s \u003cpath\u003e\\n\", argv[0]);\n                return -1;\n        }\n        if(unlink(argv[1]) \u003c 0) {\n                perror(argv[1]);\n                return 1;\n        }\n        return 0;\n}\n# gcc -Wall -O1 unlink.c -o unlink\n# ./unlink /etc/\n/etc/: Operation not permitted\n# ./unlink /.\n/.: Operation not permitted\n# ./unlink /\n/: Is a directory"
+}

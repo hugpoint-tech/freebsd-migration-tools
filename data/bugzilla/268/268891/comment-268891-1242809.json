@@ -1,0 +1,8 @@
+{
+ "id": 1242809,
+ "bug_id": 268891,
+ "attachment_id": 0,
+ "creation_time": "2023-01-11T18:43:52Z",
+ "creator": "dvl@FreeBSD.org",
+ "text": "I'm seeing this error:\n\nArgument \"v6.0.1\" isn't numeric in numeric lt (\u003c) at /usr/local/libexec/nagios/check_snmp_storage.pl line 420.\nArgument \"v6.0.1\" isn't numeric in numeric lt (\u003c) at /usr/local/libexec/nagios/check_snmp_storage.pl line 494.\n\nThis affect other scripts with this package as well.\n\nThe lines in question look like this:\n\n  if (Net::SNMP-\u003eVERSION \u003c 4) {\n\nI think the problem is caused by a change in format for Net::SNMP-\u003eVERSION - it is now alphanumeric and was previously numeric.\n\nI have this code snippet to demonstrate a potential fix:\n\n#!/usr/local/bin/perl\n\nuse strict;\nuse Net::SNMP;\n\n\nprint (Net::SNMP-\u003eVERSION);\nprint\"\\n\";\n\nif (Net::SNMP-\u003eVERSION lt \"v4.0.0.0\") {\n     print \"it is less than\\n\";\n} else {\n     print \"it is NOT less than\\n\";\n}\n\n$ perl test-snmp-version.pl\nv6.0.1\nit is NOT less than\n\n\n$ pkg info -x nagios-snmp-plugins-extras\nnagios-snmp-plugins-extras-1.1.2_1\n\n\n pkg info -x net-snmp\nnet-snmp-5.9.1_1,1\np5-Net-SNMP-6.0.1_1"
+}

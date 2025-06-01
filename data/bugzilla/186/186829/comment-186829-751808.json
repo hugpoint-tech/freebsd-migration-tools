@@ -1,0 +1,8 @@
+{
+ "id": 751808,
+ "bug_id": 186829,
+ "attachment_id": 0,
+ "creation_time": "2014-03-22T19:13:02Z",
+ "creator": "pgj@FreeBSD.org",
+ "text": "Hi Nikolai,\n\nYes, you were right, the build of GHC is not really thread-safe, so\nrunning this on multiple threads is going to fail at some point.  I\nhave been already notified about this by Baptiste (Daroussin) a few\nmonths ago when he did the experimental runs for activating multiple\njobs by default.\n\nThat is when I suggested to introduce a new variable called\nMAKE_JOBS_NUMBER_LIMIT to allow using multiple jobs but still in a\ncareful fashion by setting a limit to the parallelization [1].\n\nHowever, I am not sure this would prevent somebody from passing `-jN`\ndirectly to make(1).  And I am not either sure if this is recommended\nat all.  Instead, you should use MAKE_JOBS_NUMBER=N, that is:\n\n# make MAKE_JOBS_NUMBER=8\n\nMAKE_JOBS_NUMBER is automatically set to the value of the hw.ncpu\nsysctl(3) variable.  In that case, I could then add this\nMAKE_JOBS_NUMBER_LIMIT variable to the Makefile of lang/ghc so the\nport would allow parallel builds but only in a limited way.\n\nCan you please test if adding this line below to the Makefile fixes\nyour problem?\n\nMAKE_JOBS_NUMBER_LIMIT= 4\n\nThanks!\n\n[1] http://svnweb.freebsd.org/changeset/ports/323100"
+}

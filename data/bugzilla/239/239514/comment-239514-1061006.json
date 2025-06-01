@@ -1,0 +1,8 @@
+{
+ "id": 1061006,
+ "bug_id": 239514,
+ "attachment_id": 0,
+ "creation_time": "2019-08-08T11:06:41Z",
+ "creator": "mfechner@FreeBSD.org",
+ "text": "Just for reference, the upgrade instruction could be:\nservice gitlab stop\nservice postgresql stop\npkg create postgresql95-server postgresql95-contrib\nmkdir /tmp/pg-upgrade\ntar xf postgresql96-server-9.5.18_1.txz -C /tmp/pg-upgrade\ntar xf postgresql96-contrib-9.5.18_1.txz -C /tmp/pg-upgrade\n\npkg delete -f postgresql95-server postgresql95-contrib postgresql95-client\npkg install postgresql11-server postgresql11-contrib postgresql11-client\npkg upg\n\n/usr/local/etc/rc.d/postgresql initdb\nsu -l postgres -c \"pg_upgrade -b /tmp/pg-upgrade/usr/local/bin/ -d /var/db/postgres/data95/ -B /usr/local/bin/ -D /var/db/postgres/data11/\"\n\nservice postgresql start\nservice gitlab start\n\n#Verify everything works\nsu -l postgres -c \"cd /var/db/postgres \u0026\u0026 /usr/local/bin/vacuumdb --all --analyze-in-stages\"\nsu -l postgres -c \"cd /var/db/postgres \u0026\u0026 rm -rf '/var/db/postgres/data95'\"\nrm /var/db/postgres/analyze_new_cluster.sh\nrm /var/db/postgres/delete_old_cluster.sh\n\nrm -R /tmp/pg-upgrade"
+}

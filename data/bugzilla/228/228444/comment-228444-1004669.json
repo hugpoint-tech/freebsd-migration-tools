@@ -1,0 +1,8 @@
+{
+ "id": 1004669,
+ "bug_id": 228444,
+ "attachment_id": 0,
+ "creation_time": "2018-08-03T14:06:02Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: asomers\nDate: Fri Aug  3 14:05:23 UTC 2018\nNew revision: 337242\nURL: https://svnweb.freebsd.org/changeset/base/337242\n\nLog:\n  MFC r336205:\n\n  Don't acquire evclass_lock with a spinlock held\n\n  When the \"pc\" audit class is enabled and auditd is running, witness will\n  panic during thread exit because au_event_class tries to lock an rwlock\n  while holding a spinlock acquired upstack by thread_exit.\n\n  To fix this, move AUDIT_SYSCALL_EXIT futher upstack, before the spinlock is\n  acquired. Of thread_exit's 16 callers, it's only necessary to call\n  AUDIT_SYSCALL_EXIT from two, exit1 (for exiting processes) and kern_thr_exit\n  (for exiting threads). The other callers are all kernel threads, which\n  needen't call AUDIT_SYSCALL_EXIT because since they can't make syscalls\n  there will be nothing to audit.  And exit1 already does call\n  AUDIT_SYSCALL_EXIT, making the second call in thread_exit redundant for that\n  case.\n\n  PR:\t\t228444\n  Reported by:\taniketp\n  Reviewed by:\taniketp, kib\n  Differential Revision:\thttps://reviews.freebsd.org/D16210\n\nChanges:\n_U  stable/11/\n  stable/11/sys/kern/kern_thr.c\n  stable/11/sys/kern/kern_thread.c"
+}

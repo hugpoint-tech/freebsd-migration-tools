@@ -1,0 +1,8 @@
+{
+ "id": 614227,
+ "bug_id": 157728,
+ "attachment_id": 0,
+ "creation_time": "2011-06-09T15:20:08Z",
+ "creator": "mm@FreeBSD.org",
+ "text": "\tzfs receive (v28) may leave behind temporary clones if doing\n\ta parallel zfs list on an incremental snapshot being received.\n\n\tThe temporary clone gets properly removed in Nexenta and OpenIndiana\n\t(but not immediately after zfs receive finishes - there is\n\ta small delay).\n\n\tIn FreeBSD, something prevents the process/thread responsible for\n\tremoving the clone doing its job.\n\nFix: \n\nFor now only a workaround:\n- do not do zfs list\nor\n- destroy temporary clone afterwards (zfs destroy test/d2/%s2)\nHow-To-Repeat: Script:\n#!/bin/sh\nzpool destroy test\nif [ ! -f \"/tmp/testfile\" ]; then\n\tdd if=/dev/zero of=/tmp/testfile bs=1M count=250\nfi\nzpool create test /tmp/testfile\nzfs create test/d1\n#dd if=/dev/zero of=/test/d1/file1 bs=1M count=100\nzfs snapshot test/d1@s1\n#rm /test/d1/file1\nzfs send test/d1@s1 | zfs recv test/d2\nzfs snapshot test/d1@s2\n( sleep 1; zfs send -I @s1 test/d1@s2 | zfs recv test/d2) \u0026\nwhile test \"$OK\" != \"1\"; do\nzfs list -H test/d2@s2 \u003e/dev/null 2\u003e/dev/null \u0026\u0026 OK=1\ndone\nzfs destroy test/d2@s1\nzdb -d test | grep %\n\nResult:\ncannot destroy 'test/d2@s1': dataset already exists\nCould not open test/d2/%s2, error 16"
+}

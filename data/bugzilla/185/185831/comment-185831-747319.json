@@ -1,0 +1,8 @@
+{
+ "id": 747319,
+ "bug_id": 185831,
+ "attachment_id": 0,
+ "creation_time": "2014-01-17T00:20:00Z",
+ "creator": "alfred@FreeBSD.org",
+ "text": "If we bump maxcpu on our machine we get a panic at boot about running out of witness pending objects.\n\n\n\nThe following patch fixes it:\n(https://github.com/alfredperlstein/freebsd/compare/witness_scaling)\n\ndiff --git a/sys/kern/subr_witness.c b/sys/kern/subr_witness.c\nindex 9315133..e1c8d1b 100644\n--- a/sys/kern/subr_witness.c\n+++ b/sys/kern/subr_witness.c\n@@ -132,10 +132,19 @@\n /* Define this to check for blessed mutexes */\n #undef BLESSING\n \n-#define\tWITNESS_COUNT \t\t1024\n-#define\tWITNESS_CHILDCOUNT \t(WITNESS_COUNT * 4)\n+/*\n+ * Each cpu requires early locks so scale WITNESS_COUNT \u0026 WITNESS_PENDLIST\n+ * based on MAXCPU\n+ */\n+#ifndef\tWITNESS_COUNT\n+#define\tWITNESS_COUNT\t\t(MAXCPU \u003c= 64 ? 1024 : MAXCPU * 16)\n+#endif\n+\n #define\tWITNESS_HASH_SIZE\t251\t/* Prime, gives load factor \u003c 2 */\n-#define\tWITNESS_PENDLIST\t1024\n+\n+#ifndef\tWITNESS_PENDLIST\n+#define\tWITNESS_PENDLIST\t(MAXCPU \u003c= 64 ? 1024 : MAXCPU * 16)\n+#endif\n \n /* Allocate 256 KB of stack data space */\n #define\tWITNESS_LO_DATA_COUNT\t2048"
+}

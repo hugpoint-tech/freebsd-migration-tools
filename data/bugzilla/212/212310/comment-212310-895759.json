@@ -1,0 +1,8 @@
+{
+ "id": 895759,
+ "bug_id": 212310,
+ "attachment_id": 174298,
+ "creation_time": "2016-09-01T20:00:38Z",
+ "creator": "tobik@freebsd.org",
+ "text": "Created attachment 174298\nglib.diff\n\nThe example can be a lot smaller:\n\n#include \u003cerrno.h\u003e\n#include \u003cglib.h\u003e\n#include \u003clocale.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n\nint main(int argc, char *argv[]) {\n    setlocale(LC_ALL, \"\");\n    const gchar *err = g_strerror(ENOENT);\n    printf(\"%lu: %s\\n\", strlen(err), err);\n    return 1;\n}\n\nAnd it's also pretty clear that the problem is in devel/glib20 and in g_strerror.\n\ng_strerror is defined in glib/gstrfunc.c line 1254. We see this snippet in there\n\n      if (!g_get_charset (NULL))\n        {\n          msg = g_locale_to_utf8 (msg, -1, NULL, NULL, \u0026error);\n          if (error)\n            g_print (\"%s\\n\", error-\u003emessage);\n        }\n\nWhen g_get_charset returns FALSE (which it does when we setlocale(LC_ALL, \"\")) msg is a pointer to a local variable which is put into a GHashTable and returned. Adding \n\n      else\n        msg = g_strdup(buf);\n\nfixes the problem or at least prevents printing of garbage values.  glib master has a similar patch for this:\n\n      else if (msg == (const gchar *)buf)\n        msg = g_strdup (buf);\n\nAlso see https://git.gnome.org/browse/glib/commit/glib/gstrfuncs.c?id=f87e002313d566dcce71a9aba040d22ddb5c1e80\n\nI'm attaching a patch against devel/glib20 with a backport of this.\n\nPoudriere testport 9.3/amd64 ok"
+}

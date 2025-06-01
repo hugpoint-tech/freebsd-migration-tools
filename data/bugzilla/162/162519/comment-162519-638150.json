@@ -1,0 +1,8 @@
+{
+ "id": 638150,
+ "bug_id": 162519,
+ "attachment_id": 0,
+ "creation_time": "2011-11-13T14:50:07Z",
+ "creator": "rmh@FreeBSD.org",
+ "text": "zpool_find_import_impl() in cddl/contrib/opensolaris/lib/libzfs/common/libzfs_import.c\nis relying on buggy realpath() behaviour.\n\nFreeBSD realpath() does not currently conform to SUS specification (see\nPR 128933). It returns succesfully for invalid paths for which it should\nreturn ENOENT.\n\nThe code in zpool will stop working correctly when this bug is fixed:\n\n  - By default zpool_find_import_impl() operates on \"/dev/dsk/\" directory,\n    which on FreeBSD doesn't exist.\n\n  - It begins by attempting to canonicalize this path using realpath().\n    This should fail with ENOENT and abort execution, but realpath()\n    returns succesfully.\n\n  - It then proceeds to replace \"/dev/dsk/\" with \"/dev/\".\n\n  - Finally it opens devices from the (now correct) directory and imports\n    them.\n\nFix: \n\nThe correct solution IMHO is to replace all instances of \"/dev/dsk/\" with\n\"/dev/\". However this could be undesirable wrt new code imports.\n\nOther possibilities could be to move the 'rdsk = \"/dev/\";' correction up\nso that it happens before realpath() call, or to add \"errno != ENOENT\"\nrequirement before aborting with error."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 796625,
+ "bug_id": 195080,
+ "attachment_id": 0,
+ "creation_time": "2014-11-19T12:37:16Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "Right, and I think this simple logic can be improved.  Currently nvidia-driver conflicts not just with xorg and libGL, but also libEGL and libGLESv2.\n\nI'm playing with the idea to stop assuming of any particular order in which these ports/packages are installed, and create symlinks (hardlinks only complicate things here) upon install/deinstall in the following way:\n\nIn post-install:\n        ...\n        /bin/ln -sf .nvidia/libGL.so.1 ${PREFIX}/lib\n        /bin/ln -sf .nvidia/libGL.so ${PREFIX}/lib\n        /bin/ln -sf .nvidia/libEGL.so.1 ${PREFIX}/lib\n        /bin/ln -sf .nvidia/libEGL.so ${PREFIX}/lib\n        /bin/ln -sf .nvidia/libGLESv2.so.2 ${PREFIX}/lib\n        /bin/ln -sf .nvidia/libGLESv2.so ${PREFIX}/lib\n        /bin/ln -sf .nvidia/libglx.so ${PREFIX}/lib/xorg/modules/extensions\n\nIn post-deinstall:\n\n# Conditionally put links to files (i.e., if they were previously installed)\n# $1 common path (prior to hidden directory)\n# $2 remainder (e.g., .foo/libbar.so)\nmaybe_link_back()\n{\n        [ -f \"$1/$2\" ] \u0026\u0026 /bin/ln -sf \"$2\" \"$1\"\n}\n        ...\n        maybe_link_back ${PREFIX}/lib .libGL/libGL.so.1\n        maybe_link_back ${PREFIX}/lib .libGL/libGL.so\n        maybe_link_back ${PREFIX}/lib .libEGL/libEGL.so.1\n        maybe_link_back ${PREFIX}/lib .libEGL/libEGL.so\n        maybe_link_back ${PREFIX}/lib .libGLESv2/libGLESv2.so.2\n        maybe_link_back ${PREFIX}/lib .libGLESv2/libGLESv2.so\n        maybe_link_back ${PREFIX}/lib/xorg/modules/extensions .xorg/libglx.so\n\nSimilar changes will have to be added to \"conflicting\" ports (libraries and X server)."
+}

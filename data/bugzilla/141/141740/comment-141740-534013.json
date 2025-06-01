@@ -1,0 +1,8 @@
+{
+ "id": 534013,
+ "bug_id": 141740,
+ "attachment_id": 0,
+ "creation_time": "2009-12-18T06:00:14Z",
+ "creator": "zhouzhouyi@ec.com.cn",
+ "text": "When the kernel is configured as preemptable, when after the PC excuted function g_journal_destroy line 2352:\n\n2350         while (sc-\u003esc_worker != NULL)\n2351                 msleep(\u0026sc-\u003esc_worker, \u0026sc-\u003esc_mtx, PRIBIO, \"gj:destroy\", 0);\n2352         mtx_destroy(\u0026sc-\u003esc_mtx);\n\nnow the g_topology_unlock has been called, then if g_journal_switcher got scheduled, the concurrence problem will occur.\n\n\n#0  0x407a8de5 in turnstile_setowner (ts=0x63be6480, owner=0x4) at ../../../kern/subr_turnstile.c:457\n#1  0x407a92bc in turnstile_wait (lock=0x836b8210, owner=0x4, queue=0) at ../../../kern/subr_turnstile.c:661\n#2  0x40770fb3 in _mtx_lock_sleep (m=0x836b8210, tid=2145898496, opts=0, file=0x0, line=0) at ../../../kern/kern_mutex.c:580\n#3  0x407359de in g_journal_do_switch (classp=0x40dbaee0, td=0x7fe7d000) at ../../../geom/journal/g_journal.c:2861\n#4  0x40735c57 in g_journal_switcher (arg=0x40dbaee0) at ../../../geom/journal/g_journal.c:2909\n\nHow-To-Repeat: reboot/shutdown, if luck, the problem occurs"
+}

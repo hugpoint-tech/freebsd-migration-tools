@@ -1,0 +1,8 @@
+{
+ "id": 1295731,
+ "bug_id": 276870,
+ "attachment_id": 0,
+ "creation_time": "2024-02-07T15:31:17Z",
+ "creator": "thomas@gibfest.dk",
+ "text": "ps. The very rudimentary netstat -m exporter is here, needs jq and sponge installed:\n\n[tykling@dgncr2a ~]$ cat /etc/cron.d/netstat_mbuf_exporter\n# Run netstat_mbuf_exporter.sh every minute and put the output in prometheus textfile collector directory\n* * * * * root /usr/local/bin/netstat_mbuf_exporter.sh | /usr/local/bin/sponge /var/tmp/node_exporter/netstat-mbuf.prom\n\n[tykling@dgncr2a ~]$ cat /usr/local/bin/netstat_mbuf_exporter.sh\n#!/bin/sh\n/usr/bin/netstat -m --libxo json | /usr/local/bin/jq -r '.\"mbuf-statistics\" | keys_unsorted[] as $k | \"\\($k) \\(.[$k])\"' | /usr/bin/tr \"-\" \"_\" | /usr/bin/sed \"s/^/freebsd_netstat_mbuf_/g\"\n\n[tykling@dgncr2a ~]$ head -5 /var/tmp/node_exporter/netstat-mbuf.prom\nfreebsd_netstat_mbuf_mbuf_current 1495568\nfreebsd_netstat_mbuf_mbuf_cache 3547\nfreebsd_netstat_mbuf_mbuf_total 1499115\nfreebsd_netstat_mbuf_cluster_current 749044\nfreebsd_netstat_mbuf_cluster_cache 3558\n[tykling@dgncr2a ~]$"
+}

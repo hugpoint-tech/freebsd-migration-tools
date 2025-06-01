@@ -1,0 +1,8 @@
+{
+ "id": 1226271,
+ "bug_id": 266384,
+ "attachment_id": 0,
+ "creation_time": "2022-09-12T16:32:39Z",
+ "creator": "kaminar@seznam.cz",
+ "text": "Dear Maintainers,\n\nthere is a bug in the games/openarena port that causes a crash of the OpenArena when it autodownloads maps from the game server. The FreeBSD forum discussion on this topic is here:\n\nhttps://forums.FreeBSD.org/threads/autodownloading-failure-in-openarena.86313/\n\nSteps to reproduce:\n\n1. Start the OpenArena game.\n2. Enable autodownloding: Setup / Game Options / Automatic Downloading -\u003e on.\n3. Run the multiplayer.\n4. Change the option \"Servers\" to \"Internet\".\n5. Select a server with custom maps, e.g. \":F CTF FOR GENIUSES\".\n6. Enter the arena with the \"fight\" button.\n\nThe bug was probably introduced in the commit:\nhttps://cgit.freebsd.org/ports/commit/games/openarena?id=75eb5eba72912f15b677cf6b386089c894eff11e\n\nWe investigated that the bug is caused by line 94 in the file ports/games/openarena/files/patch-code_qcommon_files.c in the hunk\n@@ -754,7 +760,11 @@ void FS_SV_Rename( const char *from, con\n\n+\tFS_CheckFilenameIsMutable( to_ospath, __func__ ); \u003c-- *BUG*\n+\n+\tif ( safe ) {\n+\t\tFS_CheckFilenameIsMutable( to_ospath, __func__ );\n+\t}\n\nThe function call marked *BUG* needs to be deleted.\n\nAfter removing the function call on line 94, the autodownloading works again.\n\n\nRegards\nKaminar"
+}

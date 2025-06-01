@@ -1,0 +1,8 @@
+{
+ "id": 1138538,
+ "bug_id": 252227,
+ "attachment_id": 0,
+ "creation_time": "2020-12-28T04:53:58Z",
+ "creator": "vvd@FreeBSD.org",
+ "text": "On 12.2 look like vm.max_wired is a hard limit for number of wired pages for user processes.\nWith 48GB of RAM default value is 9727317 - it's 9727317*4096/1024/1024/1024 = ~37.1GB only.\nUse case:\n1) I see 9GB of free RAM\n2) started VM in VirtualBox with 8GB\n3) started applications in VM\n4) VM freezes with VERR_NO_MEMORY error in VBox.log\n5) stopped VM\n6) 46*1024*1024*1024/4096 = 12058624\nsysctl vm.max_wired=12058624\n7) repeat 2) and 3)\n8) VM work fine now\n\n/usr/src/sys/vm/vm_pageout.c (2082):\nvm_page_max_user_wired = 4 * freecount / 5;\n\nFrom dmesg: avail memory = 50130972672 (47808 MB)\n47808 MB * 4/5/1024 = 37.35GB ~= 37.1GB\n\nIMHO, it's very incorrect!\nSomething like 99/100 look more correct for VM servers with total RAM 48GB: 47808*99/100/1024 = 46.220625"
+}

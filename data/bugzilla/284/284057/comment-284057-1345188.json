@@ -1,0 +1,8 @@
+{
+ "id": 1345188,
+ "bug_id": 284057,
+ "attachment_id": 0,
+ "creation_time": "2025-01-21T16:02:48Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "Another thing.\nThere is a curious comment in vmxnet3_msix_intr_assign which I cannot really understand:\n/*\n * Don't provide the corresponding rxq irq for reference -\n * we want the transmit task to be attached to a task queue\n * that is different from the one used by the corresponding\n * rxq irq.  That is because the TX doorbell writes are very\n * expensive as virtualized MMIO operations, so we want to\n * be able to defer them to another core when possible so\n * that they don't steal receive processing cycles during\n * stack turnarounds like TCP ACK generation.  The other\n * piece to this approach is enabling the iflib abdicate\n * option (currently via an interface-specific\n * tunable/sysctl).\n */\n\nJust out of curiosity I set dev.vmx.0.iflib.tx_abdicate=1.\nSince doing that I do not see any concurrent calls to vmxnet3_isc_txd_credits_update for the same queue.\nThat is, each queue is always handled on its own CPU.\n\nUsed this for checking:\ndtrace -n 'vmxnet3_isc_txd_credits_update:entry /args[1] != curthread-\u003etd_oncpu/ { @[stack()] = count(); }'"
+}

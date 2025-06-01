@@ -1,0 +1,8 @@
+{
+ "id": 783799,
+ "bug_id": 193246,
+ "attachment_id": 0,
+ "creation_time": "2014-09-02T10:08:03Z",
+ "creator": "rodrigc@FreeBSD.org",
+ "text": "I did some more analysis and found that this code:\n\n\n 13253 java     CALL  bind(0x4,0x7fffffbfd7a8,0x1c)\n 13253 java     STRU  struct sockaddr { AF_INET6, [::]:33848 }\n 13253 java     RET   bind 0\n 13253 java     CALL  setsockopt(0x4,0x29,0x9,0x7fffffbfd7f4,0x4)\n 13253 java     RET   setsockopt 0\n 13253 java     CALL  getsockopt(0x4,0x29,0x9,0x7fffffbfd8ac,0x7fffffbfd864)\n 13253 java     RET   getsockopt 0\n 13253 java     CALL  setsockopt(0x4,0x29,0xc,0x7fffffbfd8c0,0x14)\n 13253 java     RET   setsockopt -1 errno 22 Invalid argument\n\nis happening inside the mcast_join_leave() function inside the JDK here:\n\nhttp://hg.openjdk.java.net/jdk7/jdk7/jdk/file/9b8c96f96a0f/src/solaris/native/java/net/PlainDatagramSocketImpl.c\n\nFrom looking at the FreeBSD header files,\nIPPROTO_IPV6 = 41 (0x29)\nIPV6_MULTICAST_IF = \nIPV6_JOIN_GROUP = 12 (0xc)_\n\ninside the mcast_join_leave() function what is basically happening is:\n\nsetsockopt(0x4, IPPROTO_IPV6, IPV6_MULTICAST_IF, ...)\ngetsockopt(0x4, IPPROTO_IPV6, IPV6_MULTICAST_IF, ...)\nsetsockopt(0x4, IPPROTO_IPV6, IPV6_JOIN_GROUP, ...)\n\nthe second setsockopt() is returning EINVAL"
+}

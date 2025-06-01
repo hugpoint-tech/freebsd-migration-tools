@@ -1,0 +1,8 @@
+{
+ "id": 65943,
+ "bug_id": 21220,
+ "attachment_id": 0,
+ "creation_time": "2004-11-25T09:16:06Z",
+ "creator": "lindroos@nls.fi",
+ "text": "The same problem appears on my Alpha. Seems like the controller doesn't like\nI/O size larger than 64k, and by hacking PAGE_SIZE (8k on alpha) to 4k will\nmake the driver decide the max. 65536 bytes I/O block.\n\nThis hack works for me, but i don't know how to fix it on i386 and/or other\nMylex controllers. I suggest you try something like:\n# dd if=/dev/rmlxd0c bs=XXX of=/dev/zero\nwith different block sizes and see when the I/O errors will appear.\n\n--- mlx_disk.c.orig\tMon Jun 25 07:37:51 2001\n+++ mlx_disk.c\tFri Nov  5 12:42:54 2004\n@@ -267,8 +267,10 @@\n      * maximum.\n      */\n     s1 = sc-\u003emlxd_controller-\u003emlx_enq2-\u003eme_maxblk * MLX_BLKSIZE;\n-    s2 = (sc-\u003emlxd_controller-\u003emlx_enq2-\u003eme_max_sg - 1) * PAGE_SIZE;\n+    s2 = (sc-\u003emlxd_controller-\u003emlx_enq2-\u003eme_max_sg - 1) * 4096;\n     dsk-\u003esi_iosize_max = imin(s1, s2);\n+    device_printf(dev, \"I/O size decided to %d after comparing %d and %d\\n\",\n+                  dsk-\u003esi_iosize_max, s1, s2);\n \n     return (0);\n }\nHere is the driver's output on my system:\n\nmlx0: \u003cMylex version 2 RAID interface\u003e port 0x10100-0x1017f mem 0x81128100-0x8112817f irq 3 at device 12.0 on pci0\nmlx0: interrupting at CIA irq 3\nmlx0: DAC960P/PD, 3 channels, firmware 2.70-0-00, 4MB RAM\nmlxd0: \u003cMylex System Drive\u003e on mlx0\nmlxd0: 8182MB (16756736 sectors) RAID 5 (online)\nmlxd0: I/O size decided to 65536 after comparing 131072 and 65536\n\n--\nDennis Lindroos \u003clindroos@nls.fi\u003e"
+}

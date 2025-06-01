@@ -1,0 +1,8 @@
+{
+ "id": 14953,
+ "bug_id": 4867,
+ "attachment_id": 0,
+ "creation_time": "1997-10-27T20:50:01Z",
+ "creator": "kwhite@csi.uottawa.ca",
+ "text": "the innetgr() helper routine _listmatch() in\n/usr/src/lib/libc/gen/getnetgrent.c returns false positives\nfor netgroups that match the regular expression '^.*group$'\n(substitute for group).  This allows for \"surprising\" entries in the\npassword file to be used.\n\nFor example, if your password file contains entries like this:\n\n+@baduser:::::::::/bin/abusemsg\n+@user:::::::::/bin/sh\n\na user in the \"user\" netgroup *may* get the \"baduser\" shell.\n(depends on the order of the user's entry in netgroups.byuser)\n\nFix: \n\nThe following _listmatch() routine may work better:\n\nstatic int _listmatch(list, group, len)\nchar *list, *group;\nint len;\n{\n        char *ptr = list;\n        int glen = strlen(group);\n \n        while ( (ptr = strstr(ptr, group)) ) {\n \n                ptr += glen; \n                if ((ptr-glen == list || ptr[-glen-1] == ',') \u0026\u0026\n                        (*ptr == ',' || *ptr == '\\0'))\n                        return(1);\n        }\n\n        return(0);\n}\nHow-To-Repeat: create NIS users a and b\nplace user a in netgroup baduser\nplace user b in netgroup user\nAdd the above two lines to the password file\nNotice how user b is treated like a \"baduser\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 94173,
+ "bug_id": 29982,
+ "attachment_id": 0,
+ "creation_time": "2001-08-23T10:40:00Z",
+ "creator": "robinson@netrinsics.com",
+ "text": "The XFree86 mouse driver currently allocates and deallocates timers in \nMousePostEvent, which is called from the SIGIO handlers.  Because \nTimerFree and TimerSet call the malloc library, this creates a race \ncondition in which the X server can crash with a \"malloc/free: recursive call\"\nif a mouse event arrives while the server is in the malloc library code in\nanother part of the server.\n\nThe timer in question is used to handle the \"Emulate3Buttons\" timeout.\nIt is not necessary to free and reallocate this timer, as TimerSet contains\ncode to reuse timers.\n\nThis patch removes the calls to FreeTimer, as well as (unnecessary)\nerror-handling code for the (harmless) spurious timer events that occur when\nthe timers aren't freed in MousePostEvent.\n\nThis patch fixes a problem I had where the X server would intermittently \ncrash during mouse motion concurrent with heavy paging activity.  I have\ntested it for several days with no ill effects, and strongly recommend \ncommitting it to the XFree86-4 port until such time as it can be incorporated\ninto the main XFree86 distribution.\n\nHow-To-Repeat: Infrequent crash with Emulate3Buttons enabled, with mouse button events \nconcurrent with heavy paging."
+}

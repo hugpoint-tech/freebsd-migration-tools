@@ -1,0 +1,8 @@
+{
+ "id": 1278015,
+ "bug_id": 274226,
+ "attachment_id": 0,
+ "creation_time": "2023-10-02T23:58:45Z",
+ "creator": "peterj@FreeBSD.org",
+ "text": "recvmsg(2) and sendmsg(2) include provision for \"ancillary data\" via msg_control and struct cmsghdr but there's no documentation on what cmsg_level and cmsg_type mean or how to set them.  recvmsg(2) says \"As an example, the SO_TIMESTAMP socket option returns a reception timestamp for UDP packets\" but provides no information on how how to actually initialise the cmsghdr to do that (the information is in getsockopt(2) but that isn't clear from the recvmsg(2) man page).\n\nIn general, the recvmsg/sendmsg \"ancillary data\" manipulates similar data to the setsockopt(2)/getsockopt(2) calls, but on a per-message basis, rather than a per-connection/socket basis.  Unfortunately, there's not an exact 1:1 relationship between the functions and in some cases, the data length varies between the two paths - e.g. the only documentation for IP_TOS is in ip(4) and indicates that it takes an int argument (4 bytes), but \nhttps://cgit.freebsd.org/src/tree/sys/netinet/udp_usrreq.c#n1144 shows that when used with sendmsg(2), the argument is a u_char (1 byte).\n\nThe direction is also unclear: getsockopt(2) and setsockopt(2) explicitly indicate whether the data is being written to the socket or read from the socket, whereas there's no such explicit indication for the msg_control path."
+}

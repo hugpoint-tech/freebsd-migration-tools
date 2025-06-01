@@ -1,0 +1,8 @@
+{
+ "id": 1219019,
+ "bug_id": 265154,
+ "attachment_id": 0,
+ "creation_time": "2022-07-12T16:43:46Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "There are two more problems around this place.\n\n1) There is a problem I recently introduced. If syncache_socket() fails to do PCB insertion, it will call soabort(). This soabort() will release last reference (that belongs to listen queue) and will go with sofree() of a socket that is still on listening queue. Note that all other non-TCP consumers of sonewconn() do not have this problem, as they just set so_error instead of call to soabort().\n2) The 6f3caa6d8159 very likely needs to be reverted. With modern synchronization in the network stack (epoch + SMR) it is very likely not an optimization.\n\nI think all 3 problems can be nailed with a single patch, that will introduce pr_newconn() to be executed instead of pr_attach() for sonewconn(). It will have slightly different semantic than pr_attach().\n\nI'm going to work on that in August, as today I'm leaving for a vacation. I think all listed problems aren't critical and can be left as as for a few weeks."
+}

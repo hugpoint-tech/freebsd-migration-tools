@@ -1,0 +1,8 @@
+{
+ "id": 520868,
+ "bug_id": 139059,
+ "attachment_id": 0,
+ "creation_time": "2009-09-26T08:26:31Z",
+ "creator": "danny@cs.huji.ac.il",
+ "text": "\u003e \n\u003e Hi,\n\u003e \n\u003e On 2009-09-22, Daniel Braniss wrote:\n\u003e \u003e the problem (as far as we can tell) is the \"create verifier\" field in\n\u003e \u003e the NFS packet. FreeBSD client uses for this field the IP address\n\u003e \u003e followed by a serial (that is incremented by every call), but the\n\u003e \u003e server treats it as a timespec value using the first four bytes (in\n\u003e \u003e network order) as seconds and the next four as nanoseconds.\n\u003e \n\u003e Could you try this patch on server?\n\u003e \n\u003e Index: sys/nfsserver/nfs_serv.c\n\u003e ===================================================================\n\u003e --- sys/nfsserver/nfs_serv.c\t(revision 197479)\n\u003e +++ sys/nfsserver/nfs_serv.c\t(working copy)\n\u003e @@ -1332,8 +1332,8 @@ nfsrv_create(struct nfsrv_descript *nfsd\n\u003e  \t\t\ttl = nfsm_dissect_nonblock(u_int32_t *,\n\u003e  \t\t\t    NFSX_V3CREATEVERF);\n\u003e  \t\t\t/* Unique bytes, endianness is not important. */\n\u003e -\t\t\tcverf.tv_sec  = tl[0];\n\u003e -\t\t\tcverf.tv_nsec = tl[1];\n\u003e +\t\t\tcverf.tv_sec  = (int32_t)tl[0];\n\u003e +\t\t\tcverf.tv_nsec = (int32_t)tl[1];\n\u003e  \t\t\texclusive_flag = 1;\n\u003e  \t\t\tbreak;\n\u003e  \t\t};\n\nit worked!\nthanks,\n\tdanny\nPS: it looks very un-intuitive :-)"
+}

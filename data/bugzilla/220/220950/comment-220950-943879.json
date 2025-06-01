@@ -1,0 +1,8 @@
+{
+ "id": 943879,
+ "bug_id": 220950,
+ "attachment_id": 0,
+ "creation_time": "2017-07-23T19:21:20Z",
+ "creator": "gerald@FreeBSD.org",
+ "text": "It appears that Mk/Scripts/check-stagedir.sh completely misses files that appear\n - in the staging directory, and\n - are listed in pkg-plist with an %%OPTION%% prefix when OPTION is off.\n\nThose files should be included in packages (or when the port is installed), but\nare not.\n\nAnd check-stagedir.sh should diagnose that those files are in stagedir, but not\nincluded in pkg-plist.\n\nThis is quite a problem!\n\n\nHow to reproduce:\n\n 1. chdir $PORTSDIR/emulators/wine-devel\n 2. svn up -r 445571  (the version before I'll fix pkg-plist in a minute)\n 3. Run the following script (after adjusting STAGEDIR and PREFIX)\n\n#!/bin/sh\n\nSTAGEDIR=$WRKDIRPREFIX/wine-devel-work/stage\nPREFIX=$WRKDIRPREFIX/wine-devel-prefix\n\ngrep %%STAGING%% pkg-plist | while read f; do\n  f=`echo $f | sed -e 's/%%STAGING%%//'`\n  if [ -f \"$STAGEDIR/$PREFIX/$f\" ]; then\n    printf \"%s no longer contigent on %%STAGING%%?\\n\" \"$f\"\n  fi\ndone"
+}

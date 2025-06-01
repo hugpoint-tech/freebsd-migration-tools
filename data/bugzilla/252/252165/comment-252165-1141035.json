@@ -1,0 +1,8 @@
+{
+ "id": 1141035,
+ "bug_id": 252165,
+ "attachment_id": 0,
+ "creation_time": "2021-01-11T12:30:07Z",
+ "creator": "ali.abdallah@suse.com",
+ "text": "I had a deeper look into the issue, applying the work-around described in comment 3 is definitely not the way to go, the problem lies somewhere else.\n\nActually the code path that end up calling miibus_linkchg is mii_tick and mii_poll (through mii_phy_update). At the first look they seem to be running without lock, but looking at the usb ethernet specific code (if_ure.c in my case), a common lock is acquired before calling those functions.\n\nin ure_tick the lock is already acquired beforehand, by the usb ethernet code \n\nstatic void\nure_tick(struct usb_ether *ue)\n....\nURE_LOCK_ASSERT(sc, MA_OWNED); \nmii_tick(mii);\n....\n\nure_ifmedia_sts is what polls for media status, and it acquires the same lock before calling mii_pollstat.\n\nstatic void\nure_ifmedia_sts(struct ifnet *ifp, struct ifmediareq *ifmr)\n...\nURE_LOCK(sc);\nmii_pollstat(mii);\n...\nURE_UNLOCK(sc);\n\nWhat I'm seeing is that, despite the lock, sometimes they run both in parallel, which is causing the race in the media status... I'm not sure why, and it is kind of driving me crazy."
+}

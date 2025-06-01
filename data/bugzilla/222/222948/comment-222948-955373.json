@@ -1,0 +1,8 @@
+{
+ "id": 955373,
+ "bug_id": 222948,
+ "attachment_id": 0,
+ "creation_time": "2017-10-12T09:18:22Z",
+ "creator": "grarpamp@gmail.com",
+ "text": "Boot the latest amd64 snapshot either 11 or 12, set the dev= parameter in the script to some available da device and run it. Repeats every time.\n\nLOR panic is almost identical to\nhttp://docs.freebsd.org/cgi/mid.cgi?CAD2Ti2-6W_b04fHen5XHiT-bFQZ9CncZptUbDP0yaHbg7gjnUA\nand was possibly first noted here\nhttps://lists.freebsd.org/pipermail/freebsd-stable/2017-June/087291.html\n\n#!/bin/sh --\n\ndev=da1\n\nset -x\ndd if=/dev/zero of=/dev/${dev} bs=1m count=64\ngpart create -s mbr ${dev}\ngpart add -t freebsd -a 1m -b 1m -s 64m -i 1 ${dev}\ngpart create -s bsd ${dev}s1\ngpart add -t freebsd-ufs -a 1m -b 1m -s 31m -i 1 ${dev}s1\ngpart show -p ${dev} ${dev}s1\n\nnewfs /dev/${dev}s1a\nfsck -fy /dev/${dev}s1a\nmount -v -o rw /dev/${dev}s1a /mnt\nsysctl kern.geom.debugflags=16\n### this is broken, footshooting should be allowed here\n# dd: /dev/da0s1: Operation not permitted\ndd if=/dev/zero of=/dev/${dev}s1 seek=2  count=1 bs=1m\nsysctl kern.geom.debugflags=0\numount -v /dev/${dev}s1a\nmount -v -o ro /dev/${dev}s1a /mnt\nls /mnt\ndd if=/dev/zero of=/dev/${dev}s1 seek=34 count=1 bs=1m\n### this is broken\n# ls: .snap: Device not configured\nls -l /mnt\n### select mount instead of umount to get the LOR PANIC\numount -v /dev/${dev}s1a\n#mount -uvw /dev/${dev}s1a"
+}

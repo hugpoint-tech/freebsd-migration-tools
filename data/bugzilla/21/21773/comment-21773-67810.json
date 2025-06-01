@@ -1,0 +1,8 @@
+{
+ "id": 67810,
+ "bug_id": 21773,
+ "attachment_id": 0,
+ "creation_time": "2000-10-05T17:40:00Z",
+ "creator": "jlemon@flugsvamp.com",
+ "text": "\n\tAfter the nexus/ivar change around Sep 28, my kernel no longer\n\tboots.  This seems to be a disagreement over how ivars are used\n\tin the kernel.  Within nexus_alloc_resource(), we have the \n\tfollowing:\n\n#define DEVTONX(dev)       ((struct nexus_device *)device_get_ivars(dev))\n\t\tstruct nexus_device *ndev = DEVTONX(child);\n\n\twhere ``child'' happens to be ata1.  However, within ata/ata-all.c,\n\tThere is the following statement:\n\n\t\tdevice_set_ivars(child, (void *)(uintptr_t) unit);\n\n\tSo when nexus_alloc_resource() is called, it ends up treating the\n\tunit as a pointer.  I'm not sure what the new world order mandates\n\there; what is the legal usage of ivar?\n\n\tAdditional debug infromation from the nexus_alloc_resource()\n\tstack frame:\n\n(kgdb) p *dev\n$4 = {ops = 0xc0a57000, link = {tqe_next = 0x0, tqe_prev = 0xc0721410}, \n  parent = 0xc0721400, children = {tqh_first = 0xc0a6f300, \n    tqh_last = 0xc0a6f184}, driver = 0xc02fb38c, devclass = 0xc0725300, \n  unit = 0, nameunit = 0xc071d640 \"nexus0\", desc = 0x0, busy = 0, \n  state = DS_ALIVE, devflags = 0, flags = 19, order = 0 '\\000', \n  pad = 0 '\\000', ivars = 0x0, softc = 0xc071d620}\n(kgdb) p *child\n$5 = {ops = 0xc0a43000, link = {tqe_next = 0x0, tqe_prev = 0xc0a70804}, \n  parent = 0xc0a70f00, children = {tqh_first = 0x0, tqh_last = 0xc0a70790}, \n  driver = 0xc02f5ce4, devclass = 0xc0718ce0, unit = 1, \n  nameunit = 0xc071d390 \"ata1\", desc = 0x0, busy = 0, state = DS_NOTPRESENT, \n  devflags = 0, flags = 3, order = 0 '\\000', pad = 0 '\\000', ivars = 0x1, \n  softc = 0xc0a70680}"
+}

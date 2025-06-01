@@ -1,0 +1,8 @@
+{
+ "id": 1321038,
+ "bug_id": 269770,
+ "attachment_id": 252840,
+ "creation_time": "2024-08-17T10:41:38Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "Created attachment 252840\nworkaround/fix\n\nIn libalias/alias_db.c:_FindLinkIn() is a search for a temporary\n(fully specified) flow, and on success it does\n        return (UseLink(la, lnk));\nFurther down in this function is another search for a permanent\n(partially specified) portforward.\n\nIf we return through UseLink(), this then does\n        CleanupLink(la, \u0026lnk, 0)\nand there is a check for expiry, and then\n        DeleteLink(lnk, ...)\nSo from there, if the link is expired, we get a NULL back, and the\npermanent portforward is not searched for.\n\nI fix this by delaying the CleanupLink() invocation to after the\npermanent link has been searched for. And since this would add another\nsearch on potentially every packet, I delay it only if the temporary\nlink has expired."
+}

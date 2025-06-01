@@ -1,0 +1,8 @@
+{
+ "id": 930023,
+ "bug_id": 131876,
+ "attachment_id": 0,
+ "creation_time": "2017-04-11T22:25:14Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "It looks to me as though the loop in kern_recvit() which sets MSG_CTRUNC needs to use dom_dispose to ensure that the remaining rights are closed before the mbuf is\nfreed. Unfortunately, dom_dispose wants a socket rather than an mbuf - this was changed in r285522 to fix a race between unp_dispose() and unp_gc(). However, in this case the truncated mbuf will have already been removed from the socket buffer, so we don't need to worry about the race. (If MSG_PEEK is set, the rights will still be present in the sockbuf and we needn't do anything.)\n\nSo, to fix this we'd either need a way to invoke dom_dispose on a plain mbuf (i.e., the KPI prior to r285522), or we need to fake up a socket like sorflush() does."
+}

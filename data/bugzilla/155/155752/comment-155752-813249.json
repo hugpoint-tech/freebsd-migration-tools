@@ -1,0 +1,8 @@
+{
+ "id": 813249,
+ "bug_id": 155752,
+ "attachment_id": 0,
+ "creation_time": "2015-03-04T12:47:44Z",
+ "creator": "nkoch@demig.de",
+ "text": "I came across the same problem: I need to switch the transmitter\nof an external RS232/RS485 converter on before satarting transmittision\nand off afterwards using RTS.\n\nMy quick driver hack is to always call the chip-specific drain\nfunction whenever there is a request to turn off RTS.\n\nThis is my patch to the 16550 code:\n\n--- uart_dev_ns8250.c.orig\t2015-03-04 13:37:04.000000000 +0100\n+++ uart_dev_ns8250.c\t2015-03-04 13:40:05.000000000 +0100\n@@ -886,6 +886,10 @@\n \t\t}\n \t} while (!atomic_cmpset_32(\u0026sc-\u003esc_hwsig, old, new));\n \tuart_lock(sc-\u003esc_hwmtx);\n+#ifdef UART_HACK_DRAIN_RTSOFF\n+        if ((sig \u0026 SER_DRTS) \u0026\u0026 !(sig \u0026 SER_RTS))\n+                ns8250_drain(bas, UART_DRAIN_TRANSMITTER);\n+#endif\n \tns8250-\u003emcr \u0026= ~(MCR_DTR|MCR_RTS);\n \tif (new \u0026 SER_DTR)\n \t\tns8250-\u003emcr |= MCR_DTR;\n\nThe patch is against head but has been tested with 9.1\nusing a scope with protocol analyzer function.\n\nI did not look into the other chips' code so may it\nwill not universally work."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1300943,
+ "bug_id": 264115,
+ "attachment_id": 0,
+ "creation_time": "2024-03-15T01:26:02Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch main references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=3705d679a6344c957cae7a1b6372a8bfb8c44f0e\n\ncommit 3705d679a6344c957cae7a1b6372a8bfb8c44f0e\nAuthor:     Kyle Evans \u003ckevans@FreeBSD.org\u003e\nAuthorDate: 2024-03-15 01:19:18 +0000\nCommit:     Kyle Evans \u003ckevans@FreeBSD.org\u003e\nCommitDate: 2024-03-15 01:19:21 +0000\n\n    if_wg: use proper barriers around pkt-\u003ep_state\n\n    Without appropriate load-synchronization to pair with store barriers in\n    wg_encrypt() and wg_decrypt(), the compiler and hardware are often\n    allowed to reorder these loads in wg_deliver_out() and wg_deliver_in()\n    such that we end up with a garbage or intermediate mbuf that we try to\n    pass on.  The issue is particularly prevalent with the weaker\n    memory models of !x86 platforms.\n\n    Switch from the big-hammer wmb() to more explicit acq/rel atomics to\n    both make it obvious what we're syncing up with, and to avoid somewhat\n    hefty fences on platforms that don't necessarily need this.\n\n    With this patch, my dual-iperf3 reproducer is dramatically more stable\n    than it is without on aarch64.\n\n    PR:             264115\n    MFC after:      1 week\n    Reviewed by:    andrew, zlei\n    Differential Revision:  https://reviews.freebsd.org/D44283\n\n sys/dev/wg/if_wg.c | 10 ++++------\n 1 file changed, 4 insertions(+), 6 deletions(-)"
+}

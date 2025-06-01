@@ -1,0 +1,8 @@
+{
+ "id": 980376,
+ "bug_id": 192487,
+ "attachment_id": 0,
+ "creation_time": "2018-03-02T16:07:48Z",
+ "creator": "mhorne063@gmail.com",
+ "text": "This procedure is not handled by either the cpucontrol or cpupdate utilities but instead by the underlying driver cpuctl. Inspection of the cpuctl code shows that this is being handled properly in the update_intel() function.\n\nsys/dev/cpuctl/cpuctl.c starting at line 366:\n\n  critical_enter();\n  rdmsr_safe(MSR_BIOS_SIGN, \u0026rev0); /* Get current microcode revision. */\n\n  /*\n   * Perform update.\n   */\n  wrmsr_safe(MSR_BIOS_UPDT_TRIG, (uintptr_t)(ptr));\n  wrmsr_safe(MSR_BIOS_SIGN, 0);\n\n  /*\n   * Serialize instruction flow.\t\n   */\n  do_cpuid(0, tmp);\n  critical_exit();\n  rdmsr_safe(MSR_BIOS_SIGN, \u0026rev1); /* Get new microcode revision. */\n\nThe section of the SDM mentioned defines a procedure to safely determine the signature after a microcode update but it doesn't seem to be necessary to perform it each time the MSR is queried."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 943691,
+ "bug_id": 220930,
+ "attachment_id": 184607,
+ "creation_time": "2017-07-23T01:03:08Z",
+ "creator": "yuri@freebsd.org",
+ "text": "Created attachment 184607\nmalloc-user-process.d\n\nHere's how to repeat:\n1. Install qTox and google perftools: pkg install qTox google-perftools\n2. Load dtraceall kernel module: kldload dtraceall.ko\n3. Place the attached scripts 'start-process-and-wait' and 'malloc-user-process.d' into some directory and set +x flag on both.\n4. As a regular user, start qTox in stopped mode: LD_PRELOAD=/usr/local/lib/libtcmalloc.so  ./start-process-and-wait /usr/local/bin/qtox\n5. As root, with the pid printed on step 4, start dtrace: ./malloc-user-process.d {pid} \u003e out.log\n\nIn many cases, step 5 prints one of these two error messages and exits:\n\u003e dtrace: failed to compile script ./malloc-user-process.d: line 9: Invalid argument\nor\n\u003e dtrace: failed to compile script ./malloc-user-process.d: line 13: failed to create return probe for 'malloc': Unknown variable name\nIn both cases the debugged process gets continued.\n\nIn rare other cases dtrace continues and eventually deadlocks:\n\u003e dtrace: script './malloc-user-process.d' matched 2 probes\n- at this point qtox process stays in TX+ state, and dtrace stays in S+ state forever.\n\nAll errors are invalid. pidNNN argument should be valid in line 9, and malloc symbol is always present by the virtue of LD_PRELOAD of the library with 'malloc' symbol in it.\ndtrace shouldn't deadlock. Ctrl-C on dtrace doesn't stop it. However, 'killall -9 dtrace' does."
+}

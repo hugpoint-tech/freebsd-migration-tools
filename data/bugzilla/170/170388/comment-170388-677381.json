@@ -1,0 +1,8 @@
+{
+ "id": 677381,
+ "bug_id": 170388,
+ "attachment_id": 0,
+ "creation_time": "2012-08-07T09:36:20Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kib\nDate: Tue Aug  7 08:36:10 2012\nNew Revision: 239125\nURL: http://svn.freebsd.org/changeset/base/239125\n\nLog:\n  Do not apply errata 721 workaround when under hypervisor, since\n  typical hypervisor does not implement access to the required MSR,\n  causing #GP on boot.\n  \n  Reported and tested by:\tolgeni\n  PR:\tamd64/170388\n  MFC after:\t3 days\n\nModified:\n  head/sys/amd64/amd64/initcpu.c\n\nModified: head/sys/amd64/amd64/initcpu.c\n==============================================================================\n--- head/sys/amd64/amd64/initcpu.c\tTue Aug  7 07:52:25 2012\t(r239124)\n+++ head/sys/amd64/amd64/initcpu.c\tTue Aug  7 08:36:10 2012\t(r239125)\n@@ -91,11 +91,17 @@ init_amd(void)\n \t *\n \t * http://support.amd.com/us/Processor_TechDocs/41322_10h_Rev_Gd.pdf\n \t * http://support.amd.com/us/Processor_TechDocs/44739_12h_Rev_Gd.pdf\n+\t *\n+\t * Hypervisors do not provide access to the errata MSR,\n+\t * causing #GP exception on attempt to apply the errata.  The\n+\t * MSR write shall be done on host and persist globally\n+\t * anyway, so do not try to do it when under virtualization.\n \t */\n \tswitch (CPUID_TO_FAMILY(cpu_id)) {\n \tcase 0x10:\n \tcase 0x12:\n-\t\twrmsr(0xc0011029, rdmsr(0xc0011029) | 1);\n+\t\tif ((cpu_feature2 \u0026 CPUID2_HV) == 0)\n+\t\t\twrmsr(0xc0011029, rdmsr(0xc0011029) | 1);\n \t\tbreak;\n \t}\n }\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

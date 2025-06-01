@@ -1,0 +1,8 @@
+{
+ "id": 80786,
+ "bug_id": 25886,
+ "attachment_id": 0,
+ "creation_time": "2001-03-18T01:50:01Z",
+ "creator": "fenner@research.att.com",
+ "text": "\nThe getcap(3) library provides the ability, using cgetset(), to\nprepend an entry to a capabilities database.  This is used, e.g.,\nby libtermcap when the $TERMCAP environment variable is set.\n\nHowever, if an application using libtermcap also uses getcap(3)\nitself, the value prepended by libtermcap is also prepended to\nthe application's database.\n\nThis is noted in the getcap(3) BUGS section, so I suppose this is\nvaugely an lpc bug.\n\nFix: \n\nWorkaround: call cgetset(NULL) right before the first cgetfirst()\nin any getcap(3) consumer (e.g. usr.sbin/lpr/common_source/printcap.c),\nparticularly those that link with -ltermcap (but who knows what other\nlibrary function might use cgetset(), so better safe than sorry).\n\nFix: Change the getcap(3) API?  Make cgetfirst() notice that it's being\ncalled with a different db_array without a cgetset() call in between\nand call cgetset(NULL)?  (eeew)  Make cgetclose() call cgetset(NULL)\nif gottoprec == 1?  (subtle API change but less eeew)\nHow-To-Repeat: \n% eval `tset -s`\n% lpc\nlpc\u003e stat all\n\nNotice the extra printer named after your terminal type.\n% echo \"$TERMCAP\"\n\naha, that's where it came from."
+}

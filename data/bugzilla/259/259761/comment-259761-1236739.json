@@ -1,0 +1,8 @@
+{
+ "id": 1236739,
+ "bug_id": 259761,
+ "attachment_id": 0,
+ "creation_time": "2022-11-24T10:16:06Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "(In reply to dgilbert from comment #0)\n\u003e identified the function as jsimd_rgb_ycc_convert_avx2.columnloop(),\n\u003e but I'm not sure I trust that.\njsimd_rgb_ycc_convert_avx2[columnloop] to be precise, but it can be overridden by passing specific JSIMD_FORCE{MMX,SSE,SSE2,etc.} environment variable.  Let's disable SIMD altogether and see how it goes:\n\n$ env JSIMD_FORCENONE=1 gdb %wrkdir%/fbida-2.14/build/exiftran/exiftran\n$ r -g -o foo1.jpg foo.jpg\nProgram received signal SIGBUS, Bus error.\nObject-specific hardware error.\n0x00000008010d24b7 in rgb_ycc_convert_internal (cinfo=0x7fffffffe148, input_buf=0x801ac18c8, output_buf=0x801a5b750, output_row=1, num_rows=0) at %wrkdir%/libjpeg-turbo-2.1.4/jccolext.c:51\n51            r = inptr[RGB_RED];\n(gdb) p inptr\n$1 = (JSAMPROW) 0x3b3b3939392b2b2b \u003cerror: Cannot access memory at address 0x3b3b3939392b2b2b\u003e\n(gdb)\n\nNote that similar bug report had been filed at their GitHub (linked) and immediately closed as libjpeg's API is admittedly not very user-friendly or user-proof, and specially crafted image can crash it.  I'm not sure if/how should we pursue this from the FreeBSD side."
+}

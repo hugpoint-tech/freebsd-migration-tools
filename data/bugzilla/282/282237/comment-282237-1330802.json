@@ -1,0 +1,8 @@
+{
+ "id": 1330802,
+ "bug_id": 282237,
+ "attachment_id": 0,
+ "creation_time": "2024-10-21T04:30:15Z",
+ "creator": "jackdbendtsen@gmail.com",
+ "text": "Some of the cases inside umouse_request() (usr.sbin/bhyve/usb_mouse.c) use the data component of an event, while only partially checking if it's NULL.\n\nFor example:\n```\n\tcase UREQ(UR_GET_STATUS, UT_READ_INTERFACE):\n\tcase UREQ(UR_GET_STATUS, UT_READ_ENDPOINT):\n\t\tDPRINTF((\"umouse: (UR_GET_STATUS, UT_READ_INTERFACE)\"));\n\t\tif (data != NULL \u0026\u0026 len \u003e 1) {\n\t\t\tUSETW(udata, 0);\n\t\t\tdata-\u003eblen = len - 2;\n\t\t\tdata-\u003ebdone += 2;\n\t\t}\n\t\teshort = data-\u003eblen \u003e 0;\n\t\tbreak;\n```\nAs you can see, 'data' has a NULL check, but then 'data' is immediately deferenced anyway after the check regardless of if it's NULL or not.\n\nThere are actually four occurrences of this same bug, each in a different case in this switch block.\n\nHere's a patch that can be applied to CURRENT that fixes the issue:\n```\n533c533\n\u003c \t\teshort = data-\u003eblen \u003e 0;\n---\n\u003e \t\teshort = data != NULL \u0026\u0026 data-\u003eblen \u003e 0;\n544c544\n\u003c \t\teshort = data-\u003eblen \u003e 0;\n---\n\u003e \t\teshort = data != NULL \u0026\u0026 data-\u003eblen \u003e 0;\n629c629\n\u003c \t\teshort = data-\u003eblen \u003e 0;\n---\n\u003e \t\teshort = data != NULL \u0026\u0026 data-\u003eblen \u003e 0;\n638c638\n\u003c \t\teshort = data-\u003eblen \u003e 0;\n---\n\u003e \t\teshort = data != NULL \u0026\u0026 data-\u003eblen \u003e 0;\n```\n\nCheers,\nJack Bendtsen"
+}

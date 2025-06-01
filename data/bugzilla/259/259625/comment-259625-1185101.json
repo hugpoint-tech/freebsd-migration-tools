@@ -1,0 +1,8 @@
+{
+ "id": 1185101,
+ "bug_id": 259625,
+ "attachment_id": 0,
+ "creation_time": "2021-11-03T10:18:49Z",
+ "creator": "sir@cmpwn.com",
+ "text": "This problem seems to be reproducible in FreeBSD 13.\n\nGiven the following test program:\n\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n\nextern char **environ;\n\nint main(void) {\n\tint fd = open(\"./test.sh\", O_RDONLY);\n\tchar *argv[] = {\n\t\t\"./test.sh\",\n\t\tNULL\n\t};\n\tfexecve(fd, argv, environ);\n}\n\nAnd the following ./test.sh:\n\n#!/bin/sh\necho hi\n\nThe result is:\n\n/bin/sh: cannot open /dev/fd/3: No such file or directory\n\nMounting fdescfs on /dev/fd changes the error:\n\n/bin/sh: cannot open /dev/fd/3: Permission denied\n\nThe results do not change with O_EXEC instead of (or in addition to) O_RDONLY.\n\nPossibly related: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=169651\n\nIt seems like this may have worked at some point, as some effort seems to have gone into making this use-case work. The fdescfs requirement is documented in the CAVEATS section of the execve(2) man page, but it does not seem to work even with fdescfs. I think it would also be wise for FreeBSD to enable fdescfs by default in order to allow programs to reliably depend on the functionality of fexecve."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1047772,
+ "bug_id": 233863,
+ "attachment_id": 0,
+ "creation_time": "2019-04-21T02:36:54Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "One thing I'm not sure of for usefdt-mode is what\nthe consequences of small memory machines might be.\n/usr/src/stand/powerpc/ofw/ofwfdt.c has:\n\nint\nfdt_platform_load_dtb(void)\n{\n        void *buffer;\n        size_t buflen = 409600;\n\n        buffer = malloc(buflen);\n        fdt_create_empty_tree(buffer, buflen);\n        add_node_to_fdt(buffer, OF_peer(0), fdt_path_offset(buffer, \"/\"));\n        ofwfdt_fixups(buffer);\n        fdt_pack(buffer);\n\n        fdt_load_dtb_addr(buffer);\n        free(buffer);\n\n        return (0);\n}\n\nOn a 1 GiByte machine, with some other overhead\nuse of RAM, that 409600 could be around half the\navailable memory --or more. Even though\nfdt_load_dtb_addr will make a smaller copy, and\nthen the bigger one will be freed, the copy's\naddress range is constrained by the existing big\nallocation at the time.\n\nOn a sufficiently small memory machine the 409600\nwould just not be possible. (That might even be\ntrue for a 1 GiByte machine.) Note the lack of\nany check on the malloc(409600)'s success vs.\nfailure status. (By contrast, fdt_load_dtb_addr\ndoes check for a NULL return, even though\nfdt_platform_load_dtb ignores the fdt_load_dtb_addr\nreturn value.)\n\nNothing that I've done so far attempts to deal with\nsuch issues. The behavior for insufficient problems\nis probably a mess and it may not be obvious that\nany odd behavior is tied to insufficient RAM for the\nexisting implementation."
+}

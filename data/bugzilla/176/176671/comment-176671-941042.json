@@ -1,0 +1,8 @@
+{
+ "id": 941042,
+ "bug_id": 176671,
+ "attachment_id": 0,
+ "creation_time": "2017-07-06T11:31:26Z",
+ "creator": "olivier@freebsd.org",
+ "text": "I've reach to reproduce a setup when this localy-unique epair create conflict on a LAN:\n\n     +----------------+       +---------------+\n     |     ServerA    |       |    serverB    |\n     |  bridge0 - em0 |- LAN -| em0 - bridge0 |\n     |    |           |       |         |     |\n     |  epair1a       |       |       epair1a |\n     |  epair1b       |       |       epair1b |\n     |    |           |       |         |     |\n     |  vnetjail1     |       |     vnetjail2 |\n     +----------------+       +---------------+\n\nMAC addresses of epair1 are the same on both jail, then they can't communicate each others:\n\n[root@jail1]~# ifconfig epair1b ether\nepair1b: flags=8943\u003cUP,BROADCAST,RUNNING,PROMISC,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        options=8\u003cVLAN_MTU\u003e\n        ether 02:ff:70:00:0f:0b\n        hwaddr 02:ff:70:00:0f:0b\n\n\n[root@jail2]~# ifconfig epair1b ether\nepair1b: flags=8943\u003cUP,BROADCAST,RUNNING,PROMISC,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        options=8\u003cVLAN_MTU\u003e\n        ether 02:ff:70:00:0f:0b\n        hwaddr 02:ff:70:00:0f:0b\n\nWe could perhaps generate a MAC field \"eaddr[1]\" (in if_epair.c) from the hostid  for mitigate this conflict (like the net/if_bridge.c code) ?\nBut if we take code from if_bridge, we should create a common function for being available to if_bridge and if_epair."
+}

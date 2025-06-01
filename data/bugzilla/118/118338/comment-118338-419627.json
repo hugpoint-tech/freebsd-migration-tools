@@ -1,0 +1,8 @@
+{
+ "id": 419627,
+ "bug_id": 118338,
+ "attachment_id": 0,
+ "creation_time": "2007-11-29T21:30:02Z",
+ "creator": "dimitry@andric.com",
+ "text": "Hi,\n\nI recently upgraded some boxes with fresh ports, and I noticed the\nfollowing, which only occurs if you make a binary package from\nports/www/apache22, AND there is no /usr/local/www/apache22/data\ndirectory before installing it:\n\ncp: /usr/local/share/examples/apache22/www/apache22/data/index.html: No such file or directory\npkg_add: command '[ -f /usr/local/www/apache22/data/index.html ] || cp /usr/local/share/examples/apache22/www/apache22/data/index.html /usr/local/www/apache22/data/index.html' failed\n\nThere are two issues in the pkg-plist:\n- it doesn't create the %D/www/apache22/data directory if it doesn't\nexist yet\n- if index.html doesn't exist, the cp tries to copy from (nonexisting)\n%D/share/examples/apache22/www/apache22/data/index.html instead of\n%D/share/examples/apache22/index.html.\n\nHere is a patch that solves these two issues; it creates the\n%D/www/apache22/data dir if needed, and corrects the cp source path.\nNote I also added a @dirrmtry, since we probably don't want to complain\nif the user customized his index.html, and we therefore can't remove\nthe directory.\n\nHow-To-Repeat: Build apache-2.2.6_2.tbz (make -C /usr/ports/www/apache22 package)\nCopy apache-2.2.6_2.tbz to clean machine\npkg_add apache-2.2.6_2.tbz\nObserve installation error message"
+}

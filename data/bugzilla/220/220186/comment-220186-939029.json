@@ -1,0 +1,8 @@
+{
+ "id": 939029,
+ "bug_id": 220186,
+ "attachment_id": 0,
+ "creation_time": "2017-06-21T15:05:19Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "There was a recent change to the ZFS boot code that makes check all vdev labels for the vdev configuration data.  ZFS boot code now requires information about the disk sizes and, as a side effect, it now rejects disks with a too small size.\n\nThat change exposed a problem in bhyveload.  Specifically, it uses fstat(2) to check a size of a disk.  But that seems to work reliably only if the disk is a file.  If the disk is character device, then st_size is zero and the ZFS boot code rejects such a \"zero-sized\" disk.\n\nIt seems that bhyveload, cb_diskioctl() to be precise, needs to check the type of the disk and issue a real DIOCGMEDIASIZE ioctl if it's a character device.\n\nThe emulation of illumos fstat64() in sys/cddl/compat/opensolaris/sys/stat.h seems to be the code that can be easily reused."
+}

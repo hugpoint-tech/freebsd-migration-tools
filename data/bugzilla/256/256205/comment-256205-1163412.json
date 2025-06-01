@@ -1,0 +1,8 @@
+{
+ "id": 1163412,
+ "bug_id": 256205,
+ "attachment_id": 0,
+ "creation_time": "2021-05-27T16:52:21Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "While experimenting with star on an arm64 FreeBSD 13.0-RELEASE system on ZFS, I noticed that star would some times spuriously consider files to be full of data holes when they do in fact not have any holes at all.  A typical truss trace looks like this:\n\n 4677: openat(AT_FDCWD,\"ved\",O_RDONLY,00)\t = 3 (0x3)\n 4677: lseek(3,0x0,SEEK_HOLE)\t\t\t = 0 (0x0)\n 4677: write(2,\"'ved' is sparse\\n\",16)\t\t = 16 (0x10)\n 4677: lseek(3,0x0,SEEK_HOLE)\t\t\t = 0 (0x0)\n 4677: lseek(3,0x0,SEEK_DATA)\t\t\t ERR#6 'Device not configured'\n 4677: lseek(3,0x37594,SEEK_HOLE)\t\t ERR#6 'Device not configured'\n 4677: lseek(3,0x0,SEEK_SET)\t\t\t = 0 (0x0)\n\n\nlseek(3, 0, SEEK_HOLE) returns 0, indicating that the file begins with a data hole.  This is unlikely as the file ved is an ELF executable which always begins with \\0177ELF.  There are also spurious ENXIO returns from further lseek calls I do not understand.  Copying the file before running star makes the problem go away:\n\n 4721: openat(AT_FDCWD,\"ved\",O_RDONLY,00)\t = 3 (0x3)\n 4721: lseek(3,0x0,SEEK_HOLE)\t\t\t = 226708 (0x37594)\n 4721: lseek(3,0x0,SEEK_SET)\t\t\t = 0 (0x0)\n\nIt is difficult to reproduce this problem as it seems to only appear some times and on random executables.\n\nI believe this is a severe problem as wrong output from lseek(..., SEEK_HOLE, ...) may make “smart” copying and archiving programs generate corrupt copies/archives.\n\nThis problem looks similar to #164445, but surely that bug has already been fixed long ago."
+}

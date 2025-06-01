@@ -1,0 +1,8 @@
+{
+ "id": 25581,
+ "bug_id": 8388,
+ "attachment_id": 0,
+ "creation_time": "1998-10-20T18:30:01Z",
+ "creator": "peter@baileynm.com",
+ "text": "\n\tUsers forget to take out \"DOMAIN\" in DUN dialog box when switching\n\tbetween NT and BSD dial-in servers. Dialin fails. Users assume it's\n\tbecause FreeBSD is a POS and whine about using NT instead. Sysadmin\n\tfixes problem instead of whining on IRC. Nobody dies.\n\nFix: \n\nIf getpwnam fails in pap.c, then call it again with remainder of\n\tusername (pap.c, about line 125) :\n\n     result = (pwd = getpwnam(name)) \u0026\u0026\n              !strcmp(crypt(key, pwd-\u003epw_passwd), pwd-\u003epw_passwd);\n+    if(!result) {\n+        if(!pwd) { /* disgusting hack to avoid complaints about domain auth */\n+                char *s;\n+                if(s=strchr(name, '\\\\')) {\n+                    result = (pwd = getpwnam(s+1)) \u0026\u0026\n+                     !strcmp(crypt(key, pwd-\u003epw_passwd), pwd-\u003epw_passwd);\n+                }\n+                if(!pwd)\n+                        LogPrintf(LogLCP, \"No such user?\\n\");\n+        }\n+    }\n     endpwent();\nHow-To-Repeat: \n\tDial-in with DOMAIN in DUN dialog box."
+}

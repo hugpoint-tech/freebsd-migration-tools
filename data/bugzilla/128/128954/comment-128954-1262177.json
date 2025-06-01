@@ -1,0 +1,8 @@
+{
+ "id": 1262177,
+ "bug_id": 128954,
+ "attachment_id": 0,
+ "creation_time": "2023-06-05T12:19:35Z",
+ "creator": "melifaro@FreeBSD.org",
+ "text": "(In reply to Alexander V. Chernikov from comment #4)\nI'd like to state that I'm not particularly happy about this design decision, but (as of now) I don't see an easy way to fix this.\nTo avoid deleting the routes one needs to provide an alternative for the source address, which is impossible for the system with a single ifa (given that 127.0.0.1 cannot be the source of such routes). To have an alternative, one needs to propagate the \"change\" event for the ifa instead of a pair of delete/add event. Specifically,\n\n1) When scanning the routes on ifa deletion/change the logic for SaS selection, along with the logic for the nexthop creation has to be added.\n2) Ifa change has to be propagated from the protocol control player (no such thing exists ATM)\n3) Ifa change has to start from the userland (e.g. ifconfig has to be taught to do replace instead of delete/update)\n4) The current approach results in \"silent\" deletion not propagated to the routing socket. The new approach will result in the route changes. Making it compatible for rtsock-based routing daemons may be tricky.\n\nWhile 2) (partially) and 3) is going to be address by the upcoming Netlink enhancements for the address manipulation, the considerable amount of effort still remains, with the biggest part being backward compatibility."
+}

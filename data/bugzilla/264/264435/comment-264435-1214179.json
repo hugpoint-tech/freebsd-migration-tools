@@ -1,0 +1,8 @@
+{
+ "id": 1214179,
+ "bug_id": 264435,
+ "attachment_id": 0,
+ "creation_time": "2022-06-03T15:01:27Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "In this from Bhyve's pci_hda.c:\n\nstatic int\nhda_write(struct hda_softc *sc, uint32_t offset, uint8_t size, uint32_t value)\n{\n        uint32_t old = hda_get_reg_by_offset(sc, offset);\n        ...;\n        hda_set_reg_handler set_reg_handler = hda_set_reg_table[offset];\n        ...;\n        if (set_reg_handler)\n                set_reg_handler(sc, offset, old);\n\nhda_set_reg_table[] has 385 entries. The guest gets to specify offset,\nand it can be up to 8580 (HDA_LAST_OFFSET, enforced in\nhda_get_reg_by_offset). So a malicious guest has a bunch of options\nfor where the call to set_reg_handler() can end up.\n\nYou can demo this by adding\n\n    HDAC_WRITE_4(\u0026sc-\u003emem, 0x4a4, 0x0);\n\nat the start of hdac_reset() in /sys/dev/sound/pci/hda/hdac.c\nand booting the resulting guest kernel on Bhyve."
+}

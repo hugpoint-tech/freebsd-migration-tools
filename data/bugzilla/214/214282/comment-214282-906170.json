@@ -1,0 +1,8 @@
+{
+ "id": 906170,
+ "bug_id": 214282,
+ "attachment_id": 0,
+ "creation_time": "2016-11-06T19:54:00Z",
+ "creator": "bugzilla.freebsd@omnilan.de",
+ "text": "At least on Intel single socket servers the UEFI firmware can't handle the msdosfs (FAT12) volume label\"EFI        \", which is currently used with \"/boot/boot1.efifat\" image (tested on 11-release, most likely also on 10.3-release).\n\nFirmware's boot process somehow confused the label \"EFI\" with the boot path, also containing EFI (as far as I remember the meaning of the failure message).\nAffected systems are S1200BT and S1200v3RP e.g.\n\nSimply reformatting with a different volume label solved the problem.\n\nAccording to Dimitry Andric, it's easily fixable for build process by changing the label name in \"sys/boot/efi/boot1/generate-fat.sh\".\nSorry, I don't have sources handy right now, so no patch attached. Could suggest one of course, but would take longer to process the one from here instead of direct edit I guess ;-)\n\nBesides changing boot1.efifat, bsdinstall could be modified to work arround; but that's not the right thing IHMO.\n\nPeople affected (or unsure if they also suffer from this firmware obstacle) could try the following (assuming index 1 of /dev/da0's GPT is the EFI-sys-part):\n'newfs_msdos -L DA0BOOT1 /dev/da0p1 \u0026\u0026 mount /dev/msdosfs/DA0BOOT1 /mnt'\n'mkdir -p /mnt/EFI/BOOT \u0026\u0026 cp /boot/boot1.efi /mnt/EFI/BOOT/BOOTx64.efi'\n'echo \"BOOTx64.efi\" \u003e mnt/EFI/BOOT/startup.nsh \u0026\u0026 umount /mnt'\n\nJust in case this report is found while people are searching for solution…\n\n-harry"
+}

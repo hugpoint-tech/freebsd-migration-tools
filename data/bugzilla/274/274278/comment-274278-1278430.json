@@ -1,0 +1,8 @@
+{
+ "id": 1278430,
+ "bug_id": 274278,
+ "attachment_id": 0,
+ "creation_time": "2023-10-05T10:27:39Z",
+ "creator": "oliver.giersch@b-tu.de",
+ "text": "Setting \"debug.late_console=0\" in loader.conf leads to machdep.c:hammer_time to initialize console device(s) before `getmemsize` is called.\n\nThis causes a kernel panic: \"pmap_mapdev_internal:too many preinit mappings\",\nwith the following callstack (examined through QEMU+GDB):\n\npmap_mapdev_internal@0xffffffff808cf591 (/usr/local/src/freebsd/sys/amd64/amd64/pmap.c:9094)\npmap_mapdev_attr@0xffffffff808cf518 (/usr/local/src/freebsd/sys/amd64/amd64/pmap.c:9150)\nvt_efifb_init@0xffffffff803cc9f2 (/usr/local/src/freebsd/sys/dev/vt/hw/efifb/efifb.c:143)\nvtterm_cnprobe@0xffffffff803d0852 (/usr/local/src/freebsd/sys/dev/vt/vt_core.c:1677)\ntermcn_cnprobe@0xffffffff805555df (/usr/local/src/freebsd/sys/kern/subr_terminal.c:579)\ncninit@0xffffffff80435f79 (/usr/local/src/freebsd/sys/kern/kern_cons.c:166)\nhammer_time@0xffffffff808b349e (/usr/local/src/freebsd/sys/amd64/amd64/machdep.c:1532)\nbtext@0xffffffff8029ffc0 (/usr/local/src/freebsd/sys/amd64/amd64/locore.S:78)\n\nFrom a quick look at the code, the cause of the panic seems to stem from this:\n\n`pmap_mapdev_internal` expects `virtual_avail` (defined in amd64/pmap.c) to be initialized to a non-zero value, but `virtual_avail` is only initialized in `pmap_bootstrap`, which is called during execution of `getmemsize`, i.e., after the attempted early console init."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 580487,
+ "bug_id": 151023,
+ "attachment_id": 0,
+ "creation_time": "2010-09-28T10:00:23Z",
+ "creator": "tjmao@tjmao.net",
+ "text": "An interval timer (itimer) allows a process to do repeated work at a given frequency.  If an -i or -f option is specified, the FreeBSD ping6(8) will use this value to call setitimer(2) to register the timer, then the signal handler is called at every expiry of the timer, sending an ICMPv6 packet each time.\n\nHowever, the KAME version of ping6 utility immediately exits the loop after knowing that it is the last packet to send, which causes unread replies from a remote host to be ignored.\n\nThis is a bug and can be fixed by setting itimer to zero as soon as the last packet is sent, then continue the loop to see if any replies are received.\n\nFix: Apply the attached patch to src/sbin/ping6/ping6.c and the problem will be fixed.\n\nTested against CVS revision 1.39 but this is supposed to work on older versions as well.\n\nPatch attached with submission follows:\nHow-To-Repeat: Suppose there is an average RTT seconds round-trip delay between v6host1 and v6host2.\nINT is the interval (seconds) between packets.\nCNT is the total number of packets to send.\n\nRun as root on v6host1:\nv6host1# ping6 -i $INT -c $CNT -q v6host2\n\nThen the reply might look like this (0.01 interval, 245.816 ms delay, 100 packets):\n\n--- ipv6.sjtu.edu.cn ping6 statistics ---\n100 packets transmitted, 76 packets received, 24.0% packet loss\nround-trip min/avg/max/std-dev = 244.446/245.816/247.826/0.705 ms\n\nAfter re-adjusting $INT and switching to another destination host with a different RTT, one would simply conclude with the following formula:\n\nestimated-packets-lost = RTT / INT"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 657615,
+ "bug_id": 166382,
+ "attachment_id": 0,
+ "creation_time": "2012-04-04T18:25:18Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: mav\nDate: Wed Apr  4 17:24:53 2012\nNew Revision: 233878\nURL: http://svn.freebsd.org/changeset/base/233878\n\nLog:\n  MFC r233606:\n  Stop HDA controller polling callout on suspend and reset it on resume.\n  \n  PR:\t\tkern/166382\n\nModified:\n  stable/9/sys/dev/sound/pci/hda/hdac.c\nDirectory Properties:\n  stable/9/sys/   (props changed)\n\nModified: stable/9/sys/dev/sound/pci/hda/hdac.c\n==============================================================================\n--- stable/9/sys/dev/sound/pci/hda/hdac.c\tWed Apr  4 16:15:40 2012\t(r233877)\n+++ stable/9/sys/dev/sound/pci/hda/hdac.c\tWed Apr  4 17:24:53 2012\t(r233878)\n@@ -1558,8 +1558,10 @@ hdac_suspend(device_t dev)\n \tHDA_BOOTHVERBOSE(\n \t\tdevice_printf(dev, \"Reset controller...\\n\");\n \t);\n+\tcallout_stop(\u0026sc-\u003epoll_callout);\n \thdac_reset(sc, 0);\n \thdac_unlock(sc);\n+\tcallout_drain(\u0026sc-\u003epoll_callout);\n \ttaskqueue_drain(taskqueue_thread, \u0026sc-\u003eunsolq_task);\n \tHDA_BOOTHVERBOSE(\n \t\tdevice_printf(dev, \"Suspend done\\n\");\n@@ -1608,6 +1610,7 @@ hdac_resume(device_t dev)\n \t    HDAC_GCTL_UNSOL);\n \tHDAC_WRITE_4(\u0026sc-\u003emem, HDAC_INTCTL, HDAC_INTCTL_CIE | HDAC_INTCTL_GIE);\n \tDELAY(1000);\n+\thdac_poll_reinit(sc);\n \thdac_unlock(sc);\n \n \terror = bus_generic_resume(dev);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1021585,
+ "bug_id": 233180,
+ "attachment_id": 0,
+ "creation_time": "2018-11-12T19:45:13Z",
+ "creator": "kmachine@free.fr",
+ "text": "These issues have low impact because they require precise circumstances to trigger one of them. The disk must be \u003e 2 TiB in size and either:\n- The primary GPT header is dammaged.\n- The freebsd-boot partiton is located farther than the first 2 TiB of the disc and one of its sectors takes place at a lba value that makes the higher 32 bits of this very value change.\n\nErrors and corrections folow:\n\n\n* Lines 117 - 118\n\nmain.3a:\tdecl (%si)\t\t\t# 0x0(%si) = last sec (0-31)\n\t\tmovw $2,%cx\n\nShould be:\nmain.3a:\tsubl $1, (%si)\t\t\t# 0x0(%si) = last sec (0-31)\n\t\tsbbl $0, 4(%si)\n\t\tmovw $4,%cx\n\n-\u003e Copies only two 16-bits words but it's a 64-bits value. Moreover, decrements this 64-bit value without care for a possible carry.\n\n\n* Line 131\n\nmovb $0x10,%cl\nrepe cmpsb\n\nShould be:\nmovw $0x10,%cx\nrepe cmpsb\n\n-\u003e It's CX the counter for repe not CL. It works as is but it's dangerous to keep that.\n\n\n* Lines 153 - 154\n\nnext_boot:\tincl (%si)\t\t\t# Next LBA\n\t\tadcl $0,4(%si)\n\nShould be:\nnext_boot:\taddl $1, (%si)\t\t\t# Next LBA\n\t\tadcl $0,4(%si)\n\n-\u003e inc instruction doesn't affect the carry flag.\n\n\n* Lines 174 - 175\n\nincl GPT_ADDR+GPT_PART_LBA\t# Next sector\nadcl $0,GPT_ADDR+GPT_PART_LBA+4\n\nShould be:\naddl $1, GPT_ADDR+GPT_PART_LBA.\nadcl $0,GPT_ADDR+GPT_PART_LBA+4\n\n-\u003e Same as before."
+}

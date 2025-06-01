@@ -1,0 +1,8 @@
+{
+ "id": 1037771,
+ "bug_id": 235754,
+ "attachment_id": 0,
+ "creation_time": "2019-02-15T09:02:51Z",
+ "creator": "solarcatcher@gmx.de",
+ "text": "I use a cron job to update a table of badhosts, following the approach shown here https://www.geoghegan.ca/pfbadhost.html.\n\nOn FreeBSD 11 the nightly replace works fine.\nOn FreeBSD 12.0-RELEASE-p3 (and on the latest HardenedBSD 12-STABLE) update of the pf table fails with the following message \"pfctl: Invalid argument.\"\n\nOn further inspection, pfctl does not anymore allow to replace a table with more than 32768 (2^15) IP addresses. Flushing and adding works fine, just replacing leads to the error.\n\nHow to reproduce\nDownload list of 32769 badhosts to /tmp/pf-badhost.txt: https://gist.github.com/utrenkner/617534545407587a8919dc6b47676f6e\n\nAdd this line to pf.conf:\ntable \u003cpfbadhost\u003e persist file \"/tmp/pf-badhost.txt\"\n\nLoad new rules:\npfctl -f /etc/pf.conf\n\nVerify that table \u003cpfbadhost\u003e has 32769 entries:\npfctl -t pfbadhost -T show | wc -l\n\nNow, try to replace table:\npfctl -t pfbadhost -T replace -f /tmp/pf-badhost.txt\n\nThis will fail. Remove one IP address from /tmp/pf-badhost.txt and try replacing table again:\npfctl -t pfbadhost -T replace -f /tmp/pf-badhost.txt\n\nResult: \"1 addresses deleted.\"\n\nI can -T flush and -T add, but it seems a bug to me that -T replace does not work with the same number of IP addresses."
+}

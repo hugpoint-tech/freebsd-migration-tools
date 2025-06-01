@@ -1,0 +1,8 @@
+{
+ "id": 1241130,
+ "bug_id": 268579,
+ "attachment_id": 0,
+ "creation_time": "2022-12-29T10:40:43Z",
+ "creator": "martin@waschbuesch.de",
+ "text": "(In reply to Li-Wen Hsu from comment #2)\n\nI got the same results on 12.3 and 12.4.\n\nconfigure.ac in 1.28 seems to try and enable unwind by default:\n\n----\n\n# Enable unwind if found by default\nAC_ARG_WITH(unwind,\n  AS_HELP_STRING([--without-unwind], [Ignore unwind if found and disable it]))\n\nAS_IF([test \"x$with_unwind\" != \"xno\"],\n  [AC_CHECK_HEADERS(unwind.h)] [AC_CHECK_FUNCS(_Unwind_GetIP)],\n  [have_unwind=no])\n\nAS_IF([test \"x$ac_cv_func__Unwind_GetIP\" = \"xyes\"],\n  [have_unwind=yes],\n  [have_unwind=no])\n\nAS_IF([test \"x$have_unwind\" = \"xyes\"],\n  [AC_DEFINE([WITH_UNWIND], [1], [Have and use Unwind library])],\n  [AS_IF([test \"x$with_unwind\" = \"xyes\"],\n         [AC_MSG_ERROR([unwind requested but not found])\n  ])\n])\n\n----\n\nIt seems that while the check for unwind.h fails, somehow the check for _Unwind_GetIP does succeed which results in the assumption that unwind can be enabled, which in turn leads to unwind.h being expected.\n\n1.27 does not do that, but only checks if the header file is present.\n\nI have added a dependency on devel/libunwind, which will make it compile on 12.x\nCan you try the updated patch?\n(However, perhaps it would be better to only add the dependency for 12.x?)"
+}

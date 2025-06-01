@@ -1,0 +1,8 @@
+{
+ "id": 720387,
+ "bug_id": 179828,
+ "attachment_id": 0,
+ "creation_time": "2013-06-22T03:10:00Z",
+ "creator": "john@jmarshall.id.au",
+ "text": "\nsyslogd startup in a jail always displays the following messages:\n\n  ln: /dev/log: Operation not permitted\n  Starting syslogd.\n\nThe final paragraph of syslogd(8) states:\n\n  \"The log socket was moved from /dev to ease the use of a read-only\n   root file system.  This may confuse some old binaries so that a\n   symbolic link might be used for a transitional period.\"\n\nThe suggested symbolic link is created by etc/rc.d/syslogd at startup if\nthere is no /dev/log link already in place.  Creation of the symbolic\nlink is not possible in a jail.  ln(1) emits the failure message when\nlink creation is attempted within a jail.\n\nFix: The attached patch to etc/rc.d/syslogd tests to make sure that we are\n*not* in a jail prior to attempting creation of the /dev/log link to the\nsyslogd log socket.\n\nBUT...\n\nGiven that creation of this link was intended to be for a TRANSITIONAL\nperiod, and that it has existed for ever (well, ever since importing the\nrc.d scripts (r78344) from NetBSD in 2001) perhaps it might be time to\nretire this link creation altogether or, at least, make it optional via\nrc.conf (syslogd_link_devlog=\"NO\")?\n\nHow-To-Repeat: \n - Create a jail(8)\n - /etc/rc.d/syslogd start (from within the jail)"
+}

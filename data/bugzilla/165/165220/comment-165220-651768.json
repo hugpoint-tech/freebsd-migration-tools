@@ -1,0 +1,8 @@
+{
+ "id": 651768,
+ "bug_id": 165220,
+ "attachment_id": 0,
+ "creation_time": "2012-02-17T03:00:21Z",
+ "creator": "adrian@freebsd.org",
+ "text": "There are far too many of the following messages showing up:\n\n\n[100191] ath0: ath_rx_tasklet: sc_inreset_cnt \u003e 0; skipping\n[100191] ath0: ath_rx_tasklet: sc_inreset_cnt \u003e 0; skipping\n[100191] ath0: ath_rx_tasklet: sc_inreset_cnt \u003e 0; skipping\n[100191] ath0: ath_rx_tasklet: sc_inreset_cnt \u003e 0; skipping\n[100191] ath0: ath_start: sc_inreset_cnt \u003e 0; bailing\n[100191] ath0: ath_rx_tasklet: sc_inreset_cnt \u003e 0; skipping\n[100191] ath0: ath_rx_tasklet: sc_inreset_cnt \u003e 0; skipping\n[100191] ath0: ath_rx_tasklet: sc_inreset_cnt \u003e 0; skipping\n\n. What's happening is that a bunch of TX or RX completion is occuring at the same time as a channel change/reset. The previous code just had these run concurrently, causing all kinds of random and weird behaviour.\n\nI introduced some debugging in FreeBSD-HEAD that tries to (a) stop these and (b) log when they occur, so I could actually try finding/figuring out what's going on.\n\nThis is one of these cases. :-)\n\nFix: \n\nThe problem is that although interrupts are disabled in reset, the ath taskqueue may currently be running and this means existing TX completion and RX will occur.\n\nI think the fix is to do this:\n\n* grab the PCU lock\n* disable interrupts\n* grab the reset counter\n* stop the ath taskqueue and wait for pending tasks to complete\n\n. but is this still racy? A patch I've done to do the above in ath_reset() and ath_chan_change() reduces the instances of this quite heavily but it still occasionally turns up.\nHow-To-Repeat: Just run ath :-)"
+}

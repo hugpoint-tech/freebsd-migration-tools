@@ -1,0 +1,8 @@
+{
+ "id": 738234,
+ "bug_id": 183790,
+ "attachment_id": 0,
+ "creation_time": "2013-11-08T15:50:00Z",
+ "creator": "ganthore@gmail.com",
+ "text": "After upgrading to FreeBSD-10.0-BETA3, I noticed that pkg is broken. This may correlate to my earlier report:\n\namd64/183789: Upgrading to FreeBSD-10.0-BETA3 Breaks Portmaster DB\n\nI use portmaster for everything so I didn't notice the problem until I invoked pkg by itself. It results in the following error:\n\n# pkg\nShared object \"libyaml.so.1\" not found, required by \"pkg\"\n\nI checked /usr/local/lib and discovered that libyaml.so is there but libyaml.so.1 is not:\n\n# ls -lah /usr/local/lib | grep libyaml\nlrwxr-xr-x   1 root  wheel    14B Nov  8 10:36 libyaml-0.so -\u003e libyaml-0.so.2\n-rwxr-xr-x   1 root  wheel   128K Nov  8 10:36 libyaml-0.so.2\n-rw-r--r--   1 root  wheel   163K Nov  8 10:36 libyaml.a\n-rwxr-xr-x   1 root  wheel   943B Nov  8 10:36 libyaml.la\nlrwxr-xr-x   1 root  wheel    14B Nov  8 10:36 libyaml.so -\u003e libyaml-0.so.2\n\nTo correct the problem. I simply made a symbolic link, but this should be corrected in the ports-mgmt/pkg or textproc/libyaml package.\n\nFix: \n\nTo fix the immediate problem, make a symbolic link to /usr/local/lib/libyaml.so as /usr/local/lib/libyaml.so.1\n\nln -s /usr/local/lib/libyaml.so /usr/local/lib/libyaml.so.1\nHow-To-Repeat: 1) Have a FreeBSD-10.0-BETA2 system fully up-to-date in ports. Have PKGNG enabled in /etc/make.conf and make sure that ports-mgmt/pkg is installed.\n\n2) Upgrade to FreeBSD-10.0-BETA3 from BETA2.\n\n3) Run the pkg command:\npkg\n\n4) You should see this error:\nShared object \"libyaml.so.1\" not found, required by \"pkg\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1280881,
+ "bug_id": 274509,
+ "attachment_id": 0,
+ "creation_time": "2023-10-22T14:02:11Z",
+ "creator": "nhuff@acm.org",
+ "text": "It isn't that close_range doesn't exist it is how they use it.\n\nWhen rsyslog forks to the background it opens a pipe between the child and parent process which is supposed to be used to signal to the parent when the child is done initializing.  Part of the initialization process is to close open file descriptors.  Before the code looped through all of the file descriptors, but had a check to make sure it didn't close the signalling pipe.\n\nif((i != dbgGetDbglogFd()) \u0026\u0026 (i != parentPipeFD)) {\n  aix_close_it(i); /* AIXPORT */\n}\n\nWhen they switched to close_range they lost that check so the parentPipeFD gets closed during initialization and then the child process tries to write to the closed file descriptor and the parent process never gets the successful initialization message."
+}

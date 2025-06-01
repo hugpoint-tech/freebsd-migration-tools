@@ -1,0 +1,8 @@
+{
+ "id": 490527,
+ "bug_id": 132832,
+ "attachment_id": 0,
+ "creation_time": "2009-03-20T01:50:01Z",
+ "creator": "renaud@vmware.com",
+ "text": "The tcp_output() routine has an issue when the send window exceeds TCP_MAXWIN and the underlying interface supports TSO.\n\nThere is a check to ensure the data being pushed doesn't exceed the maximum TSO packet size. If this is the case, \"len\" is trimmed and \"sendalot\" is set:\n\n--- 8\u003c ---\nif (tso) {\n\tif (len \u003e TCP_MAXWIN - hdrlen - optlen) {\n\t\tlen = TCP_MAXWIN - hdrlen - optlen;\n\t\tlen = len - (len % (tp-\u003et_maxopd - optlen));\n\t\tsendalot = 1;\n--- \u003e8 ---\n\nEverything's hunky-dory, until the next \"sendalot\" iteration;\n\nIf the remaining window does not require TSO (i.e. len \u003c= tp-\u003et_maxseg), this following piece of code fails to properly reset \"tso\":\n\n--- 8\u003c ---\nif (len \u003e tp-\u003et_maxseg) {\n\tif (\u003ctso_conds\u003e)\n\t\ttso = 1;\n\t} else {\n\t\tlen = tp-\u003et_maxseg;\n\t\tsendalot = 1;\n\t\ttso = 0;\n\t}\n}\n--- \u003e8 ---\n\n\"tso\" remains set to 1 and the resulting packet is tagged with CSUM_TSO although it doesn't require TSO. This causes problems with a large number of nics which refuse to send the resulting frame and, in some case, wedge.\n\nFix: The solution is to always reset \"tso\" at the beginning of the \"sendalot\" loop in order to ensure it is not stale.\n\nIn my patch I also added a KASSERT() which directly catches any problematic frame before it reaches any other layer.\n\nPatch attached with submission follows:\nHow-To-Repeat: Using netperf (or any TCP workload) with a large socket buffer size exposes the issue in a matter of seconds."
+}

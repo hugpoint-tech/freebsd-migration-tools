@@ -1,0 +1,8 @@
+{
+ "id": 919449,
+ "bug_id": 216650,
+ "attachment_id": 0,
+ "creation_time": "2017-01-31T02:03:34Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Matthias Vallentin from comment #2)\n\u003e I would like to reproduce the issue, but can't find a clang 4.x package: pkg search clang yields:\n\nIf you're on 12.0-CURRENT (only the kernel matters) try the following\n\n  $ poudriere jail -cj clang40-amd64 -v projects/clang400-import -m svn\n  $ poudriere bulk -Ctj clang40-amd64 devel/caf\n\notherwise try the following but it may show a false positive during linking\n\n  $ git clone https://github.com/llvm-mirror/libcxx/\n  $ (cd libcxx; git co origin/release_40)\n  $ cd /usr/ports/devel/caf\n  $ echo 'CXXFLAGS += -nostdinc++ -isystem/path/to/libcxx/include' \u003e\u003eMakefile.local\nthen\n  $ pkg install llvm40\n  $ make clean all CC=clang40 CXX=clang++40 CPP=clang-cpp40\nor\n  $ pkg install llvm-devel\n  $ make clean all CC=clang-devel CXX=clang++-devel CPP=clang-cpp-devel\n\n\u003e The issue itself looks like it could be one-line fix by adding\n\u003e\n\u003e    #include \"caf/behavior.hpp\"\n\u003e\n\u003e in libcaf_core/caf/actor_config.hpp. If you have a chance to try it,\n\u003e I'd much appreciate it.\n\nIt does help. I'll land it shortly after testing the fix doesn't regress build on other FreeBSD versions."
+}

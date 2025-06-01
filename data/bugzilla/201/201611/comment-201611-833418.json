@@ -1,0 +1,8 @@
+{
+ "id": 833418,
+ "bug_id": 201611,
+ "attachment_id": 0,
+ "creation_time": "2015-07-23T23:24:42Z",
+ "creator": "aritger@nvidia.com",
+ "text": "Actually, for the driver to use devfs_get_cdevpriv_from_file(), as in:\n\n    struct file *fp;\n    struct driver_per_open *popen;\n\n    fget(curthread, fd, \u0026fp);\n\n    devfs_get_cdevpriv_from_file(\u0026popen, fp);\n\n    /* use popen... */\n\n    fdrop(fp, curthread);\n\nsomeone would need to validate that the 'popen' was allocated by the driver.  Otherwise, an attacker could open some other device file and pass that fd into this code, tricking the driver into misinterpreting what file::f_cdevpriv::cdpd_data points to.\n\nI think this could be validated by comparing file::f_cdevpriv::cdpd_dtr to the function pointer (cdevpriv_dtr_t) that was passed into devfs_set_cdevpriv().  Would it make sense for devfs_get_cdevpriv_from_file() to take a cdevpriv_dtr_t as an argument?  Or is there a better way to structure this?"
+}

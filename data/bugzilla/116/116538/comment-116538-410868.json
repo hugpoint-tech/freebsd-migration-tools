@@ -1,0 +1,8 @@
+{
+ "id": 410868,
+ "bug_id": 116538,
+ "attachment_id": 0,
+ "creation_time": "2007-09-22T06:55:31Z",
+ "creator": "ports@grosbein.net",
+ "text": "Sorry, I've attached malformed version of patch. The correct line follows.\nAnother note, one may verify that is works only after applying another\npatch from http://www.freebsd.org/cgi/query-pr.cgi?pr=116536,\nbecause fdc(4) ignores per-drive hints for now. After all, you may\nuse 'hint.fd.0.flags=0x40' to enable FD_NO_CHLINE.\n\n--- share/man/man4/fdc.4.orig\t2007-09-16 16:23:27.000000000 +0800\n+++ share/man/man4/fdc.4\t2007-09-16 16:23:34.000000000 +0800\n@@ -101,7 +101,7 @@\n the driver.\n To indicate a drive that does not have the changeline support,\n this can be overridden using the per-drive device flags value of\n-.Ar 0x10\n+.Ar 0x40\n (causing each call to\n .Xr open 2\n to perform the autodetection).\n--- sys/dev/fdc/fdc.c.orig\t2007-09-15 16:53:23.000000000 +0800\n+++ sys/dev/fdc/fdc.c\t2007-09-16 16:26:07.000000000 +0800\n@@ -98,6 +98,8 @@\n \t\t\t\t * and fd1 */\n #define FD_NO_PROBE\t0x20\t/* don't probe drive (seek test), just\n \t\t\t\t * assume it is there */\n+#define FD_NO_CHLINE\t0x40\t/* drive does not support changeline\n+\t\t\t\t* aka. unit attention */\n \n /*\n  * Things that could conceiveably considered parameters or tweakables\n@@ -827,7 +829,8 @@\n \n \tif (bp-\u003ebio_cmd \u0026 BIO_PROBE) {\n \n-\t\tif (!(fdin_rd(fdc) \u0026 FDI_DCHG) \u0026\u0026 !(fd-\u003eflags \u0026 FD_EMPTY))\n+\t\tif (!(fd-\u003eflags \u0026 FD_NO_CHLINE) \u0026\u0026\n+\t\t    !(fdin_rd(fdc) \u0026 FDI_DCHG) \u0026\u0026 !(fd-\u003eflags \u0026 FD_EMPTY))\n \t\t\treturn (fdc_biodone(fdc, 0));\n \n \t\t/*"
+}

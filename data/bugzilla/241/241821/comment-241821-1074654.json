@@ -1,0 +1,8 @@
+{
+ "id": 1074654,
+ "bug_id": 241821,
+ "attachment_id": 0,
+ "creation_time": "2019-11-09T16:54:53Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Removing /dev/shm doesn't help Xwayland.\n\n$ devfs rule apply path shm hide\n\n(In reply to Edward Tomasz Napierala from comment #2)\n\u003e Can you run stuff under ktrace and see which binary tries to access /dev/shm?\n\n$ kdump -r\n...\n  1096 sway     CALL  open(0x7fffffffe260,0x120004\u003cO_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC\u003e)\n  1096 sway     NAMI  \"/dev/shm/\"\n  1096 sway     RET   open 38/0x26\n...\n  1142 Xwayland CALL  ioctl(0x5,0xc0106446,0x7fffffffd580) # DRM_IOCTL_I915_GETPARAM\n  1142 Xwayland RET   ioctl -1 errno 13 Permission denied\n  1142 Xwayland CALL  write(0x2,0x7fffffffcd80,0x34)\n  1142 Xwayland GIO   fd 2 wrote 52 bytes\n       \"i965_dri.so does not support the 0xffffffff PCI ID.\n       \"\n  1142 Xwayland RET   write 52/0x34\n...\n\n$ fgrep /dev/shm =sway\n$ ldd =sway | awk 'FNR \u003e 1 { print $3 }' | xargs fgrep /dev/shm\nBinary file /usr/local/lib/libffi.so.6 matches\n\n(In reply to Vladimir Kondratyev from comment #3)\n\u003e Could you check a file permissions on /dev/shm directory?\n\nAdjusting permissions doesn't help Xwayland.\n\n$ ls -dl /dev/shm\ndr-xr-xr-x  2 root  wheel  512 Nov  9 16:51 /dev/shm\n$ touch /dev/shm/test\ntouch: /dev/shm/test: Operation not supported\n$ chmod 1777 /dev/shm\n$ touch /dev/shm/test\n$ ls -l /dev/shm/test\n-rw-r--r--  1 foo   wheel  0 Nov  9 16:52 /dev/shm/test"
+}

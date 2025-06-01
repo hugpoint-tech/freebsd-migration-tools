@@ -1,0 +1,8 @@
+{
+ "id": 535489,
+ "bug_id": 142083,
+ "attachment_id": 0,
+ "creation_time": "2009-12-27T21:50:01Z",
+ "creator": "jakub.klama@uj.edu.pl",
+ "text": "There's memory corruption after \"vfsname\" or \"path\" buffers by one byte\n(trailing \\0), reported by WITNESS when user enters mount path with\nelements longer than MFSNAMELEN or MNAMELEN. It's caused by too short\nbuffer malloc'd in lines 1722 and 1723 of vfs_mount.c (or too long string\nsscanf'd):\n\nhttp://fxr.watson.org/fxr/source/kern/vfs_mount.c?v=FREEBSD7#L1721:\n\n1721         /* parse vfs name and path */\n1722         vfsname = malloc(MFSNAMELEN, M_MOUNT, M_WAITOK);\n1723         path = malloc(MNAMELEN, M_MOUNT, M_WAITOK);\n1724         vfsname[0] = path[0] = 0;\n1725         sprintf(patt, \"%%%d[a-z0-9]:%%%ds\", MFSNAMELEN, MNAMELEN);\n1726         if (sscanf(mountfrom, patt, vfsname, path) \u003c 1)\n1727                 goto out;\n\nFix: \n\na) malloc one byte longer buffer (and adjust other kernel structures,\nif any, to use one byte longer buffer)\nb) sscanf() MFSNAMELEN-1 instead of MFSNAMELEN and MNAMELEN-1 instead of\nMNAMELEN\nHow-To-Repeat: Enter any string longer than 16 characters without \":\" in it with WITNESS\nkernel option enabled in mountroot prompt."
+}

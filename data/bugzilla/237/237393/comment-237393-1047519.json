@@ -1,0 +1,8 @@
+{
+ "id": 1047519,
+ "bug_id": 237393,
+ "attachment_id": 0,
+ "creation_time": "2019-04-19T18:35:18Z",
+ "creator": "sef@FreeBSD.org",
+ "text": "In trying to build some installation media, I did a buildworld and buildkernel, and then \"cd release ; make -j10 cdrom\".\n\nThis fails every time.  There is at least one big problem I could tell from looking at the output and the Makefile:  the rules for base.txz end with \"mv ${DISTDIR}/*.txz .\"; this will conflict with the rules for kernel.txz, which tries to move ${DISTDIR}/kernel*.txz -- and the parallel build means that it's already been moved.\n\nMaking kernel.txz depend on base.txz, however, exposed another problem:\n\ncd //usr/obj/usr/src/amd64.amd64/release/dist/kernel;  tar cvf - --exclude '*.debug' . |  xz -T 0 \u003e //usr/obj/usr/src/amd64.amd64/release/dist/kernel.txz\ncd: //usr/obj/usr/src/amd64.amd64/release/dist/kernel: No such file or directory\n*** [packagekernel] Error code 2\n\nwhich is coming from Makefile.inc1\n\nThis isn't critical, since I can just do a non-parallel make."
+}

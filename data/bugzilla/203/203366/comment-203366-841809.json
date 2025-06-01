@@ -1,0 +1,8 @@
+{
+ "id": 841809,
+ "bug_id": 203366,
+ "attachment_id": 0,
+ "creation_time": "2015-09-26T09:04:19Z",
+ "creator": "mt-bugs@markoturk.info",
+ "text": "Hi,\n\naccording to kqueue(2) man page for EVFILT_READ on a fifo:\n\"When the last writer disconnects, the filter will set EV_EOF in flags. This may be cleared by passing in EV_CLEAR, at which point the filter will resume waiting for data to become available before returning.\"\n\nBut, EV_CLEAR on fifo does not work (EV_EOF is returned).\n\nTo reproduce (tail uses kevent and EV_CLEAR internally):\nmkfifo foo\ntail -f foo\n(in another terminal:) echo xxx \u003e foo\nAfter this, top process uses all CPU.\n\nI tried to fix the bug. After applying this patch the problem is not visible, but I'm not sure if this is the correct solution:\n\nIndex: sys/kern/sys_pipe.c\n===================================================================\n--- sys/kern/sys_pipe.c (revision 288220)\n+++ sys/kern/sys_pipe.c (working copy)\n@@ -1791,9 +1791,10 @@\n        if ((kn-\u003ekn_data == 0) \u0026\u0026 (rpipe-\u003epipe_state \u0026 PIPE_DIRECTW))\n                kn-\u003ekn_data = rpipe-\u003epipe_map.cnt;\n \n-       if ((rpipe-\u003epipe_state \u0026 PIPE_EOF) ||\n+       if (!(kn-\u003ekn_flags \u0026 EV_CLEAR) \u0026\u0026\n+           ((rpipe-\u003epipe_state \u0026 PIPE_EOF) ||\n            wpipe-\u003epipe_present != PIPE_ACTIVE ||\n-           (wpipe-\u003epipe_state \u0026 PIPE_EOF)) {\n+           (wpipe-\u003epipe_state \u0026 PIPE_EOF))) {\n                kn-\u003ekn_flags |= EV_EOF;\n                return (1);\n        }"
+}

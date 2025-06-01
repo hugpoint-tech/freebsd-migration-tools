@@ -1,0 +1,8 @@
+{
+ "id": 1213117,
+ "bug_id": 260011,
+ "attachment_id": 234241,
+ "creation_time": "2022-05-27T00:04:23Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 234241\nhandle bogus slot# replies for the Sequence op\n\ncpercival@ emailed with some diagnostics (that I did not\nrealize were not in 13.0) which indicates that the Amazon\nEFS server is pretty badly broken.\nIt sometimes (I don't know how frequently) returns the wrong\nslotid for a session. (It is required by the RFC to be the same\nas the request.)\n\nOnce this happens, there is no way to know which slot# the server\nactually used.\n\nThis patch (which is rather large and, unfortunately, will not apply\nto 13.0, but should apply to stable/13 and 13.1, I think?) marks both\nof the slots (the one in the request and the one in the reply) bad,\nso they will no longer be used.\n\nWhen all slots get marked \"bad\", it does a DestroySession operation,\nwhich should make subsequent uses of the session fail with\nNFSERR_BADSESSION.\nAn NFSERR_BADSESSION reply should, in turn, start a recovery cycle\nwhich should create a new session that can be used.\n\nThis patch has been tested against a hacked FreeBSD nfsd that replies\nwith a bogus slot# once every 100 RPCs and seems to work ok.\n\nI have no idea if the Amazon EFS server will behave the same way, but\nI am hoping cpercival@ will be able to test it.\n\nI believe this serious bug in the Amazon EFS server would explain\nyour hangs."
+}

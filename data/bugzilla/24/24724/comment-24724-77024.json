@@ -1,0 +1,8 @@
+{
+ "id": 77024,
+ "bug_id": 24724,
+ "attachment_id": 0,
+ "creation_time": "2001-01-29T20:00:01Z",
+ "creator": "khera@kcilink.com",
+ "text": "\nyou can't run everybuddy 0.2.0 more than once, since the file\n~/.everybuddy/eb_socke doesn't get removed, and the second time you\ntry to run the program, it fails with the cryptic \"bind: Address\nalready in use\".  Using ktrace, it is evident that the eb_socke file\nis the culprit.\n\nFix: Make everybuddy delete the socket file prior to creating it on the\nnext run... it looks like it is trying to do so, around line 280 of\nsrc/main.c, but it seems to fail since the file name is somehow\ntruncated in the bind call, as ktrace shows:\n\n 15426 everybuddy RET   fcntl 0\n 15426 everybuddy CALL  unlink(0xbfbff8aa)\n 15426 everybuddy NAMI  \"/home/khera/.everybuddy/eb_socket\"\n 15426 everybuddy RET   unlink -1 errno 2 No such file or directory\n 15426 everybuddy CALL  bind(0x6,0xbfbff8a8,0x22)\n 15426 everybuddy NAMI  \"/home/khera/.everybuddy/eb_socke\"\n 15426 everybuddy RET   bind -1 errno 48 Address already in use\n\nMy guess is that this patch needs to be applied.  Classic off-by-one\nerror.  It works for me (tm).  Now the socket is named eb_socket like\nit seems it was intended.\nHow-To-Repeat: \nrun everybuddy, exit, run again.  (sounds suspiciously like \"lather,\nrinse, repeat\" doesn't it? ;-)"
+}

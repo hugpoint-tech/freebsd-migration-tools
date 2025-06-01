@@ -1,0 +1,8 @@
+{
+ "id": 589234,
+ "bug_id": 152738,
+ "attachment_id": 0,
+ "creation_time": "2010-12-01T11:00:21Z",
+ "creator": "anycmd@mamemilk.com",
+ "text": "vmstat with -P option under multi-CPU environment doesn't display the header correctly if it has a cpu unavailable. \n\nthe reason is below:\nin the function \"printhdr()\", ncpus  is the number of CPUs available, not the number of all CPUs. so it might have the case that printf() is not called enough times for the number of all CPUs. \n\n842:\t\tfor (i = 0; i \u003c ncpus; i++) {\n843:\t\t\tif (cpumask \u0026 (1ul \u003c\u003c i))\n844:\t\t\t\tprintf(\"cpu%-2d    \", i);\n845:\t\t}\n\non the other hand, \"pcpustats()\", which display the state of multiple CPUs, this works fine, using maxid which is the number of all CPUs.  \n1122:\tfor (i = 0; i \u003c= maxid; i++) {\n1123:\t\tif ((cpumask \u0026 (1ul \u003c\u003c i)) == 0)\n1124:\t\t\tcontinue;\n1125:\t\tfor (state = 0; state \u003c CPUSTATES; ++state) {\n1126:\t\t\ttmp = cur_cp_times[i * CPUSTATES + state];\n1127:\t\t\tcur_cp_times[i * CPUSTATES + state] -= last_cp_times[i *\nCPUSTATES + state];\n1128:\t\t\tlast_cp_times[i * CPUSTATES + state] = tmp;\n1129:\t\t}\n1130:\t}\n\nFix: this is a patch for vmstat.c at revision 1.109\nhttp://www.freebsd.org/cgi/cvsweb.cgi/~checkout~/src/usr.bin/vmstat/vmstat.c\n\nHow-To-Repeat: did the code inspection and haven't actually run the problem. don't have multi-cpu machine for the first place lol."
+}

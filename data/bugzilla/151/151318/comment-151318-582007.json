@@ -1,0 +1,8 @@
+{
+ "id": 582007,
+ "bug_id": 151318,
+ "attachment_id": 0,
+ "creation_time": "2010-10-11T04:55:06Z",
+ "creator": "swell.k@gmail.com",
+ "text": "Make wrapper script also work when LISP environment variable has options\nor uses an absolute/relative path.\n\n  $ export LISP=\"sbcl --noinform\"\n  $ stumpwm\n\n  $ export LISP=/usr/local/bin/sbcl\n  $ stumpwm\n\nTested on our old lang/sbcl (1.0.34) just in case.\n\n--- c.diff begins here ---\ndiff --git x11-wm/cl-stumpwm/files/stumpwm.in x11-wm/cl-stumpwm/files/stumpwm.in\nindex 36dc6b0..2413f5d 100644\n--- x11-wm/cl-stumpwm/files/stumpwm.in\n+++ x11-wm/cl-stumpwm/files/stumpwm.in\n@@ -1,10 +1,10 @@\n #! /bin/sh\n \n have() {\n-    type $1 \u003e\u0026- 2\u003e\u0026-\n+    command -v $1 \u003e\u0026-\n }\n \n-if [ -n \"$LISP\" ]; then\n+if [ \"$LISP\" ]; then\n elif have sbcl; then\n     LISP=sbcl\n elif have clisp; then\n@@ -16,15 +16,17 @@ fi\n \n : ${STUMPWM_EVAL:=\"(progn (stumpwm:stumpwm) (quit))\"}\n case $LISP in\n-    sbcl)\n-\targs=\"$args --eval '#.(load \\\"%%LOCALBASE%%/etc/asdf-init\\\")'\"\n+    *sbcl*)\n+\targs=\"$args --load %%LOCALBASE%%/etc/asdf-init\"\n \targs=\"$args --eval \\\"(require 'stumpwm)\\\"\"\n \targs=\"$args --eval \\\"$STUMPWM_EVAL\\\"\"\n \t;;\n-    clisp)\n+    *clisp*)\n \targs=\"$args -i %%LOCALBASE%%/etc/asdf-init\"\n-\targs=\"$args -x \\\"(asdf:operate 'asdf:load-op :stumpwm) $STUMPWM_EVAL\\\"\"\n+\targs=\"$args -x \\\"(asdf:operate 'asdf:load-op :stumpwm)\\\"\"\n+\targs=\"$args -x \\\"$STUMPWM_EVAL\\\"\"\n \t;;\n esac\n+eval set -- \"$args\" '\"$@\"'\n \n-eval exec $LISP $args '\"$@\"'\n+exec $LISP \"$@\"\n--- c.diff ends here ---"
+}

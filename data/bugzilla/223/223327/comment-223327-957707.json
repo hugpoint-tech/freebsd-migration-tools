@@ -1,0 +1,8 @@
+{
+ "id": 957707,
+ "bug_id": 223327,
+ "attachment_id": 187588,
+ "creation_time": "2017-10-30T18:38:14Z",
+ "creator": "olevole@olevole.ru",
+ "text": "Created attachment 187588\nforces the dhclient to work in the vnet-jail again on FreeBSD-CURRENT\n\nAt the moment dhclient(8) does not work in vnet jail under FreeBSD 12-CURRENT. \nIf you try to execute dhclient in jail, it will return with the following error:\n--\nchroot\nexiting.\n--\nand NOPERM in errno.\n\nThis behavior occurs when you try to execute a chroot with an open to the outside environment descriptor\n\nkern.chroot_allow_open_directories can affect this behavior, but apparently in dhclient it is not necessary to keep fd open, because all operations on it occur before chroot.\n\nThis patch forces the dhclient to work in the jail again.\n\nHow to reproduce problem (have fresh FreeBSD 12-CURRENT, e.g. 325104+):\n--\n1) prepare base for chroot\n% mkdir /tmp/base\n% cd /tmp/base\n% wget http://ftp.freebsd.org/pub/FreeBSD/snapshots/amd64/12.0-CURRENT/base.txz\n% tar xfz base.txz\n% ifconfig epair0 create\n\n\n2) Wrote /tmp/jail.conf:\n\njail1 {\n    path = /tmp/base;\n    devfs_ruleset=\"99\";\n    allow.mount;\n    vnet = new;\n    vnet.interface = epair0a;\n    mount.devfs;\n    interface = vlan1;\n    allow.raw_sockets;\n    allow.sysvipc;\n    exec.start = \"/bin/sh /etc/rc\";\n    exec.stop = \"/bin/sh /etc/rc.shutdown\";\n}\n\n3) Create jail:\njail -c -f /jail1.conf\n\n4) Try to dhclient where 4 is jail ID:\njexec 4 dhclient epair0a\n--"
+}

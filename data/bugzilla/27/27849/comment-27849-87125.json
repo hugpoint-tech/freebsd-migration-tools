@@ -1,0 +1,8 @@
+{
+ "id": 87125,
+ "bug_id": 27849,
+ "attachment_id": 0,
+ "creation_time": "2001-06-03T06:10:01Z",
+ "creator": "simonw@lucent.com",
+ "text": "The implementation of the ioctl AGPIOC_RELEASE includes the following\ncode:\n\n        /*\n         * Clear out the aperture and free any outstanding memory blocks.\n         */     \n        while ((mem = TAILQ_FIRST(\u0026sc-\u003eas_memory)) != 0) {\n                if (mem-\u003eam_is_bound)\n                        AGP_UNBIND_MEMORY(dev, mem);\n                AGP_FREE_MEMORY(dev, mem);\n        }\n\nClearly this deallocates all the memory that the application\nhas attached to the AGP space. Yet the spec for the agp ioctls\n(at least the one I have) states that this ioctl merely releases\ncontrol of the agp device - it doesn't deallocate memory that the\napp allocated while it had control. That is done with the UNBIND\nand DEALLOCATE commands.\n\n   The Utah GLX code certainly assumes this behaviour - I had to\ncomment out the RELEASE ioctl to get it to work with FreeBSD.\n\nFix: \n\nI think just taking out the code segment given above\nwill suffice.\nHow-To-Repeat: Use Xfree86 3.3.5 with the Utah GLX module (add -DHAVE_LINUX_NEWAGP).\nIt will complain about"
+}

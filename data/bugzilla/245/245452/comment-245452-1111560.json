@@ -1,0 +1,8 @@
+{
+ "id": 1111560,
+ "bug_id": 245452,
+ "attachment_id": 0,
+ "creation_time": "2020-07-02T22:14:13Z",
+ "creator": "vishwin@freebsd.org",
+ "text": "After hitting this problem with audio/audacity (which now uses cmake), this is almost entirely a ccache implementation defect. What we're dealing with is how clang handles precompiled headers, which is a bit different than how gcc does it.\n\nSome upstream threads for context:\nhttps://gitlab.kitware.com/cmake/cmake/-/merge_requests/4400\nhttps://github.com/ccache/ccache/issues/539\nhttps://github.com/ccache/ccache/issues/549\n\nWith regard to PCHs in ccache generally, ccache(1) has a dedicated section describing how to make it process PCHs properly (because it doesn't by default). Quote the part that needs done in ccache.conf:\n\n   ccache has support for GCC's precompiled headers. However, you have to\n   do some things to make it work properly:\n\n   o   You must set sloppiness to pch_defines,time_macros. The reason is\n       that ccache can't tell whether __TIME__ or __DATE__ is used when\n       using a precompiled header. Further, it can't detect changes in\n       #defines in the source code because of how preprocessing works in\n       combination with precompiled headers.\n\nOnce added, at least on my -CURRENT setup where base LLVM got updated since I last built and cached this port, the error message changes to:\n\nerror: PCH file built from a different branch ((git@github.com:llvm/llvm-project.git llvmorg-10.0.0-129-gd24d5c8e308)) than the comp\niler ((git@github.com:llvm/llvm-project.git llvmorg-10.0.1-rc2-0-g77d76b71d7d))\n\nFurther tests will need done to find other error messages, ie when base LLVM stays the same."
+}

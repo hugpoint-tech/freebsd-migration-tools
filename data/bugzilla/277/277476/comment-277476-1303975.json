@@ -1,0 +1,8 @@
+{
+ "id": 1303975,
+ "bug_id": 277476,
+ "attachment_id": 0,
+ "creation_time": "2024-04-06T14:22:49Z",
+ "creator": "jeffpc@josefsipek.net",
+ "text": "I dug a bit more into this.  It looks like the drm code has provisions for\nallocating memory via dma APIs.  The FreeBSD port doesn't implement those.\n\nSpecifically, looking at drm-kmod-drm_v5.15.25_5 source:\n\ndrivers/gpu/drm/amd/amdgpu/gmc_v*.c sets adev-\u003eneed_swiotlb to\ndrm_need_swiotlb(...).  drm_need_swiotlb is implemented in\ndrivers/gpu/drm/drm_cache.c as a 'return false' on FreeBSD.\n\nLater on, amdgpu_ttm_init calls ttm_device_init with the use_dma_alloc\nargument equal to adev-\u003eneed_swiotlb (IOW, false).\n\nMuch later on, ttm_pool_alloc is called to allocate a buffer.  That in turn\ncalls ttm_pool_alloc_page which amounts to:\n\n\tif (!use_dma_alloc)\n\t\treturn alloc_pages(...);\n\t\n\tpanic(\"ttm_pool.c: use_dma_alloc not implemented\");\n\nSo, because of the 'return false' during initialization, we always call\nalloc_pages (aka. linux_alloc_pages) which tries to allocate physically\ncontiguous memory.\n\nAs I said before, I don't know anything about the graphics stack, so it is\npossible that this dma API is completely irrelevant.\n\n\nLooking at ttm_pool_alloc some more, it immediately turns the physically\ncontiguous allocation into an array of struct page pointers (tt-\u003epagse).\nSo, depending on how the rest of the module uses the buffer \u0026 pages, it\nmay be relatively easy to switch to a virtually-contiguous allocation."
+}

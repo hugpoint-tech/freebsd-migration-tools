@@ -1,0 +1,8 @@
+{
+ "id": 464059,
+ "bug_id": 127441,
+ "attachment_id": 0,
+ "creation_time": "2009-06-24T17:16:27Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "I think that the following is relevant to this PR.\n\n-------- Original Message --------\nSubject: Re: DTrace \"timestamp\" wraps at about 2^33 (64-bit value)?\nDate: Mon, 22 Jun 2009 14:07:43 +0300\nFrom: Andriy Gapon \u003cavg@icyb.net.ua\u003e\nTo: Thomas Backman \u003cserenity@exscape.org\u003e\nCC: FreeBSD current \u003cfreebsd-current@freebsd.org\u003e,  John Birrell \u003cjb@FreeBSD.org\u003e\nReferences: \u003c668B820A-AAA7-4A40-8CF5-7DDCFDCD95FC@exscape.org\u003e\n\non 20/06/2009 19:29 Thomas Backman said the following:\n\u003e It appears the DTrace \"timestamp\" variable is wrapping around way, way\n\u003e too quickly - it only goes to somewhere slightly above 2^33 (in\n\u003e practice, at least), and since it's in nanoseconds, that's not a lot.\n\u003e (2^33 ns is less than 10 seconds, actually. 2^64 is 584.55 years, however!)\n[snip]\n\u003e uint64_t\n\u003e dtrace_gethrtime()\n\u003e {\n\u003e     return ((rdtsc() + tsc_skew[curcpu]) * (int64_t) 1000000000 / tsc_freq);\n\nIt appears that (rdtsc() + X) * 10^9 overflows 64-bit value for sufficiently small\nvalues of rdtsc.\nBTW, I think it would have been better/clearer to use uint64_t in the cast.\n\nI think that to minimize overflow and sufficiently accurate result a formula like\nthe following could be used:\n\nx = rdtsc() + tsc_skew[curcpu];\nsec = x / tsc_freq;\nr = x % tsc_freq;\nres = sec * 10^9 + (r * 10^9 / tsc_freq);\n\nI have not tested the formula.\nI have suspicions about its accuracy in the edge cases,\nesp. if tsc_freq \u003e (2^64 - 1) / 10^9 (not sure if have that in reality).\n\n-- \nAndriy Gapon\n\n\n-- \nAndriy Gapon"
+}

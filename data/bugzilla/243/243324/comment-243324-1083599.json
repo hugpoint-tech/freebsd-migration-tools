@@ -1,0 +1,8 @@
+{
+ "id": 1083599,
+ "bug_id": 243324,
+ "attachment_id": 0,
+ "creation_time": "2020-01-13T16:08:50Z",
+ "creator": "ghuckriede@blackberry.com",
+ "text": "Overview:\nWhile trying to see if setting ivars to NULL during detach was required (See https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=242727), discovered 're' module can panic on kldunload.  Upon further analysis, it was determined that there is no protection for ioctls during the kldunload.  The 'mii' devices appear to be detached and destroyed while ioctl (ifconfig) is holding the RL_LOCK.  There does not appear to be a 'mii' device lock (perhaps assuming the RL_LOCK would protect it, which it doesn't).\n\nSteps to Reproduce:\nCompile a kernel without re module (needed to do a kldunload).\n\n\nAfter rebooting open 2 terminals (ssh for example)\nfor 're'\n#### 1st terminal\n$ su root\n# /bin/sh\n# while true ; do kldload /usr/obj/usr/src/amd64.amd64/sys/modules/re/if_re.ko;ifconfig re0 up;sleep 1; kldunload if_re.ko ; done\n\n#### 2nd terminal\n$ su root\n# /bin/sh\n# while true ; do ifconfig re0 ; done\n\nOR for 'axe'\n$ su root\n# /bin/sh\n# while true ; do ifconfig ue0 up;sleep 1; kldunload if_axe.ko ; done\n\n#### 2nd terminal\n$ su root\n# /bin/sh\n# while true ; do ifconfig ue0 ; done\n\n\nActual Results:\nPanic occurred within a few seconds.\n\nExpected Results:\nno panic\n\nBuild Date \u0026 Hardware:\n\n# uname -a\nFreeBSD FreeBSD_head_ghuckriede 13.0-CURRENT FreeBSD 13.0-CURRENT #2 r356559: Thu Jan  9 15:45:41 EST 2020     ghuckriede@FreeBSD_head_ghuckriede:/usr/obj/usr/src/amd64.amd64/sys/GENERIC_NO_RE  amd64"
+}

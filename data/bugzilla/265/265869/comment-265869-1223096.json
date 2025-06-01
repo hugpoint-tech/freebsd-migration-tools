@@ -1,0 +1,8 @@
+{
+ "id": 1223096,
+ "bug_id": 265869,
+ "attachment_id": 0,
+ "creation_time": "2022-08-16T03:02:49Z",
+ "creator": "harris.snyder@gmail.com",
+ "text": "Hi all. While trying to pass a USB controller through to a VM via PCI passthrough, I hit an assertion in unregister_mem (usr.sbin/bhyve/mem.c):\n\nassert(mr-\u003ename == memp-\u003ename);\n\nI hooked the process up to a debugger and printed out the two names, and discovered that indeed: \n\nmr-\u003ename    =  \"passthru-pci-22\"\nmemp-\u003ename  =  \"virtio-net-pci-2\"\n\nso clearly mmio_rb_lookup is returning the wrong memory range.\n\nI'm not very knowledgeable about the internals of bhyve, and I don't yet have any further insight into why this might be occurring, but even if this was caused by user error, it is triggering an assertion and thus I feel is worth treating as a bug. \n\nHere's my bhyve command:\n\nbhyve -AHP -S -w -c sockets=1,cores=8 -m 16G \\\n        -s 0,amd_hostbridge \\\n        -s 31,lpc \\\n        -s 2,virtio-net,tap1,mac=00:A0:98:41:AC:CB \\\n        -s 3,virtio-net,tap12,mac=00:A0:98:88:6F:09,mtu=9000 \\\n        -s 13,ahci-hd,/dev/zvol/fast/vols/winvm1 \\\n        -s 7,virtio-rnd \\\n        -s 9,xhci,tablet \\\n        -s 22,passthru,35/0/3 \\\n        -l bootrom,/root/BHYVE_BHF_CODE.fd \\\n        windowsvm\n\nAnd here's the pciconf entry for the device I'm trying to pass through:\n\nppt0@pci0:35:0:3:       class=0x0c0330 rev=0x00 hdr=0x00 vendor=0x1022 device=0x148c subvendor=0x15d9 subdevice=0x145c\n    vendor     = 'Advanced Micro Devices, Inc. [AMD]'\n    device     = 'Starship USB 3.0 Host Controller'\n    class      = serial bus\n    subclass   = USB"
+}

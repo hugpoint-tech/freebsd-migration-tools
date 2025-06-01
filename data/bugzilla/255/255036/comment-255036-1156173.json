@@ -1,0 +1,8 @@
+{
+ "id": 1156173,
+ "bug_id": 255036,
+ "attachment_id": 224103,
+ "creation_time": "2021-04-14T11:55:58Z",
+ "creator": "florian@wagner-flo.de",
+ "text": "Created attachment 224103\ndevel_py-daemon-2.3.0.patch\n\nTurns out the real culprit is actually security/py-keyring (one of the dependencies of devel/py-twine) which in version 23.0.1 brings in that dependency:\n\n  cd /usr/local/lib/python3.9/site-packages; grep -r importlib_metadata .\n  ./keyring-23.0.1-py3.9.egg-info/requires.txt:importlib_metadata\u003e=3.6\n\nSee also [1]. That dependency specification is missing in the Port. The older version 18.0.1 from 2021Q1 didn't have that dependency. That's where I tested my Ports and why they worked for me.\n\nThe easy way out would be to actually drop devel/py-twine from the build dependencies. And why wouldn't you:\n\n  ~/python-daemon-2.3.0 grep -ri twine .                                             \n  ./ChangeLog:* Declare Twine as a build dependency.\n  ./setup.py:            \"twine\",\n\nWell... possibly the author of python-daemon has a different definition of build dependency than FreeBSD Ports and myself. Using twine to upload to PyPI is not build dependency IMHO, but well...\n\nUpdated my Patch again. This time tested on main with Python 3.6, 3.7, 3.8, 3.9.\n\n[1] https://github.com/jaraco/keyring/blob/90bf330ebe3f86fe77794cf16af954858735b0dd/setup.cfg#L24-L28"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 928019,
+ "bug_id": 218113,
+ "attachment_id": 0,
+ "creation_time": "2017-03-28T15:09:34Z",
+ "creator": "kaho@elam.kais.kyoto-u.ac.jp",
+ "text": "(In reply to igor from comment #11)\n\nHello. Thank you for your test.\nI think the situation is like this.\n\nThe function bus_alloc_resource_any() calls resource_list_alloc()\nin subr_bus.c:3362, and the bus_release_resource() calls \nresource_list_release() in subr_bus.c:3436. The rid(resource id)\ncan be set to any value by the device driver, but it must be same value\nat both a allocation time and a releasing time. If the rid value is incorrect,\nthe kernel cannot find out the resource requested by the device driver and\nthe kernel panics.\n\nThe difference between i350 and i340(82580) is using PCIR_BAR3(pci register:\nBase Address Register #3) or BAR4. \n\"adapter-\u003ememrid == PCIR_BAR(IGB_MSIX_BAR)\" is setting the rid as BAR3.\nIf the BAR3 is unused, the BAR4 is used instead of the BAR3 \nby \"adapter-\u003ememrid += 4\" and the rid is also changed to BAR4.\n\nIf the device driver use MSI-X, the resources are not released and\nany problem does not occur. But in a vmware environment, the pci bus code\nof FreeBSD rejects to use MSI-X by the pci quirk mechanism, the igb driver\nallocates resources at 1st and the driver will release the resources\nbecause of the quirk mechanism, and then the driver mistakes the rid value\nif BAR4 is using.\n\n--\nThe function pci_release_msi(dev) releases all resources related MSI and MSI-X.\nThis function may be called at a time some resources are allocated but some are not. There is nothing to do regardless any return value of the function."
+}

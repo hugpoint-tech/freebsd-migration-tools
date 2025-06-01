@@ -1,0 +1,8 @@
+{
+ "id": 1291311,
+ "bug_id": 276213,
+ "attachment_id": 0,
+ "creation_time": "2024-01-09T04:58:23Z",
+ "creator": "hugo@slabnet.com",
+ "text": "I'm running unifi7 on an opnsense 23.7.11 box, based on FreeBSD 13.2 with unifi7 version 7.5.187_1.\n\nThe system is fully dual stack, but out of the box the java processes for the unifi7 application (web UI and such) appear to bind only to IPv4.\n\nI've confirmed that explicitly toggling java.net.preferIPv4Stack in /usr/local/etc/rc.d/unifi to 'false' permits the application to bind to both v4 and v6 (tcp46 bind). The java docs at https://docs.oracle.com/javase%2F7%2Fdocs%2Fapi%2F%2F/java/net/doc-files/net-properties.html indicate that this setting *should* be 'false' by default, but in an out-of-the-box setup it definitely was only listening on v4 for me.\n\nI don't have another system to validate this on at the moment, but if it *is* binding on v4 by default, could we toss an explicit '-Djava.net.preferIPv4Stack=false' in the rc script to permit a dual AF bind by default?\n\ne.g.:\n\n$ diff -u unifi unifi_afbind\n--- unifi       2024-01-07 18:27:14\n+++ unifi_afbind        2024-01-07 18:27:07\n@@ -46,6 +46,7 @@\n : ${unifi_chdir=/usr/local/share/java/unifi}\n : ${unifi_java_home=/usr/local/openjdk17}\n : ${unifi_javaflags=\"-Djava.awt.headless=true -Xmx1024M \\\n+       -Djava.net.preferIPv4Stack=false \\\n        --add-opens java.base/java.lang=ALL-UNNAMED \\\n        --add-opens java.base/java.time=ALL-UNNAMED \\\n        --add-opens java.base/sun.security.util=ALL-UNNAMED \\"
+}

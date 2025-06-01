@@ -1,0 +1,8 @@
+{
+ "id": 778449,
+ "bug_id": 192567,
+ "attachment_id": 0,
+ "creation_time": "2014-08-11T00:10:43Z",
+ "creator": "adrian@freebsd.org",
+ "text": "The AR9331 HAL is programming the regulator during reset. However, it's reading values from the OTP which seems to (a) read correctly from the OTP, but (b) read 0xbadc0ffe. I'm not sure why that is yet (eg is the OTP hardware off?)\n\nNow, on the AR9331 boards I have (eg carambola 2) the calibration data is in the NOR flash rather than OTP.  So, this won't .. work. I'm not sure which boards will use OTP in this instance.\n\nBut the code seems to check and use the OTP value. Ie:\n\nar9300_internal_regulator_apply():\n...\n                    if ((reg_val \u0026 0x80) == 0x80){\n                        usb_valid = 1;\n                        reg_usb = reg_val \u0026 0x000000ff;\n                    }\n...\n                    if ((reg_val \u0026 0x80000000) == 0x80000000){\n                        pmu_valid = 1;\n                        reg_pmu = (reg_val \u0026 0xff000000) \u003e\u003e 24;\n                    }\n\n... 0xbadc0ffe has both of those bits set!\n\nath9k doesn't bother checking the OTP here. It just uses some local values to program in.\n\nSo, what should be done?\n\n* Is the code correct but OTP isn't on for some reason?\n* Should I be checking the in-flash calibration data?\n* should I just ignore OTP and use hard-coded values like ath9k?\n\n\n\n-a"
+}

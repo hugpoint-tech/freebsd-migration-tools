@@ -1,0 +1,8 @@
+{
+ "id": 1035840,
+ "bug_id": 235473,
+ "attachment_id": 201701,
+ "creation_time": "2019-02-03T22:49:52Z",
+ "creator": "noah.bergbauer@tum.de",
+ "text": "Created attachment 201701\nInitial patch draft\n\nIt really shouldn't be necessary to rebuild a gconcat volume from scratch just to add another disk. This is particularly inconvenient because it forces one to remount/restart any filesystems/geoms stacked on top of gconcat for no apparent reason.\n\nI attached my first attempt at hacking on this. It works! But since I have never worked with geoms (or rather any part of the kernel at all) before I am very unsure about correctness, especially when it comes to locking and race conditions in general.\n\nSince the existing mutex appears to have a very specific purpose, I created a new one. One obvious race is keeping the `g_access` levels in sync, so I'm locking over there as well. I would like to avoid locking a mutex in the regular IO path (g_concat_start) as this looks like a performance footgun to me, but given that I have to do array reallocation it seems to me that the only alternative is to leak memory - perhaps an rwlock would be appropriate to solve this?\n\nEven after using FreeBSD for several years I never understood the hardcode option so I didn't implement that either. Incrementing G_CONCAT_VERSION didn't work for some reason (userland tool wouldn't pick up the new version), did I miss something? Also I still need to update the manpage.\n\nI mean, the patch is quite literally a copy-pasted mix from gmultipath (resize/insert capability), gmirror (metadata update) and gconcat itself. It works but it really needs someone who actually knows how this stuff works to advise me on how to proceed."
+}

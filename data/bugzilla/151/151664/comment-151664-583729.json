@@ -1,0 +1,8 @@
+{
+ "id": 583729,
+ "bug_id": 151664,
+ "attachment_id": 0,
+ "creation_time": "2010-10-23T17:40:04Z",
+ "creator": "littlesavage@rambler.ru",
+ "text": "sbin/route/route.c have incorrect bounds checking of msgtypes[] in print_rtmsg():\n\nchar *msgtypes[] = {\n \"\",\n ...\n 0\n};\n\nvoid\nprint_rtmsg(rtm, msglen)\n{\n..\n   if (msgtypes[rtm-\u003ertm_type] != NULL)\n       (void)printf(\"%s: \", msgtypes[rtm-\u003ertm_type]);\n..\n}\n\nThere is also no checks for received message length (msglen) there.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: Run `route monitor` and send invalid message to PF_ROUTE socket:\n\n$ route monitor \u0026\n[1] 13682\n$ perl -MSocket  -e 'socket(SOCK, PF_ROUTE, SOCK_RAW, 0); syswrite(SOCK, pack(\"Scc\",4,5,0xa0));'\n\ngot message of size 4 on Sat Oct 23 20:26:51 2010\n[1]+  Segmentation fault: 11  route monitor"
+}

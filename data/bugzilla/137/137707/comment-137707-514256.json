@@ -1,0 +1,8 @@
+{
+ "id": 514256,
+ "bug_id": 137707,
+ "attachment_id": 0,
+ "creation_time": "2009-08-13T10:50:42Z",
+ "creator": "fli@shapeshifter.se",
+ "text": "The version of ee.c in contrib/ee initialize char *direction to NULL,\nthe value of this pointer is then calculated depending on if the\ncursor should move up and down. Without any next lines, the pointer\nis never initialized before fed to strcmp() which segfaults on\nthe NULL pointer.\n\nThis bug is only triggered if the cursor is at the last line and\none attempts to move down.\n\nTo minimize the changes of the contrib source it's easiest to\njust initialize direction to \"d\", this should have no impact\nas the pointer is changed when possible and moving \"down\" 0 lines\nhas no effect.\n\nCCed the upstream author as the sources in the tree (1.5.0)\nlooks identical in this aspect.\n\nHugh, any particular reason direction isn't just a char? I might\nbe missing something but it seems it's only used with lines containing\none character only.\n\nFredrik\n\nProgram received signal SIGSEGV, Segmentation fault.\n0x281a4ec8 in strcmp () from /lib/libc.so.7\n\n#1  0x0804cda6 in goto_line (cmd_str=0x28217102 \"2\")\n     at /usr/home/fli/work/freebsd/src/usr.bin/ee/../../contrib/ee/ee.c:2027\n2027\t\t\tif (!strcmp(direction, \"d\"))\n(gdb) print direction\n$1 = 0x0\n(gdb) print number\n$4 = 2\n(gdb) print t_line-\u003eline_number\n$5 = 1\n(gdb) print t_line-\u003enext_line\n$6 = (struct text *) 0x0\n"
+}

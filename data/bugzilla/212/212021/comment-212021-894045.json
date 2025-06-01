@@ -1,0 +1,8 @@
+{
+ "id": 894045,
+ "bug_id": 212021,
+ "attachment_id": 0,
+ "creation_time": "2016-08-21T17:57:32Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "Got it. OK, Look at this error:\n\nxhci: output context at 831a000\nxhci: invalid input context control 00000000 00000003\n13236@1471749323.871077:usb_xhci_queue_event v 0, idx 8, ER_COMMAND_COMPLETE, CC_TRB_ERROR, p 000000000499fdf0, s 05000000, c 0x01008401\n13236@1471749323.871080:usb_xhci_irq_intx level 1\n\nAnd this piece of code which I simply Googled:\n\nhcd-xhci.c:\n\n    cpu_physical_memory_read(ictx, (uint8_t *) ictl_ctx, sizeof(ictl_ctx));\n\n    if (ictl_ctx[0] != 0x0 || ictl_ctx[1] != 0x3) {\n        fprintf(stderr, \"xhci: invalid input context control %08x %08x\\n\",\n                ictl_ctx[0], ictl_ctx[1]);\n        return CC_TRB_ERROR;\n    }\n\nIt looks like the ictl_ctx[1] read should have a le32_to_cpu() wrapper around it.\n\n--HPS"
+}

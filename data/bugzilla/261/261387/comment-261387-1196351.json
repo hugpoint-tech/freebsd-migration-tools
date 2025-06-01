@@ -1,0 +1,8 @@
+{
+ "id": 1196351,
+ "bug_id": 261387,
+ "attachment_id": 0,
+ "creation_time": "2022-01-25T15:38:06Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Looks like the cam_sim callout has been removed: https://cgit.freebsd.org/src/commit/?id=28027f28e607012b83ee9062eed3b8ed82e819c1\n\nI think you're right that it should have been drained, but it's somewhat moot since it apparently wasn't used.\n\nThe cam_ed callout is a bit more complicated: it's interlocked by the device's SIM's devq lock, dev-\u003esim-\u003edevq-\u003esend_mtx.  So the callout handler, xpt_release_devq_timeout(), runs with send_mtx held, as does xpt_release_device() when it stops the callout.  The interlock is mostly sufficient to ensure that the callout does not continue running.  It's not completely sufficient, though, since xpt_release_devq_timeout() may drop the send_mtx lock to schedule I/O (presumably from a different device).  During this window, xpt_release_device() may try to stop the callout, fail, and continue destroying the device, while the callout is still running.\n\nIt's not very clear whether it's ok to free a callout while the handler is running.  At that point the callout subsystem no longer references the callout, and xpt_release_devq_timeout() presumably won't access a \"doomed\" device after dropping the send lock, since it's shouldn't appear in the devq anymore.\n\nSo I suspect that it's mostly a theoretical problem, though the callout documentation really doesn't make this clear."
+}

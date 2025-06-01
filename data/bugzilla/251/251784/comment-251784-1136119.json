@@ -1,0 +1,8 @@
+{
+ "id": 1136119,
+ "bug_id": 251784,
+ "attachment_id": 0,
+ "creation_time": "2020-12-12T22:30:21Z",
+ "creator": "val@packett.cool",
+ "text": "So, turns out libusb does its own descriptor parsing, I can fix this in libusb:\n\n--- i/lib/libusb/libusb20_desc.c\n+++ w/lib/libusb/libusb20_desc.c\n@@ -208,10 +208,9 @@ libusb20_parse_config_desc(const void *config_desc)\n \t\t\t}\n \t\t\t/*\n \t\t\t * Sometimes USB devices have corrupt interface\n-\t\t\t * descriptors and we need to overwrite the provided\n-\t\t\t * interface number!\n+\t\t\t * descriptors. Do not overwrite the provided\n+\t\t\t * interface number though!\n \t\t\t */\n-\t\t\tlast_if-\u003edesc.bInterfaceNumber = niface - 1;\n \t\t\tlast_if-\u003eextra.ptr = LIBUSB20_ADD_BYTES(ptr, ptr[0]);\n \t\t\tlast_if-\u003eextra.len = 0;\n \t\t\tlast_if-\u003eextra.type = LIBUSB20_ME_IS_RAW;\n\n…aaand huh. This changes the number in usbconfig dump_all_desc too.\nTIL usbconfig uses libusb :)\n\nNow, this shouldn't fix it for uhid/hidraw usage (and I'd like to eventually get hidapi-hidraw working maybe) I guess?\n\nBut I can't find 'bInterfaceNumber =' in kernel code at all. Who assigns that?"
+}

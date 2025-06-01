@@ -1,0 +1,8 @@
+{
+ "id": 1206699,
+ "bug_id": 263226,
+ "attachment_id": 0,
+ "creation_time": "2022-04-11T18:15:46Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Issue reported on the fulldisclosure list in 2010 https://seclists.org/fulldisclosure/2010/Dec/489\n\nThe OpenBSD CARP implementation (and all derivatives, such as FreeBSD and\nNetBSD) fails to include all fields contained in the \"carp_header\"\nstructure[1] when calculating the SHA1 HMAC hash of the packet in the\nfunction carp_proto_input_c[2]. The two 8-bit fields not included in the\nhash generation are \"carp_advskew\" and \"carp_advbase\". Among other\nfunctions, the fields are both set to 255 by the master CARP node to\nindicate that it wants to step down from the master role.\n\nThis behaviour can be exploited to force a backup member to assume the role\nof master by capturing a master CARP advertisement, updating the two fields\nin question to 255 and replaying the modified packet. A backup node will\nreceive this packet and the hash check will be satisfied as the two modified\nfields are not included in the hash generation. A backup node will now\nassume the master role and the current master will step down to backup.\n\nAt this point, the attacker can now capture an advertisement from the new\nmaster. By replaying both of the unmodified master advertisements, all CARP\nnodes assume the backup role. At this point, a Denial of Service (DoS)\ncondition has been introduced as no device answers ARP requests for the\nVirtual IP (VIP). The attacker can now decide whether to start answering ARP\nfor the VIP therefore performing a Man in the Middle (MitM) attack."
+}

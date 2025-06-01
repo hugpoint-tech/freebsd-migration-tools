@@ -1,0 +1,8 @@
+{
+ "id": 82781,
+ "bug_id": 26506,
+ "attachment_id": 0,
+ "creation_time": "2005-02-21T09:18:29Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "On Sun, Feb 20, 2005 at 02:30:34PM -0800, Doug White wrote:\nD\u003e This patch appears to work.  I don't know if its correct or not, just that\nD\u003e the previous behavior stops occuring after the patch is applied :-)\n\nThere is a problem with it: if a non-jail multihomed host opens socket,\nand uses sendto() to send packets into different directions, this socket\nis bound to the interface which was used on first packet. This is incorrect.\n\nThis patch allows binding to a particular address only for jail case. I'm\nnot yet sure, that this solution is the best.\n\nIndex: udp_usrreq.c\n===================================================================\nRCS file: /home/ncvs/src/sys/netinet/udp_usrreq.c,v\nretrieving revision 1.171\ndiff -u -r1.171 udp_usrreq.c\n--- udp_usrreq.c\t7 Jan 2005 01:45:45 -0000\t1.171\n+++ udp_usrreq.c\t21 Feb 2005 08:14:11 -0000\n@@ -804,6 +804,10 @@\n \t\t/* Commit the local port if newly assigned. */\n \t\tif (inp-\u003einp_laddr.s_addr == INADDR_ANY \u0026\u0026\n \t\t    inp-\u003einp_lport == 0) {\n+\t\t\t/* Remember addr if jailed, to prevent\n+\t\t\t * rebinding */\n+\t\t\tif (jailed(inp-\u003einp_socket-\u003eso_cred))\n+\t\t\t\tinp-\u003einp_laddr = laddr;\n \t\t\tinp-\u003einp_lport = lport;\n \t\t\tif (in_pcbinshash(inp) != 0) {\n \t\t\t\tinp-\u003einp_lport = 0;\n-- \nTotus tuus, Glebius.\nGLEBIUS-RIPN GLEB-RIPE"
+}

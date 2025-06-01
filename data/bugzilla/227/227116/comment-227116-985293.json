@@ -1,0 +1,8 @@
+{
+ "id": 985293,
+ "bug_id": 227116,
+ "attachment_id": 0,
+ "creation_time": "2018-03-31T15:59:06Z",
+ "creator": "daniel@octaforge.org",
+ "text": "(In reply to Konstantin Belousov from comment #11)\n\nThat's amusing, I just came to the same conclusion by isolating the code into a standalone .c program with stubbed out variables.\n\n---\n    /* Memory for the rest of startup zones, UMA and VM, ... */\n    if (zsize \u003e UMA_SLAB_SIZE) {\n        printf(\"branch1\\n\");\n        pages += (zones + vm_zones) *\n            howmany(roundup2(zsize, UMA_BOOT_ALIGN), UMA_SLAB_SIZE);\n    } else {\n        printf(\"branch2\\n\");\n        printf(\"roundup2 %d\\n\", roundup2(zsize, UMA_BOOT_ALIGN));\n        pages += howmany(zones,\n            UMA_SLAB_SPACE / roundup2(zsize, UMA_BOOT_ALIGN));\n    }\n---\n\n---\n$ ./foo                \nKSIZE 304\nZSIZE 3984\nUMA_SLAB_SIZE 4096\nsizeof uma_slab 112\nUMA_SLAB_SPACE 3984\nbranch2\nroundup2 4000\nzsh: floating point exception  ./foo\n---\n\nSo yeah, indeed, this seems to be the source of error."
+}

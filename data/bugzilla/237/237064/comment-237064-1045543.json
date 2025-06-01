@@ -1,0 +1,8 @@
+{
+ "id": 1045543,
+ "bug_id": 237064,
+ "attachment_id": 203432,
+ "creation_time": "2019-04-06T20:47:50Z",
+ "creator": "momchil@xaxo.eu",
+ "text": "Created attachment 203432\nProposed solution/patch\n\npw leaks memory when invoked with the -V  or -R arguments. The following example leaks memory\n\n  pw -V /etc usershow root\n\nThis does not leak any memory\n\n  pw usershow root\n\nThe memory leak is more prominent when \n\n  pw -V /etc usershow -a\n\nis invoked as a portion of memory is leaked for each entry in the user table.\n\nThe passwd and group structures are allocated with malloc() in vnextpwent() and vnextgrent() when the -V or -R options are used. These call pw_scan() and gr_scan() which call pw_dup() and gr_dup(). The latter calls gr_add() which does calls malloc(). Calls to GETPWENT(), GETPWNAM(), GETGRENT() and GETGRNAM() are used to obtain the structures. These structures are not later released via free(). The missing calls to free() are probably due the fact that they are not necessary when pw is not invoked with either -V or -R arguments. In this case the functions vnextpwent() and vnextgrent() are not used. Instead, the functions getpwent() and getgrent() are used. These do not require the user to free the structures.\n\nThe proposed solution: record the last structures provided by vnextpwent() and vnextgrent() and free them upon consecutive calls. This solution is in the spirit of getpwent() and getgrent()."
+}

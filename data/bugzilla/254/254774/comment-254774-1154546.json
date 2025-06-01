@@ -1,0 +1,8 @@
+{
+ "id": 1154546,
+ "bug_id": 254774,
+ "attachment_id": 0,
+ "creation_time": "2021-04-05T01:02:53Z",
+ "creator": "emacsray@gmail.com",
+ "text": "Note: dlpi_tls_data is essentially __tls_get_addr((tls_mod_off_t[]){1,0}) on both TLS Variant I and Variant II architectures.\n\nmusl has the same problem. Rich has acknoledged the problem and will fix it with:\n\n\ndiff --git a/ldso/dynlink.c b/ldso/dynlink.c\nindex aaadcce0..b66ad537 100644\n--- a/ldso/dynlink.c\n+++ b/ldso/dynlink.c\n@@ -2331,7 +2331,7 @@ int dl_iterate_phdr(int(*callback)(struct dl_phdr_info *info, size_t size, void\n \t\tinfo.dlpi_adds      = gencnt;\n \t\tinfo.dlpi_subs      = 0;\n \t\tinfo.dlpi_tls_modid = current-\u003etls_id;\n-\t\tinfo.dlpi_tls_data  = current-\u003etls.image;\n+\t\tinfo.dlpi_tls_data = __tls_get_addr((tls_mod_off_t[]){current-\u003etls_id,0});\n \n \t\tret = (callback)(\u0026info, sizeof (info), data);\n \ndiff --git a/src/ldso/dl_iterate_phdr.c b/src/ldso/dl_iterate_phdr.c\nindex 86c87ef8..9546dd36 100644\n--- a/src/ldso/dl_iterate_phdr.c\n+++ b/src/ldso/dl_iterate_phdr.c\n@@ -1,5 +1,6 @@\n #include \u003celf.h\u003e\n #include \u003clink.h\u003e\n+#include \"pthread_impl.h\"\n #include \"libc.h\"\n \n #define AUX_CNT 38\n@@ -35,7 +36,7 @@ static int static_dl_iterate_phdr(int(*callback)(struct dl_phdr_info *info, size\n \tinfo.dlpi_subs  = 0;\n \tif (tls_phdr) {\n \t\tinfo.dlpi_tls_modid = 1;\n-\t\tinfo.dlpi_tls_data = (void *)(base + tls_phdr-\u003ep_vaddr);\n+\t\tinfo.dlpi_tls_data = __tls_get_addr((tls_mod_off_t[]){1,0});\n \t} else {\n \t\tinfo.dlpi_tls_modid = 0;\n \t\tinfo.dlpi_tls_data = 0;"
+}

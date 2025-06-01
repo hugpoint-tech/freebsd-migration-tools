@@ -1,0 +1,8 @@
+{
+ "id": 1121035,
+ "bug_id": 249149,
+ "attachment_id": 0,
+ "creation_time": "2020-09-07T06:34:33Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "It looks like this is a KCSan false positive on the LAPIC MMIO mapping.  Since this is a guest that doesn't use the x2APIC (and therefore must use MMIO for LAPIC access instead of MSRs), all CPUs will share the same LAPIC mapping.  However, the underlying physical access will be routed to the local CPU's APIC, so multiple CPUs aren't actually racing on the same hardware resource.   Or at least I hope that's the source of the problem, otherwise Hyper-V really misconfigured the guest.\n\nSince the LAPIC access happens in the course of configuring an event timer, and the KCSan warning printf itself tries to configure a callout, we get the panic.\n\nCan you try the attached (build-tested only) patch?"
+}

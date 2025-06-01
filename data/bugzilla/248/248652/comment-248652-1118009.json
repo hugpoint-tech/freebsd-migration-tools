@@ -1,0 +1,8 @@
+{
+ "id": 1118009,
+ "bug_id": 248652,
+ "attachment_id": 0,
+ "creation_time": "2020-08-14T14:23:02Z",
+ "creator": "vmaffione@FreeBSD.org",
+ "text": "Thanks for reporting.\nWhat I can tell you for sure is that the difference is to be attributed to the conversion of Intel drivers (em, ix, ixl) to iflib.\nThis impacted netmap because netmap support for iflib drivers (intel ones, vmx, mgb, bnxt) is provided directly within the iflib core. IOW, no explicit netmap code stays within the drivers.\n\nI would say some physiological performance drop is to be expected, due to the additional indirection introduced by iflib. However, the performance drop should not be so large as reported in your experiments.\nThe 2.6 Mpps you get in the first comparison let me think that you may have accidentally left ethernet flow control enabled, maybe?\nMoreover, the last experiment is rather confusing, since you have actually a performance improvement... this lets me think that maybe the configuration is not 100% aligned between the two cases?\n\nHave you tried to disable all the offloads? In 11-stable the driver-specific netmap code does not program the offloads, whereas in CURRENT (and 12) the iflib callbacks actually program the offloads also in case of netmap.\n\n  # ifconfig ix0 -txcsum -rxcsum -tso4 -tso6 -lro -txcsum6 -rxcsum6"
+}

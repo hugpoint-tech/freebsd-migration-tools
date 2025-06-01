@@ -1,0 +1,8 @@
+{
+ "id": 486480,
+ "bug_id": 131999,
+ "attachment_id": 0,
+ "creation_time": "2009-02-24T06:19:17Z",
+ "creator": "bde@FreeBSD.org",
+ "text": "On Mon, 23 Feb 2009, Deomid Ryabkov wrote:\n\n\u003e\u003e Synopsis:       chflags: unable to unset flags on symlinks when link target exists\n\nAlso, setting only works accidentally in some cases.\n\n\u003e truss of chflags reveals the problem: usage of stat() where lstat() should have been used.\n\u003e\n\u003e # truss chflags -h noschg logs\n\u003e [...]\n\u003e stat(\"logs\",{ mode=drwxr-x--- ,inode=22303757,size=512,blksize=4096 }) = 0 (0x0)\n\u003e process exit, rval = 0\n\u003e\n\u003e this way, lchflags(2) is never actually called because chflags(3) doesn't think it is necessary.\n\nAnd for chflags -h schg logs, lchflags() is only called because the wrong\nflags returned by stat() happen to have their schg bit clear.  If the\nschg bit were set in the symlink target, then this chflags would do nothing\ntoo.\n\n\u003e\u003e Fix:\n\u003e i had a glance at bin/chflags/chflags.c and it seems to be using fts_* functions to traverse the tree. somehow those need to be told to use lstat to return information, when appropriate.\n\nSetting FTS_PHYSICAL seems to fix it:\n\n% Index: chflags.c\n% ===================================================================\n% RCS file: /home/ncvs/src/bin/chflags/chflags.c,v\n% retrieving revision 1.24\n% diff -u -2 -r1.24 chflags.c\n% --- chflags.c\t9 Mar 2008 12:10:24 -0000\t1.24\n% +++ chflags.c\t24 Feb 2009 06:13:00 -0000\n% @@ -115,5 +115,7 @@\n%  \t\t\tfts_options |= FTS_LOGICAL;\n%  \t\t}\n% -\t} else\n% +\t} else if (hflag)\n% +\t\tfts_options = FTS_PHYSICAL;\n% +\telse\n%  \t\tfts_options = FTS_LOGICAL;\n%\n\nBruce"
+}

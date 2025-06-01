@@ -1,0 +1,8 @@
+{
+ "id": 19027,
+ "bug_id": 6212,
+ "attachment_id": 0,
+ "creation_time": "1998-04-05T02:30:01Z",
+ "creator": "dillon@backplane.com",
+ "text": "\n\tThe kernel does not set the P_SYSTEM flag for the MFS filesystem\n\tprocesses.  Due to the size of the processes this will result\n\tin the kernel attempting to kill the process over and over again\n\tif it runs out of swap, which really screws the machine up.\n\t(note: my one-liner fix to this is probably not in the right place)\n\n\tThe MFS kernel process needs to msync() the memory map to backing\n\tstore (which only effects MFS mounts that use a file for backing store).\n\tIf it fails to do so, the kernel syncer will *never* *see* the dirty\n\tpages.  (note:  I change the tsleep() to tsleep() with a timeout and\n\tcheck the time, calling msync() every 30 seconds).\n\n\tThe mount_mfs program (the mkfs.c code) insists on clearing the \n\tbacking store file if one has been specified.   There are lots of\n\tpeople who probably would like to be able to use an NFS mounted file\n\tfor backing store, and this clearing results in a massive amount\n\tof network I/O (especially if you are mounting huge filesystems).\n\tAlso included in my bug fixes is a modification to the program to\n\tcheck the size of the file and only truncate/pre-initialize it\n\tif it does not match the size of the requested filesystem.  If it\n\tdoes match, mount_mfs does not bother to clear it and simply\n\tnewfs's over whatever data was previously there."
+}

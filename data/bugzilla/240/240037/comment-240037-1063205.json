@@ -1,0 +1,8 @@
+{
+ "id": 1063205,
+ "bug_id": 240037,
+ "attachment_id": 0,
+ "creation_time": "2019-08-22T14:43:29Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "If a port tries to detect CPU features during build poudriere hangs. The cause appears a qemu crash e.g.,\n\n$ poudriere testport -j 112aarch64 security/nss\n[...]\ngmake[4]: Leaving directory 'cmd/shlibsign/mangle'\ncd OPT.OBJ ; sh 'cmd/shlibsign/.'/sign.sh 'cmd/shlibsign/../../../dist/OPT.OBJ' \\\n'cmd/shlibsign/OPT.OBJ' FreeBSD \\\n'cmd/shlibsign/../../../dist/OPT.OBJ/lib' 'cmd/shlibsign/../../../dist/OPT.OBJ/lib/libsoftokn3.so'\ncmd/shlibsign/OPT.OBJ/shlibsign -v -i cmd/shlibsign/../../../dist/OPT.OBJ/lib/libsoftokn3.so\nqemu:handle_cpu_signal received signal outside vCPU context @ pc=0x602e5b07\n\n$ cat a.c\n#include \u003csys/types.h\u003e\n#include \u003cmachine/armreg.h\u003e\n#include \u003cstdio.h\u003e\n\nint main(void)\n{\n  uint64_t id_aa64isar0;\n  id_aa64isar0 = READ_SPECIALREG(ID_AA64ISAR0_EL1);\n  if (ID_AA64ISAR0_AES(id_aa64isar0) == ID_AA64ISAR0_AES_BASE) {\n    printf(\"AES found\\n\");\n  }\n  if (ID_AA64ISAR0_AES(id_aa64isar0) == ID_AA64ISAR0_AES_PMULL) {\n    printf(\"PMULL found\\n\");\n  }\n  if (ID_AA64ISAR0_SHA1(id_aa64isar0) == ID_AA64ISAR0_SHA1_BASE) {\n    printf(\"SHA1 found\\n\");\n  }\n  if (ID_AA64ISAR0_SHA2(id_aa64isar0) == ID_AA64ISAR0_SHA2_BASE) {\n    printf(\"SHA2 found\\n\");\n  }\n  return 0;\n}\n\n$ cc a.c\n$ ./a.out\nqemu: uncaught target signal 4 (Illegal instruction) - core dumped\nIllegal instruction"
+}

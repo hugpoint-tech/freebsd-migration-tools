@@ -1,0 +1,8 @@
+{
+ "id": 936821,
+ "bug_id": 219803,
+ "attachment_id": 183243,
+ "creation_time": "2017-06-05T17:48:30Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "Created attachment 183243\npf RFC 4787 req 1 and 3 implementation\n\nThis patch implements RFC 4787 requirements 1 and 3, changing PF's allocation of NAT mappings for UDP from the current \"symmetric\" NAT to a \"endpoint-independent mapping\" NAT, a.k.a \"full cone\" NAT. All UDP packets from the internal IP:port X:x go through the same external Y:y no matter the Z:z, and nothing but X:x uses Y:y.\n\nInternal             External\nX:x  -----\u003e NAT Y:y ----\u003e Z:z\n\nThe implementation is relatively straightforward. pf_state for UDP connections now reference a pf_udp_mapping, which is reference counted, and kept alive as long as at least 1 pf_state is referencing it. Every new NAT mapping that gets created tries to find a pf_udp_mapping by its source X:x endpoint and reuses its external Y:y, failing which, it creates a new one through an unused Y:y. Only allocation of NAT mappings is changed. Each X:x \u003c-\u003e Z:z still has its own distinct connection state (struct pf_state) and behaves the same as before.\n\nCurrently, only if a Z:z was previously transmitted to by X:x, can it transmit back to X:x through Y:y, i.e it behaves as a \"port-restricted cone\" NAT (or endpoint-independent mapping NAT with address- and port-dependent filtering, as per RFC 4787), but I am working on that too.\n\nThis should fix STUN and vastly improve UDP applications using PF's NATing such as gaming, VoIP, WebRTC, peer to peer applications, etc.\n\nAre the NAT implementations in our other firewalls also \"symmetric\" NATs?"
+}

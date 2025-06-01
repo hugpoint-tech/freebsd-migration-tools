@@ -1,0 +1,8 @@
+{
+ "id": 706005,
+ "bug_id": 176740,
+ "attachment_id": 0,
+ "creation_time": "2013-03-11T23:43:13Z",
+ "creator": "john@jmarshall.id.au",
+ "text": "On Mon, 11 Mar 2013, 13:18 +0100, Dag-Erling SmÃ¸rgrav wrote:\n\u003e Strictly speaking, you don't actually need a\n\u003e separate call for LOGIN_SETUMASK - you can add it to the LOGIN_SETUSER\n\u003e call - but it doesn't hurt.\n\nThat's great!  I had no idea that would work!  I didn't pick that up\nfrom the man pages but looking at the code for login_class.c I can see\nhow that works.  I'm all for merging this into a single call if that's\nacceptable.\n\n\u003e The comment is inaccurate, though.\n\u003e ... Therefore,\n\u003e LOGIN_SETUMASK is the only user setting that hasn't already been applied\n\u003e at that point.\n\nNo, at this point we still haven't visited do_setup_env() where the\nuser-specific LOGIN_SETENV and LOGIN_SETPATH are set; but I'm content to\ndrop the comment if it is superfluous.\n\n1624:do_child(Session *s, const char *command)\n1625:{\n1638:\t\tdo_setusercontext(pw);\n1665:\t\tdo_setusercontext(pw);\n1694:\tenv = do_setup_env(s, shell);\n1842:}\n\nHow does this look?\n\nIndex: crypto/openssh/session.c\n===================================================================\n--- crypto/openssh/session.c\t(revision 243728)\n+++ crypto/openssh/session.c\t(working copy)\n@@ -1525,7 +1525,8 @@\n \t\t}\n \n #ifdef HAVE_LOGIN_CAP\n-\t\tif (setusercontext(lc, pw, pw-\u003epw_uid, LOGIN_SETUSER) \u003c 0) {\n+\t\tif (setusercontext(lc, pw, pw-\u003epw_uid,\n+\t\t    LOGIN_SETUSER|LOGIN_SETUMASK) \u003c 0) {\n \t\t\tperror(\"unable to set user context (setuser)\");\n \t\t\texit(1);\n \t\t}\n\n-- \nJohn Marshall"
+}

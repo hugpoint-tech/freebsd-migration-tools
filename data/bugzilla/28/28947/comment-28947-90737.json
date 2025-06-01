@@ -1,0 +1,8 @@
+{
+ "id": 90737,
+ "bug_id": 28947,
+ "attachment_id": 0,
+ "creation_time": "2001-07-13T15:00:01Z",
+ "creator": "sdalu@loria.fr",
+ "text": "\nwhen using pthread 2 file descriptors are used for pipes (see lsof output),\nthese file descriptors can't be closed by close(), but dup2() manage to \nduplicate other fd at these positions (fcntl/F_DUPFD cannot)\n\nthe real problem occurs when doing an exec, when presumably the\npthread is doing some cleanup and closes its files descriptor,\nunfortunatelly these descriptors are not its own anymore but the\ncopy done but dup2.\n\nwould have expected dup2() to fail\n(the problem is perhaps more with the pthread librairy than the kernel)\n\nHow-To-Repeat: \n-- a ------------------------\n#include \u003cpthread.h\u003e\n\nint main() {\n    if (close(3) \u003c 0)\n\tperror(\"close\");\n    if (dup2(0, 3) \u003c 0) \n\tperror(\"dup2\");\n}\n-----------------------------\n\ngcc -o a a.c -pthread\n\na         71332 sdalu    0u  VCHR          5,14     0t4766    8311 /dev/ttype\na         71332 sdalu    1u  VCHR          5,14     0t4766    8311 /dev/ttype\na         71332 sdalu    2u  VCHR          5,14     0t4766    8311 /dev/ttype\na         71332 sdalu    3u  PIPE    0xd734f260      16384         -\u003e0xd734f300\na         71332 sdalu    4u  PIPE    0xd734f300      16384         -\u003e0xd734f260\n\n./a\nclose: Bad file descriptor"
+}

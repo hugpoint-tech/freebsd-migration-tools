@@ -1,0 +1,8 @@
+{
+ "id": 1256185,
+ "bug_id": 270964,
+ "attachment_id": 0,
+ "creation_time": "2023-04-20T19:21:56Z",
+ "creator": "brian90013@gmail.com",
+ "text": "Hello,\n\nWe recently saw a machine with Intel E810 cards stop transmitting and start printing \"Malicious Driver Detection Tx Descriptor check event 'Packet too small or too big'\" to the console. Some investigation showed a user application was incorrectly building packets over 9724 bytes and passing them via netmap to the ice driver.\n\nWe quickly avoided the MDD event by fixing the user application. However, I was surprised there appears to be no length checking when using netmap with iflib drivers.\n\nLooking at iflib_netmap_txsync(), it assembles the set of fragments composing a packet and passes them to ctx-\u003eisc_txd_encap() aka ice_ift_txd_encap(). That function has an int return value and seems like an excellent place to compare the total packet length (in pi-\u003eipi_len) against ICE_MAX_FRAME_SIZE. (In fact the ixl driver does this with MPASS().)\n\nThe issue is iflib_netmap_txsync() ignores the return code and always increments the nic_i pointer. I have made several attempts to modify this function to handle failures from isc_txd_encap but none have passed all my tests.\n\nI wonder if there is a reasonable way to modify iflib_netmap_txsync() to drop fragments if isc_txd_encap returns an error code? I realize this code is in the fast path and should be kept to a minimum. However, this change would let the ice driver (and other iflib users) inspect packet sizes, avoid this class of MDD events, and keep the interface up and running."
+}

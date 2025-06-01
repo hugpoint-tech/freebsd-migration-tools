@@ -1,0 +1,8 @@
+{
+ "id": 1223908,
+ "bug_id": 256280,
+ "attachment_id": 0,
+ "creation_time": "2022-08-22T21:18:15Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I took a look at the packet trace and it does not\nappear that the server is hung.\nI suspect that, if you did:\n# nfsstat -s -E\nrepeatedly, you would see the RPC counts increasing.\n\nWhat the packet trace shows is the client doing a\nWrite RPC repeatedly, getting a NFS3ERR_STALE reply\neach time. (First reply at packet#1252, followed by\nmany more Write RPC attempts for the same file.)\n\nNFS3ERR_STALE - Means that the file no longer exists\n  on the server. I do not know why it no longer exists,\n  since there are no Remove RPCs in the trace.\n  I would consider it a client bug to keep retrying a\n  Write RPC after a NFS3ERR_STALE reply, since the error\n  is fatal and cannot recover upon retries.\n\nYou might look for some \"cleanup\" process/thread that\nmight delete a file before the NFS client would expect that."
+}

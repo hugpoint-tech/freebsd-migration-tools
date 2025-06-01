@@ -1,0 +1,8 @@
+{
+ "id": 1198250,
+ "bug_id": 261792,
+ "attachment_id": 0,
+ "creation_time": "2022-02-08T15:30:38Z",
+ "creator": "gray@nxg.name",
+ "text": "The slapd startup script searches for the location of the database directory with the line\n\n    DATABASEDIR=`grep olcDbDirectory /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase=* | awk '{ print $2 }'`\n\nThis assumes that the objects olcDatabase=* are files, but they needn't be.  For example\n\n    % ls -d1 /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase=*\n    /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={-1}frontend.ldif\n    /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={0}config.ldif\n    /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={1}mdb/\n    /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={1}mdb.ldif\n    /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={2}mdb/\n    /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={2}mdb.ldif\n\n(the extra databases are for accesslog and syncprov)\n\nThis produces warnings when the script is used:\n\n    % service slapd stop\n    grep: /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={1}mdb: Is a directory\n    grep: /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase={2}mdb: Is a directory\n    Stopping slapd.\n    Waiting for PIDS: 72659.\n\nA suitable alternative might be:\n\n    % find /usr/local/etc/openldap/slapd.d/cn=config -name olcDatabase=\\*.ldif|xargs grep olcDbDirectory\n\nThis is in the port of openldap26-server-2.6.0, in 13.0-RELEASE."
+}

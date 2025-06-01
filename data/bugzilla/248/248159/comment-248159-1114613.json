@@ -1,0 +1,8 @@
+{
+ "id": 1114613,
+ "bug_id": 248159,
+ "attachment_id": 0,
+ "creation_time": "2020-07-22T00:37:52Z",
+ "creator": "freebsd@kumba.dev",
+ "text": "It looks like the mpr(4) driver w/ an LSI/AVAGO/Broadcom SAS9300-8i won't allow an AMD Ryzen system to enter ACPI S3 state.  I have on system running Ryzen on an ASUS PRIME B450M-A/CSM motherboard, and building a second system using a Gigabyte B450M DS3H motherboard.  Both systems have a SAS9300-8i card in them, and I finally pinned down that removing the SAS card allowed 'acpiconf -s 3' to work and put the system to sleep.\n\nIssue is reproducible on 12.1-RELEASE-p7, 12.1-STABLE (r361761), and 13-CURRENT (r361779).  The only (somewhat) usable error message is \"acpi0: device_suspend failed\", followed by the system running resume functions (mostly bringing the USB ports back online).\n\nDoing some looking around, it appears the culprit is....by design:\n\n/usr/src/sys/dev/mpr/mpr_pci.c:454\n\n    static int\n    mpr_pci_suspend(device_t dev)\n    {\n            return (EINVAL);\n    }\n\nAre there plans to implement mpr_pci_suspend so that this device can be put into S3 state?  are here any SAS/SATA HBA drivers in FreeBSD that support suspend/resume?"
+}

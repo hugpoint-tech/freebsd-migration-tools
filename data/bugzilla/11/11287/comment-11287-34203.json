@@ -1,0 +1,8 @@
+{
+ "id": 34203,
+ "bug_id": 11287,
+ "attachment_id": 0,
+ "creation_time": "1999-04-30T17:05:13Z",
+ "creator": "luoqi@chen.ml.org",
+ "text": "User LDT sharing should really be done in the machine dependent layer.\nI have an implementation based on -current (I don't have any machine\nrunning -stable), you may want to take a look at, the patch is at\nhttp://www.freebsd.org/~luoqi\n\nThere are still two problems with this implementation:\n- It is incomplete for SMP. We need something similar to TLB shootdown\n  when modifying the ldt table.\n- It doesn't work correctly in the following case:\n  1. process A initially doesn't have a user ldt table\n  2. process A forks process B (RFMEM)\n  3. process B calls i386_set_ldt()\n  now process B has a user ldt table, but inaccessible to A. I can\n  see 3 solutions to this problem:\n  1. Allocate a user ldt table for all processes.\n       This is not really an acceptable solution, it penalize everyone\n       else for the benefit of a few.\n  2. Define another rfork flag RFLDT.\n       The problem with solution is the flag is too machine-specific.\n  3. Any process wants to share user ldt with its descendants should\n     call i386_set_ldt() prior to any fork.\n       This is a workaround in the user application, but should work\n       well.\n\n-lq"
+}

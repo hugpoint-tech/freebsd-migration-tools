@@ -1,0 +1,8 @@
+{
+ "id": 4017,
+ "bug_id": 1397,
+ "attachment_id": 0,
+ "creation_time": "1996-07-18T16:50:01Z",
+ "creator": "markd@grizzly.com",
+ "text": "\n  Pipes are implemented as sockets and this is what fstat reports. However\nsend returns a \"Socket operation on non-socket\" error.  Either socket\noperations should work or fstat should report the file as a FIFO, not a socket.\n\nThis worked on 2.1.\n\nFix: \n\nUnknown.\nHow-To-Repeat: \n#include \u003cunistd.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003csys/stat.h\u003e\n\nint\nmain ()\n{\n    int fds [2];\n    struct stat statBuf;\n    char *data;\n\n    if (pipe (fds) \u003c 0) {\n        perror (\"pipe\");\n        exit (1);\n    }\n    if (fstat (fds [1], \u0026statBuf)) {\n        perror (\"fstat\");\n        exit (1);\n    }\n\n    printf (\"pipe mode is: %o\\n\", statBuf.st_mode);\n\n    data = \"some data to write\";\n    if (send (fds [1], data, strlen (data), 0) \u003c 0) {\n        perror (\"but doing a send fails\");\n        exit (1);\n    }\n    exit (0);\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 870870,
+ "bug_id": 208132,
+ "attachment_id": 0,
+ "creation_time": "2016-03-19T18:10:10Z",
+ "creator": "mp@FreeBSD.org",
+ "text": "During a vfork in tcsh the child process changes the signals. Normally this is not an issue but user space signal implementations need special handling due to the child borrowing memory from the parent via the vfork. This was noticed when tcsh as used with libthr. The change to add SAVESIGVEC was supposed to resolve this issue by saving and restoring the signals.\n\nObviously there is an edge case occurring where the signals are not being handled correctly and causing this behavior. I believe what I'm seeing with the squid example are the signals still blocked in the thread state (procstat -j).\n\nThe other patch discussed (instead of SAVESIGVEC) to resolve the user space signal implementation was to use fork instead of vfork. There is a performance difference between fork and vfork which is why we preferred the SAVESIGVEC change.\n\nI just tested a patch to switch over to fork and it appeared to resolve the issue on my system. If you have time please give it a try on your system."
+}

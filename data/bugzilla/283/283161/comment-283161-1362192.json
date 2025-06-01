@@ -1,0 +1,8 @@
+{
+ "id": 1362192,
+ "bug_id": 283161,
+ "attachment_id": 0,
+ "creation_time": "2025-05-03T16:29:43Z",
+ "creator": "lew@perftech.com",
+ "text": "I had a similar event, tracking down why the trusted root certificates were broken on our embedded system, which relies on the old linkage.\n\nThe problem appears to be that, beginning with ca_root_nss version 3.108, the symlink has changed, but the trusted root certificate file is still in the prior location.\n\nIn other words, we now have this linkage:\n\n  /etc/ssl/cert.pem -\u003e ../../usr/local/etc/ssl/cert.pem\n\nHowever, there is no such target file in the package.  The package still contains the prior trusted root certificate file in /usr/local/share/certs/ca-root-nss.crt, but the symlink no longer points to this file.\n\nThis results in all OpenSSL applications that rely on the trusted root certificate store to fail.\n\nI see a comment above that the default certificate file for OpenSSL, however, we don't find this to be the case.  Calling X509_get_default_cert_file() returns \"/etc/ssl/cert.pem\"."
+}

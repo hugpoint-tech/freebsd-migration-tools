@@ -1,0 +1,8 @@
+{
+ "id": 983451,
+ "bug_id": 226510,
+ "attachment_id": 0,
+ "creation_time": "2018-03-20T20:23:36Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "It looks like we're not releasing the DA_REF_TUR. We clear it, but don't release, then see if it is set and clear it and release. This isn't going to work out too well, so always release when we clear the work flag.\n\n\ndiff --git a/sys/cam/scsi/scsi_da.c b/sys/cam/scsi/scsi_da.c\nindex 4bcddbb8dff9..beeda8d90f79 100644\n--- a/sys/cam/scsi/scsi_da.c\n+++ b/sys/cam/scsi/scsi_da.c\n@@ -3114,6 +3114,7 @@ dastart(struct cam_periph *periph, union ccb *start_ccb)\n                if (bp == NULL) {\n                        if (cam_iosched_has_work_flags(softc-\u003ecam_iosched, DA_WORK_TUR)) {\n                                cam_iosched_clr_work_flags(softc-\u003ecam_iosched, DA_WORK_TUR);\n+                               da_periph_release_locked(periph, DA_REF_TUR);\n                                scsi_test_unit_ready(\u0026start_ccb-\u003ecsio,\n                                     /*retries*/ da_retry_count,\n                                     dadone,\n@@ -3139,11 +3140,6 @@ dastart(struct cam_periph *periph, union ccb *start_ccb)\n                        }\n                }\n\n-               if (cam_iosched_has_work_flags(softc-\u003ecam_iosched, DA_WORK_TUR)) {\n-                       cam_iosched_clr_work_flags(softc-\u003ecam_iosched, DA_WORK_TUR);\n-                       da_periph_release_locked(periph, DA_REF_TUR);\n-               }\n-\n                if ((bp-\u003ebio_flags \u0026 BIO_ORDERED) != 0 ||\n                    (softc-\u003eflags \u0026 DA_FLAG_NEED_OTAG) != 0) {\n                        softc-\u003eflags \u0026= ~DA_FLAG_NEED_OTAG;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1299866,
+ "bug_id": 276002,
+ "attachment_id": 0,
+ "creation_time": "2024-03-06T10:22:43Z",
+ "creator": "pho@FreeBSD.org",
+ "text": "This is just an observation.\nBy replacing the ftruncate() call in mmap47.sh with a fdatasync() I also see the data corruption:\n\n20:53:22 Start test of mmap47a.sh\n20:54:27, elapsed 0 days, 00:01.05\n20:55:31, elapsed 0 days, 00:02.09\n20:56:35, elapsed 0 days, 00:03.13\n20:57:41, elapsed 0 days, 00:04.19\n20:58:45, elapsed 0 days, 00:05.23\n20:59:49, elapsed 0 days, 00:06.27\n12661c12661\n\u003c 0613500    40  41  42  43  44  45  46  47  48  49  4a  4b  4c  4d  4e  4f\n---\n\u003e 0613500    40  41  42  43  44  45  46  ee  48  49  4a  4b  4c  4d  4e  4f\n256 -rw-------  1 root wheel 262144 Mar  5 21:00 file\n256 -rw-------  1 root wheel 262144 Mar  5 20:59 file.orig\n21:01:08, elapsed 0 days, 00:07.46\nFailed with exit code 2 after 7 loops of mmap47a.sh.\n21:01 /usr/src/tools/test/stress2/misc $ diff -u mmap47.sh mmap47a.sh\n--- mmap47.sh   2024-03-01 20:00:28.468087000 +0100\n+++ mmap47a.sh  2024-03-05 20:53:07.446204000 +0100\n@@ -126,8 +126,13 @@\n        while (go == -1)\n                usleep(50);\n        while (go == 1) {\n+#if 0\n                if (ftruncate(fd, siz) == -1) /* No size change */\n                        err(1, \"truncate)\");\n+#else\n+               if (fdatasync(fd) == -1)\n+                       err(1, \"fdatasync()\");\n+#endif\n                usleep(arc4random() % 1000);\n        }\n        return (0);\n21:20 /usr/src/tools/test/stress2/misc $"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 428412,
+ "bug_id": 120194,
+ "attachment_id": 0,
+ "creation_time": "2008-01-31T22:40:01Z",
+ "creator": "snow@teardrop.org",
+ "text": "UFS volumes created on ZVOLs (as demonstrated in the FreeBSD ZFS\nWiki: http://wiki.freebsd.org/ZFSQuickStartGuide) cannot be fsck'd by\nthe current boot process.\n\nIn the current boot process, fsck runs before zfs, which runs before\nmountlate.  If a UFS/ZVOL mount point is in /etc/fstab with pass# set to\na non-zero value, even in 'late' is set, the boot process will abort.\n\nFix: Patches provided by swell.k@gmail.com:\n\n--- /usr/src/etc/rc.d/hostid\n+++ /etc/rc.d/hostid\n@@ -28,7 +28,7 @@\n #\n\n # PROVIDE: hostid\n-# REQUIRE: root\n+# REQUIRE: early\n # BEFORE: mountcritlocal\n # KEYWORD: nojail\n\n--- /usr/src/etc/rc.d/zfs\n+++ /etc/rc.d/zfs\n@@ -4,7 +4,7 @@\n #\n\n # PROVIDE: zfs\n-# REQUIRE: mountcritlocal\n+# REQUIRE: hostid\n\nThis puts /etc/rc.d/zfs before /etc/rc.d/fsck, which solves the problem.\n\nPatch attached with submission follows:\nHow-To-Repeat: (Assuming ZFS is enabled and a zpool called 'tank' exists...)\n\nzfs create -V1g tank/ufs\nnewfs /dev/zvol/tank/ufs\necho \"/dev/zvol/tank/ufs /mnt ufs rw,late 2 2\" \u003e\u003e /etc/fstab\nshutdown -r now"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 19926,
+ "bug_id": 6495,
+ "attachment_id": 0,
+ "creation_time": "1998-05-03T23:20:02Z",
+ "creator": "gibbs@narnia.plutotech.com",
+ "text": "\n\tThe pci_map_* routines are only reflexive when it comes to\n\tinterrupt registration.  Drivers may want to release their\n\tmemory and port mappings as well.  For instance, the BusLogic/Mylex\n\tMultiMaster driver for CAM performs a pci_mem_map during it's\n\tprobe to ensure that the device is functional and to disable\n\tany ISA compatibility ports.  All resources (at least those for\n\twhich an API exists to do so) are freed before the probe completes.\n\tThe code is written this way so that no ordering between the probe\n\tand attach routines are relied on although it is assumed that\n\tISA probes will follow PCI probes.  When the attach routine is\n\tcalled, the resources are allocated again which results in the\n\tregisters for the card to be mapped in a second time.  If resource\n\taccounting was in place, this would cause a failure.  Right now\n\tit simply causes us to consume a little extra KVA.\n\nFix: \n\nProbably need a pmap_unmap_device to implement pci_unmap_mem??\nHow-To-Repeat: \n\tSee above."
+}

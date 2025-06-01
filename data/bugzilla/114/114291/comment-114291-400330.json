@@ -1,0 +1,8 @@
+{
+ "id": 400330,
+ "bug_id": 114291,
+ "attachment_id": 0,
+ "creation_time": "2007-07-04T16:20:03Z",
+ "creator": "david.chosrova@libertysurf.fr",
+ "text": "Hi,\n\nI'm new to Freebsd and interested in system programming. So I'have picked\nup a task from the project ideas list to start with.\n\n(part of) the subject is : \"This task is to define and implement a general\nmechanism for tracking these references and use them in handling module\nunload requests.\"\n\nSo, to do that, I've added an \"int dynrefs\" in struct module\n(kern_module.c), and functions to increase or decrease this count\n(module_add/remove_dynrefs(const char * modname) and\nmodule_updatedynrefs(const char * modname, int action) ) in kern_module.c.\n\nTo avoid unload of a module which has a dynrefs count != 0 , I have\nmodified module_unload(), so that unload is process only if dynrefs=0\nor flag=LINKER_UNLOAD_FORCE.\n\n module_unload(module_t mod, int flags)\n {\n \tint error;\n-\terror = MOD_EVENT(mod, MOD_QUIESCE);\n+\tMOD_SLOCK;\n+\t(mod-\u003edynrefs == 0) ? (error = MOD_EVENT(mod, MOD_QUIESCE)) : (error = EPERM);\n+\tMOD_SUNLOCK;\n\n\n\nI have compiled and tested. with a 6-2 RELEASE. For the test I'have used\ntwo dummy module, one adding a dynrefs on the other.\n\nAny comment are welcome\n\nDavid chosrova\n\nFix: Patch attached with submission follows:"
+}

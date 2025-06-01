@@ -1,0 +1,8 @@
+{
+ "id": 1291765,
+ "bug_id": 275594,
+ "attachment_id": 0,
+ "creation_time": "2024-01-12T03:10:31Z",
+ "creator": "seigo.tanimura@gmail.com",
+ "text": "(In reply to Mark Johnston from comment #9)\n\nNow with the somewhat better answer:\n\n\u003e Sorry, I don't understand.  The trigger for arc_prune is whether the ARC is holding \"too much\" metadata, or ZFS is holding \"too many\" dnodes in memory.  If arc_prune() is spending most of its time reclaiming tmpfs vnodes, then it does nothing to address its targets; it may as well do nothing.  Rate-limiting just gets us closer to doing nothing, or I am misunderstanding something about the patch.\n\nThe rate limiting in my fix now comes with the maximum and optimal workload.  That is required because both the overcommit and undercommit of the ARC pruning waste the CPU time by the effortless vnode list lock and the overhead to call vnlru_free_impl(), respectively.  The elimination of the giveups in vnlru_free_impl() and the prunable znodes under zfs_arc_dnode_reduce_percent are the positive evidences.\n\nThe pileup of the ARC metadata with no evictable portion should still be investigeted, as that is the direct cause of the out-of-control ARC pruning requests.  The unevictable ARC content is caused by the ZIO on it, but it is not clear how the ZIO keeps running so long."
+}

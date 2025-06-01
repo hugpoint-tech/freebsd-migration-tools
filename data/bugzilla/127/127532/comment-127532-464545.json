@@ -1,0 +1,8 @@
+{
+ "id": 464545,
+ "bug_id": 127532,
+ "attachment_id": 0,
+ "creation_time": "2008-09-22T04:00:12Z",
+ "creator": "jcw@highperformance.net",
+ "text": "The install command deleted libc when it should not have.  Running the\ninstall command with '-fschg -S' deletes the install target when\nsecurity.jail.chflags_allowed=0 inside a jail.  I observed this during\ninstallworld.  The problem can be avoided by setting\nsecurity.jail.chflags_allowed=1 before running make installworld.\n\nHow-To-Repeat: (outside the jail)\n~$ chflags noschg /usr/jails/cr/lib/libc.so.6\n\n(inside the jail)\n[root@s4cr /usr/src/lib/libc]# ls -lao /lib/libc.so.6\n-rwxr-xr-x  1 root  wheel  - 981331 Sep 21 15:57 /lib/libc.so.6\n\n[root@s4cr /usr/src/lib/libc]# sysctl -a | grep secur\nkern.securelevel: -1\nsecurity.jail.chflags_allowed: 0\n\n[root@s4cr /usr/src/lib/libc]#   make install\ninstall -C -o root -g wheel -m 444   libc.a /usr/lib\ninstall -C -o root -g wheel -m 444   libc_p.a /usr/lib\ninstall -s -o root -g wheel -m 444   -fschg -S  libc.so.6 /lib\ninstall: /lib/libc.so.6: chflags: Operation not permitted\n*** Error code 71\n\nStop in /usr/src/lib/libc.\n\n[root@s4cr /usr/src/lib/libc]# ls -lao /lib/libc.so.6\n/libexec/ld-elf.so.1: Shared object \"libc.so.6\" not found, required by \"ls\"\n[root@s4cr /usr/src/lib/libc]#"
+}

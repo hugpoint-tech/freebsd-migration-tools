@@ -1,0 +1,8 @@
+{
+ "id": 1102601,
+ "bug_id": 246426,
+ "attachment_id": 0,
+ "creation_time": "2020-05-14T21:21:48Z",
+ "creator": "otsugen0000@gmail.com",
+ "text": "(In reply to Gen Otsuji from comment #16)\nI again try to regenerate the bug\nI moved all the files/patch-* somewhere in the $HOME,\nAnd then svnlite update /usr/ports/emulators/wine-devel .\nand delete STAGING option.\nand build again.\n\nSo, I've regenerated the bug!\n\nAnd following is the summary of \nwhat I did after encounted this bug.\n(only the right paths omitted unnecessary things).\n\nThe application generated the Crash infomation.\nUnfortunately there wasn't backtrace.\n\nThe info has the line of\nException   : C00000FD at 000000007B058D66 NA to 0000000000000000\nIt is stack over flow error(?) at 0x7b058d66\n\n7b058d66 is an address near the kernelbase\n(EXTRADLLFLAGS has -Wl,--image-base,0x7b000000 in Makefile.in)\n\nso objdump -d kernelbase.dll.so | less +/7b058d66\nthis search goes well and\nthe address is in the 000000007b058cf0 \u003cLocalLock\u003e: function.\n\nso I grep'ed the LocalLock in kernelbase directory, and hit memory.c.\nAnd then I try to understand the HLOCAL, hmem,is_pointer(),__TRY,__EXCEPT_PAGE_FAULT, and so on with grep'ing.\nAnd I also put the debugging info fprintf(stderr,\"HELLO %d\\n\",__LINE__).\nevery where in that function, (I recommend don't do this in __TRY block.:-)\nAnd finally I find the *p|=0 (if this p is null?)\n\nP.S.\n\u003e 0024:fixme:dbghelp:MiniDumpWriteDump NIY MiniDumpWithHandleData\nfrom this line that wine has generated, I found the minidump stuff.\nbut where is the writed dump?"
+}

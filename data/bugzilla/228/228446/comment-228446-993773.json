@@ -1,0 +1,8 @@
+{
+ "id": 993773,
+ "bug_id": 228446,
+ "attachment_id": 0,
+ "creation_time": "2018-05-23T21:28:26Z",
+ "creator": "saper@saper.info",
+ "text": "I am using the following setup:\n\nOpenSSL is configured to use libtpm:\n\n[openssl_def]\nengines = engine_section\n\n[engine_section]\n\nfoo = tpm_section\n\n[tpm_section]\ndynamic_path = /usr/local/lib/openssl/engines/libtpm.so\nengine_id = tpm\ndefault_algorithms = ALL\n#default_algorithms = RAND,RSA\ninit = 1\n\nSSH client is configured to use libsimple-tpm-pk11.so:\n\nHost m\nPKCS11Provider /usr/home/saper/sw/simple-tpm-pk11/.libs/libsimple-tpm-pk11.so\nGSSAPIAuthentication yes\nGSSAPIDelegateCredentials yes\nForwardAgent yes\nForwardX11 no\nUser xxx\n\nI am using a vanilla /usr/local/etc/tcsd.conf\n\nI start ssh-agent from my .xsession file as\n\neval `/usr/bin/ssh-agent -s`\n\ntherefore it does not die when I kill my X session.\n\nI noticed that tcsd blocks system shutdown (gets killed eventually by the watchdog).\n\nQuick look at the source code and open sockets reveals, that ssh-agent maintains   a persistent connection to tcsd.\n\nThe easiest way to reproduce the problem with my config is to start a separate shell with\n\nssh-agent /bin/sh\n\nand try to stop tcsd in another terminal:\n\nsudo service tcsd stop\n\nas long as the shell is running tcsd will not stop.\n\nIt is enough to exit the shell and after a second or two tcsd will shutdown.\n\nThe shutdown is immediate if ssh-agent is not running.\n\nI think tcsd should be able to notice earlier that it is time to close its sockets and go away."
+}

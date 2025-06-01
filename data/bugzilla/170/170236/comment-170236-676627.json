@@ -1,0 +1,8 @@
+{
+ "id": 676627,
+ "bug_id": 170236,
+ "attachment_id": 0,
+ "creation_time": "2012-07-28T19:30:05Z",
+ "creator": "avilla@FreeBSD.org",
+ "text": "Web plug-ins (ports using www/firefox/Makefile.webplugins) are symlinked to browser-specific directories. Those symlinks are installed in PREFIX, while they should be installed in LOCALBASE (browsers are patched to search them in LOCALBASE).\n\nFix: The attached patch changes WEBPLUGINS_LIBDIR to be in LOCALBASE. WEBPLUGINS_DIR - the directory where the plug-in file is actually installed - was left in PREFIX (with WEBPLUGINS_LIBDIR:S,^${LOCALBASE}/,${PREFIX}/), as the real location of the file is not important, and it really belongs to PREFIX.\n\nAs a consequence, WEBPLUGINS_LIBDIR (with %D instead of LOCALBASE) is now removed (@dirrmtry) twice when PREFIX != LOCALBASE (before and after the @cwd %%LOCALBASE%%), otherwise there's going to be a leftover. This might cause the directory to be removed uselessly when WEBPLUGINS_DIR is defined to something independent from it, but this cannot be a problem as either it has files inside, or it doesn't exist (and, remember, it's @dirrmtry).\n\nI've tested some dependent ports and they work fine with both default and custom PREFIX. The question is: do they need a PORTREVISION bump? If people have them installed in custom PREFIX (!= LOCALBASE) - quite unlikely - the symlinks need to be regenerated.\n\nPatch attached with submission follows:\nHow-To-Repeat: This became apparent while working on a KDE port (which has PREFIX != LOCALBASE): Firefox is not going to check into /usr/local/kde4/lib/browser_plugins/*."
+}

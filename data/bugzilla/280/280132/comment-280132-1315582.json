@@ -1,0 +1,8 @@
+{
+ "id": 1315582,
+ "bug_id": 280132,
+ "attachment_id": 0,
+ "creation_time": "2024-07-04T22:23:16Z",
+ "creator": "email@luiz.eng.br",
+ "text": "After upgrading one of my hosts from FreeBSD 13.2-RELEASE to 14.1-RELEASE, I started running into issues when originating IPv4 traffic from the host. \n\nOn my public interface, I have a single IPv6 GUA address. No IPv4. \nI have a loopback interface that has a public IPv4 address configured on it, with a /32 netmask. \nI then install an IPv4 default route with: route add -net default -inet6 2a12:6e40:0::xx\n\nThis setup works fine on the 13.2 host, but on the 14.1 host, it results in a EHOSTUNREACH. I first noticed the issue because unbound was having issues with domains that had only IPv4 nameservers, but I was also able to reproduce it when originating any type of IPv4 traffic from the host: mtr, telnet, ping all fail. \n\nI compared the netstat -no4 and netstat -nr4 outputs between the two systems and they are similar, changing only the last octet of the IPs between the systems. \n\nI don't have a lot of experience with dtrace, but I put together a small script to check the nhop_object returned by fib4_lookup and I noticed that on FreeBSD 14.1 nh_ifa has an IPv6 link-local address, while on 13.2 it has an IPv4 (which interestingly is not the public one).\n\nI'm glad to provide more information and run more tests on request."
+}

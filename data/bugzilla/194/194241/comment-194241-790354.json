@@ -1,0 +1,8 @@
+{
+ "id": 790354,
+ "bug_id": 194241,
+ "attachment_id": 148094,
+ "creation_time": "2014-10-08T13:13:29Z",
+ "creator": "brnrd@freebsd.org",
+ "text": "Created attachment 148094\nPatch to enable TLSv1\n\nWhen I run svnup it returns a large amount of \nSSL_connect error:1\nlines.\n\nThere seems to have been a change in the svnup servers that no longer allow it to negotiate SSLv3 connections.\n$ openssl s_client -connect svn0.eu.freebsd.org:443 -ssl3\nCONNECTED(00000003)\n34379134632:error:14094410:SSL routines:SSL3_READ_BYTES:sslv3 alert handshake failure:/usr/src/secure/lib/libssl/../../../crypto/openssl/ssl/s3_pkt.c:1260:SSL alert number 40\n34379134632:error:1409E0E5:SSL routines:SSL3_WRITE_BYTES:ssl handshake failure:/usr/src/secure/lib/libssl/../../../crypto/openssl/ssl/s3_pkt.c:596:\n\nNegotiating a TLSv1(.1/.2) connection is fine.\n\nThe SSL connection is established with \n   connection-\u003ectx = SSL_CTX_new(SSLv23_client_method()); \nwhich will be broken for people using security/libressl\nthen the code disables TLSv1 breaking the ssl session setup.\n   SSL_CTX_set_options(connection-\u003ectx, SSL_OP_ALL | SSL_OP_NO_TICKET | SSL_OP_NO_TLSv1);\n\nWhen I remove \"| SSL_OP_NO_TLSv1\" it compiles and runs fine."
+}

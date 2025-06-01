@@ -1,0 +1,8 @@
+{
+ "id": 1232307,
+ "bug_id": 267266,
+ "attachment_id": 0,
+ "creation_time": "2022-10-22T03:08:11Z",
+ "creator": "jschauma@netmeister.org",
+ "text": "With tm_year being a signed 32-bit int, the maximum date I should be able to represent ought to be\n\nWed Dec 31 23:59:59 UTC 2147485547\n\nwhich is epoch 67768036191676799.\n\nThis works on Linux and NetBSD, for example, as well as macOS.\n\nOn FreeBSD 13.1R, however, it does not:\n\n$ date -r 67768036191676799\ndate: invalid time\n$ date -r 67767976233532799\nTue Dec 31 23:59:59 UTC 2147483647\n$ date -r 67767976233532800\ndate: invalid time\n\nNote that here the maximum value (epoch 67767976233532799) is in the year 2147483647, not in the year 2147485547.  The difference between the two is 1900, suggesting that FreeBSD somehow counts tm_year as starting at the year 0, not 1900.  However, I can't identify where/when that is the case, as other dates correctly display tm_year as \"year - 1900\":\n\n\n        struct tm *t;\n        time_t now = time(NULL);\n\n        t = gmtime(\u0026now);\n        printf(\"%s%ld %d\\n\", ctime(\u0026now), now, t-\u003etm_year);\n\n=\u003e\n\nSat Oct 22 03:06:43 2022\n1666408003 122\n\nIt's unclear to me why FreeBSD then can't represent 67768036191676799."
+}

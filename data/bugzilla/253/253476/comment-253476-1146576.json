@@ -1,0 +1,8 @@
+{
+ "id": 1146576,
+ "bug_id": 253476,
+ "attachment_id": 0,
+ "creation_time": "2021-02-14T06:12:48Z",
+ "creator": "freebsd@oldach.net",
+ "text": "I believe this goes back to D27148, enforcing TSopt for RFC 7323 compliance if negotiated. This is MFC'd so I expect we will see said behaviour in recent stable/12 (and stable/11) as well.\n\nI am however wondering about the strict TSopt requirement for keepalive packets not carrying user data (as in this case). IMHO this requirement will help neither PAWS nor RTTM: We are in an idle situation where there is simply no user data to transmit, so there is no risk of corrupting user data nor a compelling reason for RTT measurements.\n\nRFC 7223 section 3.2 already mentions situations where the guidelines are too strict.\n\nThe case with ipfw generated keepalives is that ipfw apparently doesn't store sufficient context to generate a proper TSopt. We can perhaps reuse previous TSval/TSecr but that might potentially impact PAWS/RTTM?\n\nAs a quick fix meant to improve interoperability I would suggest to amend the tolerate_missing_ts sysctl in a way that we have three alternatives for dealing with negotiated TSopt:\n- Strict RFC 7223, dropping packets w/o TSopt (currently: tolerate_missing_ts=0)\n- Accept packets w/o TSopt if zero data\n- Accept all packets (currently: tolerate_missing_ts=1)"
+}

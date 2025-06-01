@@ -1,0 +1,8 @@
+{
+ "id": 888282,
+ "bug_id": 211028,
+ "attachment_id": 0,
+ "creation_time": "2016-07-15T15:20:13Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Dexuan Cui from comment #17)\n\u003e (In reply to Dexuan Cui from comment #16)\n\u003e Please review the attached patch. It may be a little ugly since I'm pretty\n\u003e new to GEOM code... Please suggest how we should fix the issue in a better\n\u003e way.\n\nGEOM serves not only the disks, you can break g_provider_resize() for other types of providers.\nCan you test this patch instead?\nIndex: geom_disk.c\n===================================================================\n--- geom_disk.c\t(revision 302840)\n+++ geom_disk.c\t(working copy)\n@@ -126,7 +126,6 @@ g_disk_access(struct g_provider *pp, int r, int w,\n \t\t\tif (error != 0)\n \t\t\t\treturn (error);\n \t\t}\n-\t\tpp-\u003emediasize = dp-\u003ed_mediasize;\n \t\tpp-\u003esectorsize = dp-\u003ed_sectorsize;\n \t\tif (dp-\u003ed_maxsize == 0) {\n \t\t\tprintf(\"WARNING: Disk drive %s%d has no d_maxsize\\n\",\n@@ -143,6 +142,7 @@ g_disk_access(struct g_provider *pp, int r, int w,\n \t\tpp-\u003estripeoffset = dp-\u003ed_stripeoffset;\n \t\tpp-\u003estripesize = dp-\u003ed_stripesize;\n \t\tdp-\u003ed_flags |= DISKFLAG_OPEN;\n+\t\tg_resize_provider(pp, dp-\u003ed_mediasize);\n \t} else if ((pp-\u003eacr + pp-\u003eacw + pp-\u003eace) \u003e 0 \u0026\u0026 (r + w + e) == 0) {\n \t\tif (dp-\u003ed_close != NULL) {\n \t\t\terror = dp-\u003ed_close(dp);"
+}

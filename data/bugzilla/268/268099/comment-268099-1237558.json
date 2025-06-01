@@ -1,0 +1,8 @@
+{
+ "id": 1237558,
+ "bug_id": 268099,
+ "attachment_id": 0,
+ "creation_time": "2022-12-01T13:37:44Z",
+ "creator": "mail@rubenvos.com",
+ "text": "Hi,\n\nWe ran into an issue where snapshots were not being deleted properly. Fortunately my co-worker was able to identify and hotpatch the issue. \n\nMore specifically: the way egrep is being used (against an empty string) in the script seems invalid. Using FreeBSD egrep in this particular situation throws this:\n\n# egrep \"string(aaa|)\"\negrep: empty (sub)expression\n# \n\nsince some variables are declared empty by default this caused snapshots not being deleted, which in turn filled up our ZFS pool on one of our machines.\n\nAltering the script like this:\n\ndiff /root/zfSnap /usr/local/sbin/zfSnap : \n235,236c235,236\n\u003c delete_specific_fs_snapshots=\"someText\"     # List of specific snapshots to delete\n\u003c delete_specific_fs_snapshots_recursively=\"someText\" # List of specific snapshots to delete recursively\n---\n\u003e delete_specific_fs_snapshots=\"\"     # List of specific snapshots to delete\n\u003e delete_specific_fs_snapshots_recursively=\"\" # List of specific snapshots to delete recursively\n398d397\n\u003c     export rm_snapshot_pattern=someText\n\nsolved our predicament. \n\nKind regards,\n\nRuben"
+}

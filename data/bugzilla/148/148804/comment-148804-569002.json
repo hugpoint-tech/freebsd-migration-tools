@@ -1,0 +1,8 @@
+{
+ "id": 569002,
+ "bug_id": 148804,
+ "attachment_id": 0,
+ "creation_time": "2010-07-21T02:20:03Z",
+ "creator": "tom@uffner.com",
+ "text": "The port makefile has a config knob for \"Thread support\". When this is enabled, the port fails to build:\n\ncpl_multiproc.cpp:735:2: error: #error \"Recursive mutexes apparently unsupported, configure --without-threads\"\ngmake[1]: *** [cpl_multiproc.o] Error 1\ngmake[1]: Leaving directory `/usr/ports/graphics/gdal/work/gdal-1.6.0/port'\ngmake: *** [port-target] Error 2\n*** Error code 1\n\nthe problem appears to be a Linuxism in cpl_multiproc.cpp where it checks if recursive mutexes are supported. They are (and have been since 1998) but the test fails due to non-portable coding. In BSD derived PThreads implementations, since 1996, pthread mutex types are defined as an enum, not a C pre-processor macro (currently at line 128 of /usr/include/pthread.h). The comment immediatly above implies, though I haven't checked, that this syntax was standardized in SUSv2.\n\ndeleting or altering the \"#if defined(PTHREAD_MUTEX_RECURSIVE)\" test so that the #error is not triggered allows the package to build with thread support.\n\nFix: This really should be fixed upstream by the GDAL project since they claim to support BSD, but adding the attached patch to the FreeBSD port is a workaround.\n\nPatch attached with submission follows:\nHow-To-Repeat: % cd /usr/ports/graphics/gdal\n% make config\n\ncheck the \"Thread support\" box\n\n% make all\n\nbuild will fail as shown above"
+}

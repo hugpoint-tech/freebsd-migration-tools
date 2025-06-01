@@ -1,0 +1,8 @@
+{
+ "id": 842226,
+ "bug_id": 166372,
+ "attachment_id": 0,
+ "creation_time": "2015-09-29T12:18:26Z",
+ "creator": "mk@neon1.net",
+ "text": "(In reply to Cy Schubert from comment #3)\n\nYes, the issue is still present in FreeBSD 10.2-RELEASE, at least with if_vr (PC Engines ALIX platform). Steps to reproduce:\n\n- Install FreeBSD 10.2 on machine with affected NIC\n- Load ipfilter with the following minimal ruleset:\n\npass out quick on vr0 all keep state\npass in quick on vr0 from any to any port = 1234 keep state\nblock in log quick all\nblock out log quick all\n\n- Start netcat to listen for UDP packets:\n\n# nc -u -l 1234\n\n- Send UDP packets with zero checksums from another host, ensuring that hardware checksum calculation etc. doesn't override the checksum:\n\n# sysctl net.inet.udp.checksum=0\n# nc -u x.x.x.x 1234\n\n- Observe that those packets are blocked by ipfilter (ipmon says \"bad\"). When checksums are enabled again on the sending host, the packets pass through fine. Alternatively, if rxcsum is disabled on vr0, it works as well."
+}

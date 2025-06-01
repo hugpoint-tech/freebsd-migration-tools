@@ -1,0 +1,8 @@
+{
+ "id": 754993,
+ "bug_id": 187549,
+ "attachment_id": 0,
+ "creation_time": "2014-03-13T17:40:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "When UPing a new interface, the kernel automatically adds a host route (referred to as a loopback route in some places) and a network route.  These routes should be added to the interface's FIB.  However, they get added to the default FIB instead.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: ifconfig tap0 create\nsetfib 2 ifconfig tap0 192.0.2.2 netmask 255.255.255.0 fib 2\nsetfib 2 netstat -rn -f inet\n\n# This is what you ought to see\nRouting tables\n\nInternet:\nDestination        Gateway            Flags    Refs      Use  Netif Expire\n192.0.2.0/24       link#9             UP          0        0   tap0\n192.0.2.2          link#9             UHS         0        0    lo0\n\n# This is what you actually see\nRouting tables (fib: 2)\n\nInternet:\nDestination        Gateway            Flags    Netif Expire\n192.0.2.0/24       link#3             U        tap0\n\nNotice that the host route is missing."
+}

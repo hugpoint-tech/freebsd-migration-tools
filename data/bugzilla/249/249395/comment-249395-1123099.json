@@ -1,0 +1,8 @@
+{
+ "id": 1123099,
+ "bug_id": 249395,
+ "attachment_id": 0,
+ "creation_time": "2020-09-21T18:13:52Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Hmm, are you familiar with dtrace?  It would be nice to see which scsi_sg requests are being issued and if they are reporting errors or not, etc.  In particular, a dtrace script that logs the return value from sgioctl() for cmd == SG_IO, and logs the struct sg_io_hdr structure on entry to sgioctl() when cmd == SG_IO.  You would need to do something like:\n\nkldload dtraceall\ndtrace -s /path/to/script.d\n\nand then run your test program in another window.\n\nHere's a stab at the script but it is untested:\n\ninline unsigned long SG_IO = 0xc0582285;\n\nfbt::sgioctl:entry\n/args[1] == SG_IO/\n{\n    self-\u003etrace = 1;\n    print(*(struct sg_io_hdr *)arg2);\n}\n\nfbt::sgioctl:return\n/self-\u003etrace == 1/\n{\n    self-\u003etrace = 0;\n    printf(\"returned %d\", arg1);\n}"
+}

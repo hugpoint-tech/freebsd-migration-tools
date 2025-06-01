@@ -1,0 +1,8 @@
+{
+ "id": 430962,
+ "bug_id": 120751,
+ "attachment_id": 0,
+ "creation_time": "2008-02-17T10:30:01Z",
+ "creator": "kazuaki@aliceblue.jp",
+ "text": "\tThe type of members, lft_c, lft_h and lft_s, in struct secasvar have\n\tbeen changed from struct sadb_lifetime* to struct seclifetime* at\n\tnetipsec/keydb.h rev. 1.6.  But, key_expire() in netipsec/key.c is\n\tnot aware of the change.  The following code in key_expire() is on\n\tthe assumption that the type of sav-\u003elft_s is struct sadb_lifetime*,\n\tnot struct seclifetime*.\n\n\tbcopy(sav-\u003elft_s, lt, sizeof(*lt));\n\n\tstruct seclifetime does not have the members, len and exttype.  So,\n\tas the result, kernel sends wrong pfkey expire message to IKE daemon.\n\nFix: It seems the attached patch fixes the problem.  But I am not familiar\n\twith IPsec code.  Other changes may be needed.  For example, the\n\tfollowing code in key_setsaval() may have to be modified.\n\n\tsav-\u003elft_c = malloc(sizeof(struct sadb_lifetime), M_IPSEC_MISC, M_NOWAIT);\nHow-To-Repeat: \tInstall security/ipsec-tools from the ports, and setup IPsec tunnel.\n\tracoon outputs the following message:\n\n\tlibipsec failed pfkey align (Invalid sadb message)\n\n\tand, it fails to create new IPsec-SAs before old ones expire."
+}

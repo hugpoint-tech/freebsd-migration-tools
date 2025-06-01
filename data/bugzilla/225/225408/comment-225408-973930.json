@@ -1,0 +1,8 @@
+{
+ "id": 973930,
+ "bug_id": 225408,
+ "attachment_id": 190006,
+ "creation_time": "2018-01-23T18:14:44Z",
+ "creator": "aaron.styx@baesystems.com",
+ "text": "Created attachment 190006\nif (maxpkt == 0) return EAGAIN;\n\nIn trying to diagnose a separate issue, I discovered that the interrupt processing of re_int_task was leaving interrupts disabled far more often than seemed appropriate. The return value from re_rxeof was returning EAGAIN when handling stray packets on the network, and returning 0 when under heavy traffic load.\n\nIf my understanding of the re_rxeof function is correct, it is supposed to process at most 16 packets before returning. The variable maxpkt starts at 16 and is decremented each time a packet is processed. If maxpkt gets to zero, the routine returns and *should* tell the caller whether or not there is more data to process. However, the check of 'if (maxpkt) return EAGAIN;' will return EAGAIN when the loop has cleared the entire receive ring before processing 16 packets; i.e.: when it's done processing everything available. I believe it should be returning EAGAIN only when it has processed 16 packets and there is still more to do. \n\nThe attached patch changes the check to return EAGAIN when maxpkt reaches 0. If there were exactly 16 packets to process, this could mean it would also erroneously return EAGAIN, so there may be a better way to check if the ring is empty. \n\nThe driver still works as is, but it does spend more time processing than is necessary when there is really nothing to do. Under load it may not enqueue the processing task when it should, but further interrupts should generally keep things moving."
+}

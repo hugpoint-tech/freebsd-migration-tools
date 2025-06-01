@@ -1,0 +1,8 @@
+{
+ "id": 567030,
+ "bug_id": 148429,
+ "attachment_id": 0,
+ "creation_time": "2010-09-29T10:22:23Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: luigi\nDate: Wed Sep 29 09:22:12 2010\nNew Revision: 213265\nURL: http://svn.freebsd.org/changeset/base/213265\n\nLog:\n  fix handling of initial credit for an idle pipe.\n  This fixes the bug where setting bw \u003e 1 MTU/tick resulted in\n  infinite bandwidth if io_fast=1\n  \n  PR:\t\t147245 148429\n  Obtained from:\tRiccardo Panicucci\n  MFC after:\t3 days\n\nModified:\n  head/sys/netinet/ipfw/ip_dn_io.c\n\nModified: head/sys/netinet/ipfw/ip_dn_io.c\n==============================================================================\n--- head/sys/netinet/ipfw/ip_dn_io.c\tWed Sep 29 09:20:18 2010\t(r213264)\n+++ head/sys/netinet/ipfw/ip_dn_io.c\tWed Sep 29 09:22:12 2010\t(r213265)\n@@ -752,8 +752,11 @@ dummynet_io(struct mbuf **m0, int dir, s\n \t}\n \n \t/* compute the initial allowance */\n-\t{\n+\tif (si-\u003eidle_time \u003c dn_cfg.curr_time) {\n+\t    /* Do this only on the first packet on an idle pipe */\n \t    struct dn_link *p = \u0026fs-\u003esched-\u003elink;\n+\n+\t    si-\u003esched_time = dn_cfg.curr_time;\n \t    si-\u003ecredit = dn_cfg.io_fast ? p-\u003ebandwidth : 0;\n \t    if (p-\u003eburst) {\n \t\tuint64_t burst = (dn_cfg.curr_time - si-\u003eidle_time) * p-\u003ebandwidth;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

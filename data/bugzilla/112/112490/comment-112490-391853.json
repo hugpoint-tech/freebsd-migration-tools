@@ -1,0 +1,8 @@
+{
+ "id": 391853,
+ "bug_id": 112490,
+ "attachment_id": 0,
+ "creation_time": "2007-10-22T23:55:55Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "jhb         2007-10-22 19:01:26 UTC\n\n  FreeBSD src repository\n\n  Modified files:\n    sys/net              route.c \n    sys/netinet6         nd6.c \n  Log:\n  Close a race when trying to lookup a gateway route in rt_check().\n  Specifically, if two threads were doing concurrent lookups and the existing\n  gateway was marked down, the the first thread would drop a reference on the\n  gateway route and then unlock the \"root\" route while it tried to allocate\n  a new route.  The second thread could then also drop a reference on the\n  same gateway route resulting in a reference underflow.  Fix this by\n  clearing the gateway route pointer after dropping the reference count but\n  before dropping the lock.  Secondly, in this same case, the second thread\n  would overwrite the gateway route pointer w/o free'ing a reference to the\n  route installed by the first thread.  In practice this would probably just\n  fix a lost reference that would result in a route never being freed.\n  \n  This fixes panics observed in rt_check() and rtexpunge().\n  \n  MFC after:      1 week\n  PR:             kern/112490\n  Insight from:   mehuljv at yahoo.com\n  Reviewed by:    ru (found the \"not-setting it to NULL\" part)\n  Tested by:      several\n  \n  Revision  Changes    Path\n  1.121     +3 -1      src/sys/net/route.c\n  1.84      +3 -1      src/sys/netinet6/nd6.c\n_______________________________________________\ncvs-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/cvs-all\nTo unsubscribe, send any mail to \"cvs-all-unsubscribe@freebsd.org\""
+}

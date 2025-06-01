@@ -1,0 +1,8 @@
+{
+ "id": 63222,
+ "bug_id": 20490,
+ "attachment_id": 0,
+ "creation_time": "2000-08-08T22:20:00Z",
+ "creator": "r_chipi@yahoo.com",
+ "text": "When using VMIN = 0 and VTIME \u003e 0 to control receiver timeout\nin Python, it does not work as it should.  For example, programming\nVMIN = 0 and VTIME = 200 should make a read block for at least 20 seconds\nor until a character is received, however, the read does not block and\nreturns immediately.  When a similar routine is written in C it works\nas it should.\n\nHow-To-Repeat: To reapeat write the following test code:\n\n# This code does not work\n\nimport os\nfrom TERMIOS import *\nfrom tty import *\n\nfd = os.open(\"/dev/cuaa1\", os.O_RDWR)\nattrs = tcgetattr(fd)\nattrs[CFLAG] = CS8 | CLOCAL | CREAD\nattrs[OFLAG] = attrs[OFLAG] \u0026 ~OPOST\nattrs[LFLAG] = 0\nattrs[CC][VMIN] = 0\nattrs[CC][VTIME] = 200\ntcsetattr(fd, TCSANOW, attrs)\n\n\nprint os.read(fd, 80)\n\n/* the equivalent test in C works as it should */\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003ctermios.h\u003e\n#include \u003cfcntl.h\u003e\n\n\nmain()\n{\n    struct termios term;\n    int fd, bytes;\n    char buf[80];\n\n    fd = open(\"/dev/cuaa1\", O_RDWR);\n    if (fd \u003c 0)\n    {\n        perror(\"open\");\n        return 1;\n    }\n\n    tcgetattr(fd, \u0026term);\n    term.c_cflag = CS8 | CREAD | CLOCAL;\n    term.c_oflag \u0026= ~OPOST;\n    term.c_lflag = 0;\n    term.c_cc[VMIN] = 0;\n    term.c_cc[VTIME] = 200;\n    tcsetattr(fd, TCSANOW, \u0026term);\n\n    bytes = read(fd, buf, 40);\n    buf[bytes] = 0;\n    puts(buf);\n    return 0;\n\n}"
+}

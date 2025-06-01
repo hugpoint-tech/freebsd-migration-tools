@@ -1,0 +1,8 @@
+{
+ "id": 1000825,
+ "bug_id": 229614,
+ "attachment_id": 0,
+ "creation_time": "2018-07-09T07:30:45Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "(In reply to Michael Gmelin from comment #5)\nI am confident that it's the same bug.\nI think that it is a deadlock between a thread like the one from comment #0 and a thread like this:\nzfs_zget+0x1b4 zfs_get_data+0x7c zil_commit+0x926 zfs_sync+0xad sys_sync+0xe6 amd64_syscall+0x2f6 Xfast_syscall+0xfb\n\nThe first thread is waiting on zil_commit in the second thread to complete.\nAt the same time the second thread is waiting (in zfs_zget) on the first thread to finish reclaiming the vnode.\n\nI think I understand the problem, but I do not see an easy way to fix it.\nChecking the vnode state in zil_commit -\u003e zfs_get_data -\u003e zfs_zget is problematic as zil_commit can be called from vnode operations while an arbitrary other vnode is locked."
+}

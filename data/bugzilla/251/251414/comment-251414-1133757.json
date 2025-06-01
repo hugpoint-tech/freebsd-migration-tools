@@ -1,0 +1,8 @@
+{
+ "id": 1133757,
+ "bug_id": 251414,
+ "attachment_id": 0,
+ "creation_time": "2020-11-28T01:18:19Z",
+ "creator": "sigsys@gmail.com",
+ "text": "(In reply to Mark Johnston from comment #8)\nLooks like I found an easy way to reproduce on -CURRENT.  It doesn't even need a big table loaded from a file.  Looks like it's related to toggling the counters support like you said.  I guess I somehow managed to keep messing with this flag while trying out rulesets.\n\nLoad this ruleset and enable pf:\n\n\tpass all\n\ttable \u003ctab\u003e { self }\n\tpass in log to \u003ctab\u003e\n\nThen switch to this ruleset:\n\n\tpass all\n\ttable \u003ctab\u003e counters { self }\n\tpass in log to \u003ctab\u003e\n\nThen send in some traffic that should create a new state.  Panics every time for me.  If the table already existed it might need to be destroyed first.\n\nI think the problem is in pfr_commit_ktable().  When it transfers the addresses from the \"shadow\" inactive table to the active table, in some cases the existing entries will be reused and those won't have their counters if the active table wasn't created with counters support to begin with.  Maybe it could end up leaking counters too if you try to disabling them in the new table?  I think the table can end up with a mix of entries with and without counters."
+}

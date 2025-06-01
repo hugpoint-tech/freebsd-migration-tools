@@ -1,0 +1,8 @@
+{
+ "id": 1205866,
+ "bug_id": 263073,
+ "attachment_id": 0,
+ "creation_time": "2022-04-06T00:23:50Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "Yea, these routines weren't intended for values \u003e 1s originally.\nMy fix was to try cope with that. However, you are correct, it's somewhat wrong.\n\ndiff --git a/sys/sys/time.h b/sys/sys/time.h\nindex 866a9e788cd0..f3a3bc99a0f2 100644\n--- a/sys/sys/time.h\n+++ b/sys/sys/time.h\n@@ -207,7 +207,7 @@ nstosbt(int64_t _ns)\n #ifdef KASSERT\n        KASSERT(_ns \u003e= 0, (\"Negative values illegal for nstosbt: %jd\", _ns));\n #endif\n-       if (_ns \u003e= SBT_1S) {\n+       if (_ns \u003e= 1000000000) {\n                sb = (_ns / 1000000000) * SBT_1S;\n                _ns = _ns % 1000000000;\n        }\n@@ -231,7 +231,7 @@ ustosbt(int64_t _us)\n #ifdef KASSERT\n        KASSERT(_us \u003e= 0, (\"Negative values illegal for ustosbt: %jd\", _us));\n #endif\n-       if (_us \u003e= SBT_1S) {\n+       if (_us \u003e= 1000000) {\n                sb = (_us / 1000000) * SBT_1S;\n                _us = _us % 1000000;\n        }\n@@ -255,7 +255,7 @@ mstosbt(int64_t _ms)\n #ifdef KASSERT\n        KASSERT(_ms \u003e= 0, (\"Negative values illegal for mstosbt: %jd\", _ms));\n #endif\n-       if (_ms \u003e= SBT_1S) {\n+       if (_ms \u003e= 1000) {\n                sb = (_ms / 1000) * SBT_1S;\n                _ms = _ms % 1000;\n        }\n\nIs I think the right fix."
+}

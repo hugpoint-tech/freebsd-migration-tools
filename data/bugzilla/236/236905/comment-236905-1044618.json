@@ -1,0 +1,8 @@
+{
+ "id": 1044618,
+ "bug_id": 236905,
+ "attachment_id": 0,
+ "creation_time": "2019-03-30T19:51:34Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "When __gcc_personality_v0 is invoked (when exceptions unwind through C code that needs to run cleanups), it calls _Unwind_GetLanguageSpecificData:\n\nhttps://github.com/freebsd/freebsd/blob/56c04b0bcfcd116f1b13087ec13bcba2d8dc7705/contrib/compiler-rt/lib/builtins/gcc_personality_v0.c#L205\n\nThis is completely fine on most architectures, but on ARM this tries to map from the context to the exception structure.  The GNU extension to the APCS requires that the personality function stores this pointer in the context in register 12 (reserved as a linker scratch register, so never actually used in unwinding).  \n\nThe abstraction layer used in libcxxrt does this automatically:\n\nhttps://github.com/pathscale/libcxxrt/blob/f96846efbfd508f66d91fcbbef5dd808947c7f6d/src/unwind-arm.h#L223\n\nIt appears that the LLVM implementation of the personality routine does not do this.  This can be fixed by adding:\n\n```\n_Unwind_SetGR(context, 12, reinterpret_cast\u003cunsigned long\u003e(exceptionObject));\n```\n\non entry to the personality routine.  This will want to be done upstream, but we should carry a local patch to compiler-rt (and possibly issue an EN) because at present any program that tries to throw an exception through C stack frames crashes on ARM."
+}

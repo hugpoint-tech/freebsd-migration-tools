@@ -1,0 +1,8 @@
+{
+ "id": 611413,
+ "bug_id": 157200,
+ "attachment_id": 0,
+ "creation_time": "2011-05-20T07:20:09Z",
+ "creator": "kensaku.masuda@gmail.com",
+ "text": "\tstf(4) is work fine between native prefixes. But other 6to4 prefix holder is not.\nCase of with navtive prefix, stf send a packet(protocol 41) into anycast router.\nBut other 6to4 prefix, stf send a packet into its V4 address directly. and other side router drop it.\n\nFix: function stf_output(mbuf, dest, ro) in if_stf.c create a outgoing packet for stf(4).\nAnd stf_output address IPv4 address from mbuf(outgoing IPv6 packet) or dest.\nI think that it use only \"dest\", no need to refer raw IPv6 packet. \nbecause, \"dest\" was look like computed from routing table and interface prefix length.\n\nAnd problem will clear,so delete routing information about 2002::/16 or above.\n(Need to setup route using anycast router)\nHow-To-Repeat: \t1) Setup stf:\n\t\tstf_interface_ipv4addr=\"XXX.XXX.XXX.XXX\" \u003c- Global V4 Address\n\t\tipv6_defaultrouter=\"2002:c058:6301::1\"   \u003c- 192.88.99.1 6to4 anycast router\n\t2) ping to native v6 machine(Ex: www.kame.net)\n\t3) see protocol 41 packet, you see a packet that destination is 192.88.99.1.\n\t4) ping to some 6to4 prefix holder(2002::YYYY:YYYY:?????.....)\n\t5) see protocol 41 packet, you see a packet that destination is YY.YY.YY.YY."
+}

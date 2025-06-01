@@ -1,0 +1,8 @@
+{
+ "id": 976848,
+ "bug_id": 225818,
+ "attachment_id": 0,
+ "creation_time": "2018-02-11T10:34:32Z",
+ "creator": "woodsb02@freebsd.org",
+ "text": "Reviewing the log output, my explanation of the backtrace is below (cronological order / newest item last):\n\n- Dovecot had successfully performed pam_start(), the necessary pam_set_item(), and called pam_authenticate(pamh, 0)\nhttps://github.com/dovecot/core/blob/2.2.33.2/src/auth/passdb-pam.c#L158\n\n- PAM called pam_sm_authenticate() in /usr/lib/libpam/modules/pam_krb5/pam_krb5.c which successfully got the user, ruser, service, principal, password, checked local user, and then ran krb5_get_init_creds_opt_set_default_flags\nhttps://github.com/freebsd/freebsd/blob/master/lib/libpam/modules/pam_krb5/pam_krb5.c#L242\n\n- Heimdal krb5_get_init_creds_opt_set_default_flags ran the Heimdal version of krb5_appdefault_time:\nhttps://github.com/freebsd/freebsd/blob/master/crypto/heimdal/lib/krb5/init_creds.c#L171\n\n- Heimdal function krb5_appdefault_time ran the MIT kerberos version of krb5_appdefault_string:\nhttps://github.com/freebsd/freebsd/blob/master/crypto/heimdal/lib/krb5/appdefault.c#L130\n\nThis is where the code path cross from using the Heimdal code to the MIT kerberos code, which it should not do. I know this, because the GDB backtrace shows the krb5_appdefault_string function called strdup in file appdefault.c:165, but the Heimdal appdefault.c file only has 140 lines. Reviewing the MIT kerberos code, the strdup function is indeed called at appdefault.c:165.\n\nWhy did the Heimdal appdefault.c code call the MIT kerberos version of krb5_appdefault_string, when the Heimdal version was only 50 lines higher in the same appdefault.c file?"
+}

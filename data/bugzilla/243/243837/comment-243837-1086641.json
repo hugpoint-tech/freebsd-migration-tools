@@ -1,0 +1,8 @@
+{
+ "id": 1086641,
+ "bug_id": 243837,
+ "attachment_id": 0,
+ "creation_time": "2020-02-03T14:21:58Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "There is a regression on all 32-bit platforms.  With the addition of the sequence number field to UMA buckets, one of the built-in bucket sizes becomes 0, and the bucket zone selection code doesn't expect this.\n\nThis should fix the problem, I can't really see a better solution:\n\ndiff --git a/sys/vm/uma_core.c b/sys/vm/uma_core.c\nindex 28b959d66b4a..0551ec1ade48 100644\n--- a/sys/vm/uma_core.c\n+++ b/sys/vm/uma_core.c\n@@ -239,7 +239,9 @@ struct uma_bucket_zone {\n #define        BUCKET_MIN      BUCKET_SIZE(4)\n \n struct uma_bucket_zone bucket_zones[] = {\n+#ifndef __ILP32__\n        { NULL, \"4 Bucket\", BUCKET_SIZE(4), 4096 },\n+#endif\n        { NULL, \"6 Bucket\", BUCKET_SIZE(6), 3072 },\n        { NULL, \"8 Bucket\", BUCKET_SIZE(8), 2048 },\n        { NULL, \"12 Bucket\", BUCKET_SIZE(12), 1536 },"
+}

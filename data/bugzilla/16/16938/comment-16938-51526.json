@@ -1,0 +1,8 @@
+{
+ "id": 51526,
+ "bug_id": 16938,
+ "attachment_id": 0,
+ "creation_time": "2001-12-31T05:25:17Z",
+ "creator": "ppl@nbnet.nb.ca",
+ "text": "here a patch that worked for me:\n\n\n--- fetch.c\tMon Dec 31 01:05:01 2001\n+++ /fetch-patch.c\tMon Dec 31 01:04:51 2001\n@@ -88,6 +88,33 @@\n jmp_buf\thttpabort;\n \n /*\n+ * Decode the %XX escapes in the string.\n+ * return -1 on failure, 0 on success\n+ */\n+static int\n+url_decode(str)\n+\tchar *str;\n+{\n+\tchar v[3] = \"XX\";\n+\tchar *vp;\n+\n+\tif (str == NULL)\n+\t\treturn 0;\n+\n+\twhile ( (str = strchr(str, '%')) != NULL)\n+\t{\n+\t\tif (isxdigit(*(str+1)) == 0 || isxdigit(*(str+2)) == 0)\n+\t\t\treturn -1;\n+\n+\t\tv[0] = *(str+1);\n+\t\tv[1] = *(str+2);\n+\t\t*str = (char)strtol(v, \u0026vp, 16);\n+\t\tmemmove(str+1, str+3, strlen(str+3) + 1);\n+\t}\n+\treturn 0;\n+}\n+\n+/*\n  * Retrieve URL, via the proxy in $proxyvar if necessary.\n  * Modifies the string argument given.\n  * Returns -1 on failure, 0 on success\n@@ -160,6 +187,12 @@\n \t\tgoto cleanup_url_get;\n \t}\n \n+\tif (url_decode(path) == -1 || url_decode(savefile) == -1)\n+\t{\n+\t\twarnx(\"Invalid URL (invalid encoding): %s\", origline);\n+\t\tgoto cleanup_url_get;\n+\t}\n+\n \tif (proxyenv != NULL) {\t\t\t\t/* use proxy */\n \t\tproxy = strdup(proxyenv);\n \t\tif (proxy == NULL)\n@@ -589,6 +622,10 @@\n \t\t\t\tdir = NULL;\n \t\t\t}\n \t\t}\n+\t\tif (url_decode(user) == -1 || url_decode(pass) == -1 || \n+\t\t\t\t\t\t\turl_decode(dir) == -1 || url_decode(file) == -1)\n+\t\t\tgoto bad_ftp_url;\n+\n \t\tif (debug)\n \t\t\tprintf(\"user %s:%s host %s port %s dir %s file %s\\n\",\n \t\t\t    user, pass, host, portnum, dir, file);"
+}

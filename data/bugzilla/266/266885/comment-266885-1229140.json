@@ -1,0 +1,8 @@
+{
+ "id": 1229140,
+ "bug_id": 266885,
+ "attachment_id": 0,
+ "creation_time": "2022-10-07T10:18:13Z",
+ "creator": "jmillikin@gmail.com",
+ "text": "The documentation for fcntl(F_GETLK) says:\n\n  If no lock is found that would prevent this lock from being created,\n  the structure is left unchanged by this system call except for\n  the lock type which is set to F_UNLCK.\n\nHowever, the code is currently overwriting the flock structure's `l_pid` field:\n\n\t/* sys/fs/fuse/fuse_vnops.c :: fuse_vnop_advlock() */\n\tif (err == 0 \u0026\u0026 op == FUSE_GETLK) {\n\t\tflo = fdi.answ;\n\t\tfl-\u003el_type = flo-\u003elk.type;\n\t\tfl-\u003el_pid = flo-\u003elk.pid;            /* \u003c- here */\n\t\tif (flo-\u003elk.type != F_UNLCK) {\n\t\t\tfl-\u003el_start = flo-\u003elk.start;\n\nI think that assignment should be moved down a line, into the `!= F_UNLCK` branch."
+}

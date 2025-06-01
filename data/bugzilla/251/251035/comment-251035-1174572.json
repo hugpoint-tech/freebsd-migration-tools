@@ -1,0 +1,8 @@
+{
+ "id": 1174572,
+ "bug_id": 251035,
+ "attachment_id": 0,
+ "creation_time": "2021-08-17T00:55:39Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "(In reply to Kubilay Kocak from comment #3)\n\nThat code has changed a lot in FreeBSD 13 and upstream.\n\n32 bit \"zpool list\" still crashes, as per truss:\n\n21250: openat(AT_FDCWD,\"/dev/zfs\",O_RDWR,00)\t = 5 (0x5)\n21250: ioctl(3,0xc0145a04 { IORW 0x5a('Z'), 4, 20 },0xffffb338) ERR#22 'Invalid argument'\n\nwhere /var/log/messages has:\n\nAug 17 02:37:31 pc kernel: len 20 vecnum: 4 sizeof (zfs_cmd_t) 4528\n\nprobably from:\n\n        if (len != sizeof (zfs_iocparm_t)) {\n                printf(\"len %d vecnum: %d sizeof (zfs_cmd_t) %ju\\n\",\n                    len, vecnum, (uintmax_t)sizeof (zfs_cmd_t));\n                return (EINVAL);\n        }\n\nin sys/contrib/openzfs/module/os/freebsd/zfs/kmod_core.c\n\nThat has another bug in logging, as zfs_iocparm_t and zfs_cmd_t are different structs. We should be printing sizeof(zfs_iocparm_t), not sizeof(zfs_cmd_t).\n\nThis bug probably doesn't affect Linux, as it uses zfs_cmd_t directly, which has the same field sizes/alignments on 32 and 64 bit already. We wrap zfs_cmd_t in our zfs_iocparm_t, and add this bug in the process.\n\nIt will take me a while to test a new patch."
+}

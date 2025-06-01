@@ -1,0 +1,8 @@
+{
+ "id": 1175372,
+ "bug_id": 257965,
+ "attachment_id": 0,
+ "creation_time": "2021-08-23T17:19:08Z",
+ "creator": "zec@FreeBSD.org",
+ "text": "I retract my previous speculation about the possibility of the forwarding path blocking on RIB write lock, because the problem seems to be more obvious.\n\nThe FIB updating is being done under the net epoch, which means that the FIB updating thread can't be preempted until it completes, and with DXR this can last anywhere between a millisecond and a full second, depending on the size / complexity of the RIB, and the nature of the updates.  If this happens on a CPU which also has to service a RX queue of a busy interface, there's nothing we can do ATM, except watch RX queue drop counters jumping through the roof.\n\nIdeally FIB rebuilds should be done under the RIB read lock but not under the net epoch.  I'm not sure whether or how this could be arranged but perhaps melifaro@ might have an idea..."
+}

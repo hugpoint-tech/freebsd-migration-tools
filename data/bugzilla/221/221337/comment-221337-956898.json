@@ -1,0 +1,8 @@
+{
+ "id": 956898,
+ "bug_id": 221337,
+ "attachment_id": 0,
+ "creation_time": "2017-10-23T21:31:47Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: dim\nDate: Mon Oct 23 21:31:04 UTC 2017\nNew revision: 324938\nURL: https://svnweb.freebsd.org/changeset/base/324938\n\nLog:\n  After jemalloc was updated to version 5.0.0 in r319971, i386 executables\n  linked with AddressSanitizer (even those linked on earlier versions of\n  FreeBSD, or with external versions of clang) started failing with errors\n  similar to:\n\n    ==14688==AddressSanitizer CHECK failed:\n    /usr/src/contrib/compiler-rt/lib/asan/asan_poisoning.cc:36\n    \"((AddrIsAlignedByGranularity(addr))) != (0)\" (0x0, 0x0)\n\n  This is because AddressSanitizer expects all the TLS data in the program\n  to be aligned to at least 8 bytes.\n\n  Before the jemalloc 5.0.0 update, all the TLS data in the i386 version\n  of libc.so added up to 80 bytes (a multiple of 8), but 5.0.0 made this\n  grow to 2404 bytes (not a multiple of 8).  This is due to added caching\n  data in jemalloc's internal struct tsd_s.\n\n  To fix AddressSanitizer, ensure this struct is aligned to at least 16\n  bytes, which can be done unconditionally for all architectures.  (An\n  earlier version of the fix aligned the struct to 8 bytes, but only for\n  ILP32 architectures.  This was deemed unnecessarily complicated.)\n\n  PR:\t\t221337\n  X-MFC-With:\tr319971\n\nChanges:\n  head/contrib/jemalloc/include/jemalloc/internal/tsd.h"
+}

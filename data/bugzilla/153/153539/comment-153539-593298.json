@@ -1,0 +1,8 @@
+{
+ "id": 593298,
+ "bug_id": 153539,
+ "attachment_id": 0,
+ "creation_time": "2010-12-30T09:50:08Z",
+ "creator": "swell.k@gmail.com",
+ "text": "When checking STRIP under bsd.port.pre.mk it still contains value\ninherited from bsd.own.mk. For example, WITH_DEBUG won't work for the\nfollowing check if its placed under bsd.port.pre.mk\n\n  .if !defined(STRIP) || ${STRIP} == \"\"\n\nas STRIP still has \"-s\" at the time. This can be worked around by\nplacing it after bsd.port.post.mk. However, portlint will complain\n\n  FATAL: Makefile: the last line of Makefile has to be .include \u003cbsd.port(.post).mk\u003e\n\nFix: Move WITH_DEBUG ifdef so it defines STRIP more early, e.g. in _PREMKINCLUDED.\nHow-To-Repeat: $ make\nCONFIGURE_ARGS=\"\"\n\n$ make WITH_DEBUG=\nCONFIGURE_ARGS=\"\"\n\n$ make DEBUG_FLAGS=\nCONFIGURE_ARGS=\"--disable-strip\"\n\n$ make STRIP=\nCONFIGURE_ARGS=\"--disable-strip\"\n\nLet's move the check under bsd.port.post.mk\n\n$ make WITH_DEBUG=\nCONFIGURE_ARGS=\"--disable-strip\"\n\nRestore makefile and try the patch\n\n$ make WITH_DEBUG=\nCONFIGURE_ARGS=\"--disable-strip\"\n\n%% contents of \"Makefile\"\nPORTNAME=\t# dummy\n\n.include \u003cbsd.port.pre.mk\u003e\n\n.if !defined(STRIP) || ${STRIP} == \"\"\nCONFIGURE_ARGS+=\t--disable-strip\n.endif\n\nall:\n\t@${ECHO_MSG} CONFIGURE_ARGS=\\\"${CONFIGURE_ARGS}\\\"\n\n.include \u003cbsd.port.post.mk\u003e\n%%"
+}

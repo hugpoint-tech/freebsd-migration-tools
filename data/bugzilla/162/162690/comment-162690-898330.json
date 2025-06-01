@@ -1,0 +1,8 @@
+{
+ "id": 898330,
+ "bug_id": 162690,
+ "attachment_id": 0,
+ "creation_time": "2016-09-18T14:48:22Z",
+ "creator": "ben.rubson@gmx.com",
+ "text": "So, 2 patches attached.\n\nThe gpart label can be refreshed automatically (when they are added or modified), thanks to a patch by Andrey (many thanks Andrey !).\n\nThere is however a case where glabel refresh is needed.\n\nLet's take this example (which is my use case) :\n\n# gpart create -s gpt da0\n# gpart add -t freebsd-zfs -s 2048G -a 1m -l mygptlabel da0\n# glabel label myglabellabel da0p1\n\n# cat /etc/ctl.conf\ntarget iqn.2012-06.srv:t1 {\nlun 0 {\n  path /dev/gpt/mygptlabel\n}\n}\n\nSo as you can see /dev/gpt/mygptlabel is an iscsi target.\nAnd this target contains a generic label \"myglabellabel\".\n\n/dev/label/myglabellabel will show up on initiator side, perfect, this is what we want.\nHowever, when ctld is stopped, /dev/label/myglabellabel will not show up again on target.\nWe then need to \"glabel refresh\" to make this label visible again.\n\nSame issue if for example we add /dev/gpt/mygptlabel to as zpool.\n/dev/label/myglabellabel will disappear because ZFS holds the disk, which is expected.\nHowever, when we remove the disks from the zpool, /dev/label/myglabellabel will not show up again.\nHere again we need to \"glabel refresh\" to make this label visible again.\n\nI then think that both patches may be required.\nThe \"glabel refresh\" can handle all cases in a manual fashion.\nThe gpart patch can only handle gpart add/modify automatically."
+}

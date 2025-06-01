@@ -1,0 +1,8 @@
+{
+ "id": 871048,
+ "bug_id": 208168,
+ "attachment_id": 0,
+ "creation_time": "2016-03-21T00:05:42Z",
+ "creator": "daverabbitz@ihug.co.nz",
+ "text": "The KASSERT in this function is always true for positive values of vcpuid, it looks like it is intended to check vcpuid is in the range -1 to VM_MAXCPU.\n\nHere is a patch to make it right:\n\ndiff --git a/sys/amd64/vmm/vmm.c b/sys/amd64/vmm/vmm.c\nindex cb04f3c..ebd6360 100644\n--- a/sys/amd64/vmm/vmm.c\n+++ b/sys/amd64/vmm/vmm.c\n@@ -914,7 +914,7 @@ vm_gpa_hold(struct vm *vm, int vcpuid, vm_paddr_t gpa, size_t len, int reqprot,\n         * guaranteed if at least one vcpu is in the VCPU_FROZEN state.\n         */\n        int state;\n-       KASSERT(vcpuid \u003e= -1 || vcpuid \u003c VM_MAXCPU, (\"%s: invalid vcpuid %d\",\n+       KASSERT(vcpuid \u003e= -1 \u0026\u0026 vcpuid \u003c VM_MAXCPU, (\"%s: invalid vcpuid %d\",\n            __func__, vcpuid));\n        for (i = 0; i \u003c VM_MAXCPU; i++) {\n                if (vcpuid != -1 \u0026\u0026 vcpuid != i)"
+}

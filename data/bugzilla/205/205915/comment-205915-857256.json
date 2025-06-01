@@ -1,0 +1,8 @@
+{
+ "id": 857256,
+ "bug_id": 205915,
+ "attachment_id": 0,
+ "creation_time": "2016-01-05T07:51:13Z",
+ "creator": "marino@FreeBSD.org",
+ "text": "On DragonFly, but the same must be happening to FreeBSD:\n\nIn x11/kde4-runtime makefile:\n\nLIB_DEPENDS=   libssh.so:${PORTSDIR}/security/libssh\n# Explicitly depend on libssh to avoid interference with ssh.4 from\n20\t# compat7x.\n21\tBUILD_DEPENDS=  ${LOCALBASE}/lib/libssh.so:${PORTSDIR}/security/libssh\n\n\nThe way pkg(8) works is that it will not pull in a library if it finds on the system.  The libssh.so specification MATCHES /usr/lib/libssh.so so this is NEVER imported.  See pkg with verbose on:\n\n========================\u003c phase : package         \u003e========================\n===\u003e  Building package for kde-runtime-4.14.3\nactual-package-depends: dependency on /usr/lib/libssh.so not registered (normal if it belongs to base)\nfile sizes/checksums  [1820]: .......... done\npacking files         [1820]: .......... done\npacking directories      [0]: . done\n===========================================================================\n\nThe impact is that it fails a sanity check every time because it expects libssh to be part of the package but it's not there.\n\nRecommendation: Explicitly set LIB_DEPENDS by package version to force it to be be used instead of base version."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 421191,
+ "bug_id": 118670,
+ "attachment_id": 0,
+ "creation_time": "2008-02-27T21:41:13Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "According to the USB spec, the protocol field is only defined if the subclass \nis 1.  So a subclass of 0 is really a violation of the spec.  I think a \nbetter fix is to put back the old hid_is_collection() test first and then \ndirectly check the descriptor if that fails:\n\nIndex: ums.c\n===================================================================\nRCS file: /usr/cvs/src/sys/dev/usb/ums.c,v\nretrieving revision 1.97\ndiff -u -r1.97 ums.c\n--- ums.c\t26 Dec 2007 14:31:16 -0000\t1.97\n+++ ums.c\t27 Feb 2008 21:40:48 -0000\n@@ -198,7 +198,10 @@\n \tif (err)\n \t\treturn (UMATCH_NONE);\n \n-\tif (id-\u003ebInterfaceClass == UICLASS_HID \u0026\u0026\n+\tif (hid_is_collection(desc, size,\n+\t\t\t      HID_USAGE2(HUP_GENERIC_DESKTOP, HUG_MOUSE)))\n+\t\tret = UMATCH_IFACECLASS;\n+\telse if (id-\u003ebInterfaceClass == UICLASS_HID \u0026\u0026\n \t    id-\u003ebInterfaceSubClass == UISUBCLASS_BOOT \u0026\u0026\n \t    id-\u003ebInterfaceProtocol == UIPROTO_MOUSE)\n \t\tret = UMATCH_IFACECLASS;\n\n-- \nJohn Baldwin"
+}

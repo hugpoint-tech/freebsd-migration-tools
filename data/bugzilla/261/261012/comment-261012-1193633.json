@@ -1,0 +1,8 @@
+{
+ "id": 1193633,
+ "bug_id": 261012,
+ "attachment_id": 230794,
+ "creation_time": "2022-01-07T19:32:39Z",
+ "creator": "jocke@gipset.se",
+ "text": "Created attachment 230794\nremoves dep on setproctitle and use pidfile in deluge-web service script\n\nThis is my first bug report in freebsd, please be gentle :)\n\n\nI noticed deluge-web could not be restarted through its service script so I went looking into why. It turns out it doesn't set a pidfile. Fixing that, I immediately had another problem, that the process in the pid file could not be matched by rc.subr[0] so it could not be restarted even with pidfile.\n\nIt seems what while setproctitle makes for nice ps/top/htop output, it confuses rc.subr such that e.g. `service deluge-web status` cannot find the process and stop/restart will not work (since the old process is still alive the new one cannot bind to the same port and fails with warnings in logs).\n\nMotivation for adding it to deluge in the first place [1]:\n\u003e Set process name to match application using setproctitle\n\u003e Using the setproctitle module the process name displayed in top\n\u003e and other places will correctly reflect the binary name. This is an\n\u003e optional dependency\n\nI believe, since the dependency is optional and falls back to noop implementations, that having functioning service scripts is more important than nicer output in `ps`. A patch is included that is taken from my running system, but I have not actually tried these changes all the way from a manual port build (I am very new to freebsd so not exactly sure how to verify things anyway).\n\n\n[0]: https://cgit.freebsd.org/src/tree/libexec/rc/rc.subr#n316\n[1]: https://github.com/deluge-torrent/deluge/commit/b396b11611be9c828090d1dafedfb3cd3bf092f3"
+}

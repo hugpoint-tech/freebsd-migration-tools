@@ -1,0 +1,8 @@
+{
+ "id": 1339476,
+ "bug_id": 267028,
+ "attachment_id": 0,
+ "creation_time": "2024-12-16T19:17:42Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "One of the older (\"obsolete\") crash dump reports is\nfor:\n\n/*\n *      free:\n * \n *      Free a block of memory allocated by malloc.\n * \n *      This routine may not block.\n */\nvoid\nfree(void *addr, struct malloc_type *mtp)\n{\n        uma_zone_t zone;\n        uma_slab_t slab;\n        u_long size;\n \n#ifdef MALLOC_DEBUG\n        if (free_dbg(\u0026addr, mtp) != 0)\n                return;\n#endif\n        /* free(NULL, ...) does nothing */\n        if (addr == NULL)\n                return;\n \n        vtozoneslab((vm_offset_t)addr \u0026 (~UMA_SLAB_MASK), \u0026zone, \u0026slab);\n. . .\n\nwhere addr ended up being 0xfffff80000000007 , in other words\nPHYS_TO_DMAP(0x7). The (vm_offset_t)addr \u0026 (~UMA_SLAB_MASK)\nturned it into 0xfffff80000000000 for vtozoneslab. That in\nturn reported a failure.\n\nThe presence of a NULL check in the kernel's free suggests to me that\nthe kernel's free may not be intended to handle DMAP addresses.\nSimilarly for other kernel code that checks against NULL but not\nagainst PHYS_TO_DMAP(NULL).\n\nHow does one tell where DMAP addresses should not appear when\nlooking around via kgdb?"
+}

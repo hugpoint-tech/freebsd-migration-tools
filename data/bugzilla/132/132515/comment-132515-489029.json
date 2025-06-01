@@ -1,0 +1,8 @@
+{
+ "id": 489029,
+ "bug_id": 132515,
+ "attachment_id": 0,
+ "creation_time": "2009-03-10T19:10:01Z",
+ "creator": "jpaetzel@FreeBSD.org",
+ "text": "Setting ntpd_sync_on_start=\"YES\" in /etc/rc.conf is not a drop in replacement for the depricated ntpdate\n\nIn order to mimic ntpdate's functiomnality, ntpd needs to be started with the -q -x -g flags, which causes it to exit.\n\nAs the rc script stands, ntpd_sync_on_start=\"YES\" only adds -g to ntpd's startup\n\nFix: As a very naive fix, and more of a proof of concept thing, I tried...\n\n\n\nIgnore the REQUIRE changes, the problem and fix was verified on a stock 6.4, I just didn't have access to that box when I wrote this.--TtIKRql2Hexy2MAnUfJGMfNqzjf25qUf5sphtkRpFWc8aWYZ\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- /etc/rc.d/ntpd      2008-11-28 11:54:08.000000000 -0600\n+++ ntpd        2009-03-10 07:05:46.000000000 -0500\n@@ -4,8 +4,7 @@\n #\n \n # PROVIDE: ntpd\n-# REQUIRE: DAEMON ntpdate cleanvar devfs\n-# BEFORE:  LOGIN\n+# REQUIRE: mount_gbde\n # KEYWORD: nojail\n \n . /etc/rc.subr\n@@ -23,7 +22,8 @@\n        rc_flags=\"-c ${ntpd_config} ${ntpd_flags}\"\n \n        if checkyesno ntpd_sync_on_start; then\n-               rc_flags=\"-g $rc_flags\"\n+               #rc_flags=\"-g $rc_flags\"\n+                ntpd -g -q -x\n        fi\n \n        if [ -z \"$ntpd_chrootdir\" ]; then\nHow-To-Repeat: ntpd_enable=\"YES\"\nntpd_sync_on_start=\"YES\" in /etc/rc.conf\n\nthen slew your time way off\n\nthen reboot\n\nntpd will be started on boot, but won't have synced the time up correctly"
+}

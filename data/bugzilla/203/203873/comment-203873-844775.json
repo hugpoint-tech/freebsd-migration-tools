@@ -1,0 +1,8 @@
+{
+ "id": 844775,
+ "bug_id": 203873,
+ "attachment_id": 162210,
+ "creation_time": "2015-10-19T16:07:12Z",
+ "creator": "ports@grosbein.net",
+ "text": "Created attachment 162210\npatch for gzip\n\nWhile running FreeBSD using space-constrained embedded platform like MIPS32 router, one may not have enough flash space for full-blown file system to keep variable configuration files persistent between reboots. For example, there may be only 64K or so flash space seen as /dev/map/cfg. This is not enough for newfs(1) but enough to write gzip-compressed tar archive that can store hundreds kilobytes of text configs like SSH host keys etc.\n\nWe need a way to check integrity of those raw 64Kbytes of data and \"gzip -qt\" would do the job. However, \"gzip -qt \u003c /dev/map/cfg\" does not work due to hardware limitations and we need to use \"dd bs=64k if=/dev/map/cfg | gzip -qt\".\nThat feeds gzip with our compressed data and some trailing garbage.\n\nOur gzip ignores trailing garbage but returns exit status 1 (fatal error) even if CRC matches. GNU gzip returns exit status 2 (just warning) in such case. Attached patch makes our gzip return 2 in case of ignored trailing garbage."
+}

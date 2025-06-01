@@ -1,0 +1,8 @@
+{
+ "id": 1234685,
+ "bug_id": 267630,
+ "attachment_id": 0,
+ "creation_time": "2022-11-08T00:00:47Z",
+ "creator": "cgull@glup.org",
+ "text": "In bug 276628, I report an issue with growfs that can cause it to uninterruptibly deadlock.  After growfs deadlocks, when the system is rebooted/shutdown, it hangs during disk sync, and never halts/reboots.  I think this is because growfs is in disk wait, and cannot be killed, and the UFS ufssuspend state blocks UFS from completing any pending writes.\n\nThe reproduction is easy:\n\nmdconfig -s 20m\ngpart create -s gpt md0\ngpart add -t freebsd-ufs -s 10m -i 1 md0\nnewfs md0p1\nmount /dev/md0p1 /mnt\ngpart resize -i 1 md0\ngrowfs -y md0p1 \u003e /mnt/growfs.log\n\nthen, via some other session, halt/reboot/shutdown.\n\nReproduced in 13.1p2 and a -CURRENT snapshot dated Nov 3 07:57 with identifier 'main-n259005-5cc5c9254da'.\n\nSee bug 276628 for more about the userland side of this problem."
+}

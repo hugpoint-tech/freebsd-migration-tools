@@ -1,0 +1,8 @@
+{
+ "id": 969520,
+ "bug_id": 224892,
+ "attachment_id": 0,
+ "creation_time": "2018-01-04T12:52:22Z",
+ "creator": "breno.leitao@gmail.com",
+ "text": "I am running current freebsd (Jan 4st - git commit 6fceb757ffd5b050eca4c75ecbd350710b11db5e) on a powerpc64 machine and I am facing a file system lock order reversal.\n\nlock order reversal:\n 1st 0xc0000000008ac748 bufwait (bufwait) @ /root/kernel/freebsd/sys/kern/vfs_bio.c:3564\n 2nd 0x4985200 dirhash (dirhash) @ /root/kernel/freebsd/sys/ufs/ufs/ufs_dirhash.c:289\nstack backtrace:\n#0 0x5ec138 at ??+0\n#1 0x5ee360 at ??+0\n#2 0x576c2c at ??+0\n#3 0x870e50 at ??+0\n#4 0x871314 at ??+0\n#5 0x875008 at ??+0\n#6 0x87f6b4 at ??+0\n#7 0x923d0c at ??+0\n#8 0x66ede4 at ??+0\n#9 0x66ef2c at ??+0\n#10 0x908890 at ??+0\n#11 0x8fd938 at ??+0\n\n\n$ awk 'NR \u003e= 3560 \u0026\u0026 NR \u003c= 3570' /root/kernel/freebsd/sys/kern/vfs_bio.c    \n\t\tif (flags \u0026 GB_LOCK_NOWAIT)\n\t\t\tlockflags |= LK_NOWAIT;\n\n\t\terror = BUF_TIMELOCK(bp, lockflags,\n\t\t    BO_LOCKPTR(bo), \"getblk\", slpflag, slptimeo);\n\n\t\t/*\n\t\t * If we slept and got the lock we have to restart in case\n\t\t * the buffer changed identities.\n\t\t */\n\t\tif (error == ENOLCK)\n\n\n$ awk 'NR \u003e= 285 \u0026\u0026 NR \u003c= 295' /root/kernel/freebsd/sys/ufs/ufs/ufs_dirhash.c\n\n\tdh = ip-\u003ei_dirhash;\n\tif (dh == NULL)\n\t\treturn (NULL);\n\tsx_xlock(\u0026dh-\u003edh_lock);\n\tif (dh-\u003edh_hash != NULL)\n\t\treturn (dh);\n\tufsdirhash_free_locked(ip);\n\treturn (NULL);\n}"
+}

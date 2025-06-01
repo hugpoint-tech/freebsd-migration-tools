@@ -1,0 +1,8 @@
+{
+ "id": 969959,
+ "bug_id": 224971,
+ "attachment_id": 189491,
+ "creation_time": "2018-01-07T14:22:00Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 189491\nRevert unintended change\n\n/nxb-bin/usr/bin/c++ is a cross compiler created by a poudriere jail -x. On https://pkg-status.freebsd.org/ that'd be builders for mips, mips64, armv6, armv7. To reproduce on amd64 host the following would be enough:\n\n  # -x (native-xtools) before FreeBSD 12.0 requires /usr/src to match jail\n  $ svn checkout https://svn.freebsd.org/base/releng/11.1 /usr/src\n  $ poudriere jail -cxj 111aarch64 -a arm64.aarch64 -v 11.1-RELEASE\n  $ poudriere bulk -Ctj 111aarch64 devel/qt5-qmake\n\nor\n\n  $ poudriere jail -cxj head-aarch64 -a arm64.aarch64 -v head -m svn+https\n  $ poudriere bulk -Ctj head-aarch64 devel/qt5-qmake\n\nThe build broke because CONFIGURE_ARGS now tries to chop directory off QMAKESPEC , something completely unnecessary given the expression never evaluates to any other string than \"clang\" or \"g++\".  However, qt5-qmake doesn't really respect CXX and calls clang++ instead which ends up being emulated via qemu-user-static rather than use cross-compiler."
+}

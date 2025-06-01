@@ -1,0 +1,8 @@
+{
+ "id": 1130841,
+ "bug_id": 250966,
+ "attachment_id": 0,
+ "creation_time": "2020-11-08T19:58:21Z",
+ "creator": "antiduh@gmail.com",
+ "text": "This affects all postgres server ports.\n\nThe rc.d file lists the base sshd service as the predecessor for rcorder:\n\n# $FreeBSD: head/databases/postgresql11-server/files/postgresql.in 501149 2019-05-09 22:32:11Z girgen $\n#\n# PROVIDE: postgresql\n# REQUIRE: sshd\n# KEYWORD: shutdown\n\nIf sshd is not part of base and thus sshd is not PROVIDE'd anywhere, then rcorder handles this by putting postgres at the absolute top of the list, before any useful machine init has happened:\n\nmasheen(~) # rcorder /etc/rc.d/* /usr/local/etc/rc.d/*\n/usr/local/etc/rc.d/postgresql\n/etc/rc.d/rctl\n/etc/rc.d/dhclient\n/etc/rc.d/natd\n/usr/local/etc/rc.d/htcacheclean\n/etc/rc.d/growfs\n...\n\n\n\nA more sensible REQUIRE line would be:\n\n# REQUIRE: LOGIN FILESYSTEMS\n\n...\n\nTo anticipate questions why sshd would not be present:\n\nsshd might be not installed on machines that have removed it from base, such as one can do with pkg-base, or by recompiling world without the built-in sshd (by setting WITHOUT_OPENSSH=YES).\n\nOne might choose to strip out base sshd and replace it with ports' security/openssh-portable because it's easier to update and maintain a port than it is to recompile base when openssh has updates (at least, until pkg-base is released)."
+}

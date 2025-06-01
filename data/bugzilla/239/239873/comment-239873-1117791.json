@@ -1,0 +1,8 @@
+{
+ "id": 1117791,
+ "bug_id": 239873,
+ "attachment_id": 0,
+ "creation_time": "2020-08-12T20:15:04Z",
+ "creator": "sigsys@gmail.com",
+ "text": "(In reply to Thibault Payet from comment #2)\nSame problem here.\n\nLooks like the proccontrol stackgap toggle only affects the stack \"guard page\" (handled by vm_map_stack_locked() in sys/vm/vm_map.c), not the ASLR randomized stackgap.\n\nThis patch makes it affect the ASLR stackgap too and that makes firefox work with proccontrol.\n\ndiff --git a/sys/kern/imgact_elf.c b/sys/kern/imgact_elf.c\nindex fe71acabe0b..56623f29d4e 100644\n--- a/sys/kern/imgact_elf.c\n+++ b/sys/kern/imgact_elf.c\n@@ -2766,6 +2766,9 @@ __elfN(stackgap)(struct image_params *imgp, uintptr_t *stack_base)\n \n \tif ((imgp-\u003emap_flags \u0026 MAP_ASLR) == 0)\n \t\treturn;\n+\tif ((imgp-\u003eproc-\u003ep_flag2 \u0026 P2_STKGAP_DISABLE) != 0 ||\n+\t    (imgp-\u003eproc-\u003ep_fctl0 \u0026 NT_FREEBSD_FCTL_STKGAP_DISABLE) != 0)\n+\t\treturn;\n \tpct = __elfN(aslr_stack_gap);\n \tif (pct == 0)\n \t\treturn;\n\nAlso if you mark firefox's binary with the new ELF feature flag to disable stackgap like so:\n\n# elfctl -e +stackgap /usr/local/bin/firefox\n\nThen firefox just works without needing to start with it proccontrol."
+}

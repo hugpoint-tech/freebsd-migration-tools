@@ -1,0 +1,8 @@
+{
+ "id": 498343,
+ "bug_id": 134471,
+ "attachment_id": 0,
+ "creation_time": "2009-05-12T09:38:00Z",
+ "creator": "bsam@ipt.ru",
+ "text": "I reproduced it at another 7.x machine:\n-----\n% uname -a\nFreeBSD ns.bsam.ru 7.2-PRERELEASE FreeBSD 7.2-PRERELEASE #1: Tue May  5 11:41:59 MSD 2009     root@ns.bsam.ru:/usr/obj/usr/src/sys/GENERIC  i386\n% ls -ld /usr/local/share/skype\ndrwx------  6 root  wheel  512 12 Ð¼Ð°Ð¹ 12:20 /usr/local/share/skype\n-----\n\nThat seems to be a problem with gnu cpio which is used at 7.x and below.\nAt 8-current I can't reproduce this error (it uses BSD cpio).\n\nThe following patch helps here (just create ${PREFIX}/${SKYPEDIR}\nbefore doing ${COPYTREE_SHARE}):\n-----\nIndex: Makefile\n===================================================================\nRCS file: /home/pcvs/ports/net/skype/Makefile,v\nretrieving revision 1.50\ndiff -u -r1.50 Makefile\n--- Makefile\t11 May 2009 20:45:23 -0000\t1.50\n+++ Makefile\t12 May 2009 08:31:22 -0000\n@@ -61,7 +61,7 @@\n \t@${INSTALL} -d ${PREFIX}/share/applications\n \t@${INSTALL_DATA} ${WRKSRC}/skype.desktop ${PREFIX}/share/applications/\n \t@${INSTALL_DATA} ${WRKSRC}/icons/SkypeBlue_48x48.png ${PREFIX}/share/pixmaps/skype.png\n-\t@cd ${WRKSRC}/\u0026\u0026${COPYTREE_SHARE} \"avatars icons sounds lang\" ${PREFIX}/${SKYPEDIR}/\n+\t@cd ${WRKSRC}/ \u0026\u0026 {MKDIR} ${PREFIX}/${SKYPEDIR} \u0026\u0026 ${COPYTREE_SHARE} \"avatars icons sounds lang\" ${PREFIX}/${SKYPEDIR}/\n \n # The binary main program\n \t@${INSTALL_PROGRAM} ${WRKSRC}/skype ${PREFIX}/${SKYPEDIR}/\n-----\n\nBTW, the package is not affected, no need to bump PORTREVISION.\n\n\nWBR\n-- \nbsam"
+}

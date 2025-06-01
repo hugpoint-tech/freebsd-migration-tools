@@ -1,0 +1,8 @@
+{
+ "id": 25679,
+ "bug_id": 8423,
+ "attachment_id": 0,
+ "creation_time": "1998-10-23T18:10:00Z",
+ "creator": "lab@gta.com",
+ "text": "\nA Intel EtherExpress PRO/100+ Managment Adapter (PILA8461) panics a\n2.2.7 kernel at boot during a probe.\n\nFix: \n\nI don't know the fix, but I have narrowed it down to the line of code\nwith the problem.  The problem is in the function pci_map_mem() in the\nfile /sys/pci/pci.c.  The size of the region to map (psize) is\ncalculated incorrectly.\n\nThis function uses pci_conf_read() to intialize a variable called data.\n\nOn a PILA8461 card data is set to 0x7ffff000.\n\nThen psize is calculated using the following magic code:\n\n#define        PCI_MAP_MEMORY_ADDRESS_MASK     0xfffffff0\n\tpsize = -(data \u0026 PCI_MAP_MEMORY_ADDRESS_MASK);\n\nThis results in psize receiving a value of 0x80001000.\n\nThis value of psize when passed to pmap_mapdev() causes a panic.\n\nFYI, values from a working PILA8460 card are:\n   data - 0xfffff008\n  psize - 0x1000\nHow-To-Repeat: \nPut a PILA8461 card in a boot."
+}

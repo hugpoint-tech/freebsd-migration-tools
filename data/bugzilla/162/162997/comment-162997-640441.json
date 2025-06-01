@@ -1,0 +1,8 @@
+{
+ "id": 640441,
+ "bug_id": 162997,
+ "attachment_id": 0,
+ "creation_time": "2011-12-05T01:06:11Z",
+ "creator": "kaho@elam.kais.kyoto-u.ac.jp",
+ "text": "Hello,\n\nI don't like to crash real machine many times and build test\nenvironment on qemu. md0p2a is labeled gm0 and md0p2h is gm1,\nand mount as UFS2. After sysctl kern.geom.debugflags=7,\nmachine was rebooted. The copy from console before panic is here.\n\nopen delta:[r-1w-1e-3] old:[r2w2e6] provider:[r2w2e6] 0xc14eac00(md0)\ng_post_event_x(0xc052c830, 0xc166c300, 2, 0)\n  ref 0xc166c300\ng_post_event_x(0xc0a03e40, 0xc1446b00, 2, 0)\ng_wither_geom(0xc17ffa80(gm1.sync))\nGEOM_MIRROR: Device gm1 destroyed.\ng_wither_geom(0xc17ffb00(gm1))\ng_orphan_register(mirror/gm1)\ng_vfs_orphan(0xc1800400(ffs.mirror/gm1))\nkernel trap 12 with interrupts disabled\n\nThe situation looks like this:\ngm1 was destroyed in g_vfs_close() and then g_vfs_orphan() was called to\nmanipulate gm1. The function g_vfs_close() was freed softc and \ng_vfs_orphan() would like to use softc already freed and it causes\npanic. \n\nI think that malloc() in g_vfs_open() and free() in g_vfs_close()\nfor mtx_lock is not valid method. malloc() should not be used,\nor fee() should be used in other function. Or correct other code\nwhich never call destroyed provider.\n\n--\nkaho Toshikazu"
+}

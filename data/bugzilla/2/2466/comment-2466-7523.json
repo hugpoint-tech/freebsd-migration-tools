@@ -1,0 +1,8 @@
+{
+ "id": 7523,
+ "bug_id": 2466,
+ "attachment_id": 0,
+ "creation_time": "1997-01-12T18:10:12Z",
+ "creator": "j@uriah.heep.sax.de",
+ "text": "As andrew@ugh.net.au wrote:\n\n\u003e If you leave telnet idle and then type something it will say \"sleep(5)\n\u003e from telnet, after select\". It will continue to work but it messes up\n\u003e the screen.\n\n\u003e \u003eHow-To-Repeat:\n\u003e telnet somewhere and leave it idle for a while, come back to it and type.\n\nNo, this is not generally repeatable.\n\nI suspect something special with your network setup.  Perhaps you add\na debug printf to see what the actual error code is.\n\nThe code in question (modulo some tn3720 hack) is:\n\n    if ((c = select(16, \u0026ibits, \u0026obits, \u0026xbits,\n\t\t\t(poll == 0)? (struct timeval *)0 : \u0026TimeValue)) \u003c 0) {\n\tif (c == -1) {\n\t\t    /*\n\t\t     * we can get EINTR if we are in line mode,\n\t\t     * and the user does an escape (TSTP), or\n\t\t     * some other signal generator.\n\t\t     */\n\t    if (errno == EINTR) {\n\t\treturn 0;\n\t    }\n\t\t    /* I don't like this, does it ever happen? */\n\t    printf(\"sleep(5) from telnet, after select\\r\\n\");\n\t    sleep(5);\n\t}\n\treturn 0;\n    }\n\n...so the sleep only happens after select() returned -1 (nothing\nfound) but without EINTR.  This is a ``Cannot happen'' situation.\nPerhaps you can investigate a little why it happens in your\nenvironment.  (Mind you, many people leave telnet sessions idle for\ndays.)\n\n-- \ncheers, J\"org\n\njoerg_wunsch@uriah.heep.sax.de -- http://www.sax.de/~joerg/ -- NIC: JW11-RIPE\nNever trust an operating system you don't have sources for. ;-)"
+}

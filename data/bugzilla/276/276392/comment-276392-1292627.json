@@ -1,0 +1,8 @@
+{
+ "id": 1292627,
+ "bug_id": 276392,
+ "attachment_id": 0,
+ "creation_time": "2024-01-17T00:53:49Z",
+ "creator": "aly@aaronly.me",
+ "text": "The 'l_identity_lock' lock must be acquired to access 'l_has_identity' and 'l_private' members; i.e., noise_precompute_ss() must be called with the 'l_identity_lock' locked.\n\nFix noise_remote_alloc() to acquire the lock before calling noise_precompute_ss().  Meanwhile, add an assertion to the latter to assert the required lock is held.\n\nBelow is my suggested patch:\n\n--- wg_noise.c.orig\t2024-01-16 22:53:33.518906792 +0800\n+++ wg_noise.c\t2024-01-16 23:21:16.069687841 +0800\n@@ -281,6 +281,8 @@ noise_local_keys(struct noise_local *l,\n static void\n noise_precompute_ss(struct noise_local *l, struct noise_remote *r)\n {\n+\trw_assert(\u0026l-\u003el_identity_lock, RA_LOCKED);\n+\n \trw_wlock(\u0026r-\u003er_handshake_lock);\n \tif (!l-\u003el_has_identity ||\n \t    !curve25519(r-\u003er_ss, l-\u003el_private, r-\u003er_public))\n@@ -302,7 +304,10 @@ noise_remote_alloc(struct noise_local *l\n \tr-\u003er_handshake_state = HANDSHAKE_DEAD;\n \tr-\u003er_last_sent = TIMER_RESET;\n \tr-\u003er_last_init_recv = TIMER_RESET;\n+\n+\trw_wlock(\u0026l-\u003el_identity_lock);\n \tnoise_precompute_ss(l, r);\n+\trw_wunlock(\u0026l-\u003el_identity_lock);\n \n \trefcount_init(\u0026r-\u003er_refcnt, 1);\n \tr-\u003er_local = noise_local_ref(l);"
+}

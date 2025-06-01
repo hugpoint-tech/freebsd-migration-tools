@@ -1,0 +1,8 @@
+{
+ "id": 686751,
+ "bug_id": 172277,
+ "attachment_id": 0,
+ "creation_time": "2012-10-02T17:30:25Z",
+ "creator": "daniel.thibault@drdc-rddc.gc.ca",
+ "text": "The au_to_socket_ex function of bsm_token.c (a component of the current libbsm implementation) reads in part:\n\n/*\n[...]\n * Domain and type arguments to this routine are assumed to already have been\n * converted to the BSM constant space, so we don't do that here.\n */\ntoken_t *\nau_to_socket_ex(u_short so_domain, u_short so_type,\n    struct sockaddr *sa_local, struct sockaddr *sa_remote)\n{\n[...]\n\tADD_U_INT16(dptr, au_domain_to_bsm(so_domain));\n\tADD_U_INT16(dptr, au_socket_type_to_bsm(so_type));\n\nThe documentation claims the socket domain and type are assumed already converted to the BSM constant space, but the code invokes au_domain_to_bsm and au_socket_type_to_bsm, two functions (bsm_domain.c) which, unless I'm very much mistaken, actually do convert from the local domain to the BSM domain.\n\nEither the documentation needs to be corrected, or the code is wrong.\n\nFix: \n\nIf the documentation is to be fixed, change the au_to_socket_ex preamble to conclude with:\n\n * Domain and type arguments to this routine are assumed to be in the local\n * constant space; they are converted to the BSM constant space before\n * incorporation in the token.\n */\nHow-To-Repeat: Look up http://www.opensource.apple.com/source/OpenBSM/OpenBSM-21/openbsm/libbsm/bsm_token.c and http://www.opensource.apple.com/source/OpenBSM/OpenBSM-21/openbsm/libbsm/bsm_domain.c and search for au_to_socket_ex, au_domain_to_bsm and au_socket_type_to_bsm."
+}

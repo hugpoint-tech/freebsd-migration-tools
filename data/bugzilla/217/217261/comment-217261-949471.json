@@ -1,0 +1,8 @@
+{
+ "id": 949471,
+ "bug_id": 217261,
+ "attachment_id": 0,
+ "creation_time": "2017-08-25T22:56:46Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "So I've wanted to test a fix for this, but I've been utterly unable to reproduce.  The limit I thought of earlier (max_buf_aio) only applies to disk devices that do not support unmapped IO via SI_UNMAPPED.  However, /dev/mdX does support this for the malloc disks used by the tests, so requests don't use a 'pbuf' and are thus never limited.  If the process were to hit the other applicable limits (vfs.aio.max_aio_queue or vfs.aio.max_queue_per_proc), then it would always fail with EAGAIN well before the \"safe\" check.  (I have verified that behavior via a dedicated test program.)  It seems likely that the request may be failing for some other reason and so adding the \"unsafe\"  requirement has really just had the effect of disabling the test and masking whatever error might be occurring.\n\nI've attached the test program I'm using, compile with 'cc -std=c11 -lthr'.  You can increase the number of parallel things queued by increasing the thread count (defaults to 16).  With the default per-process limit of 256 requests queued, any thread count over 256 will report retries, however, the program will exit if it gets EOPNOTSUPP which I've yet to provoke on an existing kernel.\n\nThe candidate fixes are in an 'aio_physio_again' branch at https://github.com/freebsd/freebsd/compare/master...bsdjhb:aio_physio_again"
+}

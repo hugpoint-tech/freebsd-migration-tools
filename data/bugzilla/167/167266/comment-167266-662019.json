@@ -1,0 +1,8 @@
+{
+ "id": 662019,
+ "bug_id": 167266,
+ "attachment_id": 0,
+ "creation_time": "2012-04-27T21:23:35Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: rmacklem\nDate: Fri Apr 27 20:23:24 2012\nNew Revision: 234740\nURL: http://svn.freebsd.org/changeset/base/234740\n\nLog:\n  Fix a leak of namei lookup path buffers that occurs when a\n  ZFS volume is exported via the new NFS server. The leak occurred\n  because the new NFS server code didn't handle the case where\n  a file system sets the SAVENAME flag in its VOP_LOOKUP() and\n  ZFS does this for the DELETE case.\n  \n  Tested by:\tOliver Brandmueller (ob at gruft.de), hrs\n  PR:\t\tkern/167266\n  MFC after:\t1 month\n\nModified:\n  head/sys/fs/nfsserver/nfs_nfsdport.c\n\nModified: head/sys/fs/nfsserver/nfs_nfsdport.c\n==============================================================================\n--- head/sys/fs/nfsserver/nfs_nfsdport.c\tFri Apr 27 20:16:20 2012\t(r234739)\n+++ head/sys/fs/nfsserver/nfs_nfsdport.c\tFri Apr 27 20:23:24 2012\t(r234740)\n@@ -1047,6 +1047,8 @@ nfsvno_removesub(struct nameidata *ndp, \n \telse\n \t\tvput(ndp-\u003eni_dvp);\n \tvput(vp);\n+\tif ((ndp-\u003eni_cnd.cn_flags \u0026 SAVENAME) != 0)\n+\t\tnfsvno_relpathbuf(ndp);\n \tNFSEXITCODE(error);\n \treturn (error);\n }\n@@ -1086,6 +1088,8 @@ out:\n \telse\n \t\tvput(ndp-\u003eni_dvp);\n \tvput(vp);\n+\tif ((ndp-\u003eni_cnd.cn_flags \u0026 SAVENAME) != 0)\n+\t\tnfsvno_relpathbuf(ndp);\n \tNFSEXITCODE(error);\n \treturn (error);\n }\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

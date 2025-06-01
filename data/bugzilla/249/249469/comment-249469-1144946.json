@@ -1,0 +1,8 @@
+{
+ "id": 1144946,
+ "bug_id": 249469,
+ "attachment_id": 0,
+ "creation_time": "2021-02-04T04:13:41Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "(In reply to Edward Tomasz Napierala from comment #2)\n\n% cat sched.c \n#define _GNU_SOURCE\n\n#include \u003cassert.h\u003e\n#include \u003cpthread.h\u003e\n#include \u003csched.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n\n#include \u003csys/types.h\u003e\n#include \u003csys/time.h\u003e\n#include \u003csys/resource.h\u003e\n\nvoid* thread_start(void* arg) {\n  return 0;\n}\n\nint main() {\n\n  {\n    pthread_attr_t attr;\n    assert(pthread_attr_init(\u0026attr) == 0);\n    assert(pthread_attr_setinheritsched(\u0026attr, PTHREAD_EXPLICIT_SCHED) == 0);\n\n    pthread_t t;\n    int err = pthread_create(\u0026t, \u0026attr, \u0026thread_start, NULL);\n    if (err != 0) {\n      fprintf(stderr, \"pthread_create: %s\\n\", strerror(err));\n    }\n\n    pthread_attr_destroy(\u0026attr);\n  }\n\n  {\n    struct sched_param p;\n    p.sched_priority = 0;\n    if (sched_setscheduler(0, SCHED_RESET_ON_FORK, \u0026p) == -1) {\n      perror(\"sched_setscheduler\");\n    }\n  }\n\n  {\n    struct rlimit rl;\n    int err = getrlimit(RLIMIT_RTTIME, \u0026rl);\n    if (err == -1) {\n      perror(\"rlimit\");\n    }\n  }\n\n  return 0;\n}\n% /compat/linux/bin/gcc sched.c -pthread -o sched\n% ./sched \npthread_create: Operation not permitted\nsched_setscheduler: Invalid argument\nrlimit: Invalid argument"
+}

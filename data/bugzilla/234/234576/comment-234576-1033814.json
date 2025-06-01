@@ -1,0 +1,8 @@
+{
+ "id": 1033814,
+ "bug_id": 234576,
+ "attachment_id": 0,
+ "creation_time": "2019-01-25T09:16:33Z",
+ "creator": "freebsd-bugzilla@prt.org",
+ "text": "I see exactly the same hastd issue on 12.0-RELEASE-p2, with hast directly on top of the drives (no partitions) - I don't think that specifically is your problem.  HAST seems to be broken in some other way with 12.0\n\nHowever, my setup is slightly complicated as I have a zpool using GELI devices, running above HAST.  I am currently doing some testing to reduce this to the simplest reproducible setup to remove everything else, and then turn up some debugging.\n\nWhat I've noted so far is:\n1) All of the hastd worker threads die virtually simultaneously.\n2) This doesn't appear happen immediately you start writing data, but a very short while afterwards (order of a few seconds).\n\nAs a side note for anyone else reading, I had issues making HAST work reliably in my setup under 11 as well, but this was easier to track down and patch.  The high level problem I found there was that ggate_recv received more data than MAXPHYS and the \"impossible\" condition of ENOMEM happened (line 1264 of primary.c).  After adding some logging here, I \"fixed\" this by setting gctl_length to MAXPHYS + 0x200 in both primary.c and secondary.c which stopped the problem; this isn't exactly elegant but it worked OK for me.\n\nThe issue reported in this bug seems unrelated to that."
+}

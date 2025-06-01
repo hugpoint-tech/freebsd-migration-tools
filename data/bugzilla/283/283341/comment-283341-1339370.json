@@ -1,0 +1,8 @@
+{
+ "id": 1339370,
+ "bug_id": 283341,
+ "attachment_id": 0,
+ "creation_time": "2024-12-16T00:33:04Z",
+ "creator": "mp@FreeBSD.org",
+ "text": "I was able to reproduce this issue on a FreeBSD 14.2 host with a 14.2 guest using bhyveload. The earlier issue commented about it regressing in 12.2 so looking at the commits before that time had this one:\n\nhttps://github.com/freebsd/freebsd-src/commit/14243f8de746e756ad3466aa6920a80e39157d9c\nhttps://reviews.freebsd.org/D19262\n\nwhich was MFC'd into 12.2:\n\nhttps://github.com/freebsd/freebsd-src/commit/7c7ef3e8f9f2309430d171f93e3cb85f463e87e6\n\nbhyveload will load the host loader into the VM which is why it would regress when upgrading to 12.2 (and beyond).\n\n\nI applied this patch to revert a functional change and was able to boot\n\ndiff --git a/stand/userboot/userboot/main.c b/stand/userboot/userboot/main.c\nindex cf1d9b12d69f..8b8cc30ea91a 100644\n--- a/stand/userboot/userboot/main.c\n+++ b/stand/userboot/userboot/main.c\n@@ -248,7 +248,7 @@ extract_currdev(void)\n                dev.dd.d_dev = \u0026userboot_disk;\n                dev.dd.d_unit = 0;\n                dev.d_slice = D_SLICEWILD;\n-               dev.d_partition = D_PARTWILD;\n+               dev.d_partition = 0;\n                /*\n                 * If we cannot auto-detect the partition type then\n                 * access the disk as a raw device.\n\nThis is not the correct long term patch but does indicate where the regression occurred. I've cc'd a couple of other people that might know more about what should be done here."
+}

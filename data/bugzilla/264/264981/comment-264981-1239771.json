@@ -1,0 +1,8 @@
+{
+ "id": 1239771,
+ "bug_id": 264981,
+ "attachment_id": 0,
+ "creation_time": "2022-12-17T13:38:28Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "@bz also encountered this issue and reported in mailing list: https://lists.freebsd.org/archives/freebsd-jail/2022-December/000156.html\n\nI'll quote from the mail about some analyzations by me:\n\n\u003e After DDB debugging and tracing , it seems that is triggered by a combine of [1] and [2]\n\u003e\n\u003e [1] https://reviews.freebsd.org/rGfec8a8c7cbe4384c7e61d376f3aa5be5ac895915\n\u003e [2] https://reviews.freebsd.org/rGeb93b99d698674e3b1cc7139fda98e2b175b8c5b\n\u003e\n\u003e In [1] the per-VNET uma zone is shared with the global one.\n\u003e `pcbinfo-\u003eipi_zone = pcbstor-\u003eips_zone;`\n\u003e\n\u003e In [2] unref `inp-\u003einp_cred` is deferred called in inpcb_dtor() by uma_zfree_smr() .\n\u003e\n\u003e Unfortunately inps freed by uma_zfree_smr() are cached and inpcb_dtor() is not called immediately ,\n\u003e thus leaking `inp-\u003einp_cred` ref and hence `prison-\u003epr_ref`.\n\u003e\n\u003e And it is also not possible to free up the cache by per-VNET SYSUNINIT tcp_destroy / udp_destroy / rip_destroy."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1236384,
+ "bug_id": 263613,
+ "attachment_id": 0,
+ "creation_time": "2022-11-21T16:18:45Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "Bjoern, the lock seems to have a problem.\n\nAs I have no idea what we are doing here, but I can code K\u0026R C and I can learn. So I spoiled my kernel with printf(). Specifically I put one in the entry of psq_drain():\n\n        printf(\"entering psq_drain psq=%lld, lock=%lu\\n\",\n                         (long long)psq, psq-\u003epsq_lock.mtx_lock);\n\nNow when everything goes well, it works like this:\n\n# ifconfig wlan0 down\n\n[56] entering psq_drain psq=-2195130981992, lock=0\n\u003c6\u003e[56] wlan0: link state changed to DOWN\n\n# kldunload if_iwlwifi\n\n[58] entering psq_drain psq=-2195461594728, lock=0\n\n\nAnd when it crashes, it looks like this:\n\nTo the contrary, when it crashes it looks like this:\n\n# ifconfig wlan0 down\n\n[135] entering psq_drain psq=-2195141467752, lock=0\n\u003c6\u003e[135] wlan0: link state changed to DOWN\n\n# kldunload if_iwlwifi\n\n[157] entering psq_drain psq=-2195120246376, lock=0\n[157] entering psq_drain psq=-2195120246376, lock=4\n[157]\n[157] Fatal trap 12: page fault while in kernel mode\n\nTentatively, as far as I currently understand, that mtx_lock=4 is not supposed to go into __mtx_lock_sleep()."
+}

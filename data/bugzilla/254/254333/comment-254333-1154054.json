@@ -1,0 +1,8 @@
+{
+ "id": 1154054,
+ "bug_id": 254333,
+ "attachment_id": 0,
+ "creation_time": "2021-03-30T20:06:08Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "net.inet.tcp.hostcache.count: 4294966447 is -849 (decimal).\n\ntcp_hc_purge_internal decrements hostcache.count unconditionally, and would be \nthe most likely candidate where that counter can rapidely go negative (becoming a huge uint32).\n\nAll the adjustments to hch_length, cache_count and actual add/dels from hashbuckets appear to be symmetric.\n\nOne more hint (more operationally): if you have high \"hostcache buffer-overflows\" in 'netstat -snp tcp' you my want to tweak the bucket size rather than the hashsize.\n\nUnfortunately, the hostcache does not currently provide insight if a wider hashsize, or a deeper bucketlimit would be preferrential for your workload...\n\n(you would probably want a histogram of #buckets of length \"n\". If that histogram shows few deeply used buckets, but most buckets empty or sparsely used, a narrower hashsize with deeper buckets may be more optimal space use.\n\nIf most buckets are mostly used, a wider hashsize may be preferrably over deeper buckets..."
+}

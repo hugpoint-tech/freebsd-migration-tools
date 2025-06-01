@@ -1,0 +1,8 @@
+{
+ "id": 972708,
+ "bug_id": 225223,
+ "attachment_id": 0,
+ "creation_time": "2018-01-16T16:20:20Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "ZFS creates device nodes for every zvol and every snapshot of a zvol.  If you rename a snapshot on a zvol, the device node will automatically get renamed too.  However, if you use \"zfs rename -r\" (-r means recursive) on a snapshot of the zvol's parent dataset, then the snapshot's device node will _not_ get renamed.\n\nSteps to reproduce:\n[alans@tom ~]$ sudo zpool create foo da1\n[alans@tom ~]$ sudo zfs create -V 100m foo/vol0\n[alans@tom ~]$ sudo zfs snapshot -r foo@0\n[alans@tom ~]$ find /dev/zvol/foo/ -type c\n/dev/zvol/foo/vol0\n/dev/zvol/foo/vol0@0\n[alans@tom ~]$ sudo zfs rename -r foo@0 foo@1\n[alans@tom ~]$ find /dev/zvol/foo/ -type c\n/dev/zvol/foo/vol0\n/dev/zvol/foo/vol0@0\n[alans@tom ~]$ zfs list -t all -r foo/vol0\nNAME         USED  AVAIL  REFER  MOUNTPOINT\nfoo/vol0     105M  3.51T    56K  -\nfoo/vol0@1      0      -    56K  -\n\n/dev/zvol/foo/vol0@0 should've been renamed to /dev/zvol/foo/vol0@1 ."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 825761,
+ "bug_id": 200493,
+ "attachment_id": 0,
+ "creation_time": "2015-05-28T15:10:31Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Edward Tomasz Napierala from comment #0)\nIt is very _weird_ bug report from developer.  You did not invesigated what is the state of the idle (?) process after the kill, obviously pid value does not matter since kernel starts variable number of the kprocs during the boot (on my kernel idle has pid 10). And last and most important, kernel processes do not process signals: there is no place where cursig()/postsig() pair is called, since there is no return from kernel to user mode, and no ast handler called.\n\nE.g. after I do kill -9 10 (pid 10 is my idle process), I see\nsandy% sudo procstat -i 10\n  PID COMM             SIG     FLAGS\n  10 idle             KILL     P--\nI.e. SIGKILL was put into the queue, but nothing processed it.  And I do not observe any weirdness in the system behaviour afterward.\n\nIf your system consumed the SIGKILL, there should be some code which called postsig() in the context of the idle threads.\n\nFYI, the idle loop is sched_idletd(), private for the given scheduler implementation."
+}

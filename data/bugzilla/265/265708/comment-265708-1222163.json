@@ -1,0 +1,8 @@
+{
+ "id": 1222163,
+ "bug_id": 265708,
+ "attachment_id": 0,
+ "creation_time": "2022-08-08T10:29:06Z",
+ "creator": "dch@freebsd.org",
+ "text": "Updating e.g. net/seaweedfs to 3.19 requires using the new `M2T_GITHUB` env\nvar to fetch repos. However this is insufficient for some repos, for example\naws/aws-sdk-go-v2 returns:\n\ngetting refs for aws/aws-sdk-go-v2: apis.get https://api.github.com/repos/aws/aws-sdk-go-v2/git/refs/tags: 502,\n\nIt appears to be a limit *on the requested repo*  as all the prior calls work,\njust the AWS ones fail. Re-running these requests from a different IP, with a different Github account's API key, hits the same limit.\n\nhttps://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting\n\n\u003e For requests to resources that belong to an enterprise account on GitHub.com,\n\u003e GitHub Enterprise Cloud's rate limit applies, and the limit is 15,000 requests\n\u003e per hour per repository.\n\n...\n$ cd /usr/ports/net/seaweedfs\n$ sed -E -i '' -e 's/^PORTREV.*//' -e 's/2.81/3.19/' Makefile\n$ truncate -s 0  distinfo Makefile.deps\n$ make makesum\n$ env M2T_DEBUG=1 M2T_GITHUB=$YOU:TOKEN make gomod-vendor | tee Makefile.new  \n...\ncznic:strutil:5f824aabbbe044946f35921791abccfe3b1eafe1:cznic_strutil/vendor/modernc.org/strutil \\\n                cznic:token:46658f20d51b8d0b6c4c551c363c8510c30c2a72:cznic_token/vendor/modernc.org/token\n\n                # Errors found during processing:\n                #       error getting refs for aws/aws-sdk-go-v2: apis.get https://api.github.com/repos/aws/aws-sdk-go-v2/git/refs/tags: 502, body: {\n  \"message\": \"Server Error\"\n}\n...\n```\n\nIs this an issue with gomod-vendor, github api limits?\n\nI has asked github to clarify, will report back here."
+}

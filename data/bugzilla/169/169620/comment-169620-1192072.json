@@ -1,0 +1,8 @@
+{
+ "id": 1192072,
+ "bug_id": 169620,
+ "attachment_id": 0,
+ "creation_time": "2021-12-27T10:46:03Z",
+ "creator": "longwitz@incore.de",
+ "text": "The patch given in bug 187566 has solved an other problem than the one discussed in this bug report. We still need the patch\n\n--- ng_l2tp.c.1st       2021-12-19 19:31:10.693840000 +0100\n+++ ng_l2tp.c   2021-12-23 14:50:47.334147000 +0100\n@@ -755,6 +755,7 @@\n        hookpriv_p hpriv = NULL;\n        hook_p hook = NULL;\n        struct mbuf *m;\n+       struct m_tag *mtag;\n        u_int16_t tid, sid;\n        u_int16_t hdr;\n        u_int16_t ns, nr;\n@@ -997,6 +998,11 @@\n                NG_FREE_M(m);\n                ERROUT(0);\n        }\n+\n+       /* Delete an existing ipsec tag */\n+       mtag = m_tag_find(m, PACKET_TAG_IPSEC_IN_DONE, NULL);\n+       if (mtag != NULL)\n+               m_tag_delete(m, mtag);\n \n        /* Deliver data */\n        NG_FWD_NEW_DATA(error, item, hook, m);\n\nThe same issue for if_epair.c is solved in FreeBSD V12.3 calling a new statc function called epair_clear_mbuf(). commit ae23f081...\n\nAndreas"
+}

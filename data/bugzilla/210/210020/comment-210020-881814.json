@@ -1,0 +1,8 @@
+{
+ "id": 881814,
+ "bug_id": 210020,
+ "attachment_id": 0,
+ "creation_time": "2016-06-04T14:01:49Z",
+ "creator": "dab@freebsd.org",
+ "text": "From the man page description of the -R flag:\n\n\t      \t      \t      \t      \t             When a daemon does exe-\n\t     cute newsyslog with the -R\toption,\tit should make sure all\tof the\n\t     log files are closed before calling newsyslog, and\tthen it\tshould\n\t     re-open the files after newsyslog returns.\t Usually the calling\n\t     process will also want to specify the -s option, so newsyslog\n\t     will not send a signal to the very\tprocess\twhich called it\tto\n\t     force the rotate.\tSkipping the signal step will also mean\tthat\n\t     newsyslog will return faster, since newsyslog normally waits a\n\t     few seconds after any signal that is sent.\n\nAfter going through the signal work list, during which do_sigwork() is called and essentially does nothing because -s and -R were specified on the command line, newsyslog will sleep for 10 seconds as the (verbose) code says: \"Pause 10 seconds to allow daemon(s) to close log file(s)\".\n\nHowever, the man page verbiage for -R (and -s) seems quite clear that this sleep() is unnecessary because the daemon was expected to have already closed the log file before calling newsyslog. I submit that the sleep should be eliminated in at least the case where -R and -s have been specified and possibly also in the case where only -s was specified (if there were no signal sent, how is the daemon supposed to know to close (and reopen) the log file?)."
+}

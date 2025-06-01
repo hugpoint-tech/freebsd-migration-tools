@@ -1,0 +1,8 @@
+{
+ "id": 1011191,
+ "bug_id": 231334,
+ "attachment_id": 0,
+ "creation_time": "2018-09-14T02:15:13Z",
+ "creator": "ota@j.email.ne.jp",
+ "text": "(In reply to Ian Lepore from comment #1)\n\nFor \"make installworld DESTDIR=/mnt/current\" case,\n\"mergemaster -Fp -D /mnt/current\" needs to be run instead of \"mergemaster -Fp\"\n\nThe problem is /usr/src/Makefile,\n\n.for uid in ${CHECK_UIDS}\n        @if ! `id -u ${uid} \u003e/dev/null 2\u003e\u00261`; then \\\n                echo \"ERROR: Required ${uid} user is missing, see /usr/src/UPDAT\nING.\"; \\\n                false; \\\n        fi\n.endfor\n\nThis checks if a user exists on the host server and \"not on the destination of installworld.\"\n\n$ uname -r\n11.2-RELEASE-p2\n\n$ id -u ntpd\nid: ntpd: no such user\n\n$ svn info /usr/src\nPath: /usr/src\nWorking Copy Root Path: /usr/src\nURL: https://svn0.us-east.freebsd.org/base/head\nRelative URL: ^/head\nRepository Root: https://svn0.us-east.freebsd.org/base\nRepository UUID: ccf9f872-aa2e-dd11-9fc8-001c23d0bc1f\nRevision: 338677\nNode Kind: directory\nSchedule: normal\nLast Changed Author: mmacy\nLast Changed Rev: 338677\nLast Changed Date: 2018-09-13 21:30:05 -0400 (Thu, 13 Sep 2018)\n\n$ grep ntpd /mnt/current/etc/passwd\nntpd:*:123:123:NTP Daemon:/var/db/ntp:/usr/sbin/nologin\n\n$ make installworld -C /usr/src DESTDIR=/mnt/current\n...\nERROR: Required ntpd user is missing, see /usr/src/UPDATING.\n\n\n\nPerhaps, this needs to be like\n\n.for uid in ${CHECK_UIDS}\n        @if `awk -F: '\"${uid}\" == $$1{rc=1}END{exit rc}' ${DESTDIR}/etc/passwd`; then \\\n                echo \"ERROR: Required ${uid} user is missing, see /usr/src/UPDAT\nING.\"; \\\n                false; \\\n        fi\n.endfor\n\nI'm not sure for NIS based cases..."
+}

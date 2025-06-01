@@ -1,0 +1,8 @@
+{
+ "id": 1152881,
+ "bug_id": 254024,
+ "attachment_id": 223496,
+ "creation_time": "2021-03-22T09:24:01Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "Created attachment 223496\ng_file_monitor_directory() test\n\nHere's a simple test that monitors a directory with g_file_monitor_directory() like gvfsd-trash does.\n\nWhile it monitors a mountpoint:\n\nOn Linux:\n1. \"lsof\" shows an inotify file descriptor, but no directory file descriptors.\n2. umount succeeds.\n3. glib delivers a \"changed\" event to GFileMonitor after umount.\n\nOn FreeBSD:\n1. \"lsof\" shows a kqueue file descriptor, AND an open file descriptor for each monitored directory.\n2. umount fails with \"Device busy\" (EBUSY).\n\nThus it seems the directories kept open by glib's kqueue usage are stopping the unmount.\n\nEither glib is using kqueue badly and needs fixing, or kqueue, by design, cannot monitor directories without keeping them open, and thus always stops unmounting (which could be much harder to fix).\n\n-------\n\nTo build, make a SConstruct file with these lines and runs \"scons\":\nglib_mount_monitor = Environment()\nglib_mount_monitor.ParseConfig('pkg-config --cflags --libs glib-2.0')\nglib_mount_monitor.ParseConfig('pkg-config --cflags --libs gio-2.0')\nglib_mount_monitor.Program('glib_mount_monitor', 'glib_mount_monitor.c')\n\nRun: ./glib_mount_monitor /path/to/mountpoint"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 42774,
+ "bug_id": 14034,
+ "attachment_id": 0,
+ "creation_time": "1999-09-29T09:10:00Z",
+ "creator": "riccardo@torrini.org",
+ "text": "gettimeofday() sometimes returns negative values for microseconds.\nAlready submitted as PR misc/13992 (routed exit after some day of\nwork with signal 6, core dump).\n\nFix: \n\nI have work-around with a script that poll processes and\nrespawn \"routed -s\" when it dies.  Not a real fix... :-(\nHow-To-Repeat: -----8\u003c-----[ gettimeofday_test.c ]-----8\u003c-----\n#include \u003csys/time.h\u003e\n#include \u003cerr.h\u003e\n#include \u003cstdio.h\u003e\n\nvoid\nmain()\n{\n    struct timeval tp;\n\n    do {\n        if (gettimeofday(\u0026tp, (struct timezone *)NULL) == -1) {\n            err(1, \"gettimeofday\");\n        }\n\n        if (tp.tv_usec \u003c 0) {\n            errx(1, \"invalid time returned: %ld:%ld\",\n                tp.tv_sec, tp.tv_usec);\n        }\n    } while (1);\n\n}\n\n=====[ output on my machine ]=====\nAfter about 20minutes:\ngettimeofday_test: invalid time returned: 938527821:-695331771\n\n# sysctl kern.timecounter.method machdep.i8254_freq\nkern.timecounter.method: 0\nmachdep.i8254_freq: 1193182"
+}

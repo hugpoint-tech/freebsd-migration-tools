@@ -1,0 +1,8 @@
+{
+ "id": 804154,
+ "bug_id": 196586,
+ "attachment_id": 151450,
+ "creation_time": "2015-01-07T08:51:03Z",
+ "creator": "arnaud.ysmal@stormshield.eu",
+ "text": "Created attachment 151450\nUse (uk_maxpages / uk_ppera) * uk_ipers to compute the number of items\n\nOverview:\n\nUsing sysctl to set a new value to kern.ipc.nmbjumbo9 or kern.ipc.nmbjumbo16 leads to a wrong value.\nThis appears in FreeBSD 9.3 with the revision 254515 (https://svnweb.freebsd.org/base?view=revision\u0026revision=254515) which MFC the revision 243631.\n\n\nHow to reproduce:\n\n# sysctl kern.ipc.nmbjumbo9=224000\nkern.ipc.nmbjumbo9: 223263 -\u003e 672000\n\n\nExpected Results:\n\n# sysctl kern.ipc.nmbjumbo9=224000\nkern.ipc.nmbjumbo9: 223263 -\u003e 224000\n\n\nAudit:\n\nThe sysctls functions in sys/kern/kern_mbuf.c got the new value from the uma_zone_set_max (sys/vm/uma_core.c) function.\nThe formula used in uma_core.c to compute the number of items based on the number of pages is not always the same (uk_ppera is sometimes missing).\n\nFix:\n\nThe enclosed patch fixes this issue by always using the same formula to compute the number of items.\n\n\nAdditional Information:\n\nThis report is a follow up of my mail on freebsd-net (https://lists.freebsd.org/pipermail/freebsd-net/2014-December/040584.html).\n\nThis issue was previously discussed on FreeBSD-hackers (https://lists.freebsd.org/pipermail/freebsd-hackers/2014-September/046158.html)."
+}

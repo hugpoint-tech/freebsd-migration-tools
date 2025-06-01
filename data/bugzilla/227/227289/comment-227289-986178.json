@@ -1,0 +1,8 @@
+{
+ "id": 986178,
+ "bug_id": 227289,
+ "attachment_id": 0,
+ "creation_time": "2018-04-04T23:56:21Z",
+ "creator": "fbsdbugzilla@csj.no",
+ "text": "Installing nginx, py-certbot and py-certbot-nginx results in wrong behaviour when running certbot:\n\n# certbot\nSaving debug log to /var/log/letsencrypt/letsencrypt.log\nError while running nginx -c /etc/nginx/nginx.conf -t.\n\nnginx: [emerg] open() \"/etc/nginx/nginx.conf\" failed (2: No such file or directory)\nnginx: configuration file /etc/nginx/nginx.conf test failed\n\nCertbot doesn't know how to automatically configure the web server on\nthis system. However, it can still get a certificate for you. Please run\n\"certbot certonly\" to do so. You'll need to manually configure your web\nserver to use the resulting certificate.\n\nDigging through the system, I eventually came across this file:\n\n/usr/local/lib/python2.7/site-packages/certbot_nginx/constants.py\n\nIn constants.py, the server_root for nginx is set:\n\nCLI_DEFAULTS = dict(\n    server_root=\"/etc/nginx\",\n    ctl=\"nginx\",\n)\n\nThis should be set to /usr/local/etc/nginx, which is where nginx' config files reside on FreeBSD.\n\nChanging server_root to /usr/local/etc/nginx and recompiling constants.py to constants.pyc and constants.pyo solves the problem and certificate requests and renewals work as expected.\n\n\nSystem: FreeBSD 11.1-RELEASE-p9 amd64\nNginx: www/nginx-devel (1.13.10)\nCertbot: security/py-certbot (0.22.2,1)\nCertbot-nginx: security/py-certbot-nginx (0.22.2)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1220899,
+ "bug_id": 265001,
+ "attachment_id": 0,
+ "creation_time": "2022-07-28T12:26:38Z",
+ "creator": "crahman@gmail.com",
+ "text": "So the problem is that the lua parser in /boot/lua/config.lua is splitting the line on the '=', sending the first match to the key and the second to the value.\n\nIn the problem case, the value is:\n   '\"test b\"               # This is \"test_directive_b\"'\n\nThen the value gets matched against QVALEXPR = '\"(.*)\"'.\n\nThis cleans up the value by removing the first and last '\"', but in this case turns it into:\n\n  test b\"               # This is \"test_directive_b\n\nwhich then gets rejected in processEnvVar() with MSG_FAILSYN_QUOTE, since\nvalues aren't allowed to contain '\"'.\n\nChanging QVALEXPR to '([-%w_]+)' fixes this problem.  Since the value is explicitly prevented from containing quotes, it's not unreasonable to load it from an expression that excludes them.  The only other place this is used is in the 'exec=\"command\"' expression, which also should not contain '\"' in the command value.\n\nA patch is attached."
+}

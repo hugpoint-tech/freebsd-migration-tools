@@ -1,0 +1,8 @@
+{
+ "id": 584821,
+ "bug_id": 151871,
+ "attachment_id": 0,
+ "creation_time": "2010-11-04T15:24:38Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: brucec\nDate: Thu Nov  4 15:24:32 2010\nNew Revision: 214781\nURL: http://svn.freebsd.org/changeset/base/214781\n\nLog:\n  Fix standby timer calculation: the timer was being set 30 minutes later\n  than the user requested.\n  Also, 21 minutes is encoded as 252 and 22-29 minutes cannot be encoded\n  so must be rounded up to 30.\n  \n  PR:\tbin/151871\n\nModified:\n  head/sbin/camcontrol/camcontrol.c\n\nModified: head/sbin/camcontrol/camcontrol.c\n==============================================================================\n--- head/sbin/camcontrol/camcontrol.c\tThu Nov  4 12:33:07 2010\t(r214780)\n+++ head/sbin/camcontrol/camcontrol.c\tThu Nov  4 15:24:32 2010\t(r214781)\n@@ -4316,10 +4316,17 @@ atapm(struct cam_device *device, int arg\n \t\tsc = 0;\n \telse if (t \u003c= (240 * 5))\n \t\tsc = t / 5;\n+\telse if (t == (252 * 5))\n+\t\t/* special encoding for 21 minutes */\n+\t\tsc = 252;\n+\telse if (t \u003c (30 * 60))\n+\t\t/* no encoding exists for 22-29 minutes, so set to 30 mins */\n+\t\tsc = 241;\n \telse if (t \u003c= (11 * 30 * 60))\n-\t\tsc = t / (30 * 60) + 241;\n+\t\tsc = t / (30 * 60) + 240;\n \telse\n \t\tsc = 253;\n+\n \tcam_fill_ataio(\u0026ccb-\u003eataio,\n \t\t      retry_count,\n \t\t      NULL,\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

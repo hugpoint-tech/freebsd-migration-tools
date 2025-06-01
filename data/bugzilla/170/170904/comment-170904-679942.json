@@ -1,0 +1,8 @@
+{
+ "id": 679942,
+ "bug_id": 170904,
+ "attachment_id": 0,
+ "creation_time": "2012-08-24T18:38:05Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: adrian\nDate: Fri Aug 24 17:37:51 2012\nNew Revision: 239657\nURL: http://svn.freebsd.org/changeset/base/239657\n\nLog:\n  Correctly handle the \"pe_enabled\" flag - both when configuring DFS and\n  fetching the current DFS configuration.\n  \n  PR:\t\tkern/170904\n\nModified:\n  head/sys/dev/ath/ath_hal/ar5212/ar5212_misc.c\n\nModified: head/sys/dev/ath/ath_hal/ar5212/ar5212_misc.c\n==============================================================================\n--- head/sys/dev/ath/ath_hal/ar5212/ar5212_misc.c\tFri Aug 24 17:37:12 2012\t(r239656)\n+++ head/sys/dev/ath/ath_hal/ar5212/ar5212_misc.c\tFri Aug 24 17:37:51 2012\t(r239657)\n@@ -1160,7 +1160,12 @@ ar5212EnableDfs(struct ath_hal *ah, HAL_\n \t\tval \u0026= ~AR_PHY_RADAR_0_INBAND;\n \t\tval |= SM(pe-\u003epe_inband, AR_PHY_RADAR_0_INBAND);\n \t}\n-\tOS_REG_WRITE(ah, AR_PHY_RADAR_0, val | AR_PHY_RADAR_0_ENA);\n+\tif (pe-\u003epe_enabled)\n+\t\tval |= AR_PHY_RADAR_0_ENA;\n+\telse\n+\t\tval \u0026= ~ AR_PHY_RADAR_0_ENA;\n+\n+\tOS_REG_WRITE(ah, AR_PHY_RADAR_0, val);\n }\n \n /*\n@@ -1206,6 +1211,7 @@ ar5212GetDfsThresh(struct ath_hal *ah, H\n \tpe-\u003epe_height =  MS(val, AR_PHY_RADAR_0_HEIGHT);\n \tpe-\u003epe_prssi = MS(val, AR_PHY_RADAR_0_PRSSI);\n \tpe-\u003epe_inband = MS(val, AR_PHY_RADAR_0_INBAND);\n+\tpe-\u003epe_enabled = !! (val \u0026 AR_PHY_RADAR_0_ENA);\n \n \tpe-\u003epe_relpwr = 0;\n \tpe-\u003epe_relstep = 0;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

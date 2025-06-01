@@ -1,0 +1,8 @@
+{
+ "id": 77464,
+ "bug_id": 24857,
+ "attachment_id": 0,
+ "creation_time": "2001-08-03T01:20:40Z",
+ "creator": "jon@FreeBSD.org",
+ "text": "\u003e However, when run standalone, it crashed frequently, and I also\n\u003e discovered a file descriptor leak.\n\u003e \n\u003e I have observed that:\n\u003e \n\u003e 1) rpc.rstatd opens /dev/mem and /dev/kmem multiple times\n\u003e    until running out of file descriptors.\n\u003e 2) rpc.rstatd often crashes within 24 hours\n\nThe following patch is what I've applied to -CURRENT.  It simplifies what \nyou have to fix (1) and more correctly fixes (2) (your code still allows a \nsmall window where the problem can still occur).  Please test it out.\nTo crash rpc.rstatd, I used something similar to the following:\nrup localhost \u0026 ; rup localhost \u0026 ;rup localhost \u0026 ;rup localhost \u0026 ;[repeat]\n\nIndex: rstat_proc.c\n===================================================================\nRCS file: /export/ncvs/src/libexec/rpc.rstatd/rstat_proc.c,v\nretrieving revision 1.14\ndiff -u -r1.14 rstat_proc.c\n--- rstat_proc.c\t1999/08/28 00:09:54\t1.14\n+++ rstat_proc.c\t2001/08/03 00:12:15\n@@ -115,6 +115,7 @@\n {\n     stat_is_init = 1;\n     setup();\n+    alarm(0);\n     updatestat();\n     (void) signal(SIGALRM, updatestat);\n     alarm(1);\n@@ -203,6 +204,7 @@\n #ifdef DEBUG\n                 fprintf(stderr, \"about to closedown\\n\");\n #endif\n+\t\tkvm_close(kd);\n                 if (from_inetd)\n                         exit(0);\n                 else {"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 4604,
+ "bug_id": 1557,
+ "attachment_id": 0,
+ "creation_time": "1996-08-31T22:23:51Z",
+ "creator": "jkh@time.cdrom.com",
+ "text": "\u003e \tSo, i looked into why the .tgz extension isn't being added in, and\n\u003e \tadded that (see patches to pkg_install/lib/file.c below) then\n\u003e \tretried\n\nGenuine bug, thanks.\n\n\u003e \tanyway, i traced this to a thing inside libftpio where with\n\u003e \tftpGetURL, an static FILE* is being closed on each re-open.\n\u003e \n\u003e \tI suspect that the fclose done in ftpGetURL() is to avoid\n\u003e \texhausting file descriptors... anyway what i have now works,\n\nErm, sort of. :-(\n\nThat construct is very deliberately the way it is, due to the fact\nthat when you open a connection to an FTP, that returns one FILE*.  If\nyou then ask for a file from that connection, it returns another\nFILE*.  Now, and this is the important part, if you close the first\nfile pointer before finishing with the second, you lose.  The intended\nuse of ftpGetURL() was that you'd process the file it returned all the\nway to completion and close it before asking for another URL.  This is\nclearly not what pkg_add is doing, and pkg_add has a bug I'll have to\nlook into.  Leaving leaks in libftpio is not an acceptable solution by\nany conceivable stretch.\n\nHowever, you have suggested an important optimization to me, and\nthat's to cache the old host connection when getting ftpGetURL()\nrequests back-to-back for the same host.  That just makes simple\nsense, and was easy to do.  I'll commit the changes shortly to\nlibftpio, as well as some fixes to pkg_add.\n\n\t\t\t\t\tJordan"
+}

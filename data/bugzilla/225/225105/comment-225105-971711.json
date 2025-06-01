@@ -1,0 +1,8 @@
+{
+ "id": 971711,
+ "bug_id": 225105,
+ "attachment_id": 0,
+ "creation_time": "2018-01-13T14:02:37Z",
+ "creator": "trasz@FreeBSD.org",
+ "text": "The first chunks (passing pointers to pointers) breaks the dynamically linked binary:\n\n% ./go\ncannot set up thread-local storage: cannot set %fs base address for thread-local storage; ktrace looks like this:\n\n 64990 go       CALL  linux_arch_prctl(0x1002,0x800ac31c0)\n 64990 go       RET   linux_arch_prctl -1 errno -14 Bad address\n 64990 go       CALL  writev(0x2,0x7fffffffc410,0x3)\n 64990 go       GIO   fd 2 wrote 89 bytes\n       \"cannot set up thread-local storage: cannot set %fs base address for thread-local storage\n       \"\n 64990 go       RET   writev 89/0x59\n 64990 go       CALL  linux_exit_group(0x7f)\n\nIt also doesn't fix the statically linked binary, although it changes the way it fails:\n(gdb) run\nStarting program: /usr/home/en322/aosp/prebuilts/go/linux-x86/bin/gofmt \n\nProgram received signal SIGSEGV, Segmentation fault.\nruntime.settls () at prebuilts/go/linux-x86/src/runtime/sys_linux_amd64.s:524\n524     prebuilts/go/linux-x86/src/runtime/sys_linux_amd64.s: No such file or directory.\n(gdb) where\n#0  runtime.settls () at prebuilts/go/linux-x86/src/runtime/sys_linux_amd64.s:524\n#1  0x0000000000453694 in runtime.rt0_go () at prebuilts/go/linux-x86/src/runtime/asm_amd64.s:145\n#2  0x0000000000000000 in ?? ()"
+}

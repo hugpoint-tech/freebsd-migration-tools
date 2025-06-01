@@ -1,0 +1,8 @@
+{
+ "id": 1299558,
+ "bug_id": 276002,
+ "attachment_id": 0,
+ "creation_time": "2024-03-04T07:32:05Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Peter Holm from comment #88)\nPlease try the following\ncommit fc160bc8d3296b16e1882eed7355309a8eefcdcb\nAuthor: Konstantin Belousov \u003ckib@FreeBSD.org\u003e\nDate:   Mon Mar 4 09:26:55 2024 +0200\n\n    allocbuf()/vfs_vmio_extend(): assume zero-sized buffers are B_CACHE\n    \n    vfs_vmio_extend() tests each added page for valid, and then extends the\n    validity of B_CACHE flag if all added pages are valid.  But, if we have\n    a blank buffer without any content yet, the B_CACHE flag is not set yet,\n    and validity test is not executed due to this.\n    \n    This makes the buffer incoherent with the page content, loosing data.\n\ndiff --git a/sys/kern/vfs_bio.c b/sys/kern/vfs_bio.c\nindex b5466fb2cd53..3ec886a32ded 100644\n--- a/sys/kern/vfs_bio.c\n+++ b/sys/kern/vfs_bio.c\n@@ -3175,6 +3175,8 @@ vfs_vmio_extend(struct buf *bp, int desiredpages, int size)\n \t * B_CACHE may remain set! XXX\n \t */\n \ttoff = bp-\u003eb_bcount;\n+\tif (toff == 0)\n+\t\tbp-\u003eb_flags |= B_CACHE;\n \ttinc = PAGE_SIZE - ((bp-\u003eb_offset + toff) \u0026 PAGE_MASK);\n \twhile ((bp-\u003eb_flags \u0026 B_CACHE) \u0026\u0026 toff \u003c size) {\n \t\tvm_pindex_t pi;\n\n(both my patches are available on the ufs1 branch of deviant3)"
+}

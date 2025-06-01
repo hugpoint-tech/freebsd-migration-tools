@@ -1,0 +1,8 @@
+{
+ "id": 1212730,
+ "bug_id": 258412,
+ "attachment_id": 0,
+ "creation_time": "2022-05-24T21:10:04Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Thanks for the report and the pointer to the updated libkqueue tests.  I'm sorry this didn't get any attention sooner.\n\nI ported three new timer tests to our in-tree copy of the libkqueue test suite, periodic_modify, periodic_to_oneshot, and dispatch.  They found a couple of kernel bugs unrelated to the one that you described.\n\nLooking at our documentation, it's not obvious to me that FreeBSD's behaviour in the dispatch test is incorrect.  With a periodic timer, EV_DISPATCH masks the knote after its state is retrieved by kqueue(), but the timer continues to fire and we continue to count events.  So when the timer filter is unmasked with EV_ENABLE | EV_DISPATCH, the knote is immediately activated.  That seems consistent with my reading of the documentation.\n\n\u003e The above step fails on FreeBSD 13, we get one event with the data field set to 1.\n\nI would expect this to be 2 = 500ms / 200ms.  That itself is a kernel bug which I have a patch for.\n\n\u003e Adding EV_ADD to the call re-enabling the timer does nothing, as does only passing EV_ENABLE.\n\nIn fact, adding EV_ADD fixes the test for me on FreeBSD.  That also seems to make sense, since EV_ADD causes the timer state to be reset, throwing away timer firings that occurred while the knote was masked.\n\nSo, I'm not sure what to do here.  I spent some time looking at the XNU sources to better understand what macos is doing but don't quite understand their timer state machine yet."
+}

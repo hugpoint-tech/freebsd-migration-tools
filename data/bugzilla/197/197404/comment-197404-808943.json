@@ -1,0 +1,8 @@
+{
+ "id": 808943,
+ "bug_id": 197404,
+ "attachment_id": 152696,
+ "creation_time": "2015-02-08T01:30:02Z",
+ "creator": "beastie@tardisi.com",
+ "text": "Created attachment 152696\nmy patch\n\nAfter this port was upgraded from 1.06 to 1.09, I had incorrectly assumed that my port (see bug 196528) failing was a problem with its use IO::Interface methods marked as deprecated.\n\nHowever, this didn't solve the problem.\n\nMy port would continue to fail with:\n\n    Error: Illegal seek\n\nAnd, in dmesg, lines like this would appear:\n\n    WARNING pid 10917 (perl): ioctl sign-extension ioctl ffffffffc0206933\n    WARNING pid 10917 (perl): ioctl sign-extension ioctl ffffffffc0206921\n\nIn deeper investigation, found that the problem was in net/p5-IO-Interface.\n\nIn looking at the change log, between 1.06 and 1.09, the upstream applied a patch for a segfault in 1.07 and another in 1.08.  1.08 was also the first Git version.  In 1.09, converted to use Module::Build.\n\nThe problem is the CONFIGURE portion that was in Makefile.PL was not replicated into Build.PL, so it wasn't checking if it was being built on FreeBSD, OpenBSD or NetBSD.  Or testing for the presence of two headerfiles.  So, the compile was missing 3 compiler flags (DEFINES).\n\nI waited to see if this port would get fixed, or rolled back to 1.08, but didn't seem either wanted to take place.  So, after figuring out what specific change to Build.PL I needed and fed it into 'poudriere testport', I submitted a report to cpan for IO::Interface (#101985).\n\nMade an additional change to Makefile to satisfy warning from poudriere QA."
+}

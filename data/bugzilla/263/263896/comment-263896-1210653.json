@@ -1,0 +1,8 @@
+{
+ "id": 1210653,
+ "bug_id": 263896,
+ "attachment_id": 0,
+ "creation_time": "2022-05-10T13:13:36Z",
+ "creator": "hannula@gmail.com",
+ "text": "In sys/dev/e1000/if_em.c the RX buffer is defined as:\nu16 rx_buffer_size\n\nso max value is 65535.\n\nLater it is used to calculate the buffer water levels:\nrx_buffer_size = (pba \u0026 0xffff) \u003c\u003c 10;\nhw-\u003efc.high_water = rx_buffer_size - roundup2(hw-\u003emac.max_frame_size, 1024);\n\nThis is ok for example for 36KB when pba is 0x36 fc.high_water is calculated as 36864-2048=34816.\n\nBut for I350 when only 2 ports are used PBA size can be set as 72KB (see datasheet RXPbsize or e1000_rxpbs_adjust_82580 function in e1000_82575.c).\nIn this case calculating the rx_buffer_size overflows as 0x0048 \u003c\u003c 10 = 73728 or 0x12000 pushed into u16. It is then set as 0x2000 or 8192.\n\nTested on my dual port I350 vs quad port I350:\nOn quad port the PBA size is 36KB and is calculated correctly 36864-2048=34816:\ndev.igb.0.fc_low_water: 34800\ndev.igb.0.fc_high_water: 34816\n\nOn dual port the PBA size is 72KB and totally wrong values are set corresponding to 8192-2048=6144:\ndev.igb.0.fc_low_water: 6128\ndev.igb.0.fc_high_water: 6144\n\nOne can verify what PBA is set in hardware with enabling verbose boot:\nkernel: em_reset: pba=36K\nkernel: em_reset: pba=72K"
+}

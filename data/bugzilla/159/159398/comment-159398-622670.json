@@ -1,0 +1,8 @@
+{
+ "id": 622670,
+ "bug_id": 159398,
+ "attachment_id": 0,
+ "creation_time": "2011-08-02T23:40:11Z",
+ "creator": "harrycoin@aol.com",
+ "text": "openldap slapd fails to start at boot time, blocking directory server\noperations, every time under certain undocumented conditions.\n\nIf slapd.conf has\n\nTLSCACertificatePath /some/legal/path/to/CACerts\n\nand there exists even one file in that directory that is protected\nagainst reading by user ldap:ldap (such as perhaps the \u003cca name\u003e.srl\nfile for folk who have their own internal CA root certificates for\nsigning multiple ldap servers, which openssl looks for in the same\ndirectory with the certificates) then:\n\n../rc.d/slapd start fails to start, and the debug log has the obscure error\n\ntls init def ctx failed: -1\n\nThis, even though all the certificates necessary for slapd operation\nare there and readable by the ldap user.\n\nFix: \n\nWorkaround: Make sure all the files in the certificate directory are\nreadable by user LDAP, no matter what their purpose or content.\n\nOtherwise, it needs a source fix.\nHow-To-Repeat: 1. Use \"openssl verify\" ... to prove the certificates are good.\n2. be sure one file exists in the TLSCACertificatePath directory that\n   is not readable by user ldap:ldap.  The file can be anything, anyu\n   length, unrelated to slapd operations, not even a certificate at all.\n\n3. As root, run .../libexec/slapd manually and notice proper operations.\n\n4. then notice failure every time running ../libexec/slapd -u ldap -g ldap\nor .../rc.d/slapd start"
+}

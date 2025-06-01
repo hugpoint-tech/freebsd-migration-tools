@@ -1,0 +1,8 @@
+{
+ "id": 496290,
+ "bug_id": 134055,
+ "attachment_id": 0,
+ "creation_time": "2009-04-28T00:00:12Z",
+ "creator": "skuti@skuti.is",
+ "text": "can't build port misc/libhome\n\nI'm using:\nFreeBSD 7.1 RELEASE amd64.iso install cd\nupdated world and custom kernel (patch 4)\n(the same problem repeated when I skiped the update process)\nand vmware esx server\n\nwhen trying to buld I get error \n\n./libtool --mode=link cc -O2 -fno-strict-aliasing -pipe  -o home_su -Icompat home_su.c libhome.la\ncc -O2 -fno-strict-aliasing -pipe -o .libs/home_su -Icompat home_su.c  ./.libs/libhome.so -L/usr/local/lib /usr/local/lib/libldap.so /usr/local/lib/liblber.so -lgssapi -lssl -lcrypto -Wl,--rpath -Wl,/usr/local/lib\n./.libs/libhome.so: undefined reference to `crypt'\n*** Error code 1\nStop in /usr/ports/misc/libhome/work/libhome-0.10.1.\n\n\nI only want ldap support, and maby proxy\n\nFix: \n\nI'm not the best programmer to fix this, but I can debug alitle:\nI was able to compile with this tricks, but run with success.\n\ncd /usr/ports/misc/libhome/\nedit Makefile\n\nadd line:\nCONFIGURE_ARGS+=  --without-db3 --without-db4\n\nmake\nwait for error...\nedit work/libhome-0.10.1/Makefile\nadd \" /usr/lib/libcrypt.so\" to the end of lines 106 and 112\n\nso it looks like this:\n\nhome_su: home_su.c libhome.la compat\n        ${LINK} -o home_su -Icompat home_su.c libhome.la /usr/lib/libcrypt.so\n\nand\n \nhome_proxy: home_proxy.c libhome.la\n        ${LINK} -o home_proxy  ${CPPFLAGS} -I. home_proxy.c libhome.la /usr/lib/libcrypt.so\n\n\nthis enables me to compile the port, but all my results are coredump of home_finger\nHow-To-Repeat: install FreeBSD 7.1 amd64\ncd /usr/ports/misc/libhome\nmake install clean"
+}

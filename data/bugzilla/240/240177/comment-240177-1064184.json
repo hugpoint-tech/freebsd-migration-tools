@@ -1,0 +1,8 @@
+{
+ "id": 1064184,
+ "bug_id": 240177,
+ "attachment_id": 206984,
+ "creation_time": "2019-08-28T17:42:51Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Created attachment 206984\nFix iocage upgrade - patch\n\nThis addresses a couple problems that prevented `iocage upgrade' from working properly.\n\n1. Bug #229346 changed freebsd-update to exit with status code 1 in case of no more updates are available. This fixed ezjail and iocell, but broke iocage. As a result, iocage upgrade -r 11.3-RELEASE would not finish updating iocage jail config and exit with an error message. This happened first on 11.3-RELEASE and will also happen on 12.1-RELEASE\n\n2. When updating a jail to 11.x-RELEASE on a 12.x machine, merging config files will create empty files (which then all end up as merge errors). As a result, all configuration is lost (or the attentive sysadmin exits the process in time and fixes things manually). This is caused by the fact that rcs was removed from base in 12.x. Its freebsd-update uses diff3 instead. As iocage always fetches the freebsd-update script of the target release, it gets one from 11.x which will break. This was fixed by adding rcs57 as a dependency of the package (based on the existence of \"merge\").\n\n3. Upgrading multiple jails (iocage upgrade ALL -r \u003crelease\u003e) would break, because of a workaround (setting UNAME_r in the environment) that shouldn't be required any more (iocage 1.2RC already has it removed).\n\nI also:\n- bumped revision\n- moved NO_ARCH to pacify portlint\n\nSee also:\nhttps://github.com/iocage/iocage/pull/1027"
+}

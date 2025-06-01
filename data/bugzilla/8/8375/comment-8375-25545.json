@@ -1,0 +1,8 @@
+{
+ "id": 25545,
+ "bug_id": 8375,
+ "attachment_id": 0,
+ "creation_time": "1998-10-24T16:08:34Z",
+ "creator": "eischen@vigrid.com",
+ "text": "\u003e IMO, your _thread_kern_sched_[un]lock() is a bad idea. Theses functions \n\u003e defeat the idea of spinlocks. What is the need to do _SPINLOCK/_SPINUNLOCK \n\u003e when scheduling is blocked? Your code do it a lot. OTOH, spinlocks are \n\u003e designed exactly to make rescheduling harmless. And they works; the only \n\u003e problem is that spinlocks are released in a bit wrong time. (BTW, why you \n\u003e disable scheduling in pthread_cond_signal and pthread_cond_broadcast?)\n\nEspecially for pthread_cond_broadcast, you do not want to\nget preempted while walking the condition variable queue\nto signal waiters.  If you are preempted, other threads\nrun, time increments, and that can cause a thread that\nwould normally be signalled to be woken up with a timeout\n(assuming it was doing a pthread_cond_timedwait).  At the\ntime of the pthread_cond_broadcast, all threads that are\ncurrently on the waiting list should be woken up.  You do\nnot want the scheduler to run and wakeup some of these threads.\n\nAnother thing that looks possible, is that the condition\nvariable queue can be corrupted.  When a thread is on\nthe queue and it times out, I don't see where the scheduler\nremoves it from the queue (_thread_queue_remove isn't used).\nWhat if it timesout and immediately does another pthread_cond_timedwait?\nI'll look at this some more later today - perhaps I'm just\noverlooking something.\n\nDan Eischen\neischen@vigrid.com"
+}

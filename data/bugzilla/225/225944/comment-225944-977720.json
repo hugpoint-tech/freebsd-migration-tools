@@ -1,0 +1,8 @@
+{
+ "id": 977720,
+ "bug_id": 225944,
+ "attachment_id": 0,
+ "creation_time": "2018-02-16T06:55:46Z",
+ "creator": "vladimir-csp@yandex.ru",
+ "text": "This command:\n\n    ipfw table sometable destroy\n\nalways returns 0 even if 'sometable' does not exist.\n\nThis command:\n\n    ipfw table sometable create type addr\n\nbehaves correctly (0 on creation, 71 if table already exits)\n\nSince autocreating table when adding address is now deprecated, it would be logical if -q option would also be supported for create/destroy commands. Currently a ruleset like this would work on boot, but fail on ipfw restart:\n\n    -qf flush\n    table 10 create type addr\n    -q table 10 add 172.17.2.1/32\n    add 00010 allow tcp from table(10) to me\n\nSupporting -q option on create/destroy would make this construction workable:\n\n    -qf flush\n    -q table 10 create type addr\n    -q table 10 add 172.17.2.1/32\n    add allow tcp from table(10) to me\n\n\nAnother inconsistency is produced when checking the above ruleset (first variant without -q for create):\n\n    # ipfw -n ipfw.rules\n    Flushed all rules.\n    Line 3: DEPRECATED: inserting data into non-existing table 10. (auto-created)\n    00010 allow tcp from table(10) to me\n\n'ipfw -n' ignores table create line, ignores existence of table 10, makes it impossible to tell whether the ruleset would work or not."
+}

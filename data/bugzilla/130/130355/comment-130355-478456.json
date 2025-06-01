@@ -1,0 +1,8 @@
+{
+ "id": 478456,
+ "bug_id": 130355,
+ "attachment_id": 0,
+ "creation_time": "2009-01-11T00:40:05Z",
+ "creator": "gb@clozure.com",
+ "text": "i386_set_fsbase(void *addr) has the effect of causing memory references relative to %fs to reference the linear address \"addr\"; part of this effect is achieved by loading a segment descriptor (GSEL(GUFS_SEL, SEL_UPL), which is generally = 0x13) into %fs on return from the sysarch syscall.\n\nThis works as expected on (at least) i386 versions of 6.4-RELEASE, 7.0-RELEASE, and 7.1-RELEASE and on amd64 versions of 6.4-RELEASE and 7.0-RELEASE, but on 7.1-RELEASE/amd64 the i386_set_fsbase() call returns 0 but %fs is unchanged on return and subsequent attempts to reference memory relative to %fs seem to be equivalent to references relative to address 0.\n\nFix: \n\nUnknown.  To the extent that I understand the issue, it seems to have to do with code that tries to ensure that the correct value is loaded into %fs on return from the syscall and on subsequent context switches; the code that actually sets the fsbase msr seems to be unchanged between the released versions of 7.0 and 7.1.\nHow-To-Repeat: Compile (in a 32-bit FreeBSD/i386 environment) a small program that uses i386_set_fsbase() and checks to ensure that %fs has changed on successful return from the call to i386_set_fsbase().  Run the program on i386 versions of FreeBSD (6.4, 7.0, 7.1) and on amd64 versions of 6.4 and 7.0 and note that %fs is changed by the syscall.  Run the program on 7.1-RELEASE/amd64 and note that it fails.\n\n(I'm not really sure if I'm supposed to provide a simple test case on the web form that I'm using to report this; I can easily do so if requested.)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1107310,
+ "bug_id": 247102,
+ "attachment_id": 0,
+ "creation_time": "2020-06-09T16:56:15Z",
+ "creator": "cem@freebsd.org",
+ "text": "Something like this:\n\n--- a/lib/libc/gen/Symbol.map\n+++ b/lib/libc/gen/Symbol.map\n@@ -156,7 +156,6 @@ FBSD_1.0 {\n        gethostname;\n        getloadavg;\n        getlogin;\n-       getlogin_r;\n        setnetgrent;\n        getnetgrent;\n        endnetgrent;\n@@ -423,6 +422,7 @@ FBSD_1.5 {\n };\n\n FBSD_1.6 {\n+       getlogin_r;\n        memalign;\n        sigandset;\n        sigisemptyset;\n--- a/lib/libc/gen/getlogin.c\n+++ b/lib/libc/gen/getlogin.c\n@@ -58,7 +58,7 @@ getlogin(void)\n }\n\n int\n-getlogin_r(char *logname, int namelen)\n+getlogin_r(char *logname, size_t namelen)\n {\n        char tmpname[MAXLOGNAME];\n        int     len;\n@@ -75,3 +75,13 @@ getlogin_r(char *logname, int namelen)\n        strlcpy(logname, tmpname, len);\n        return (0);\n }\n+\n+/* FreeBSD 12 and earlier compat. */\n+int\n+__getlogin_r_fbsd12(char *logname, int namelen)\n+{\n+       if (namelen \u003c 1)\n+               return (ERANGE);\n+       return (getlogin_r(logname, namelen));\n+}\n+__sym_compat(getlogin_r, __getlogin_r_fbsd12, FBSD_1.0);"
+}

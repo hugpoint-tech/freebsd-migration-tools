@@ -1,0 +1,8 @@
+{
+ "id": 786977,
+ "bug_id": 193669,
+ "attachment_id": 0,
+ "creation_time": "2014-09-15T20:36:02Z",
+ "creator": "major12@gmail.com",
+ "text": "Kernel emits a lot of warnings for \nipfw pipe show \u003cnumber\u003e\n\nWarnings looks like \ncopy_obj   (WARN) type 2 flowset 133077 have 28 need 120\ncopy_obj   (WARN) type 4 inst 66541 have 92 need 96\n\nSeems that code responsible for this error is in ip_dummynet.c\n\tif (have \u003c o-\u003elen || o-\u003elen == 0 || o-\u003etype == 0) {\n\t\tD(\"(WARN) type %d %s %d have %d need %d\",\n\t\t\to-\u003etype, msg, i, have, o-\u003elen);\n\t\treturn 1;\n\t}\n\nWarnings are shown after some traffic passed via pipe.\nAnd command like 'ipfw pipe show' - emits no warnings.\nSo warning are observed only in case if particular pipe or pipes list is shown.\n\nHow to reproduce:\n-----------------\nInstall 9.3-RELEASE\n\nLoad ipfw.ko and dummynet.ko\n\nCreate some pipes\nipfw pipe 1 config bw 5bit/s\nipfw pipe 2 config bw 5bit/s\n\nCreate pipe with mask\nipfw pipe 3 config bw 5bit/s mask src-ip 0xffffffff\n\nConfigure ipfw\nipfw add 100 pipe 3 ip from any to me\n\nDisable pipe expiration\nsysctl net.inet.ip.dummynet.expire=0\n\nThen generate some traffic. For my case it was enough to have 260+ entries in pipe.\n\nNow command like\nipfw pipe show 3 \nor\nipfw pipe show 1,3 \nwill emit few kernel warnings in console and in /var/log/messages.\n\nAnd just 'ipfw pipe show' works ok."
+}

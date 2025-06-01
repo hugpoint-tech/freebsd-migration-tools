@@ -1,0 +1,8 @@
+{
+ "id": 1181368,
+ "bug_id": 258970,
+ "attachment_id": 0,
+ "creation_time": "2021-10-07T17:08:42Z",
+ "creator": "sobomax@FreeBSD.org",
+ "text": "(In reply to Andrey V. Elsukov from comment #1)\n\nAndrey, removing that check only won't be sufficient, the situation is more complicated than that. There are 3 distinct cases to consider:\n\n1. Normal packet (no fragmentation). In that case both of checks apply.\n\n2. First fragment. In that case the packet has UDP/TCP header but payload may be truncated. Only first check apply.\n\n3. Any of the subsequent fragments. In that case there is just raw data after IP header, so none of the checks apply here.\n\nThere are two places in the code where this logic applies, (In/Out), so I am working on unifying those checks into a subroutine.\n\nI also noticed that logic permits some random data be taken out of the data area and passed into functions as \"source\" and \"destination\" ports for the case (3) above. While the logic perhaps just ignores those garbage values it's still looks like a bit of oversight.\n\nStay tuned, I will post review request on phabricator once I finish and test everything.\n\nThanks!\n\n-Max"
+}

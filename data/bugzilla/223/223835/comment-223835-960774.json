@@ -1,0 +1,8 @@
+{
+ "id": 960774,
+ "bug_id": 223835,
+ "attachment_id": 0,
+ "creation_time": "2017-11-24T23:19:24Z",
+ "creator": "pautina@kharkiv.net",
+ "text": "Good night everybody.\nThe problem is solved.\nMany thanks to Marek Zarychta mailto:zarychtam@plan-b.pwste.edu.pl for the help.\nHe showed me a similar problem: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=219453.\nАnd indeed, the problem was that on the interface TX/RX checksums was disabled.\n\nNow everything works with the following settings:\n\nOn interface ix0 or ixl0 or other must be turn ON: rxcsum txcsum; (ifconfig ixl0 rxcsum txcsum)\n\nAt /etc/rc.conf:\nifconfig_ixl0=\"up -tso -lro -vlanhwtso\" (I disabled only tso and lro)\nipsec_enable=\"YES\"\nipsec_file=\"/etc/ipsec.conf\"\n\nAt /etc/ipsec.conf:\nflush;\nadd 185.1.62.241 185.1.62.69 tcp 0x1000 -A tcp-md5 \"some_password\";\nadd 185.1.62.69 185.1.62.241 tcp 0x1001 -A tcp-md5 \"some_password\";\n\nOn kernel you must add next:\noptions         IPSEC                   # IP (v4/v6) security\noptions         IPSEC_SUPPORT           # Allow kldload of ipsec and tcpmd5\n# The crypto framework is required by IPSEC\ndevice          crypto                  # Required by IPSEC\ndevice          cryptodev\noptions         TCP_SIGNATURE\n\nAnd need set password for neighbor on FRRouting, for example:\n neighbor 185.1.62.69 password some_password\n\nI think it's necessary to describe all this in documentation. \nThis would be good, as this problem arises for many. Or you can simply forget about it :)"
+}

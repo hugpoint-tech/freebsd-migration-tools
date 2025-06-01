@@ -1,0 +1,8 @@
+{
+ "id": 1066600,
+ "bug_id": 240509,
+ "attachment_id": 0,
+ "creation_time": "2019-09-11T14:31:44Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "basename is allowed to modify the passes buffer. This is documented on both FreeBSD and Linux. In the attached example the string is immutable, an attempt to modify it is undefined behavior and a crash (as observed) the likely outcome.\n\nThe FreeBSD implementation happens to always at least add a NUL-byte which triggers the crash here, while Linux one does not modify the string if there is nothing to do.\n\nThe program will trivially crash if the string is modified to get basename to operate, e.g. by adding trailing slashes: \"/home/tags///\".\n\nFinally, the Linux manpage explicitly shows usage with a copied buffer:\n\n       The following code snippet demonstrates the use of basename() and dirname():\n           char *dirc, *basec, *bname, *dname;\n           char *path = \"/etc/passwd\";\n\n           dirc = strdup(path);\n           basec = strdup(path);\n           dname = dirname(dirc);\n           bname = basename(basec);\n           printf(\"dirname=%s, basename=%s\\n\", dname, bname);\n\n\nThat said, there is no bug in the FreeBSD version and the code does not crash on Linux because of a combination of an artifact of the implementation and the passed argument. FreeBSD variant can be modified to match but there is real benefit to it."
+}

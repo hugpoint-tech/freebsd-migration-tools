@@ -1,0 +1,8 @@
+{
+ "id": 466924,
+ "bug_id": 128025,
+ "attachment_id": 0,
+ "creation_time": "2008-10-12T03:30:01Z",
+ "creator": "rtdean@cytherianage.net",
+ "text": "The WITH_LDAP option in security/heimdal does not work under FreeBSD 7.  \nIf you attempt to initalize a realm, add or change a key, or perform any \noperation that affects the krb5Key attribute in the LDAP tree, the\nprogram attempting the modification will segmentation fault.\n\nThe issue lies in heimdal-1.0.1/lib/hdb/hdb-ldap.c, in the \nLDAP_addmod_len() function.  When allocating memory to store the krb5Key\nattribute, it only allocates enough memory for a pointer to a berval\nstructure, not enough memory for the structure itself.  This results in \na memory alignment error, and each added krb5Key attribute ends up\nclobbering the previous entry's data pointers.\n\nThis issue is present everywhere from 1.0 through the 1.2.1 release, and\nwill be fixed upstream when 1.2.2 is released.  This change was applied\nupstream in change # 23726, and can be viewed via heimdal's fisheye at\nhttp://www.h5l.org/fisheye/changelog/heimdal?cs=23726\n\nThis issue does not affect installations that are not using the LDAP hdb\navailable in Heimdal.\n\nFix: Add the file patch-lib_hdb_hdb-ldap.c to the 'files' directory under\nthe security/heimdal port.  This is the same change from the changeset\nlisted above.\nHow-To-Repeat: Build the current port with WITH_LDAP enabled.\nAttempt to initialize a test realm, i.e., EXAMPLE.COM using the LDAP \nbackend.  (Instructions here: \nhttp://www.h5l.org/manual/heimdal-1-0-branch/info/heimdal.html#Using-LDAP-to-store-the-database\nor\nhttp://www.openinput.com/auth-howto/ ).  When you get to the step where\nyou inialize your heimdal database, kadmin will segfault."
+}

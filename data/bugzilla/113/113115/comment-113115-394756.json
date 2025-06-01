@@ -1,0 +1,8 @@
+{
+ "id": 394756,
+ "bug_id": 113115,
+ "attachment_id": 0,
+ "creation_time": "2007-06-11T20:10:05Z",
+ "creator": "bcran@FreeBSD.org",
+ "text": "The ports Makefile didn't have a line to install the RC script. In \naddition, a new file files/ataidle.in is required.\nThe following patch and ataidle.in script fixes the issue:\n\n--- Makefile.old    2007-06-11 19:36:15.000000000 +0100\n+++ Makefile 2007-06-11 20:02:19.000000000 +0100\n@@ -7,6 +7,7 @@\n\n PORTNAME=      ataidle\n PORTVERSION=   1.0\n+PORTREVISION=   1\n CATEGORIES=    sysutils\n MASTER_SITES=  http://www.cran.org.uk/bruce/software/\n\n@@ -14,6 +15,7 @@\n COMMENT=       Utility to spin down ATA drives\n\n MAN8=          ataidle.8\n+USE_RC_SUBR=   ataidle\n PORTDOCS=      COPYING ChangeLog README\n PLIST_FILES=   sbin/ataidle\n\n\n\nNew file: files/ataidle.in\n\n#!/bin/sh\n# Author: \u003cluc@2113.ch\u003e Sep 30, 2006\n\n# PROVIDE: ataidle\n# BEFORE: LOGIN\n\n#\n# Add the following lines to /etc/rc.conf to enable ataidle:\n#\n#ataidle_enable=\"YES\"     # Spindown disk after 120 mins\n#ataidle_device=\"ad1 ad2 ad3\"\n#ataidle_ad1=\"-I 60 -S 120 -A 127 -P 254 0 1\"\n#ataidle_ad2=\"-I 60 -S 120 -A 127 -P 254 1 0\"\n#ataidle_ad3=\"-I 60 -S 120 -A 127 -P 254 1 1\"\n#\n\n. /etc/rc.subr\n\nname=\"ataidle\"\nrcvar=${name}_enable\ncommand=\"/usr/local/sbin/${name}\"\n\nload_rc_config $name\n\nstart_cmd=\"start_cmd\"\nstart_cmd()\n{\n    if [ -n \"${ataidle_device}\" ]; then\n            for i in ${ataidle_device}; do\n                    eval ataidle_args=\\$ataidle_${i}\n                    ${command} ${ataidle_args}\n            done\n    fi\n\n}\n\nrun_rc_command \"$1\"\n\n--\nBruce Cran"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 873589,
+ "bug_id": 208529,
+ "attachment_id": 0,
+ "creation_time": "2016-04-07T13:25:39Z",
+ "creator": "cyclaero@gmail.com",
+ "text": "I found the culprit. It lies in the local_unbound_poststart() sub-routine in file /etc/rc.d/local_unbound. Said sub-routine has been newly introduced with RELEASE-10.3.\n\nFor checking the online status of Unbound the remote control tool unbound-control is utilized, which is disabled by default, and not properly setup on most machines.\n\nIn my file /etc/rc.d/local_unbound I commented out he body of local_unbound_poststart():\nCode:\n#\n# After starting, wait for Unbound to report that it is ready to avoid\n# race conditions with services which require functioning DNS.\n#\nlocal_unbound_poststart()\n{\n#    local retry=5\n#\n#    echo -n \"Waiting for nameserver to start...\"\n#    until \"${command}-control\" status | grep -q \"is running\" ; do\n#        if [ $((retry -= 1)) -eq 0 ] ; then\n#            echo \" giving up\"\n#            return 1\n#        fi\n#        echo -n \".\"\n#        sleep 1\n#    done\n#    echo \" good\"\n}\n\nThis solved the problem for me. I am using Unbound since 2 years, and I never saw any race conditions, anyway. If we really need to check whether Unbound is running, why not simply run `drill localhost @127.0.0.1`, or something similar along this line. The additional benefit of this would be, that the timing out feature is built-in to the drill command."
+}

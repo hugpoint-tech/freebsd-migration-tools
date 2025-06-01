@@ -1,0 +1,8 @@
+{
+ "id": 34079,
+ "bug_id": 11247,
+ "attachment_id": 0,
+ "creation_time": "1999-04-21T00:40:01Z",
+ "creator": "fenner@research.att.com",
+ "text": "\nDuring a valid FTP protocol exchange, during which an error occurs\nafter the file transfer starts, such as:\n\n\tRETR foo ----\u003e\n\t\u003c---- 150 Opening BINARY mode data connection for fenner.tar.gz (264367025 bytes).\n\t\u003c---- 500 Failed to contact content security server\n\nfetch(1) creates a zero-length file and exits with success.\nThis is because\n1) libftpio doesn't appear to provide a way to check the second return\ncode (although it might be sufficiently confused to think that it was\nthe return code for its \"QUIT\" request)\n2) fetch doesn't check the return value of fclose(ftp), even though\nlibftpio goes to some trouble to provide one.\n\n(Although RFC 959 doesn't explicitly list 550 as a valid response\nto a RETR command after the 150 preliminary response, the state\nmachine on page 55 shows failing on any 4xx or 5xx result after\nthe initial 1xx result)\n\nFix: \n\nUnknown.  I know that libftpio is supposedly dead and libfetch is\nsupposedly its replacement.  However, libfetch doesn't appear to handle\nthis problem either.  (In fact, libfetch appears to never attempt to\nclose the FTP connection cleanly, tsk tsk...)\nHow-To-Repeat: \nftp a file through a Firewall/1 with aftpd and content security\nenabled while the content security server is unavailable.\n\n(Why do I always end up at places with weird firewalls?...)"
+}

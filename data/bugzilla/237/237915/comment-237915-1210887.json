@@ -1,0 +1,8 @@
+{
+ "id": 1210887,
+ "bug_id": 237915,
+ "attachment_id": 233877,
+ "creation_time": "2022-05-12T17:41:51Z",
+ "creator": "brian90013@gmail.com",
+ "text": "Created attachment 233877\nRevised v2 patch to fix counters\n\nMy apologies but the first patch should not be used. It placed the vsi_reset_stats() call in initialize_vsi() which gets called every time the interface comes up. Someone watching the interface with 'netstat -I xxx -w 1' will see a jump near 2^64 as the counters are reset.\n\nTherefore I moved the vsi_reset_stats() call to if_attach_post() where it is right next to the pf_reset_stats() call. This function is not called when an interface flaps down and then back up.\n\nI also removed the call to update_stats_counters() in if_attach_post(). Now the only call to update_stats_counters() is in if_timer(). This matches the behavior of the ice driver and produces the expected results in my testing. Elapsed metrics are all 0 on boot and periodic metrics don't jump when an interface comes up."
+}

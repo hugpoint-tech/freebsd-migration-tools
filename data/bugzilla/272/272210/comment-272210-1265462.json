@@ -1,0 +1,8 @@
+{
+ "id": 1265462,
+ "bug_id": 272210,
+ "attachment_id": 243264,
+ "creation_time": "2023-07-05T12:15:30Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "Created attachment 243264\npatch4\n\nFix fallout.\n\nThe fix for p5-Crypt-GCrypt requires a change to lang/perl5* that also requires an exp-run, so everything that depends on lang/perl5* should also be included in the next run.\n\nlang/perl5*: Link with -pthread instead of -lpthread\n\nDuring configure of security/p5-Crypt-GCrypt a test program is\ncompiled and run to test libgcrypt.  This program segfaults when perl5\nis built with the THREADS option.  Libgcrypt links with libgpg-error\nwhich has an init function which calls into libintl (gettext) which\ncalls pthread functions before libthr is initialised.\n\nThe compiler command line is provided by perl and it includes both\n-pthread and -lpthread.  Patch perl to remove -lpthread.  With -pthread\nthe compiler will pass -lpthread to the linker such that it is\ninitialised early.\n\nDiscovered by the exp-run for gettext 0.22.\n\nWhile here also remove -lc unconditionally and remove the code that\nreplaced it with -lc_r for old version of FreeBSD because the version\ntest is incorrect (missing a dot).  The -pthread flag already tells\nthe compiler to use -lc_r on those old versions."
+}

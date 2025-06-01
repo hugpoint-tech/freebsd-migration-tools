@@ -1,0 +1,8 @@
+{
+ "id": 857418,
+ "bug_id": 205938,
+ "attachment_id": 165127,
+ "creation_time": "2016-01-05T23:53:26Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "Created attachment 165127\nFix a kernel panic when reading mmaped files from EXT4\n\nCalling mmap() on any sizeable file on an EXT4 filesystem, and then attempting to read that memory (can be easily tested using the \"cmp file file\" tool), causes a reproducible kernel panic:\n\nuserret: returning with the following locks held:\nexclusive lockmgr bufwait (bufwait) r = 0 (0xfffffe001d90c220) locked @ /usr/src/sys/kern/vfs_bio.c:1454\npanic: witness_warn\ncpuid = 0\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace-self_wrapper+0x2b/frame 0xfffffe002b7e67f0\nvpanic() at vpanic+0x182/frame 0xfffffe002b7e6870\nkassert_panic() at kassert_panic+0x126/frame 0xfffffe002b7e68e0\nwitness_warn() at witness_warn+0x3c6/frame 0xfffffe002b7e69b0\nuserret() at userret+0x98/frame 0xfffffe002b7e69e0\ntrap() at trap+0x3f4/frame 0xfffffe002b7e6bf0\ncalltrap() at calltrap+0x8/frame 0xfffffe002b7e6bf0\n--- trap 0xc, rip = 0x4019c0, rsp = 0x7fffffffe940, rbp = 0x7ffffffffeea30 ---\nKDB: enter: panic\n[ thread pid 909 tid 100082 ]\nStopped at      kdb_enter+0x3b: movq    $0,kdb_why\n\n\nThe problem comes from ext4_bmapext() in sys/fs/ext2fs/ext2_bmap.c never calling brelse(), meaning the \"struct buf\" returned in path.ep_bp from ext4_ext_find_extent() is never released/unlocked, something userret() catches later and panics from.\n\nThe attached patch always calls brelse(path.ep_bp), fixing reading EXT4 files using mmap().\n\nThis affects all versions of FreeBSD."
+}

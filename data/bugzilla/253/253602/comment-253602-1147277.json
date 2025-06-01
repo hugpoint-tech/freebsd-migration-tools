@@ -1,0 +1,8 @@
+{
+ "id": 1147277,
+ "bug_id": 253602,
+ "attachment_id": 222539,
+ "creation_time": "2021-02-17T22:08:12Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Created attachment 222539\nPatch to the port\n\nPaul Saab found that devel/glib20 was failing to build in a poudriere jail on one of his machines.  We tracked this down to the alloca() in our local patch to add fdwalk2() failing and overflowing the stack.  The reason is that the fdwalk2() implementation uses the kern.file sysctl which fetches a _global_ table of all open files across all processes, meaning that the amount of required memory scales with the number of processes in the system.  fdwalk2() should instead be using kinfo_getfile() from libutil which fetches only the open files for the current process (which also uses malloc() to avoid stack limit issues).  While here, I also noticed that fdwalk2() failed to propagate the callback's return value to the caller and instead always returns 0 since *ret was never assigned a value.\n\nThe attached patch is untested, but should fix both of these issues.  I wasn't quite sure how to convince glib20's port to add libutil as an explicit dependency (e.g. in LDFLAGS), so I'm hopeful a port maintainer can add that missing bit and finish this the rest of the way."
+}

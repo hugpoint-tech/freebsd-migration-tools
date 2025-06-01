@@ -1,0 +1,8 @@
+{
+ "id": 1240185,
+ "bug_id": 268495,
+ "attachment_id": 0,
+ "creation_time": "2022-12-20T22:36:17Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "During an exp-run for llvm 15 (see bug 265425), it turned out that audio/openal-soft failed to link with lld 15, on i386:\n\n      : \u0026\u0026 /usr/bin/c++ -O2 -pipe -fstack-protector-strong -fno-strict-aliasing -O2 -pipe -fstack-protector-strong -fno-strict-aliasing   -DNDEBUG -Wl,--as-needed -fstack-protector-strong -Wl,-z,notext CMakeFiles/makemhr.dir/utils/makemhr/loaddef.cpp.o CMakeFiles/makemhr.dir/utils/makemhr/loadsofa.cpp.o CMakeFiles/makemhr.dir/utils/makemhr/makemhr.cpp.o -o makemhr  -Wl,-rpath,/usr/local/lib:  -pthread  libsofa-support.a  -pthread  libcommon.a  /usr/local/lib/libmysofa.so  /usr/lib/libz.so  -lm \u0026\u0026 :\n      ld: error: makemhr:(.eh_frame+0x14cf): internal linker error: wrote incorrect addend value 0x3400 instead of 0x0 for dynamic relocation R_386_32 at offset 0x408417 against symbol __gxx_personality_v0\n\nThis is because lld 15 with assertions enabled (which is default on -CURRENT) checks dynamic relocations more thoroughly, and in combination with -z notext (which was added earlier for bug 242307) results in the above diagnostic.\n\nWork around it by disabling the dynamic relations checks on i386."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1293115,
+ "bug_id": 276464,
+ "attachment_id": 0,
+ "creation_time": "2024-01-19T18:30:30Z",
+ "creator": "jfc@mit.edu",
+ "text": "Running fsck_msdosfs -n on a bad filesystem produces the following output:\n\n** /dev/zvol/fast/fat32s1\n** Phase 1 - Read FAT and checking connectivity\nFAT starts with odd byte sequence (f8ffff0ffffffff7)\nCorrect? no\n** Phase 2 - Checking Directories\n/archive/2013-02-02 Drum1 doesn't start a new cluster chain\nTruncate? no\nAssertion failed: (fat_is_cl_head(fat, head)), function checkchain, file /usr/home/jfc/freebsd/src/sbin/fsck_msdosfs/fat.c, line 1046.\n\nThe assertion may be invalid with -n.\n\nAlternatively, this code from dir.c line 985\n\n\t\t\t} else {\n\t\t\t\tmod |= k = checksize(fat, p, \u0026dirent);\n\t\t\t\tif (k \u0026 FSDIRMOD)\n\t\t\t\t\tmod |= THISMOD;\n\t\t\t}\n\nshould not execute if (mod \u0026 FSERROR).\n\nThis is the same bad filesystem from bug 276408.\n\n# file -s /dev/zvol/fast/fat32\n/dev/zvol/fast/fat32: DOS/MBR boot sector MS-MBR 9M english at offset 0x10+0xFF \"Invalid partition table\" at offset 0x127 \"Error loading operating system\" at offset 0x146 \"Missing operating system\", disk signature 0xaab3b4a1, created with driveID 0x81 at 21:59:0; partition 1 : ID=0xc, active, start-CHS (0x0,1,1), end-CHS (0x280,254,63), startsector 63, 586067202 sectors\n# file -s /dev/zvol/fast/fat32s1 \n/dev/zvol/fast/fat32s1: DOS/MBR boot sector, code offset 0x5a+2, OEM-ID \"MSWIN4.1\", sectors/cluster 64, Media descriptor 0xf8, sectors/track 63, heads 255, hidden sectors 63, sectors 586067202 (volumes \u003e 32 MB), FAT (32 bit), sectors/FAT 71533, serial number 0x1dd91023, label: \"SEA_DISK   \""
+}

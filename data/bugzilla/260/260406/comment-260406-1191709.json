@@ -1,0 +1,8 @@
+{
+ "id": 1191709,
+ "bug_id": 260406,
+ "attachment_id": 0,
+ "creation_time": "2021-12-24T15:25:24Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Diego Linke from comment #45)\nOkay, that tells us at least that I used the entry probe in a few places where I meant to use the return probe.\n\nBut also that it looks like in cache_alloc_retry() we failed to find a bucket with free space, and then presumably also failed zone_alloc_item(). That still looks for all the world like you're out of memory.\n\nHere's an updated dtrace script:\n\n#!/usr/sbin/dtrace -s\n\nBEGIN\n{\n        self-\u003ein_call = 0;\n}\n\nfbt:pf:pfr_create_kentry:entry\n{\n        self-\u003ein_call = 1;\n        printf(\"In\");\n}\n\nfbt:pf:pfr_create_kentry:return\n{\n        self-\u003ein_call = 0;\n        printf(\"=\u003e %x (@%x)\\n\", arg1, arg0);\n}\nfbt:pf:pfr_create_kentry:return\n/ arg1 == 0 /\n{\n        stack();\n}\n\nfbt:kernel:uma_zalloc_arg:return\n/ self-\u003ein_call == 1 /\n{\n        printf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:cache_alloc_retry:return\n/ self-\u003ein_call == 1 /\n{\n        printf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:cache_alloc:return\n/ self-\u003ein_call == 1 /\n{\n        printf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:zone_alloc_item:return\n/ self-\u003ein_call == 1 /\n{\n        printf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:uma_small_alloc:return\n/ self-\u003ein_call == 1 /\n{\n        printf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:zone_alloc_limit_hard:return\n/ self-\u003ein_call == 1 /\n{\n        printf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:zone_free_limit:entry\n/ self-\u003ein_call == 1 /\n{\n    printf(\"In\");\n}"
+}

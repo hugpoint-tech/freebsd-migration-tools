@@ -1,0 +1,8 @@
+{
+ "id": 534073,
+ "bug_id": 141753,
+ "attachment_id": 0,
+ "creation_time": "2010-03-03T15:43:36Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: jh\nDate: Wed Mar  3 15:43:26 2010\nNew Revision: 204636\nURL: http://svn.freebsd.org/changeset/base/204636\n\nLog:\n  In reallocf(3), free the memory only when size != 0. Otherwise, when the\n  System V compatibility option (malloc \"V\" flag) is in effect a zero sized\n  reallocf() could cause a double free.\n  \n  PR:\t\tbin/141753\n  Submitted by:\tDan Lukes\n\nModified:\n  head/lib/libc/stdlib/reallocf.c\n\nModified: head/lib/libc/stdlib/reallocf.c\n==============================================================================\n--- head/lib/libc/stdlib/reallocf.c\tWed Mar  3 15:05:58 2010\t(r204635)\n+++ head/lib/libc/stdlib/reallocf.c\tWed Mar  3 15:43:26 2010\t(r204636)\n@@ -35,7 +35,14 @@ reallocf(void *ptr, size_t size)\n \tvoid *nptr;\n \n \tnptr = realloc(ptr, size);\n-\tif (!nptr \u0026\u0026 ptr)\n+\n+\t/*\n+\t * When the System V compatibility option (malloc \"V\" flag) is\n+\t * in effect, realloc(ptr, 0) frees the memory and returns NULL.\n+\t * So, to avoid double free, call free() only when size != 0.\n+\t * realloc(ptr, 0) can't fail when ptr != NULL.\n+\t */\n+\tif (!nptr \u0026\u0026 ptr \u0026\u0026 size != 0)\n \t\tfree(ptr);\n \treturn (nptr);\n }\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

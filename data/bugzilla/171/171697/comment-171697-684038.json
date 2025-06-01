@@ -1,0 +1,8 @@
+{
+ "id": 684038,
+ "bug_id": 171697,
+ "attachment_id": 0,
+ "creation_time": "2013-06-08T21:16:29Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "Hi, Eugene,\n\nit seems I found how this KASSERT can be triggered.\nThe ip6_output function has this part of code:\n\nroutefound:\nif (rt \u0026\u0026 !IN6_IS_ADDR_MULTICAST(\u0026ip6-\u003eip6_dst)) {\n        if (opt \u0026\u0026 opt-\u003eip6po_nextroute.ro_rt) {\n                /*\n                 * The nexthop is explicitly specified by the\n                 * application.  We assume the next hop is an IPv6\n                 * address.\n                 */\n                dst = (struct sockaddr_in6 *)opt-\u003eip6po_nexthop;\n        }\n        else if ((rt-\u003ert_flags \u0026 RTF_GATEWAY))\n                dst = (struct sockaddr_in6 *)rt-\u003ert_gateway;\n}\n\nThere a dst pointer can be changed to the rt-\u003ert_gateway, that in your\ncase has non IPv6 address. Then, the nd6_output_lle() does lla_lookup()\nfor this address and it triggers KASSERT when INVARIANTS is enabled.\nNot sure that this is a correct fix, but I think, it should work like\nwhen INVARIANTS is disabled. You can try attached patch.\n\n-- \nWBR, Andrey V. Elsukov"
+}

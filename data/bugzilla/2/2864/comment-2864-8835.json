@@ -1,0 +1,8 @@
+{
+ "id": 8835,
+ "bug_id": 2864,
+ "attachment_id": 0,
+ "creation_time": "1997-03-04T00:00:01Z",
+ "creator": "mks@msc.edu",
+ "text": "\n\tThere are two problems when using modload -p \u003cpost-install\u003e:\n\n\t1. If the -u option is also specified, the loaded output file is\n\t   never deleted;\n\n\t2. The /dev/lkm device isn't closed before calling the post-install\n\t   program, thus modload still holds the exclusive lock on /dev/lkm.\n\t   If the post-install program then tries to use modstat (to figure\n           out name of loaded module) it will hang on its open(/dev/lkm) and\n\t   thus the modload itself will hang waiting for the install program\n\t   to complete.\n\nHow-To-Repeat: \n\to create the following shell script (call it mod_loaded)\n\t\t#!/bin/sh\n\t\t#\n\t\tPATH=/bin:/sbin:/usr/bin:/usr/sbin; export PATH\n\t\tMODID=$1\n\t\tMOD=`modstat -i ${MODID} | awk '\n        \t\t$2 == modid {\n                \t\tprint $NF;\n                \t\texit;\n        \t\t}' modid=${MODID}`\n\t\techo \"module loaded was ${MOD}\"\n\t\texit 0\n\n\to pick your favorite loadable module (mymod) and,\n\n\t\tmodload -u -e \u003cwhatever\u003e -o /tmp/mymod -p mod_loaded mymod.o\n\n\to this should hang the modload and its invocation of mod_loaded and\n\t  will also not delete /tmp/mymod."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1035633,
+ "bug_id": 235031,
+ "attachment_id": 0,
+ "creation_time": "2019-02-02T23:42:25Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "A little off topic, but rsize,wsize will be set to a power of 2 at or\nbelow the argument. As such, rsize=10240,wsize=10240 will result in\na setting of 8K (or less if the server forces it) for both of them.\nYou can use \"nfsstat -m\" on the client to see what is actually being used.\n\nI can't help much, but I would suggest trying increasing powers of 2 for\nrsize,wsize until performance tanks.\n\nA couple of reasons smaller rsize,wsize might perform better.\n- TSO is broken. This can be tested by using the sysctl to disable TSO.\n  (I suggest the generic sysctl and not a driver specific ifconfig, in\n   case the driver config flag is broken.)\n- Small send or receive rings that can't handle the burst of packets/mbufs\n  that the larger I/O size causes.\n  A write request/receive reply will typically be a chain of size/2K + 2 mbufs\n  for the sender. (Sometimes +3 depending on how the driver handles the MAC\n  header.)\n  The receiver will typically see this as a burst of roughly size/1500 + 1 packets\n  making up one TCP segment.\nIf jumbo packets are in use, all bets are off for the receive side, since\nat least the \u003e4K ones can fragment the mbuf cluster pool.\n- Interrupt throttling. Since most NFS RPCs are small messages requiring\n  a small reply message in the opposite direction, anything that increases\n  latency (such as delaying interrupts assuming more packets of a stream\n  will arrive soon) can hit NFS performance."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 32936,
+ "bug_id": 10872,
+ "attachment_id": 0,
+ "creation_time": "1999-05-11T17:59:56Z",
+ "creator": "beyssac@enst.fr",
+ "text": "I was looking into PR kern/10872, hoping to find an easily fixable\noccurence of NULL mbuf pointer. But it doesn't seem to be.\n\nIt's labelled \"Panic in sorecieve() due to NULL mbuf pointer\", but\nfrom the debug data filed with the PR it seems the actual problem\nis with so_rcv.sb_cc being 0, which triggers a KASSERT in uipc_socket.c:\n\n        if (m == 0 || (((flags \u0026 MSG_DONTWAIT) == 0 \u0026\u0026\n            so-\u003eso_rcv.sb_cc \u003c uio-\u003euio_resid) \u0026\u0026\n            (so-\u003eso_rcv.sb_cc \u003c so-\u003eso_rcv.sb_lowat ||\n            ((flags \u0026 MSG_WAITALL) \u0026\u0026 uio-\u003euio_resid \u003c= so-\u003eso_rcv.sb_hiwat)) \u0026\u0026\n            m-\u003em_nextpkt == 0 \u0026\u0026 (pr-\u003epr_flags \u0026 PR_ATOMIC) == 0)) {\n                KASSERT(m != 0 || !so-\u003eso_rcv.sb_cc, (\"receive 1\"));\n\n(more data can be found in the PR)\n\nI can't seem to be able to reproduce the problem on -current with\nthe script provided by Bob, and I don't have a -stable box to try\nit on either.\n\nPlus, I don't have (yet) much of a clue regarding the semantics of\nsb_cc. I continue investigating this stuff, but if anyone has more\nclue than I have, he's welcome to send me some directions to look\ninto :-)\n-- \nPierre Beyssac\t\tpb@enst.fr"
+}

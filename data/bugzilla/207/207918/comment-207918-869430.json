@@ -1,0 +1,8 @@
+{
+ "id": 869430,
+ "bug_id": 207918,
+ "attachment_id": 0,
+ "creation_time": "2016-03-12T09:02:44Z",
+ "creator": "mmokhi@freebsd.org",
+ "text": "I've checked this.\nI figured out it happens for all ::max() ones, seems because of  \"this-\u003efill()\".\n\nThis could be changed easily, though i think we should see which is the better (standard) behavior (use fill in all cases or exclude showbase case) ?\n\nthis is the code i talking based on(contrib/libc++/include/ostream):\n\n\u003ccode\u003e\n\ntemplate \u003cclass _CharT, class _Traits\u003e\nbasic_ostream\u003c_CharT, _Traits\u003e\u0026\nbasic_ostream\u003c_CharT, _Traits\u003e::operator\u003c\u003c(unsigned long long __n)\n{\n#ifndef _LIBCPP_NO_EXCEPTIONS\n    try\n    {\n#endif  // _LIBCPP_NO_EXCEPTIONS\n        sentry __s(*this);\n        if (__s)\n        {\n            typedef num_put\u003cchar_type, ostreambuf_iterator\u003cchar_type, traits_type\u003e \u003e _Fp;\n            const _Fp\u0026 __f = use_facet\u003c_Fp\u003e(this-\u003egetloc());\n            if (__f.put(*this, *this, this-\u003efill(), __n).failed())\n                this-\u003esetstate(ios_base::badbit | ios_base::failbit);\n        }\n#ifndef _LIBCPP_NO_EXCEPTIONS\n    }\n    catch (...)\n    {\n        this-\u003e__set_badbit_and_consider_rethrow();\n    }\n#endif  // _LIBCPP_NO_EXCEPTIONS\n    return *this;\n}\n\n\u003c/code\u003e\n\n\nregards, Mokhi."
+}

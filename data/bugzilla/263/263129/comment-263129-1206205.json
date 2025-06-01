@@ -1,0 +1,8 @@
+{
+ "id": 1206205,
+ "bug_id": 263129,
+ "attachment_id": 0,
+ "creation_time": "2022-04-08T02:46:59Z",
+ "creator": "t_uemura@macome.co.jp",
+ "text": "On a stock 13.1-RC1 amd64 host, tar -x always fails in a unionfs mount (readonly NFS below the local /usr/ports directory, in my case).\n\n# cat /etc/fstab\n...\n192.168.1.14:/usr /mnt nfs ro,noinet6,bg,intr,nfsv3,tcp 0 0\n/mnt/ports /usr/ports unionfs rw,noauto,noatime,below 0 0\n\n# mount\n...\n192.168.1.14:/usr on /mnt (nfs, read-only)\n\u003cbelow\u003e:/mnt/ports on /usr/ports (unionfs, noatime)\n\nmake extract in anywhere always fails with a bunch of \"Could not stat\" and \"Not a directory\" error messages, like\n\n# cd /usr/ports/ports-mgmt/pkg\n# make -DBATCH extract\n===\u003e  License BSD2CLAUSE accepted by the user\n===\u003e Fetching all distfiles required by pkg-1.17.5_1 for building\n===\u003e  Extracting for pkg-1.17.5_1\n===\u003e  License BSD2CLAUSE accepted by the user\n===\u003e Fetching all distfiles required by pkg-1.17.5_1 for building\n=\u003e SHA256 Checksum OK for freebsd-pkg-1.17.5_GH0.tar.gz.\npkg-1.17.5/.cirrus.yml: Could not stat pkg-1.17.5/.cirrus.yml: Not a directory\npkg-1.17.5/.gitignore: Could not stat pkg-1.17.5/.gitignore: Not a directory\npkg-1.17.5/.gitlab-ci.yml: Could not stat pkg-1.17.5/.gitlab-ci.yml: Not a directory\n...\n\nAt the same time, simple mkdir and/or touch work as expected.\n\n# mkdir -p foo/bar\n# touch foo/bar/baz\n# ls -la foo/bar/baz\n-rw-r--r--  1 root  wheel  0 Apr  8 11:37 foo/bar/baz\n\nThe above make extract (or any other targets) works without any hitch on 12.3-RELEASE so I think it's a regression."
+}

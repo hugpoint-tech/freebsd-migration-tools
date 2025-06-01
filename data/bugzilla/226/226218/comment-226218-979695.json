@@ -1,0 +1,8 @@
+{
+ "id": 979695,
+ "bug_id": 226218,
+ "attachment_id": 191017,
+ "creation_time": "2018-02-26T13:49:03Z",
+ "creator": "freebsd@tim.thechases.com",
+ "text": "Created attachment 191017\nRemove the broken check for \"addr != addr_last\" in /usr/src/bin/ed/main.c\n\nTo reproduce:\n\n $ ed\n r file.txt\n 314\n q\n $\n\nExpected behavior:\n\n $ ed\n r file.txt\n 314\n q\n ?\n q\n $\n\nwhich keeps it in line with the POSIX requirement\n\nhttp://pubs.opengroup.org/onlinepubs/009604599/utilities/ed.html\n\n\"If the buffer has changed since the last time the entire buffer was written, the user shall be warned\"\n\nReading a file changes the buffer. Compare with the correct\n\n $ ed\n a\n x\n .\n q\n ?\n q\n $\n\nwhere the buffer is changed and the \"modified\" flag is properly set.\n\nThe solution appears to be to base \"modified\" purely on whether any lines were read in (addr \u003e 0), regardless of whether \"addr != addr_last\" as performed by the attached patch."
+}

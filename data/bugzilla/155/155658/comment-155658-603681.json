@@ -1,0 +1,8 @@
+{
+ "id": 603681,
+ "bug_id": 155658,
+ "attachment_id": 0,
+ "creation_time": "2012-10-04T22:05:41Z",
+ "creator": "longwitz@incore.de",
+ "text": "\u003e \n\u003e Index: amr.c\n\u003e ===================================================================\n\u003e --- amr.c\t(revision 240692)\n\u003e +++ amr.c\t(working copy)\n\u003e @@ -533,13 +533,19 @@ shutdown_out:\n\u003e   * The amr(4) firmware relies on this feature.  In fact, it assumes\n\u003e   * the buffer is always a power of 2 up to a max of 64k.  There is\n\u003e   * also at least one case where it assumes a buffer less than 16k is\n\u003e - * greater than 16k.  Force a minimum buffer size of 32k and round\n\u003e - * sizes between 32k and 64k up to 64k as a workaround.\n\u003e + * greater than 16k.  However, forcing all buffers to a size of 32k\n\u003e + * causes stalls in the firmware.  Force each command smaller than\n\u003e + * 64k up to the next power of two except that commands between 8k\n\u003e + * and 16k are rounded up to 32k instead of 16k.\n\u003e   */\n\u003e  static unsigned long\n\u003e  amr_ioctl_buffer_length(unsigned long len)\n\u003e  {\n\u003e  \n\u003e +    if (len \u003c= 4 * 1024)\n\u003e +\treturn (4 * 1024);\n\u003e +    if (len \u003c= 8 * 1024)\n\u003e +\treturn (8 * 1024);\n\u003e      if (len \u003c= 32 * 1024)\n\u003e  \treturn (32 * 1024);\n\u003e      if (len \u003c= 64 * 1024)\n\u003e \n\nI have tested this patch for 10 days on 10 different server, no error\noccurred. Patch works !\n\nAndreas Longwitz"
+}

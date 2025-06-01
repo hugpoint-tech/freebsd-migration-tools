@@ -1,0 +1,8 @@
+{
+ "id": 613968,
+ "bug_id": 157670,
+ "attachment_id": 0,
+ "creation_time": "2011-06-06T20:40:08Z",
+ "creator": "mk@neon1.net",
+ "text": "For IPv4, one can use the net.inet.ipsec.filtertunnel sysctl to control whether decapsulated IPsec packets are sent through pfil. This defaults to 0 (unless the deprecated IPSEC_FILTERTUNNEL option is set in the kernel config) and works as intended.\n\nFor IPv6, there is a similar sysctl net.ip6.ipsec6.filtertunnel, but it doesn't seem to do anything (i.e. packets get passed to the filter even if it's set to 0).\n\nThis is especially annoying when using if_enc, as one will then see decapsulated IPv6 packets twice (once on enc0, and again on the physical interface that the corresponding IPsec packet came in on), when usually one only wants to see them on enc0.\n\nCloser investigation of the kernel source code shows that there is a function ip6_ipsec_filtertunnel() to check whether pfil should be bypassed for a packet, but unlike its v4 counterpart, it doesn't seem to be called anywhere in the ip6_input path.\n\nFix: A simple patch that fixes the issue for me is attached.\n\nPatch attached with submission follows:\nHow-To-Repeat: Set up an IPv6 IPsec connection between two FreeBSD 8.2 hosts. Load your favourite pfil-based firewall on one host and add rules to match decapsulated packets on enc0 and the physical interface. Send IPsec traffic from the other host. Observe that the firewall sees each packet twice even though net.ip6.ipsec6.filtertunnel=0."
+}

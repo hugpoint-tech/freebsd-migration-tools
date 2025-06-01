@@ -1,0 +1,8 @@
+{
+ "id": 945691,
+ "bug_id": 221130,
+ "attachment_id": 0,
+ "creation_time": "2017-08-02T21:46:04Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Phil Shafer from comment #8)\nDerp. But I still get different behaviour from you. On freefall, I see:\n\nmarkj@freefall\u003e uname -a\nFreeBSD freefall.freebsd.org 12.0-CURRENT FreeBSD 12.0-CURRENT #0 r320066: Wed Jul 12 21:17:55 UTC 2017     peter@build-12.freebsd.org:/usr/obj/usr/src/sys/CLUSTER12  amd64\nmarkj@freefall\u003e ./a.out\n        0xdeadc0de\nmarkj@freefall\u003e ./a.out --libxo json,pretty\n{\n  \"foo\": {\n    \"address\": \"0x12\"\n  }\n}\n\nand, I found that making \"address\" a string can cause a segfault. That is, if I replace the xo_emit() call with:\n\n    xo_emit(\"{[:/%d}{:address/%s}{]:}\\n\", 18, \"foo\");\n\nI get:\n\nmarkj@freefall\u003e clang test.c -lxo\nmarkj@freefall\u003e ./a.out \n               foo\nmarkj@freefall\u003e ./a.out --libxo json,pretty\nSegmentation fault (core dumped)\nmarkj@freefall\u003e"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 442799,
+ "bug_id": 123140,
+ "attachment_id": 0,
+ "creation_time": "2008-05-27T08:16:26Z",
+ "creator": "bobf@mrp3.com",
+ "text": "inserted test code into lapic_handle_timer to indicate the proper \nexecution of timer interrupt callbacks by printing a message once every \n4096 times that the function is called.  The test code was inserted as \nfollows.\n\nlapic_handle_timer(struct trapframe *frame)\n{\n// BBB begin\n         static int iBBBIter = 0;\n// BBB end\n         struct lapic *la;\n\n         /* Send EOI first thing. */\n         lapic_eoi();\n\n// BBB begin\n         if(!((iBBBIter++) \u0026 0xfff))\n         {\n             printf(\"TEMPORARY - cpu %d timer tick %xH\\n\",\n                    PCPU_GET(cpuid), iBBBIter - 1);\n         }\n// BBB end\n\n\nobservations:\n\na) just prior to the point of failure (when disk access is being \nattempted), only CPU #0 is calling the ISR, and the ISR appears to be \ninvoked approximately 2000 times per second.  Divider value is assigned \nto a value of '66666' or '66667' (same value for all 4 CPUs).\n\nb) at the actual point of failure (ATA drives not detected) it appears \nas if there are still timer callbacks being invoked.  Drive detection \ntakes place after the 'firewire' setup message and before the additional \nCPUs are initialized.\n\nc) once the 'mountroot' prompt appeared, only a single CPU (varies each \ntime I retried) received timer interrupts.  These timer interrupts \nappear to be taking place 4 times as often (is this because of the 4 CPU \ncores?)\n\nd) after pressing \u003cENTER\u003e at 'mountroot' and getting the 'db' prompt, \nentering 'continue' allowed the other CPUs to get their timer interrupts \nprior to system restart."
+}

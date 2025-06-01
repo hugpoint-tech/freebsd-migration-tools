@@ -1,0 +1,8 @@
+{
+ "id": 1050154,
+ "bug_id": 237800,
+ "attachment_id": 0,
+ "creation_time": "2019-05-09T17:12:35Z",
+ "creator": "khw@cpan.org",
+ "text": "(In reply to Peter Jeremy from comment #3)\nThere's nothing in the ticket that indicates perl is using pow() to convert between strings and floating point values.  To do that, it instead uses a call to a C library function: some strtod() flavor, which particular one depends on the desired precision, and what is available on the platform, determined by configuration options at the time the perl executable is compiled.  If those options indicate to use long doubles, it will use strtodl(), for example.\n\nHowever, it used to be that perl used atof() in some circumstances instead of when it otherwise could use plain strtod().\n\nPerl does use pow() when performing an exponentiation operation and regular doubles were requested at perl compilation time.  This module does exponentiation.  The maintainer of the module discovered that the results of that operation were sometimes wrong, and further somehow figured out that if the floating point value was stringified and then reparsed by perl, that the value magically was corrected.  Statements s/he wrote in the perl language expand to do a C library sprintf and then an atof on that result.  Except that now it's sprintf followed by strtod.\n\nBut it turns out that the magic was only because of the poorer precision offered by atof(), and when perl converted to not ever use atof, the workaround failed."
+}

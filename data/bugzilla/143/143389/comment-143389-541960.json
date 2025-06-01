@@ -1,0 +1,8 @@
+{
+ "id": 541960,
+ "bug_id": 143389,
+ "attachment_id": 0,
+ "creation_time": "2010-01-31T01:40:08Z",
+ "creator": "aoyama@peach.ne.jp",
+ "text": "I first noticed at the post of FreeNAS forum below.\nhttp://sourceforge.net/apps/phpbb/freenas/viewtopic.php?f=78\u0026t=5558\u0026start=0\n\nThe reason is /sbin/fdisk reads config value by strtol(3) as signed long which is 32 bits on i386.\nAt least, this bug still exists in HEAD.\n\nstructure definition:\n \u003e\u003etypedef struct cmd {\n \u003e\u003e    char                cmd;\n \u003e\u003e    int                 n_args;\n \u003e\u003e    struct arg {\n \u003e\u003e        char    argtype;\n \u003e\u003e        int     arg_val;\t\t//signed int (32bit)\n \u003e\u003e    }                   args[MAX_ARGS];\n \u003e\u003e} CMD;\n \n in function parse_config_line():\n \u003e\u003e command-\u003eargs[command-\u003en_args].arg_val = strtol(cp, \u0026end, 0);  // return as signed long\n \n strtol(3) is overflow if the value \u003e LONG_MAX(0x7fffffffL on i386).\n As a result, the partition have wrong size and boundary.\n Once wrong partition is created, writing to it will cause data loss of next/previous partition.\n \n I tested following config on 2TB disk.\n \n g c261083 h255 s63\n p 1 165 1 2097152\n p 2 165 2097154 4175429632\n p 3 165 4177526787 16777216\n p 4 0 0 0\n a 1\n \n Please see above the link for more detail.\n I am not checking other utilities.\n\nFix: \n\nuse unsigned long/int or more wide type.\n(strtoul, etc)\nHow-To-Repeat: /sbin/fdisk -f \u003cabove config\u003e on 2TB disk."
+}

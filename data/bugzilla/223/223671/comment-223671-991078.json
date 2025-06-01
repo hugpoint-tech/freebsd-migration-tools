@@ -1,0 +1,8 @@
+{
+ "id": 991078,
+ "bug_id": 223671,
+ "attachment_id": 0,
+ "creation_time": "2018-05-10T13:08:05Z",
+ "creator": "r00t@kaba1ah.org",
+ "text": "The reason why you see N/As is because 'gluster volume status' relies on RDMA (libverbs in particular, which as far as I understood doesn't exist in FreeBSD).\n\nIf you try to compile glusterfs manually you'll notice that:\n\n...\nchecking for ibv_get_device_list in -libverbs... no\nchecking for rdma_create_id in -lrdmacm... no\n...\n\nWhich will result in:\n\nGlusterFS configure summary\n===========================\n...\nInfiniband verbs     : no\n...\n\nAnd consequently will produce the following in the logs:\n\nE [rpc-transport.c:283:rpc_transport_load] 0-rpc-transport: Cannot open \"/usr/local/lib/glusterfs/3.13.2/rpc-transport/rdma.so\"\nW [rpc-transport.c:287:rpc_transport_load] 0-rpc-transport: volume 'rdma.management': transport-type 'rdma' is not valid or not found on this machine\n\nI'm not sure about the support of userspace access to RDMA in FreeBSD. According to https://wiki.freebsd.org/InfiniBand you can try to add WITH_OFED=yes to /etc/src.conf and build/installworld."
+}

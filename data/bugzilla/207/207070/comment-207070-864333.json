@@ -1,0 +1,8 @@
+{
+ "id": 864333,
+ "bug_id": 207070,
+ "attachment_id": 0,
+ "creation_time": "2016-02-10T02:53:50Z",
+ "creator": "david@dcrosstech.com",
+ "text": "This should effect both i386 and amd64.. but I can only pick one.\n\ngptboot does not zero the read buffer around line 162, the result is a nondeterminstic, apparently hardware/bios specific condition where parsing fails on the unterminated boot.config file.\n\nPatch is:\n\n--- /usr/src/sys/boot/i386/gptboot/gptboot.c    2015-08-12 10:22:09.000000000 -0400\n+++ gptboot.c   2016-02-05 21:09:12.000000000 -0500\n@@ -159,9 +159,9 @@\n                return (-1);\n \n        autoboot = 1;\n-       *cmd = '\\0';\n \n        for (;;) {\n+               bzero(cmd, sizeof(cmd));\n                *kname = '\\0';\n                if ((ino = lookup(PATH_CONFIG)) ||\n                    (ino = lookup(PATH_DOTCONFIG)))\n\n\nPretty straighforwaed, eliminate the single null terminationa and replace with a bzero of the entire buffer.  single byte termination handled the case where here was no boot.config file, but not the case where there was something read it."
+}

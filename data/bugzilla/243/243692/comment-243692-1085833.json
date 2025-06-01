@@ -1,0 +1,8 @@
+{
+ "id": 1085833,
+ "bug_id": 243692,
+ "attachment_id": 0,
+ "creation_time": "2020-01-29T04:11:17Z",
+ "creator": "james.blachly@gmail.com",
+ "text": "Summary:\nBriefly, file-backed virtio-block devices in bhyve are exposed differently than zvol backed VMs. This causes ZFS in illumos to segfault when a file-backed virtio-block device is used.\n\nIn illumos, the only difference in the block devices, as far as I can tell, is that zvol-backed devices have the \":lba-access-ok\" flag set.\n\n\nPossible cause:\nThe virtio block driver has a set of flags that expose supposed capabilities:\n\nhttps://github.com/freebsd/freebsd/blob/0f0a35a04846fc4f4bdb6caa2852336d7de9447d/usr.sbin/bhyve/pci_virtio_block.c#L70-L84\n\nHowever, these differ between file-backed VMs and zvol-backed VMs, possibly here:\n\nhttps://github.com/freebsd/freebsd/blob/0f0a35a04846fc4f4bdb6caa2852336d7de9447d/usr.sbin/bhyve/pci_virtio_block.c#L366-L377\n\n(if not specifically there, seems likely in that function, pci_vtblk_init)\n\nThis manifests in illumos as a segmentation fault when the command `zpool create` is issued on a bhyve-exposed virtio block device that is backed by a file.\n\n\nI also filed an issue with illumos: https://www.illumos.org/issues/12237\n\n\nThanks in advance for help."
+}

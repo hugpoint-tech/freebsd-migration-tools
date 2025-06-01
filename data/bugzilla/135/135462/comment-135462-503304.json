@@ -1,0 +1,8 @@
+{
+ "id": 503304,
+ "bug_id": 135462,
+ "attachment_id": 0,
+ "creation_time": "2009-09-25T01:15:40Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: davidxu\nDate: Fri Sep 25 00:15:30 2009\nNew Revision: 197477\nURL: http://svn.freebsd.org/changeset/base/197477\n\nLog:\n  don't report error if key was deleted.\n  \n  PR:\tthreads/135462\n\nModified:\n  head/lib/libthr/thread/thr_spec.c\n\nModified: head/lib/libthr/thread/thr_spec.c\n==============================================================================\n--- head/lib/libthr/thread/thr_spec.c\tFri Sep 25 00:03:13 2009\t(r197476)\n+++ head/lib/libthr/thread/thr_spec.c\tFri Sep 25 00:15:30 2009\t(r197477)\n@@ -131,9 +131,19 @@ _thread_cleanupspecific(void)\n \t\t\t\tcurthread-\u003especific[key].data = NULL;\n \t\t\t\tcurthread-\u003especific_data_count--;\n \t\t\t}\n+\t\t\telse if (curthread-\u003especific[key].data != NULL) {\n+\t\t\t\t/* \n+\t\t\t\t * This can happen if the key is deleted via\n+\t\t\t\t * pthread_key_delete without first setting the value\n+\t\t\t\t * to NULL in all threads.  POSIX says that the\n+\t\t\t\t * destructor is not invoked in this case.\n+\t\t\t\t */\n+\t\t\t\tcurthread-\u003especific[key].data = NULL;\n+\t\t\t\tcurthread-\u003especific_data_count--;\n+\t\t\t}\n \n \t\t\t/*\n-\t\t\t * If there is a destructore, call it\n+\t\t\t * If there is a destructor, call it\n \t\t\t * with the key table entry unlocked:\n \t\t\t */\n \t\t\tif (destructor != NULL) {\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

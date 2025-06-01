@@ -1,0 +1,8 @@
+{
+ "id": 359590,
+ "bug_id": 105542,
+ "attachment_id": 0,
+ "creation_time": "2006-11-14T21:20:02Z",
+ "creator": "dws@panasas.com",
+ "text": "The problem seems to be that ldd isn't setting LD_32_* environment variables\nalong with the LD_* environment variables that it already sets:\n\n: compute-6-29; ldd /usr/pan/bin/tclsh8.3\nldd: /usr/pan/bin/tclsh8.3: can't read program header\nldd: /usr/pan/bin/tclsh8.3: not a dynamic executable\n: compute-6-29; ldd32 /usr/pan/bin/tclsh8.3\n        libtcl83.so =\u003e /usr/pan/lib/libtcl83.so (0x28077000)\n        libm.so.4 =\u003e /usr/lib32/libm.so.4 (0x280fb000)\n        libc.so.6 =\u003e /usr/lib32/libc.so.6 (0x28112000)\n: compute-6-29; cat $HOME/scripts/ldd32\n#!/bin/sh\n#-------\n# This lets us see what's going on with loading 32-bit shared objects\n# on FreeBSD 6.\n#-------\nexport LD_32_TRACE_LOADED_OBJECTS; LD_32_TRACE_LOADED_OBJECTS=1\nexec \"$@\"\n\nFix: \n\nThe fix would presumably be to go through the ldd code and have it\nset LD_32_* in addition to LD_*, for each LD_* variable it currently\nsets.  Some adjustments to how ldd examines the program header may also\nbe necessary.\nHow-To-Repeat: Use ldd on a dynamically loaded i386 executable on an amd64 freebsd6\nsystem."
+}

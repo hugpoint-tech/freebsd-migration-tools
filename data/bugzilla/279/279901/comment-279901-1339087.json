@@ -1,0 +1,8 @@
+{
+ "id": 1339087,
+ "bug_id": 279901,
+ "attachment_id": 0,
+ "creation_time": "2024-12-13T20:13:00Z",
+ "creator": "mp@FreeBSD.org",
+ "text": "(In reply to Darren Henderson from comment #28)\n\nThe glibc changes indicated in this bug were specific to amd. I have tried numerous times to reproduce this issue on intel systems but have not seen it occur. Sadly I don't have an applicable AMD systems to test on.\n\nHere's my arch install as a bhyve guest:\n$ uname -a\nLinux archlinux 6.12.4-arch1-1 #1 SMP PREEMPT_DYNAMIC Mon, 09 Dec 2024 14:31:57 +0000 x86_64 GNU/Linux\n$ ld.so --list-diagnostics | grep -e version.version\nversion.version=\"2.40\"\n\nGiven some of the ld.so output in previous updates to this bug, I did a diff to try to find the x86 tunable changes between them.\n43c40\n\u003c version.version=\"2.36\"\n---\n\u003e version.version=\"2.40\"\n189,191c196,199\n\u003c x86.cpu_features.rep_movsb_threshold=0x2000\n\u003c x86.cpu_features.rep_movsb_stop_threshold=0x80000\n\u003c x86.cpu_features.rep_stosb_threshold=0x800\n---\n\u003e x86.cpu_features.memset_non_temporal_threshold=0xc000000000\n\u003e x86.cpu_features.rep_movsb_threshold=0x0\n\u003e x86.cpu_features.rep_movsb_stop_threshold=0xc000000000\n\u003e x86.cpu_features.rep_stosb_threshold=0xffffffffffffffff\n\nRunning binaries with this environment set, so the intel system would run the same code path in glibc as amd would, did not cause the issue on my intel system.\n\nGLIBC_TUNABLES=\"glibc.cpu.x86_memset_non_temporal_threshold=0xc000000000:glibc.cpu.x86_rep_movsb_threshold=0x0:glibc.cpu.x86_rep_movsb_stop_threshold=0xc000000000:glibc.cpu.x86_rep_stosb_threshold=0xffffffffffffffff\"\n\nIf anyone has seen it on intel, it would be great to have the repro steps added to this bug."
+}

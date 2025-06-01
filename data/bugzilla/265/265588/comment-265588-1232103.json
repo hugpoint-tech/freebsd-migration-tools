@@ -1,0 +1,8 @@
+{
+ "id": 1232103,
+ "bug_id": 265588,
+ "attachment_id": 0,
+ "creation_time": "2022-10-20T11:47:47Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "1448 byte chunks between server and client align perfectly until server frame #51 (5 chunks: 0xb23ee730dd    0xc2fd29b2eb    0xbe27bbf1be    0xb829e51fdc    0xbc5b20682b) and client frame #48 (3 chunks 0xb23ee730dd    0xc2fd29b2eb    0xbe27bbf1be).\n\nThe last two chunks of the TSO get dropped.\n\nserver #62 is the lost 4th chunk of #51.\n\nAnd server #63 starts with chunk 5 of #51 but doesn't have the correct sequence number!\n\nFrame 66 repeats chunk 5 of #51, with the correct sequence number.\n\n\nTSO frame 63 seems to send everything from snd.una for an entire window, but the seq number is off by one segment (1448) to the left. However, 19 packets during SACK loss recovery is unexpected too!\n\n(In short, I feel like the TSO frame #63 shouldn't be there at all).\n\nI wonder if this may be the issue https://reviews.freebsd.org/D36637 although that's dealing with the traffic burst, not the erraneous sequence number..."
+}

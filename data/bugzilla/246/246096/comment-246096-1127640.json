@@ -1,0 +1,8 @@
+{
+ "id": 1127640,
+ "bug_id": 246096,
+ "attachment_id": 0,
+ "creation_time": "2020-10-19T19:19:27Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "IMP, the nature of the bug is that the /usr/local/SUBDIR and /usr/SUBDIR implementations of GSSAPI are incompatible if FreeBSD's krb5 package is installed and curl is supposed to use GSSAPI_BASE. It cannot achieve that because the GSSAPI stuff in /usr/local shadows the base implementation.\n\nThe port or the upstream code (not sure which) might need to run actual feature/version checks and not be told from the outside what to expect, so it sees that it gets krb5.\n\nOf course one might also hack the port to detect the presence of krb5 and if it's installed, flip the switch from GSSAPI_BASE to GSSAPI_MIT.\n\nI doubt much of this is really upstream stuff. A few \"make debug-krb5\" later it seems that we pass the port garbage through LIBS and CFLAGS, and it ends up using the wrong libraries and headers.  For one, we pass -lkrb5 believing it would be /usr/lib/libkrb5.so but in fact it will be /usr/local/lib/libkrb5.so.\n\nGarbage in, garbage out.  My patch just traps the bogus configuration.  I haven't tested if other misconfigurations explode in the user's face at run-time, I've only compile-tested those.  I don't have Kerberized systems to test against."
+}

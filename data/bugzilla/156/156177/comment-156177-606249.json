@@ -1,0 +1,8 @@
+{
+ "id": 606249,
+ "bug_id": 156177,
+ "attachment_id": 0,
+ "creation_time": "2011-04-09T22:40:58Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kib\nDate: Sat Apr  9 21:40:48 2011\nNew Revision: 220506\nURL: http://svn.freebsd.org/changeset/base/220506\n\nLog:\n  Linuxolator calls VOP_READDIR with ncookies pointer. Implement a\n  workaround for fdescfs to not panic when ncookies is not NULL, similar\n  to the one committed as r152254, but simpler, due to fdescfs_readdir()\n  not calling vfs_read_dirent().\n  \n  PR:\tkern/156177\n  MFC after:\t1 week\n\nModified:\n  head/sys/fs/fdescfs/fdesc_vnops.c\n\nModified: head/sys/fs/fdescfs/fdesc_vnops.c\n==============================================================================\n--- head/sys/fs/fdescfs/fdesc_vnops.c\tSat Apr  9 19:07:44 2011\t(r220505)\n+++ head/sys/fs/fdescfs/fdesc_vnops.c\tSat Apr  9 21:40:48 2011\t(r220506)\n@@ -500,16 +500,12 @@ fdesc_readdir(ap)\n \tstruct dirent *dp = \u0026d;\n \tint error, i, off, fcnt;\n \n-\t/*\n-\t * We don't allow exporting fdesc mounts, and currently local\n-\t * requests do not need cookies.\n-\t */\n-\tif (ap-\u003ea_ncookies)\n-\t\tpanic(\"fdesc_readdir: not hungry\");\n-\n \tif (VTOFDESC(ap-\u003ea_vp)-\u003efd_type != Froot)\n \t\tpanic(\"fdesc_readdir: not dir\");\n \n+\tif (ap-\u003ea_ncookies != NULL)\n+\t\t*ap-\u003ea_ncookies = 0;\n+\n \toff = (int)uio-\u003euio_offset;\n \tif (off != uio-\u003euio_offset || off \u003c 0 || (u_int)off % UIO_MX != 0 ||\n \t    uio-\u003euio_resid \u003c UIO_MX)\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

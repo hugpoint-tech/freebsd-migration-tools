@@ -1,0 +1,8 @@
+{
+ "id": 490585,
+ "bug_id": 132845,
+ "attachment_id": 0,
+ "creation_time": "2009-03-20T08:10:03Z",
+ "creator": "ota@j.email.ne.jp",
+ "text": "ggated doesn't close local file after closing client connections.\n\nBy the way, the patch at http://www.freebsd.org/cgi/query-pr.cgi?pr=bin/132798 also includes this fix, too.  I decided to file this because it is a separate issue.\n\nFix: \n\nAdd the following in connection_remove function in sbin/ggate/ggated/ggated.c\n\n        if(conn-\u003ec_diskfd == -1)\n                close(conn-\u003ec_diskfd);\n\n\nFYI:\nstatic void\nconnection_remove(struct ggd_connection *conn)\n{\n\n        LIST_REMOVE(conn, c_next);\n        g_gate_log(LOG_DEBUG, \"Connection removed [%s %s].\",\n            ip2str((struct sockaddr*)\u0026conn-\u003ec_srcaddr), conn-\u003ec_path);\n        if (conn-\u003ec_sendfd != -1)\n                close(conn-\u003ec_sendfd);\n        if (conn-\u003ec_recvfd != -1)\n                close(conn-\u003ec_recvfd);\n        free(conn-\u003ec_path);\n        free(conn);\n}\nHow-To-Repeat: server# ggated\nclient# ggatec create -oro server /dev/da0\nclient# ggatec destroy -u 0\nserver# mount -orw /dev/da0 /mnt/backup\n\nRW mount on server fails because ggated remain /dev/da0 opened."
+}

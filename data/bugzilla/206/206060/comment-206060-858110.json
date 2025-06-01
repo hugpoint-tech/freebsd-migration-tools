@@ -1,0 +1,8 @@
+{
+ "id": 858110,
+ "bug_id": 206060,
+ "attachment_id": 0,
+ "creation_time": "2016-01-09T07:57:40Z",
+ "creator": "marino@FreeBSD.org",
+ "text": "With any drupal port, the new SELECTED_OPTIONS and DESELECTED_OPTIONS are broken.\n\n\u003e cd /usr/ports/www/drupal6-token\n\u003e make showconfig\n\n===\u003e The following configuration options are available for drupal6-token-6.x.1.12_1:\n     DOCS=on: Build and/or install documentation\n===\u003e Use 'make config' to modify these settings\n\nmake -V SELECTED_OPTIONS -V DESELECTED_OPTIONS\n(returns 2 blank rows)\n\nThe cause is because Mk/Uses/drupal.mk is manipulating the options definitions AFTER bsd.port.options.mk is included (and thus *SELECTED_OPTIONS have been evaluated)\n\n.if ${_DRUPAL_COMP}\n_USES_POST+=    drupal\nPKGNAMEPREFIX=  drupal${_DRUPAL_VERSION}-\n.if defined(DOC_FILES)\nOPTIONS_DEFINE= DOCS\n.endif\n\n# drupal contributions must be licensed under the GPLv2 or GPLv3.  This is\n# documented at: http://drupal.org/licensing/faq/\n.if !defined(LICENSE)\nLICENSE=        GPLv2 GPLv3\nLICENSE_COMB=   dual\n.endif\n\n\nAfter speaking with bdrewery about the idea of relocating the *SELECTED_OPTIONS evaluations to bsd.port.mk, he indicated that he believed it is an error to use Mk/Uses to change options and that in his opinion, Drupal is what needs changing.\n\nHe also pointed out that drupal.mk also makes the mistake of of assigning OPTIONS_DEFINE with \"=\" rather than \"+=\" which overwrites any previous options definitions (strike two)\n\n\nThis PR is to request that DOCS be moved back to the individual ports and secondarily portmgr/documentation guys should specifically document that OPTIONS in Mk/Uses is verboten."
+}

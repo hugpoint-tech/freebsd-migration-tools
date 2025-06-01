@@ -1,0 +1,8 @@
+{
+ "id": 387451,
+ "bug_id": 111537,
+ "attachment_id": 0,
+ "creation_time": "2007-04-13T14:00:09Z",
+ "creator": "thkarcher@gmx.de",
+ "text": "\nIn ip6_input() after line 294, a bunch of code takes care of copying the mbuf/mbuf cluster to a more KAME conform mbuf/mbuf cluster - but in my opinion, it does it not completely right ...\n\nIn line 318, the m_copydata() call works only if the new mbuf n is \"just\" an mbuf and not an mbuf cluster. See the solution what I mean.\n\nFix: I think the code should look like this:\n\n 318                 if (n \u0026\u0026 n-\u003em_pkthdr.len \u003e MHLEN) {\n 319                         m_copydata(m, 0, n-\u003em_pkthdr.len, n-\u003em_ext.ext_buf);\n 320                         n-\u003em_data = n-\u003em_ext.ext_buf;\n 321                 } else {\n 322                         m_copydata(m, 0, n-\u003em_pkthdr.len, mtod(n, caddr_t));\n 323                 }\n\nPlease find a diff attached.\n\n\nPatch attached with submission follows:"
+}

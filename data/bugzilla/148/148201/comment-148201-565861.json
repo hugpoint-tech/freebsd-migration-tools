@@ -1,0 +1,8 @@
+{
+ "id": 565861,
+ "bug_id": 148201,
+ "attachment_id": 0,
+ "creation_time": "2010-07-13T15:35:34Z",
+ "creator": "yanegomi@gmail.com",
+ "text": "Some other details, like install media settings and the package\ninstalled would be helpful.\n\nAs far as the technical issues are concerned, it might be because fp\nisn't initialized to NULL in package_extract:\n\nint\npackage_extract(Device *dev, char *name, Boolean depended)\n{\n    char path[MAXPATHLEN];\n    const char *PkgExts[] = { \"\", \".tbz\", \".tbz2\", \".tgz\" };\n    int last_msg, pathend, ret;\n    size_t ext;\n    FILE *fp;\n\nThere's a codepath where if it fails to setup the `device' via\nDEVICE_GET, it'll be uninitialized with a bogus value:\n\n    /* We have a path, call the device strategy routine to get the file */\n    for (ext = 0 ; ext \u003c sizeof PkgExts / sizeof PkgExts[0]; ++ext) {\n        strlcpy(path + pathend, PkgExts[ext], sizeof path - pathend);\n        if ((fp = DEVICE_GET(dev, path, TRUE)))\n            break;\n    }\n\n    if (fp) {\n\nThere are some other QA issues in this function as well...\n\n- fork can fail:\n\n        pid = fork();\n\n- dup2 can fail:\n\n            dup2(pfd[0], 0); close(pfd[0]);\n            dup2(DebugFD, 1); dup2(1, 2);\n            close(pfd[1]);\n\n- pipe can fail:\n\n        pipe(pfd);\n\n- WEXITSTATUS is only valid if WIFEXITED is true:\n\n            if (sigpipe_caught || i \u003c 0 || WEXITSTATUS(tot)) {\n\n- signal can fail:\n\n        signal(SIGPIPE, catch_pipe);\n\n- This can spin the CPU (doesn't matter so much on install media, but\nit does matter for multiuser):\n\n            /* Now catch any stragglers */\n            while (wait3(\u0026tot, WNOHANG, NULL) \u003e 0);\n\nThanks,\n-Garrett"
+}

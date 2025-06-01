@@ -1,0 +1,8 @@
+{
+ "id": 368299,
+ "bug_id": 107392,
+ "attachment_id": 0,
+ "creation_time": "2007-01-01T08:20:13Z",
+ "creator": "ports@grosbein.net",
+ "text": "\tThis PR is very similar to bin/63616 and the fix\n\tis nearly identical. The following spdadd line cannot be\n\tparsed by setkey(8) currently:\n\nspdadd 1.1.1.1/32 2.2.2.2/32 esp -P out none;\n\n\tHowever, such functionality is required as workaround\n\tfor a kernel desing problem: if outgoing packet encrypted with IPSEC\n\tis passed to the TCP/IP stack second time with IPDIVERT\n\tof DUMMYNET (when net.inet.ip.fw.one_pass=0), it may be\n\tencrypted with IPSEC second time that breaks PMTUD.\n\tSee kern/103135 for details.\n\n\tThe spdadd line shown above prevents IPSEC from this logic error\n\tand presents a workaround. But setkey does not parse this.\n\nFix: This patch is very like parse.y,1.5 that fixed the same issue for tcp.\n\tparse.y is located in sbin/setkey/ for recent versions\n\tand the same file is in usr.sbin/setkey/ for RELENG_4.\n\n\n\nI'd be glad to see this trivial patch backported\n\tto RELENG_5 and RELENG_4 :-)\n\nEugene Grosbein--HLaV5tfXKWtK3Y0MEMRFgi0eTOChSA0Y7g1m4noh9g1mIFCX\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- parse.y.orig\tMon Jan  1 14:31:55 2007\n+++ parse.y\tMon Jan  1 14:32:04 2007\n@@ -683,6 +683,7 @@\n \t:\tDECSTRING { $$ = $1; }\n \t|\tANY { $$ = IPSEC_ULPROTO_ANY; }\n \t|\tPR_TCP { $$ = IPPROTO_TCP; }\n+\t|\tPR_ESP { $$ = IPPROTO_ESP; }\n \t|\tSTRING\n \t\t{\n \t\t\tstruct protoent *ent;\nHow-To-Repeat: \n\tTry to process spdadd shown above with setkey(8)."
+}

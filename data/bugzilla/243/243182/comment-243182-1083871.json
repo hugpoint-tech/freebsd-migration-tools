@@ -1,0 +1,8 @@
+{
+ "id": 1083871,
+ "bug_id": 243182,
+ "attachment_id": 0,
+ "creation_time": "2020-01-15T08:38:55Z",
+ "creator": "pkubaj@FreeBSD.org",
+ "text": "(In reply to Greg Lewis from comment #11)\nSure, GCC supports ELFv2 since 4.8.3 (https://www.gnu.org/software/gcc/gcc-4.8/changes.html). But FreeBSD/powerpc64 with ELFv2 uses Clang.\nFrom java/openjdk11/Makefile:\n.if ${COMPILER_TYPE} == gcc\nUSE_GCC=        yes\nCONFIGURE_ARGS+=        --with-extra-ldflags=\"-Wl,-rpath=${LOCALBASE}/lib/gcc${GCC_DEFAULT} -L${LOCALBASE}/lib/gcc${GCC_DEFAULT}\" \\\n                        --with-extra-cflags=\"-Wl,-rpath=${LOCALBASE}/lib/gcc${GCC_DEFAULT}\" \\\n                        --with-extra-cxxflags=\"-Wl,-rpath=${LOCALBASE}/lib/gcc${GCC_DEFAULT}\"\n.else\nMAKE_ENV+=      USE_CLANG=true\n.endif\n\nSo new GCC from ports (able to use ELFv2) will be used only when GCC is used in the first place (base GCC, which only does ELFv1).\n\nIf Clang is used (only on ELFv2), you don't switch to GCC.\n\nYou definitely could build FreeBSD without Clang and use external GCC on ELFv2, or use Clang with GNU ld.bfd on ELFv1 (ldd doesn't support ELFv1, in fact Mark Millard played with Clang + ld.bfd on ELFv1), but this is entirely unsupported use-case and I doubt anyone does this anymore (even if someone does, it's unsupported).\n\nThere are of course other ports that need to use GCC from ports on powerpc64, because Clang can't compile them (it's still pretty immature on POWER compared to GCC 9 and has some bugs), but it can definitely build OpenJDK.\n\nThat's why there's this assumption: that GCC means ELFv1 and Clang means ELFv2."
+}

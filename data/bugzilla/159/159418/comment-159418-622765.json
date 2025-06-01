@@ -1,0 +1,8 @@
+{
+ "id": 622765,
+ "bug_id": 159418,
+ "attachment_id": 0,
+ "creation_time": "2011-11-22T16:18:26Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: ivoras\nDate: Tue Nov 22 16:18:12 2011\nNew Revision: 227822\nURL: http://svn.freebsd.org/changeset/base/227822\n\nLog:\n  Avoid panics from recursive rename operations. Not a perfect patch but\n  good enough for now.\n  \n  PR:\t\tkern/159418\n  Submitted by:\tGleb Kurtsou\n  Reviewed by:\tkib\n  MFC after:\t1 month\n\nModified:\n  head/sys/fs/tmpfs/tmpfs_vnops.c\n\nModified: head/sys/fs/tmpfs/tmpfs_vnops.c\n==============================================================================\n--- head/sys/fs/tmpfs/tmpfs_vnops.c\tTue Nov 22 16:08:12 2011\t(r227821)\n+++ head/sys/fs/tmpfs/tmpfs_vnops.c\tTue Nov 22 16:18:12 2011\t(r227822)\n@@ -965,11 +965,8 @@ tmpfs_rename(struct vop_rename_args *v)\n \n \t/* If we need to move the directory between entries, lock the\n \t * source so that we can safely operate on it. */\n-\tif (tdvp != fdvp) {\n-\t\terror = vn_lock(fdvp, LK_EXCLUSIVE | LK_RETRY);\n-\t\tif (error != 0)\n-\t\t\tgoto out;\n-\t}\n+\tif (fdvp != tdvp \u0026\u0026 fdvp != tvp)\n+\t\tvn_lock(fdvp, LK_EXCLUSIVE | LK_RETRY);\n \tfdnode = VP_TO_TMPFS_DIR(fdvp);\n \tfnode = VP_TO_TMPFS_NODE(fvp);\n \tde = tmpfs_dir_lookup(fdnode, fnode, fcnp);\n@@ -1143,7 +1140,7 @@ tmpfs_rename(struct vop_rename_args *v)\n \terror = 0;\n \n out_locked:\n-\tif (fdnode != tdnode)\n+\tif (fdvp != tdvp \u0026\u0026 fdvp != tvp)\n \t\tVOP_UNLOCK(fdvp, 0);\n \n out:\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

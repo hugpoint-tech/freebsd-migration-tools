@@ -1,0 +1,8 @@
+{
+ "id": 1188381,
+ "bug_id": 260116,
+ "attachment_id": 0,
+ "creation_time": "2021-11-29T13:35:11Z",
+ "creator": "albin.hellqvist@ericsson.com",
+ "text": "It seems like POLLOUT/EVFILT_WRITE always is true for SCTP sockets even if the socket send buffer is full.\n\nBesides this, it should also account for SO_SNDLOWAT but it is possible that we will get this for \"free\" since it looks like the functionality already is there.\n\nBased on some experiments (which might be faulty), SCTP sockets doesn't use struct sockbuf in the same way as TCP uses it. A lot of the fields in that struct are 0 for SCTP sockets since it also has its own structs.\n\nThis seems to affect filt_sowrite() in (https://github.com/freebsd/freebsd-src/blob/main/sys/kern/uipc_socket.c). More specifically, this line:\nkn-\u003ekn_data = sbspace(\u0026so-\u003eso_snd);\n\nI have tested to replace that line with:\nkn-\u003ekn_data = (so-\u003eso_snd.sb_hiwat - so-\u003eso_snd.sb_acc);\n\nWhich seems to do the trick, but I expect this to have side effects."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 589606,
+ "bug_id": 152818,
+ "attachment_id": 0,
+ "creation_time": "2010-12-04T02:20:12Z",
+ "creator": "cperciva@FreeBSD.org",
+ "text": "\nThe Xen blkfront driver panics with \"XEN disk driver data cannot cross a\npage boundary\" when performing I/O to a buffer which is not sector-aligned\nand starts just before a page boundary.\n\nIn blkif_queue_cb in blkfront.c, I/O is handled one page at a time, and\nlines 1065--1067 attempt to map addresses in memory to sectors, but don't\nacknowledge the fact that the memory buffer might not be aligned.\n\nIn addition to the panic message, it seems very likely that this could\ncause data corruption (due to data being read/written from/to the wrong\npart of a page) but I don't understand this code well enough to say.\n\nHow-To-Repeat: \nOn a system where /dev/da0 is a Xen block device:\n\n#include \u003cfcntl.h\u003e\n#include \u003cstdint.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cunistd.h\u003e\n\nint\nmain(int argc, char * argv[])\n{\n        char * buf = malloc(0x3000);\n        char * buf2 = (char *)(((uintptr_t)buf + 0xfff) \u0026 ~0x1000);\n        int fd = open(\"/dev/da0\", O_RDONLY);\n\n        read(fd, \u0026buf2[0xf00], 0x200);\n\n        return (0);\n}"
+}

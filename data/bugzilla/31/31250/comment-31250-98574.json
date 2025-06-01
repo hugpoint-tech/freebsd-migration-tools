@@ -1,0 +1,8 @@
+{
+ "id": 98574,
+ "bug_id": 31250,
+ "attachment_id": 0,
+ "creation_time": "2001-10-13T13:20:01Z",
+ "creator": "bleez@bellatlantic.net",
+ "text": "This applies to an Olympus D-370 digital camera with storage class usb.\n\nAfter compiling a kernel with scbus, da, pass, and umass support, mount_msdos /dev/da0s1 /mnt gives the following result:\nOct 13 07:50:18 gravy /kernel: (da0:umass-sim0:0:0:0): READ(06). CDB: 8 0 0 0 1\nOct 13 07:50:18 gravy /kernel: (da0:umass-sim0:0:0:0): ILLEGAL REQUEST asc:20,0\nOct 13 07:50:18 gravy /kernel: (da0:umass-sim0:0:0:0): Invalid command operation\nOct 13 07:50:18 gravy /kernel: da0: reading primary partition table: error reading fsbn 0\n~\n\nFix: Apply this patch:\n\n\n\nstatic d_open_t    daopen;--6OQsoEISA7ktUbw42Jhq9iJgatogoErthgJUXgxwTEqWs7YZ\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- /usr/src/sys/cam/scsi/scsi_da.c Mon Sep 24 11:23:55 2001\n+++ scsi_da.c   Sat Oct 13 07:29:06 2001\n@@ -243,12 +243,20 @@\n         * do not support READ_6 commands, only READ_10.\n         */\n        {T_DIRECT, SIP_MEDIA_REMOVABLE, \"Sony\", \"Sony DSC\", \"*\"},\n        /*quirks*/ DA_Q_NO_6_BYTE|DA_Q_NO_SYNC_CACHE\n    },\n    {\n+       /*\n+        * Olympus D series cameras do not support READ_6\n+        * commands\n+        */\n+       {T_DIRECT, SIP_MEDIA_REMOVABLE, \"OLYMPUS\", \"D*\", \"*\"},\n+       /*quirks*/ DA_Q_NO_6_BYTE\n+   },\n+   {\n        {T_OPTICAL, SIP_MEDIA_REMOVABLE, \"FUJITSU\", \"MCF3064AP\", \"*\"},\n        /*quirks*/ DA_Q_NO_6_BYTE\n    }\n };\nHow-To-Repeat: Try to mount the camera as described above"
+}

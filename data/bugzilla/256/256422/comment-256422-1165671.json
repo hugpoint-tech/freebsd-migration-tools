@@ -1,0 +1,8 @@
+{
+ "id": 1165671,
+ "bug_id": 256422,
+ "attachment_id": 0,
+ "creation_time": "2021-06-10T15:24:59Z",
+ "creator": "grehan@FreeBSD.org",
+ "text": "This looks to be an edge condition in the EFI NVMe driver, caused by the large maximum data transfer size advertised by bhyve NVMe (2MB), and the increase in size of grubx64.efi from 1.9MB in centos 8.3, to 2.3MB in centos 8.4.\n\nIn 8.4, EFI attempts to read 2MB of grubx64.efi. However, the buffer starts at a non page-aligned address, using PRP1 in the command descriptor with an offset. PRP2 points to a PRP list, but with a 2MB transfer size, all 512 PRP entries in a page will be used. Since the first buffer was unaligned, there is a small amount left at the end, and EFI is putting garbage into that entry.\n\n(Copying the smaller 8.3 grubx64.efi to an 8.4 system resulted in a successful boot).\n\nA suggested fix is to drop the advertised mdts to something that isn't right on the verge of requiring a chained PRP list. Qemu defaults to 512KB, and h/w I've looked at advertises 256K. e.g.\n\n--- a/usr.sbin/bhyve/pci_nvme.c\n+++ b/usr.sbin/bhyve/pci_nvme.c\n@@ -106,7 +106,7 @@ static int nvme_debug = 0;\n #define        NVME_MPSMIN_BYTES       (1 \u003c\u003c (12 + NVME_MPSMIN))\n \n #define        NVME_PRP2_ITEMS         (PAGE_SIZE/sizeof(uint64_t))\n-#define        NVME_MDTS               9\n+#define        NVME_MDTS               7\n\n(or 8)\n\n8.4 boots fine with this change."
+}

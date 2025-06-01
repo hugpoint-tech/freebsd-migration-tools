@@ -1,0 +1,8 @@
+{
+ "id": 796747,
+ "bug_id": 195188,
+ "attachment_id": 149608,
+ "creation_time": "2014-11-19T22:40:31Z",
+ "creator": "guyyur@gmail.com",
+ "text": "Created attachment 149608\nAdd hostid to REQUIRE: for hostid_save and netif\n\nWhen /etc/rc.d/zvol is removed hostid is run after\nhostid_save and netif.\n\n\nhostid is required by hostid_save in case /etc/hostid\ndoesn't exist so the correct hostid will be written.\n\nhostid is required by netif for the bridge interface MAC address.\nIf hostid is run after netif a random MAC address will be\ngenerated on each boot.\n\n\nrcorder with zvol\nsysctl\nhostid\nzvol\n...\n\nrcorder without zvol\n...\nhostid_save\n...\nnetif\n...\nhostid\n...\n\n\nVerified behavior on virtual machine installed from\nFreeBSD-11.0-CURRENT-i386-20140525-r266655-disc1.iso.\n\n/etc/rc.conf\n...\ncloned_interfaces=\"bridge0\"\n\n\nifconfig bridge0 # (first boot)\nbridge0: flags=8802\u003cBROADCAST,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        ether 22:b3:11:79:51:3d\n\nifconfig bridge0 # (second boot)\nbridge0: flags=8802\u003cBROADCAST,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        ether 5e:dc:bd:ed:43:5d\n\n\nWhen hostid is added to netif REQUIRE line:\ndmesg -a\n...\nSetting hostid: 0x49d109e4.\n...\n\nifconfig bridge0 # (on every boot)\nbridge0: flags=8802\u003cBROADCAST,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        ether 02:49:d1:09:e4:00"
+}

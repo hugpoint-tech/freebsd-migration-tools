@@ -1,0 +1,8 @@
+{
+ "id": 852990,
+ "bug_id": 205180,
+ "attachment_id": 0,
+ "creation_time": "2015-12-10T09:16:54Z",
+ "creator": "mail@fbsd2.e4m.org",
+ "text": "man bsdtar says:\n\n     -p, --insecure, --preserve-permissions\n             (x mode only) Preserve file permissions.  Attempt to restore the\n             full permissions, including owner, file modes, file flags and\n             ACLs, if available, for each item extracted from the archive.\n             This is the default, if tar is being run by root and can be over-\n             riden by also specifying --no-same-owner and\n             --no-same-permissions.\n\nThis description of -p makes one think that it does for\nordinary user the same as for root. But if I (as ordinary--same-owner\nuser) extract an archive with -xpf groups won't get restored.\nThey get restored with --same-owner.\n\nIMHO -p should actually include --same-owner, the fix would be\n\n--- bsdtar.c.ORI        2012-09-24 18:09:20.000000000 +0200\n+++ bsdtar.c    2015-12-10 10:14:27.085470000 +0100\n@@ -438,6 +438,7 @@\n                        bsdtar-\u003eoption_absolute_paths = 1;\n                        break;\n                case 'p': /* GNU tar, star */\n+                       bsdtar-\u003eextract_flags |= ARCHIVE_EXTRACT_OWNER;\n                        bsdtar-\u003eextract_flags |= ARCHIVE_EXTRACT_PERM;\n                        bsdtar-\u003eextract_flags |= ARCHIVE_EXTRACT_ACL;\n                        bsdtar-\u003eextract_flags |= ARCHIVE_EXTRACT_XATTR;\n\nIf not, the manpage should be corrected."
+}

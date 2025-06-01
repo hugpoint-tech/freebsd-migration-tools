@@ -1,0 +1,8 @@
+{
+ "id": 404824,
+ "bug_id": 115261,
+ "attachment_id": 0,
+ "creation_time": "2007-08-07T09:30:01Z",
+ "creator": "pekkas@netcore.fi",
+ "text": "I get a lot of following kind of IPv6 packets:\n\n11:35:48.327605 IP6 (hlim 255, next-header: unknown (59), length: 0) 2001:0:4136 :xxxx:yyyy:zzzz:wwww:vvvv \u003e fe80::fc31:b43b:679c:dcb9: no next header\n\nThese are used for Teredo bubbles through a Teredo relay.  (There are also occas ional other kinds of no-next-header packets which get the same pull-up failed tr eatment.)\n\nThese seem to cause \"ipfw: pullup failed\" messages in syslogs (I get 300-500 / 1 0 minutes), so a large number of packets are lost before they get to the main ip fw and forwarding code.\n\nThe code in ip_fw2.c appears to be:\n\n                        case IPPROTO_NONE:      /* RFC 2460 */\n                                PULLUP_TO(hlen, ulp, struct ip6_ext);\n                                /* Packet ends here. if ip6e_len!=0 octets\n                                * must be ignored. */\n                                break;\n\n. but struct ip6_ext is at least 2 bytes long.  The problem here is that the co de expects that in addition to the IPv6 base header, there would be sizeof(struc t ip6_ext) of payload. This is an incorrect assumption as IPPROTO_NONE by defini tion does not need to have any payload, even the skeleton extension header.\n\nAttached patch demonstrates a quick'n'dirty way to avoid these warning messages.   The real fix may or may not require redefining the PULLUP_TO macro to pass a l ength as third argument rather than the struct.\n\nFix: See the patch.\n\nPatch attached with submission follows:\nHow-To-Repeat: Craft an IPv6 packet with next-header set to 59 (no next header) and no payload."
+}

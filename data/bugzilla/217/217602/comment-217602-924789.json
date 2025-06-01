@@ -1,0 +1,8 @@
+{
+ "id": 924789,
+ "bug_id": 217602,
+ "attachment_id": 0,
+ "creation_time": "2017-03-07T04:42:45Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "As discussed on IRC with imp, Allan Jude, John Baldwin, and myself...\n\nbsdconfig mirrors the actions of pw(8) with respect to skel (please see the pw(8) manual with respect to skeleton files and the effect the `-m' parameter has on copying of skel files).\n\nAt the very least, the suggested change here has to be accompanied by a corresponding change to several other tools, including but not limited to pw(8), adduser(8), and their respective manuals.\n\nA patch that implements the bsdinstall part of the change can be found at https://github.com/freebsd/freebsd/pull/98 and it still applies, included inline for your convenience since it is so simple. Also noted in the code review the -R -n should be -Rn (or maybe that was in the IRC conversation).\n\nSince this isn't a code snippet ready to commit, redirecting to bugzilla per project policy. This should be assigned to dteske@.\n\nusr.sbin/bsdconfig/usermgmt/share/user.subr\n @@ -145,12 +145,12 @@ f_user_copy_dotfiles()\n  \t\t[ -e \"$file\" ] || continue # no-match\n  \n  \t\tf_shell_escape \"$file\" \"_file\"\n -\t\tf_eval_catch $funcname cp \"cp -n '%s' '%s'\" \\\n +\t\tf_eval_catch $funcname cp \"cp -R -n '%s' '%s'\" \\\n  \t\t\t\"$_file\" \"$_user_home_dir/${_file#dot}\"\n  \t\tretval=$?\n  \t\t[ $retval -eq $SUCCESS ] || break\n  \t\tf_eval_catch $funcname chown \\\n -\t\t\t\"chown -h '%i:%i' '%s'\" \\\n +\t\t\t\"chown -R -h '%i:%i' '%s'\" \\\n  \t\t\t\"$_user_uid\" \"$_user_gid\" \\\n  \t\t\t\"$_user_home_dir/${_file#dot}\"\n  \t\tretval=$?"
+}

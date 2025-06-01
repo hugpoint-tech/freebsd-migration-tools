@@ -1,0 +1,8 @@
+{
+ "id": 872324,
+ "bug_id": 208365,
+ "attachment_id": 0,
+ "creation_time": "2016-03-29T11:30:36Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "I'm able to reproduce the problem using the following kernel patch and test-program on the latest and greatest 11-current:\n\ndiff --git a/sys/x86/x86/busdma_machdep.c b/sys/x86/x86/busdma_machdep.c\nindex c96b26d..a4c0af7 100644\n--- a/sys/x86/x86/busdma_machdep.c\n+++ b/sys/x86/x86/busdma_machdep.c\n@@ -97,6 +97,13 @@ bus_dma_run_filter(struct bus_dma_tag_common *tc, bus_addr_t paddr)\n {\n        int retval;\n \n+       if (tc-\u003eflags \u0026 BUS_DMA_KEEP_PG_OFFSET) {\n+               if ((paddr % 3) == 0) {\n+                       printf(\"F\");\n+                       return (1);\n+               }\n+       }\n+\n        retval = 0;\n        do {\n                if (((paddr \u003e tc-\u003elowaddr \u0026\u0026 paddr \u003c= tc-\u003ehighaddr) ||\n\ncat \u003c\u003c EOF \u003e test.c\n#include \u003cstdio.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cstdlib.h\u003e\n\nint main()\n{\n\tint fd = open(\"/dev/da0\", O_RDONLY);\n\tchar buffer[65536];\n\tint y;\n\n\tif (fd \u003c 0)\n\t\treturn (0);\n\n\ty = 65536;\n\twhile (1) {\n\t\t(void) malloc(512);\n\t\tif (lseek(fd, 0, 0) \u003c 0)\n\t\t\tprintf(\"ERROR seek\\n\");\n\t\tif (read(fd, buffer, y) != y)\n\t\t\tprintf(\"ERROR read\\n\");\n\t}\n\tclose(fd);\n\n\treturn (0);\n}\nEOF\n\n\nMemory stick is connected through USB 3.0 port XHCI.\n\nIt appears that when bounce pages are mixed with non-bounce pages the problem happens."
+}

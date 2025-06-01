@@ -1,0 +1,8 @@
+{
+ "id": 1228229,
+ "bug_id": 266719,
+ "attachment_id": 236964,
+ "creation_time": "2022-09-30T09:55:27Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 236964\ncrash telnetd with IAC EC\n\nIf telnetd receives IAC EC (erase), telrcv() dereferences an sptr:\n\n                                        ch = *slctab[SLC_EC].sptr;\n\nHowever, slctab[] is initialized only after telnetd asks the client\nfor the terminal type. That is, doit() calls getterminaltype() before\ncalling telnet(); and telnet() calls get_slc_defaults() which\ninitializes slctab[]. So if the client sends IAC EC too early in the\nsession, telnetd will crash.\n\nI've attached a demo:\n\n% cc telnetd2a.c\n% ./a.out\n\ngdb on telnetd says:\n\nProgram received signal SIGSEGV, Segmentation fault.\nAddress not mapped to object.\n0x000000000102c1dc in telrcv () at /usr/src/contrib/telnet/telnetd/state.c:224\n224                                     if (c == EC)\n(gdb) where\n#0  0x000000000102c1dc in telrcv ()\n    at /usr/src/contrib/telnet/telnetd/state.c:224\n#1  0x0000000001030974 in ttloop ()\n    at /usr/src/contrib/telnet/telnetd/utility.c:84\n#2  0x000000000102f131 in getterminaltype (name=\u003coptimized out\u003e)\n    at /usr/src/contrib/telnet/telnetd/telnetd.c:481\n#3  0x000000000102efd8 in doit (who=who@entry=0x7fffffffe790)\n    at /usr/src/contrib/telnet/telnetd/telnetd.c:715\n#4  0x000000000102ecb5 in main (argc=0, argv=\u003coptimized out\u003e)\n    at /usr/src/contrib/telnet/telnetd/telnetd.c:408\n\nFreeBSD stock14 14.0-CURRENT FreeBSD 14.0-CURRENT #3 main-n258027-c9baa974717a: Thu Sep 15 20:02:51 AST 2022     root@stock14:/usr/obj/usr/src/amd64.amd64/sys/GENERIC amd64"
+}

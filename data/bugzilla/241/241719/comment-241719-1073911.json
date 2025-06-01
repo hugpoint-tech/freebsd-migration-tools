@@ -1,0 +1,8 @@
+{
+ "id": 1073911,
+ "bug_id": 241719,
+ "attachment_id": 0,
+ "creation_time": "2019-11-05T02:32:15Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "After ports/r515761, the build now gets missing prototype warnings like so:\n\nparsetexi/api.c:74:7: warning: implicit declaration of function 'bindtextdomain' is invalid in C99 [-Wimplicit-function-declaration]\n      bindtextdomain (PACKAGE, s);\n      ^\nparsetexi/api.c:89:5: warning: implicit declaration of function 'bindtextdomain' is invalid in C99 [-Wimplicit-function-declaration]\n    bindtextdomain (PACKAGE, LOCALEDIR);\n    ^\nparsetexi/api.c:91:3: warning: implicit declaration of function 'textdomain' is invalid in C99 [-Wimplicit-function-declaration]\n  textdomain (PACKAGE);\n\n\nThere are a few problems involved:\n\n (a) The top level configure does not detect libintl.h, so it does not define HAVE_LIBINTL_H (because it doesn't look in /usr/local/include).\n\n (b) Even if it did set HAVE_LIBINTL_H (add USES=localbase would do the job), the configure that is run in tp/Texinfo/XS is different.  It does not even try to detect libintl.h and so it also does not set HAVE_LIBINTL_H.  This means libintl.h is never included which triggers the compiler warnings.\n\n\nThus, the change in ports/r515761 effectively just comment out the include of libintl.h.  An #if 0 would have done just as well.\n\n\nA fix for (a) is \"NLS_USES=gettext localbase\" (instead of NLS_USES=gettext).\n\n\nA fix for (b) is to teach tp/Texinfo/XS/configure(.ac) to look for libintl.h - perhaps use the same method the top level configure uses."
+}

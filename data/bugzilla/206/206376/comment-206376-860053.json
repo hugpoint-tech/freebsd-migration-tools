@@ -1,0 +1,8 @@
+{
+ "id": 860053,
+ "bug_id": 206376,
+ "attachment_id": 165773,
+ "creation_time": "2016-01-18T18:54:08Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 165773\nUse local asm labels to prevent problems with unrolling\n\nDuring the exp-run in bug 206074, it was found that emulators/mednafen gives errors with a recent clang 3.8.0 snapshot [1]:\n\n    OwlResampler.cpp:447:39: error: invalid symbol redefinition\n    \"movups  0(%%\" X86_REGC \"di), %%xmm0\\n\\t\"\n                                      ^\n    \u003cinline asm\u003e:7:2: note: instantiated into assembly here\n            SSE_Loop:\n            ^\n\nThis is because a named asm label should not be used in an inline function.  If the function is used while unrolling a loop, as in this case, it will lead to duplicated asm labels.  Note that gcc 4.7 and higher also complain similarly, when used with optimization.\n\nThe fix is to use a local label, \"1:\", and jump to it using \"jnz 1b\".\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR206074-default/2016-01-15_15h26m58s/logs/errors/libxul-38.5.2.log"
+}

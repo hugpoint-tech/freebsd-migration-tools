@@ -1,0 +1,8 @@
+{
+ "id": 1021709,
+ "bug_id": 233204,
+ "attachment_id": 199211,
+ "creation_time": "2018-11-13T18:04:45Z",
+ "creator": "mikael@FreeBSD.org",
+ "text": "Created attachment 199211\ntest program\n\nHi,\nI'm having the following crash in rtld on aarch64 when a program uses dlopen, pthread and tls variables with the test program available at [1] :\n\nProgram terminated with signal SIGSEGV, Segmentation fault.\n#0  free_tls (tcb=0x4028e010, tcbsize=16, tcbalign=16) at /usr/src/libexec/rtld-elf/rtld.c:4842\n4842        dtvsize = dtv[1];\n\n(gdb) bt\n#0  free_tls (tcb=0x4028e010, tcbsize=16, tcbalign=16) at /usr/src/libexec/rtld-elf/rtld.c:4842\n#1  0x0000000040235910 in _rtld_free_tls (tcb=0x4028e010, tcbsize=16, tcbalign=\u003coptimized out\u003e)\n   at /usr/src/libexec/rtld-elf/rtld.c:5062\n#2  0x00000000402acde4 in _thr_free (curthread=0x406c4000, thread=0x406c4500) at /usr/src/lib/libthr/thread/thr_list.c:199\n#3  0x00000000402accf0 in _thr_gc (curthread=0x406c4000) at /usr/src/lib/libthr/thread/thr_list.c:129\n#4  0x00000000402ad164 in _thr_alloc (curthread=0x406c4000) at /usr/src/lib/libthr/thread/thr_list.c:141\n#5  0x00000000402a2124 in _pthread_create (thread=0xffffffffe948, attr=0x0, start_routine=0x406d906c \u003cdo_something\u003e, arg=0x0)\n   at /usr/src/lib/libthr/thread/thr_create.c:81\n#6  0x0000000000210364 in main ()\n\n(gdb) p *0x4028e010\n$1 = 666\n\nThe tcb points to my __thread variable which seems wrong.\n\nI don't have the knowledge to debug this problem further so any help will be greatly appreciated.\n\nIt crashes on 11.2-RELEASE and 13.0-CURRENT r340197.\n\n[1]  http://mikael.urankar.free.fr/FreeBSD/aarch64/test.c\nhttp://mikael.urankar.free.fr/FreeBSD/aarch64/test_lib.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1198585,
+ "bug_id": 261855,
+ "attachment_id": 0,
+ "creation_time": "2022-02-10T08:33:14Z",
+ "creator": "lapo@lapo.it",
+ "text": "Daily scrub periodic task is currently using `zpool history` to check the last time a `zpool scrub` was started (note: not completed, or executed, just started).\n\nOn my system, which has a lots of filesystems and hourly snapshot/send/recv/destroy jobs in order to replicate it to/from another system my `zpool history` only covers 48h of data and thus periodic scrub (configured to 35 days as per default) gets executed every 3 days (this is the reason I looked into it in the first place).\n\nRight now the logic is more or less:\n1. check last scrub start in `zpool history`\n2. calculate diff, if \u003c 35 just stop\n3. check \"scan:\" line from `zpool status` and do different stuff\n\nI would suggest to remove the usage of `zpool history` and replace it with a parsing of the `zpool status` \"scan:\" line, which can be done with `LANG=C date -j -f '%a %b %d %T %Y'`.\n\n% zpool status | fgrep 'scan:'\n  scan: scrub canceled on Thu Feb 10 08:40:04 2022\n  scan: scrub repaired 0B in 00:00:26 with 0 errors on Sun Jan 23 19:09:50 2022\n\nThis can be easily integrated in the existing `case` by adding a new match like `*\"scrub repaired\"*|*\"scrub canceled\"*)` and calculate the end of last scrub based on that.\n\nCaveat: `zpool status` gets reset each time a (manual) scrub or pause or cancel is done. But the current method has caveats too (using start time instead of end time, using a hisotry command which can not be very trustworthy in some situations) so I think this would be an overall better solution.\n\nWhat do you think?\n\nI can prepare a diff for this."
+}

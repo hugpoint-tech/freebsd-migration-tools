@@ -1,0 +1,8 @@
+{
+ "id": 909543,
+ "bug_id": 214902,
+ "attachment_id": 0,
+ "creation_time": "2016-11-28T20:30:34Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #0)\n\nThe stage was:\n\n\u003e\u003e\u003e stage 1.2: bootstrap tools\n\nDuring:\n\n--- _bootstrap-tools-usr.bin/clang/clang-tblgen ---\nand . . .\n--- _bootstrap-tools-usr.bin/clang/llvm-tblgen ---\n\n\nIt looks like this llvm activity needs to compile and link in:\n\nllvm/lib/Support/Atomic.cpp\n\nwhich defines the two routines:\n\n#include \"llvm/Support/Atomic.h\"\n#include \"llvm/Config/llvm-config.h\"\n\nusing namespace llvm;\n\n#if defined(_MSC_VER)\n#include \u003cIntrin.h\u003e\n#include \u003cwindows.h\u003e\n#undef MemoryFence\n#endif\n\n#if defined(__GNUC__) || (defined(__IBMCPP__) \u0026\u0026 __IBMCPP__ \u003e= 1210)\n#define GNU_ATOMICS\n#endif\n\nvoid sys::MemoryFence() {\n#if LLVM_HAS_ATOMICS == 0\n  return;\n#else\n#  if defined(GNU_ATOMICS)\n  __sync_synchronize();\n#  elif defined(_MSC_VER)\n  MemoryBarrier();\n#  else\n# error No memory fence implementation for your platform!\n#  endif\n#endif\n}\n\nsys::cas_flag sys::CompareAndSwap(volatile sys::cas_flag* ptr,\n                                  sys::cas_flag new_value,\n                                  sys::cas_flag old_value) {\n#if LLVM_HAS_ATOMICS == 0\n  sys::cas_flag result = *ptr;\n  if (result == old_value)\n    *ptr = new_value;\n  return result;\n#elif defined(GNU_ATOMICS)\n  return __sync_val_compare_and_swap(ptr, old_value, new_value);\n#elif defined(_MSC_VER)\n  return InterlockedCompareExchange(ptr, new_value, old_value);\n#else\n#  error No compare-and-swap implementation for your platform!\n#endif\n}"
+}

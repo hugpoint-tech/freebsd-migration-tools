@@ -1,0 +1,8 @@
+{
+ "id": 904100,
+ "bug_id": 213848,
+ "attachment_id": 0,
+ "creation_time": "2016-10-28T10:35:11Z",
+ "creator": "cedric@precidata.com",
+ "text": "Since the update 6 days ago, lighttpd 1.4.42 does not work on FreeBSD 9.3 anymore.\n\nThe binary fails to startup with:\n\n2016-10-28 11:06:30: (plugin.c.227) dlopen() failed for: /usr/local/lib/lighttpd/mod_cgi.so /usr/local/lib/lighttpd/mod_cgi.so: Undefined symbol \"pipe2” \n\nmod_cgi.c contains the following horror:\n\n#ifdef O_CLOEXEC\n#define pipe_cloexec(pipefd) pipe2((pipefd), O_CLOEXEC)\n#elif defined FD_CLOEXEC\n#define pipe_cloexec(pipefd) \\\n  (   0 == pipe(pipefd) \\\n   \u0026\u0026 0 == fcntl(pipefd[0], F_SETFD, FD_CLOEXEC) \\\n   \u0026\u0026 0 == fcntl(pipefd[1], F_SETFD, FD_CLOEXEC) \\\n    ? 0 \\\n    : -1)\n#else\n#define pipe_cloexec(pipefd) pipe(pipefd)\n#endif\n\nWhich of course is wrong, FreeBSD 9.3 has O_CLOEXEC but no pipe2.\n\nThanks,\nCedric"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 993879,
+ "bug_id": 228462,
+ "attachment_id": 0,
+ "creation_time": "2018-05-24T14:50:14Z",
+ "creator": "slow@samba.org",
+ "text": "The Samba FreeBSD port patch https://svnweb.freebsd.org/ports/head/net/samba47/files/patch-source3__modules__vfs_streams_xattr.c?revision=464431\u0026view=markup changes vfs_streams_xattr to not read and write an additional trailing byte (cf the comment lines containing \"// ? -1\" in the patch), but when creating a stream the trailing byte is still stored (cf streams_xattr_open() the code after the comment \"Darn, xattrs need at least 1 byte\").\n\nDue to a vicious interaction with a bug that is present in the latest macOS 10.13.4 (not sure about earlier versions) what happens is this:\n\n- the client send a request to create a stream \"file:AFP_AfpInfo\"\n\n- the server creates the xattr for the stream and writes a 0 byte\n\n- the client sends a request to read 60 bytes at offset 0 from the stream\n\n- the server returns a one byte sized buffer containing a 0 instead of returning nread=0 and status=NT_STATUS_END_OF_FILE\n\n- the final nail in the coffin is that the client, when writing the AFP_AfpInfo blob whos first four byte start with a magic string \"AFP\" takes the 0 byte the server returned and overwrites the first byte of the magic string\n\nThe fix for this twofold: first, we must fix vfs_streams_xattr to not store an initial zero byte when creating an xattr. Second, we must prepare vfs_fruit to allow such broken AFP_AfpInfo blobs, otherwise users who adding vfs_fruit run into the issue that vfs_fruit has a builtin check for the magic string...\n\nHave patch, need bug number...\n\nFwiw, this is a bug only present in the FreeBSD Samba port."
+}

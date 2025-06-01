@@ -1,0 +1,8 @@
+{
+ "id": 1086763,
+ "bug_id": 243864,
+ "attachment_id": 211338,
+ "creation_time": "2020-02-04T11:05:11Z",
+ "creator": "brigadir15@gmail.com",
+ "text": "Created attachment 211338\nRemove the VDESC_NOMAP_VPP and VDESC_VPP_WILLRELE flags (v0)\n\nI'm trying to build emulators/open-vm-tools-nox11 on FreeBSD 13.0-CURRENT r357195 with /usr/src updated to r357494:\n\n# cd /usr/ports/emulators/open-vm-tools-nox11\n# make build\n...\nvnops.c:536:31: error: use of undeclared identifier 'VDESC_NOMAP_VPP'\n       !(descp-\u003evdesc_flags \u0026 VDESC_NOMAP_VPP) \u0026\u0026\n                              ^\n\nvnops.c:543:32: error: use of undeclared identifier 'VDESC_VPP_WILLRELE'\n      if (descp-\u003evdesc_flags \u0026 VDESC_VPP_WILLRELE) {\n                               ^\n\n2 errors generated\n...\n\nThe first error is caused by r357287[1] which removed the VDESC_NOMAP_VPP flag.  The second one -- by r357403[2] which removed the VDESC_VPP_WILLRELE flag.\n\nI picked the changes made in those revisions in file sys/fs/nullfs/null_vnops.c and applied them to the port's file modules/freebsd/vmblock/vnops.c using define-guards.  But, because neither r357287, nor r357403 changed the __FreeBSD_version, I have to use `#if __FreeBSD_version \u003c 1300076` to be able to build the port on FreeBSD 13.0-CURRENT r357195 (which is 1300076; since r356511[3]).  Therefore, the patch I attached may not be completely correct if the removed flags somehow are in use between r356511 and r357287.\n\nPlease review.\n\n[1] https://svnweb.freebsd.org/base?view=revision\u0026revision=357287\n[2] https://svnweb.freebsd.org/base?view=revision\u0026revision=357403\n[3] https://svnweb.freebsd.org/base?view=revision\u0026revision=356511"
+}

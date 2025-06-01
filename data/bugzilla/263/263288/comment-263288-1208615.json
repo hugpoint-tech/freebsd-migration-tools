@@ -1,0 +1,8 @@
+{
+ "id": 1208615,
+ "bug_id": 263288,
+ "attachment_id": 0,
+ "creation_time": "2022-04-26T03:42:20Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to wcarson.bugzilla from comment #17)\n\n\u003e To be perfectly clear: 2600:3c00::/64 is shared insofar as other customers have VMs\n\u003e with IPv6 addresses on the same IPv6 subnet. Your SLAAC-assigned IPv6 address -\n\u003e 2600:3c00::f03c:91ff:feb0:a56f - is a /128 range, which essentially makes it a\n\u003e single IPv6 address which only your VM can use.\n\nIf other customers do NOT send spoofed NS packets, or your provider has means to prevent spoofed NS packets, then it is safe to turn on 'net.inet6.icmp6.nd6_onlink_ns_rfc4861'. \n\n\u003e The addresses within your /64 range - 2600:3c00:e000:0137::/64 - can only be used\n\u003e by the VM it's routed towards.\n\nSince your provider provided routed /64 block, the upstream router should have route to this /64 block, then the SLAAC-assigned IPv6 address 2600:3c00::f03c:91ff:feb0:a56f is not required, and you can use 2600:3c00:e000:0137::/64 directly. You can keep 'nd6_onlink_ns_rfc4861' untouched and try this:\n\n# ping6 -S 2600:3c00:e000:0137:cafe:8a2e:0370:7334 ipv6.google.com\n\nor disable SLAAC:\n\n# service rtsold stop\n# ifconfig em0 inet6 -accept_rtadv\n# ifconfig em0 inet6 2600:3c00::f03c:91ff:feb0:a56f delete\n# route -6 get default || route -6 add default fe80::1%em0\n# ping6 ipv6.google.com"
+}

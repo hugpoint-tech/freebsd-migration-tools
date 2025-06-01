@@ -1,0 +1,8 @@
+{
+ "id": 416835,
+ "bug_id": 117773,
+ "attachment_id": 0,
+ "creation_time": "2007-11-12T18:48:03Z",
+ "creator": "bob@veznat.com",
+ "text": "I did manage to repro this and have found that what's in /var/run/utmp  \ncontains the hostname of the connected host, not the IP (or IPv6)  \naddress.\n\nI think pam_lastlog is what keeps utmp current and this comes from  \npam_lastlog.c::pam_sm_open_session(). The IP address that should be  \nwritten comes in via pam_handle_t.\n\nIt appears that pam_lastlog.c simply dumps whatever comes in for  \nPAM_RHOST. Digging down into openpam we see that PAM_RHOST is \"The  \nname of the applicant's host.\"\n\nFalling back up into OpenSSH's auth-pam.c we see that it sets  \nPAM_RHOST to the remote name or IP (get_remote_name_or_ip()). So this  \nsets up pam_lastlog to log the hostname if it knows it and only if it  \ncan't find the reverse name it logs the IP.\n\nThe gist of this is, quite simply, that what's in /var/run/utmp is  \ncorrect. It is supposed to be the hostname, if known and otherwise the  \nIP address.\n\nw(1) -n does exactly what it's supposed to: it does \"not attempt to  \nresolve network addresses.\" So rest assured that no reverse DNS  \nqueries are being done even though hostnames are showing up.\n\nAll of that said I believe this bug can be closed without doing any  \nwork.\n\n-Bob"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 33222,
+ "bug_id": 10959,
+ "attachment_id": 0,
+ "creation_time": "1999-08-11T13:02:40Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e I took a stab at reproducing and analysing this PR.  The good news is\n\u003e that the problem is reproducible in -current.\n\nThe good news is that you found a new bug :-).  Rev.1.196 of vfs_bio.c\ncauses lots of problems by arranging for writes to be retried forever\nafter an error.  Some of the problems are converted from endless retries\nto panics by filesystem bugs.\n\n\u003e (a) at what point should we attempt to detect read-only media?\n\nBefore opening it read-write.  Detection on every i/o is still required\nsince removable media may become read-only (not to mention inaccessible)\nbetween i/o's.\n\n\u003e (b) how do we ensure that a (forced?) unmount really scrubs all the\n\u003e     buffers that are associated with the device being unmounted?\n\n(i) Don't forget to call vinvalbuf() on the mounted-on device in the\n    filesystem's VOP_UNMOUNT() routine.  msdosfs_unmount() forgets to.\n    Fixing this won't help much.  If the mount point has an unwritable\n    block but no fs-specific vnodes have an unwritable block, then the\n    unmount will hang retrying writes forever, despite being forced.\n    The panic is probably rare even for mishandled floppies, because an\n    unwritable block in an fs-specific vnode will cause a hang earlier.\n\n(ii) Don't allow the vinvalbuf() in (i) to fail.  It can fail in some\n     cases, but these cases probably can't occur for devices.  Anyway,\n     VOP_UNMOUNT() shouldn't proceed when vinvalbuf() fails.\n\nBruce"
+}

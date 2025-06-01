@@ -1,0 +1,8 @@
+{
+ "id": 1085284,
+ "bug_id": 243590,
+ "attachment_id": 0,
+ "creation_time": "2020-01-25T16:19:02Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "The TCP/IP ECN signaling loop looks like this\n\n         -CE-\u003e   (latches ECE)\n         \u003c----  ACK, ECE\nACK, CWR ----\u003e   (unlatches ECE)\n\nHowever, RFC3168 has a SHOULD for sending the CWR with a *new* data packet.\n\nNew data packets usually are also marked as ECN-capable transport (ECT), while\ncontrol packets, pure ACKs and retransmissions are sent without IP ECT codepoint.\n\nSome overly restrictive clients (Linux) explicitly only accept and process\nCWR, if they are received on (new) data segments, but ignore them completely when set in other packets. While such an overly restrictive behavior is also problematic, BSD *should* adhere to the guidance of RFC3168 and sent out\nCWR flags only when (new) data packets are sent out (sec 6.1.2) rather than simply the very next segment (sec. 6.1):\n\nRFC3168, section 6.1:\n  \n      * The sender sets the CWR flag in the TCP header of the next\n        packet sent to the receiver to acknowledge its receipt of and\n        reaction to the ECN-Echo flag.\n\nRFC3168, section 6.1.2:\n\n   When an ECN-Capable TCP sender reduces its congestion window for any\n   reason (because of a retransmit timeout, a Fast Retransmit, or in\n   response to an ECN Notification), the TCP sender sets the CWR flag in\n   the TCP header of the first new data packet sent after the window\n   reduction. \n\n\nThe interaction can lead to a race to the bottom, where cwnd is continually\ndecreased and kept at a very small value. This results in extremely poor\nperformance for ECN-enabled TCP sessions."
+}

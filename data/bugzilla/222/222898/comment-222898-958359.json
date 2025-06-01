@@ -1,0 +1,8 @@
+{
+ "id": 958359,
+ "bug_id": 222898,
+ "attachment_id": 0,
+ "creation_time": "2017-11-05T18:47:17Z",
+ "creator": "trasz@FreeBSD.org",
+ "text": "I've spent some time thinking about this, and I believe the KASSERT in question is wrong.  It's perfectly ok for PDUs to be allocated at this point - icl_conn_close() is called before terminating the tasks, so there might be eg cfiscsi_done() running in a parallel thread.  That's why we have the ic_terminating check in icl_queue().  I believe the KASSERT should be moved from icl_conn_close() to icl_conn_free().  Alexander, do you agree?\n\nHaving said that - I'd still like to take a look into how things actually look like when this happens, to make sure my reasoning is correct.  Eugene, could you try to repeat this with the iscsi-optimize-off.diff applied, with all the other things just as they were before - with INVARIANTS and DIAGNOSTICS enabled?  Please also include debug files from usr/lib/debug/boot/kernel/; the ones you've put up contain debug info for the kernel itself, but not for the modules.  Or perhaps just build kernel with ctl and iscsi compiled in."
+}

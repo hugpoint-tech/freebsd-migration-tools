@@ -1,0 +1,8 @@
+{
+ "id": 87900,
+ "bug_id": 28084,
+ "attachment_id": 0,
+ "creation_time": "2001-06-11T23:40:01Z",
+ "creator": "ak03@gte.com",
+ "text": "\tThere are three possible promlems in the -CURRENT PCM code\n\n\ta) pcm_chn_add deletes channel passed to it as a parameter, even \n\t   though all pcm_chn_add callers call pcm_chn_destroy themselves\n\t   when pcm_chn_add fails. pcm_chn_destroy then attempts to delete\n\t   pcm_channel struct which already has been deleted\n\n\tb) dynamic sysctl handler for the number of virtual channels does \n\t   not resize d-\u003earec and d-\u003eaplay arrays. The code like d-\u003eaplay[chan]\n\t   is used all over the place in PCM, and in presence of dynamically\n\t   allocated vchannels channel number can be bigger than d-\u003emaxchan\n\t   which is statically computed in pcm_register based of the number\n\t   of actual hardware channels.\n\n\tc) When creating additional vchannels, the code sets CHN_F_BUSY \n\t   flag _before_ calling vchan_create and fails to clean that \n\t   flag when vchan_create returns error and no other vchannels weres\n           created, thus leaving the parent channel permanently busy.\n\nFix: Attached patch patch tries to address the above problems. With patch\n\tapplied I was able to run my sbc16 sound card with 4 vchannels all\n\tplaying simultaneously :)\nHow-To-Repeat: \tN/A"
+}

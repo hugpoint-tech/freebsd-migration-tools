@@ -1,0 +1,8 @@
+{
+ "id": 629298,
+ "bug_id": 160721,
+ "attachment_id": 0,
+ "creation_time": "2011-09-14T03:10:10Z",
+ "creator": "thinker@codemud.net",
+ "text": "Compiler generated code will call ___tls_get_addr() of ld-elf.so\nfor TLS variable.  It is supposed to return the same address, every time,\nfor the same passed address and thread, but it does not.\n\nFix: Apply following patch on the root of source tree can fix this issue.\n\n\t\nHow-To-Repeat: Compile following code with commands\n\n 1. cc -shared -o test-tls-1.so -pthread -fpic test-tls-1.c\n 2. cc -o test-tls -pthread test-tls.c\n\ntest-tls is supposed to print \"100\" on stdout, but it print out \"50\",\ninstead.  If you dig into opcodes, you will find that ___tls_get_addr()\nreturn two different base addresses for modify() and for show() respective.\nThis issue is only making troubles for programs accessing TLS after dlopen().\n\n--- test-tls-1.c begins here ---\n#include \u003cstdio.h\u003e\n\n__thread int var = 50;\n\nvoid\nmodify(void) {\n    var = 100;\n}\n\nvoid\nshow(void) {\n    printf(\"%d\\n\", var);\n}\n--- test-tls-1.c ends here ---\n\n--- test-tls.c begins here ---\n#include \u003cstdio.h\u003e\n#include \u003cdlfcn.h\u003e\n\nint\nmain(int argc, char * const *argv) {\n    void (*modify)(void);\n    void (*modify)(void);\n    void *sohdl;\n\n    sohdl = dlopen(\"./test-tls-1.so\", RTLD_NOW);\n    modify = (void (*)(void))dlsym(sohdl, \"modify\");\n    show = (void (*)(void))dlsym(sohdl, \"show\");\n\n    modify();\n    show();\n\n    return 0;\n}\n--- test-tls.c ends here ---"
+}

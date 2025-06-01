@@ -1,0 +1,8 @@
+{
+ "id": 911110,
+ "bug_id": 210315,
+ "attachment_id": 0,
+ "creation_time": "2016-12-09T12:19:32Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "I've just got another of these panics.\n\nI wonder if it could be caused by this code:\n\n\t\t\tsize = vmspace_resident_count(vm);\n\t\t\tif (size \u003e= limit) {\n\t\t\t\tvm_pageout_map_deactivate_pages(\n\t\t\t\t    \u0026vm-\u003evm_map, limit);\n\t\t\t}\n#ifdef RACCT\n\t\t\tif (racct_enable) {\n\t\t\t\trsize = IDX_TO_OFF(size);\n\t\t\t\tPROC_LOCK(p);\n\t\t\t\tracct_set(p, RACCT_RSS, rsize);\n\t\t\t\travailable = racct_get_available(p, RACCT_RSS);\n\t\t\t\tPROC_UNLOCK(p);\n\n\nSpecifically, we calculate rsize from size, but the value of the latter could be outdated if size was larger than limit and vm_pageout_map_deactivate_pages() got called.\n\nAs a side note, I wonder why greater-than-or-equal is used for comparing size and limit."
+}

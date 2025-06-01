@@ -1,0 +1,8 @@
+{
+ "id": 883647,
+ "bug_id": 210313,
+ "attachment_id": 0,
+ "creation_time": "2016-06-16T06:50:29Z",
+ "creator": "glewis@FreeBSD.org",
+ "text": "pkg-deinstall in javavmwrapper hasn't changed meaningfully since 2012 (the change in 2014 was SVN props only).\n\nIt is not accurate that the script does 'rm -f /usr/local/bin/checkvms*'.  Here is the script: https://svnweb.freebsd.org/ports/head/java/javavmwrapper/pkg-deinstall?view=markup\n\nWhat it does is look for symlinks in the ${PKG_PREFIX}/bin which point to javavm that _aren't_ named checkvms, manvm, registervm, or unregistervm and deletes them (since it created them).\n\nSo it does only delete symlinks it knows about and doesn't pick random symlinks at all.\n\nNow, based on having a file named 'checkvms.OyXWrDokPDgu', I'm guessing that pkg creates temporary named files somehow as part of its install/deinstall process?  Is that correct?\n\nIn terms of fixing this, if we wanted to only act during POST-DEINSTALL, then that would be a simple change to line 8 from checking for DEINSTALL to checking for POST-DEINSTALL.  Will that break the realpath check though?  Since the files javavmwrapper installs, including javavm, will be gone by then.  I'll need to check that to be sure.\n\nIf that works, it would also remove the need to exclude files like checkvms since they will already be gone.\n\nThat is the short term fix.  The long term fix is likely that javavmwrapper should be removed and the java ports should act more like other language ports that allow the user to select a default version and use that."
+}

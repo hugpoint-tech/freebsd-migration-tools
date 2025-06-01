@@ -1,0 +1,8 @@
+{
+ "id": 1336135,
+ "bug_id": 282909,
+ "attachment_id": 0,
+ "creation_time": "2024-11-22T08:28:03Z",
+ "creator": "mail@fbsd2.e4m.org",
+ "text": "If we run make(1) without the env var MAKESYSPATH being set and from a directory which is automounted using the special map \"-hosts\" in an environment where no NFS server named \"share\" exists, operation is slowed down significantly and the syslog is spammed with messages like:\n \nNov 22 09:01:54 \u003cdaemon.warn\u003e kiste automountd[12840]: \"/etc/autofs/special_hosts share\", pid 12841, terminated with exit status 1\n \nNov 22 09:01:54 \u003ckern.crit\u003e kiste kernel: [2773] WARNING: autofs_trigger_one: request for /net/ completed with error 5, pid 12839 (make)\n \nNov 22 09:01:54 \u003cdaemon.crit\u003e kist automountd[12840]: failed to handle special map \"-hosts\"\n\nThis is because make(1) uses the compile-time defined DEFAULT_SYS_PATH (.../share/mk:/usr/share/mk) and goes up the path until it hits \"/net/share\".\n\nHow to reproduce:\n\n1. Set up an automount environment using\n\n/net    -hosts  (optional options)\n\n2. cd to an (existing) dir, e.g.\n\ncd /net/myserver/some_dir\n\n3. Type \"make\" (no Makefile needed)."
+}

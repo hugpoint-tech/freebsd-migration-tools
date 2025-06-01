@@ -1,0 +1,8 @@
+{
+ "id": 977080,
+ "bug_id": 225450,
+ "attachment_id": 0,
+ "creation_time": "2018-02-12T17:44:23Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "(In reply to Pablo Ruiz from comment #14)\nThanks, this gives me what I was looking for.  We have infinite recursion because the spin lock code is calling DELAY() which is trying to grab a spin lock.\n\nOne question is why isn't DELAY using the tsc?\n\nHmm, it seems 'tsc_is_invariant' isn't set.  Are these older AMD CPUs?\n\nYou can try this as a hack-workaround to verify it fixes the issue, but I need to think a bit more about what the right fix might be:\n\nIndex: x86/x86/delay.c\n===================================================================\n--- delay.c     (revision 329004)\n+++ delay.c     (working copy)\n@@ -72,7 +72,7 @@\n                func = get_tsc;\n                mask = ~0u;\n        } else {\n-               if (tc-\u003etc_quality \u003c= 0)\n+               if (tc-\u003etc_quality \u003c= 0 || n == 1)\n                        return (0);\n                func = tc-\u003etc_get_timecount;\n                mask = tc-\u003etc_counter_mask;"
+}

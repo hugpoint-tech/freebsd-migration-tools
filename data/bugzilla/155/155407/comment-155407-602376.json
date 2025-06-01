@@ -1,0 +1,8 @@
+{
+ "id": 602376,
+ "bug_id": 155407,
+ "attachment_id": 0,
+ "creation_time": "2011-03-09T12:30:11Z",
+ "creator": "slw@zxy.spb.ru",
+ "text": "Exhausted net.inet.tcp.reass.maxsegments block recovering tcp session\n(for this socket and any other socket waiting for retransmited packets).\n\nAfter exhausted net.inet.tcp.reass.maxsegments allocation new entry in\ntcp_reass failed (for this socket and any other socket waiting for\nretransmited packets).\n\n        te = uma_zalloc(V_tcp_reass_zone, M_NOWAIT);\n        if (te == NULL) {\n                TCPSTAT_INC(tcps_rcvmemdrop);\n                m_freem(m);\n                *tlenp = 0;\n                return (0);\n        }\n\nThat is packet can be reduce reassemble queue dropped.\n\nFix: \n\nWorkaround: set net.inet.tcp.reass.maxsegments in /boot/loader.conf to big value.\nHow-To-Repeat: Need high bandwidth-delay channel with high, but rare drop.\n\nAfter lost incoming TCP segment and before got retranmited this\nsegment net.inet.tcp.reass.maxsegments exhausted.\n\nSoftware emulation:\n\nTuning by http://fasterdata.es.net/fasterdata/host-tuning/freebsd/\nsysctl net.inet.tcp.recvspace=1048576\nsysctl net.inet.ip.dummynet.pipe_slot_limit=3000\nipfw pipe 1 config delay 300 queue 3000\nipfw add 100 pipe 1 ip from test_hot to me\n\nfetch http://test_host/big_file\n\nAfter reach 7MB/s: ipfw pipe 1 config delay 300 queue 3000 plr 0.1"
+}

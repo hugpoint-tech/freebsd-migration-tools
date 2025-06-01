@@ -1,0 +1,8 @@
+{
+ "id": 38666,
+ "bug_id": 12749,
+ "attachment_id": 0,
+ "creation_time": "1999-07-22T01:30:00Z",
+ "creator": "boris@cs.tu-berlin.de",
+ "text": "\n1. The link() system call of the linux emulator does not perform filename\ntranslation (as symlink(), unlink(), ... do).\n2. The filename translation functions do not check for enough memory\nwhen performing filename translation into the stack gap.\n3. flock() doesn't check the type argument.\n4. The linux emulator cannot handle long filenames.\n\nFix: 4. We should think about increasing SPARE_USRSPACE (/usr/include/sys/exec.h)\nto at least 2*(PATH_MAX+strlen(\"/compat/linux\")) or use another method for\nfilename translations.\n\n1.+2.+3.: Apply the following patches in /usr/src/sys/i386/linux and\ncall 'make install' in /usr/src/sys/modules/linux:\nHow-To-Repeat: \n1. Create /compat/linux/etc/dummy and try to call\nlink(\"/etc/dummy\", \"/etc/dummy2\") within the linux emulation mode.\n2. Calling open() with a long filename (\u003e256 chars) will overwrite\nthe signal trampoline code and (if the filename is really long) the\nps(1) information.\n3. Try to call flock(fd, 4711); within the linux emulation mode.\n4. After applying the patches, open() with long filenames will return\nENAMETOOLONG."
+}

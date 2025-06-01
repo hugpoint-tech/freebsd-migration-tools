@@ -1,0 +1,8 @@
+{
+ "id": 555590,
+ "bug_id": 146189,
+ "attachment_id": 0,
+ "creation_time": "2010-04-30T20:05:15Z",
+ "creator": "ed@80386.nl",
+ "text": "* Dmitry Marakasov \u003camdmi3@FreeBSD.org\u003e wrote:\r\n\u003e After these changes it no longer exits with the same exit code as the command it runs (thus, if the command fails, it'll still exit with 0)\r\n\u003e Among other things, this breaks portupgrade, as it now mistakingly interprets failed port builds as successfull ones, thus removing ports without installing newer versions.\r\n\r\nLooks like my fix is correct, but it did expose a new bug inside\r\nscript(1). We must not use WNOHANG in wait3(), because we must now\r\nreally wait for the child process to properly shut down.\r\n\r\nIndex: script.c\r\n===================================================================\r\n--- script.c    (revision 207446)\r\n+++ script.c    (working copy)\r\n@@ -223,7 +223,7 @@\r\n        int die, e, status;\r\n\r\n        die = e = 0;\r\n-       while ((pid = wait3(\u0026status, WNOHANG, 0)) \u003e 0)\r\n+       while ((pid = wait3(\u0026status, 0, 0)) \u003e 0)\r\n                if (pid == child) {\r\n                        die = 1;\r\n                        if (WIFEXITED(status))\r\n\r\n-- \r\n Ed Schouten \u003ced@80386.nl\u003e\r\n WWW: http://80386.nl/"
+}

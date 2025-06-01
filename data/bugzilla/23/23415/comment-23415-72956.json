@@ -1,0 +1,8 @@
+{
+ "id": 72956,
+ "bug_id": 23415,
+ "attachment_id": 0,
+ "creation_time": "2000-12-10T10:50:01Z",
+ "creator": "phk@critter.freebsd.dk",
+ "text": "\n\t/etc/security will examine only the current /var/log/messages\n\tand /var/log/messages.0 (with and without .gz suffix) for log\n\tmessages relevant for yesterday.\n\n\t/etc/newsyslog.conf specifies that the messages file is rotated\n\tonce per day *or* when the size exeeds 100kB.\n\n\tIf you are under attack, you are quite likely to have your\n\tmessages rotated due to the size criteria and the next run\n\tof /etc/security will only report on a fraction of the reality.\n\nFix: \n\nI think the catmsgs() function:\n\t\tcatmsgs() {\n\t\t  [ -f $LOG/messages.0.gz ] \u0026\u0026 zcat $LOG/messages.0.gz\n\t\t  [ -f $LOG/messages.0 ] \u0026\u0026 cat $LOG/messages.0\n\t\t  [ -f $LOG/messages ] \u0026\u0026 cat $LOG/messages\n\t\t}\n\tmaybe should do something like:\n\n\t\tcatmsgs() {\n\t\t find $LOG/ -name 'messages.*' -mtime -2 -print | \n\t\t    sort -r |\n\t\t    xargs zcat -f\n\t\t [ -f $LOG/messages ] \u0026\u0026 cat $LOG/messages\n\t\t}\nHow-To-Repeat: \n\tPiss off a scriptkiddie, notice that /etc/security doesn't show\n\tthe full magnitude of his lameness."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1117772,
+ "bug_id": 248008,
+ "attachment_id": 0,
+ "creation_time": "2020-08-12T17:14:38Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I think the suggested patch is ok, but not for the reason stated.  On platforms without a direct map the problem is: to allocate btags we need a slab, and to allocate a slab we need to map a page, and to map a page we need to allocate btags.\n\nWe handle this recursion using a custom slab allocator which specifies M_USE_RESERVE, allowing it to dip into a reserve of free btags.  Because the returned slab can be used to keep the reserve populated, this ensures that there are always enough free btags available to handle the recursion.\n\nUMA_ZONE_NOFREE ensures that we never reclaim free slabs from the zone.  However, when it was removed, an apparent bug in UMA was exposed: keg_drain() ignores the reservation set by uma_zone_reserve() in vmem_startup().  So under memory pressure we reclaim the free btags that are needed to break the recursion.  That's why adding _NOFREE back fixes the problem: it disables the reclamation.\n\nWe could perhaps fix it more cleverly, by modifying keg_drain() to always leave uk_reserve slabs available."
+}

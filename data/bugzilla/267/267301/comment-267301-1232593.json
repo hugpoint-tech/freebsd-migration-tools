@@ -1,0 +1,8 @@
+{
+ "id": 1232593,
+ "bug_id": 267301,
+ "attachment_id": 0,
+ "creation_time": "2022-10-24T01:07:05Z",
+ "creator": "brad@facefault.org",
+ "text": "When attempting to mount a remote file share using NFSv3, portmapper calls use UDP even when TCP is explicitly specified. Using the port= option would be a satisfactory workaround but that doesn't eliminate portmapper calls.\n\nExpected behavior: TCP explicitly specified means TCP everywhere.\n\nRepro:\n\n1. Start tcpdump with capture filter \"port 111\".\n2. Attempt to mount an NFS share with proto=tcp.\n3. The tcpdump contains UDP traffic to the remote portmapper when TCP is expected.\n4. Block outgoing UDP/111 from the client. (I guess this one's not strictly necessary.)\n5. Repeat #2 but add port=2049 to the mount options.\n6. The tcpdump contains a successful NULL call but the client immediately tried contacting the portmapper on UDP to get the mount port.\n\nThis prevents using Azure Blob Storage NFS, and I suspect there are some bad and hard-to-get-fixed firewall configurations out there since Linux's behavior is to use TCP for portmapper in this case."
+}

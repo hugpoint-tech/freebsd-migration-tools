@@ -1,0 +1,8 @@
+{
+ "id": 99821,
+ "bug_id": 31627,
+ "attachment_id": 0,
+ "creation_time": "2001-11-06T17:18:34Z",
+ "creator": "thomas@cuivre.fr.eu.org",
+ "text": "Le 2001-11-06, Eugene Grosbein écrivait :\n\n\u003e #!/bin/sh\n\u003e string=`printf \"\\21\"`\n\u003e echo $string | hd\n \n\u003e Replace 21 with 201 and rerun. You see:\n\u003e 00000000  0a                                                |.|\n\u003e 00000001\n\nCan't reproduce here for the value \\201, but for the other values\nyou mention it looks like perfectly normal and expected behaviour\nfrom sh(1). It is not surprising at all that some characters \"disappear\"\nhere: since $string appears unquoted, any character which is whitespace\nw.r.t. shell parsing rules won't be passed to echo.\nTry to quote your string:\n  echo \"$string\" | hd\n\nIn your other example, you use the 'read' builtin to get characters\nfrom jot, but read is /also/ defined to apply shell field splitting\nrules. \n\nA correct version of your test follows:\n\n#!/bin/sh -x\n\nfor n in `jot 256 0`\ndo\n  c=\"`jot -c 1 $n`\"\n  echo \"$c\" | wc -c | grep -v 2 \u0026\u0026 echo \"$n\"\ndone\n\nwhich correctly produces the following output:\n\n       1\n0\n       1\n10\n\nbecause a shell variable cannot contain a null character (which is\na string end marker), and backquote expansion is defined to remove\ntrailing newlines.\n\nThis is legal and expected behaviour, not a bug.\n\nThomas.\n\n-- \n    Thomas.Quinot@Cuivre.FR.EU.ORG"
+}

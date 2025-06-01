@@ -1,0 +1,8 @@
+{
+ "id": 90121,
+ "bug_id": 28748,
+ "attachment_id": 0,
+ "creation_time": "2001-07-06T01:30:01Z",
+ "creator": "rh@matriplex.com",
+ "text": "This problem was first noticed with a Xylan/Omniswitch ATM switch.  In\nthis case, HARP could not connect to the ARP server.  The switch sent\nCALL PROCEEDING and CONNECT, but HARP replied with RELEASE, and cause\ncode \"missing connection ID\".  Unlike Fore switches, the Xylan switch\nsent the connection ID in the CALL PROCEEDING message, but not CONNECT.\nThis is allowed (UNI 3.1, 5.3.1.3, page 170).\n\nThe CONNECT code in netatm/uni/unisig_vc_state.c checks for the connection ID\nfrom a previous CALL PROCEEDING message, but fails to allow for a VPI value\nof zero (!)  It is likely that the HARP authors used exclusively Fore\nswitches, and this code was probably not tested.\n\nFix: The following patch allows the VPI to be any value, including zero.  In\nfact, zero is probably the most common case for an SVC.\nHow-To-Repeat: To demonstrate this problem, connect a FreeBSD/HARP system to a switch\nthat does not send the connection ID (VPI and VCI) with CONNECT.  This\nis known to be the case with Xylan, and presumably others may also have\nthis behavior.  HARP will set up an SVC, but disconnect (RELEASE) at the\nvery end.  This can be seen by configuring an external ARP server."
+}

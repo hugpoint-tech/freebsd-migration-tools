@@ -1,0 +1,8 @@
+{
+ "id": 1229004,
+ "bug_id": 266862,
+ "attachment_id": 0,
+ "creation_time": "2022-10-06T06:17:48Z",
+ "creator": "takawata@FreeBSD.org",
+ "text": "Invoking \n% devctl devpath FreeBSD root0\ncause kernel panic\n\nThis may because parent of \"root0\" device is NULL and invoking \nBUS_GET_DEVICE_PATH(device_get_parent(dev), dev, locator, sb);\nreferences NULL pointer.\nSo check before invoking it.\n\nFollowing code is not tested yet.\n\ndiff --git a/sys/kern/subr_bus.c b/sys/kern/subr_bus.c\nindex 041e77259313..92447f825643 100644\n--- a/sys/kern/subr_bus.c\n+++ b/sys/kern/subr_bus.c\n@@ -5310,9 +5310,13 @@ device_get_path(device_t dev, const char *locator)\n        ssize_t len;\n        char *rv = NULL;\n        int error;\n+       device_t parent = device_get_parent(dev);\n+\n+       if(parent == NULL)\n+               return EINVAL;\n \n        sb = sbuf_new(NULL, NULL, 0, SBUF_AUTOEXTEND | SBUF_INCLUDENUL);\n-       error = BUS_GET_DEVICE_PATH(device_get_parent(dev), dev, locator, sb);\n+       error = BUS_GET_DEVICE_PATH(parent, dev, locator, sb);\n        sbuf_finish(sb);        /* Note: errors checked with sbuf_len() below */\n        if (error != 0)\n                goto out;"
+}

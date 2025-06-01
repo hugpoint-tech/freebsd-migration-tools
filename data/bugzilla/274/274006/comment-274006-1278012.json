@@ -1,0 +1,8 @@
+{
+ "id": 1278012,
+ "bug_id": 274006,
+ "attachment_id": 0,
+ "creation_time": "2023-10-02T23:16:09Z",
+ "creator": "freebsd-2024@virtual-estates.net",
+ "text": "Ok, in my case the culprit is the /usr/lib32/libc.so.7, which causes \"i386\" to be appended to COMPILER_RT_ARCHS, even though llvm's own code does not build the i386 pieces...\n\nThe quick fix is below (the second hunk is unrelated by useful):\n\n--- a/devel/llvm17/Makefile\n+++ b/devel/llvm17/Makefile\n@@ -424,7 +424,7 @@ COMPILER_RT_ARCHS=  aarch64\n .elif ${ARCH} == \"amd64\"\n COMPILER_RT_ARCHS=     x86_64\n .if exists(/usr/lib32/libc.so.7)\n-COMPILER_RT_ARCHS+=    i386\n+#COMPILER_RT_ARCHS+=   i386\n .endif\n .elif ${ARCH} == \"i386\"\n COMPILER_RT_ARCHS=     i386\n@@ -581,7 +581,7 @@ post-install-LIT-on:\n            ${STAGEDIR}${PREFIX}/bin/FileCheck${LLVM_SUFFIX}\n \n post-install-LLD-on:\n-       ${LN} -s ld.lld ${STAGEDIR}${LLVM_PREFIX}/bin/ld\n+       ${LN} -sf ld.lld ${STAGEDIR}${LLVM_PREFIX}/bin/ld\n \n TEST_CMD=      '(cd ${WRKSRC}/test; ${SETENV} ${MAKE_ENV} LD_LIBRARY_PATH=${WRKSRC}/Release/lib ${MAKE_CMD} check-local-lit)'\n do-test:"
+}

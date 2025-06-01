@@ -1,0 +1,8 @@
+{
+ "id": 1193845,
+ "bug_id": 261041,
+ "attachment_id": 0,
+ "creation_time": "2022-01-09T11:31:22Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "I can reproduce on Skylake (0x1912), both on X11 and Wayland, both via OpenGL and Vulkan. WITH_DEBUG=1 is a generic bsd.port.mk knob to remove -O* from CFLAGS, add -g and disable stripping but USES=meson also --buildtype release -\u003e debug while Mesa upstream enables assert() via 'b_ndebug=if-release' in top-level meson.build.\n\nIf you don't care about runtime checks either add -Db_ndebug=true to MESON_ARGS, replace WITH_DEBUG with explicit CFLAGS=\"-O0 -g\" + STRIP= (empty) + STRIP_CMD=true or revert upstream by appending to post-patch in Makefile\n\n\t@${REINPLACE_CMD} '/MOCS/s/ nonzero=\"true\"//' \\\n\t\t${WRKSRC}/src/intel/genxml/*.xml\n\nor hack the code\n\n--- src/intel/isl/isl_emit_depth_stencil.c~\n+++ src/intel/isl/isl_emit_depth_stencil.c\n@@ -321,6 +321,7 @@ isl_genX(emit_depth_stencil_hiz_s)(const struct isl_de\n    dw += GENX(3DSTATE_DEPTH_BUFFER_length);\n \n #if GFX_VER \u003e= 6\n+   sb.MOCS = info-\u003emocs;\n    GENX(3DSTATE_STENCIL_BUFFER_pack)(NULL, dw, \u0026sb);\n    dw += GENX(3DSTATE_STENCIL_BUFFER_length);\n   \nGiven Android is affected maybe assert() aren't tested often with non-glibc before a release."
+}

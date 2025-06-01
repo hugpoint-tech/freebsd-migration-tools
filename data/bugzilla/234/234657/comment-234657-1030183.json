@@ -1,0 +1,8 @@
+{
+ "id": 1030183,
+ "bug_id": 234657,
+ "attachment_id": 0,
+ "creation_time": "2019-01-06T19:18:14Z",
+ "creator": "cem@freebsd.org",
+ "text": "I think I understand where the device=0x1573 guess is coming from.  Family 15h Model 60h BKDG documents 0x1573 as the deviceid for PCI D18F3.  On the earlier Model *00h*, which we currently support, the PCI D18F3 device register 0xa4 is the Reported Temperature.\n\nHowever, on Model *60h*, Reported Temperature lives in a different register, \"D0F0xBC_xD820_0CA4\" (page 238 of the relevant BKDG below).  So I suspect 0x1573 is wrong.\n\nhttps://www.amd.com/system/files/TechDocs/50742_15h_Models_60h-6Fh_BKDG.pdf\n\nD0F0 (PCI Root complex) on 60h has the vendor:device id 0x1022:0x1576.\n\nIt seems like Family 15h Model 60h also requires indirect SMU / SMN access (p. 233), like on Family 17h:\n\n\u003e D0F0xB8 SMU Index Address\n\u003e The index/data pair registers, D0F0xB8 and D0F0xBC, are used to access the registers at\n\u003e D0F0xBC_x[FFFF_FFFF:0000_0000]. To access any of these registers, the address is first written into the\n\u003e index register, D0F0xB8, and then the data is read from or written to the data register, D0F0xBC.\n\n0xB8 is the 32-bit register NbSmuIndAddr.\n0xBC is the 32-bit register NbSmuIndData.\n\nSo we must indirectly access the index \"0xD820_0CA4\" to read the temperature on 15h, model 60h.\n\nI'm going to do a quick spot check of other 15h BKDGs to see what other models specify."
+}

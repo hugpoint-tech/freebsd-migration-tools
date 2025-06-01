@@ -1,0 +1,8 @@
+{
+ "id": 1142535,
+ "bug_id": 252787,
+ "attachment_id": 0,
+ "creation_time": "2021-01-19T22:10:33Z",
+ "creator": "kreuter@progn.net",
+ "text": "By inspection, it appears that the improvements in 13 do not address this issue: I tested with a checkout that includes commit ddf61156, using my attached reproduction to create a suitably goofy disk image, and it still reports exfat after newfs. \n\nThe UFS superblock starts at 8192 bytes, i.e., 16 sectors, from the start of a volume, right? If that's correct, then the exfat code's examination of the first 12 sectors won't avoid this false positive.\n\nAnyhow, if someone wishes to consider this a defect in fstyp, one potential minimally disruptive approach would be to reorder the checks in fstyp.c so that the more common file system formats are checked for last (right now things are checked for in alphabetical order). For the purpose of heuristically guessing the format of a removable medium, I'd say that EXFAT or FAT is most likely (since commodity media is often pre-formatted that way), and so \"falling through\" to check for those after ruling out UFS, ZFS, etc., will arrive at the correct answer while avoiding this particular false positive.\n\nThat said, I'd be satisfied considering the possibility of a false positive from fstyp just a documentation issue. It's easy enough to overwrite the first sector of a disk with dd, for instance, so long as one knows that that's the cause of the false positive."
+}

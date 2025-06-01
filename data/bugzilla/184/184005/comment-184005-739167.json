@@ -1,0 +1,8 @@
+{
+ "id": 739167,
+ "bug_id": 184005,
+ "attachment_id": 0,
+ "creation_time": "2013-11-15T18:30:02Z",
+ "creator": "tsmith@palantir.com",
+ "text": "Under Puppet 3.3.1 with ruby 1.9.3, the package provider patches provided in freebsd ports appear to clash with puppet's best practices. When attempting to realize package resources, it gouts forth the line\n\n/usr/local/lib/ruby/site_ruby/1.9/puppet/provider/package/freebsd.rb:84: warning: class variable access from toplevel\n\n, one for every line in the INDEX.bz2, every time it parses the index. I ended up with 30000 lines of output.\n\nFix: \n\nBased on http://projects.puppetlabs.com/issues/8974\n\nI patched the @@variable definitions that were apparently causing the problem:\n\n/usr/local/lib/ruby/site_ruby/1.9/puppet/provider/package/freebsd.rb\n\n\n18,19c18,19\n\u003c   @@lock = Mutex.new\n\u003c   @@ports_index = nil\n---\n\u003e   class_variable_set(:@@lock , Mutex.new )\n\u003e   class_variable_set(:@@ports_index , nil )\n\n\nand blessed silence ensued.\nHow-To-Repeat: install puppet 3.3.1 with ruby 1.9.x.\n\npuppet apply -e 'package{ \"shells/bash\": ensure =\u003e installed}'"
+}

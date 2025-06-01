@@ -1,0 +1,8 @@
+{
+ "id": 1017361,
+ "bug_id": 232146,
+ "attachment_id": 0,
+ "creation_time": "2018-10-21T05:19:37Z",
+ "creator": "freebsd@oldach.net",
+ "text": "Same issue here.\n\nThe culprit seems to be that _proccheck (in _find_processes() from /etc/rc.subr) now compares $command_interpreter (specified in the sa-spamd rc script) but that doesn't match with the command line of the process:\n\n# ps ax | fgrep spamd\n69955  -  Ss       1:15.91 /usr/local/bin/perl5.26.2 -T -w /usr/local/bin/spamd\n70304  -  I        0:35.68 spamd child (perl5.26.2)\n70305  -  I        0:13.40 spamd child (perl5.26.2)\n78673  1  S+       0:00.01 fgrep spamd\n# fgrep command_inter /usr/local/etc/rc.d/sa-spamd\ncommand_interpreter=\"/usr/local/bin/perl\"\n#\n\nAlthough /usr/local/bin/perl5.26.2 and /usr/local/bin/perl are in fact hardlinked this is a textual mismatch.\n\nI seem to recall that before the recent mail/spamassassin update the command interpreter as seen on the command line was /usr/local/bin/perl and not $^X, so it seems below logic in spamd (sub do_sighup_restart) breaks it:\n\n  # ensure we re-run spamd using the right perl interpreter, and\n  # with the right switches (taint mode and warnings) (bug 5255)\n  my $perl = untaint_var($^X);\n  my @execs = ( $perl, \"-T\", \"-w\", $ORIG_ARG0, @ORIG_ARGV );"
+}

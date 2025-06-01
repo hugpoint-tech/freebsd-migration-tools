@@ -1,0 +1,8 @@
+{
+ "id": 1225382,
+ "bug_id": 266241,
+ "attachment_id": 0,
+ "creation_time": "2022-09-05T21:18:08Z",
+ "creator": "se@FreeBSD.org",
+ "text": "If converters/libiconv is installed, the devel/libdatrie runs a configure test with -liconv, but ${ICONV_LIB} is expanded to an empty string on systems that have iconv functionality in libc.so.\n\nBut the iconv functionality in libc.so is incomplete, it does specifically lack the locale_charset() function that is provided by libiconv.so (that had been used by the configure script).\n\nlibtool: link: cc -O2 -pipe -DLIBICONV_PLUG -fstack-protector-strong -isystem /usr/local/include -fno-strict-aliasing -fstack-protector-strong -o .libs/trietool trietool.o  -L/usr/local/lib ../datrie/.libs/libdatrie.so -Wl,-rpath -Wl,/usr/local/lib\nld: error: undefined symbol: locale_charset\n\u003e\u003e\u003e referenced by trietool.c\n\u003e\u003e\u003e               trietool.o:(main)\ncc: error: linker command failed with exit code 1 (use -v to see invocation)\n*** Error code 1\n\nTo reproduce install converters/libiconv on the base system and then try to build the devel/libdatrie port on the base system.\n\n\nThe magic in Uses/iconv.mk does not cover the case where locale_charset() is required by a port.\n\nA solution could be to forcefully depend on converters/libiconv and to link against -liconv (instead of ${ICONV_LIB}).\n\nAnother possibility is to link against libunistring.so in addition to libc.so (but that does only move the extra dependency to a different port).\n\nPatching the port to not require locale_charset() but to use nl_langinfo() instead could also allow the port to build in all cases."
+}

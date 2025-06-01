@@ -1,0 +1,8 @@
+{
+ "id": 1004794,
+ "bug_id": 230258,
+ "attachment_id": 0,
+ "creation_time": "2018-08-04T05:36:04Z",
+ "creator": "cem@freebsd.org",
+ "text": "From the FreeBSD side of things, here's the status quo (to the best of my understanding):\n\n1. On create (open + O_CREAT), we:\n  a. cache_enter() (add an entry to the generic namecache which sits between generic namei()/lookup and VFS specific VOP_LOOKUP operations) — ignoring any entry_valid value (bogus).\n  b. Arbitrarily nuke all negative cache entries below the parent directory, for unclear reasons (maybe pessimistic, but orthogonal to this issue).\n  c. Totally ignore any returned attribute and attribute timeout (safe, I think, but maybe pessimistic).\n\n2. In lookup, we:\n  a. Skip right past fuse_entry_out or fuse_attr_out and go directly to the attributes (ignoring cache timeout value).\n  b. And of course cache them indefinitely (cache_attrs()) (bogus).\n\n3. For link, we check link count validity with our cached va_nlink attribute, assuming our attribute cache is valid (bogus).\n  a. Then we ignore the entry_out result entirely (but don't cache the newly created link vnode, which is safe, if pessimistic)."
+}

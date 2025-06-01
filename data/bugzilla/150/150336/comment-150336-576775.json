@@ -1,0 +1,8 @@
+{
+ "id": 576775,
+ "bug_id": 150336,
+ "attachment_id": 0,
+ "creation_time": "2010-09-07T00:10:01Z",
+ "creator": "rercola@acm.jhu.edu",
+ "text": "On reboot, our system with a RAID-Z of about 200 filesystems, all inheriting the same sharenfs rule, failed to export, while the dozen or so filesystems with their own individual sharenfs rules all succeeded.\n\nAt first, it appeared that we'd somehow bungled the sharenfs configuration without reloading the exports file pre-reboot (...!?), but as time passed, it became clear this wasn't a problem with the export line, but with the state nfsd/mountd were in - no matter what we tried (including \"ro\"), we always got back a flood of \"can't change attributes for [FS]\", each followed by an error \"bad exports list line [FS] [old line]\". We also tried sharenfs=[one of the lines from a working sharenfs export], to the same effect.\n\nIt turned out our sharenfs line was perfectly fine - I shut down nfsd and mountd, zfs set sharenfs=[old export line];started mountd and nfsd again, and everything ran happily, and everything was exported properly.\n\nThis sounds like some internal state got muddled somewhere, or a race condition was lost, but I can't imagine where.\n\nIt's worth noting this is the first time in a number of reboots this has ever happened, and we haven't modified the sharenfs line in many months prior to this.\n\nHow-To-Repeat: 1) Reboot system\n2) Maybe nfsd will fail to export?"
+}

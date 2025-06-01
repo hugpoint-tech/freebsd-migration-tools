@@ -1,0 +1,8 @@
+{
+ "id": 92018,
+ "bug_id": 29323,
+ "attachment_id": 0,
+ "creation_time": "2001-07-30T12:00:01Z",
+ "creator": "david.newall@tellurian.com.au",
+ "text": "Ipfw rules that specify \"established\" TCP packets incorrectly match packets\nwith the ECN-Echo flag set (see RFC 2481).  This type of rule is sometimes\nused to permit unrestricted \"outbound\" and restricted \"inbound\" connections.\nIntruders can exploit this fault to penetrate a firewall that is so configured.\n\nFix: \n\nThere are a number of good ways to fix the problem.\n1. Modify ip_fw.h, ip_fw.c and ipfw.c so that IP_FW_TCPF_ESTAB is not\n    stored in fw_tcpf (best solution);\n2. Modify ip_fw.c so that rules with IP_FW_TCPF_ESTAB set return 0 if\n    neither the RST nor ACK flags are set (acceptable, but will need rework\n    when the number of allocated flags exceeds 8); or\n3. Modify ipfw.c to set fw_tcpnf to -1 (work around).\n\nAn acceptable work-around is to modify ipfw.c, appending\n  rule.fw_tcpnf = 1;\nafter line 1896, which reads\n  rule.fw_tcpf  |= IP_FW_TCPF_ESTAB;\nHow-To-Repeat: Create an ipfw incorporating the following general rules:\n   ...\n   accept tcp from TARGET to SECURE established\n   deny tcp from TARGET to SECURE\n   ...\nthen attempt to connect from TARGET to SECURE having set tcp flag 0x40."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1352692,
+ "bug_id": 275828,
+ "attachment_id": 0,
+ "creation_time": "2025-03-02T11:39:40Z",
+ "creator": "lapo@lapo.it",
+ "text": "(In reply to Boris Korzun from comment #38)\n\nI tried your latest 1.110.2 patch, but it seems to have lost \"version information\":\n\n% vmagent -version                                         \nvmagent--bc69d5f\n% xh firewall.andxor.it:8429/metrics | fgrep vm_app_version\nvm_app_version{version=\"vmagent--bc69d5f\", short_version=\"\"} 1\n\nYou should apply this patch:\n\n-GO_BUILDFLAGS= -ldflags=\"-w -X github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo.Version=$${out}-${_GET_DATE:sh}-${BUILDINFO_TAG}\"\n+GO_BUILDFLAGS= -ldflags=\"-w -X github.com/VictoriaMetrics/VictoriaMetrics/lib/buildinfo.Version=$${out}-${_GET_DATE:sh}-tags-v${PORTVERSION}-0-g${BUILDINFO_TAG}\"\n\nWhich produces:\n\n% vmagent -version\nvmagent--tags-v1.110.2-0-gbc69d5f\nfirewall 123857 ~\n% xh firewall.andxor.it:8429/metrics | fgrep vm_app_version\nvm_app_version{version=\"vmagent--tags-v1.110.2-0-gbc69d5f\", short_version=\"v1.110.2\"} 1\n\nThere seems to be still something broken with _GET_DATE though."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 962097,
+ "bug_id": 224096,
+ "attachment_id": 188532,
+ "creation_time": "2017-12-04T21:20:41Z",
+ "creator": "harald@boehm.codes",
+ "text": "Created attachment 188532\nPatch that adds call to bus_set_resource() for fixed I/O port ranges that wrongly have been defined as relocatable ones\n\nThe MacBook Pro 11,3's (and possibly other versions') BIOS has a buggy _CRS entry[0]. It is defined as a relocatable I/O range, although its actually a fixed one. This bug currently prevents drivers from allocating the device's resources, since the function acpi_res_set_iorange() in sys/dev/acpica/acpi_resource.c just prints the message: \"I/O range not supported\".\n\nThe attached patch adds a call to bus_set_resource(), if range_min + length == range_max, which should be an indication that the BIOS is buggy and the resource is actually a fixed I/O range. Additionally, a warning message is printed if the system boots in verbose mode, since the _CRS should not contain resource definitions like these. This was suggested by John Baldwin [1]. \n\n[0] The device's _CRS as returned by acpidump -td:\nDevice (GMUX)\n{\n    ...\n    Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings\n    {\n        IO (Decode16,\n            0x0700,             // Range Minimum\n            0x07FF,             // Range Maximum\n            0x01,               // Alignment\n            0xFF,               // Length\n            )\n    })\n    ...\n}\n[1] https://lists.freebsd.org/pipermail/freebsd-hackers/2017-November/051744.html"
+}

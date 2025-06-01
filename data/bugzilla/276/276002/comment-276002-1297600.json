@@ -1,0 +1,8 @@
+{
+ "id": 1297600,
+ "bug_id": 276002,
+ "attachment_id": 0,
+ "creation_time": "2024-02-19T01:24:58Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #62)\nI'll admit that I do not think readahead is the problem\nnow.  First off, both VOP_GETPAGES() and VOP_READ() are\ncalled with the vnode LK_SHARED, so they are not serialized\nby the vnode lock.\n\nWhen I look at the code, both ncl_getpages() (VOP_GETPAGES\nfor NFS) and ncl_bioread() (VOP_READ for NFS) end up calling\ngetblkx(), which should serialize access to the buffer and the\ncode does appear to safely handle B_CACHE.\n\nThere is one thing that does look weird to me, although I'll\nadmit I do not understand the VM side of things.\n- When VOP_GETPAGES() calls bread_gb() (actually breadn_flags()\n  with various arguments) the pages are sbusied.\n  Then nfs_strategy() calls ncl_doio(), which does the RPCs and\n  then calls bufdone().\n  bufdone() calls vfs_vmio_iodone(), which sunbusies the pages.\n- After the bread_gb() call in vfs_bio_getpages() it does a bunch\n  of stuff that might not be correct for an unbusied page?\n  I won't claim to understand the code, but it \"upgrades\" the\n  pages to xbusied (assuming it is sbusied, I think?) and also\n  does some stuff I do not understand related to checking the pages\n  valid, which the comment claims is racy.\nAnyhow Kostik, hopefully you can understand the code and determine\nif the code in vfs_bio_getpages() is safe even if the pages have\nbeen sunbusied by the bread_gb() call?"
+}

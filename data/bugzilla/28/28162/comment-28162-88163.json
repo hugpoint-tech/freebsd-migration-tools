@@ -1,0 +1,8 @@
+{
+ "id": 88163,
+ "bug_id": 28162,
+ "attachment_id": 0,
+ "creation_time": "2001-06-15T04:30:02Z",
+ "creator": "shimon@simon-shapiro.com",
+ "text": "/usr/src/sys/vm/swap_pager.c, line 310 or thereabout calls zinit.\nzinit returns NULL because it calls zinita with too large a number.\n\nI tried to force the value down but that only helps in SMP.\nA UP kernel still crashes.\n\nI forced the value down like this:\n\n\tif ((swap_zone = zinit( \"SWAPMETA\", sizeof(struct swblock), \n\t    \t\t\tn, ZONE_INTERRUPT, 1 )) == NULL) {\n\t\tint m = 127332; /* This number is from 256MB system */\n\n\t\tprintf(\"%s.%s(%d) ERROR:  swap_zone is NULL\\n\"\n\t\t\t\"    Reducing n from %d to %d\\n\",\n\t\t\t__FILE__, __FUNCTION__, __LINE__,\n\t\t\tn, m);\n\n\t\tif ((swap_zone = zinit( \"SWAPMETA\", sizeof(struct swblock), \n\t    \t\t\tm, ZONE_INTERRUPT, 1 )) == NULL) {\n\t\t\tpanic(\"swap_pager_swap_init: swap_zone == NULL\");\n\t\t}\n\n\t\tn = m; /* Prevents failure and panic */\n\t}\n\n\nNOTE:  The above snippet is _not_ a fix.\n\nFix: \n\nNot sure.  The code needs to be re-written to examine how much \nmemory is really there.  I did not have this problem, in the identical\nmachine, in RELENG_3.\nHow-To-Repeat: Boot on a Pentium III with 2 or 4 GB of RAM."
+}

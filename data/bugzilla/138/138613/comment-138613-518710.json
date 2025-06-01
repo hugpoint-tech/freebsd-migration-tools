@@ -1,0 +1,8 @@
+{
+ "id": 518710,
+ "bug_id": 138613,
+ "attachment_id": 0,
+ "creation_time": "2009-09-07T17:00:02Z",
+ "creator": "none@FreeBSD.org",
+ "text": "Lets take a look at this code in ufs_vnops.c file:\nrefcount_init(\u0026ucred.cr_ref, 1);\nucred.cr_uid = ip-\u003ei_uid;\nucred.cr_ngroups = 1;\nucred.cr_groups[0] = dp-\u003ei_gid;\u003c---problem here\nucp = \u0026ucred;\n\nucred structure variable is used here. It's a local structure so it's allocated on stack. Now lets take a look at the structure definition:\nstruct ucred {\n--skipped...\ngid_t *cr_groups;\n--skipped...\n};\n\nAs we see we've got a pointer. But this pointer is not initialized at the point of usage. So it contains some arbitrary value from the stack. And then that memory gets overwritten. Lets take a look at the assembly listing:\nmov     edx, [esi+6Ch]\nmov     eax, [ebp+var_140]\u003c---here we read some arbitrary pointer from the stack\nmov     [eax], edx\u003c---and here we smash the data at our arbitrary pointer\n\nIn my case some memory around ufs_lookup was overwritten.\n\nFix: \n\nI suppose we should allocate memory for our pointer before using it so recklessly. And I suggest to review the code that works with this pointer, the same mistake may happen elsewhere.\nHow-To-Repeat: Enable QUOTA and SUIDDIR at the kernel, set them on some partition and try to create a directory there.\nFor me worked tar -xvjf phpMyAdmin-3.2.1-all-languages.tar.bz2 which also calls mkdir when extracting files."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1341103,
+ "bug_id": 283649,
+ "attachment_id": 0,
+ "creation_time": "2024-12-27T18:16:56Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "Here the connection state that leads to a bogus packet:\n\nTF_FASTRECOVERY is set\nsnd_wnd = 384\nsnd_cwnd quite large\nsnd_nxt == snd_una\nSACK state: sack_bytes_rexmit 1448 sacked_bytes 124528 lost_bytes 0\n\nIn this state we start with sendwin=0 at line 262, then it is set to snd_wnd at line 277.  We enter the fast recovery block and tcp_compute_pipe() returns us large negative -121632 at line 301. Subtracting large negative from small positive ends in large cwin. At this point we totally forget that we have small snd_wnd. So whatever branch for the len calculation we take in the rest of recovery block, we may overcommit snd_wnd.\n\nSo, I'm 90% sure that regression comes from 7dc78150c730e90fa2afdaba3aa645932b30c429 this chunk:\n@@ -292,10 +294,13 @@ tcp_default_output(struct tcpcb *tp)\n        if ((tp-\u003et_flags \u0026 TF_SACK_PERMIT) \u0026\u0026\n            (IN_FASTRECOVERY(tp-\u003et_flags) || SEQ_LT(tp-\u003esnd_nxt, tp-\u003esnd_max)) \u0026\u0026\n            (p = tcp_sack_output(tp, \u0026sack_bytes_rxmt))) {\n-               uint32_t cwin;\n+               int32_t cwin;\n \n-               cwin =\n-                   imax(min(tp-\u003esnd_wnd, tp-\u003esnd_cwnd) - sack_bytes_rxmt, 0);\n+               if (IN_FASTRECOVERY(tp-\u003et_flags)) {\n+                       cwin = imax(sendwin - tcp_compute_pipe(tp), 0);\n+               } else {\n+                       cwin = imax(sendwin - off, 0);\n+               }\n                /* Do not retransmit SACK segments beyond snd_recover */\n                if (SEQ_GT(p-\u003eend, tp-\u003esnd_recover)) {\n                        /*"
+}

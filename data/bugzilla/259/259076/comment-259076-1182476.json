@@ -1,0 +1,8 @@
+{
+ "id": 1182476,
+ "bug_id": 259076,
+ "attachment_id": 0,
+ "creation_time": "2021-10-15T15:49:54Z",
+ "creator": "dynamic-wind@mail.ru",
+ "text": "All right, here's a worse bug in rtld-malloc.\n\nOnce morepages has failed, it sets pagepool_start to MAP_FAILED, that is -1.\nIf the next call to __crt_malloc is for the same bucket, morecore is called\nagain but does not call morepages, because (amt \u003e pagepool_end - pagepool_start) is TRUE. And the free list loop crashes.\n\nA quick test (with -lpthread, release \u003e= 12.1):\n#include \u003csys/time.h\u003e\n#include \u003csys/resource.h\u003e\n#include \u003cpthread.h\u003e\n\nint\nmain()\n{\n        pthread_mutex_t t;\n        int lim = 1\u003c\u003c26;\n\n        struct rlimit rl = { lim,lim };\n        setrlimit(RLIMIT_AS,\u0026rl);\n\n        for(;;) {\n                if (pthread_mutex_init(\u0026t,NULL)) {\n                        pthread_mutex_init(\u0026t,NULL);\n                        break;\n                }\n        }\n        return 0;\n}"
+}

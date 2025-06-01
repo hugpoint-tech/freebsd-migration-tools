@@ -1,0 +1,8 @@
+{
+ "id": 1321401,
+ "bug_id": 280922,
+ "attachment_id": 252911,
+ "creation_time": "2024-08-19T11:28:51Z",
+ "creator": "vlad.shabanov@gmail.com",
+ "text": "Created attachment 252911\nexample code\n\nChange 46c599340f187db577b9212ab18022f3c7380c68 fixes one case (localtime / gmtime -\u003e strftime('%s'), but breaks another:\n\nClassic POSIX specification says nothing about tm_zone and tm_gmtoff. A lot of code assumes, than only described in the specification fields of struct tm affect to the result of strftime. \n\nFor example, Python has timetuple described in package \"time\", containing these fields. The datetime module constructs timetuple to convert the datetime object to string (see https://github.com/python/cpython/blob/v3.12.5/Modules/_datetimemodule.c date_strftime then datetime_timetuple, then https://github.com/python/cpython/blob/v3.12.5/Modules/timemodule.c )\n\nChange https://cgit.freebsd.org/src/commit/lib/libc/stdtime?id=46c599340f187db577b9212ab18022f3c7380c68 fixes case discovered by  Dag-Erling Smørgrav but changes the behaviour when struct tm is constructed manually in assumption, than the structure contains only standard fields.\n\nIMHO, there is another solution: both localtime and gmtime fill not only tm-\u003etm_gmtoff, but also tm-\u003etm_zone. Hence, it's possible to distinguish two cases: \nstruct tm filled by library code and struct tm filled manually. \n\nYes, I know that strftime('%s') is undocumented feature in Python, but I sure that this is only one case. I sure that a lot of code assumes than struct tm is based in local timezone, not UTC.\n\nThe example code ant proposed patch solving the issue are attached."
+}

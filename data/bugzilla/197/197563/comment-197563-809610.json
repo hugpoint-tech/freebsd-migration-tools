@@ -1,0 +1,8 @@
+{
+ "id": 809610,
+ "bug_id": 197563,
+ "attachment_id": 0,
+ "creation_time": "2015-02-12T10:12:44Z",
+ "creator": "jahns@dkrz.de",
+ "text": "I have built the mpich port because the default package didn't have Fortran. Along this effort I noticed that the wrappers (mpicc, mpif90 etc.) insert optimizer flags, which is unwelcome since that makes it harder to see what's going on for the user or perform debug builds.\n\nI used the following command to still build an optimized library, that does not pass optimizer flags to the wrappers:\n\n$ cd /usr/ports/net/mpich\n$ sudo make install CFLAGS= \\\nMPICHLIB_CFLAGS=\"-O2 -pipe  -fstack-protector -fno-strict-aliasing\" \\\nMPICHLIB_CXXFLAGS=\"-O2 -pipe  -fstack-protector -fno-strict-aliasing\"\n\nTo add a working Fortran integration, the following was added to the above command:\n\n_GCC_VER=49 \\\nMPICHLIB_FCFLAGS=\"-O2\" FFLAGS=\"-Wl,-rpath=/usr/local/lib/gcc49\" \\\nMPICHLIB_FFLAGS=\"-O2\" \\\nMPICH_LIBS=\"-L/usr/local/lib/gcc49 -Wl,-rpath,/usr/local/lib/gcc49 -lgcc_s\"\n\nThat way the libgcc_s.so dependency of libmpi will be addressed by the wrappers when Fortran is part of the mix. Obviously using gfortran49 is my choice and not necessary.\n\nProbably the ports Makefile can be changed to address this, but unfortunately I don't understand the ports system well enough to make the change myself.\n\nI did this build on FreeBSD 10.1 on x86_64 hardware. But I assume my changes are general enough to translate to basically any hw FreeBSD runs on."
+}

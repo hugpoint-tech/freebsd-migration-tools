@@ -1,0 +1,8 @@
+{
+ "id": 86297,
+ "bug_id": 27598,
+ "attachment_id": 0,
+ "creation_time": "2001-05-23T21:50:01Z",
+ "creator": "dan@obluda.cz",
+ "text": "        when I use kldload smbfs, the following messages appear on console:\n---------\nerror: module compiled without SMP support\nnetsmb_dev: unloaded\nmodule_register_init: MOD_LOAD (dev_netsmb, c0c251a0, 0) error 1\nerror: module compiled without SMP support\n---------\n\n        despite of it, smbfs is loaded\n\nFix: \n\nI'm not sure about correct fix, because I'm not sure if netsmb\nand/or smbfs is SMP sensitive and SMP ready.\n\n        sys/netsmb/smb_dev.c call the smb_checksmp() which is implemented\n        in sys/netsmb/smb_subr.c\n        smb_subr.c use SMP variable (#define), but doesn't #include\nopt_global.h where SMP is defined\n\n\tNo file in sys/netsmb nor sys/fs/smbfs seems to contain a SMP specific\ncode other than (ever failing) test (there are no code using number of CPU's\nnor ifdef-ed with SMP variable).\n\n\tSo, there are three posibilities:\n1. netsmb/smbfs isn't SMP sensitive \n  - lets completelly remove redundant test\n2. netsmp/smbfs is SMP sensitive, but not SMP ready \n  - lets change error message to something more true\n3. netsmp/smbfs is SMB sensitive and is SMP ready (and I miss something)\n  - lets include opt_global.h to (at least) smb_subr.c \n  it give chance to test to work properly\nHow-To-Repeat: \tsee environment and description"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 98176,
+ "bug_id": 31130,
+ "attachment_id": 0,
+ "creation_time": "2001-10-08T10:20:02Z",
+ "creator": "tburgess@whitley.unimelb.edu.au",
+ "text": "It looks to me like using the ipfw 'tee' function on incoming packets actually accepts the packets as destined for the localhost.  Hence a rule such as:\n\n600 tee 8665 ip from any to any in\n\nMeans that anyone browsing the web on the subnet behind the gateway sees the gateway machine's webserver no matter which url they enter.  www.hotmail.com/wi actually goes to www.whitley.unimelb.edu.au/wi !\n\nOutgoing packets are fine.\n\nFix: \n\nHere is my experimental fix (untested, but it gives you an idea of what I think the problem is).  I will test it when I have a chance to bring down the (relatively important to us) machine for a little while.\n\n(from netinet/ip_input.c)\n\n/* If 'tee', continue with original packet */\nif (clone == NULL)\n  return;\nm = clone;\nip = mtod(m, struct ip *);\n\nThen normally it just keeps going in the 'ours' section of the code, which might explain the observed phenomena.  I think something along the lines of:\n\n                /* TJB added this as an experimental bug fix */\n                /* make sure we don't divert again - just accept the packet*/\n                divert_info = 0;\n                goto pass;\n\nNote that ideally the packet SHOULD continue processing through the firewall but looking at the way the code is put together I can understand why this is nontrivial.  Oh well :(  Maybe it's possible to export the divert_out function from ip_divert.c and call it to reinject the duplicated packet immediately?\nHow-To-Repeat: See above"
+}

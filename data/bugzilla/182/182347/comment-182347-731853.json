@@ -1,0 +1,8 @@
+{
+ "id": 731853,
+ "bug_id": 182347,
+ "attachment_id": 0,
+ "creation_time": "2013-09-24T14:40:00Z",
+ "creator": "amdmi3@FreeBSD.org",
+ "text": "When pkgng is used and the port supports staging, `make install` with NO_PKG_REGISTER set does nothing - no files are installed to the system.\n\nThis seeminlgy happens because the package installation and pkgdb registration are now done in the same time with pkg, and whole fake-pkg target which runs this pkg is wrapped in .if !defined(NO_PKG_REGISTER):\n\n---\nfake-pkg: create-manifest\n.if !defined(NO_PKG_REGISTER)\n.if defined(INSTALLS_DEPENDS)\n    @${ECHO_MSG} \"===\u003e   Registering installation for ${PKGNAME} as automatic\"\n.else\n    @${ECHO_MSG} \"===\u003e   Registering installation for ${PKGNAME}\"\n.endif\n.if defined(INSTALLS_DEPENDS)\n    @${SETENV} FORCE_POST=\"${_FORCE_POST_PATTERNS}\" ${PKG_CMD} -d ${STAGE_ARGS} -m ${METADIR} -f ${TMPPLIST}\n.else\n    @${SETENV} FORCE_POST=\"${_FORCE_POST_PATTERNS}\" ${PKG_CMD} ${STAGE_ARGS} -m ${METADIR} -f ${TMPPLIST}\n.endif\n    @${RM} -rf ${METADIR}\n.else\n    @${DO_NADA}\n.endif\n.endif\n---\n\nFix: \n\nLikely a mode needs to be added to pkg which does installation but not registration, and it should be used in pkgng.mk\n\nAlso, this probably may be achieved with using -l argument of `pkg register` and fake PKG_DBDIR, but I haven't tested.\nHow-To-Repeat: Try `make install` any port with NO_PKG_REGISTER."
+}

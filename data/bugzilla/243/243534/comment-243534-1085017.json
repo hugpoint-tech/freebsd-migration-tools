@@ -1,0 +1,8 @@
+{
+ "id": 1085017,
+ "bug_id": 243534,
+ "attachment_id": 0,
+ "creation_time": "2020-01-23T16:05:04Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "sparc64's pmap_release() is freeing pages belonging to the TSB object, and the new vm_page_free() contract requires the caller to busy the page.\n\ndiff --git a/sys/sparc64/sparc64/pmap.c b/sys/sparc64/sparc64/pmap.c\nindex 46454795ad26..753bd6af5aa1 100644\n--- a/sys/sparc64/sparc64/pmap.c\n+++ b/sys/sparc64/sparc64/pmap.c\n@@ -1301,6 +1301,7 @@ pmap_release(pmap_t pm)\n        while (!TAILQ_EMPTY(\u0026obj-\u003ememq)) {\n                m = TAILQ_FIRST(\u0026obj-\u003ememq);\n                m-\u003emd.pmap = NULL;\n+               vm_page_xbusy(m);\n                vm_page_unwire_noq(m);\n                vm_page_free_zero(m);\n        }"
+}

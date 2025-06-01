@@ -1,0 +1,8 @@
+{
+ "id": 970699,
+ "bug_id": 225054,
+ "attachment_id": 0,
+ "creation_time": "2018-01-10T18:47:55Z",
+ "creator": "jkim@FreeBSD.org",
+ "text": "This patch does not look good.  The previous inline assembly should generate something like this:\n\n\tje\t.Ltmp0\n\tlock\n.Ltmp0:\n\tcmpxchgl\t%ecx, (%edi)\n\nAssembled:\n\n   4:\t0f 84 01 00 00 00    \tje     b \u003ctest+0xb\u003e\n   a:\tf0 67 0f b1 0f       \tlock addr32 cmpxchg %ecx,(%edi)\n\nYour patch will generate something like this:\n\n\tje\t.Ltmp0\n.Ltmp0:\n\tlock\n\tcmpxchgl\t%ecx, (%edi)\n\nAssembled:\n\n   4:\t0f 84 00 00 00 00    \tje     a \u003ctest+0xa\u003e\n   a:\tf0 67 0f b1 0f       \tlock addr32 cmpxchg %ecx,(%edi)\n\nAs you can see, this patch *always* adds the prefix for cmpxchg."
+}

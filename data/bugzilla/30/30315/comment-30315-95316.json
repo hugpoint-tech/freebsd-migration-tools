@@ -1,0 +1,8 @@
+{
+ "id": 95316,
+ "bug_id": 30315,
+ "attachment_id": 0,
+ "creation_time": "2001-09-04T16:20:01Z",
+ "creator": "wiwi@progon.net",
+ "text": "Bug in: /usr/src/sys/netinet/ip_fw.c\n\"static void\nadd_dyn_rule(struct ipfw_flow_id *id, struct ipfw_flow_id *mask,\n       struct ip_fw_chain *chain)\"\n\ncurr_dyn_buckets will never be updated! There is a statement missing!\n\nif (i != 1) /* not a power of 2 */\n           dyn_buckets = curr_dyn_buckets ; /* reset */       \n       else {\n******\n******\nthe following statement is missing in the original sources!\n******\n******\n           curr_dyn_buckets = dyn_buckets;\n\n******\n******\nend of changes\n******\n******\n\n           if (ipfw_dyn_v != NULL)\n                free(ipfw_dyn_v, M_IPFW);\n           ipfw_dyn_v = malloc(curr_dyn_buckets * sizeof r,\n                   M_IPFW, M_DONTWAIT | M_ZERO);\n           if (ipfw_dyn_v == NULL)      \n                return ; /* failed ! */\n\nFix: \n\ninsert:\n         curr_dyn_buckets = dyn_buckets;\nas shown above!\nHow-To-Repeat: just try to change the number of buckets for dynamic rules!\n\neg:\nsysctl -w net.inet.ip.fw.dyn_buckets=8192\n\nthe number will never be changed actually..."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1190139,
+ "bug_id": 260406,
+ "attachment_id": 0,
+ "creation_time": "2021-12-14T15:03:08Z",
+ "creator": "kp@freebsd.org",
+ "text": "\u003e  2  36537            pfr_ina_define:return c ffffa000c1e48be0\n\u003e  2  36537            pfr_ina_define:return 0 0\n\nWhat? That's ... that can't be right. The first number should be the offset in the function where we returned from. Both 0xc and 0x0 make no sense there. The second value is the return value. That should be zero or an error number. Not a pointer like we're clearly getting here.\n\nSigh, it looks like Dtrace's fbt is buggy on aarch64, and indeed if I'm reading sys/cddl/dev/fbt/aarch64/fbt_isa.c correctly we're passing x[0] / x[1] in the return probe, rather than the return offset and the return value. So we should look for the return value in arg0, and indeed we see a return value of 0x0c (or 12, ENOMEM).\n\nSo we now know at least that the big allocation succeeds, but that pfr_ina_define() or one of the functions it calls fail to allocate memory. Let's dig a bit more.\n\nTry:\ndtrace -n 'fbt:kernel:pfr_create_ktable:return { printf(\"%x\", arg0); }' -n 'fbt:kernel:pf_find_or_create_kruleset:return { printf(\"%x\", arg0); }' -n 'fbt:kernel:pfr_create_kentry:return { printf(\"%x\", arg0); }'"
+}

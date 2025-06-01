@@ -1,0 +1,8 @@
+{
+ "id": 1063859,
+ "bug_id": 240130,
+ "attachment_id": 0,
+ "creation_time": "2019-08-26T17:36:43Z",
+ "creator": "freebsd@tim.thechases.com",
+ "text": "tl;dr: Simple reduced example\n=============================\n\n  $ echo 'anchor \"blacklistd/*\"' | pfctl -nvf -\n\non OpenBSD, this outputs what I'd expect:\n\n  anchor \"blacklistd/*\" all\n\nhowever on FreeBSD (tried 12-RELEASE-p10 here, and got corroboration from \"Evilham\" on IRC for 13.0-CURRENT), this outputs\n\n  anchor \"/*\" all\n\nwhere the anchor name has been stripped out. The \"/\" seems to cause the issue since the following all produce the results I expect (whether useful, sensible, \nor not):\n\n  $ echo 'anchor \"blacklistd\"' | pfctl -nvf -\n  $ echo 'anchor \"blacklistd*\"' | pfctl -nvf -\n  $ echo 'anchor \"*\"' | pfctl -nvf -\n\n\nLonger details/backstory:\n=========================\n\nWas trying to figure out why blacklistd wasn't populating the anchor properly with blocking rules. After a morning of troubleshooting, determined that blacklistd was correctly interacting with sshd, and /usr/libexec/blacklistd-helper was getting as far as invoking `pfctl` with the (AFAIK) correct parameters, but pf didn't seem to have the anchor in place.  I tracked it down to the lack of a \"blacklistd/*\" anchor existing.  So I experimented with my pf.conf file stripping it down to the bare essentials of just a \"scrub in all\" and that one 'anchor \"blacklistd\"' entry, only to see that loading the pf.conf file still listed the only anchor as \"/*\" not \"blacklistd/*\".\n\nkevins91 on #freebsd in IRC said to create a PR and to CC kp@ so here it is."
+}

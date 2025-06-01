@@ -1,0 +1,8 @@
+{
+ "id": 880603,
+ "bug_id": 207096,
+ "attachment_id": 0,
+ "creation_time": "2016-05-27T18:52:01Z",
+ "creator": "ian@FreeBSD.org",
+ "text": "I just had a look.  I think the cause of this is probably found on line 2544 of lzodefs.h:\n\n#  elif 1 \u0026\u0026 defined(__TARGET_ARCH_ARM) \u0026\u0026 ((__TARGET_ARCH_ARM)+0 \u003e= 7)\n\nA similar check on line 2551 assumes armv6-a and -r profiles also support unaligned.\n\nOur freebsd clang would normally not define __ARM_FEATURE_UNALIGNED (checked on line 2528 of lzodefs.h) unless someone had specifically added the -munaligned-access option; in the PR we see it specifically has -mno-unaligned-access.  But it also has -march=armv7 (our default is v6 due to the rpi and the ongoing stupidity that we pretend v6 and v7 are \"the same enough\" to not need separate names).\n\nSo with __ARM_FEATURE_UNALIGNED not defined and arch = armv7, the check on line 2544 makes the assumption (incorrect until a few days ago) that if the arch is v7, we must have support for unaligned access.  I think that assumption is right for every major OS, but there could be special embedded environments where it's incorrect.  (In fact, a highly specialized embedded system is pretty much the ONLY place you'd expect someone to legitimately disable unaligned accesses, now that freebsd gets it right).\n\nI think the right thing to do is: if __ARM_ARCH is defined, that means the current compiler properly supports the ACLE feature symbols[1] and thus only __ARM_FEATURE_UNALIGNED should be consulted.  If __ARM_ARCH is not defined, then __ARM_FEATURE_UNALIGNED can't be used, and a fallback to guessing based on arch might be valid.\n\n[1] http://infocenter.arm.com/help/topic/com.arm.doc.ihi0053c/IHI0053C_acle_2_0.pdf"
+}

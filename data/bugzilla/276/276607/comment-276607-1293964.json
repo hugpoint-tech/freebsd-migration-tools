@@ -1,0 +1,8 @@
+{
+ "id": 1293964,
+ "bug_id": 276607,
+ "attachment_id": 247947,
+ "creation_time": "2024-01-25T13:14:49Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "Created attachment 247947\nrc.d/jackd: apply rtprio later\n\nHearing \"knack\" noises in the playback, I found these accompanying messages:\n\n\u003e       JackOSSDriver::Write buffer balancing -294 frames\n\u003e       JackOSSDriver::Write buffer balancing 367 frames\n\nAlso, rtprio seems inconsistent:\n\nps -o tid -axlHww  | grep jackd\n   LWP  UID   PID  PPID  C PRI NI      VSZ     RSS MWCHAN   STAT TT         TIME COMMAND\n101791    0  8754     1  0 -51  0    12856    2580 piperd   S\u003cs   -      0:00.00 daemon: /usr/local/bin/jackd[8755] (daemon)\n122472 1100  8755  8754  0 -51  0   153496   72692 sigwait  S\u003cs   -      0:00.07 /usr/local/bin/jackd -r -d oss -r48000 -p1024 -n2 -w16 -i4 -o8 -C /dev/dsp0 -P /dev/dsp0\n216324 1100  8755  8754  0  52  0   153496   72692 uwait    Is    -      0:00.00 /usr/local/bin/jackd -r -d oss -r48000 -p1024 -n2 -w16 -i4 -o8 -C /dev/dsp0 -P /dev/dsp0\n216325 1100  8755  8754  0  20  0   153496   72692 select   Ss    -      0:00.05 /usr/local/bin/jackd -r -d oss -r48000 -p1024 -n2 -w16 -i4 -o8 -C /dev/dsp0 -P /dev/dsp0\n216326 1100  8755  8754  0  20  0   153496   72692 select   Ss    -      0:00.00 /usr/local/bin/jackd -r -d oss -r48000 -p1024 -n2 -w16 -i4 -o8 -C /dev/dsp0 -P /dev/dsp0\n\nBringing all threads into rtprio solved the issue for me. \nFor now I created a patch on rc.d/jackd that should do this. (If jackd happens to create further threads inflight, we would need to patch the source.)\n\nFull story here: \nhttps://forums.freebsd.org/threads/audio-jack-artifact-noises-and-message-write-buffer-balancing.92060/post-640487"
+}

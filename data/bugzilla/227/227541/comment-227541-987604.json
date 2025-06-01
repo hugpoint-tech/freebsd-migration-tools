@@ -1,0 +1,8 @@
+{
+ "id": 987604,
+ "bug_id": 227541,
+ "attachment_id": 0,
+ "creation_time": "2018-04-16T06:04:50Z",
+ "creator": "hsakamt@tsnr.com",
+ "text": "Hello,\n\nI setup a FreeBSD box as NIS master. The 'useradd' and 'usermod' options of the 'pw' command work fine, but there are two problems with the 'userdel' option.\n\n1. 'pw userdel' always fail with error:\npw: pw_copy(): No such file or directory\n\nBecause \"GETPWNAM(user)\" at line 102 of pwdupd.c seems to have destroyed the 'pwd' global variable. \n\n2. 'pw userdel' does not update \"NIS maps\" with '-Y' option.\n\n\nWorkaround patch for 11-STABLE:\n\ndiff -u pw_user.c.orig pw_user.c\n--- pw_user.c.orig      2018-04-16 14:26:59.461462000 +0900\n+++ pw_user.c   2018-04-16 14:27:21.843681000 +0900\n@@ -963,7 +963,7 @@\n        else\n                grname[0] = '\\0';\n \n-       rc = delpwent(pwd);\n+       rc = delpwent(nis ? pw_dup(pwd) : pwd);\n        if (rc == -1)\n                err(EX_IOERR, \"user '%s' does not exist\", pwd-\u003epw_name);\n        else if (rc != 0)\n@@ -1024,6 +1024,9 @@\n                     \"completely \");\n        }\n \n+       if (nis \u0026\u0026 nis_update() == 0)\n+               pw_log(cnf, M_ADD, W_USER, \"NIS maps updated\");\n+\n        return (EXIT_SUCCESS);\n }\n \nThank you."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 654952,
+ "bug_id": 165863,
+ "attachment_id": 0,
+ "creation_time": "2012-03-08T23:00:27Z",
+ "creator": "eric_van_gyzen@dell.com",
+ "text": "in_lltable_prefix_free() does not acquire the if_afdata_lock, so it can free the llentry while another thread is in lla_lookup(), such as during packet processing.\n\nWhile working on a fix, it quickly became apparent that in_lltable_prefix_free() does not safely drain the callout, so it races with arptimer().  If arptimer() has already tested callout_active() before in_lltable_prefix_free() calls callout_drain(), arptimer() will have freed the llentry before callout_drain() returns.\n\nI can reliably reproduce the first problem (lla_lookup) on 8.1-RELEASE and 8.2-RELEASE.  I cannot reproduce it on 9.0-RELEASE or head, but since the relevant code has not changed, I suspect it still exists.\n\nI have not earnestly tried to reproduce the second problem (arptimer).\n\nThe same problem exists in the IPv6 code, but that code is never called.\n\nFix: With the attached patch, my systems survive the test for over 30 minutes.\n\nPatch attached with submission follows:\nHow-To-Repeat: In a second process, repeatedly and rapidly call SIOCSIFADDR and SIOCDIFADDR on the /only/ interface address by which that neighbor is reached.  This drives in_lltable_prefix_free().\n\nIn one process, flood ping an IPv4 neighbor.  This drives lla_lookup()\nvia the processing of ARP replies, packets queued on la_hold, and\necho request packets.\n\nThis reliably panics in 10-20 seconds."
+}

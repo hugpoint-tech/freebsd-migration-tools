@@ -1,0 +1,8 @@
+{
+ "id": 695822,
+ "bug_id": 174489,
+ "attachment_id": 0,
+ "creation_time": "2012-12-21T04:56:44Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "As noted, there are two bugs here:\n1. The \"exists\" flag in copy_link() is set based on whether the target\n   can be stat(2)'ed. But if -R is specified and the destination is a\n   symlink, the \"exists\" flag ends up referring to the path that the\n   target symlink is pointing to. The result is that the target symlink\n   isn't unlink(2)ed before symlink(2) is called in copy_link(), so\n   cp(1) errors out.\n2. copy_link() doesn't respect -n. So in the following example, baz\n   should be left unchanged by cp(1), but we're overwriting it:\n\n  $ touch foo1 foo2\n  $ ln -s foo1 bar\n  $ ln -s foo2 baz\n  $ cp -an bar baz\n  $ ls -la bar bar\n  lrwxr-xr-x  1 mark  mark  4 Dec 20 23:49 bar -\u003e foo1\n  lrwxr-xr-x  1 mark  mark  4 Dec 20 23:49 baz -\u003e foo1\n  $\n\nThe attached patch fixes both of these issues. I'd also like to add\nsome regression tests for cp(1) (we have a bunch for mv(1)), but in the\nmeantime, can you test the patch?\n\nThanks,\n-Mark"
+}

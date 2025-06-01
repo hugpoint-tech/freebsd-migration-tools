@@ -1,0 +1,8 @@
+{
+ "id": 17066,
+ "bug_id": 5565,
+ "attachment_id": 0,
+ "creation_time": "1998-01-25T16:40:01Z",
+ "creator": "schweikh@noc.dfn.de",
+ "text": "\n\tftp prints garbage when I type Control-D at the login prompt.\n\nFix: The bug is that tmp[] is used unitialized when fgets returns NULL.\nThe following patch to usr.bin/ftp/ftp.c makes a Control-D at the\nlogin prompt leave ftp -- the same behavior as for telnet.\n\n\n\nRegards,\n\n\tJens\n-- \nJens Schweikhardt  http://www.shuttle.de/schweikh/\nSIGSIG -- signature too long (core dumped)--EueSsfoY8OxLQr9zvzv8hpMAGd5UD163GuK9eIND9rzGehHR\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- ftp.c.orig\tSun Jan 25 14:39:14 1998\n+++ ftp.c\tSun Jan 25 14:51:46 1998\n@@ -214,7 +214,8 @@\n \t\t\tprintf(\"Name (%s:%s): \", host, myname);\n \t\telse\n \t\t\tprintf(\"Name (%s): \", host);\n-\t\t(void) fgets(tmp, sizeof(tmp) - 1, stdin);\n+\t\tif (fgets(tmp, sizeof(tmp) - 1, stdin) == NULL)\n+\t\t\treturn 0;\n \t\ttmp[strlen(tmp) - 1] = '\\0';\n \t\tif (*tmp == '\\0')\n \t\t\tuser = myname;\nHow-To-Repeat: \nhal9000: 0 $ ftp localhost\nConnected to localhost.\n220 hal9000.details.de FTP server (Version 6.00) ready.\nName (localhost:schweikh): ^D331 Password required for \u0014.\n\nThe garbage is the stuff after 'Password required for '"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 894752,
+ "bug_id": 211947,
+ "attachment_id": 0,
+ "creation_time": "2016-08-25T16:36:37Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kib\nDate: Thu Aug 25 16:35:42 UTC 2016\nNew revision: 304808\nURL: https://svnweb.freebsd.org/changeset/base/304808\n\nLog:\n  Prevent leak of URWLOCK_READ_WAITERS flag for urwlocks.\n\n  If there was some error, e.g. the sleep was interrupted, as in the\n  referenced PR, do_rw_rdlock() did not cleared URWLOCK_READ_WAITERS.\n  Since unlock only wakes up write waiters when there is no read\n  waiters, for URWLOCK_PREFER_READER kind of locks, the result was\n  missed wakeups for writers.\n\n  In particular, the most visible victims are ld-elf.so locks in\n  processes which loaded libthr, because rtld locks are urwlocks in\n  prefer-reader mode.  Normal rwlocks fall into prefer-reader mode only\n  if thread already owns rw lock in read mode, which is not typical and\n  correspondingly less visible.  In the PR, unowned rtld bind lock was\n  waited for in the process where only one thread was left alive.\n\n  Note that do_rw_wrlock() correctly clears URWLOCK_WRITE_WAITERS in\n  case of errors.\n\n  Reported and tested by:\tlongwitz@incore.de\n  PR:\t211947\n  Sponsored by:\tThe FreeBSD Foundation\n  MFC after:\t1 week\n\nChanges:\n  head/sys/kern/kern_umtx.c"
+}

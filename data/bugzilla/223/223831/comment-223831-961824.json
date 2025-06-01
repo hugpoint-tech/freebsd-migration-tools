@@ -1,0 +1,8 @@
+{
+ "id": 961824,
+ "bug_id": 223831,
+ "attachment_id": 0,
+ "creation_time": "2017-12-03T04:59:39Z",
+ "creator": "ota@j.email.ne.jp",
+ "text": "(In reply to Konstantin Belousov from comment #2)\n\nIndeed, 1st patch chunk failed and I overlooked it.\nAlso, I missed offset initialization.\n\nTo answer your question, I started with 2 reasons.\n#1 - I started looking at optimizing page-in cases and process exit cases where they had released 1 block at a time although swp_pager_freeswapspace() takes npages to free.  This was the 3rd one.\n#2 - swp_pager_force_pagein() comment says \"it doesn't work\" and I wondered why.  The reason I found is we need to call vm_page_grab for the number of pages we want to page in.\n\nSumming up, after I figured vm_page part, the code started working okay and based on my observation of \"top\", multi-block page-in was considerably faster - reading 1 block 32 times compare to 32 blocks a time.  It looksvm_object_t is locked during swapoff operation (while paging-in), too.\n\nDuring research, I found swap_pager_getpages() calls swap_pager_haspage() anyway and swap_pager_haspage() checks how many continuous blocks are behind.  So, I started researching from swap_pager_haspage() side instead of swblk side.\n\nI had few questions like when to lock and how and when to increment vm_object_pip.  I posted here for some feed backs.\n\nWhile checking patch failure against HEAD, I realized swp_pager_force_pagein() in HEAD had a change for (m-\u003evalid == VM_PAGE_BITS_ALL) case.  This change cleared some of my questions.  I will update my changes and post a new one for 11-STABLE and HEAD."
+}

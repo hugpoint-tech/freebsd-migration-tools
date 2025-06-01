@@ -1,0 +1,8 @@
+{
+ "id": 957150,
+ "bug_id": 222118,
+ "attachment_id": 0,
+ "creation_time": "2017-10-26T00:27:15Z",
+ "creator": "heathn@gmail.com",
+ "text": "(In reply to naito.yuichiro from comment #17)\n\nHandbrake works just fine with the clang compiler.  I've been using my clang-built Handbrake for some time without issue.  However, I don't use the i386 arch which is why I wasn't aware of the compiler issue until Vladimir pointed it out.\n\nI personally prefer to not have to install a 2nd compiler if it isn't absolutely required but it is not my decision.\n\nYou are correct that additional patching of the source would be required to get it to work on i386 but it seems that additional patching will still be required to use a more recent version of gcc.\n\nI installed a i386 instance to see what the issue is and it appears that the build just needs to disable use of the EBX register.  Similar to what can be found here: https://trac.ffmpeg.org/ticket/4599.  I just haven't found the time to figure out how best to patch handbrake since its build system is different from what I'm used to....\n\nSince much of the Handbrake source comes from the ffmpeg project, I looked at how the multimedia/ffmpeg port works around this issue.  In the file multimedia/ffmpeg/files/patch-libavutil-x86-asm.h you can see:\n\n-#define HAVE_7REGS (ARCH_X86_64 || (HAVE_EBX_AVAILABLE \u0026\u0026 HAVE_EBP_AVAILABLE))\n+#define HAVE_7REGS (ARCH_X86_64 || (HAVE_EBX_AVAILABLE \u0026\u0026 HAVE_EBP_AVAILABLE \u0026\u0026\n !defined(__clang__)))\n\n\nIt seems like such a solution would solve the same compiler problem identified by Vladimir...(at least if you want to try to use clang as the compiler)"
+}

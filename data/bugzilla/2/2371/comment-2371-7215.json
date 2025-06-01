@@ -1,0 +1,8 @@
+{
+ "id": 7215,
+ "bug_id": 2371,
+ "attachment_id": 0,
+ "creation_time": "1997-01-05T23:55:45Z",
+ "creator": "gibbs@FreeBSD.org",
+ "text": "State Changed\nFrom-To: closed-\u003eopen\n\nThere are two problems here: \n1) The Adaptec driver in current and in 2.2 has a few bugs in it that \ncause the controller to wedge.  Although data is lost, data that successfully \nreaches the disk is just fine. \n2) The aic7xxx driver uses simple queue tags when tagged queueing is turned on. \nThis means that I/O transactions queued to the target can be re-ordered at the \ntargets discretion (except that a read following a write must return the data \nfrom the last queued write transaction).  Unfortunately, this can cause problems \nwhen syncronous write requests are issued.  There is nothing preventing a \nsyncronous write from returning prior to some of the transactions queued before \nit.  I believe that this situation, when combined with a hang (meaning there \nare multiple outstanding transactions) is the cause of your \"corruption\" since \nmeta-data state can be unstable. \n\nThe first problem is being actively worked on by me, and should be addressed \nin the next two weeks. \n\nThere is already a preliminary framework for fixing problem two in the 'SCSI' \nbranch.  The basic approach is to take syncronous requests and use ordered \ntagged queueing on them so that synchronous requests work as they are intended. \n\n\n"
+}

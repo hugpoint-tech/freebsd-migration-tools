@@ -1,0 +1,8 @@
+{
+ "id": 933525,
+ "bug_id": 118230,
+ "attachment_id": 0,
+ "creation_time": "2017-05-10T10:29:02Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "Yes, it is still relevant.  The problem here happens due to the order of directories in which /compat/linux/lib/ld-linux.so.2 tries to find libraries, and the behaviour of linux_open(): it would first try to open a file under /compat/linux, and then, if not found, attempt to open the same file in global namespace.\n\nBecause /usr/local/lib is attempted before /usr/lib, the following would open FreeBSDish native shared library instead of Linuxish one (in most GNU/Linux distributions, all libraries go under /usr/lib with /usr/local/lib being typically empty):\n\n\u003e linux_open(\"/usr/local/lib/libX11.so.6\", ...)\nAnd, naturally, fail with aforementioned \"ELF file OS ABI invalid\" message.  To work-around this problem, instead of linking every library like suggested in the audit trail, symlinking just /compat/linux/usr/local/lib -\u003e ../lib is sufficient in this particular case."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1191693,
+ "bug_id": 260406,
+ "attachment_id": 0,
+ "creation_time": "2021-12-24T14:07:21Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to tech-lists from comment #39)\nYes please. Let's see if that makes a difference or not.\n\n\nWhile we're at it, it'd be useful for someone who has an affected amd64 machine to try this dtrace script:\n\n#!/usr/sbin/dtrace -s\n\nBEGIN\n{\n\tself-\u003ein_call = 0;\n}\n\nfbt:pf:pfr_create_kentry:entry\n{\n\tself-\u003ein_call = 1;\n\tprintf(\"In\");\n}\n\nfbt:pf:pfr_create_kentry:return\n{\n\tself-\u003ein_call = 0;\n\tprintf(\"=\u003e %x (@%x)\\n\", arg1, arg0);\n}\nfbt:pf:pfr_create_kentry:return\n/ arg1 == 0 /\n{\n\tstack();\n}\n\nfbt:kernel:uma_zalloc_arg:return\n/ self-\u003ein_call == 1 /\n{\n\tprintf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:cache_alloc_retry:entry\n/ self-\u003ein_call == 1 /\n{\n\tprintf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:cache_alloc:entry\n/ self-\u003ein_call == 1 /\n{\n\tprintf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:zone_alloc_item:entry\n/ self-\u003ein_call == 1 /\n{\n\tprintf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nfbt:kernel:uma_small_alloc:return\n/ self-\u003ein_call == 1 /\n{\n\tprintf(\"=\u003e %x (@%x)\", arg1, arg0);\n}\n\nOnce the problem occurs there should be output like 'pfr_create_kentry:return =\u003e 0 (@120)'. Please attach the full log, because there's going to be more information (hopefully!) in there."
+}

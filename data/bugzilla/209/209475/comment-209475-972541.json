@@ -1,0 +1,8 @@
+{
+ "id": 972541,
+ "bug_id": 209475,
+ "attachment_id": 0,
+ "creation_time": "2018-01-16T08:43:45Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to fehmi noyan isi from comment #10)\nYes, but I wouldn't check the free memory.\n\nI've not yet looked at the code, but the original report suggests there are a couple of related issues:\n\n\u003e kldload stuck and never give the console back on my 8GB RAM server\nThis suggests that pf is doing an allocation with M_WAITOK. This means the malloc() call will keep waiting until enough memory is found to satisfy the request. If that's for more memory than is available it'll never return\n\n\u003e During this status, issuing command \"pfctl\" will crash the system:\nThis suggests that there's a race in pf initialisation where the ioctl() handler is already registered before all initialisation is done (i.e. the large allocation is still blocked). That's a bug too, and one that could potentially occur even if the large allocation succeeds (though in a very small time window).\n\nMy initial approach would be to find the allocation that blocks startup, presumably where the state hash table is allocated, and remove the M_WAITOK flag. Then the code needs to be changed to ensure that it can handle an allocation failure.\nThe second step is to audit the initialisation code to find out why ioctls() can be done before the state hash table is allocated."
+}

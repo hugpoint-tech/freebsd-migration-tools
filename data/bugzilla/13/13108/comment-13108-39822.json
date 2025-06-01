@@ -1,0 +1,8 @@
+{
+ "id": 39822,
+ "bug_id": 13108,
+ "attachment_id": 0,
+ "creation_time": "1999-08-12T16:00:00Z",
+ "creator": "dm@eecs.harvard.edu",
+ "text": "\nauthunix_create_default includes the effictive group ID in the\ngrouplist (as well as the gid field).  This is inconsistent with\nalmost all other operating systems, and also inconsistent with the\nFreeBSD kernel.\n\nFor instance, in nfs_subs.c, the kernel avoids putting\ncr-\u003ecr_groups[0] in the grouplist, because it has already placed\nit in the gid field of the marshalled authunix structure.\n\n   714                  for (i = 1; i \u003c= grpsiz; i++)\n   715                          *tl++ = txdr_unsigned(cr-\u003ecr_groups[i]);\n\nFix: The fix is to change authunix_create_default to compensate for the\nfact that FreeBSD keeps the effective group ID in the first element\nof a processes grouplist (unlike the operating systems for which the\ncode was originally written).  A simple patch is appended.\n\nAlternatively, you could change the kernel to behave like\nauthunix_create_default.\n\nThe current behavior of having the kernel and libc generate\ndifferent authunix structures is quite annoying.  (In particular,\nit makes it virtually impossible to \"autoconf\" RPC behavior in\nsupposedly portable software)."
+}

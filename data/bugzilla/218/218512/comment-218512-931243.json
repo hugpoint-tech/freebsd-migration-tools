@@ -1,0 +1,8 @@
+{
+ "id": 931243,
+ "bug_id": 218512,
+ "attachment_id": 0,
+ "creation_time": "2017-04-21T20:38:19Z",
+ "creator": "fhriley@gmail.com",
+ "text": "(In reply to Alexander Motin from comment #13)\n\n\"Multiple processes running same time indeed likely cause different number of iterations to be set on different disks.\"\n\nIf you recognize that, you should see the problem. Say we have three disks, you set passphrases on them and they end up with the following iterations:\n\n1: 10\n2: 11\n3: 10\n\nNow you come along and want to change the passphrase (without using -i), and this time it computes the iterations as so:\n\n1: 11\n2: 10\n3: 10\n\nWith the current code and your commit, disks 1 \u0026 2 will fail because it sees you trying to change the iterations. Here is your if statement:\n\nif (*valp != -1 \u0026\u0026 md.md_iterations == -1) {\n    md.md_iterations = *valp;\n} else if (*valp != -1 \u0026\u0026 *valp != md.md_iterations) {\n    /* fail */\n}\n\nFor disk 1 above in setting the passphrase the second time:\n\n*valp == 11\nmd_md_iterations == 10\n\nThis is fixed in my pull request."
+}

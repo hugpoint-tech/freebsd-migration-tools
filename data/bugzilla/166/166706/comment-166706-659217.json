@@ -1,0 +1,8 @@
+{
+ "id": 659217,
+ "bug_id": 166706,
+ "attachment_id": 0,
+ "creation_time": "2012-04-06T22:10:01Z",
+ "creator": "igaztanaga@gmail.com",
+ "text": "POSIX states that if O_EXCL and O_CREAT are set, sem_open() fails if the\nsemaphore name exists, even if the semaphore was already opened by the\ncurrent process. The following test case shows the problem:\n\n#include \u003csemaphore.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n\n#include \u003csemaphore.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n\nint main()\n{\n   sem_t *sem1, *sem2;\n   sem_unlink(\"/testsem\");\n   sem1 = sem_open(\"/testsem\", O_CREAT|O_EXCL, 0644, 1);\n   if(sem1 == SEM_FAILED){\n      return 1;\n   }\n   \n   sem2 = sem_open(\"/testsem\", O_CREAT|O_EXCL, 0644, 1);\n   if(sem2 != SEM_FAILED){\n      printf(\"ERROR: semaphore already created O_EXCL should fail\\n\");\n      sem_close(sem2);\n      sem_unlink(\"/testsem\");      \n      return 1;\n   }\n   printf(\"OK: semaphore already created, O_EXCL has failed\\n\");\n   sem_close(sem1);\n   sem_unlink(\"/testsem\");\n   return 0;\n}\n\nIn FreeBSD 9 the test fails, whereas in FreeBSD 8 (FreeBSD pcbsd-4080\n8.0-RELEASE-p2 FreeBSD 8.0-RELEASE-p2  (...) PCBSD i386) the test passes.\n\nHow-To-Repeat: Run the test case"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1059318,
+ "bug_id": 239475,
+ "attachment_id": 0,
+ "creation_time": "2019-07-27T11:51:41Z",
+ "creator": "arichardson@FreeBSD.org",
+ "text": "For the following test program:\n\n```\n#include \u003cstdio.h\u003e\n#include \u003cpthread.h\u003e\n\nint main() {\n  printf(\"pthread_create = %p\\n\", (void*)\u0026pthread_create);\n  return 0;\n}\n```\n\nIf I link -lthr after -lc, I get infinite recursion in the pthread interposing table since the value in libthr.a is resolved to the one from libc which then just calls itself.\n\n#0  0x000000000026c0bc in __pthread_cleanup_push_imp ()\n#1  0x000000000026c30a in printf ()\n#2  0x000000000026c25d in main ()\n\nThe following fails:\n$ clang -static -o test-c-first -nodefaultlibs -lc -lthr test.c -fuse-ld=lld \u0026\u0026 ./test-c-first\n\nWhereas this works:\nclang -static -o test-thr-first -nodefaultlibs -lthr -lc test.c -fuse-ld=lld \u0026\u0026 ./test-thr-first\npthread_create = 0x24dbc0\n\n\nI am hitting this issue while writing some tests that want to avoid pulling in all default libs, but the order if libraries on the link command line is difficult to change.\nI can probably work around it, but it seems like this infinite recursion should not happen even if you link in the wrong order. I'm not sure why the functions in the libthr table resolve to the libc ones instead of the ones in libthr."
+}

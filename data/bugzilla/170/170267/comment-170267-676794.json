@@ -1,0 +1,8 @@
+{
+ "id": 676794,
+ "bug_id": 170267,
+ "attachment_id": 0,
+ "creation_time": "2012-07-30T05:10:10Z",
+ "creator": "richlowe@richlowe.net",
+ "text": "Fixing a bug in another system, using an ixgbe driver derived from yours,\nI've happened upon the fact that IXGBE_LE32_TO_CPUS appears to be a no-op.\n\nOn FreeBSD, it's defined to be le32dec(), which is a pure function, however\nthe uses in ixgbe_common.c are as if it were side-effecting its argument:\n\n  3964          /* Pull in the rest of the buffer (bi is where we left off)*/\n  3965          for (; bi \u003c= dword_len; bi++) {\n  3966                  buffer[bi] = IXGBE_READ_REG_ARRAY(hw, IXGBE_FLEX_MNG, bi);\n  3967                  IXGBE_LE32_TO_CPUS(\u0026buffer[bi]);\n  3968          }\n\nFix: \n\nGuessing suggests that:\n    buffer[bi] = IXGBE_LE32_TO_CPUS(buffer[bi]);\n\n(there are two instances).\n\nIs what was intended.\nHow-To-Repeat: Read through ixgbe_common.c and ixgbe_osdep.h.  I'm unsure if this causes\npractical problems (I don't have a big-endian system with this board)."
+}

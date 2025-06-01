@@ -1,0 +1,8 @@
+{
+ "id": 992488,
+ "bug_id": 228335,
+ "attachment_id": 0,
+ "creation_time": "2018-05-18T14:46:07Z",
+ "creator": "nreilly@qnx.com",
+ "text": "virtio is allocating the standard descriptors using contigmalloc() but the indirect descriptors using malloc(). This doesn't normally cause an issue because the malloc() happens to get contiguous memory, but I was using a different memory allocator and ran into this issue. In my scenario then the virtio network driver caused QEMU on Linux to exit. \n\nIndex: sys/dev/virtio/virtqueue.c\n===================================================================\n--- sys/dev/virtio/virtqueue.c\t(revision 330873)\n+++ sys/dev/virtio/virtqueue.c\t(working copy)\n@@ -249,7 +249,8 @@\n \tfor (i = 0; i \u003c vq-\u003evq_nentries; i++) {\n \t\tdxp = \u0026vq-\u003evq_descx[i];\n \n-\t\tdxp-\u003eindirect = malloc(size, M_DEVBUF, M_NOWAIT);\n+\t\tdxp-\u003eindirect = contigmalloc(size, M_DEVBUF, M_NOWAIT,\n+\t\t    0, 0xFFFFFFFFUL, PAGE_SIZE, 0);\n \t\tif (dxp-\u003eindirect == NULL) {\n \t\t\tdevice_printf(dev, \"cannot allocate indirect list\\n\");\n \t\t\treturn (ENOMEM);\n@@ -274,7 +275,7 @@\n \t\tif (dxp-\u003eindirect == NULL)\n \t\t\tbreak;\n \n-\t\tfree(dxp-\u003eindirect, M_DEVBUF);\n+\t\tcontigfree(dxp-\u003eindirect, vq-\u003evq_indirect_mem_size, M_DEVBUF);\n \t\tdxp-\u003eindirect = NULL;\n \t\tdxp-\u003eindirect_paddr = 0;\n \t}"
+}

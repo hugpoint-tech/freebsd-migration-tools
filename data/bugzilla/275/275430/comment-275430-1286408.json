@@ -1,0 +1,8 @@
+{
+ "id": 1286408,
+ "bug_id": 275430,
+ "attachment_id": 0,
+ "creation_time": "2023-11-30T05:53:30Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "To be pedantic, xwayland-run also depends on Xwayland binary which is only a problem if wlroots is built with X11=off as rootful Xwayland doesn't need interop with Wayland compositor. While adding Xwayland to RUN_DEPENDS should be easy there's a xwayland vs. xwayland-devel package conflict (see also bug 261202). Moreover, non-devel package lacks -Dxcsecurity=true (noted in review D35662) which may affect how XAUTHORITY works in a subtle way (ssh -X vs. ssh -Y within X11 WM).\n\n$ make clean all deinstall install INSTALLS_DEPENDS= WITHOUT=X11 -C $(pkg query %do cage | fgrep wlroots)\n$ pkg autoremove\n$ xwayland-run -- glxgears\nTraceback (most recent call last):\n  File \"/usr/local/bin/xwayland-run\", line 65, in \u003cmodule\u003e\n    if xwayland.spawn_xwayland(xserver_args) \u003c 0:\n  File \"/usr/local/lib/python3.9/site-packages/wlheadless/xwayland.py\", line 66, in spawn_xwayland\n    proc = subprocess.Popen(command, stdout = subprocess.PIPE)\n  File \"/usr/local/lib/python3.9/subprocess.py\", line 951, in __init__\n    self._execute_child(args, executable, preexec_fn, close_fds,\n  File \"/usr/local/lib/python3.9/subprocess.py\", line 1837, in _execute_child\n    raise child_exception_type(errno_num, err_msg, err_filename)\nFileNotFoundError: [Errno 2] No such file or directory: 'Xwayland'"
+}

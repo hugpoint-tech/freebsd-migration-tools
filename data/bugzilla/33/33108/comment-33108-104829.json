@@ -1,0 +1,8 @@
+{
+ "id": 104829,
+ "bug_id": 33108,
+ "attachment_id": 0,
+ "creation_time": "2001-12-23T10:50:00Z",
+ "creator": "petef@FreeBSD.org",
+ "text": "\nmake(1) does Special Things when dealing with /usr/obj (mainly it doesn't\nupdate ${.CURDIR} if curdir = objdir, and objdir defaults to /usr/obj).  I'm\nnot sure of the _exact_ bug (the make(1) code is either bad, or I just suck\nat C - which is more likely), but if you change /usr/obj to /usr/foo in\n/usr/src/usr.bin/make/pathnames.h, setting WRKDIRPREFIX=/usr/obj doesn't\ncause any ports problem.  The bug looks like this:\n\n'configure' is up to date.\nmake: don't know how to make real-build. Stop\n*** Error code 2\n\nThis is because ${.CURDIR} points to ${WRKSRC}\n(/usr/obj/usr/ports/.../work/foo), and bsd.port.mk has a bunch of recursive\nmakes like:\n\ncd ${.CURDIR} \u0026\u0026 make configure\ncd ${.CURDIR} \u0026\u0026 make real-build\n\n... and this obviously won't work because it expects that ${.CURDIR} is\npointing to the port skeleton directory (as it should be, really).\n\nFix: After discussing this with Will, I think we should catch this error in\nbsd.port.mk so people don't shoot themselves in the foot.  I'm looking into\na proper fix for make(1), too.\nHow-To-Repeat: \ncd /usr/ports/foo/bar \u0026\u0026 make WRKDIRPREFIX=/usr/obj\n\nThis has been brought up on the lists a few times as well."
+}

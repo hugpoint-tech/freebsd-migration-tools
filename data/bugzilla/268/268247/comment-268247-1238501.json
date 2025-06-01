@@ -1,0 +1,8 @@
+{
+ "id": 1238501,
+ "bug_id": 268247,
+ "attachment_id": 0,
+ "creation_time": "2022-12-08T16:24:23Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "During an exp-run for llvm 15 (see bug 265425), it turned out that devel/cvise failed to build if devel/llvm15 is also installed:\n\n  /wrkdirs/usr/ports/devel/cvise/work/cvise-2.4.0/clang_delta/ExpressionDetector.cpp:62:16: error: 'InclusionDirective' marked 'override' but does not override any member functions\n    virtual void InclusionDirective(SourceLocation HashLoc,\n                 ^\n  /wrkdirs/usr/ports/devel/cvise/work/cvise-2.4.0/clang_delta/ExpressionDetector.cpp:62:16: warning: '(anonymous namespace)::IncludesPPCallbacks::InclusionDirective' hides overloaded virtual function [-Woverloaded-virtual]\n  /usr/local/llvm15/include/clang/Lex/PPCallbacks.h:127:16: note: hidden overloaded virtual function 'clang::PPCallbacks::InclusionDirective' declared here: type mismatch at 6th parameter ('Optional\u003cclang::FileEntryRef\u003e' vs 'const clang::FileEntry *')\n    virtual void InclusionDirective(SourceLocation HashLoc,\n                 ^\n  1 warning and 1 error generated.\n\nThis is because during the configure phase, it picks up ClangConfig.cmake from the llvm13 package, but LLVMConfig.cmake from the llvm15 package:\n\n  -- Found LLVM 15.0.6\n  -- Using LLVMConfig.cmake in /usr/local/llvm15/lib/cmake/llvm\n  -- Using ClangConfig.cmake in /usr/local/llvm13/lib/cmake/clang\n  -- Found PythonInterp: /usr/local/bin/python3 (found suitable version \"3.9.15\", minimum required is \"3.6\")\n\nAdd a -DLLVM_DIR flag to CMAKE_ARGS to point to the correct directory for LLVMConfig.cmake."
+}

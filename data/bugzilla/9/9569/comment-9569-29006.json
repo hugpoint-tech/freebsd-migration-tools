@@ -1,0 +1,8 @@
+{
+ "id": 29006,
+ "bug_id": 9569,
+ "attachment_id": 0,
+ "creation_time": "1999-01-19T15:30:00Z",
+ "creator": "gnats-admin@FreeBSD.org",
+ "text": "top(1) stays (hyperventilating) running after\n\"xterm -e top\" is terminated with windowmanager,\nas top does not check read(2) for EOF.\n\nThere might be problems elsewhere, too, (xterm \u0026 pty signals),\nbut EOF checking should be good to do anyway.\ntop seems to expect hangup signal.\npty default flags have -clocal set, i'm using pdksh.\n\nFix: \n\n/usr/src/contrib/top/top.c\nabout line 667\n     /* wait for either input or the end of the delay period */\n!    if (select(32, \u0026readfds, NULL, NULL, \u0026timeout) != 0) /* -1 or 1*/\n\nabout line 678\n!    if (read(0, \u0026ch, 1) != 1) ch = 'q';\n     if ((iptr = strchr(command_chars, ch)) == NULL)\nHow-To-Repeat: \nxterm -e top\ndelete window with manager\nps shows top still running"
+}

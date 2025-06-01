@@ -1,0 +1,8 @@
+{
+ "id": 1108413,
+ "bug_id": 247276,
+ "attachment_id": 215581,
+ "creation_time": "2020-06-15T12:33:53Z",
+ "creator": "trapexit@spawn.link",
+ "text": "Created attachment 215581\nexample mmap usage\n\nI'm the author of the FUSE based filesystem mergerfs. A user recently reported that after updating to 12.1 some client software to mergerfs was locking up. rtorrent in particular. \n\nrtorrent uses mmap. Linux's FUSE implementation is unable to handle mmap when direct_io is enabled so I recommend to users not enable direct_io who need any software leveraging mmap. The user hadn't read the docs and was using direct_io on FreeBSD. It appears that mmap does work on FreeBSD's FUSE implementation when direct_io is used so he had no issues.\n\nOnce updated his setup started blocking and the apps became unkillable (waiting on IO). I wrote a simple mmap example to read and write to a shared mapped file and could reproduce the issue.\n\nWhen direct_io is off everything works fine. If I enable direct_io I will see read requests come into the mergerfs server and so long as I only read from the mapped memory it works fine. When writing however as soon as it needs to flush it seems to lock up. I don't see any write commands come in, the client app blocks and is unkillable, other calls into the filesystem seem to work briefly and then block. A stack trace of mergerfs seems to indicate that it is working as normal and could take requests. If mergerfs is killed none of the clients receive an error from the syscalls they are blocked on.\n\nI've been able to reproduce this with sshfs by simply adding `direct_io` to the mount options.\n\nAttached is an example that triggers it."
+}

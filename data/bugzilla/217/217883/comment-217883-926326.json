@@ -1,0 +1,8 @@
+{
+ "id": 926326,
+ "bug_id": 217883,
+ "attachment_id": 0,
+ "creation_time": "2017-03-17T23:13:19Z",
+ "creator": "vegeta@tuxpowered.net",
+ "text": "Introducing another direction \"PF_FWD\" broke possibility of forwarding IPv6 traffic if firewall has direction-matching rule on outgoing interface.\n\nIn my case on public interface of a LoadBalancer has a rule witch catches the traffic and uses route_to to direct it to one of hosts inside network. Internal interface of this LoadBalancer has a rule \"pass out quick on $if_intern_all keep state (tcp.first 5 tcp.opening 5)\". Since this rule only passes direction PF_OUT, a IPv6 packet of direction PF_FWD won't match this rule. Traffic is then properly dropped on the last rule of my firewall. Observing dropped traffic on pflog0 shows that the direction PF_FWD is kept and even in the end show by tcpdump as \"unk(3)\".\n\nThere are a few ways to solve it:\n\n1. Teach tcpdump about PF_FWD, make pf_test_rule match packets with direction PF_FWD on rules with PF_OUT.\n\nhttps://github.com/innogames/freebsd/commit/581c3c88f460f6747c342f8a059d3cb92b8e155f\nhttps://github.com/innogames/freebsd/commit/7273dc2abac6c16ecaf28b63be69d3a1635a441f\n\n2. Extend it even more, use PF_FWD for IPv4 too and teach pfctl to understand new direction \"forward\". That of course would break all firewall rules every written in the human history.\n\n3. Or the simplest way: present direction PF_OUT to pf_test_rule no matter if PF_FWD was used or not:\n\nhttps://github.com/innogames/freebsd/commit/17a7601573372ac76f624e27d16936dbb80012e1"
+}

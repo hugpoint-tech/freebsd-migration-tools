@@ -1,0 +1,8 @@
+{
+ "id": 53202,
+ "bug_id": 17474,
+ "attachment_id": 0,
+ "creation_time": "2000-03-19T18:27:11Z",
+ "creator": "bfoz@glue.umd.edu",
+ "text": "I looked into this a little more...\n\nFile work/arla-0.31/appl/afsutils/klog.c calls a function called\nkrb_afslog_uid which is prototyped in the kafs.h file provided with the\nport. However klog.c is linked with the system version of the library,\nin which the corresponding function is k_afsklog_uid. So that's where\nthe undefined reference problem came from. The port's kafs.h tries to\nget around this with some #define's but they weren't done properly.\n\nArla's kafs.h:\nint krb_afslog __P((const char *cell, const char *realm));\nint krb_afslog_uid __P((const char *cell, const char *realm, uid_t\nuid));\n/* compat */\n#define k_afsklog krb_afslog\n#define k_afsklog_uid krb_afslog_uid\n\n/usr/include/kafs.h:\nint k_afsklog __P((const char *cell, const char *realm));\nint k_afsklog_uid __P((const char *cell, const char *realm, uid_t uid));\n\nfunction call in klog.c:\nrc = krb_afslog_uid(arg_cell, arg_realm, afsid);\n\nI'm not sure what the \"right\" solution is. Either change the function\ncall, change the system library (may I have old libraries lying\naround?), or change the kafs.h file included in the port (maybe a\nconfigure problem?). Somebody that knows more than I do is going to have\nto figure that one out.\n\nFor now I removed the #define's from arla's kafs.h and changed the\nprototype and the function call. It builds, but still doesn't run\n(/dev/lkm not configured). More on that later.\n\n-Brandon"
+}

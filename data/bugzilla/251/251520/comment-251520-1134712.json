@@ -1,0 +1,8 @@
+{
+ "id": 1134712,
+ "bug_id": 251520,
+ "attachment_id": 0,
+ "creation_time": "2020-12-04T03:17:19Z",
+ "creator": "fullermd@over-yonder.net",
+ "text": "I'm puzzled about how this is happening.  Note that it was also recently seen on 12.1 on the package builder:\n\nhttp://package19.nyi.freebsd.org/data/121amd64-default-build-as-user/556467/logs/ctwm-4.0.3,1.log\n\nSee from the configure stage output:\n  -- Installing manpage to      /usr/local/man/man1\n\n(I'm unable to find any _other_ older builds for it in a little digging; there doesn't seem to be any particularly useful interface to the package build logs)\n\nHowever, the proposed fix is the _inverse_ of ports r523493 which was done in the shadow of ports r523104 and so doesn't seem like it'd be expected behavior...\n\nI can't reproduce it on some -STABLE boxes, or a 12.1 system.  Nor can I obviously see a way the ports framework would be passing an explicit dir in, which means it's down to ctwm's cmake build.  That checks (in order) for $PREFIX/share/man and $PREFIX/man to determine where to put things, with a fallback to $PREFIX/man if it can't find either.  So it could only wind up using $PREFIX/man if $PREFIX/share/man didn't exist.  And if neither existed and it used the fallback, it would print a warning we don't see in the build cluster log:\n\n  -- Enabling standard warnings.\n  -- Found X11: /usr/local/include   \n\n(it'd be between those lines)\n\nI don't see any recent changes in ports/Mk that sound suspicious either.  Does anything enlightening show up in your output for the 'configure' stage?"
+}

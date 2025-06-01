@@ -1,0 +1,8 @@
+{
+ "id": 997124,
+ "bug_id": 228907,
+ "attachment_id": 0,
+ "creation_time": "2018-06-11T23:31:03Z",
+ "creator": "vdasahar@gmail.com",
+ "text": "When dispatching a VMCI datagram, if no source context is provided we must use the current context. Also, it's better to use VMCI_MEMORY_ATOMIC i.e, M_NOWAIT for memory allocation in datagram_create_hnd. Could you please help get this patch in?\n\n--- a/freebsd_driver/src/vmci_datagram.c\n+++ b/freebsd_driver/src/vmci_datagram.c\n@@ -160,7 +160,7 @@ datagram_create_hnd(vmci_id resource_id, uint32_t flags,\n                handle = VMCI_MAKE_HANDLE(context_id, resource_id);\n        }\n\n-       entry = vmci_alloc_kernel_mem(sizeof(*entry), VMCI_MEMORY_NORMAL);\n+       entry = vmci_alloc_kernel_mem(sizeof(*entry), VMCI_MEMORY_ATOMIC);\n        if (entry == NULL) {\n                VMCI_LOG_WARNING(LGPFX\"Failed allocating memory for datagram \"\n                    \"entry.\\n\");\n@@ -457,7 +457,7 @@ vmci_datagram_dispatch_as_guest(struct vmci_datagram *dg)\n\n        resource = vmci_resource_get(dg-\u003esrc, VMCI_RESOURCE_TYPE_DATAGRAM);\n        if (NULL == resource)\n-               return VMCI_ERROR_NO_HANDLE;\n+               return (VMCI_ERROR_NO_HANDLE);\n\n        retval = vmci_send_datagram(dg);\n        vmci_resource_release(resource);\n@@ -495,6 +495,10 @@ vmci_datagram_dispatch(vmci_id context_id, struct vmci_datagram *dg)\n                return (VMCI_ERROR_INVALID_ARGS);\n        }\n\n+       /* If no source context then use the current context. */\n+       if (VMCI_INVALID_ID == dg-\u003esrc.context)\n+               dg-\u003esrc.context = vmci_get_context_id();\n+\n        return (vmci_datagram_dispatch_as_guest(dg));\n }"
+}

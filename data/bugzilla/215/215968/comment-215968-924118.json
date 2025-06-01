@@ -1,0 +1,8 @@
+{
+ "id": 924118,
+ "bug_id": 215968,
+ "attachment_id": 0,
+ "creation_time": "2017-03-02T21:39:31Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "(In reply to Ed Maste from comment #10)\n\nCorrect - svnsync does a multi-stage stage replication, for reasons that I don't fully understand.\n\nThe first stage replicates the contents and commits the transaction.  This shows up as a commit by the UID of the replicator (not the original author) and the current time rather than the original time.\n\nThe second stage fixes the author and timestamp as a separate transaction.\n\nThe third stage would be to call post-commit hooks which would normally push the commit to a downstream mirror.  Except we operate in pull rather than push mode to avoid having to do remote execution across the internet.\n\nI think the theory with push based replication is that it won't ever race, but.. I don't see why a series of rapid fire commits couldn't trigger concurrent asynchronous post-commit callbacks.\n\nAnyway, it looks like uqs captured a snapshot of the mananged script we run everywhere which is auto-updated.  It would be simple enough to add a hook for serializing access via a lockfile."
+}

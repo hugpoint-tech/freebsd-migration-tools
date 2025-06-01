@@ -1,0 +1,8 @@
+{
+ "id": 1299765,
+ "bug_id": 262179,
+ "attachment_id": 0,
+ "creation_time": "2024-03-05T20:03:01Z",
+ "creator": "crest@rlwinm.de",
+ "text": "If I understand your description correctly the security fix as proposed in the patches wouldn't just fix the exploitable case, of using the directory descriptor to dig up the file system tree (e.g. \"../../../../../../../etc/master.passwd\"), but would also prevent intentionally sharing a directory and anything underneath it. I started looking into this to write a wrapper that finds creates a unix socketpair, forks child process, attaches it to a jail and has the child process send it the runtime linker, an executable and the library directories to run a link and run an dynamically linked executable installed on the host inside a jail without having to pollute the jail file system subtree with nullfs mounts.\n\nSuch a command would be a generic alternative to adding a -j option to each command you might want to run in jail, but isn't available inside the jail because the jail is too stripped down (single executable jails, maybe even an empty read-only mounted directory) or incompatible (e.g. Linux branded, new kernel features with older jails).\n\nWould it be possible to instead of preventing the passed directory descriptor be used at all only force O_RESOLVE_BENEATH flag to be applied to all operations on it? The jail_attach() and jail_set(JAIL_ATTACH) system calls already prevent processes from accidentally bringing directory descriptors into a jail so the only way it can happen is passing the descriptor over a socket. In this case I don't consider walking the directory content and deriving file descriptors to the content an exploitable security bug, but a useful feature."
+}

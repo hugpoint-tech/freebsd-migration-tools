@@ -1,0 +1,8 @@
+{
+ "id": 847686,
+ "bug_id": 204358,
+ "attachment_id": 0,
+ "creation_time": "2015-11-07T13:20:41Z",
+ "creator": "tsoome@me.com",
+ "text": "sys/boot/zfs/zfs.c has probe args structure including uint16_t secsz variable for media sector size; its used as an argument for ioctl() at line 484:\n\nioctl(pa.fd, DIOCGSECTORSIZE, \u0026pa.secsz);\n\nhowever, this ioctl is expecting 32bit data (u_int *) and therefore this ioctl will overwrite and corrupt 16bits of memory.\n\nother use cases seem to use correct u_int type for secsz.\n\nfor fix the following fix should be sufficient.\ntsoome@beastie:/code/freebsd/head/sys/boot/zfs$ diff -u zfs.c.orig zfs.c\n--- zfs.c.orig  N apr 16 14:49:00 2015\n+++ zfs.c       L nov  7 15:13:55 2015\n@@ -399,7 +399,7 @@\n        int             fd;\n        const char      *devname;\n        uint64_t        *pool_guid;\n-       uint16_t        secsz;\n+       u_int           secsz;\n };\n \n static int"
+}

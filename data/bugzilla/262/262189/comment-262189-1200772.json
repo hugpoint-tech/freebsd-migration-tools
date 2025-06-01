@@ -1,0 +1,8 @@
+{
+ "id": 1200772,
+ "bug_id": 262189,
+ "attachment_id": 0,
+ "creation_time": "2022-02-25T14:49:58Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "There are two things.\n\nFirst, I think /dev/zvol/\u003cpool\u003e/device is created asynchronously. Therefore, after the completion of the \"zfs create ...\" command, the device may not have been created yet and the dd command will fail.\n\nI think that if you add \"sleep 5\" to the script, the error will not be reproduced:\n\nseq 1 100 | while read i; do\nzfs create -o volmode=dev -V 1G $name_pool/data$i\n\nsleep 5\n\ndd if=/dev/zero of=/dev/zvol/$name_pool/data$i bs=1M\ndone\n\nSecond, the OpenZFS code creates a ZVOL device in a very strange way: https://github.com/openzfs/zfs/blob/master/module/zfs/zvol.c#L1394\n\n/*\n* It's unfortunate we need to remove minors before we create new ones:\n* this is necessary because our backing gendisk (zvol_state-\u003ezv_disk)\n* could be different when we set, for instance, volmode from \"geom\"\n* to \"dev\" (or vice versa).\n*/\n\nFirst, a ZVOL device is created with the default volmode, then it's removed and created with the requested one. In FreeBSD, the default value for vfs.zfs.vol.mode is 1 (GEOM). Therefore, there is a race between the ZFS and GEOM threads. That's why you see this error: \"g_dev_taste: g_dev_taste(zvol/test/data22) failed to g_attach, error=6\".\n\nFor example output of the \"cat /var/run/devd.pipe\" when I create ZVOL (zfs create -V 1G -o volmode=dev datapool/test).\n!system=GEOM subsystem=DEV type=CREATE cdev=zvol/datapool/test\n!system=DEVFS subsystem=CDEV type=DESTROY cdev=zvol/datapool/test\n!system=GEOM subsystem=DEV type=DESTROY cdev=zvol/datapool/test\n!system=DEVFS subsystem=CDEV type=CREATE cdev=zvol/datapool/test"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1194406,
+ "bug_id": 261033,
+ "attachment_id": 0,
+ "creation_time": "2022-01-12T20:42:55Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "From Linus Torvalds, drivers/infiniband/hw/mlx5/gsi.c, the code is similar, so then there is a bug in Linux too!\n\nTo summarize:\n\nIf \"ib_destroy_qp(gsi-\u003erx_qp)\" fails, there will be a memory leak!\n\nI think that \"ib_destroy_qp()\" cannot fail in this case, but then the error check should be asserted and removed!\n\n--HPS\n\nint mlx5_ib_gsi_destroy_qp(struct ib_qp *qp)\n{\n\tstruct mlx5_ib_dev *dev = to_mdev(qp-\u003edevice);\n\tstruct mlx5_ib_gsi_qp *gsi = gsi_qp(qp);\n\tconst int port_num = gsi-\u003eport_num;\n\tint qp_index;\n\tint ret;\n\n\tmlx5_ib_dbg(dev, \"destroying GSI QP\\n\");\n\n\tmutex_lock(\u0026dev-\u003edevr.mutex);\n\tret = ib_destroy_qp(gsi-\u003erx_qp);\n\tif (ret) {\n\t\tmlx5_ib_warn(dev, \"unable to destroy hardware GSI QP. error %d\\n\",\n\t\t\t     ret);\n\t\tmutex_unlock(\u0026dev-\u003edevr.mutex);\n\t\treturn ret;\n\t}\n\tdev-\u003edevr.ports[port_num - 1].gsi = NULL;\n\tmutex_unlock(\u0026dev-\u003edevr.mutex);\n\tgsi-\u003erx_qp = NULL;\n\n\tfor (qp_index = 0; qp_index \u003c gsi-\u003enum_qps; ++qp_index) {\n\t\tif (!gsi-\u003etx_qps[qp_index])\n\t\t\tcontinue;\n\t\tWARN_ON_ONCE(ib_destroy_qp(gsi-\u003etx_qps[qp_index]));\n\t\tgsi-\u003etx_qps[qp_index] = NULL;\n\t}\n\n\tib_free_cq(gsi-\u003ecq);\n\n\tkfree(gsi-\u003eoutstanding_wrs);\n\tkfree(gsi-\u003etx_qps);\n\tkfree(gsi);\n\n\treturn 0;\n}"
+}

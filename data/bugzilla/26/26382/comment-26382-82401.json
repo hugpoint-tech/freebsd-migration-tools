@@ -1,0 +1,8 @@
+{
+ "id": 82401,
+ "bug_id": 26382,
+ "attachment_id": 0,
+ "creation_time": "2001-04-06T17:30:01Z",
+ "creator": "ambrisko@whistle.com",
+ "text": "\nThe problem is that some BIOSes namely IBM's writes to the boot sector\nof the floppy to potentially update the parameters for the emulated\nfloppy used for the El Torrito boot.  Since we do not allocate space\nfor a typical MSDOS \"Boot Sector\" when the BIOS updates this area\nit then ends up modifying the boot code which is not a good thing.\nThe boot code then fails in random ways.\n\nFix: This is relative to /sys/boot/i386/boot2 and was generated against \n-stable.  Hints were obtained from OpenBSD \u0026 NetBSD.  \n\nSpace in boot1 was allocated so the BIOS could non-destructively update the\nMSDOS Boot Sector in boot1 without nuking code.\n\nI added a hack since \"xread\" was being called from boot2 with a hard\ncoded value.  Since this can change and lead me on a wild goose chase\nI added a perl script and modified the Makefile to determine the\noffset for \"xread\" and then patch that into boot2.c  So whenever boot1\nchanges boot2.c will be patched with a potentially new value.  This\nalso means that xread can be moved around the boot1.s code without\nbreaking things.\n\nI did not put in the full label from OpenBSD since boot1 started to \noverflow.  So I only did it for the size that NetBSD did.\n\nWe can now boot CDROM on several different IBM desktops.\nHow-To-Repeat: \nStick any FreeBSD CDROM that is bootable into an IBM PC and it won't\nboot of the CDROM currectly (For example IDE CDROM on IntelliStations\nand other IDE based models).  This does not fix failures on ThinkPads\n(770Z \u0026 600E for sure).  That seems to be yet a different problem."
+}

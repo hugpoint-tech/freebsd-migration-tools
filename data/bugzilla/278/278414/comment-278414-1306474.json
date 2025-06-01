@@ -1,0 +1,8 @@
+{
+ "id": 1306474,
+ "bug_id": 278414,
+ "attachment_id": 0,
+ "creation_time": "2024-04-25T07:01:42Z",
+ "creator": "editor@callfortesting.org",
+ "text": "Perhaps you would like to experiment with a makefs -t zfs image.\n\nThis is the syntax used by /usr/src/release/tools/vmimage.subr with a 128m image:\n\nmkdir -p /tmp/rootfs/ROOT/default\nmkdir -p /tmp/rootfs/usr/ports\nmkdir -p /tmp/rootfs/var/audit\n\nmakefs -t zfs -s 128m -B little -o 'poolname=zroot' -o 'bootfs=zroot/ROOT/default' -o 'rootpath=/' -o 'fs=zroot;mountpoint=none' -o 'fs=zroot/ROOT;mountpoint=none' -o 'fs=zroot/ROOT/default;mountpoint=/' -o 'fs=zroot/home;mountpoint=/home' -o 'fs=zroot/tmp;mountpoint=/tmp;exec=on;setuid=off' -o 'fs=zroot/usr;mountpoint=/usr;canmount=off' -o 'fs=zroot/usr/ports;setuid=off' -o 'fs=zroot/usr/src' -o 'fs=zroot/usr/obj' -o 'fs=zroot/var;mountpoint=/var;canmount=off' -o 'fs=zroot/var/audit;setuid=off;exec=off' -o 'fs=zroot/var/log;setuid=off;exec=off' -o 'fs=zroot/var/mail;atime=on' -o 'fs=zroot/var/tmp;setuid=off' /tmp/raw.zfs.img /tmp/rootfs\n\nNote:\n\nzdb -l /tmp/raw.zfs.img\n\nzpool import -d /tmp/raw.zfs.img\n\ntruncate -s 128m /tmp/img.raw\nzpool create foo /tmp/img.raw\nzpool export foo\nzpool import -d /tmp/img.raw\n\nThe img.raw created with truncate and zpool create can be imported while the makefs one reports:\n\n   pool: zroot\n     id: 17927745092259738836\n  state: UNAVAIL\nstatus: One or more devices contains corrupted data.\n action: The pool cannot be imported due to damaged devices or data.\n   see: https://openzfs.github.io/openzfs-docs/msg/ZFS-8000-5E\n config:\n\n\tzroot                                                  UNAVAIL  insufficient replicas\n\t  /tmp/img.raw  UNAVAIL  invalid label"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 890694,
+ "bug_id": 211305,
+ "attachment_id": 0,
+ "creation_time": "2016-08-01T00:38:10Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #5)\n\nThe following looks to be deliberate in the code:\n\n./nat/x86-dregs.c:209:7: warning: variable 'i' is incremented both in the loop header and in the loop body [-Wfor-loop-analysis]\n      i++;\n      ^\n./nat/x86-dregs.c:199:32: note: incremented here\n  ALL_DEBUG_ADDRESS_REGISTERS (i)\n                               ^\n\n\nFrom gdb-7.11.1/gdb/nat/x86-dregs.h :\n\n/* A macro to loop over all debug address registers.  */\n#define ALL_DEBUG_ADDRESS_REGISTERS(i) \\\n  for (i = DR_FIRSTADDR; i \u003c= DR_LASTADDR; i++)\n\nFrom gdb-7.11.1/gdb/nat/x86-dregs.c :\n\n  ALL_DEBUG_ADDRESS_REGISTERS (i)\n    {\n      debug_printf (\"\\\n\\tDR%d: addr=0x%s, ref.count=%d  DR%d: addr=0x%s, ref.count=%d\\n\",\n                    i, phex (state-\u003edr_mirror[i],\n                             x86_get_debug_register_length ()),\n                    state-\u003edr_ref_count[i],\n                    i + 1, phex (state-\u003edr_mirror[i + 1],\n                                 x86_get_debug_register_length ()),\n                    state-\u003edr_ref_count[i + 1]);\n      i++;\n    }\n\nSo an overall effect of i+=2 for the incrementing makes sense. It is just not expressed very directly when ALL_DEBUG_ADDRESS_REGISTERS is used."
+}

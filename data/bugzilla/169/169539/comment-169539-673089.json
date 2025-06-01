@@ -1,0 +1,8 @@
+{
+ "id": 673089,
+ "bug_id": 169539,
+ "attachment_id": 0,
+ "creation_time": "2012-06-29T11:40:04Z",
+ "creator": "alter@alter.org.ua",
+ "text": "LSI MegaRaid controller\n    * always modifies last sector of attached disks.\n    * can't boot from disks without its own (LSI) metadata.\n    * there is no passthrough option to expose disk as non-raid storage. \nThis makes impossible to boot from GMIRROR array on this controller.\nSince ar* handle LSI metadata in r/o mode, I can't maintain array without BIOS.\nThis in unacceptable.\nUsing gmirror also becomes impossible.\n\nFix: Fast solution:\nhttp://alter.org.ua/en/soft/fbsd/gmirror/\n(patch for CURRENT is attached)\n Update gmirror with special patch. Now it can optionally store its metadata in the previous sector. You can use -o 1 option with 'label' and 'insert' to place gmirror metadata in alternative location.\ngmirror attempts to load metadata from last sector. If this attempt fails, it tries previous one. gmirror shall not ovewrite last sector if metadata is stored in previous. So, we have compatibility option for ar*.\n Setup BIOS to use all drives as separate STRIPE arrays (one disk in each one).\n    Use gmirror with -o 1 option to setup proper array.\n---\nRight solution (imho):\nI think, would be nice to add some API or library to report presence and location of some known metadata.\nUse this API in all RAID tools (atacontrol, gmirror) to check and warn about presence of incompatible matadata on disks.\nAnd (if required to workaroud some hardware issues) place metadata in alternative locations.\n\nPatch attached with submission follows:\nHow-To-Repeat: 1) config GMIRROR on boot disk\n2) reboot\nok, now we have no valid metadata at all (neither gm*, nor ar*)\nsystem cannot boot"
+}

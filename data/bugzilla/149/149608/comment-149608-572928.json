@@ -1,0 +1,8 @@
+{
+ "id": 572928,
+ "bug_id": 149608,
+ "attachment_id": 0,
+ "creation_time": "2010-08-14T15:13:55Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bz\nDate: Sat Aug 14 14:13:44 2010\nNew Revision: 211301\nURL: http://svn.freebsd.org/changeset/base/211301\n\nLog:\n  In rip6_input(), in case of multicast, we might skip the normal processing\n  and go to the next iteration early if multicast filtering would decide that\n  this socket shall not receive the data.\n  Unlock the pcb in that case or we leak the read lock and next time trying\n  to get a write lock, would hang forever.\n  \n  PR:\t\tkern/149608\n  Submitted by:\tChris Luke (chrisy flirble.org)\n  MFC after:\t3 days\n\nModified:\n  head/sys/netinet6/raw_ip6.c\n\nModified: head/sys/netinet6/raw_ip6.c\n==============================================================================\n--- head/sys/netinet6/raw_ip6.c\tSat Aug 14 14:09:13 2010\t(r211300)\n+++ head/sys/netinet6/raw_ip6.c\tSat Aug 14 14:13:44 2010\t(r211301)\n@@ -248,6 +248,7 @@ rip6_input(struct mbuf **mp, int *offp, \n \t\t\t}\n \t\t\tif (blocked != MCAST_PASS) {\n \t\t\t\tIP6STAT_INC(ip6s_notmember);\n+\t\t\t\tINP_RUNLOCK(in6p);\n \t\t\t\tcontinue;\n \t\t\t}\n \t\t}\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 634105,
+ "bug_id": 161710,
+ "attachment_id": 0,
+ "creation_time": "2011-10-16T15:40:07Z",
+ "creator": "FreeBSD.org@logicalsolutns.com",
+ "text": "After upgrading from 7.3 to 8.2, I found errors in my /var/log/message\nfile indicating that inetd had a conflict.\n\n(We run inetd to handle ssh on this machine).\n\nAfter investigating I discovered that all of my 8.2 boxes are starting\nSSHD even though /etc/rc.conf has sshd_enable=\"NO\"\n\nTo diagnose the issue, I added sshd_flags=\"-p 9991\" to rc.conf and rebooted\n\nThe system booted with sshd running on port 9991\n\n[root@kahlua]:[/usr/src]# sockstat | grep sshd\nroot     sshd       37697 3  tcp6   *:9991                *:*\nroot     sshd       37697 4  tcp4   *:9991                *:*\n\nI then ran the /usr/sbin/sshd command and sshd also started on port 2220\n(which is what is set in /etc/ssh/sshd_config\n\n[root@kahlua]:[/usr/src]# /usr/sbin/sshd\n[root@kahlua]:[/usr/src]# sockstat | grep sshd\nroot     sshd       17757 3  tcp6   *:2220                *:*\nroot     sshd       37697 3  tcp6   *:9991                *:*\nroot     sshd       37697 4  tcp4   *:9991                *:*\n\n(Note: inetd was running tcp4 on *:2220 per /etc/rc.conf and inetd.conf)\n\nIf I've done something wrong on my end, I don't know what it is.\nIt appears that this same issue is impacting all of my 8.2 boxes.\n\nHow-To-Repeat: [root@kahlua]:[~]# cat /etc/rc.conf | grep sshd\n# sshd is controlleb by inetd\nsshd_enable=\"NO\"\nsshd_flags=\"-p 9991\"\n[root@kahlua]:[~]#\n\n\n/etc/ssh/sshd_config\n\n#Port 22\nPort 2220\n#Protocol 2\n#AddressFamily any\n#ListenAddress 0.0.0.0\n#ListenAddress ::\n\n\nps axu | grep sshd\nroot  37697  0.0  0.8  6712  4036  ??  Is    9:08AM   0:00.00 /usr/sbin/sshd -p 9991"
+}

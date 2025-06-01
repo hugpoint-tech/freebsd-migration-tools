@@ -1,0 +1,8 @@
+{
+ "id": 709022,
+ "bug_id": 177366,
+ "attachment_id": 0,
+ "creation_time": "2013-03-25T09:30:00Z",
+ "creator": "pluknet@gmail.com",
+ "text": "After upgrading from 8-stable to 9-stable I noticed the\nerror in malloc(9) type 80211node counter. From vmstat -m:\n         Type InUse MemUse HighUse Requests  Size(s)\n    80211node 18446744073709551605 18014398509481852K       -        0\n\n18446744073709551605/18014398509481852\n1024.00000\n\n18446744073709551605/2^64\n.99999\n\n2^64-18446744073709551605\n11\n\nLooks like it updates stats on free and forget to update on malloc,\nso it goes negative and wraps on uint64_t.\n\n(kgdb) p ((struct malloc_type_internal *)M_80211_NODE-\u003eks_handle)-\u003emti_stats[0]\n$20 = {mts_memalloced = 0, mts_memfreed = 61440, mts_numallocs = 0, mts_numfrees = 5, mts_size = 0, _mts_reserved1 = 0, _mts_reserved2 = 0, \n  _mts_reserved3 = 0}\n(kgdb) p ((struct malloc_type_internal *)M_80211_NODE-\u003eks_handle)-\u003emti_stats[1]\n$21 = {mts_memalloced = 0, mts_memfreed = 73728, mts_numallocs = 0, mts_numfrees = 6, mts_size = 0, _mts_reserved1 = 0, _mts_reserved2 = 0, \n  _mts_reserved3 = 0}\n(kgdb) p mp_ncpus\n$1 = 2\n\nmts_numfrees[i] - mts_numallocs[i] =\u003e 11"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 691674,
+ "bug_id": 173479,
+ "attachment_id": 0,
+ "creation_time": "2012-11-08T17:20:00Z",
+ "creator": "jas@cse.yorku.ca",
+ "text": "I have a FreeBSD 9.1RC3 NFSv4 server exporting a share to a Red Hat 6.3 NFSv4 client.  The user and group mapping is working well.  The share has enabled root write access.\n\nIf root writes a file from the RH63 client, the file becomes owned by \"root\" as would be expected.  However, if \"root\" then tries to chown the file from the client to a user \"j\" (uid 1004), it becomes owned by \"nobody\".  (A similar thing happens with the chgrp operation).\n\nI assumed that the problem was the Red Hat NFSv4 client, and spoke to an NFS expert from Red Hat.  He helped me to identify exactly what was happening...\n\nWhen the client does the 'chown j FILE', the uid that is sent to the server is '1004' not 'j@cs.yorku.ca'. This was a recent change that was backported to RHEL from upstream. The client will first try a uid_string. If the server accepts it, so be it. If not, the client will retry with the name@domainname string.\n\nWhen the server returns the uid on chown its '1004@cs.yorku.ca' which the client seems to ignore which the reason that 'll FILE' shows the correct username for a few moments.  But after the attribute cache expires and a 'll FILE' is done again, the server again returns the '1004@cs.yorku.ca' string. This is when the id mapping fails and the owner is set to 'nobody'\n\nThe same test was done between a RH63 NFSv4 client and server, and the same problem does not exist.\n\nHow-To-Repeat: RHEL63 client as root on NFSv4 share: touch file\nRHEL63 client 15 seconds later: ll file"
+}

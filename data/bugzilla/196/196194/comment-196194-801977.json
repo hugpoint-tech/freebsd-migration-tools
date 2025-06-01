@@ -1,0 +1,8 @@
+{
+ "id": 801977,
+ "bug_id": 196194,
+ "attachment_id": 0,
+ "creation_time": "2014-12-22T15:12:26Z",
+ "creator": "areiter@veracode.com",
+ "text": "In the usr.bin/hexdump source directory, there is code for hexdump tool, od tool (I think that's it). In quickly looking at code that seems to only be used in od, I found this oddball that seems to have gotten through compilers since 4.4BSD lite import:\n\n368\tvoid\n369\tdoskip(const char *fname, int statok)\n370\t{\n371\t        int cnt;\n372\t        struct stat sb;\n373\t\n374\t        if (statok) {\n375\t                if (fstat(fileno(stdin), \u0026sb))\n376\t                        err(1, \"%s\", fname);\n377\t                if (S_ISREG(sb.st_mode) \u0026\u0026 skip \u003e= sb.st_size) {\n378\t                        address += sb.st_size;\n379\t                        skip -= sb.st_size;\n380\t                        return;\n381\t                }\n382\t        }\n383\t        if (S_ISREG(sb.st_mode)) {\n384\t                if (fseeko(stdin, skip, SEEK_SET))\n385\t                        err(1, \"%s\", fname);\n386\t                address += skip;\n387\t                skip = 0;\n388\t        } else {\n389\t                for (cnt = 0; cnt \u003c skip; ++cnt)\n390\t                        if (getchar() == EOF)\n391\t                                break;\n392\t                address += cnt;\n393\t                skip -= cnt;\n394\t        }\n395\t}\n\n\nThe code is reading and branching on initialized 'struct stat sb' structure.\n\nI looked briefly to see what the appropriate fix was, but sadly, I have been busy with some other work and was unable to come up with a suitable patch :-( I apologize for this! If no one will work on it, I will do something slowly over the holidays."
+}

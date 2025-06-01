@@ -1,0 +1,8 @@
+{
+ "id": 934435,
+ "bug_id": 211204,
+ "attachment_id": 182690,
+ "creation_time": "2017-05-18T11:48:50Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "Created attachment 182690\nattempt to fix loading via freebsd boot chain\n\nI finally found some time to look into this and made a few interesting discoveries.\n\nMost importantly, the current version of memtest86+, unlike all previous\nversions, does not relocate itself to the low memory at the very start.  That,\nof course, causes a problem when it switches to the real mode needed for making\nBIOS calls.  That's why it crashed in mem_size -\u003e query_pcbios.\nI've added a patch to add that early relocation (patch-main.c).\nI've changed the initial load address to a higher value as well\n(patch-memtest.lds).  That way there should be a smaller chance of interfering\nwith the loader.\n\nAlso, it seems that the stack size was too small, at least on my system, and\nsome global variables got corrupted after the BIOS calls.  I've added a patch\nfor that too (patch-test.h).\n\nAdditionally I've fixed the SMP detection code for systems with older ACPI\nversions (patch-smp.c).\n\nFinally, I have fixed a couple of problems in the code, so that it can be\ncompiled with newer GCC versions (4.9.x, 5.x) (patch-test.c, patch-lib.c,\npatch-io.h).  Unfortunately, resulting binaries do not work correctly, so the\ncompiler is still 4.8.  I suspect that the newer compilers do progressively more\naggressive optimizations and that results in the bad code because of some quite\nsloppy inline assembly (incorrect constraints and clobber lists) in test.c.\n\nCould you please test it and see if it works?\nThank you!"
+}

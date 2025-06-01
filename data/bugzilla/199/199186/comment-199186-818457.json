@@ -1,0 +1,8 @@
+{
+ "id": 818457,
+ "bug_id": 199186,
+ "attachment_id": 155215,
+ "creation_time": "2015-04-05T20:20:24Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 155215\nFix sysutils/i7z segfaults and warnings\n\nI found out that sysutils/i7z segfaults under various conditions, e.g. different compilers and compilation flags.  For example, compiling with clang -O0 almost always works, but as soon as you start optimizing, segfaults occur.\n  \nThere is also a comment in the Makefile about having to disable several gcc optimizations to avoid segfaults.\n\nI did some debugging, and it turns out that the inline cpuid() implementation can inadvertently clobber registers, causing the cpu_heirarchy_info struct in 'chi' to be destroyed.  Later on, this can lead to segfaults.\n\nI replaced the cpuid() implementation by a more standard one, and that solves all crashes for me.  I tried compiling with:\n\n* clang 3.4.1 (on stable/10), with default flags\n* clang 3.4.1 (on stable/10), with CPUTYPE=core-avx2\n* clang 3.4.1 (on stable/10), with CPUTYPE=core-avx2 and -O3\n* gcc 4.2.1 (on stable/10), with default flags\n* gcc 4.2.1 (on stable/10), with -O3\n\nThere was also no more need to use -fno-schedule-insns2 -fno-schedule-insns -fno-caller-saves for gcc.\n\nIn addition, I fixed a number of warnings about printf formats used for time_t, but that is mostly cosmetic."
+}

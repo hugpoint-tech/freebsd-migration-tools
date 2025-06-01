@@ -1,0 +1,8 @@
+{
+ "id": 374069,
+ "bug_id": 108581,
+ "attachment_id": 0,
+ "creation_time": "2009-03-25T22:32:16Z",
+ "creator": "bcran@FreeBSD.org",
+ "text": "In acpi_cpu_startup in /sys/dev/acpi_cpu.c cpu_cx_count is initialized\nto 0. If the generic Cx mode is being used (which it appears to be on\nolder CPUs) then a loop is run over all the CPUs to find the highest Cx\nstate common to all of them.  However that code assumes that\ncpu_cx_count has been initialized too *high*, since it only sets it if\nit finds a CPU with a maximum Cx state lower than the current value of\ncpu_cx_count. This means that while setting the per-CPU cx_lowest\nsysctl works because it correctly gets\ninitialized to 1 in acpi_cpu_generic_cx_probe, the global systl\nhw.acpi.cpu.cx_lowest always fails because it thinks there are no Cx\nstates.  Initializing cpu_cx_count to 3 instead of 0 should fix the\nproblem.\n\nThere appears to be a related bug in the _CST mode handling below; if\nthere exists a CPU in the system which supports a higher Cx state than\nthe others, the global cx_cpu_count will be set too high if the\npurpose of that sysctl is to reflect the maximum Cx state that all\nCPUs support. \n\n-- \nBruce"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1003306,
+ "bug_id": 230032,
+ "attachment_id": 0,
+ "creation_time": "2018-07-27T12:39:48Z",
+ "creator": "felixstella@protonmail.com",
+ "text": "I have found two bugs (so far) in the code of the intel driver.\n\nIn /sys/dev/drm2/i915/intel_sdvo.c, in function intel_sdvo_write_cmd:\n\n\nLine 458:\n\tmsgs = malloc(args_len + 3 * sizeof(*msgs), DRM_MEM_KMS, M_NOWAIT | M_ZERO);\n\nThis line is allocating \"args_len\" bytes plus \"3 * sizeof(*msgs)\" bytes of memory, which is not as intended and actually leads to memory corruption. The correct code should be:\n\n\tmsgs = malloc((args_len + 3) * sizeof(*msgs), DRM_MEM_KMS, M_NOWAIT | M_ZERO);\n\n\nLines 493-503:\n\tret = -iicbus_transfer(intel_sdvo-\u003ei2c, msgs, i+3);\n\tif (ret \u003c 0) {\n\t\tDRM_DEBUG_KMS(\"I2c transfer returned %d\\n\", ret);\n\t\tret = false;\n\t\tgoto out;\n\t}\n\nout:\n\tfree(msgs, DRM_MEM_KMS);\n\tfree(buf, DRM_MEM_KMS);\n\treturn ret;\n\nThe function iicbus_transfer returns 0 on success, and in that case, ret = -0 = 0 = false and so the function intel_sdvo_write_cmd ends up returning false even when it has actually succeeded. The correct code should be:\n\n\tret = iicbus_transfer(intel_sdvo-\u003ei2c, msgs, i+3);\n\tif (ret != 0) {\n\t\tDRM_DEBUG_KMS(\"I2c transfer returned %d\\n\", ret);\n\t\tret = false;\n\t}\n\telse\n\t\tret = true;\n\n\tfree(msgs, DRM_MEM_KMS);\n\tfree(buf, DRM_MEM_KMS);\n\treturn ret;\n\n\nCorrecting these two bugs makes the intel_sdvo_get_capabilities call successful, but the intel_sdvo_set_target_input call is still unsuccessful (this call is successful on FreeBSD 10). So there are still some bugs left..."
+}

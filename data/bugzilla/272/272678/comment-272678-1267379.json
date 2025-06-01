@@ -1,0 +1,8 @@
+{
+ "id": 1267379,
+ "bug_id": 272678,
+ "attachment_id": 0,
+ "creation_time": "2023-07-23T13:32:58Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "I analyzed this one based on discussions on IRC with the original poster (and did the testing on 13.2-stable and 14-current).\n\nThe short version is that vn_read thinks it can do the VOP_READ_PGCACHE path without doing any locking at all, which violates the consistency expected here (and the OP's test case is taken from an actual application, mariadb). The problem does not normally manifest with non-tmpfs filesystems because those are using range locks and the vn_io_fault code path (which tmpfs does not use).\n\nIn more detail:\n\nvn_write calls tmpfs_write with the vnode exclusively locked, and on an appending write, tmpfs_write updates the file length before copying in the new data.\n\nvn_read calls tmpfs_read_pgcache without any locking, and that reads the file length (getting the new length). There is a comment here \"size cannot become shorter due to rangelock.\", which I think is bogus because there is no rangelock in effect at this point; further tests would be needed to verify whether a concurrent truncate could crash it. After getting the length (and in the race case, that'll be the new length), it copies the data (which is not yet written in the race case)."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 441723,
+ "bug_id": 122925,
+ "attachment_id": 0,
+ "creation_time": "2008-05-20T08:48:33Z",
+ "creator": "jh@saunalahti.fi",
+ "text": "On 2008-05-18, Bruce Cran wrote:\n\u003e  This is occurring because sftp-server expects readdir(3) to return NULL \n\u003e  for a given DIR* twice in a row after all the files have been retrieved. \n\u003e    It seems that under certain conditions that isn't true.\n\nThanks for the test case.\n\nThe problem seems to lie in cd9660_readdir()\n(src/sys/fs/cd9660/cd9660_vnops.c). The problem is that if we have\nreached end of file (directory) and enter again to cd9660_readdir()\nthe idp-\u003euio_off variable is not initialized correctly. In the end of\nthe function the file offset is set to idp-\u003euio_off. So this basically\nmeans that the file offset changes to a random value. This causes\neffects such readdir(3) starting again at some position or g_vfs_done()\nerrors when data is attempted to read from bogus offset.\n\nI believe that this patch fixes the problem:\n\nIndex: cd9660_vnops.c\n===================================================================\nRCS file: /home/ncvs/src/sys/fs/cd9660/cd9660_vnops.c,v\nretrieving revision 1.113\ndiff -p -u -r1.113 cd9660_vnops.c\n--- cd9660_vnops.c\t15 Feb 2007 22:08:34 -0000\t1.113\n+++ cd9660_vnops.c\t20 May 2008 06:45:20 -0000\n@@ -495,6 +495,7 @@ cd9660_readdir(ap)\n \t}\n \tidp-\u003eeofflag = 1;\n \tidp-\u003ecurroff = uio-\u003euio_offset;\n+\tidp-\u003euio_off = uio-\u003euio_offset;\n \n \tif ((entryoffsetinblock = idp-\u003ecurroff \u0026 bmask) \u0026\u0026\n \t    (error = cd9660_blkatoff(vdp, (off_t)idp-\u003ecurroff, NULL, \u0026bp))) {\n\nCould you please test the patch?\n\n-- \nJaakko"
+}

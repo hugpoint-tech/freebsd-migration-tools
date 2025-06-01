@@ -1,0 +1,8 @@
+{
+ "id": 1195312,
+ "bug_id": 261291,
+ "attachment_id": 0,
+ "creation_time": "2022-01-18T15:26:49Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Hmm. Took a look and it looks like a variant of the TCP bug.\nYou'll notice that the last NFS reply for the NFSv4 connection\n(port #805 on the client) shows up at packet #653.\nAfter that, all there is from the FreeBSD end are ACks, as you\nsaid.\n\nThe NFSv3 RPCs near the end of the trace are done on other TCP\nconnections (port#800 and #804) and they work.\n\nCan you roll back to before rscheff@'s fix and then revert\nr367492? (See PR#256280.) In other words, get that code back\nto its pre-r367492 state.\n--\u003e The pre-r367492 code has worked ok, literally for decades.\nWe believe that rscheff@'s fix is ok because otis@ did not observe\na hang during two weeks of testing, but that doesn't guarantee it\nfixed the problem.\n\nOther possibilities are that the nfsd threads are getting hung\ntrying to do some RPC around packet #653, but I would have expected\nthat to result in all nfsd threads hung eventually (and the server\nobviously is not in that state, since RPCs on other connections\nare still working).\n\nIf it happens again, do these commands on the FreeBSD server:\n# ps axHl  \u003c-- to look for \"hung\" nfsd threads\n# netstat -a \u003c-- to look at the TCP connection for the broken client.\n  (If it is in ESTABLISHED state with a non-0 Recv-Q, the rscheff@\n   patch has not fixed the problem.)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 589441,
+ "bug_id": 152781,
+ "attachment_id": 0,
+ "creation_time": "2010-12-02T15:30:14Z",
+ "creator": "citrin@citrin.ru",
+ "text": "kdump(1) decode falgs in syscalls aguments, but decode not all semget(2) flags.\n\nHow-To-Repeat: \n1. Run code\nsemget(IPC_PRIVATE, 3, IPC_CREAT | IPC_EXCL | SEM_R | SEM_A);\nsemget(IPC_PRIVATE, 3, SEM_R | SEM_A);\nunder ktrace(1)\n\n2.\n\u003e kdump -n | fgrep semget\n 87823 a.out    CALL  semget(0,0x3,0x780)\n 87823 a.out    RET   semget 0x60000\n 87823 a.out    CALL  semget(0,0x3,0x180)\n 87823 a.out    RET   semget 0x30001\nkdump -n show 2 semget(2) syscall with differend flags, all right.\n\n\u003e kdump | fgrep semget\n 87823 a.out    CALL  semget(0,0x3,SEM_R|SEM_A)\n 87823 a.out    RET   semget 393216/0x60000\n 87823 a.out    CALL  semget(0,0x3,SEM_R|SEM_A)\n 87823 a.out    RET   semget 196609/0x30001\n\nWhitout -n same flags shown - it is a bug.\n\nWhith attached path correct flags shown:\n\u003e kdump | fgrep semget\n 87823 a.out    CALL  semget(0,0x3,IPC_CREAT|IPC_EXCL|SEM_R|SEM_A)\n 87823 a.out    RET   semget 393216/0x60000\n 87823 a.out    CALL  semget(0,0x3,SEM_R|SEM_A)\n 87823 a.out    RET   semget 196609/0x30001"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 806568,
+ "bug_id": 196517,
+ "attachment_id": 0,
+ "creation_time": "2015-01-24T11:07:24Z",
+ "creator": "marino@FreeBSD.org",
+ "text": "A quick update -- \n\nPeter Avalos has determined this is the difference between FreeBSD and DragonFly.  Perl's  mg.c contains:\n\n#ifdef HAS_SETPROCTITLE\n\t/* The BSDs don't show the argv[] in ps(1) output, they\n\t * show a string from the process struct and provide\n\t * the setproctitle() routine to manipulate that. */\n\tif (PL_origalen != 1) {\n\t    s = SvPV_const(sv, len);\n#   if __FreeBSD_version \u003e 410001\n\t    /* The leading \"-\" removes the \"perl: \" prefix,\n\t     * but not the \"(perl) suffix from the ps(1)\n\t     * output, because that's what ps(1) shows if the\n\t     * argv[] is modified. */\n\t    setproctitle(\"-%s\", s);\n#   else\t/* old FreeBSDs, NetBSD, OpenBSD, anyBSD */\n\t    /* This doesn't really work if you assume that\n\t     * $0 = 'foobar'; will wipe out 'perl' from the $0\n\t     * because in ps(1) output the result will be like\n\t     * sprintf(\"perl: %s (perl)\", s)\n\t     * I guess this is a security feature:\n\t     * one (a user process) cannot get rid of the original name.\n\t     * --jhi */\n\t    setproctitle(\"%s\", s);\n#   endif\n\nSo he's recommending that we patch perl mg.c to have the same behavior as FreeBSD, which will cause perl scripts not to need (actually can't use) command_interpreter just like FreeBSD."
+}

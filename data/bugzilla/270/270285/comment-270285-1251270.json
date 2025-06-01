@@ -1,0 +1,8 @@
+{
+ "id": 1251270,
+ "bug_id": 270285,
+ "attachment_id": 0,
+ "creation_time": "2023-03-17T13:18:37Z",
+ "creator": "mhaarmann@midoco.de",
+ "text": "Yes, packet also looks ok for me, the question is why the traffic forwarded to the client includes these two 0 bytes in the middle of the payload.\n(pfsense/freebsd reorders the traffic and as a result, we are getting different\nframe sizes in output).\n\nSo some part in the code does not the respect the actual length but seems to read the whole segment starting from the payload.\nThe whole setup is:\nServer (10GBit) \n-\u003e Switch1 \n-\u003e Switch2 \n-\u003e pfSense LAN (GBit) \u003c--- here we can see the small packet with padding\n-\u003e haproxy \n-\u003e pfSense WAN (GBit) \u003c--- here we can see the 00 00 bytes in the outgoing frame\n-\u003e some internet hops\n-\u003e client   -\u003e resulting in a defect download\n\nWe wanted to reduce this to a minimal number of components.\nWe were able to reproduce the error situation from local pfsense command line\n(not touching the WAN interface or haproxy at all), with a \"fetch http:......\" call.\n\nSo even the local file was defect which was produced on the firewall.\nThis means that some code internally did forward the 0 bytes to the logical socket which was opened by the fetch command.\nThis can be reproduced in 1 of ~500 requests.\nAnd we always see the padded packet in the incoming data in case a corruption is found."
+}

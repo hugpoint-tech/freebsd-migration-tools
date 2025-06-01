@@ -1,0 +1,8 @@
+{
+ "id": 563852,
+ "bug_id": 147798,
+ "attachment_id": 0,
+ "creation_time": "2010-06-11T21:50:01Z",
+ "creator": "lynx.ripe@gmail.com",
+ "text": "In the following pared-down ipfw ruleset (yes, it's complete):\n\n25150  208 22046 skipto 25199 ip from any to any\n30410    0     0 nat 1 ip from not 192.168.1.0/24 to not table(1) out via em0\n30610    0     0 nat 1 ip from not table(1) to 192.168.1.2 in\n65000  372 38232 allow ip from any to any\n65535 1178 53032 deny ip from any to any\n\npackets from 192.168.251.1 fail to match against the rule number 30410 (despite being directed to IP absent in table(1) via em0. IP-addresses 192.168.1.2 and 192.168.251.1 are local; nat 1 is configured as \"nat 1 config ip 192.168.1.2\", \ntable 1 contains non-globally routable networks:\n\n0.0.0.0/8 0\n10.0.0.0/8 0\n169.254.0.0/16 0\n172.16.0.0/12 0\n192.0.2.0/24 0\n192.168.0.0/16 0\n224.0.0.0/4 0\n240.0.0.0/4 0\n\nHowever, adding dummy 'count' rule between 'skipto' and 'nat' works around the problem:\n\n25150  303 31614 skipto 25199 ip from any to any\n26000   16  1268 count ip from any to any\n30410    7   588 nat 1 ip from not 192.168.1.0/24 to not table(1) out via em0\n30610    7   588 nat 1 ip from not table(1) to 192.168.1.2 in\n65000  467 47800 allow ip from any to any\n65535 1178 53032 deny ip from any to any\n\n\nNote that simpicated forms of the rule 30410 (e.g. nat 1 ip from 192.168.251.1 to not table(1) out via em0) don't become skipped over - only form shown in the first ruleset does."
+}

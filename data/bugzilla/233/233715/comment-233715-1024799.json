@@ -1,0 +1,8 @@
+{
+ "id": 1024799,
+ "bug_id": 233715,
+ "attachment_id": 0,
+ "creation_time": "2018-12-03T19:47:47Z",
+ "creator": "rhurlin@FreeBSD.org",
+ "text": "(In reply to Sunpoet Po-Chuan Hsieh from comment #1)\n\nI am sorry my analysis in the initial report was wrong, because I did not understand, what happens. Investigating again in this problem turns out, that there is something wrong with the behaviour of portmaster in this situation.\n\n\nThis happens only on real world boxes (not in Poudriere), when I use Portmaster AND @py36 (a non default flavor) is not installed before (first time install):\n\n#portmaster databases/py-psycopg2@py36\n\n===\u003e  Installing for py36-psycopg2-2.7.6.1\n===\u003e  Checking if py36-psycopg2 already installed\n===\u003e   Registering installation for py36-psycopg2-2.7.6.1\nInstalling py36-psycopg2-2.7.6.1...\n===\u003e\u003e\u003e Installation of databases/py-psycopg2@py36 (py27-psycopg2-2.7.6.1) complete\n                                             ^^^^  ^^^^\n\nIn fact, after that, the correct @py36 flavor is installed:\n\n#pkg info | grep psycopg2\npy36-psycopg2-2.7.6.1\n\n\nBut, in /var/db/pkg there is instead an entry (directory) with the wrong flavor:\n\n#ls -ldU /var/db/pkg/*-psycopg2-*\ndrwxr-xr-x  2 root  wheel  512  3 Dez. 20:36 /var/db/pkg/py27-psycopg2-2.7.6.1\n\n\nThis does not happen, if I install via:\ncd /usr/ports/databases/py-psycopg2\nmake clean install FLAVOR=py36\n\nor if I reinstall the already existing port a second time with Portmaster.\n\n\nSo it seems, that Portmaster does something wrong here. The right port and flavor is installed, but the bookkeeping under /var/db/pkg is wrong in the first time."
+}

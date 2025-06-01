@@ -1,0 +1,8 @@
+{
+ "id": 936665,
+ "bug_id": 219779,
+ "attachment_id": 0,
+ "creation_time": "2017-06-04T15:57:27Z",
+ "creator": "mmel@FreeBSD.org",
+ "text": "I found several configuration problems in all llvm ports:\n1) In port's Makefile, the block marked as \n   ' # keep in sync with /usr/src/lib/clang/clang.build.mk'\n   is significantly out of sync with clang.build.mk :)\n\n2) For ARM, llvm's cmake/config.guess doesn't return proper ABI.\n\n3) CONFIGURE_TARGET is not a passed to real llvm cmake at all. (Look to\n   default triple for llvm – it doesn’t contain 'portbld')\n\nAll these issues causes that default llvm configuration is invalid (for ARM).\n\nFix for 1) is trivial.\n\nFix for 2) is also easy, but question is why we must explicitly specify ABI\nfor armv6-portbld-freebsd12.0 target. Dimitry, please, can you comment this? \nOne can expect that pure triple 'armv6-portbld-freebsd12.0' is enough for\nselecting right system's ABI (but I'm not sure).\n\nPoint 3) is more interesting. Seems that\n'CMAKE_ARGS+= -DLLVM_DEFAULT_TARGET_TRIPLE=${CONFIGURE_TARGET}'\nfixes default triple for normal (driver based) compilation. But it looks\nlike JIT compilers (an API based) doesn't uses it at all (is this bug or\nfeature?) and  \n'CMAKE_ARGS+= -DLLVM_HOST_TRIPLE=${CONFIGURE_TARGET}'\nis also necessary. At this point I'm simply not sure if this is expected\nbehavior – if yes, then fix is easy, but it depends on resolution of point 2).\n\nCan you, please, help me with proper resolution of remaining questionable points?\n\nThanks,\nMichal"
+}

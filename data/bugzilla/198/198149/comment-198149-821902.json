@@ -1,0 +1,8 @@
+{
+ "id": 821902,
+ "bug_id": 198149,
+ "attachment_id": 0,
+ "creation_time": "2015-05-01T15:34:46Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I can reproduce this trivially on real hardware.  I use a dummy test app (threadspin.c).  On my x220 laptop, this usually breaks in a few seconds.  Same on a server (fox2 in the netperf lab).  If I run it in a reduced cpuset to limit the number of CPUs then pmcstat runs longer before it stops working.  Pinning the threads to specific CPUs does not fix the issue either.  I looked via kgdb at the software state of hwpmc when pmcstat stops reporting samples and it seems to think that the PMC is enabled and should be working.  However, it seems that the PMC is no longer generating interrupts.\n\nI've ported all of the PMC debug stuff over to KTR and added a hack so that KTR auto-disables once a polling sample request fails.  When run with all CPUs there is simply too much noise in the ktrdump and I can't find the last sample in my dump (it seems that the dump only contains events logged after interrupts stopped working).  I tried restricting to a smaller set of CPUs but that failed to break.  My plan is to try to find the smallest set of CPUs that do break while KTR is active and then see if I can tease anything out from the ktrdump.\n\nThe changes to pmc to use KTR can be found at https://github.com/freebsd/freebsd/compare/master...bsdjhb:pr_198149"
+}

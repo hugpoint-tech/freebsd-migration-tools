@@ -1,0 +1,8 @@
+{
+ "id": 79347,
+ "bug_id": 25462,
+ "attachment_id": 0,
+ "creation_time": "2001-02-28T21:50:01Z",
+ "creator": "mkamm@gmx.net",
+ "text": "\nThe C library routine daemon(3) has a subtle bug:\n\nIf the calling process is a session leader (i.e. pid == pgid)\nthen a hangup signal will be delivered immediately to the\ncreated child process (daemon).\nThe reason can be read in the _exit(2) manpage.\n\nI guess this bug is rarely triggered during normal operation\nbut I can think of several scenarios were it will show up:\n - starting a daemon from /etc/passwd (as a login shell)\n - exec'ing a daemon from any login shell\n - exec'ing a daemon from a daemon\n - controlling a daemon with expect(1) from ports/lang/expect\n - giving a daemon as argument to script(1)\n\nFix: There are several options here. I guess the most simple\napproach is ignoring SIGHUP until setsid(2) has been\ncalled.\nOf course, this doesn't fix daemons using fork \u0026\u0026 _exit\ninstead of daemon(3).\nHow-To-Repeat: \n~/tmp$ cat daemontest.c\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdlib.h\u003e\n\nint\nmain (void) {\n    unlink(\"SUCCESS\");\n    printf(\"I want to become a daemon\\n\");\n    if (daemon(1, 1))\n\tperror(\"daemon\");\n    open(\"SUCCESS\", O_CREAT | O_TRUNC | O_WRONLY, 0666);\n    printf(\"I'm a daemon now\\n\");\n    return (0);\n}\n~/tmp$ make daemontest\ncc -Wall daemontest.c -o daemontest\n~/tmp$ ./daemontest \nI want to become a daemon\n~/tmp$ I'm a daemon now\n\n~/tmp$ script -q logfile ./daemontest\nI want to become a daemon\n~/tmp$ ls SUCCESS\nls: SUCCESS: No such file or directory\n~/tmp$ cat logfile\nI want to become a daemon\n~/tmp$"
+}

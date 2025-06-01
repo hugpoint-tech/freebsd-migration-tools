@@ -1,0 +1,8 @@
+{
+ "id": 699330,
+ "bug_id": 175269,
+ "attachment_id": 0,
+ "creation_time": "2013-01-13T20:00:00Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Things have gotten steadily better over time, but if I do something like exec a program with truss like:\n\ntruss -ff startx\n\nIt still gets stuck when detaching from processes when I hit ^C for instance. This has been present for several releases, so it's not a new thing, but it would be nice if this worked because it makes debugging easier in some respects compared to working with ktrace, which requires root privileges in order to function (and introduces other issues in the diagnosing process because it's running as root).\n\nFix: \n\nI need to do more investigation, but my guess is that the problem lies in either the ptrace code or truss itself.\nHow-To-Repeat: $ cat rsleeper.sh \n#!/bin/sh\n\ntrap \"kill -9 -$$\" EXIT INT\nrsleeper()\n{\n\tif [ -z \"$RECURSIVE\" ]\n\tthen\n\t\techo going recursive\n\t\texport RECURSIVE=1\n\t\trsleeper \u0026\n\telse\n\t\techo going non-recursive\n\t\twhile :\n\t\tdo\n\t\t\tsleep 1\n\t\tdone\n\tfi\n}\nrsleeper\nwait\n$ ./rsleeper.sh \ngoing recursive\ngoing non-recursive\n^CKilled\n$ ps auxww | grep sleeper\ngcooper    41020   0.0  0.1  18468 10040  0  R+   11:50AM     0:00.01 grep sleeper\n$ truss -ff -o log ./rsleeper.sh\ngoing recursive\ngoing non-recursive\n^Ckill: -41022: No such process\nkill: -41022: No such process\n^C^C^C^C^C^Z\n[1]+  Stopped                 truss -ff -o log ./rsleeper.sh\n$ kill %1\n$ kill %1\nbash: kill: (41021) - No such process\n[1]+  Done                    truss -ff -o log ./rsleeper.sh\n$ ps auxww | grep sleeper\ngcooper    41038   0.0  0.1  18468 10040  0  RL+  11:51AM     0:00.02 grep sleeper"
+}

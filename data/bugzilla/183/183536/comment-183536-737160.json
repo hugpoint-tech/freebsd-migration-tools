@@ -1,0 +1,8 @@
+{
+ "id": 737160,
+ "bug_id": 183536,
+ "attachment_id": 0,
+ "creation_time": "2013-10-31T19:40:05Z",
+ "creator": "mazhe@alkumuna.eu",
+ "text": "x11-fonts/fontconfig was reported to segfault a while ago when built with clang on the arm architecture.\n\nat the time, the proposed workaround was to build it with gcc, but this is not working anymore on freebsd 10 : lang/gcc is not buildable yet on the arm platform.\n\nI've investigated the real problem, this is a segfault when calling the random() function in the FcRandom() function, located in src/fccompat.c\n\nFix: Here's another, not perfect but working, fix :\n\n\n\nWhen applied, USE_GCC can be removed and fontconfig segfault is not obversable anymore.--K9wzq83hh4jYmikwXYL7udZCaPczWwAcQ4QHikc6s0q67jLp\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- src/fccompat.c.orig\t2013-10-31 19:16:42.000000000 +0000\n+++ src/fccompat.c\t2013-10-31 19:15:57.000000000 +0000\n@@ -182,7 +182,7 @@\n     }\n \n     random_r(\u0026fcrandbuf, \u0026result);\n-#elif HAVE_RANDOM\n+#elif HAVE_RANDOM \u0026\u0026 !defined(__arm__)\n     static char statebuf[256];\n     char *state;\n     static FcBool initialized = FcFalse;\nHow-To-Repeat: =\u003e build fontconfig on arm target with freebsd 10"
+}

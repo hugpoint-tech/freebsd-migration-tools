@@ -1,0 +1,8 @@
+{
+ "id": 435570,
+ "bug_id": 121660,
+ "attachment_id": 0,
+ "creation_time": "2008-03-17T05:58:27Z",
+ "creator": "jkoshy@FreeBSD.org",
+ "text": "\u003e  This patch sign extends the 48 bit to 64 bits before applying 2s\n\u003e  compliement to restore the original sampling value. It seems to work\n\u003e  for me.\n\nThat is great news.\n\nI have a simpler patch to offer, though.  This replaces the test and\nbranch with two shifts.\n\nIndex: hwpmc_amd.c\n===================================================================\nRCS file: /cvs/FreeBSD/src/sys/dev/hwpmc/hwpmc_amd.c,v\nretrieving revision 1.9.2.1\ndiff -u -r1.9.2.1 hwpmc_amd.c\n--- hwpmc_amd.c\t15 Sep 2005 15:48:16 -0000\t1.9.2.1\n+++ hwpmc_amd.c\t16 Mar 2008 16:48:27 -0000\n@@ -298,9 +298,11 @@\n #endif\n \n \ttmp = rdmsr(pd-\u003epm_perfctr); /* RDMSR serializes */\n-\tif (PMC_IS_SAMPLING_MODE(mode))\n+\tif (PMC_IS_SAMPLING_MODE(mode)) {\n+\t\t/* Sign extend 48 bit value to 64 bits. */\n+\t\ttmp = (pmc_value_t) (((int64_t) tmp \u003c\u003c 16) \u003e\u003e 16);\n \t\t*v = AMD_PERFCTR_VALUE_TO_RELOAD_COUNT(tmp);\n-\telse\n+\t} else\n \t\t*v = tmp;\n \n \tPMCDBG(MDP,REA,2,\"amd-read id=%d -\u003e %jd\", ri, *v);\n\nThe use of 2's complement isn't a 'hack'; these counters only count\nup, so if you want sample every 'n' events, you have to program the\ncounters with an initial value that is 'n' less than the overflow\nlimit.  This is documented in the manual, IIRC.\n\nThe additional debug messages you've added are fine; if you feel\nthey will be to be useful to someone in the future, feel free to\nadd them to CVS.\n\nRegards,\nKoshy"
+}

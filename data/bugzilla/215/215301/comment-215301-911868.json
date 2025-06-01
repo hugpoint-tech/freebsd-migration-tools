@@ -1,0 +1,8 @@
+{
+ "id": 911868,
+ "bug_id": 215301,
+ "attachment_id": 0,
+ "creation_time": "2016-12-14T12:43:39Z",
+ "creator": "markus@stoffdv.at",
+ "text": "A SSID with the maximum length of 32 characters will be abbreviated by \"list scan\", even when in verbose mode (using \"-v\" switch) (BSSID changed for privacy):\n\n\u003e ifconfig -v wlan0 list scan\nSSID/MESH ID                     BSSID              CHAN RATE    S:N     INT\nDIRECT-88-HP DeskJet 3630 se...  fc:3f:db:ff:ff:ff    1   54M  -87:-95   100\n\n\nThis is because list_scan() assumes the maximum SSID length (ssidmax) to be \"IEEE80211_NWID_LEN - 1\" in verbose mode. Changing this to \"IEEE80211_NWID_LEN\" will lead to the expected behavior of displaying the full SSID:\n\n\u003e ifconfig -v wlan0 list scan\nSSID/MESH ID                      BSSID              CHAN RATE    S:N     INT\nDIRECT-88-HP DeskJet 3630 series  fc:3f:db:ff:ff:ff    1   54M  -87:-95   100\n\n\nThis change should be safe, as the \"ssid\" variable, which is used to store that value, is already initialized with the correct size (IEEE80211_NWID_LEN+1).\n\nHere is a unified diff with my suggested fix:\n\n--- sbin/ifconfig/ifieee80211.c.orig    2016-12-14 13:12:15.883264000 +0100\n+++ sbin/ifconfig/ifieee80211.c 2016-12-14 13:12:36.495865000 +0100\n@@ -3311,7 +3311,7 @@\n \n        getchaninfo(s);\n \n-       ssidmax = verbose ? IEEE80211_NWID_LEN - 1: 14;\n+       ssidmax = verbose ? IEEE80211_NWID_LEN: 14;\n        printf(\"%-*.*s  %-17.17s  %4s %4s   %-7s  %3s %4s\\n\"\n                , ssidmax, ssidmax, \"SSID/MESH ID\"\n                , \"BSSID\""
+}

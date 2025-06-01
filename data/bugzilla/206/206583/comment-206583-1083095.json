@@ -1,0 +1,8 @@
+{
+ "id": 1083095,
+ "bug_id": 206583,
+ "attachment_id": 0,
+ "creation_time": "2020-01-11T00:08:39Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: bz\nDate: Sat Jan 11 00:08:16 UTC 2020\nNew revision: 356621\nURL: https://svnweb.freebsd.org/changeset/base/356621\n\nLog:\n  MFC r354857:\n\n  Reduce the vnet_set module size of ip_mroute to allow loading as a module.\n\n    With VIMAGE kernels modules get special treatment as they need\n    to also keep the original values and make copies for each instance.\n    For that a few pages of vnet modspace are provided and the\n    kernel-linker and the VNET framework know how to deal with things.\n    When the modspace is (almost) full, other modules which would\n    overflow the modspace cannot be loaded and kldload will fail.\n\n    ip_mroute uses a lot of variable space, mostly be four big arrays:\n    set_vnet 0000000000000510 vnet_entry_multicast_register_if\n    set_vnet 0000000000000700 vnet_entry_viftable\n    set_vnet 0000000000002000 vnet_entry_bw_meter_timers\n    set_vnet 0000000000002800 vnet_entry_bw_upcalls\n\n    Dynamically malloc the three big ones for each instance we need\n    and free them again on vnet teardown (the 4th is an ifnet).\n    That way they only need module space for a single pointer and\n    allow a lot more modules using virtualized variables to be loaded\n    on a VNET kernel.\n\n    PR:\t\t206583\n\nChanges:\n_U  stable/12/\n  stable/12/sys/netinet/ip_mroute.c"
+}

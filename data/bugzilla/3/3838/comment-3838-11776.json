@@ -1,0 +1,8 @@
+{
+ "id": 11776,
+ "bug_id": 3838,
+ "attachment_id": 0,
+ "creation_time": "1997-06-15T11:57:50Z",
+ "creator": "dfr@nlsystems.com",
+ "text": "On Wed, 11 Jun 1997, Bruce Evans wrote:\n\n\u003e \u003emkfifo on a nfs-mounted filesystem will reply: \"operation not permitted\".\n\u003e \u003eThis didn't happen with release 2.1.0. (No, the fs isn't mounted with\n\u003e \u003enodev!)\n\u003e \n\u003e This was broken in the initial v3 import (rev.1.16), which is essentially\n\u003e the same as Lite2.  There are several bugs:\n\u003e \n\u003e 1. In the v2 case, nfsrv_create() lost some special handling for fifos.\n\u003e    suser() is always called, although mkfifo doesn't require special\n\u003e    privileges.\n\u003e 2. In the v3 case, the new nfsrv_mknod() never had enough special handling\n\u003e    for fifos.  suser() is always called, except for sockets.\n\u003e 3. In the v3 case, after suser() fails, the error code is eventually\n\u003e    thrown away.  nfsrv_mknod() returns 0, and mkfifo() returns the bogus\n\u003e    errno EIO.\n\u003e \n\u003e Bruce\n\u003e \n\u003e Untested fixes for (1)-(2):\n\u003e \n\u003e ! \t\t\tif (vap-\u003eva_type == VFIFO \u0026\u0026\n\u003e ! \t\t\t    (error = suser(cred, (u_short *)0))) {\n\nI think this should be:\n\n\t\t\tif (vap-\u003eva_type != VFIFO \u0026\u0026\n\t\t\t    (error = suser(cred, (u_short *)0))) {\n\nApart from that, your fixes seem to work fine.\n\nOh.  I just noticed that your fixes have already been committed.  Sorry\nfor not giving feedback earlier; I have been extremely busy on other stuff\nfor the last few days.\n\n--\nDoug Rabson\t\t\t\tMail:  dfr@nlsystems.com\nNonlinear Systems Ltd.\t\t\tPhone: +44 181 951 1891\n\t\t\t\t\tFax:   +44 181 381 1039"
+}

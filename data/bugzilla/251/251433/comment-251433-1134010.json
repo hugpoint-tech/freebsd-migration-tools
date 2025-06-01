@@ -1,0 +1,8 @@
+{
+ "id": 1134010,
+ "bug_id": 251433,
+ "attachment_id": 0,
+ "creation_time": "2020-11-29T21:15:48Z",
+ "creator": "raj@gusw.net",
+ "text": "Well, I can't figure this one out. Really need some help with that. I am afraid I will just mess things up and in the end we'll have resource leaks. Now that said, there are already some problems when certain (rare) error conditions occur. The locking up issue was not caused by me, it was only triggered by my messing around. \n\nAnyway, I have found out why my VOP_ACCESS check didn't work. Apparently I need to filter out stuff from ap-\u003eap_mode \u0026 (VREAD|VWRITE|VEXEC) is what I use now, and that works:\n\n        if (targetvp == NULLVP) {\n                if (uvp == NULLVP) {\n                        if (((ap-\u003ea_mode \u0026 FWRITE) || (ump-\u003eum_copypolicy == UNIONFS_COPY_ALWAYS)) \u0026\u0026 lvp-\u003ev_type == VREG) {\n                                error = VOP_ACCESS(lvp, ap-\u003ea_mode \u0026 (VREAD|VWRITE|VEXEC), cred, td);\n                                if (error != 0)\n                                        goto unionfs_open_abort;\n\n\nfine. Now I will submit my full diff here."
+}

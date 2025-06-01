@@ -1,0 +1,8 @@
+{
+ "id": 1150305,
+ "bug_id": 254058,
+ "attachment_id": 0,
+ "creation_time": "2021-03-06T09:07:04Z",
+ "creator": "peterj@FreeBSD.org",
+ "text": "vfs_mountroot() extracts the most recent mnt_time from the mounted filesystems (root and devfs at the time) and passes it to inittodr() as a fallback if there isn't a functioning system RTC.  This is intended to ensure that things like log timestamps don't go backwards.\n\nUnfortunately, only the UFS code actually initialises mnt_time so other root filesystems types will leave mnt_time set to the epoch (1970-01-01 0000Z).  Root on NFS isn't impacted because that uses nfs_mountroot(), which does inittodr() based on the remote filesystem.\n\nThat leaves ZFS: If a system with root on ZFS doesn't have a functioning RTC then the system time will start at 1970-01-01 0000Z until (eg) NTP fixes it.  This leaves close-to-epoch timestamps strewn throughout the filesystem, which is annoying."
+}

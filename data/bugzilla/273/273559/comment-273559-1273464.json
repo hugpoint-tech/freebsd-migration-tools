@@ -1,0 +1,8 @@
+{
+ "id": 1273464,
+ "bug_id": 273559,
+ "attachment_id": 0,
+ "creation_time": "2023-09-07T07:12:11Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to Konrad from comment #0)\n\nThe lagg(4) has no changes related to NUMA since Nov 19 2021.\n\nFrom the logic in `sys/net/if_lagg.c`: \n```\nstruct lagg_port *\nlacp_select_tx_port(struct lagg_softc *sc, struct mbuf *m, int *err)\n{\n        struct lacp_softc *lsc = LACP_SOFTC(sc);\n        uint32_t hash;\n        uint8_t numa_domain;\n\n        if ((sc-\u003esc_opts \u0026 LAGG_OPT_USE_FLOWID) \u0026\u0026\n            M_HASHTYPE_GET(m) != M_HASHTYPE_NONE)\n                hash = m-\u003em_pkthdr.flowid \u003e\u003e sc-\u003eflowid_shift;\n        else\n                hash = m_ether_tcpip_hash(sc-\u003esc_flags, m, lsc-\u003elsc_hashkey);\n\n        numa_domain = m-\u003em_pkthdr.numa_domain;\n        return (lacp_select_tx_port_by_hash(sc, hash, numa_domain, err));\n}\n```\n\nI guess `numa_domain` in mbuf packet header is not set correctly. That should be done in driver IIUC.\n\nI do not have NUMA devices, can you please share the debug info for `m-\u003em_pkthdr.numa_domain` ?"
+}

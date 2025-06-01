@@ -1,0 +1,8 @@
+{
+ "id": 2410,
+ "bug_id": 920,
+ "attachment_id": 0,
+ "creation_time": "1995-12-30T04:40:02Z",
+ "creator": "smp@csn.net",
+ "text": "\n\tThe sio driver disables the fifo (of 16550 class chips) in\n        sioclose() -\u003e comhardclose().  This appears to 'loose' characters\n        currently in the uart.  If the port is open by another process\n        ( as in \"cat \u003e /dev/ttyd4\" ) the problem doesn't occur.\n\nFix: \n\nremoving/disabling lines 989-996 from src/sys/i386/isa/sio.c 'fixes'\n\tthe problem:\n\n\u003e\tif (com-\u003ehasfifo) {\n\u003e\t\t/*\n\u003e\t\t * Disable fifos so that they are off after controlled\n\u003e\t\t * reboots.  Some BIOSes fail to detect 16550s when the\n\u003e\t\t * fifos are enabled.\n\u003e\t\t */\n\u003e\t\toutb(iobase + com_fifo, 0);\n\u003e\t}\nHow-To-Repeat: \n\techo characters to a serial port connected to an external monitoring\n\tdevice.  Note that you CANNOT merely send them back in thru a hard wire\n\tand monitor with a \"cat \u003c /dev/ttyd4\" as this keeps the port open and\n\t'hides' the problem.  Although I haven't tried it, I suspect you could\n\twire the output of ttyd4 to the input of ttyd5 and monitor it that way.\n\n\techo 1 2 3 4 5 6 7 8 9 0 \u003e /dev/ttyd4\n\n\twill get the \"1 2 3 4 5 6 7 8\" out the port but loose \"9 0\""
+}

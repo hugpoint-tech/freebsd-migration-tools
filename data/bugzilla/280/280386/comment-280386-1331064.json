@@ -1,0 +1,8 @@
+{
+ "id": 1331064,
+ "bug_id": 280386,
+ "attachment_id": 0,
+ "creation_time": "2024-10-22T20:00:53Z",
+ "creator": "cc@FreeBSD.org",
+ "text": "(In reply to Kevin Bowling from comment #22)\n(In reply to pascal.guitierrez from comment #23)\n\nI had a similar experience last year when I was debugging a ENOBUFS error returned to TCP on using bce NICs. But I am not sure if you can find a similar solution.\n\n\u003csnap from 2023\u003e\nTurns out the root cause is the default NIC send queue length is too small. The enobufs error came from the _IF_QFULL check in ifq.h.\n\nHowever, tuning \"sysctl net.link.ifqmaxlen\" directly does not work. There is a per NIC interface setup in the driver to setup device tx/rx queues. I have to increase the tx queue \"ifq_maxlen\" from the device sysctl \"hw.bce.tx_pages\". After tuning that, I can achieve a stable 1Gbps x 100ms delay BDP.\n\u003c/snap from 2023\u003e\n\nTalking about review D4295, it reminds me of `Linux has some work like TCP small queue at the sender side.`\n\nTalking about workaround, you may also test the following two patches I prepared in stable/14 branch as a workaround of improving TCP performance in congestion control.\n\nhttps://reviews.freebsd.org/D47218     \u003c\u003c apply this patch firstly\nhttps://reviews.freebsd.org/D47213     \u003c\u003c apply this patch secondly"
+}

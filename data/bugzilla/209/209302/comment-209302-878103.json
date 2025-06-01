@@ -1,0 +1,8 @@
+{
+ "id": 878103,
+ "bug_id": 209302,
+ "attachment_id": 170159,
+ "creation_time": "2016-05-09T21:20:30Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "Created attachment 170159\niconv.mk.patch\n\nI think I know what's going on.  When the print/cups build is started via release.sh /usr/local/include/iconv.h does not exist yet.  It is installed by one of the dependencies of cups (Avahi, which is optional and has recently been enabled by default).  The problem is that the exists(...) test in iconv.mk runs before dependencies are installed.  There's no way to run this test after dependencies as far as I know, so this patch modifies iconv.mk such that -DLIBICONV_PLUG is added to CFLAGS unconditionally.  You can test it by modifying release.sh like this:\n\n--- release/release.sh\t(revision 299059)\n+++ release/release.sh\t(working copy)\n@@ -226,6 +226,7 @@ chroot_setup() {\n \tfi\n \tif [ -z \"${NOPORTS}\" ] \u0026\u0026 [ -z \"${PORTS_UPDATE_SKIP}\" ]; then\n \t\t${VCSCMD} ${PORTBRANCH} ${CHROOTDIR}/usr/ports\n+\t\tpatch -d ${CHROOTDIR}/usr/ports \u003c path/to/iconv.mk.patch\n \tfi\n \n \tif [ -z \"${CHROOTBUILD_SKIP}\" ]; then"
+}

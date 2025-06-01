@@ -1,0 +1,8 @@
+{
+ "id": 440850,
+ "bug_id": 122750,
+ "attachment_id": 0,
+ "creation_time": "2008-11-27T15:31:12Z",
+ "creator": "mdounin@mdounin.ru",
+ "text": "Hello!\n\nI've recently digged into nss_ldap-related assertions we are \nobserving periodically in our environment:\n\nAssertion failed: (r != NULL), function ldap_parse_result, file error.c, line 272.\nAbort trap: 6\n\nThey are indeed start_tls related.  The reason is insufficient \nerror checking in ldap-nss.c's do_start_tls().  Patch is fairy \ntrivial:\n\n--- ldap-nss.c.backup\tThu Nov  6 23:59:33 2008\n+++ ldap-nss.c\tFri Nov  7 00:05:20 2008\n@@ -1387,7 +1387,7 @@\n     }\n \n   rc = ldap_result (session-\u003els_conn, msgid, 1, timeout, \u0026res);\n-  if (rc == -1)\n+  if (rc \u003c= 0)\n     {\n #if defined(HAVE_LDAP_GET_OPTION) \u0026\u0026 defined(LDAP_OPT_ERROR_NUMBER)\n       if (ldap_get_option (session-\u003els_conn, LDAP_OPT_ERROR_NUMBER, \u0026rc) != LDAP_SUCCESS)\n\nAnyway, this part of code seems to be rewritten in nss_ldap 1.264 \nand update should resolve the issue too (see ports/129030).\n\nMaxim Dounin"
+}

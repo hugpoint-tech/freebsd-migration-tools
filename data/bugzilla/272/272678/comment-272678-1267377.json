@@ -1,0 +1,8 @@
+{
+ "id": 1267377,
+ "bug_id": 272678,
+ "attachment_id": 243566,
+ "creation_time": "2023-07-23T13:03:32Z",
+ "creator": "knielsen@knielsen-hq.org",
+ "text": "Created attachment 243566\nC test program to trigger the bug\n\nA read(2) system call on a file can read incorrect data when run\nconcurrently with a write(2) that appends to the file.\n\nThe attached test program demonstrates this:\n\n  sudo mount -t tmpfs tmpfs /tmp\n  cd /tmp\n  ./test_concurrent_read_write2\nERROR! invalid value read 0x 0 at 343 of 387, pos 387\n\nIt's a race, seems to need a couple hundred iterations to provoke the bug\n(it defaults to 1000 iterations). When the bug happens, the read() sees the\nlength of the file as including the data from the concurrent write(), but\nthe read data is incorrect (all zeros in my tests).\n\nThis was reproduced with FreeBSD 13.0, 13.2, and 14-current.\nIt is reproducable on tmpfs with default settings.\nIt can reportedly be reproduced on ufs filesystems by disabling vn_io_fault\nand enablint vn_io_pgcache_read_enable.\nA work-around is: sysctl debug.vn_io_pgcache_read_enable=0"
+}

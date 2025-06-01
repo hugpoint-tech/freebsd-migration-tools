@@ -1,0 +1,8 @@
+{
+ "id": 957108,
+ "bug_id": 223243,
+ "attachment_id": 0,
+ "creation_time": "2017-10-25T18:10:59Z",
+ "creator": "bobf@mrp3.com",
+ "text": "the 404.status-zfs script in /etc/periodic/daily needs to use the '-v' flag when reporting the status via 'zpool status'.  This way, if there are errors affecting specific files, these errors will be reported along with the I/O and checksum error count.\n\nSometimes after a zpool scrub a file that previously had errors in it stops being in the list.  And it has been my experience that this \"fixed\" file may have corrupt data in it [I have seen one such example], if the scrub \"fixes\" the problem but the error in the file remains.\n\nHaving a log of these potentially corrupt files in /var/mail/root [or wherever it ends up] would help to diagnose problems that have crept in without notice, by leaving a kind of audit trail, as long as the daily zfs status includes the '-v' flag.\n\nOtherwise the only information you have is \"an error happened\". And that's less than helpful.\n\nI made a simple fix in my own version of the script:\n\n@@ -24,17 +24,19 @@\n \t\t;;\n \t    *)\n \t\t;;\n \tesac\n \tsout=`zpool status -x`\n-\techo \"$sout\"\n+\t#echo \"$sout\"\n \t# zpool status -x always exits with 0, so we have to interpret its\n \t# output to see what's going on.\n \tif [ \"$sout\" = \"all pools are healthy\" \\\n \t    -o \"$sout\" = \"no pools available\" ]; then\n+\t\techo \"$sout\"\n \t\trc=0\n \telse\n+\t\tzpool status -v\n \t\trc=1\n \tfi\n \t;;\n \n     *)\n\nit's not perfect, but does a 'zpool status -v' whenever it detects errors.  A better solution may exist, but this one appears to work.  [if it doesn't, then you might fix it so it does]"
+}

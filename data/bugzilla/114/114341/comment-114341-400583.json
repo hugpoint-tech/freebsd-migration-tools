@@ -1,0 +1,8 @@
+{
+ "id": 400583,
+ "bug_id": 114341,
+ "attachment_id": 0,
+ "creation_time": "2007-07-05T22:40:10Z",
+ "creator": "leif@ofWilsonCreek.com",
+ "text": "\tlockf(1) does not properly implement locking.\n\nThe problem is that lockf calls open() with O_CREAT and O_EXLOCK, but open()\ndoes not implement creating the file and locking it atomically.  Calling open\nin this way is the same as calling open without O_EXLOCK, then separately\ncalling flock().\n\nFix: \n\nTo work around, always use the -k option to flock(1).  To fix the\nproblem, patch the code to check that the file exists after open() returns.\nFor example:\n\n\twhile(1) {\n\t\tlockfd = open(name, O_CREAT|O_RDONLY|O_EXLOCK, 0666);\n\t\tif(lockfd == -1) {\n\t\t\t...abort\n\t\t}\n\n\t\tcheckfd = open(name, O_RDONLY, 0);\n\t\tif(checkfd != -1) {\n\t\t\t// Successful lock.  Continue execution.\n\t\t\tclose(checkfd);\n\t\t\tbreak;\n\t\t}\n\n\t\t// Lock file was removed by a concurrent peer.  Try again.\n\t\tif(errno != ENOENT) {\n\t\t\tclose(lockfd);\n\t\t\t...abort - almost can't happen\n\t\t}\n\t\tclose(lockfd);\n\t}\nHow-To-Repeat: \tlockf will break under the following use case:\n\n  - Alice executes lockf /tmp/test.lock foobar.\n  - Bob executes lockf /tmp/test.lock foobar.\n  - Alice finishes executing foobar (and lockf removes the lockfile).\n  - Bob obtains the lock (but lockf forgets to create a lockfile to replace the\nremoved one).\n  - Charlie executes lockf /tmp/test.lock foobar.\n  - Charlie immediately begins executing foobar, since there is no record of\nBob's lock.\n  - Bob and Charlie are now erroneously executing foobar at the same time."
+}

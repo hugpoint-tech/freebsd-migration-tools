@@ -1,0 +1,8 @@
+{
+ "id": 836826,
+ "bug_id": 202419,
+ "attachment_id": 0,
+ "creation_time": "2015-08-18T15:08:07Z",
+ "creator": "martin@sugioarto.com",
+ "text": "Scenario:\n\n- server serves files with Samba 3.6\n- client mounts with smbfs\n\nProblem description:\n\n- change directory to the smbfs-mounted filesystem on client\n- try to start vim (not vi!), evince, libreoffice or similar (you don't need to open a file from smbfs!)\n- truss shows that it hangs calling openat in infinite loop\n\ntruss output:\n\nopenat(0xffffff9c,0x7fffffffc6b0,0x100000,0x0,0x7ff7fe43c39f,0x8080808080808080) = 499 (0x1f3)\nopenat(0xffffff9c,0x7fffffffc6b0,0x100000,0x0,0x7ff7fe43c39f,0x8080808080808080) = 499 (0x1f3)\nopenat(0xffffff9c,0x7fffffffc6b0,0x100000,0x0,0x7ff7fe43c39f,0x8080808080808080) = 499 (0x1f3)\n[ repeating infinitely ]\n\nFurther details:\n\n- while current working directory is inside a smbfs-mountpoint, it is also not possible to open files on locally mounted filesystems\n\nMount description in /etc/fstab:\n\n//username@servername/remotefs   /net/server/remotefs  smbfs   rw,noauto,-N,-W=DOMAIN,-u=username,-g=groupname    0       0\n\n(*) remark: I use noauto because there is a race condition with the network initialization which forces me to mount after a 10s sleep in /etc/rc.local (I think this problem is not related with the one described here)\n\n\nDisclaimer:\n\nIt might be a samba misconfiguration. I am not fully sure what happens here.\n\n--\nMartin"
+}

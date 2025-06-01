@@ -1,0 +1,8 @@
+{
+ "id": 96977,
+ "bug_id": 30781,
+ "attachment_id": 0,
+ "creation_time": "2001-09-24T14:14:03Z",
+ "creator": "roam@ringlet.net",
+ "text": "On Mon, Sep 24, 2001 at 01:58:54AM -0700, dwchoe@naver.com wrote:\n\u003e \n\u003e \u003eNumber:         30781\n\u003e \u003eCategory:       kern\n\u003e \u003eSynopsis:       msgrcv call blocks other pthread's jobs\n\u003e \u003eOriginator:     Choi, Dong-won\n\u003e \u003eRelease:        FreeBSD 4.2-20010108-STABLE\n\u003e \u003eOrganization:\n\u003e Naver.COM\n\u003e \u003eEnvironment:\n\u003e FreeBSD 4.2-20010108-STABLE #0: Thu Jan 11 09:23:26 KST 2001     /usr/src/sys/compile/MYKERNEL  i386\n\u003e \u003eDescription:\n\u003e A program using msgrcv call and pthread do not run as expected.\n\u003e One thread calls msgrcv and wait until some messages are arrived.\n\u003e Other thread does its given jobs.\n\u003e And some other threads can call msgsnd to send messages.\n\u003e All threads need to run concurruntly.\n\u003e It's just ok under Linux or SunOS.\n\nIn FreeBSD, all threads live within one process.  This means that if\none thread should make a blocking system call, the whole process blocks\nuntil the call returns.  The way around this is to make your system calls\nnot block.  For syscalls dealing with file descriptors, the fd's need to\nbe set into non-blocking mode.  Other syscalls have their own ways of\nspecifying non-blocking operation.\n\t\nFor msgrcv(3), it is the msgflg parameter - read the msgrcv(3) manual page\nand set the IPC_NOWAIT flag.  Then have your main thread call msgrcv(3)\nin non-blocking mode and if it returns nothing, sleep for a while before\nthe next call.\n\nG'luck,\nPeter\n\n-- \nWhat would this sentence be like if it weren't self-referential?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 72443,
+ "bug_id": 23252,
+ "attachment_id": 0,
+ "creation_time": "2000-12-15T17:02:11Z",
+ "creator": "eischen@vigrid.com",
+ "text": "I've analyzed this PR and am the opinion that it is not a threads library\nbug.  It seems to have something to do with either the compiler (libgcc2)\nor the implementation of string in libstdc++.  In the sample program included\nwith the original PR submittal, there are the following functions:\n\nvoid\nSS::run()\n{\n    string s;   // !!!\n    string s1;  // !!!\n    sleep(1);\n}\n\nstatic void sp_call(SS *ss)\n{\n    string s;   // !!!\n    ss-\u003espawn();\n}\n\nSS::run() is called from a thread that is created by the \"ss-\u003espawn()\" call in\nsp_call().  sp_call initializes/allocates the local string s, then creates a\nthread that calls SS::run().  SS::run() is called which also initializes/allocates\n2 strings (s and s1).  The thread then sleeps and a thread switch back to the\nmain thread occurs.  ss-\u003espawn returns and the local string in sp_call() is\nthen finalized.  When the spawned thread returns from the sleep it also tries\nto finalize the two strings (s and s1).  But it seems that the finalization\nof the string in sp_call() has corrupted one of the strings in SS::run()."
+}

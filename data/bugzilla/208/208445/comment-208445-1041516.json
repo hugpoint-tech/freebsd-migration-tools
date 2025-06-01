@@ -1,0 +1,8 @@
+{
+ "id": 1041516,
+ "bug_id": 208445,
+ "attachment_id": 0,
+ "creation_time": "2019-03-09T11:13:43Z",
+ "creator": "misc-freebsd-bugzilla@talk2dom.com",
+ "text": "Still present in FreeBSD12.0-RELEASE\n\n\"$ is not set properly\"\n\n... is caused by this in /etc/rc.d/addswap:\n\nrcvar=\n\nand this code in service(8):\n\n                        eval `grep ^rcvar $file`\n                        if [ -n \"$rcvar\" ]; then\n                                load_rc_config_var ${name} ${rcvar}\n                        fi\n                        checkyesno $rcvar 2\u003e/dev/null \u0026\u0026 echo $file\n \nSo although service(8) checks whether $rcvar has non-zero length (-n), it still goes on to use it with checkyesno (from /etc/rc.subr) which emits the warning.\n\nOther /etc/rc.d scripts with empty rcvar, like dhclient, have \"nostart\" in their keywords so are not considered by service(8) thanks to it calling rcorder(8) with \"-s nostart\"\n\nThat's the 'why' but I don't know enough to say whether the fix should be:\n\n1. move checkyesno inside the if-block for service(8)\n2. change checkyesno to remove warning if arg (rcvar) is unset/empty\n3. add \"nostart\" keyword /etc/rc.d/addswap"
+}

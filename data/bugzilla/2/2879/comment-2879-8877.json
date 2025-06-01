@@ -1,0 +1,8 @@
+{
+ "id": 8877,
+ "bug_id": 2879,
+ "attachment_id": 0,
+ "creation_time": "1997-03-05T02:30:02Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "\n\t\n! fails to negate the return value of a pipeline.  The sh man page says:\n\n       If the reserved word ! does not precede the pipeline, the\n       exit status is the exit status of the last command speci-\n       fied in the pipeline.  Otherwise, the exit status is the\n       logical NOT of the exit status of the last command.\n\nHowever, I see the following behavior:\n\n$ if ! date | false; then echo hi; fi\n$ if ! date | true; then echo hi; fi\nhi\n\n! works when not associated with a pipeline:\n\n$ if ! false; then echo hi; fi\nhi\n$ if ! true; then echo hi; fi\n\nAll of the above work properly in 2.2 .\n\nFix: \n\nI'm pretty suspicious of rev 1.17 of parser.c, since it appears to\nchange where in the parse tree the NNOT (23) appears.  \n\nIn 2.2, the parse tree for the command line \"! date | false\" looks\nsomething like\n\nevaltree(0x539cc: 23) called\t[!]\nevaltree(0x53988: 2) called\t[|]\nevaltree(0x53978: 1) called\t[date]\nevaltree(0x539bc: 1) called\t[false]\n\nIn 3.0, the parse tree for the same command line looks like\n\nevaltree(0x19b54: 2) called\t[|]\nevaltree(0x19b4c: 23) called\t[!]\nevaltree(0x19b3c: 1) called\t[date]\nevaltree(0x19b88: 1) called\t[false]\n\ne.g. it looks like the return value of date is being negated and\nthen discarded.  Presumably there was a reason to make the changes\nin 1.17, and since I don't understand that reason I can't suggest\na fix (other than back them out).\nHow-To-Repeat: \n\t\nUse ! to negate the return value of a pipeline.  Watch it fail to negate\nthe return value of the pipeline."
+}

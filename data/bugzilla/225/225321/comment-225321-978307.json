@@ -1,0 +1,8 @@
+{
+ "id": 978307,
+ "bug_id": 225321,
+ "attachment_id": 0,
+ "creation_time": "2018-02-19T12:27:18Z",
+ "creator": "breno.leitao@gmail.com",
+ "text": "Hi Justin,\n\nWe are debugging this one in background, and the problem seems to be a wrong stack  pointer (r1). Mainly after restoring it at sys/powerpc/aim/trap_subr64.S:\n\nASENTRY_NOPROF(breakpoint)\n        ....\n\ndbtrap:\n        /* Write the trap vector to SPRG3 by computing LR \u0026 0xff00 */\n        mflr    %r1\n        andi.   %r1,%r1,0xff00\n        mtsprg3 %r1\n\n        ld      %r1,TRAP_TOCBASE(0)             /* get new SP */\n        ld      %r1,TOC_REF(tmpstk)(%r1)\n        addi    %r1,%r1,(TMPSTKSZ-48)\n\n\nWe have a working patch already, and I would suggest the authors to share it."
+}

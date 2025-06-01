@@ -1,0 +1,8 @@
+{
+ "id": 695617,
+ "bug_id": 174436,
+ "attachment_id": 0,
+ "creation_time": "2012-12-18T11:08:30Z",
+ "creator": "mjguzik@gmail.com",
+ "text": "On Tue, Dec 18, 2012 at 12:01:43PM +0100, Robert Schulze wrote:\n\u003e Hi,\n\u003e \n\u003e Am 18.12.2012 11:18, schrieb Mateusz Guzik:\n\u003e \u003eI was reading wrong version of rc.d script. Name is passed with -n switch.\n\u003e \u003e\n\u003e \u003eLooks like we can get to prison_deref before RACCT is initialized for\n\u003e \u003egiven prison.\n\u003e \u003e\n\u003e \u003ePlease test the following:\n\u003e \u003ediff --git a/sys/kern/kern_jail.c b/sys/kern/kern_jail.c\n\u003e \u003eindex 1dc43ab..7ca1d72 100644\n\u003e \u003e--- a/sys/kern/kern_jail.c\n\u003e \u003e+++ b/sys/kern/kern_jail.c\n\u003e \u003e@@ -2604,7 +2604,8 @@ prison_deref(struct prison *pr, int flags)\n\u003e \u003e                         cpuset_rel(pr-\u003epr_cpuset);\n\u003e \u003e                 osd_jail_exit(pr);\n\u003e \u003e  #ifdef RACCT\n\u003e \u003e-               prison_racct_detach(pr);\n\u003e \u003e+               if (pr-\u003epr_prison_racct != NULL)\n\u003e \u003e+                       prison_racct_detach(pr);\n\u003e \u003e  #endif\n\u003e \u003e                 free(pr, M_PRISON);\n\u003e \u003e\n\u003e \n\u003e this fixed the panic, but the jail can still not be started:\n\u003e \n\u003e # /etc/rc.d/jail onestart 0\n\u003e Configuring jails:.\n\u003e Starting jails: cannot start jail \"0\":\n\u003e .\n\nForgot to add:\n'0' is explicitly forbidden. Underlying reason is that you already have\njail 0 - your main system.\n\nThe only problem here was that cleanup was incorrect. And possibly\ndocumentation should note that '0' is already taken.\n-- \nMateusz Guzik \u003cmjguzik gmail.com\u003e"
+}

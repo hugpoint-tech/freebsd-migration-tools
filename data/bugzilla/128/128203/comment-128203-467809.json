@@ -1,0 +1,8 @@
+{
+ "id": 467809,
+ "bug_id": 128203,
+ "attachment_id": 0,
+ "creation_time": "2008-10-18T14:30:01Z",
+ "creator": "Udo.Schweigert@siemens.com",
+ "text": "\nWhen extracting a pax archive which was created with \"tar\" where files (not\ndirectories) contain acls the \"tar -xp\" command will not restore the last \nmodification time. Instead the time of the extraction shows up.\n\nThis is due to the fact that the particular routine in libarchive does\nthe acl-restoration after the time has been set. Unlike changing file\nflags and access rights the setting of acls changes the last modification\ntime of a file.\n\nFix: Apply this patch:\nHow-To-Repeat: \nOn an ACL-capable filesystem do:\n\n# mkdir test-dir\n# touch test-dir/test-file\n# setfacl -m u::rwx,g:mail:rw test-dir/test-file\n# touch -t 01011111 test-dir/test-file\n# ls -al test-dir/\ntotal 8\ndrwxr-xr-x  2 root  wheel  512 Oct 18 15:20 .\ndrwxrwxr-x+ 3 root  wheel  512 Oct 18 15:20 ..\n-rwxrw-r--+ 1 root  wheel    0 Jan  1  2008 test-file\n# tar -cvf test.tar test-dir\na test-dir\na test-dir/test-file\n# mkdir test2\n# cd test2\n# tar -xvpf ../test.tar\nx test-dir/\nx test-dir/test-file\n# ls -al test-dir/\ntotal 6\ndrwxr-xr-x  2 root  wheel  512 Oct 18 15:20 .\ndrwxr-xr-x  3 root  wheel  512 Oct 18 15:20 ..\n-rwxrw-r--+ 1 root  wheel    0 Oct 18 15:20 test-file\n\nThe test-file has not the January 1st date."
+}

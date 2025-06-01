@@ -1,0 +1,8 @@
+{
+ "id": 99897,
+ "bug_id": 31649,
+ "attachment_id": 0,
+ "creation_time": "2001-10-31T03:40:01Z",
+ "creator": "edwin@mavetju.org",
+ "text": "\nWhen compiling a program which listens to a network device via the\npcap-library with -pthread, it stops working in the pcap_loop()\nbits.\n\nFix: \n\nnone known.\nHow-To-Repeat: \n#include \u003cpcap.h\u003e\n#include \u003cnet/bpf.h\u003e\n\n#include \u003cstdlib.h\u003e\n#include \u003cstring.h\u003e\n#include \u003csignal.h\u003e\n#include \u003csys/ioctl.h\u003e\n\npcap_t *pd = NULL;\nchar *dev = \"fxp0\";\nint link_offset;\nint link_type;\nint snaplen = 65535, promisc = 1, to = 1000;\nchar pc_err[PCAP_ERRBUF_SIZE];\n\nvoid networkinit(void) {\n    if ((pd = pcap_open_live(dev, snaplen, promisc, to, pc_err)) == NULL) {\n        perror(pc_err);\n        exit(-1);\n    }\n}\n\nvoid process(u_char *data1, struct pcap_pkthdr* h, u_char *p) {\n    fprintf(stderr,\".\");\n}\n\nvoid networkrun(void) {\n    while (pcap_loop(pd, 0, (pcap_handler)process, 0));\n\n    exit(-2);\n}\n    \nint main(void) {\n    networkinit();\n    networkrun();\n}\n\n\n(You might have to tweak the fxp0 in the dev-variable)\n\nCompile as \"gcc -Wall -o nw nw.c -lpcap\". It will print a dot for\nevery IP packet.\nCompile as \"gcc -Wall -o nw nw.c -lpcap -pthread\". It will print\nnothing."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 872703,
+ "bug_id": 206761,
+ "attachment_id": 0,
+ "creation_time": "2016-03-31T20:09:42Z",
+ "creator": "sbruno@FreeBSD.org",
+ "text": "Something like this has been suggested by sson@ to resolve these issues.  What do you guys think?\n\ndiff --git a/sys/kern/imgact_binmisc.c b/sys/kern/imgact_binmisc.c\nindex dd57717..39ca156 100644\n--- a/sys/kern/imgact_binmisc.c\n+++ b/sys/kern/imgact_binmisc.c\n@@ -1,5 +1,5 @@\n/*-\n- * Copyright (c) 2013-15, Stacey D. Son\n+ * Copyright (c) 2013-16, Stacey D. Son\n * All rights reserved.\n *\n * Redistribution and use in source and binary forms, with or without\n@@ -220,16 +220,17 @@ imgact_binmisc_add_entry(ximgact_binmisc_entry_t *xbe)\n{\n\timgact_binmisc_entry_t *ibe;\n\tchar *p;\n+\tint cnt;\n\n\tif (xbe-\u003exbe_msize \u003e IBE_MAGIC_MAX)\n\t\treturn (EINVAL);\n\n-\tfor(p = xbe-\u003exbe_name; *p != 0; p++)\n-\t\tif (!isascii((int)*p))\n+\tfor(cnt = 0, p = xbe-\u003exbe_name; *p != 0; cnt++, p++)\n+\t\tif (cnt \u003e= IBE_NAME_MAX || !isascii((int)*p))\n\t\t\treturn (EINVAL);\n\n-\tfor(p = xbe-\u003exbe_interpreter; *p != 0; p++)\n-\t\tif (!isascii((int)*p))\n+\tfor(cnt = 0, p = xbe-\u003exbe_interpreter; *p != 0; cnt++, p++)\n+\t\tif (cnt \u003e= IBE_INTERP_LEN_MAX || !isascii((int)*p))\n\t\t\treturn (EINVAL);\n\n\t/* Make sure we don't have any invalid #'s. */\n@@ -266,8 +267,6 @@ imgact_binmisc_add_entry(ximgact_binmisc_entry_t *xbe)\n\n\t/* Preallocate a new entry. */\n\tibe = imgact_binmisc_new_entry(xbe);\n-\tif (!ibe)\n-\t\treturn (ENOMEM);\n\n\tSLIST_INSERT_HEAD(\u0026interpreter_list, ibe, link);\n\tinterp_list_entry_count++;"
+}

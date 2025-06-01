@@ -1,0 +1,8 @@
+{
+ "id": 601286,
+ "bug_id": 155186,
+ "attachment_id": 0,
+ "creation_time": "2011-03-02T11:40:11Z",
+ "creator": "xelah-freebsd-pr@xelah.com",
+ "text": "NetworkInterface.isUp() can throw a SocketException when there was in\nfact no error. This breaks, for example, JGroups.\n\ngetFlags in\n/usr/ports/java/openjdk7/work/openjdk/jdk/src/solaris/native/java/net/NetworkInterface.c\nreturns if2.ifr_flags where if2 is a struct ifreq. Callers expect a\nnegative (int) result on error, a positive one otherwise. ifr_flags is\na short and the top bit can be set of multi-cast capable interfaces.\nThis remains negative when cast to an int and the caller believes an\nerror occurred. An exception is thrown based on whatever errno happens\nto be.\n\nMy JDK port version is openjdk-7.0.122\n\nFix: \n\nChange the last statement of getFlags to 'return ((int) if2.ifr_flags) \u0026 0xffff;'\nHow-To-Repeat: Run this (from JGroups):\n\nimport java.net.*;\nimport java.util.*;\n\npublic class test {\n    public static void main(String[] argv) throws SocketException {\n        InetAddress address=null ;\n\n        try {\n            Enumeration intfs=NetworkInterface.getNetworkInterfaces();\n            while(intfs.hasMoreElements()) {\n                NetworkInterface intf=(NetworkInterface)intfs.nextElement();\n                if(intf.isUp()) {\n                    //address=getAddress(intf, AddressScope.NON_LOOPBACK) ;\n                    //System.err.println(address);\n                }\n            }\n        } catch (SocketException e) {\n            e.printStackTrace();\n        }\n    }\n}"
+}

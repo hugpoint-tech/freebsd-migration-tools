@@ -1,0 +1,8 @@
+{
+ "id": 13060,
+ "bug_id": 4243,
+ "attachment_id": 0,
+ "creation_time": "1997-08-07T09:30:01Z",
+ "creator": "tetsuya@secom-sis.co.jp",
+ "text": "In flock() in /sys/kern/kern_descrip.c, the following statement:\n\n    f (fp-\u003ef_type != DTYPE_VNODE)\n\t    return (EOPNOTSUPP);\n\nrejects the file descriptor if fp-\u003ef_type == DTYPE_PIPE.\nF_SETLK and F_GETLK of fcntl() have also the similar statements.\n\n\"Program rewriting map\" (RewriteMap mapname prg:filename) of\nthe URL rewriting module (mod_rewrite) of the Apache HTTP server\nuses file locking for pipe, so FreeBSD users cannot use the fine\nfeature of \"program rewriting map\".\n\nFix: \n\nMaybe, modify the three lines like\n\n    if (fp-\u003ef_type != DTYPE_VNODE)\n\ninto\n\n    if (fp-\u003ef_type != DTYPE_VNODE \u0026\u0026 fp-\u003ef_type != DTYPE_PIPE)\n\nI have not tried it, and I'm not convinced that it is safe and right\nfor I don't know detail of the kernel.\nHow-To-Repeat: The following program prints \"flock: Operation not supported\".\n\n--------\n#include \u003csys/file.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n\nint\nmain()\n{\n    int fds[2];\n    char c;\n\n    pipe(fds);\n    if (flock(fds[1], LOCK_EX) == -1)\n\tperror(\"flock\");\n    write(fds[1], \"a\", 1);\n    read(fds[0], \u0026c, 1);\n    return 0;\n}\n--------"
+}

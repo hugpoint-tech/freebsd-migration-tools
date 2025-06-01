@@ -1,0 +1,8 @@
+{
+ "id": 1272855,
+ "bug_id": 254853,
+ "attachment_id": 0,
+ "creation_time": "2023-09-03T00:54:13Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #96)\n\nLooking at the dlopen of /lib/libcrypto.so.30 shows mode=2, i.e.:\n\nmode=(RTLD_NOW|RTLD_LOCAL)\n\nThe RTLD_LOCAL means that MD4_Update and the like are not\navailable for the later dlopen of /usr/lib/ossl-modules/legacy.so\nto bind to. \n\n. . .\n\nThe mode value comes from dlfcn_load in:\n\n/usr/main-src/crypto/openssl/crypto/dso/dso_dlfcn.c\n\nstatic int dlfcn_load(DSO *dso)\n{\n    void *ptr = NULL;\n    /* See applicable comments in dso_dl.c */\n    char *filename = DSO_convert_filename(dso, NULL);\n    int flags = DLOPEN_FLAG;\n    int saveerrno = get_last_sys_error();\n\n    if (filename == NULL) {\n        ERR_raise(ERR_LIB_DSO, DSO_R_NO_FILENAME);\n        goto err;\n    }\n# ifdef RTLD_GLOBAL\n    if (dso-\u003eflags \u0026 DSO_FLAG_GLOBAL_SYMBOLS)\n        flags |= RTLD_GLOBAL;\n# endif\n# ifdef _AIX\n    if (filename[strlen(filename) - 1] == ')')\n        flags |= RTLD_MEMBER;\n# endif\n    ptr = dlopen(filename, flags);\n. . .\n\nSo far I've not found anything that would lead to\n\ndso-\u003eflags \u0026 DSO_FLAG_GLOBAL_SYMBOLS\n\nbeing non-zero.\n\nThus the failures would result: /usr/lib/ossl-modules/legacy.so use\nis designed for RTLD_GLOBAL use for /lib/libcrypto.so.30 ."
+}

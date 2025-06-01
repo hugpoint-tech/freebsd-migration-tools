@@ -1,0 +1,8 @@
+{
+ "id": 1291356,
+ "bug_id": 276220,
+ "attachment_id": 0,
+ "creation_time": "2024-01-09T13:55:07Z",
+ "creator": "hym2209268914@gmail.com",
+ "text": "The naive programmer, having some experience with the tty, and having read the POSIX 2017 may assume that upon input of the EOF cchar just throws it self away and flushes the dumb line editor's contents to the read queue.\n\nThat's not what happens in FreeBSD. If a canonical input processing program, like cat(1), chooses to repeatedly read() with nbyte set to 5 bytes, when the user presses 'h' 'e' 'l' 'l' 'o' '^D' successively, the read queue will be 6 bytes as reported by FIONREAD. The first read() will complete as expected, returning 5 and decreasing read queue to 1 byte. but when it finishes echoing the chars and read() again, the ttydisc would throw away the 1 byte in the input queue and immediately return 0! The program would then terminate, much to the surprise of the naive programmer.\n\nThat is, when program read() the input queue when the sole character there is an EOF, the kernel would incorrectly return 0 rather than throw it away and wait for input. The EOF or canonical mode should not affect the processing of the input queue, only the dumb line editor. \n\nNormally read() returning 0 in canonical input processing should only happen when user have just pressed EOF/EOL/EOL2 and pressed EOF again.\n\nIf I stop the program via debugger, hit 'hello^D', switch to -icanon via stty -f, then continue the program, this weirdness will not happen.\n\nThe latest Linux kernel does not have this problem. \nNetBSD kernel also has this problem."
+}

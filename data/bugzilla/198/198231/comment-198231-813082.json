@@ -1,0 +1,8 @@
+{
+ "id": 813082,
+ "bug_id": 198231,
+ "attachment_id": 0,
+ "creation_time": "2015-03-03T17:17:54Z",
+ "creator": "mail@fbsd2.e4m.org",
+ "text": "I can reliably deadlock a 9.3-STABLE by the following procedure:\n\nLet's assume that /tmp is a standard swap-backed file system\nalready. First let's set up what we need:\n\nmkdir /tmp/1 /tmp/2\nmount -v -t unionfs /tmp/1 /usr/local\nmount -v -t unionfs /tmp/2 /usr/local\n\nNo let's lock the system:\n\nmkdir /tmp/2/bla\nwhile :; do\n  echo go\n  tar -cC /usr/src/etc -f - . | tar -xpC /tmp/2/bla -f -\ndone\n\nIt survives about 3 or 4 rounds, sometimes more, sometimes\nonly 2. It is important to use tar to copy the stuff. If\nwe replace the tar line by e.g.\n\ncp -pR /usr/src/etc/* /tmp/2/bla\n\nthings are all well.\n\nThe system doesn't lock up entirely, you can move the mouse\nand ping it but no fs access is possible anymore. One can\nswitch to the console and enter the debugger but a reboot\nwith ctrl-alt-del doesn't work...\n\nThe interesting part is that all this worked pretty well on\n9-STABLE until approx. 2 months ago. But nothing had been\ncommitted to unionfs for a long time so I really have no\nidea what's going on.\n\nIt also reminds us of\n\nhttps://bugs.freebsd.org/bugzilla/show_bug.cgi?id=161511\n\nbut this stuff had been merged to 9-STABLE already..."
+}

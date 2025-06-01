@@ -1,0 +1,8 @@
+{
+ "id": 87073,
+ "bug_id": 27835,
+ "attachment_id": 0,
+ "creation_time": "2009-04-16T23:26:57Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "POSIX says that passing 0 arguments in execve() is allowed, but an\napplication doing it is not strictly POSIX compliant, and that\napplications must handle being started with 0 arguments. The Solaris 10\nman page says something similar.\n\nThe test program fails with EFAULT on 7.x, but passing 0 arguments is\nstill possible by changing the execve call to\n  execve(\"/bin/sh\", (char*[]){ NULL }, NULL)\nThat change is good because a null pointer for argv yields undefined\nbehaviour (like any function parameter outside the permitted domain).\n\nAnother reason not to apply the patch to the kernel is that it uses\nEINVAL which POSIX already defines for a different purpose that seems\nuseful to me: to indicate binaries with correct permissions and a valid\nfile format that are not supported (e.g. wrong architecture). This\nsituation currently results in ENOEXEC. Implementing the POSIX EINVAL\ncould improve the 'Syntax error: \"(\" unexpected' message you get when\ntrying to execute an ELF binary for the wrong architecture in sh; some\nother shells and the execlp(3) and execvp(3) libc functions also assume\nan executable is a shell script when they get ENOEXEC.\n\n-- \nJilles Tjoelker"
+}

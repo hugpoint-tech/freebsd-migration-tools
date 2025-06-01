@@ -1,0 +1,8 @@
+{
+ "id": 918452,
+ "bug_id": 205458,
+ "attachment_id": 179258,
+ "creation_time": "2017-01-25T00:49:18Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "Comment on attachment 179258\nCorrected test patch\n\nAs for the result of the corrected test patch. . .\n\nIt appears that:\n\nstatic __inline void\nofw_sprg_prepare(void)\n. . .\nstatic __inline void\nofw_sprg_restore(void)\n. . .\n\nare only defined under an earlier:\n\n#ifdef AIM\nextern register_t ofmsr[5];\nextern void     *openfirmware_entry;\nchar            save_trap_init[0x2f00];          /* EXC_LAST */\nchar            save_trap_of[0x2f00];            /* EXC_LAST */\n                \nint             ofwcall(void *);\nstatic int      openfirmware(void *args);\n. . . (ofw_sprg_\u003c?\u003e's defined in here) . . .\n#ifndef __powerpc64__\n        __asm __volatile(\"mtsprg0 %0\" :: \"r\"(ofw_sprg0_save));\n#endif\n}\n#endif\n\n(Matching the ifdef AIM if I checked right.)\n\nBut of following parts are outside any AIM\ndefinition requirement:\n\nstatic int\nopenfirmware_core(void *args)\n{\n. . .\n        ofw_sprg_prepare();\n. . .\n        ofw_sprg_restore();\n. . .\n}\n\nSo without AIM defined the code looks like\nit would not compile. (I have AIM defined\nfor my context.)"
+}

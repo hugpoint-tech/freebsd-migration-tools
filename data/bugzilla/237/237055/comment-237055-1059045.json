@@ -1,0 +1,8 @@
+{
+ "id": 1059045,
+ "bug_id": 237055,
+ "attachment_id": 0,
+ "creation_time": "2019-07-24T20:10:52Z",
+ "creator": "val@packett.cool",
+ "text": "Well here's a funny story…\n\nI've been experimenting with two aarch64 things: attaching the PMU (where P = Performance) via ACPI (to make pmcstat work) and building IPMI support.\n\nOn my Marvell MACCHIATObin, PMU attaches on boot, the interrupt fires but very rarely, so most of the time there's nothing in pmcstat, but occasionally a couple lines did appear. That platform actually has some weirdness (the PMU interrupts a custom Marvell interrupt controller, and in ACPI mode the firmware catches that and rethrows onto the GICv2, or something like that) so it might be a firmware bug.\n\nSo I've rented an Ampere eMAG instance from Packet again to try a different ACPI platform and uhh.\n\nOn boot, the PMU does not attach:\n\npmu0: rid 0 irq 23\npmu0: \u003cPerformance Monitoring Unit\u003e irq 13 on acpi0\npmu0: could not allocate resources\n\nBut when I do `kldload ipmi` (!!!):\n\npmu0: \u003cPerformance Monitoring Unit\u003e irq 13 on acpi0\n\nand pmcstat does actually start working! Wait, what?! Oh. I guess it's just reprobing all the drivers on unattached devices, but it looked so bizzare at first :D\n\nEvidently, I just put the PMU too early in the attachment order (BUS_PASS_INTERRUPT + BUS_PASS_ORDER_MIDDLE).\n\n(and, ipmi does not attach because the i2c controller wasn't even attaching (https://reviews.freebsd.org/D21059), the i2c controller doesn't attach its children, and IPMI-over-i2c-described-by-ACPI is not supported anyway)"
+}

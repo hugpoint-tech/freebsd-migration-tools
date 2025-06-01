@@ -1,0 +1,8 @@
+{
+ "id": 914857,
+ "bug_id": 215797,
+ "attachment_id": 0,
+ "creation_time": "2017-01-05T14:35:47Z",
+ "creator": "ben.rubson@gmx.com",
+ "text": "Hello,\n\nFrom Linux mount.fuse(8) :\nCONFIGURATION\n  Some options regarding mount policy can be set in /etc/fuse.conf :\n    user_allow_other\n      Allow non-root users to specify allow_other or allow_root options \n\nFrom FreeBSD mount_fusefs(8) :\nallow_other\n  Do not apply STRICT ACCESS POLICY. Only root can use this option.\n\nI would like to see the Linux behaviour under FreeBSD, being able to allow non-root users to use allow_other/allow_root option.\n\nI then also think that it could be interesting to support allow_root :\nallow_root\n  This option is similar to allow_other but file access is limited to the user mounting the filesystem and root. This option and allow_other are mutually exclusive.\n\nI need Fuse FS mounted by non-root users to be available to root (at least the very first dir).\nI then use this dirty quick tweak :\n\n--- sys/fs/fuse/fuse_internal.c.orig\n+++ sys/fs/fuse/fuse_internal.c\n@@ -142,7 +142,7 @@\n \t\t\tint denied = fuse_match_cred(data-\u003edaemoncred,\n \t\t\t    cred);\n \n-\t\t\tif (denied) {\n+\t\t\tif (denied \u0026\u0026 (cred-\u003ecr_uid)) {\n \t\t\t\treturn EPERM;\n \t\t\t}\n \t\t}\n\nWould then be nice to be officially supported.\n\nMany thanks !\n\nBen"
+}

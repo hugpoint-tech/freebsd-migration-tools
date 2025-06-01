@@ -1,0 +1,8 @@
+{
+ "id": 1260277,
+ "bug_id": 271539,
+ "attachment_id": 0,
+ "creation_time": "2023-05-20T19:30:12Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Clang 16 has a new error about incompatible function types, which shows\nup when building mail/panda-cclient:\n\n  news.c:370:36: error: incompatible function pointer types passing 'int (struct dirent *)' to parameter of type 'int (*)(const struct dirent *)' [-Wincompatible-function-pointer-types]\n    if ((nmsgs = scandir (tmp,\u0026names,news_select,news_numsort)) \u003e= 0) {\n                                     ^~~~~~~~~~~\n  /usr/include/dirent.h:127:12: note: passing argument to parameter here\n              int (*)(const struct dirent *), int (*)(const struct dirent **,\n                    ^\n  news.c:370:48: error: incompatible function pointer types passing 'int (const void *, const void *)' to parameter of type 'int (*)(const struct dirent **, const struct dirent **)' [-Wincompatible-function-pointer-types]\n    if ((nmsgs = scandir (tmp,\u0026names,news_select,news_numsort)) \u003e= 0) {\n                                                 ^~~~~~~~~~~~\n  /usr/include/dirent.h:127:44: note: passing argument to parameter here\n              int (*)(const struct dirent *), int (*)(const struct dirent **,\n                                                    ^\n\nThis is because the prototypes for the scandir(3) 'select' and 'compar'\ncallback function parameters do not match the declarations in\n\u003cdirent.h\u003e. The same occurs in a few other files under src/osdep/unix.\n\nFix these by using the correct parameter types for the callback functions."
+}

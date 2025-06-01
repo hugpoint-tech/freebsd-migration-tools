@@ -1,0 +1,8 @@
+{
+ "id": 599987,
+ "bug_id": 154915,
+ "attachment_id": 0,
+ "creation_time": "2012-02-16T13:49:50Z",
+ "creator": "olli@lurza.secnetix.de",
+ "text": "I think introducing an environment variable for this purpose\nis a bad hack.  I would advise against this.\n\nMany tools already have options for unbuffered or line-buffered\noutput (for example cat -u), and there are also other ways to\ncircumvent such problems.\n\nFor example, the problem quoted in the PR can be solved like this,\nusing the -u option of cat:\n\n    $ iostat -x 1 | cat -un | grep ad1\n\nor avoiding cat completely (also might be more efficient,\nsaving one process and one pipe, though I haven't benchmarked\nthis):\n\n    $ iostat -x 1 | awk '{n+=1} /ad1/{print n, $0}'\n\nFor certain other cases, I have the following alias in my ~/.zshrc\nthat simulates a TTY environment for a tool so it is forced to\nuse line-buffered output:\n\n    alias intty='script -qt0 /dev/null'\n\nSo I can write:\n\n    $ intty sometool -args | grep ...\n\nHowever, the intty alias only works when it is the first command\nin a pipeline (this is a limitation of the \"script\" command).\nIn the above example, the cat command is not the first, but a\nsubshell can be used to work around this:\n\n    $ intty sh -c 'iostat -x 1 | cat -n' | grep ad1\n\n(It should work with any shell that supports aliases, not just\nzsh, of course.)\n\nI suggest closing this PR.\n\nBest regards\nOliver"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 873956,
+ "bug_id": 208666,
+ "attachment_id": 0,
+ "creation_time": "2016-04-10T12:31:55Z",
+ "creator": "marino@FreeBSD.org",
+ "text": "okay, I solved it.\n\nyou need to pass \"-Duser.home=${WRKDIR}\" to maven (as seen in other maven ports)\n\nsee example:\n\n--- Makefile.orig       2016-04-10 12:05:14 UTC\n+++ Makefile\n@@ -46,7 +46,11 @@ JAVA_ARCH = ${ARCH}\n do-build:\n        ${MKDIR} ${WRKDIR}/snappy/org/xerial/snappy/native/${OPSYS}/${JAVA_ARCH}\n        ${CP} ${LOCALBASE}/lib/libsnappyjava.so ${WRKDIR}/snappy/org/xerial/snappy/native/${OPSYS}/${JAVA_ARCH}\n-       cd ${WRKSRC} \u0026\u0026 ${SETENV} ${MAKE_ENV} ${LOCALBASE}/share/java/maven33/bin/mvn --offline -Dmaven.repo.local=${WRKDIR}/m2 clean package -Dhadoop.version=2.7.2 -Pyarn -Phadoop-2.6 -DskipTests\n+       cd ${WRKSRC} \u0026\u0026 ${SETENV} ${MAKE_ENV} \\\n+               ${LOCALBASE}/share/java/maven33/bin/mvn --offline \\\n+               -Dmaven.repo.local=${WRKDIR}/m2 clean package \\\n+               -Dhadoop.version=2.7.2 -Pyarn -Phadoop-2.6 -DskipTests \\\n+               -Duser.home=${WRKDIR}\n        ${JAR} uvf ${WRKSRC}/assembly/target/scala*/*assembly*hadoop*.jar -C ${WRKDIR}/snappy org\n\n\nThis patch also changed the *HUGE* line to respect 80 columns which is the convention (and nice for people that aren't on a virtual terminal)"
+}

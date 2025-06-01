@@ -1,0 +1,8 @@
+{
+ "id": 652202,
+ "bug_id": 165306,
+ "attachment_id": 0,
+ "creation_time": "2012-02-20T02:40:09Z",
+ "creator": "adrian@freebsd.org",
+ "text": "There seem to be issues where net80211 doesn't quite get the \"beacon miss\" notification. It stays associated, the beacon interrupt/notification isn't occuring.\n\nAdding on reset/beacon debugging (0x20 + 0x80) on ath0 (sysctl dev.ath.0.debug=0xa0) didn't show any beacon miss interrupts, software or hardware.\n\nThis is with one VAP STA on an AR9280.\n\nWhat I think is happening is:\n\n* the transition to -\u003e RUN doesn't program in any beacon timers by default - it waits for the first beacon to be RX'ed before it programs in timers;\n* but if it loses connectivity during a scan, the beacon timers won't ever be reprogrammed, as no beacons will occur.\n\nSo it stays associated.\n\nFix: \n\nIt may be that we need to:\n\n* program in some beacon TSF value for the initial state transition to RUN, and hope that a new beacon will come in and reprogram the timers.\n* .. or also enable swbeacon support too for single-VAP STA mode?\nHow-To-Repeat: The above should be doable to reproduce - just enable beacon debugging, then do a scan and kill the AP whilst the station is scanning."
+}

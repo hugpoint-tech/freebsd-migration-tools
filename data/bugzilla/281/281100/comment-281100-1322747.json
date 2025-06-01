@@ -1,0 +1,8 @@
+{
+ "id": 1322747,
+ "bug_id": 281100,
+ "attachment_id": 0,
+ "creation_time": "2024-08-27T21:22:29Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "The problem is in the googletest-ATF integration.  If you do \"kyua debug access:main\", you'll see that each individual test case is indeed SKIPPED.  But that information isn't communicated to ATF.  And since multiple googletest test cases correspond to each ATF test case, it's not clear what we should do.  What if some googletest test cases are skipped but others aren't?\n\nI'll dig into the code and see if we can skip the entire thing if fusefs isn't loaded.  That should be easy, and it's the most common cause for these tests to get skipped.\n\nIn the meantime, I'll look at the gtest-tap-listener.  BTW, what I do when I want to run a single test case is:\n\n$ cd /usr/tests/sys/fs/fusefs\n$ sudo mkdir mountpoint\n$ sudo chmod 1777 mountpoint\n$ sudo chflags uchg mountpoint\n$ ./access -v --gtest_filter=Access.unlink_sticky_directory\nNote: Google Test filter = Access.unlink_sticky_directory\n[==========] Running 1 test from 1 test suite.\n[----------] Global test environment set-up.\n[----------] 1 test from Access\n[ RUN      ] Access.unlink_sticky_directory\nINIT        ino= 0\nACCESS      ino= 1 mask=0x1\nLOOKUP      ino= 1 some_file.txt\nUNLINK      ino= 1\n[       OK ] Access.unlink_sticky_directory (1 ms)\n[----------] 1 test from Access (1 ms total)\n\n[----------] Global test environment tear-down\n[==========] 1 test from 1 test suite ran. (1 ms total)\n[  PASSED  ] 1 test."
+}

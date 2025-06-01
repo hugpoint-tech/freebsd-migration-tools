@@ -1,0 +1,8 @@
+{
+ "id": 1045181,
+ "bug_id": 236714,
+ "attachment_id": 0,
+ "creation_time": "2019-04-03T20:31:21Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "It is not being ignored. There is non-zero garbage in an area not written to by sysctl, which makes the zero comparison fail.\n\ndiff --git a/usr.bin/rctl/rctl.c b/usr.bin/rctl/rctl.c\nindex 74073c13207e..8fb9e862aee8 100644\n--- a/usr.bin/rctl/rctl.c\n+++ b/usr.bin/rctl/rctl.c\n@@ -378,12 +378,15 @@ print_rules(char *rules, int hflag, int nflag)\n static void\n enosys(void)\n {\n-       int error, racct_enable;\n+       int error, racct_enable = ~(0);\n        size_t racct_enable_len;\n \n+\n+       printf(\"%x\\n\", racct_enable);\n        racct_enable_len = sizeof(racct_enable);\n        error = sysctlbyname(\"kern.racct.enable\",\n            \u0026racct_enable, \u0026racct_enable_len, NULL, 0);\n+       printf(\"%x\\n\", racct_enable);\n \n        if (error != 0) {\n                if (errno == ENOENT)\n\nResults in:\nffffffff\nffffff00\na.out: failed to show rules for '::': Function not implemented"
+}

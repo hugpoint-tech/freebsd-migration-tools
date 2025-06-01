@@ -1,0 +1,8 @@
+{
+ "id": 1252054,
+ "bug_id": 270393,
+ "attachment_id": 0,
+ "creation_time": "2023-03-22T14:42:38Z",
+ "creator": "emaste@freebsd.org",
+ "text": "They hybrid ISOs are created by copying the first 32K from a GPT image into the output image, overwriting the iso9660 system area:\n\n   113          # Create a GPT image containing the partitions we need for hybrid boot.\n   114          hybridfilename=$(mktemp /tmp/hybrid.img.XXXXXX)\n   115          if [ \"$(uname -s)\" = \"Linux\" ]; then\n   116                  imgsize=`stat -c %s \"$NAME\"`\n   117          else\n   118                  imgsize=`stat -f %z \"$NAME\"`\n   119          fi\n   120          $MKIMG -s gpt \\\n   121              --capacity $imgsize \\\n   122              -b \"$BASEBITSDIR/boot/pmbr\" \\\n   123              -p freebsd-boot:=\"$BASEBITSDIR/boot/isoboot\" \\\n   124              $espparam \\\n   125              -o $hybridfilename\n   126\n   127          # Drop the PMBR, GPT, and boot code into the System Area of the ISO.\n   128          dd if=$hybridfilename of=\"$NAME\" bs=32k count=1 conv=notrunc\n   129          rm -f $hybridfilename\n\nThis completely ignores the secondary GPT. We need to copy it as well, enlarging the original ISO image if necessary."
+}

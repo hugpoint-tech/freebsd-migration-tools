@@ -1,0 +1,8 @@
+{
+ "id": 1045648,
+ "bug_id": 237078,
+ "attachment_id": 0,
+ "creation_time": "2019-04-07T19:08:29Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "generic_timer.c installs interrupt handlers for up to four timer interrupts, causing those interrupts to be enabled on the local PIC. But the handler that it installs assumes that all interrupts come from a specific timer (either the physical one on 32bit or the virtual one on 64bit).\n\nIf an interrupt occurs on the other timer, then the interrupt is never masked or cleared, so a CPU is put into a permanent interrupt handling loop; this is commonly observed on RPI2 platforms at least.\n\nThe unexpected interrupt can occur because while the driver attach routine tries to mask off both the physical and virtual (on 32bit) interrupts, it does this on only one CPU, when in fact each CPU has its own timer.\n\nI have tested a crude workaround (not installing handlers for the unused interrupts) which fixes the observed problems as far as I can determine.\n\nThis bug could potentially apply on 64bit as well, but I am not in a position to test that."
+}

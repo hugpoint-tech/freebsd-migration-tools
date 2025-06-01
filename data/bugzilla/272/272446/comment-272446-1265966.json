@@ -1,0 +1,8 @@
+{
+ "id": 1265966,
+ "bug_id": 272446,
+ "attachment_id": 0,
+ "creation_time": "2023-07-10T17:52:04Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "If you try and enable both the -media and -noauto maps from the sample auto_master, and enable use of automount -c from devd as suggested in the comments, then on every devd event, the flags of all the -noauto filesystems are reset (clearing the \"automounted\" flag and, more critically, flags such as \"readonly\" and \"nosuid\").\n\nThis happens because when traversing the mount list, there are two entries for each -noauto map entry that is currently active: the autofs filesystem itself, and the real filesystem mounted on top of it. The automount program sees the first of those, and issues the equivalent of \"mount -u /path\" on it, WITHOUT checking whether \"/path\" is currently mounted over.\n\nThis can be partially fixed in the userland code, but that obviously leaves a race condition. Accordingly the attached review includes both a kernel and a userland change: the kernel change is to require that the fstype field passed to nmount does actually match the VFS type of the filesystem to be updated.\n\nhttps://reviews.freebsd.org/D40961"
+}

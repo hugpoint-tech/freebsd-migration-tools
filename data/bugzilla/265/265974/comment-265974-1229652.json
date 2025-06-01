@@ -1,0 +1,8 @@
+{
+ "id": 1229652,
+ "bug_id": 265974,
+ "attachment_id": 0,
+ "creation_time": "2022-10-11T14:11:19Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/13 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=65641500dbb7a93de4a6195de90c507f9d629b84\n\ncommit 65641500dbb7a93de4a6195de90c507f9d629b84\nAuthor:     Mark Johnston \u003cmarkj@FreeBSD.org\u003e\nAuthorDate: 2022-09-24 13:18:04 +0000\nCommit:     Mark Johnston \u003cmarkj@FreeBSD.org\u003e\nCommitDate: 2022-10-11 13:37:15 +0000\n\n    smr: Fix synchronization in smr_enter()\n\n    smr_enter() must publish its observed read sequence number before\n    issuing any subsequent memory operations.  The ordering provided by\n    atomic_add_acq_int() is insufficient on some platforms, at least on\n    arm64, because it permits reordering of subsequent loads with the store\n    to c_seq.\n\n    Thus, use atomic_thread_fence_seq_cst() to issue a store-load barrier\n    after publishing the read sequence number.\n\n    On x86, take advantage of the fact that memory operations are not\n    reordered with locked instructions to improve code density: we can store\n    the observed read sequence and provide a store-load barrier with a\n    single operation.\n\n    Based on a patch from Pierre Habouzit \u003cpierre@habouzit.net\u003e.\n\n    PR:             265974\n    Reviewed by:    alc\n\n    (cherry picked from commit 8694fd333556addb97acfff1feca6a1e389201ce)\n\n sys/sys/smr.h | 14 +++++++++++---\n 1 file changed, 11 insertions(+), 3 deletions(-)"
+}

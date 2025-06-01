@@ -1,0 +1,8 @@
+{
+ "id": 1149918,
+ "bug_id": 254006,
+ "attachment_id": 222968,
+ "creation_time": "2021-03-04T08:50:13Z",
+ "creator": "pen@lysator.liu.se",
+ "text": "Created attachment 222968\nPatch to fix samba_server rc.d script to wait for all processes to die\n\nThe rc.d/samba_server script when stopping and/or restarting samba doesn't wait for _all_ smbd processes to terminate before continuing - it only wait´s for the master process. This can cause Samba (smbd) processes to core dump if a new master smbd process gets started before all the old processes has had time to terminate.\n\nWith a non-busy server this rarely get noticed since it happens during samba shutdown and only on busy servers - and for you to get the core dumps you need to have enabled sugid-coredumps...\n\n/etc/sysctl.conf:\n  kern.corefile = /var/cores/%N.%P.core\n  kern.sugid_coredump = 1\n\nThis is related to this Samba issue:\n  https://bugzilla.samba.org/show_bug.cgi?id=14636\n\nThe solution is to modify the rc.d/samba_server script so it waits for all smbd processes to terminate, not just the master process, before continuing.\n\nPlease find enclosed a patch that implements this wait-loop."
+}

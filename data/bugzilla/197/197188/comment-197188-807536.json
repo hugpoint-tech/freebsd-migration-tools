@@ -1,0 +1,8 @@
+{
+ "id": 807536,
+ "bug_id": 197188,
+ "attachment_id": 152355,
+ "creation_time": "2015-01-29T23:37:55Z",
+ "creator": "dch@freebsd.org",
+ "text": "Created attachment 152355\nerl 17.3 config failre\n\nBuilding either in local ports tree, or via poudriere:\n\nchecking for 1-stage DTrace precompilation... dtrace: failed to compile script emulator/beam/erlang_dtrace.d: \"/usr/lib/dtrace/io.d\", line 43: operator -\u003e cannot be applied to a forward declaration: no struct devstat definition is available\nconfigure: error: Could not precompile erlang_dtrace.d: dtrace -h failed\nconfigure: error: /bin/sh '/wrkdirs/usr/ports/lang/erlang-runtime17/work/otp_src_17.4/erts/configure' failed for erts\n===\u003e  Script \"configure\" failed unexpectedly.\n\nI believe that `dtrace -h` requires root privileges to run, not sure how that can work within poudriere etc, viz https://github.com/jj1bdx/erlang-freebsd-port#dtrace-support\n\nAdding \n```\ndiff --git i/lang/erlang/Makefile w/lang/erlang/Makefile\nindex 1094185..cc8e776 100644\n--- i/lang/erlang/Makefile\n+++ w/lang/erlang/Makefile\n@@ -92,6 +92,7 @@ USE_GCC?=     yes\n\n .if ${PORT_OPTIONS:MDTRACE}\n CONFIGURE_ARGS+=--with-dynamic-trace=dtrace\n+NEED_ROOT=yes\n .else\n CONFIGURE_ARGS+=--without-dynamic-trace\n .endif\n```\n\nI'm not clear how to apply this to my poudriere setup for testing, but I guess it would work fine as well there.\n\nDTrace + OTP is a wonderful combo, I hope we can find a fix for this!"
+}

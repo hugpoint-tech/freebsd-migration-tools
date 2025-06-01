@@ -1,0 +1,8 @@
+{
+ "id": 906098,
+ "bug_id": 214265,
+ "attachment_id": 0,
+ "creation_time": "2016-11-06T12:39:33Z",
+ "creator": "laszlo-rdr-keethu9thi@karolyi.hu",
+ "text": "Hey,\n\nI just confirmed my theory that zfs/zpool is broken in stable/11. After experiencing it on my own machine, I fired up a google compute instance with 8 CPUs and checked out stable/11, and recompiled it with make -j10 buildworld.\n\nAfter make installworld, the zfs and zpool binaries are getting a SIGABRT:\n\n---snip---\n[root@freebsd-instance /usr/src]# zfs list\ninternal error: Invalid argument\nAbort trap (core dumped)\n---snip---\n\nthe problem seems to be /lib/libzfs_core.so.2 and/or /lib/libzfs.so.2, since when I put those to libraries back from base.txz, the commands start working.\n\nmoreover, if I compile a kernel from the stable/11 now, at the next boot, after loading the kernel, it won't find my zpool and panics at startup.\n\nSo to reproduce:\n- fire up a freebsd 11 instance somewhere\n- pkg install subversion\n- cd /usr\n- svn co https://svn0.eu.freebsd.org/base/stable/11 src\n- cd src\n- make -j10 buildworld\n- make installworld\n- zfs list \u003c--- should end up in a SIGABRT and a coredump.\n\nCheers,\nLászló"
+}

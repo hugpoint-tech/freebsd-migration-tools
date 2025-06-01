@@ -1,0 +1,8 @@
+{
+ "id": 1136822,
+ "bug_id": 251727,
+ "attachment_id": 0,
+ "creation_time": "2020-12-17T05:48:32Z",
+ "creator": "guru@unixarea.de",
+ "text": "(In reply to Sean Bruno from comment #7)\nmoving the seetings to /etc/sysctl.conf sets them now correctly:\n\n[root@c720-r368166 /home/guru]# grep dev.hdaa. /etc/sysctl.conf\ndev.hdaa.0.init_clear=1\ndev.hdaa.1.init_clear=1\n[root@c720-r368166 /home/guru]# sysctl dev.hdaa.0.init_clear\ndev.hdaa.0.init_clear: 1\n[root@c720-r368166 /home/guru]# sysctl dev.hdaa.1.init_clear\ndev.hdaa.1.init_clear: 1\n\nbut this has nothing todo with the clearing of the BIOS values, which is done (or not done) during the attach phase when the kernel boots up; as you see the value devinfo-\u003einit_clear in hdaa.c is checked *before* the root gets mounted (and /etc/sysctl.conf could have any affect):\n\n# egrep 'DEBUG|Root mount' /var/log/messages\nDec 17 06:35:31 c720-r368166 kernel: hdaa0: DEBUG hdaa.c: hdaa_audio_prepare_pin_ctrl() has  devinfo-\u003einit_clear as: 0\nDec 17 06:35:31 c720-r368166 kernel: hdaa0: DEBUG hdaa.c: hdaa_attach() calls SYSCTL_ADD_INT() macro for init_clear\nDec 17 06:35:31 c720-r368166 kernel: hdaa1: DEBUG hdaa.c: hdaa_audio_prepare_pin_ctrl() has  devinfo-\u003einit_clear as: 0\nDec 17 06:35:31 c720-r368166 kernel: hdaa1: DEBUG hdaa.c: hdaa_attach() calls SYSCTL_ADD_INT() macro for init_clear\nDec 17 06:35:31 c720-r368166 kernel: Root mount waiting for: usbus0 usbus1 CAM\nDec 17 06:35:31 c720-r368166 kernel: Root mount waiting for: usbus0 usbus1 CAM\nDec 17 06:35:31 c720-r368166 kernel: Root mount waiting for: CAM\n\nthis can not be configured from sysctl.conf;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1157739,
+ "bug_id": 255227,
+ "attachment_id": 0,
+ "creation_time": "2021-04-22T08:29:53Z",
+ "creator": "melifaro@FreeBSD.org",
+ "text": "Hi!\n\nDo I understand correctly that creating p2p gif0 interface \u0026 trying to use the remote end as a gateway should trigger the problem?\n\nI'm trying the following with 13-S (don't have 13-R handy, will test later today):\n\n8:25 [0] m@devel0 s ifconfig gif0\ngif0: flags=8011\u003cUP,POINTOPOINT,MULTICAST\u003e metric 0 mtu 1280\n\toptions=80000\u003cLINKSTATE\u003e\n\tinet 10.0.1.1 --\u003e 10.0.1.2 netmask 0xffffffff\n\tgroups: gif\n\tnd6 options=29\u003cPERFORMNUD,IFDISABLED,AUTO_LINKLOCAL\u003e\n8:25 [0] m@devel0 netstat -4rnW | grep 10.0.1\n10.0.1.1           link#4             UHS       152  16384        lo0\n10.0.1.2           link#4             UH        149   1280       gif0\n8:25 [0] m@devel0 s route add -net 172.16.0.0/24 10.0.1.2\nadd net 172.16.0.0: gateway 10.0.1.2 fib 0\n8:25 [0] m@devel0 netstat -4rnW | grep 172.16.0.0\n172.16.0.0/24      10.0.1.2           UGS       153   1280       gif0\n8:25 [0] m@devel0 s route delete 172.16.0.0/24\ndelete net 172.16.0.0 fib 0\n8:25 [0] m@devel0 s route add -net 172.16.0.0/24 10.0.1.2 -ifp gif0\nadd net 172.16.0.0: gateway 10.0.1.2 fib 0\n8:25 [0] m@devel0 netstat -4rnW | grep 172.16.0.0\n172.16.0.0/24      10.0.1.2           UGS       153   1280       gif0\n\n\nMeanwhile, could you consider sharing `netstat -4rnW` output (at least for 10.0 routes) after gif0 creation?\n\nAlso: could you please clarify the reason of adding `-ifp gif0`?"
+}

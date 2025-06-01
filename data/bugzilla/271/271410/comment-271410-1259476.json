@@ -1,0 +1,8 @@
+{
+ "id": 1259476,
+ "bug_id": 271410,
+ "attachment_id": 0,
+ "creation_time": "2023-05-14T13:16:09Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "In the exp-run bug 271047 for clang 16, there have been a bunch of failures where C++ programs included \u003clcms2.h\u003e, and then error'd due to the \"register\" keyword being used, for example graphics/libfreehand:\n\nhttps://pkg-status.freebsd.org/gohan05/data/mainamd64PR271047-default/2023-05-04_09h04m18s/logs/errors/libfreehand-0.1.2_25.log\n\n  In file included from FreeHandDocument.cpp:14:\n  In file included from ./FHParser.h:15:\n  /usr/local/include/lcms2.h:1291:44: error: ISO C++17 does not allow 'register' storage class specifier [-Wregister]\n  typedef cmsInt32Number (* cmsSAMPLER16)   (CMSREGISTER const cmsUInt16Number In[],\n                                             ^~~~~~~~~~~~\n  /usr/local/include/lcms2.h:158:23: note: expanded from macro 'CMSREGISTER'\n  #  define CMSREGISTER register\n                        ^\n\nThe lcms2.h header has a CMS_NO_REGISTER_KEYWORD define to disable usage of the \"register\" keyword, which has been unnecessary for decades now.\n\nUnfortunately the lcms2 configure script has no option to enable this keyword, so I would like to propose patching it in the post-patch stage.\n\nNote that lcms2 is not broken with clang 16 at all, it builds just fine, but applying this would prevent a number of other ports erroring out on the lcms2.h header in C++ mode."
+}

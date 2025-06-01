@@ -1,0 +1,8 @@
+{
+ "id": 1221244,
+ "bug_id": 265540,
+ "attachment_id": 235586,
+ "creation_time": "2022-07-31T19:29:36Z",
+ "creator": "dmgk@freebsd.org",
+ "text": "Created attachment 235586\nmcast.c\n\nWhen porting some Linux code, I noticed that when ipv6_mreq.ipv6mr_interface=0, it is possible to join an IPv6 multicast group, but setsockopts() returns EADDRNOTAVAIL when leaving. Running attached mcast.c on 14.0-CURRENT:\n\n$ ./mcast\nmcast: addr: ff02::42\nmcast: setsockopt: join ok\nmcast: setsockopt: IPV6_LEAVE_GROUP: Can't assign requested address\n\nI'm not sure whether this is a correct fix, but I think the lookup code in in6p_leave_group() is missing an in6_setscope() call:\n\n--- a/sys/netinet6/in6_mcast.c\n+++ b/sys/netinet6/in6_mcast.c\n@@ -2312,6 +2312,9 @@ in6p_leave_group(struct inpcb *inp, struct sockopt *sopt)\n                            \"ifp for group %s.\", __func__,\n                            ip6_sprintf(ip6tbuf, \u0026gsa-\u003esin6.sin6_addr));\n                        ifp = in6p_lookup_mcast_ifp(inp, \u0026gsa-\u003esin6);\n+                       if (ifp == NULL)\n+                               return (EADDRNOTAVAIL);\n+                       (void)in6_setscope(\u0026gsa-\u003esin6.sin6_addr, ifp, NULL);\n                } else {\n                        NET_EPOCH_ENTER(et);\n                        ifp = ifnet_byindex(ifindex);\n\nin6p_join_group() calls in6_setscope() in in6_mcast.c:1996, but the lookup by im6o_match_group() in in6_mcast.c:2336 is performed using unscoped address."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 912745,
+ "bug_id": 215471,
+ "attachment_id": 178177,
+ "creation_time": "2016-12-21T15:07:04Z",
+ "creator": "jimp@netgate.com",
+ "text": "Created attachment 178177\nA configuration file for bsnmpd which can reproduce the high CPU usage problem on a vmware guest\n\nWhen running FreeBSD 11.0-RELEASE (from release until at least -p5), there is a combination of factors that leads to bsnmpd using 100% CPU.\n\nIt seems to require all of the following:\n\n* FreeBSD 11 running as a guest in VMWare ESXi\n* The guest has a \"CD/DVD Drive\" listed in its hardware on ESX\n* The CD/DVD Drive is in a disconnected state\n* The snmp_hostres module is loaded in the bsnmpd configuration file\n* bsnmpd enabled and running\n\nHere is a very small snmpd.config that can replicate the problem in a similar environment:\n\n==================\n%snmpd\nsysDescr\t\t\t= \"FreeBSD doctor.example.com FreeBSD 11.0-RELEASE-p5 amd64\"\nbegemotSnmpdCommunityString.0.1 = \"supersecret\"\nbegemotSnmpdPortStatus.0.0.0.0.161 = 1\nbegemotSnmpdModulePath.\"mibII\"  = \"/usr/lib/snmp_mibII.so\"\nbegemotSnmpdModulePath.\"hostres\"     = \"/usr/lib/snmp_hostres.so\"\n==================\n\nIf bsnmpd is run on this guest with that configuration, it consumes all available CPU. \n\nI'll attach the above snmpd.config, along with top output and a sample of the truss output taken while bsnmpd was running.\n\nCurrently the only workaround is to disable the hostres module, but that means losing access to any of the information it provides."
+}

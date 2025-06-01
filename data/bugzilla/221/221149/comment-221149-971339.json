@@ -1,0 +1,8 @@
+{
+ "id": 971339,
+ "bug_id": 221149,
+ "attachment_id": 0,
+ "creation_time": "2018-01-12T17:57:44Z",
+ "creator": "christer.edwards@gmail.com",
+ "text": "Apologies for the delay. I must have missed the original CC.\n\nIf I understand the problem here correctly, the Salt state you're applying fails to properly set the policyd_weight_enable=\"YES\" in the rc.conf. It will *start* the service, but can't figure out how to _enable_ the same service.\n\nThe problem is that the service name and the sysrc name don't match.\n\nie; \nsysrc policyd_weight_enable=\"YES\"\nservice policyd-weight start\n\nI just spent some time reproducing this. I have a fairly simple workaround:\n\nmail/postfix-policyd-weight:\n  pkg.installed\n\npostfix-policyd-weight-service:\n  service.running:\n    - name: policyd-weight\n\npostfix-policyd-weight-sysrc:\n  sysrc.managed:\n    - name: policyd_weight_enable\n    - value: \"YES\"\n\nThe Salt service module doesn't appear to support defining a service.running where the service name and the enable name don't match. In this case I suggest simply managing the service with the service state and the sysrc changes with the sysrc state.\n\nIf anything I think this is an upstream SaltStack bug that doesn't account for this edge-case."
+}

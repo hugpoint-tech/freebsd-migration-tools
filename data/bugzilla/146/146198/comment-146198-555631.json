@@ -1,0 +1,8 @@
+{
+ "id": 555631,
+ "bug_id": 146198,
+ "attachment_id": 0,
+ "creation_time": "2010-04-30T20:50:07Z",
+ "creator": "amdmi3@amdmi3.ru",
+ "text": " * Ed Schouten (ed@80386.nl) wrote:\n \n \u003e \u003e After these changes it no longer exits with the same exit code as the command it runs (thus, if the command fails, it'll still exit with 0)\n \u003e \u003e Among other things, this breaks portupgrade, as it now mistakingly interprets failed port builds as successfull ones, thus removing ports without installing newer versions.\n \u003e \n \u003e Looks like my fix is correct, but it did expose a new bug inside\n \u003e script(1). We must not use WNOHANG in wait3(), because we must now\n \u003e really wait for the child process to properly shut down.\n \u003e \n \u003e Index: script.c\n \u003e ===================================================================\n \u003e --- script.c    (revision 207446)\n \u003e +++ script.c    (working copy)\n \u003e @@ -223,7 +223,7 @@\n \u003e         int die, e, status;\n \u003e \n \u003e         die = e = 0;\n \u003e -       while ((pid = wait3(\u0026status, WNOHANG, 0)) \u003e 0)\n \u003e +       while ((pid = wait3(\u0026status, 0, 0)) \u003e 0)\n \u003e                 if (pid == child) {\n \u003e                         die = 1;\n \u003e                         if (WIFEXITED(status))\n \u003e \n \n This seems to work, thanks!\n \n -- \n Dmitry Marakasov   .   55B5 0596 FF1E 8D84 5F56  9510 D35A 80DD F9D2 F77D\n amdmi3@amdmi3.ru  ..:  jabber: amdmi3@jabber.ru    http://www.amdmi3.ru"
+}

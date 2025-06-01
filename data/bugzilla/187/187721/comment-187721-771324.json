@@ -1,0 +1,8 @@
+{
+ "id": 771324,
+ "bug_id": 187721,
+ "attachment_id": 0,
+ "creation_time": "2014-07-01T03:05:56Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "Thanks for looking into this, and making me review the Uses/gssapi.mk file.  It looks like that addresses the issue nicely.  So, I'm guessing, with a USES=gssapi I should be able to remove the patch for dovecot2(below) :)\n\n===================================================================\n--- Makefile    (revision 359521)\n+++ Makefile    (working copy)\n@@ -60,7 +60,13 @@\n OPTIONS_SUB=           yes\n DOCS_CONFIGURE_WITH=   docs\n GSSAPI_CONFIGURE_WITH= gssapi\n+.if defined(HEIMDAL_HOME)\n+BUILD_DEPENDS+= ${HEIMDAL_HOME}/lib/libgssapi.so:${PORTSDIR}/security/heimdal\n+RUN_DEPENDS+= ${HEIMDAL_HOME}/lib/libgssapi.so:${PORTSDIR}/security/heimdal\n+GSSAPI_LDFLAGS=                -lgssapi\n+.else\n GSSAPI_LDFLAGS=                -lgssapi_krb5\n+.endif\n\nI have a minor concern that gssapi.mk sets the PREFIX though simple testing indicates that it should be ok (eg Remote our patch, insert USES=gssapi and \n\n# unsetenv HEIMDAL_HOME ; make __MAKE_CONF=/dev/null -VPREFIX -VHEIMDAL_HOME -VUSES\n/usr/local\n/usr\ngssapi iconv\n\nThe concern was that the ports PREFIX was altered (to match $HEIMDAL_HOME).  \n\nUnfortunately I'm unable to test, as we had a successful rebuild of all ports on 2014-06-28 so the systems are frozen during functional testing.\n\nI should mention that our /etc/src.conf contains \nWITHOUT_GSSAPI=yes\nWITHOUT_KERBEROS=yes\nWITHOUT_KERBEROS_SUPPORT=yes"
+}

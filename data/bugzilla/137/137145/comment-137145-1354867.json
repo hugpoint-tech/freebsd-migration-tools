@@ -1,0 +1,8 @@
+{
+ "id": 1354867,
+ "bug_id": 137145,
+ "attachment_id": 0,
+ "creation_time": "2025-03-15T12:31:53Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "(In reply to Gleb Smirnoff from comment #9)\nYou are right when the scenario is going from one owner to more.\nBut there is a scenario of multiple owners, some dropping their reference and some just getting it.\n\nFor example, let's start with refcnt of 2 and three threads: T1, T2, T3.\nT1 and T2 are getting a new reference while T3 is dropping its reference.\nThere is also another owner, Tx, that just keeps its reference.\n\n1. T1 reads refcnt, sees 2;\n2. T3 decrements refcnt to 1\n3. T2 reads refctnt see 1;\n4. T2 proceeds to non-atomic *refcnt += 1 and reads refcnt as 1 again;\n5. T1 proceeds to atomic_add_int and increments refcnt to 2;\n6. T2 sets refcnt to 2 as well (based on step 4);\n\nIn the end, we have 3 owners (T1, T2, Tx) but the refcnt is 2."
+}

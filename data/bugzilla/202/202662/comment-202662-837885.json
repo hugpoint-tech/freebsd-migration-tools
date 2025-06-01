@@ -1,0 +1,8 @@
+{
+ "id": 837885,
+ "bug_id": 202662,
+ "attachment_id": 160360,
+ "creation_time": "2015-08-25T20:13:46Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 160360\nFix go's ldelf.c to not complain about unnamed symbols\n\nDuring the exp-run in bug 201377, it was found that lang/go gives errors with a recent clang 3.7.0 snapshot:\n\nhttp://package18.nyi.freebsd.org/data/headi386PR201377-default/2015-07-31_12h04m22s/logs/errors/go-1.4.2,1.log\n\nThese errors, about unnamed symbols, are very similar to this upstream issue:\n\nhttps://github.com/golang/go/issues/8876\n\nI propose the attached patch for ldelf.c, which makes it ignore unnamed symbols, similar to those starting with .Linfo_string*.\n\nEven with this patch, on amd64, there is still another issue, where a few negative numbers are left-shifted:\n\n/usr/work/share/dim/ports/lang/go/work/go/src/cmd/6c/txt.c:995:28: error: shifting a negative signed value is undefined [-Werror,-Wshift-negative-value]\n                                f-\u003evconst |= (vlong)~0 \u003c\u003c 32;\n                                             ~~~~~~~~~ ^\n\nFor this, I propose the next patch, for src/cmd/6c/txt.c, which just casts the constant to uvlong.  This should result in no functional change, but I am unsure how to run any go test suite to verify.\n\nAlternatively, the makefile(s) can be changed to squelch the warning, if you like that better."
+}

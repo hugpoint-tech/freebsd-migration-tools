@@ -1,0 +1,8 @@
+{
+ "id": 887342,
+ "bug_id": 210957,
+ "attachment_id": 172306,
+ "creation_time": "2016-07-10T09:44:08Z",
+ "creator": "dereks@lifeofadishwasher.com",
+ "text": "Created attachment 172306\nreject FS fields that end with a / update exports man page\n\nIf the last character in the file system fields (the first set of fields) from /etc/exports ends with a / (other than root) then the exported nfs file system can't be mounted on a remote system.\n\nmountd(8) happily accepts lines from /etc/exports if the last character in the file system fields is /.  Other than / itself are there any valid cases where the fs field should/can end with a /?\n\nNFS Server(nfssrv):\n# cat /etc/exports \n/mnt/backups/isos -ro -mapall=nobody -network 10.....\n\nNFS Client(nfscli):\n$ sudo mount nfssrv:/mnt/backups/isos/  /tmp/\nmount_nfs: can't mount /mnt/backups/isos/ from nfssrv onto /private/tmp: Permission denied\n\nNFS Server rejecting a line with a FS ending with a /:\n..... mountd[66457]: bad exports list line /mnt/backups/isos/\n\nWith patch mountd\n\nNFS Server from /var/log/messages:\n........ mountd[17841]: mount request denied from nfscli for /mnt/backups/isos\n\n\nRemoving the / fixes the issue.\n\nSee the attached patch to update mountd.c:check_dirpath to reject lines and exports.5 explaining file system fields shouldn't end with / other than root.\n\nI have only tested the patch with 10.3-RELEASE (nfs server) and Mac OS X (client).  It seems this isn't a client issue (same problem with Linux NFS clients) based off other forum posts.\n\nAlso, it appears the patch should apply to (10|11)-STABLE and CURRENT."
+}

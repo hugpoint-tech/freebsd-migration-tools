@@ -1,0 +1,8 @@
+{
+ "id": 1328901,
+ "bug_id": 281953,
+ "attachment_id": 254107,
+ "creation_time": "2024-10-09T12:06:42Z",
+ "creator": "erkki.moorits@mail.ee",
+ "text": "Created attachment 254107\nTest code for fmemopen(.., .., \"r\")\n\nWhen memory buffer is opened in read-only mode with the fmemopen(.., .., \"r\") function, then the stream opened in read-write mode.\n\nAttached test code with this issue report.\n\nExpected result is (this compiled and run on Ubuntu Linux):\nbuffer before:\t'Hello123'\nbuffer after:\t'Hello123'\nfprintf result:\t-1\n\nTest code, compiled and run on FreeBSD 14.1, give following output:\nbuffer before:\t'Hello123'\nbuffer after:\t'test:1'\nfprintf result:\t6 \n\nPossible cause of this issue are on following lines:\nhttps://cgit.freebsd.org/src/tree/lib/libc/stdio/fmemopen.c#n139\n\nf = funopen(ck,\n\t    flags \u0026 O_WRONLY ? NULL : fmemopen_read, \n\t    flags \u0026 O_RDONLY ? NULL : fmemopen_write,\n\t    fmemopen_seek, fmemopen_close);\n\t    \nwhere 'flags \u0026 O_RDONLY' give always result 0; \n\nBut it should be like this (needs testing):\nf = funopen(ck,\n\t    (flags \u0026 O_ACCMODE) == O_WRONLY ? NULL : fmemopen_read, \n\t    (flags \u0026 O_ACCMODE) == O_RDONLY ? NULL : fmemopen_write,\n\t    fmemopen_seek, fmemopen_close);\n\t    \nOr this (needs testing):\nf = funopen(ck,\n\t    rc \u0026 __SWR ? NULL : fmemopen_read, \n\t    rc \u0026 __SRD ? NULL : fmemopen_write,\n\t    fmemopen_seek, fmemopen_close);"
+}

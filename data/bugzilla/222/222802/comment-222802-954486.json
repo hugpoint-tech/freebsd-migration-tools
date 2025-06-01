@@ -1,0 +1,8 @@
+{
+ "id": 954486,
+ "bug_id": 222802,
+ "attachment_id": 186926,
+ "creation_time": "2017-10-05T19:53:11Z",
+ "creator": "bsdpr@phoe.frmug.org",
+ "text": "Created attachment 186926\nKingDian S200 quirk preventing the kernel from issuing TRIM commands\n\nInexpensive KingDian SATA SSDs are experiencing failures when issued a TRIM command. This can be observed when adding such a device as part of a zpool. Kernel reports a timeout on the TRIM command; then a timeout on the INQUIRY command; them the device reapears. It looks the SSD is crashing. The command is retried, the SSD crash again, etc.\n\nThe device identifies itself as\n\nada1: \u003cKingDian S200 60GB P0921B\u003e ACS-2 ATA SATA 3.x device\nada1: Serial Number \u003celided\u003e\nada1: 300.000MB/s transfers (SATA 2.x, UDMA5, PIO 512bytes)\nada1: 57241MB (117231408 512 byte sectors)\n\nI was unable to keep track of the error messages as the system is unresponsive while he tries to handle this situation which ultimately require powering the host off to recover control.\n\nTo resolve this I had to add a new kind of quirk to ata_da.c, I called it NO_TRIM. It simply clears the device's CAN_TRIM flag. When the quirk is in effect for that device it can then succesfully be used as part of a zpool.\n\nThe quirk is applied to devices matching the \"KingDian S200 *\" pattern, there is currently two models in that line only differing in capacity: 60 and 120 GB.\nSee http://web.archive.org/web/20171005194459/https://www.king-dian.com/product-category/sata/s200/\n\nThe attached diff was made against svn revision 323189."
+}

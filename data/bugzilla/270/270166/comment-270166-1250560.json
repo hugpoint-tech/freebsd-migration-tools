@@ -1,0 +1,8 @@
+{
+ "id": 1250560,
+ "bug_id": 270166,
+ "attachment_id": 240805,
+ "creation_time": "2023-03-13T00:20:58Z",
+ "creator": "kronenpj@gmail.com",
+ "text": "Created attachment 240805\nHack to correct described problem w/instrumentation\n\nAddition of and changes related to sys/kern/subr_clockcalib.c causes infinite loop / 1+ CPU 100% usage during boot. The termination condition of the loop is indeterminate.\n\nSystem details: Virtualized FreeBSD 13.x KVM guest on Fedora Linux 37, AMD Ryzen 9 3900XT 12-Core Processor.\n\nAfter bisection to commit baee6cc1814b8e851555d2caa6410eedcef2c6c8, added instrumentation printfs. This isolated the problem to the exit condition for clockcalib. The cpu() call never returned a value larger than 4294967295 when calibrating the LAPIC timer.\n\nThe proposed solution (hack) captures the last clk() value and aborts the cpu_spinwait() loop if the current clk() and last value are the same. Because freq in this situation always ends up at 0, which causes a divide-by-zero error in the calling routine. A check for this condition with a return of 1 instead is included.\n\nI acknowledge there are cleaner ways to correct this problem, and I explored a kernel command-line option to fall-back to the previous behavior if desired. I have not figured how to accomplish this."
+}

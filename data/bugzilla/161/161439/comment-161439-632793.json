@@ -1,0 +1,8 @@
+{
+ "id": 632793,
+ "bug_id": 161439,
+ "attachment_id": 0,
+ "creation_time": "2011-10-09T21:10:02Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "If one is trying to unmount just unionfs mounted directories, one cannot do it simply via 'umount -a -t unionfs' because it isn't popping filesystems off the stack and is instead dequeueing them based on the order allocated via getfsent(2). This isn't restricted to unionfs though, as shown in the reproduction case below.\n\nSo simply put, unmounting nested filesystems via umount -a -t \u003cfoo\u003e doesn't work today.\n\nFix: \n\nFrom a high-level:\n\n1. All of the available filesystems need to be gathered and sorted by mountpoint.\n2. The filesystems should be popped off the stack and unmounted.\nHow-To-Repeat: #!/bin/sh\n\nfor i in 0 1 2; do\n        rm -f md.$i\n        touch md.$i\n        md=/dev/$(mdconfig -a -f md.$i -s 1g)\n        fdisk -Iq $md\n        mds=\"$mds $md\"\ndone\nt=tank\nv=zvol\nzpool create $t $mds\nzfs create $t/ds\nmount | grep \"^$t\"\numount -a -t zfs"
+}

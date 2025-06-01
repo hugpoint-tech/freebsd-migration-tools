@@ -1,0 +1,8 @@
+{
+ "id": 1146602,
+ "bug_id": 253158,
+ "attachment_id": 0,
+ "creation_time": "2021-02-14T09:56:54Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Cy Schubert from comment #33)\nSo everything in the dump looks fine, except in the vn_io_fault1() frame,\nthe short_uio offset and resid are corrupted, which ultimately causes the\npanic when ffs_read() tries to actually move bytes around.\n\nPlease apply the following debugging patch, compile the same way as you did,\nand provide me with the kernel.full+vmcore, again.  Thanks.\n\ndiff --git a/sys/kern/vfs_vnops.c b/sys/kern/vfs_vnops.c\nindex f8943b3c07e7..72357d3ab2af 100644\n--- a/sys/kern/vfs_vnops.c\n+++ b/sys/kern/vfs_vnops.c\n@@ -1339,6 +1339,8 @@ vn_io_fault1(struct vnode *vp, struct uio *uio, struct vn_io_fault_args *args,\n \t\ttd-\u003etd_ma = ma;\n \t\ttd-\u003etd_ma_cnt = cnt;\n \n+volatile struct uio short_uio1;\n+short_uio1 = short_uio;\n \t\terror = vn_io_fault_doio(args, \u0026short_uio, td);\n \t\tvm_page_unhold_pages(ma, cnt);\n \t\tadv = len - short_uio.uio_resid;"
+}

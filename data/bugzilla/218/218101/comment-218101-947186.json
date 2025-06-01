@@ -1,0 +1,8 @@
+{
+ "id": 947186,
+ "bug_id": 218101,
+ "attachment_id": 0,
+ "creation_time": "2017-08-11T21:26:22Z",
+ "creator": "ben.rubson@gmx.com",
+ "text": "Here is a test case for this request report :\n\n# Create a Fuse EncFS in reverse mode (will give an encrypted view of the plain folder) :\nplain=/tmp/encfs_test/plain\nciphr=/tmp/encfs_test/ciphr\nmkdir -p $plain $ciphr\nencfs --extpass=\"echo test\" --standard $plain $ciphr --reverse\n\n# Update a file in the plain folder\nwhile [ 1 ]; do echo \u003e\u003e$plain/file ; sleep 0.5; done\n\n# Monitor the files in the encrypted view :\nwhile [ 1 ]; do clear; stat $ciphr/*; sleep 0.5; done\n\nAs you can see, the timestamps correctly get updated, but not the sizes.\n\nIt's then dangerous because if you open the encrypted file\n(using dd for example, dd if=$ciphr/... of=/dev/null),\nit will then be truncated (!) to the size being displayed by stat,\nwhereas it was in reality much bigger, as its plain version was growing.\n\nI found fuse sysctls, some are cache related, but no benefit.\n\nAdding \"-o attr_timeout=0 -o entry_timeout=0\" to the encfs command\nin Linux makes this to work.\n\nThank you !\n\nBen"
+}

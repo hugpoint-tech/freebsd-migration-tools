@@ -1,0 +1,8 @@
+{
+ "id": 78326,
+ "bug_id": 25132,
+ "attachment_id": 0,
+ "creation_time": "2001-02-16T09:10:00Z",
+ "creator": "jagarl@creator.club.ne.jp",
+ "text": "I want to block a signal by sigprocmask, but the signal is not blocked.\n\nFollowing description is for SIGTERM signal.\n\nIn pthread library, signal is trapped by thread_sig_handler(). If\nthe signal mask is set, the signal blocks in the handler. But\nthread_init() sets thread_sig_hander() as signal handler only for\n_SCHED_SIGNAL, SIGINFO and SIGCHLD. When the SIGTERM signal is caught,\nthe signal is processed in kernel and default handler (kill process)\nis called.\n\nIf I set some signal hander for SIGTERM, then thread_sig_handler() is\nused as the signal handler for SIGTERM. Then the signal mask is correctly\nused.\n\nHow-To-Repeat: Compile this program with -pthread option. For example,\n  cc test.c -pthread\nThis program should block 'SIGTERM' signal, but 'kill -TERM pid' kills\nthis program.\n\n#include \u003csignal.h\u003e\n\nint main()\n{\n        sigset_t tset;\n        sigemptyset(\u0026tset);\n        sigaddset(\u0026tset, SIGTERM);\n        sigprocmask(SIG_BLOCK,\u0026tset,NULL);\n        while(1) ;\n}\n\nBut this program correctly blocks the signal.\n\n#include \u003csignal.h\u003e\n\nvoid handler(int sig) {\n        _exit(0);\n}\n\nint main()\n{\n        sigset_t tset;\n        sigemptyset(\u0026tset);\n        sigaddset(\u0026tset, SIGTERM);\n        sigprocmask(SIG_BLOCK,\u0026tset,NULL);\n        signal(SIGTERM,handler);\n        while(1) ;\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1000805,
+ "bug_id": 229626,
+ "attachment_id": 0,
+ "creation_time": "2018-07-09T04:57:32Z",
+ "creator": "linimon@FreeBSD.org",
+ "text": "Some ports have adopted the following pattern to work around dependency issues:\n\n  BUILD_DEPENDS+=  clang40:devel/llvm40\n  CC=              clang40\n  CXX=             clang++40\n\nHowever, on archs where clang is not the default compiler, this creates complaints for any bulk build:\n\n  /bin/sh: clang40: not found\n  make[2]: \"/usr/ports/Mk/Uses/compiler.mk\" line 78: warning: \"clang40 --version\" returned non-zero status\n  make[2]: \"/usr/ports/Mk/Uses/compiler.mk\" line 133: warning: \"clang++40 -### /dev/null 2\u003e\u00261\" returned non-zero status\n\nSee sysutils/osquery for an example of \"clang40\".  This pattern is also seen for instances of \"clang50\" and \"clang60\", but the symptoms are the same.\n\nThe logic in compiler.mk is hard for me to follow, but here are the offending lines:\n\n  _CCVERSION!=    ${CC} --version\n  _CXXINTERNAL!=  ${CXX} -\\#\\#\\# /dev/null 2\u003e\u00261\n\nThese lines were introduced in the initial commit of compiler.mk.\n\nI don't know what the proper fix is, but my guess is that the two lines above were written assuming that CC/CXX were whatever is in the base system.  So, either those two lines should be fixed, or compiler.mk refactored to take some kind of parameter to say \"assign BUILD_DEPENDS/CPP/CC/CXX/ in the following fashion\" and use that to trigger a code block exactly like e.g. lines 186, 208, 230, 252, and 274."
+}

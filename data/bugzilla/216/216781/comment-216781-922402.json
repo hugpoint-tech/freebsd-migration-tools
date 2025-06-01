@@ -1,0 +1,8 @@
+{
+ "id": 922402,
+ "bug_id": 216781,
+ "attachment_id": 180114,
+ "creation_time": "2017-02-18T16:39:05Z",
+ "creator": "rezny@freebsd.org",
+ "text": "Created attachment 180114\nfix qt4-network SSL patch\n\nAfter fixing up the situation in Qt5, I went back to re-check the situation in qt4-network because I had my doubts about the correctness of the patches there.\n\nThe situation with dynamic loading was ok in that the path was correct to find SSL libs from ports, but as explained that is not totally correct so I made the same change to use OPENSSLLIB for the path.\n\nThe previous change to remove SSLv3 support was improved so it depends on the availablility, allowing one to build a version with SSLv3 support if desired.\n\nMore importantly, I undid the redefinition of SecurePtotocols and default. That change was forcing the default case and the SecureProtocols case to be TLSv1.0 only. To allow those to support TLSv1+ they must call the SSLv23 methods, not the TLSv1 methods. OpenSSL API is strange; TLSv1 methods are TLSv1.0 only, full TLSv1.0+ is available through SSLv23 methods. I adjusted the masking for SecureProtocols to disable SSLv3 as well as SSLv2 so that SecureProtocols means TLSv1+ instead of TLSv1.0 (prior patch) or SSLv3+ (original). Default remains SSLv3+ for compatibility reasons, but of course that depends on the SSL library implementing SSLv3. Given that none of base OpenSSL, port OpenSSL, and libSSL make SSLv3 available by default, there is no risk in inadvertent use of SSLv3; the user would have to build OpenSSL from ports with SSLv3 explicitly enabled, in which case SSLv3 should work for them.\n\nAlso, convert USE_OPENSSL to USES=ssl while here."
+}

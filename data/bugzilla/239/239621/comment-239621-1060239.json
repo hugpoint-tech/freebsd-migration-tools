@@ -1,0 +1,8 @@
+{
+ "id": 1060239,
+ "bug_id": 239621,
+ "attachment_id": 0,
+ "creation_time": "2019-08-03T18:57:56Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "\u003csys/auxv.h\u003e on armv6 and armv7 pulls HWCAP_* definitions from \u003cmachine/elf.h\u003e but on powerpc* PPC_FEATURE_* are not pulled from \u003cmachine/cpu.h\u003e. Such behavior is inconsistent with Linux where \u003csys/auxv.h\u003e pulls \u003casm/cputable.h\u003e. Found via multimedia/dav1d.\n\n$ cat a.c\n#ifdef __linux__\n#define HAVE_GETAUXVAL\n#endif\n\n#ifdef __FreeBSD__\n#define HAVE_ELF_AUX_INFO\n#endif\n\n#if (defined(HAVE_GETAUXVAL) || defined(HAVE_ELF_AUX_INFO))\n#include \u003csys/auxv.h\u003e\n#define HAVE_AUX\n#endif\n\nunsigned dav1d_get_cpu_flags_ppc(void) {\n    unsigned flags = 0;\n#if defined(HAVE_GETAUXVAL)\n    unsigned long hw_cap = getauxval(AT_HWCAP);\n#elif defined(HAVE_ELF_AUX_INFO)\n    unsigned long hw_cap = 0;\n    elf_aux_info(AT_HWCAP, \u0026hw_cap, sizeof(hw_cap));\n#endif\n#ifdef HAVE_AUX\n    flags |= (hw_cap \u0026 PPC_FEATURE_HAS_VSX) ? DAV1D_PPC_CPU_FLAG_VSX : 0;\n#endif\n    return flags;\n}\n\n$ gcc8 -c a.c\na.c: In function 'dav1d_get_cpu_flags_ppc':\na.c:23:24: error: 'PPC_FEATURE_HAS_VSX' undeclared (first use in this function)\n     flags |= (hw_cap \u0026 PPC_FEATURE_HAS_VSX) ? DAV1D_PPC_CPU_FLAG_VSX : 0;\n                        ^~~~~~~~~~~~~~~~~~~\na.c:23:24: note: each undeclared identifier is reported only once for each function it appears in\na.c:23:47: error: 'DAV1D_PPC_CPU_FLAG_VSX' undeclared (first use in this function)\n     flags |= (hw_cap \u0026 PPC_FEATURE_HAS_VSX) ? DAV1D_PPC_CPU_FLAG_VSX : 0;\n                                               ^~~~~~~~~~~~~~~~~~~~~~"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 64315,
+ "bug_id": 20779,
+ "attachment_id": 0,
+ "creation_time": "2001-02-21T05:23:21Z",
+ "creator": "assar@FreeBSD.org",
+ "text": "Chris's patch is needed, otherwise libkrb is not confortable reading\nyour ticket file, but the bad freeing that you were seeing seems to be\ncaused by bad dynamic memory allocation.  I think the appended patch\nfixes that.\n\n/assar\n\nIndex: kadm_cli_wrap.c\n===================================================================\nRCS file: /afs/pdc.kth.se/src/packages/kth-krb/SourceRepository/krb4/lib/kadm/kadm_cli_wrap.c,v\nretrieving revision 1.29\ndiff -u -w -u -w -r1.29 kadm_cli_wrap.c\n--- kadm_cli_wrap.c\t2000/07/08 12:12:00\t1.29\n+++ kadm_cli_wrap.c\t2001/02/21 05:02:55\n@@ -165,6 +165,7 @@\n \tint retval;\n \tchar tmp[4];\n \n+\t*ret_dat = NULL;\n \tdlen = (u_int16_t) dat_len;\n \n \tif (dat_len != (int)dlen)\n@@ -193,6 +194,8 @@\n \n \tif ((retval = krb_net_read(client_parm.admin_fd,  *ret_dat,\n \t\t\t\t   dlen) != dlen)) {\n+\t    free(*ret_dat);\n+\t    *ret_dat = NULL;\n \t    if (retval \u003c 0)\n \t\treturn(errno);\t\t/* XXX */\n \t    else\n@@ -307,7 +310,7 @@\n \t    clear_secrets();\n \t    return retdat;\n \t}\n-#define RET_N_FREE2(r) {free(*ret_dat); clear_secrets(); return(r);}\n+#define RET_N_FREE2(r) {free(*ret_dat); *ret_dat = NULL; clear_secrets(); return(r);}\n \n \t/* first see if it's a YOULOUSE */\n \tif ((*ret_siz \u003e= KADM_VERSIZE) \u0026\u0026"
+}

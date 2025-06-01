@@ -1,0 +1,8 @@
+{
+ "id": 645937,
+ "bug_id": 164081,
+ "attachment_id": 0,
+ "creation_time": "2012-01-13T12:40:09Z",
+ "creator": "pirzyk@FreeBSD.org",
+ "text": "When using rkhunter one of the FreeBSD specific tests is to compare the output from sockstat with netstat.  The idea is that most rootkits will replace the netstat binary but do not deal with sockstat (since it is FreeBSD specific).  Currently on my machine, netstat is reporting *more* sockets open than sockstat.  One port in particular is port 979, which nlockmgr is running on:\n\npirzyk@amigo:~/tmp\n44\u003enetstat -an | g 979\ntcp4       0      0 127.0.0.1.3306         127.0.0.1.47979        TIME_WAIT\ntcp4       0      0 *.979                  *.*                    LISTEN\npirzyk@amigo:~/tmp\n45\u003erpcinfo -p | g 979\n    100021    0   tcp    979  nlockmgr\n    100021    1   tcp    979  nlockmgr\n    100021    3   tcp    979  nlockmgr\n    100021    4   tcp    979  nlockmgr\npirzyk@amigo:~/tmp\n46\u003esockstat |g 979\npirzyk@amigo:~/tmp\n47\u003e\n\nAccording to the sockstat man page there should be some differences between the two but I believe since port 979 is in LISTEN mode, it should be displayed by sockstat.\n\nHow-To-Repeat: Simple shell script do to the diff between outputs:\n\n#!/bin/sh\n\nsockstat | awk 'NF == 7 { print $6 } NF == 8 {print $7}' |grep '[:.][0-9][0-9]*$' | sed -e 's/^.*[:.]\\([0-9]*\\)$/\\1/' | sort | uniq \u003e sockstat.out\n\nnetstat -an |  awk '{ print $4 }' |grep '[:.][0-9][0-9]*$' | sed -e 's/^.*[:.]\\([0-9]*\\)$/\\1/' | sort | uniq \u003e netstat.out\n\ndiff -Nru netstat.out sockstat.out"
+}

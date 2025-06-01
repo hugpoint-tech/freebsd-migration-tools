@@ -1,0 +1,8 @@
+{
+ "id": 1143514,
+ "bug_id": 252981,
+ "attachment_id": 0,
+ "creation_time": "2021-01-25T20:21:56Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "This looks like a bug in zfs_crypto_dispatch() which is only tickled when cryptop dispatch is asynchronous (i.e., a hardware driver is handling the request): it needs to set session-\u003efs_done = false earlier.\n\nMore generally the code is assuming that only one thread is dispatching crypto requests for a given freebsd_session_t.  From my reading of the code this isn't obviously true: zio_do_crypt_data() uses key-\u003ezk_session but there doesn't appear to be any mutual exclusion.  Again this is only a problem with hw crypto.  I think it should be sufficient to make fs_done truly thread local."
+}

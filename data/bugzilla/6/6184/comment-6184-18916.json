@@ -1,0 +1,8 @@
+{
+ "id": 18916,
+ "bug_id": 6184,
+ "attachment_id": 0,
+ "creation_time": "1998-03-31T16:50:02Z",
+ "creator": "kent@erix.ericsson.se",
+ "text": " \nIn FreeBSD 2.2.5 lseek moves the file position without any error\nchecks. If the resulting position is negative we have the problem that\nthe result value -1 can mean two things, that there was an error or\nthat the file position was set to -1 and no error. We have to clear\nerrno before the call and examine errno after the call to find out if\nthere was an error or not.\n \nIf the resulting position is negative, Linux and Solaris will\npreserve the file position before the call to lseek and return an\nerror.\n \nIs this a bug in FreeBSD or a different interpretations of the POSIX\nstandard?\n\nFix: \n\nI belive the fix should be in the file\n\"/usr/src/sys/kern/vfs_syscalls.c\" and the function lseek(). Prior to\nsetting the new file position the function should test if the new\nvalue is negative. If so the old position should be preserved and the\nfunction return an error with errno EINVAL.\nHow-To-Repeat:  \n#include \u003csys/types.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n \nvoid main()\n{\n  char *Name = \"myfile\";\n  int pos, fd = open(Name,O_WRONLY | O_CREAT);\n \n  write(fd,\"ABCDEFGH\",8);\n  close(fd);\n \n  fd = open(Name,O_RDONLY);\n \n  if ((pos = lseek(fd,-5,SEEK_CUR)) != -1) {\n    printf(\"No error moving to pos -5: %d\\n\",pos);\n    exit(1);\n  }\n\n  printf(\"ERROR: %s\\n\",strerror(errno));\n \n  pos = lseek(fd,0,SEEK_CUR);\n \n  printf(\"The error moved the file pointer to: %d\\n\",pos);\n}"
+}

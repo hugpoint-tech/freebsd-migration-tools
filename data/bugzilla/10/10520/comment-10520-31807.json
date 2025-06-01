@@ -1,0 +1,8 @@
+{
+ "id": 31807,
+ "bug_id": 10520,
+ "attachment_id": 0,
+ "creation_time": "1999-03-10T05:40:01Z",
+ "creator": "trost@cloud.rain.com",
+ "text": "\nExec'ing programs via a nullfs mount can result in the program not\nrunning or the OS crashing.\n\nFix: \n\nNothing beyond \"Don't do that.\"\nHow-To-Repeat: \nTwo different failure modes:\n\n\tfor d in src obj; do mount -t null /mnt/usr/$d /usr/$d; done\n\tcd /usr/src\n\tmake buildworld\n\n\"make buildworld\" fails when it first tries to execute the bootstrap make,\nto the tune of the make program not being in the right format.\n\nThe more dramatic failure is accomplished by:\n\n\tmount /tmp/foo /tmp/bar\n\tcp /usr/bin/true /tmp/bar/\n\t/tmp/bar/true\n\nThis causes a kernel page fault:\n\n\tfault addr = 0x40\n\tfault code = supervisor read, page not present\n\tinterrupt mask = net bio cam\n\ttrap # = 12\n\nddb traceback says:\n\n\tffs_getpages + 0x108\n\t_end at 0xf07944b5\n\tvnode_pager_getpages\n\texec_map_first_page\n\texecve\n\tsyscall\n\nI can provide more detail if that would be useful."
+}

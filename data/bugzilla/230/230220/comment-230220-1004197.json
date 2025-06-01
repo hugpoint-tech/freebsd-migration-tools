@@ -1,0 +1,8 @@
+{
+ "id": 1004197,
+ "bug_id": 230220,
+ "attachment_id": 0,
+ "creation_time": "2018-07-31T19:02:53Z",
+ "creator": "decui@microsoft.com",
+ "text": "Thanks for the patch that removes the KASSERT for the panic!\n\nI still don't know how to correctly freeze all the mounted file systems. Can you please elaborate it? I do have multiple mounted file systems. My purpose is that: \n1. Freeze all the mounted file systems, so any write access is suspended;\n2. The host (i.e. Hyper-V) can take a quick snapshot of the guest image. The snapshot is file system consistent.\n3. The guest can thaw the file systems, so any suspended write can resume.\n\nAssuming I have these 3 mounted file systems, should I freeze (and then thaw) all of them? What order should I use -- freezing /mnt and /opt before / ?\n\n/dev/da0s1a on / (ufs, local, journaled soft-updates)\n/dev/da2p1 on /mnt (ufs, local, soft-updates)\n/dev/da2p2 on /opt (ufs, local, soft-updates)\n\nWhat' the correct way to thaw all the file systems -- by just closing the /dev/ufssuspend file descriptor, or callling ioctl(g_ufs_suspend_handle, UFSRESUME, ...) for every mounted file systems I froze by ioctl(g_ufs_suspend_handle, UFSSUSPEND, ...) ?\n\nAccording to https://lists.freebsd.org/pipermail/freebsd-fs/2015-February/020805.html, it looks I should use ioctl with UFSSUSPEND and UFSRESUME, but I need to figure out why contrib/hyperv/tools/hv_vss_daemon.c  didn't do that in the first place.\n\nIt looks there is no good document about how the UFSSUSPEND/UFSRESUME ioctl should be correctly used. \nLinux has a utility fsfreeze: https://linux.die.net/man/8/fsfreeze, but it looks the equivalent utility doesn't exist in FreeBSD."
+}

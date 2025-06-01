@@ -1,0 +1,8 @@
+{
+ "id": 1114980,
+ "bug_id": 247945,
+ "attachment_id": 0,
+ "creation_time": "2020-07-23T16:22:31Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "This may be a bug in the arm64 fpu interface?  Note that the kthread calls fpu_kern_thread() first thing before it's done any work at all.\n\nAh, I think I see the bug.  cpu_copy_thread() in vm_machdep.c just blindly copies pcb_flags which means that if the first kthread runs before another one is forked, the newly forked thread will bogusly have PCB_FP_KERN set in pcb_flags.\n\nThe amd64 version is careful to do this in cpu_copy_thread:\n\n\tclear_pcb_flags(pcb2, PCB_FPUINITDONE | PCB_USERFPUINITDONE |\n\t    PCB_KERNFPU);\n\ncpu_fork() for amd64 does an fpuexit() before copying the pcb which effectively does the same thing.\n\nOn arm64, cpu_fork() calls vfp_save_state which does not clear any pcb_flags after doing vfp_store/vfp_disable.  It also doesn't check pcb_flags to determine if it should store/disable which is probably wrong.  cpu_copy_thread() just needs to clear the relevant flags in the new pcb I think."
+}

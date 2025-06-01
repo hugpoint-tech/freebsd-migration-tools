@@ -1,0 +1,8 @@
+{
+ "id": 991599,
+ "bug_id": 228197,
+ "attachment_id": 0,
+ "creation_time": "2018-05-12T17:10:36Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "\nFull panic message:\npanic: solaris assert: arc_buf_alloc_impl(hdr, private, compressed_read, 1, \u0026buf) == 0 (0x5 == 0), file /usr/src/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/arc.c, line: 5452\n\nQuick analysis... the error (EIO) that triggered the check came from this code:\n\n                        int error = zio_decompress_data(HDR_GET_COMPRESS(hdr),\n                            hdr-\u003eb_l1hdr.b_pabd, buf-\u003eb_data,\n                            HDR_GET_PSIZE(hdr), HDR_GET_LSIZE(hdr));\n\n                        /*\n                         * Absent hardware errors or software bugs, this should\n                         * be impossible, but log it anyway so we can debug it.\n                         */\n                        if (error != 0) {\n                                zfs_dbgmsg(\n                                    \"hdr %p, compress %d, psize %d, lsize %d\",\n                                    hdr, HDR_GET_COMPRESS(hdr),\n                                    HDR_GET_PSIZE(hdr), HDR_GET_LSIZE(hdr));\n                                return (SET_ERROR(EIO));\n                        }\n\nThe call chain is arc_read -\u003e arc_buf_alloc_impl -\u003e arc_buf_fill.\n\nNot sure what to make of that decompression failure.\nDid you use any special flags for zfs send in addition to -v and -R?\nDo you have any pool errors?"
+}

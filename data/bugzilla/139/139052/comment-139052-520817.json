@@ -1,0 +1,8 @@
+{
+ "id": 520817,
+ "bug_id": 139052,
+ "attachment_id": 0,
+ "creation_time": "2009-09-22T11:00:10Z",
+ "creator": "peterjeremy@acm.org",
+ "text": "\nSomewhere between early June and -BETA4 (about SVN rev 197239),\n-fprofile-generate broke on 8.x/i386.  The problem does not exist on\namd64.  This looks to be related to stack protection.\n\nIt looks suspiciously like this is more fallout from r195697 but I'm\nnot sure what the fix is.  I had hoped r197277 might fix the problem\nbut it doesn't: r197277 provides a weak __stack_chk_fail_local in\nlibc.a but in the test below is linking against libc.so.\n\nFix: \n\nUnknown.\nHow-To-Repeat: $ echo 'int main() { return 0; }' \u003e x.c\n$ cc x.c\n$ cc -Wl,-t -fprofile-generate x.c\n/usr/bin/ld: mode elf_i386_fbsd\n/usr/lib/crt1.o\n/usr/lib/crti.o\n/usr/lib/crtbegin.o\n/var/tmp//ccUyK2TI.o\n(/usr/lib/libgcov.a)_gcov_merge_add.o\n(/usr/lib/libgcov.a)_gcov.o\n-lgcc_s (/usr/lib/libgcc_s.so)\n-lc (/usr/lib/libc.so)\n-lgcc_s (/usr/lib/libgcc_s.so)\n/usr/lib/crtend.o\n/usr/lib/crtn.o\n/usr/lib/libgcov.a(_gcov.o)(.text+0x13df): In function `gcov_exit':\n/usr/src/gnu/lib/libgcov/../../../contrib/gcc/libgcov.c:532: undefined reference to `__stack_chk_fail_local'\n/usr/bin/ld: link errors found, deleting executable `a.out'\n$ nm -o -D /usr/lib/libc.so|grep __stack_chk_fail\n/usr/lib/libc.so:00027bbc T __stack_chk_fail\n/usr/lib/libc.so:00027bbc T __stack_chk_fail_local\n$ nm -o /usr/lib/libgcov.a|grep __stack_chk_fail_local\n/usr/lib/libgcov.a:_gcov_execle.o:         U __stack_chk_fail_local\n/usr/lib/libgcov.a:_gcov_execlp.o:         U __stack_chk_fail_local\n/usr/lib/libgcov.a:_gcov_execl.o:         U __stack_chk_fail_local\n/usr/lib/libgcov.a:_gcov.o:         U __stack_chk_fail_local"
+}

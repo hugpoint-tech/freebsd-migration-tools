@@ -1,0 +1,8 @@
+{
+ "id": 740861,
+ "bug_id": 184380,
+ "attachment_id": 0,
+ "creation_time": "2013-11-30T01:20:00Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "According to SNDCTL_DSP_SETFMT documentation if the ioctl() succeeds\nthe application must check if value was accepted. Unfortunately, our\nOSS implementation may return value that's not actually supported.\n\nhttp://manuals.opensound.com/developer/SNDCTL_DSP_SETFMT.html\n\nAt least the following ports check requested format and would assume\nAFMT_FLOAT is accepted if built with sys/soundcard.h from opensound.com.\n\n  devel/allegro-devel\n  emulators/wine\n  multimedia/audacious-plugins\n  multimedia/mplayer\n  multimedia/vlc\n\nProbably, only Linux accepts AFMT_FLOAT which means apps built with\nOSSv4 wouldn't work under linuxulator either.\n\nHow-To-Repeat: # kern/21073, audio/oss\n$ ./dsp-record -b float\nTrying    8012 Hz 1 Channel float Format\nioctl(SNDCTL_DSP_SETFMT) failed: Tried 16384, Got 16\n\n# kern/21073, native\n$ ./dsp-record -b float | head -1 | vis -m\nTrying    8012 Hz 1 Channel float Format\nRecording 8012 Hz 1 Channel float Format\n=00=00=00=80=FF=FF=FF=7F=FA=FF=FF=7Fx=FF=FF=7F=E4=00=00=80=9B=FE=FF=7F\n\n# audio/oss\n$ ./test\n0x00000010\n\n# native\n$ ./test\n0x00004000\n\n$ cat test.c\n#include \u003csys/soundcard.h\u003e\n\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n\n#ifndef AFMT_FLOAT\n#define AFMT_FLOAT 0x00004000\n#endif\n\nint main()\n{\n  int fd = open(\"/dev/dsp\", O_RDWR, 0);\n\n  int format = AFMT_FLOAT;\n  if (ioctl(fd, SNDCTL_DSP_SETFMT, \u0026format) \u003c 0)\n    return 1;\n\n  printf(\"%0#10x\\n\", format);\n\n  return 0;\n}"
+}

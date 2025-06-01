@@ -1,0 +1,8 @@
+{
+ "id": 78506,
+ "bug_id": 25201,
+ "attachment_id": 0,
+ "creation_time": "2001-02-19T12:50:02Z",
+ "creator": "amorita@meadow.scphys.kyoto-u.ac.jp",
+ "text": "The beep duration of pccard event and syscons is changed\non the kernel compiled with ``options HZ=1000'' option.\n\nChecking code using sysbeep, I found hz depend coding in\nsys/pccard/pccard_beep.c, sys/i386/isa/pcvt/pcvt_kbd.c,\nsys/dev/syscons/syscons.h, sys/pc98/pc98/sc_machdep.h.\n\nThese four codes have hard coded duration of sysbeep function,\nbut the unit of sysbeep's duration argument is 1/hz second.\nThus, the duration scaling of hz is needed.\n\nFurthermore, sc_bell's duration is loaded from escape sequence\nin sys/dev/syscons/scterm-sc.c, sys/pc98/pc98/scterm-sck.c.\nFrom kbdcontrol manual and usr.sbin/kbdcontrol/kbdcontrol.c coding,\nthe unit of duration value in escape sequence is 10msec.\nThus hz scaling is needed in the case hz != 100.\n\nThe codes calling timeout with hard coded ticks would cause the same problem.\n\nFix: o sys/pccard/pccard_beep.c\n  Add hz scaling code to pccard_beep_sub and pccard_beep_start.\n\no sys/i386/isa/pcvt/pcvt_kbd.c\n  Add hz scaling to PLING and PLONG macros.\n\no sys/dev/syscons/syscons.h, sys/pc98/pc98/sc_machdep.h\n  Add hz scaling to BELL_DURATION macro.\n\no sys/dev/syscons/scterm-sc.c, sys/pc98/pc98/scterm-sck.c\n  Add hz scaling code to ``set bell pitch and duration'' escape sequence.\n\n----\nHow-To-Repeat: Add ``options HZ=1000'' and install new kernel.\nHear pccard beep/syscons beep."
+}

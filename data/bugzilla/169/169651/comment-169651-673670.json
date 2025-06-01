@@ -1,0 +1,8 @@
+{
+ "id": 673670,
+ "bug_id": 169651,
+ "attachment_id": 0,
+ "creation_time": "2012-07-04T21:50:04Z",
+ "creator": "bsd@dhke.de",
+ "text": "\nThe fexecve() does not seem to work as described.\n\nI was able identify to cases\n1) opening the file descriptor passwd to \n   fexecve() with O_EXEC does not work.\n   (see test case 1), below.\n2) passing a readonly file descriptor\n   to fexecve() with the target file\n   being an interpreted script with\n   a #! marker causes error message\n\n   cannot open /dev/fd/n: No such file or directory\n\n   to be raised from the target interpreter.\n\nFix: \n\nno fix known yet.\nHow-To-Repeat: \nTest case 1)\nextern char **environ;\n\nint\nmain(int argc, char *argv[])\n{\n    int fd = open(\"/bin/ls\" , O_EXEC);\n    fexecve(fd, argv, environ);\n    perror(\"fexecve\");\n}\n\nYields\nfexecve: Bad file descriptor\n\nChanging O_EXEC to O_RDONLY works.\n\nTest case 2)\n\nextern char **environ;\n\nint\nmain(int argc, char *argv[])\n{\n    int fd = open(\"/usr/bin/man\" , O_RDONLY); \n\tfexecve(fd, argv, environ);\n\tperror(\"fexecve\");\n}\n\nYields:\ncannot open /dev/fd/3: No such file or directory\n\n(/usr/bin/man is a shell script)"
+}

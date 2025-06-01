@@ -1,0 +1,8 @@
+{
+ "id": 574612,
+ "bug_id": 149937,
+ "attachment_id": 0,
+ "creation_time": "2010-08-26T12:23:07Z",
+ "creator": "jens.kassel@servicefactory.com",
+ "text": "Use this patch instead\n\n--- ip_nat.c.orig       2009-04-15 05:14:26.000000000 +0200\n+++ ip_nat.c    2010-08-26 13:14:32.000000000 +0200\n@@ -3783,7 +3783,16 @@\n        else if ((nat = nat_outlookup(fin, nflags|NAT_SEARCH, (u_int)fin-\u003efin_p,\n                                      fin-\u003efin_src, fin-\u003efin_dst))) {\n                nflags = nat-\u003enat_flags;\n-       } else {\n+       }\n+       else if ((fin-\u003efin_p == IPPROTO_TCP) \u0026\u0026\n+               ((fin-\u003efin_off != 0) || (fin-\u003efin_flx \u0026 FI_SHORT)))\n+       {\n+               /* Discard TCP IP fragmentes without matching NAT rule\n+               (or if fragment lock is set) if offset is nonezero */\n+               nat = NULL;\n+               nat_stats.ns_badnat++;\n+       }\n+       else {\n                u_32_t hv, msk, nmsk;\n \n                /*\n@@ -4078,7 +4087,16 @@\n        else if ((nat = nat_inlookup(fin, nflags|NAT_SEARCH, (u_int)fin-\u003efin_p,\n                                     fin-\u003efin_src, in))) {\n                nflags = nat-\u003enat_flags;\n-       } else {\n+       }\n+       else if ((fin-\u003efin_p == IPPROTO_TCP) \u0026\u0026\n+               ((fin-\u003efin_off != 0) || (fin-\u003efin_flx \u0026 FI_SHORT)))\n+       {\n+               /* Discard TCP IP fragmentes without matching NAT rule\n+               (or if fragment lock is set) if offset is nonezero */\n+               nat = NULL;\n+               nat_stats.ns_badnat++;\n+       }\n+       else {\n                u_32_t hv, msk, rmsk;\n \n                RWLOCK_EXIT(\u0026ipf_nat);"
+}

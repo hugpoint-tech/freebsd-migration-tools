@@ -1,0 +1,8 @@
+{
+ "id": 1275497,
+ "bug_id": 268726,
+ "attachment_id": 0,
+ "creation_time": "2023-09-18T16:00:16Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Jan Beich from comment #8)\nNevermind, after inspecting DBus activation[1] it appears DBus was confused between services available in and outside of jail. It was specific to my testing setup \"with X11/Wayland/DBus sockets passed through\". Host session bus didn't see the new files under /usr/local/share/dbus-1/services. Merging filesystems is tricky (if not dangerous) but so is filtering via xdg-dbus-proxy, so it's easier to just prepend dbus-run-session to cut off from the host.\n\n[1] $ dbus-send --print-reply --session --type=method_call \\\n      --dest=org.freedesktop.DBus / org.freedesktop.DBus.ListActivatableNames\n    method return time=12345.67890 sender=org.freedesktop.DBus -\u003e destination=:1.1 serial=3 reply_serial=2\n       array [\n\t  string \"org.freedesktop.DBus\"\n\t  string \"org.freedesktop.Notifications\"\n\t  string \"org.a11y.Bus\"\n\t  string \"ca.desrt.dconf\"\n       ]\n    $ dbus-run-session dbus-send --print-reply --session --type=method_call \\\n      --dest=org.freedesktop.DBus / org.freedesktop.DBus.ListActivatableNames\n    method return time=12345.67890 sender=org.freedesktop.DBus -\u003e destination=:1.0 serial=3 reply_serial=2\n       array [\n\t  string \"org.freedesktop.DBus\"\n\t  string \"org.gtk.GLib.PACRunner\"\n\t  string \"org.freedesktop.portal.Desktop\"  \u003c-- NEED THIS\n\t  string \"org.freedesktop.portal.Documents\"\n\t  string \"org.freedesktop.impl.portal.PermissionStore\"\n\t  string \"org.freedesktop.impl.portal.desktop.wlr\" \u003c-- NEED THIS\n       ]"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1063188,
+ "bug_id": 238870,
+ "attachment_id": 0,
+ "creation_time": "2019-08-22T12:01:39Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Hans Petter Selasky from comment #13)\nGood point, but it's also not trivial to add this, because if_detach_internal() does an epoch_wait_preempt() on the net epoch.\n\nSimply adding NET_EPOCH_ENTER/EXIT around the loop produces this panic:\n\npanic: epoch_wait_preempt() called in the middle of an epoch section of the same epoch\ncpuid = 5\ntime = 1566475161\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x2b/frame 0xfffffe0091dc65a0\nvpanic() at vpanic+0x19d/frame 0xfffffe0091dc65f0\npanic() at panic+0x43/frame 0xfffffe0091dc6650\nepoch_wait_preempt() at epoch_wait_preempt+0x29c/frame 0xfffffe0091dc66b0\nif_detach_internal() at if_detach_internal+0x1a6/frame 0xfffffe0091dc6730\nif_vmove() at if_vmove+0x4b/frame 0xfffffe0091dc6780\nvnet_if_return() at vnet_if_return+0x58/frame 0xfffffe0091dc67c0\nvnet_destroy() at vnet_destroy+0x124/frame 0xfffffe0091dc67f0\nprison_deref() at prison_deref+0x29d/frame 0xfffffe0091dc6830\nsys_jail_remove() at sys_jail_remove+0x28f/frame 0xfffffe0091dc6880\namd64_syscall() at amd64_syscall+0x2bb/frame 0xfffffe0091dc69b0\nfast_syscall_common() at fast_syscall_common+0x101/frame 0xfffffe0091dc69b0\n--- syscall (508, FreeBSD ELF64, sys_jail_remove), rip = 0x80031712a, rsp = 0x7fffffffe848, rbp = 0x7fffffffe8d0 ---\nKDB: enter: panic\n[ thread pid 1174 tid 100507 ]\nStopped at      kdb_enter+0x3b: movq    $0,kdb_why\ndb\u003e"
+}

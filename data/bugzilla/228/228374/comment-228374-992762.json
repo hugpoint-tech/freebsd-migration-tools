@@ -1,0 +1,8 @@
+{
+ "id": 992762,
+ "bug_id": 228374,
+ "attachment_id": 0,
+ "creation_time": "2018-05-20T11:23:32Z",
+ "creator": "aniketp@iitk.ac.in",
+ "text": "Overview\n--------------\nWhile creating a test-suite for audit framework. I noticed that two system calls, \n\n* lgetfh(2) : Get file handle of a symbolic link\n* chflagsat(2): Change file-flags' variant\n\ndo not get audited even if the system wide audit mask is set according to each system call, i.e \"fm\" for chflagsat(2) and \"fa\" for lgetfh(2)\n\nSteps to reproduce (For lgetfh(2), can be done similarly for chflagsat(2))\n----------------------------\n1) Set \"flag:fa\" in \"/etc/security/audit_control\"\n2) Enter \"praudit /dev/auditpipe | grep \"lgetfh\" \" in a separate window, this will wait for any event to occur.\n3) Compile and execute this code snippet: https://pastebin.com/EwstzSUz\n\nExpected Result\n------------------------\nYou'll not notice anything in the praudit window, signifying that the lgetfh(2) audit event was not emitted by the auditpipe(4).\n\nAdditional Information\n---------------------------------\n1) To confirm that lgetfh(2) was actually triggered, run before executing the code.\n\"sudo dtrace -i syscall:freebsd:lgetfh:entry\"\n\nThis will match an lgetfh(2) probe.\n\n2) The system call \"getfh\" is audited as \"nfs_getfh\" which has a different audit class altogether."
+}

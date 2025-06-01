@@ -1,0 +1,8 @@
+{
+ "id": 756740,
+ "bug_id": 187965,
+ "attachment_id": 0,
+ "creation_time": "2014-03-26T18:00:00Z",
+ "creator": "syuu@FreeBSD.org",
+ "text": "Intel Baytrail-M NUC(DN2820FYKH) does not able to boot FreeBSD-CURRENT/amd64, because of its buggy ACPI table.\n\nIt has two incorrect parameters on MADT: \n\nType=Local APIC NMI\nACPI CPU=1\nLINT Pin=60\nFlags={Polarity=active-hi, Trigger=0x2} \u003c-- trigger value is incorrect. 2 is reserved\n\nType=Local APIC NMI\nACPI CPU=2\nLINT Pin=61\nFlags={Polarity=0x2, Trigger=level} \u003c-- polarity value is incorrect. 2 is reserved\n\nBecause of this, interrupt_trigger() panics with \"Bogus Interrupt Trigger Mode\".\nAlso interrupt_polarity() panics with \"Bogus Interrupt Polarity\".\n\nI think this is BIOS bug, but we can do some workaround for the machine.\n\nFix: Linux uses level trigger and low polarity if the value is 0x2(reserved).\nhttp://lxr.linux.no/linux+v3.13.5/arch/x86/kernel/acpi/boot.c#L1094\n\nWe can do similar workaround, but with warning message.\nPatch is attached.\n\nPatch attached with submission follows:\nHow-To-Repeat: Boot -CURRENT on NUC."
+}

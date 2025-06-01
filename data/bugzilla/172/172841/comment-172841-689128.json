@@ -1,0 +1,8 @@
+{
+ "id": 689128,
+ "bug_id": 172841,
+ "attachment_id": 0,
+ "creation_time": "2012-10-18T06:50:00Z",
+ "creator": "johannes.reinhard@physik.uni-erlangen.de",
+ "text": "Using NFS exports from ZFS to a netgroup, netgroups are truncated to the traditional NIS entry limit of 1024 bytes, while they shouldn't. This happens regardless of the netgroup source (both settings files and ldap have been tried in nsswitch.conf). Also, if nscd is running or not does not seem to have any influence.\n\nHere is example output how hostname for blarz.domain.de got truncated.\n\n# cat /var/log/messages\n..\nOct 18 07:17:22 fileserv mountd[7684]: can't get address info for host blarz.domai\nOct 18 07:17:22 fileserv mountd[7684]: bad host blarz.domai in netgroup mynetgroup, skipping\n..\n\nAnother way to see the effects is to call\n\n# showmount -e\n\nFix: \n\nCreate multiple smaller netgroups and export to all of them.\nHow-To-Repeat: 1. Create a zfs volume\n2. Create a large (\u003e1024 byte) netgroup entry in /etc/netgroup - it must contain valid hosts\n3. Configure /etc/nsswitch.conf to use /etc/netgroup as a netgroup source\n   netgroup: files\n4. Configure zfs NFS export using a netgroup\n   # zfs set sharenfs=\"-alldirs mynetgroup\" pool\n5. read /var/log/messages and look for the message above\n   # less /var/log/messages\n6. use showmount -e to see where the netgroup got truncated"
+}

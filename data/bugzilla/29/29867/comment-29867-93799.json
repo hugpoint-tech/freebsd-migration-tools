@@ -1,0 +1,8 @@
+{
+ "id": 93799,
+ "bug_id": 29867,
+ "attachment_id": 0,
+ "creation_time": "2001-08-19T09:00:08Z",
+ "creator": "stevew@wrcad.com",
+ "text": "Running timed as master, to synchronize a Red Hat Linux 6.0 box.  This\nworked with FBSD3.5, after upgrading to 4.3, got console error\n\"short packet (xx/xx bytes) from keats\"\n(The real message included the byte counts.)\nThere appeared to be no clock sync.\n\nFix: \n\nThe problem is that the sizeof(struct tsp) differs on the two systems.\nMade the following change in readmsg.c near line 215, which seems to have fixed the problem.\n----------------------------------------------------------------------\n        length = sizeof(from);\n        if ((n = recvfrom(sock, (char *)\u0026msgin, sizeof(struct tsp), 0,\n                 (struct sockaddr*)\u0026from, \u0026length)) \u003c 0) {\n            syslog(LOG_ERR, \"recvfrom: %m\");\n            exit(1);\n        }\n/* SRW */\n/* Here is a bug: the sizeof(struct tsp) is OS dependent, depending on the\n * length of the tsp_name field (MAXHOSTNAMELEN) which is, e.g., 256 for\n * FreeBSD 4.3 and 64 for RH Linux 6.0.  Keep this as a sanity check,\n * but assume that the name field is 64 or larger\n */  \n        if (n \u003c (ssize_t)sizeof(struct tsp) - MAXHOSTNAMELEN + 64) {\n/*\n        if (n \u003c (ssize_t)sizeof(struct tsp)) {\n*/\n            syslog(LOG_NOTICE,\n                \"short packet (%u/%u bytes) from %s\",\n                  n, sizeof(struct tsp),\n                  inet_ntoa(from.sin_addr));\n            continue;  \n        }\nHow-To-Repeat: boot and run"
+}

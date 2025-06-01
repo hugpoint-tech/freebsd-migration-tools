@@ -1,0 +1,8 @@
+{
+ "id": 546491,
+ "bug_id": 144323,
+ "attachment_id": 0,
+ "creation_time": "2010-02-26T14:20:01Z",
+ "creator": "egorenar@gmail.com",
+ "text": "I was testing my Ralink WLAN driver in HOSTAP mode and noticed the following strange behaviour of net80211 while capturing frames with wireshark.\nAll responses to management frame requests appeared in the wireshark capture\n**before** the corresponding request frames, e.g. Probe Responses before Probe Requests, Action Responses before Action Requests, Association Responses before Association Requests and so on.\nI observed this behaviour only for management frames, data frames were OK.\nI also did't notice this behavior in STA mode.\n\nI could provide a wireshark capture if needed.\n\nFix: \n\nI investigated the problem and found out that\nin the function ieee80211_hostap.c:hostap_input that is responsible for processing\nincoming frames in HOSTAP mode a management frame is passed to bpf **after**\nthe call to \"iv_recv_mgmt\". The function pointer iv_recv_mgmt that points to\nthe function ieee80211_hostap.c:hostap_recv_mgmt processes received management frames and, furthermore, **sends** corresponding response frames if needed.\nAnd when hostap_recv_mgmt is done, management frames are passed to ieee80211_radiotap_rx.\n\nTo fix the problem, the call to ieee80211_radiotap_rx in ieee80211_hostap.c:hostap_input should happen **before** the call\nto iv_recv_mgmt for management frames.\nHow-To-Repeat: You need a WLAN NIC that supports HOSTAP mode.\nStart hostapd and capture some Probe Requests and Responses."
+}

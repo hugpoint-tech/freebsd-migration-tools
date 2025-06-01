@@ -1,0 +1,8 @@
+{
+ "id": 1262597,
+ "bug_id": 271785,
+ "attachment_id": 0,
+ "creation_time": "2023-06-08T16:20:37Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I'm not quite sure I follow exactly.  Are you creating the VFs in a FreeBSD bare metal machine, or have you created a VF on a host and are then passing that VF through to the guest as a PCI-e hot-plug event?\n\nGenerally speaking, FreeBSD's PCI bus driver does not try to assign resources to a device when it discovers it.  When a device is enumerated, if the BARs already have a resource that has been assigned by firmware (e.g. during boot), then this existing resource allocations are preserved and the address space is reserved when enumerating the device.  However, if a BAR doesn't have a firmware-assigned address range when a qdevice is enumerated, the BAR is still sized but left unallocated.  If a device driver attaches and calls bus_alloc_resource to reserve a BAR, at that point resources are allocated for the BAR.\n\nFor HotPlug, BARs are always unassigned when the device appears, so they are only assigned resources when you attach a driver.  Thus, if you create a VF on the host and pass through to the FreeBSD guest and the guest doesn't have a driver for the VF device loaded, I would expect to see all the BARs unassigned.  However, once you load a driver the BARs should be assigned resources during the attach of the device driver."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 971099,
+ "bug_id": 222764,
+ "attachment_id": 0,
+ "creation_time": "2018-01-12T07:42:18Z",
+ "creator": "ganbold@freebsd.org",
+ "text": "It seems like get_inet_address() function is not working anymore in case of FreeBSD.\nFollowing old function from sipp-3.4.1 in sipp-3.5.0 sort of works for me:\n\n--- src/socket.cpp-orig 2018-01-12 14:36:14.758860000 +0800\n+++ src/socket.cpp      2018-01-12 15:31:55.925119000 +0800\n@@ -337,11 +337,27 @@\n\n static char* get_inet_address(const struct sockaddr_storage* addr, char* dst, int len)\n {\n-    if (getnameinfo(_RCAST(struct sockaddr*, addr), sizeof(*addr),\n-                    dst, len, NULL, 0, NI_NUMERICHOST) != 0) {\n-        snprintf(dst, len, \"addr not supported\");\n+//    if (getnameinfo(_RCAST(struct sockaddr*, addr), sizeof(*addr),\n+//                    dst, len, NULL, 0, NI_NUMERICHOST) != 0) {\n+//        snprintf(dst, len, \"addr not supported\");\n+//    }\n+//    return dst;\n+    static char * ip_addr = NULL;\n+\n+    if (!ip_addr) {\n+        ip_addr = (char *)malloc(1024*sizeof(char));\n+    }\n+    if (getnameinfo(_RCAST(struct sockaddr *, addr),\n+                    SOCK_ADDR_SIZE(addr),\n+                    ip_addr,\n+                    1024,\n+                    NULL,\n+                    0,\n+                    NI_NUMERICHOST) != 0) {\n+        strcpy(ip_addr, \"addr not supported\");\n     }\n-    return dst;\n+\n+    return ip_addr;\n }\n\nI had to run following command to make it work in this case:\n\nsipp -sn uac -m 1 -d 30000 -r 10 -l 200 -s 1002 -mp 6000 SERVER_IP -l 10 -trace_err -i MY_IP -mi MY_IP -rsa SERVER_IP:5060 -auth_uri SERVER_IP:5060"
+}

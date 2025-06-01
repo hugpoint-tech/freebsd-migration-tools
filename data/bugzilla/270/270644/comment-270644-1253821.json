@@ -1,0 +1,8 @@
+{
+ "id": 1253821,
+ "bug_id": 270644,
+ "attachment_id": 0,
+ "creation_time": "2023-04-04T17:59:57Z",
+ "creator": "sumit.saxena@broadcom.com",
+ "text": "BCM574xx/BCM575xx controllers are managed by \"if_bnxt\" driver module. I am observing an issue with these controllers while running IPv6 UDP traffic. The traffic is always routed to Tx queue 0 even though more than one Tx queues are configured. \n\nNetwork topology: SUT1(BCM574xx) \u003c---\u003e Switch \u003c---\u003e SUT2/(BCM574xx)\n\nSteps to reproduce:\n\n1. Run iperf server on SUT2:\niperf3 -s\n\n2. Run iperf client on SUT1(System under test): \niperf3 -c ::\u003cSUT2_address\u003e -P 32 -t 3600 -l 1000 -w 1000 -u \n\n3. Checked Tx packet stats from sysctl and observed that all packets are routed to txq0. \n\n# sysctl dev.bnxt.2.hwstats | grep ucast_pkts | grep txq\ndev.bnxt.2.hwstats.txq9.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq8.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq7.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq6.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq5.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq4.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq3.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq2.ucast_pkts: 0\ndev.bnxt.2.hwstats.txq1.ucast_pkts: 6\ndev.bnxt.2.hwstats.txq0.ucast_pkts: 105706\n\nExpected results:\nIPv6 udp traffic should be fairly distributed among all Tx queues.\n\nNote: \nThe same issue is not observed with IPv4 UDP traffic. \n\nSelection of Tx queue is done by FreeBSD \"iflib\" layer.\nIs it a iflib layer issue ? or the driver missed to do certain settings ?"
+}

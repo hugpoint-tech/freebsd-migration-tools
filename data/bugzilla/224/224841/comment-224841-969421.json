@@ -1,0 +1,8 @@
+{
+ "id": 969421,
+ "bug_id": 224841,
+ "attachment_id": 0,
+ "creation_time": "2018-01-03T17:36:38Z",
+ "creator": "breno.leitao@gmail.com",
+ "text": "After some debug, I found that the machine is not stopping, but it is lopping on CPU detection part for a long period, which is involving the changes in the  chrp_cpuref_for_server(), and this is being called several times.\n\nIn fact, chrp_cpuref_for_server() through chrp_smp_next_cpu (platform_smp_next_cpu,) is called n times, where n is the amount of CPU, just to count the amount of CPUs available in the machine.\n\nThe delay is proportional to the number of CPUs available. On a machine with 100+ CPUs, it takes around 30 minutes to start the boot process, and loop again after the initial headers. This long loop is being executed twice on a machine boot.\n\nThat explains why I was not able to reproduce it yesterday. I was not able to reproduce it when I tested on a machine with few CPUs (like 2 CPUs). So, the delay is indistinguishable when you have few CPUs.\n\nThat said, I created a draft of a patch that creates a platform function that counts the maximum amount of CPUs available on machine via device tree, this helps to get the mp_ncpus much faster the the current implementation.\n\nPS: This patch was barely tested and not ready for consumption."
+}

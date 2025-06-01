@@ -1,0 +1,8 @@
+{
+ "id": 1128401,
+ "bug_id": 223564,
+ "attachment_id": 0,
+ "creation_time": "2020-10-25T17:29:38Z",
+ "creator": "sjg@FreeBSD.org",
+ "text": "(In reply to Mateusz Guzik from comment #6)\nSorry, slipped off my radar.  I have a patch that should help.\nFYI\n\ndiff -r cda9e4e14273 bmake/main.c\n--- a/bmake/main.c      Thu Oct 22 11:18:04 2020 -0700\n+++ b/bmake/main.c      Sun Oct 25 10:28:14 2020 -0700\n@@ -1449,12 +1449,15 @@\n \n        /* In particular suppress .depend for '-r -V .OBJDIR -f /dev/null' */\n        if (!noBuiltins || !printVars) {\n-           (void)Var_Subst(\"${.MAKE.DEPENDFILE:T}\",\n+           /* ignore /dev/null and anything starting with \"no\" */\n+           (void)Var_Subst(\"${.MAKE.DEPENDFILE:N/dev/null:Nno*:T}\",\n                VAR_CMD, VARE_WANTRES, \u0026makeDependfile);\n-           /* TODO: handle errors */\n-           doing_depend = TRUE;\n-           (void)ReadMakefile(makeDependfile);\n-           doing_depend = FALSE;\n+           if (makeDependfile[0] != '\\0') {\n+               /* TODO: handle errors */\n+               doing_depend = TRUE;\n+               (void)ReadMakefile(makeDependfile);\n+               doing_depend = FALSE;\n+           }\n        }\n \n        if (enterFlagObj)"
+}

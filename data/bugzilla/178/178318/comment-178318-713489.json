@@ -1,0 +1,8 @@
+{
+ "id": 713489,
+ "bug_id": 178318,
+ "attachment_id": 0,
+ "creation_time": "2013-08-29T13:48:29Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: loos\nDate: Thu Aug 29 12:48:12 2013\nNew Revision: 255021\nURL: http://svnweb.freebsd.org/changeset/base/255021\n\nLog:\n  Prevent the full restart cycle every time arge_start() is called.  Only\n  (re)start the interface when it is down.  This change fix a race with\n  BOOTP where the response packet is lost because the interface is being\n  reset by a netmask change right after send the packet.\n  \n  PR:\t\t178318\n  Approved by:\tadrian (mentor)\n\nModified:\n  head/sys/mips/atheros/if_arge.c\n\nModified: head/sys/mips/atheros/if_arge.c\n==============================================================================\n--- head/sys/mips/atheros/if_arge.c\tThu Aug 29 12:25:12 2013\t(r255020)\n+++ head/sys/mips/atheros/if_arge.c\tThu Aug 29 12:48:12 2013\t(r255021)\n@@ -1019,7 +1019,8 @@ arge_init_locked(struct arge_softc *sc)\n \n \tARGE_LOCK_ASSERT(sc);\n \n-\targe_stop(sc);\n+\tif ((ifp-\u003eif_flags \u0026 IFF_UP) \u0026\u0026 (ifp-\u003eif_drv_flags \u0026 IFF_DRV_RUNNING))\n+\t\treturn;\n \n \t/* Init circular RX list. */\n \tif (arge_rx_ring_init(sc) != 0) {\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

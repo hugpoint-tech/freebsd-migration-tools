@@ -1,0 +1,8 @@
+{
+ "id": 10970,
+ "bug_id": 3560,
+ "attachment_id": 0,
+ "creation_time": "1997-05-09T14:20:01Z",
+ "creator": "oliver.fromme@heim3.tu-clausthal.de",
+ "text": "\nIn file i386/isa/wd.c, function wdtimeout(), line 2080 (2.2.1-RELEASE):\n\n\t\tif(timeouts++ == 5)\n\t\t\twderror((struct buf *)NULL, du,\n   \"Last time I say: interrupt timeout.  Probably a portable PC.\");\n\t\telse if(timeouts++ \u003c 5)\n\t\t\twderror((struct buf *)NULL, du, \"interrupt timeout\");\n\nThe problem should be obvious:  The first wderror() (\"Last time\nI say: ...\") is _never_ executed, because timeouts==5 is never\ntrue at that location, since timeout is always incremented\n_twice_ if it's != 5.  See the suggested fix below.\n\nFix: \n\nSuggested fix (should also be obvious):\n\n\t\tif(timeouts++ == 5)\n\t\t\twderror((struct buf *)NULL, du,\n   \"Last time I say: interrupt timeout.  Probably a portable PC.\");\n\t\telse if(timeouts \u003c= 5)\n\t\t\twderror((struct buf *)NULL, du, \"interrupt timeout\");\n\nBest regards\n   Oliver Fromme  \u003coliver.fromme@heim3.tu-clausthal.de\u003e\nHow-To-Repeat: \nEnable \"IDE power down\" in the BIOS, then boot FreeBSD 2.2.1\nand wait until disk activity stops and the disk powers down (it\nmay be necessary to kill cron and other processes which access\nthe disk).  Then access some file.  During the power-up of the\ndisk, the kernel displays \"interrupt timeout\".  Repeat that\nprocedure twice.  On the third and subsequent repetition, no\nmore timeout messages are displayed.  In particular, \"Last time\nI say: ...\" is never displayed."
+}

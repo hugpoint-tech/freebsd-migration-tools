@@ -1,0 +1,8 @@
+{
+ "id": 677378,
+ "bug_id": 170388,
+ "attachment_id": 0,
+ "creation_time": "2012-08-05T14:55:18Z",
+ "creator": "kostikbel@gmail.com",
+ "text": "Try this. Comment should give enough explanation what happens there, my\r\nguess anyway.\r\n\r\ndiff --git a/sys/amd64/amd64/initcpu.c b/sys/amd64/amd64/initcpu.c\r\nindex 3890551..dbeaec6 100644\r\n--- a/sys/amd64/amd64/initcpu.c\r\n+++ b/sys/amd64/amd64/initcpu.c\r\n@@ -91,11 +91,17 @@ init_amd(void)\r\n \t *\r\n \t * http://support.amd.com/us/Processor_TechDocs/41322_10h_Rev_Gd.pdf\r\n \t * http://support.amd.com/us/Processor_TechDocs/44739_12h_Rev_Gd.pdf\r\n+\t *\r\n+\t * Hypervisors do not provide access to the errata MSR,\r\n+\t * causing #GP exception on attempt to apply the errata.  The\r\n+\t * MSR write shall be done on host and persist globally\r\n+\t * anyway, so do not try to do it when under virtualization.\r\n \t */\r\n \tswitch (CPUID_TO_FAMILY(cpu_id)) {\r\n \tcase 0x10:\r\n \tcase 0x12:\r\n-\t\twrmsr(0xc0011029, rdmsr(0xc0011029) | 1);\r\n+\t\tif ((cpu_feature2 \u0026 CPUID2_HV) == 0)\r\n+\t\t\twrmsr(0xc0011029, rdmsr(0xc0011029) | 1);\r\n \t\tbreak;\r\n \t}\r\n }\r\n"
+}

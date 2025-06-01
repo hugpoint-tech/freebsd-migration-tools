@@ -1,0 +1,8 @@
+{
+ "id": 824958,
+ "bug_id": 200361,
+ "attachment_id": 0,
+ "creation_time": "2015-05-21T23:16:22Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Not even compile tested but if someone could make sure it does the right thing, that would be great:\n\n(1) base system should always continue to work as-is.\n(2) a classic jail should get an \"operation not permitted\" back on attempting to read.\n(3) for VIMAGE kernels, base system see (1), classic jail see (2), and a vnet jail should not change either.\n\nIndex: tcp_hostcache.c\n===================================================================\n--- tcp_hostcache.c     (revision 283272)\n+++ tcp_hostcache.c     (working copy)\n@@ -69,6 +69,7 @@ __FBSDID(\"$FreeBSD$\");\n \n #include \u003csys/param.h\u003e\n #include \u003csys/systm.h\u003e\n+#include \u003csys/jail.h\u003e\n #include \u003csys/kernel.h\u003e\n #include \u003csys/lock.h\u003e\n #include \u003csys/mutex.h\u003e\n@@ -608,6 +609,9 @@ sysctl_tcp_hc_list(SYSCTL_HANDLER_ARGS)\n        char ip6buf[INET6_ADDRSTRLEN];\n #endif\n \n+       if (jailed_without_vnet(curthread-\u003etd_cred) != 0)\n+               return (EPERM);\n+\n        sbuf_new(\u0026sb, NULL, linesize * (V_tcp_hostcache.cache_count + 1),\n                SBUF_INCLUDENUL);"
+}

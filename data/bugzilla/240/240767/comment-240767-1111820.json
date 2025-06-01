@@ -1,0 +1,8 @@
+{
+ "id": 1111820,
+ "bug_id": 240767,
+ "attachment_id": 0,
+ "creation_time": "2020-07-03T22:33:56Z",
+ "creator": "trasz@FreeBSD.org",
+ "text": "Okay, so after another afternoon spent debugging this stuff, here's how it looks:\n\nFirst, glibc (namely gettyname()) requires contents of /proc/self/fd/ to be symlinks.  Turns out it's trivial to make it work, and it's even documented: just mount fdescfs with 'linrdlnk' option.  I'll make /etc/rc.d/linux default to it soon.\n\nProblem is: it doesn't work when you chroot into your Linux root (eg /compat/linux).  For some reason glibc tries to be very, _very_ careful with the name it got from /proc/self/fd/0; it calls stat(2) on fd 0, and then on the symlink target, and compares st_dev.  When chrooted to /compat/linux, your stdin is on /dev, while /proc/self/fd/0 (really /compat/linux/proc/self/fd/0) points to /dev/fd/0 (really /compat/linux/dev/fd/0); since /dev and /compat/linux/dev have different fsids, and thus stat(2) returns different st_dev, the glibc check fails.\n\nWorkaround: run sshd inside your linux chroot and ssh into localhost.  Meh."
+}

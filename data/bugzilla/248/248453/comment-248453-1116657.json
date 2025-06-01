@@ -1,0 +1,8 @@
+{
+ "id": 1116657,
+ "bug_id": 248453,
+ "attachment_id": 216990,
+ "creation_time": "2020-08-03T12:54:42Z",
+ "creator": "ronald-lists@klop.ws",
+ "text": "Created attachment 216990\ndisable OPTION SIGAR on 13 (svn diff to the databases/ dir)\n\nI noticed cassandra3/4 is not build on 13-current. It does build on 11 and 12.\nThe cause is breakage in the devel/sigar port on 13-current. It is a fairly recent breakage.\n \nworks: http://beefy18.nyi.freebsd.org/data/head-amd64-default/p541901_s363088/logs/sigar-1.7.3_2.log\n \nbroken: http://beefy18.nyi.freebsd.org/data/head-amd64-default/p543559_s363627/logs/errors/sigar-1.7.3_2.log\n\nbroken also: http://thunderx1.nyi.freebsd.org/data/head-arm64-default/p542683_s363381/logs/errors/sigar-1.7.3_2.log\n\nThe error seems to be in a missing sys/filedesc.h include. This is a big guess of my side.\ndarwin_sigar.c:1968:27: error: no member named 'fd_lastfile' in 'struct filedesc'\n    procfd-\u003etotal = filed.fd_lastfile;\n \nI noticed the working build is in Jail OSVERSION: 1300101 and the broken one is in Jail OSVERSION: 1300101.\nI'm wondering if it is possible to get a more fine grained version nr of the working/broken version. And while I'm typing this I see that the URLs contain s363088 and s363381. So this narrows it down to about 300 commits *if* the cause is in the FreeBSD source.\n\nIn the meantime I have a patch to disable the dependency on \"sigar\" on FreeBSD 13. The patch does not change anything on 11 and 12.\nIf somebody comes up with a patch for devel/sigar we can enable this option again.\n\nThe patch is for cassandra4 also."
+}

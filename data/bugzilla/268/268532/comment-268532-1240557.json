@@ -1,0 +1,8 @@
+{
+ "id": 1240557,
+ "bug_id": 268532,
+ "attachment_id": 238992,
+ "creation_time": "2022-12-24T05:42:07Z",
+ "creator": "atle.solbakken@gmail.com",
+ "text": "Created attachment 238992\nPatch\n\nThe garbage collection function of process shared locks, pshared_gc, is called whenever a process shared lock is destroyed. The GC function has a loop which checks entries in a hashmap of linked lists, looping through all registered locks.\n\nIf a process has a lot of process shared locks, like more than a few hundred, the GC function causes destruction of these locks to take a long time (exponential). This is noticeable especially if many locks are to be destroyed at the same time.\n\nThere are probably multiple solutions for this, like calling the GC function only every X lock destruction, by having a time limit or by calling it upon some other event.\n\nThe provided patch limits how often the GC function can run to at most every 25 milliseconds per process. If i understand it correctly, the only potential GC required after lock destruction should be in other processes, which have their own timers.\n\nBest regards\nAtle"
+}

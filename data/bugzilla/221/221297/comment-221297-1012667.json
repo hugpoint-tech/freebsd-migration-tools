@@ -1,0 +1,8 @@
+{
+ "id": 1012667,
+ "bug_id": 221297,
+ "attachment_id": 0,
+ "creation_time": "2018-09-23T16:42:23Z",
+ "creator": "paulzhol@gmail.com",
+ "text": "Hi,\n\nI maintain the FreeBSD/arm builder, I just wanted to add some quick notes:\n\nAs per https://golang.org/doc/install/source#go14, when go 1.4 is used as the bootstrap toolchain, you must set CGO_ENABLED=0.\nAlso it's recommended to use https://dl.google.com/go/go1.4-bootstrap-20171003.tar.gz or the git branch release-branch.go1.4 directly.\nIn release-branch.go1.4 CGO_ENABLED=0 is set by default since:\nhttps://github.com/golang/go/commit/94221a06124fe0d0f7ed45a355c72e46ed0e891b.\n\nGOARM=7 is required when running on a multi-core processor. This is because the dmb instruction is used for memory barriers in various points, and it is an ARMv7 instruction (the ARMv6 variant \"mcr p15, 0, %0, c7, c10, 5\" was deemed too slow and wasn't used).\nThe check is performed at _runtime_, the dmb instruction is always compiled in.\nFor GOARM \u003c 7 the dmb instruction is skipped as it is assumed to be single-core system - this is tested at startup and you get the \"runtime: this system has multiple CPUs and must use atomic synchronization instructions. Recompile using GOARM=7.\" message otherwise."
+}

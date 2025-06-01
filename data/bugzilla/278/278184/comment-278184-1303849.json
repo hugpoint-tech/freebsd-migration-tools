@@ -1,0 +1,8 @@
+{
+ "id": 1303849,
+ "bug_id": 278184,
+ "attachment_id": 0,
+ "creation_time": "2024-04-05T09:33:52Z",
+ "creator": "thomas.dreibholz@gmail.com",
+ "text": "Bash does not load /etc/profile since some time. Instead, it expects ${LOCALBASE}/etc/profile. This is possibly intended behaviour now, but may come unexpected to a user using a Bash shell on a system with system-wide profile settings.\n\nJust making a symlink /etc/profile -\u003e /usr/local/etc/profile (as suggested by https://forums.freebsd.org/threads/what-happened-to-etc-profile.78406/) also does not properly lead to the expected behaviour, since this leads to loading /etc/profile twice: The issue is that /etc/profile (at least in 14.0-RELEASE) is trying to avoid this recursion by checking whether it tries to load itself. But since \"/usr/local/etc/profile\" is not equal to \"/etc/profile\", this check fails. If the profile settings are just setting variables, this is probably not an issue (just a bit of wasted time). However, if making output like a login banner (e.g. using the \"td-system-tools\" package, which installs /usr/local/etc/profile.d/system-info.sh for this purpose), the output is made twice.\n\nA work around is to have a script /usr/local/etc/profile, which checks whether it is called by /etc/profile (/etc/profile sets a variable _loaded; if it is set, then just do not try to load /etc/profile again):\nif [ \"${_loaded}\" = \"\" ] ; then\n   if [ -e /etc/profile ] ; then\n      . /etc/profile\n   fi\nfi\n\nMay be such a /usr/local/etc/profile script should be installed by the Bash package as default, to get the probably expected user behaviour of getting the system-wide profile settings with Bash shell as well?"
+}

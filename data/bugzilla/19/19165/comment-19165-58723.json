@@ -1,0 +1,8 @@
+{
+ "id": 58723,
+ "bug_id": 19165,
+ "attachment_id": 0,
+ "creation_time": "2000-06-10T07:00:01Z",
+ "creator": "brad@kazrak.com",
+ "text": "cdda2wav (part of the cdrecord port) no longer works with IDE drives via\nthe cooked_ioctl interface; any attempt to use this interface immediately\nsegfaults in main (file cdda2wav.c) at line 2010:\n  cdtracks = ReadToc( get_scsi_p(), g_toc );\nReadToc is a function pointer that gets set in SetupInterface (file\ninterface.c); this should call to SetupCookedIoctl (ioctl.c), which will\nactually set the function pointer.  However, the HAVE_IOCTL_INTERFACE\n#define which protects this code is unset, despite being set on the command\nline; it appears that something in mycdrom.h is #undefing it.\nSince ReadToc is never set, it is NULL upon reaching this line, whereupon\nthe program segfaults as it attempts to dereference NULL.\n\nFix: \n\nFind the right combinations of flags/changes to mycdrom.h to #define\nHAVE_IOCTL_INTERFACE properly.\nHow-To-Repeat: Build cdda2wav and attempt to run it with '-I cooked_ioctl'."
+}

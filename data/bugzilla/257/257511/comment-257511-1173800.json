@@ -1,0 +1,8 @@
+{
+ "id": 1173800,
+ "bug_id": 257511,
+ "attachment_id": 0,
+ "creation_time": "2021-08-10T13:58:20Z",
+ "creator": "brian90013@gmail.com",
+ "text": "I tried commenting out the iflib_stop() call and setting err instead. With this change, I can collect packets with netmap using the igb, ixgbe, ixl, and ice drivers whether the interface is up or down. Setting the promiscuous bit after initializing netmap does not cause a hang if the interface is down. I'm not sure of the implications of my change, but for my use case it appears to work well.\n\n--- sys/net/iflib.c\t(revision 370286)\n+++ sys/net/iflib.c\t(working copy)\n@@ -4230,7 +4296,8 @@\n \t\t\t} else\n \t\t\t\treinit = 1;\n \t\t} else if (if_getdrvflags(ifp) \u0026 IFF_DRV_RUNNING) {\n-\t\t\tiflib_stop(ctx);\n+\t\t\terr = ENETDOWN; // Can't set flags while interface is down\n+//\t\t\tiflib_stop(ctx); // Calling this locks up netmap\n \t\t}\n \t\tctx-\u003eifc_if_flags = if_getflags(ifp);\n \t\tCTX_UNLOCK(ctx);"
+}

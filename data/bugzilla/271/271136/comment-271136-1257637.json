@@ -1,0 +1,8 @@
+{
+ "id": 1257637,
+ "bug_id": 271136,
+ "attachment_id": 0,
+ "creation_time": "2023-04-29T20:14:27Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "mesa-devel package installs /usr/local/etc/libmap.d/mesa-devel.conf which overrides mesa-{libs,dri}. For example, /usr/local/lib/xorg/modules/extensions/.xorg/libglx.so calls into libGLX.so from libglvnd which later calls into libGLX_mesa.so that libmap.conf(5) translate into libGLX_mesa-devel.so calls.\n\nI don't use Wine but the issue is likely due to 32-bit libs. Does copying /etc/libmap.conf into /etc/libmap32.conf help ? If not try adjusting \"includedir\" to point to 32-bit PREFIX used by 32-bit mesa-devel.\n\nVulkan, VAAPI, VDPAU overrides /usr/local/etc/libmap.d/mesa-devel.conf contain absolute paths because that's how their dispatchers work. For example,\n\n$ cat /usr/local/share/vulkan/icd.d/radeon_icd.i386.json\n{\n    \"ICD\": {\n        \"api_version\": \"1.3.230\",\n        \"library_path\": \"/usr/local/lib/libvulkan_radeon.so\"\n    },\n    \"file_format_version\": \"1.0.0\"\n}\n\n$ pkg which -qo /usr/local/share/vulkan/icd.d/radeon_icd.i386.json\ngraphics/mesa-dri\n\nHow does this currently work for 32-bit Wine *without* mesa-devel? /usr/local/lib/ on amd64 contains 64-bit libs, so there's probably some magic that translates it to where 32-bits are located."
+}

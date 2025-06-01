@@ -1,0 +1,8 @@
+{
+ "id": 790888,
+ "bug_id": 194314,
+ "attachment_id": 0,
+ "creation_time": "2014-10-12T09:13:04Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "The code in sys/dev/ixgbe/ixgbe.h assumes that MLEN is always \u003e 160, and doesn't exceed the size of the mbuf. MSIZE is set to 256, so if MHLEN = MSIZE - sizeof(struct m_hdr) - sizeof(struct pkthdr) \u003c 160, ixgbe will scribble over the header information in mbufs. Similarly, if IXGBE_RX_COPY_LEN is greater than the size of the mbuf, it will scribble over other memory, potentially in the same mbuf chain, or elsewhere.\n\nThis optimization needs better bounds checking/handling.\n\n 155 /*\n 156  * Used for optimizing small rx mbufs.  Effort is made to keep the copy\n 157  * small and aligned for the CPU L1 cache.\n 158  * \n 159  * MHLEN is typically 168 bytes, giving us 8-byte alignment.  Getting\n 160  * 32 byte alignment needed for the fast bcopy results in 8 bytes being\n 161  * wasted.  Getting 64 byte alignment, which _should_ be ideal for\n 162  * modern Intel CPUs, results in 40 bytes wasted and a significant drop\n 163  * in observed efficiency of the optimization, 97.9% -\u003e 81.8%.\n 164  */\n 165 #define IXGBE_RX_COPY_LEN       160\n 166 #define IXGBE_RX_COPY_ALIGN     (MHLEN - IXGBE_RX_COPY_LEN)\n\n  60  * MLEN is data length in a normal mbuf.\n  61  * MHLEN is data length in an mbuf with pktheader.\n  62  * MINCLSIZE is a smallest amount of data that should be put into cluster.\n  63  */\n  64 #define MLEN            ((int)(MSIZE - sizeof(struct m_hdr)))\n  65 #define MHLEN           ((int)(MLEN - sizeof(struct pkthdr)))\n  66 #define MINCLSIZE       (MHLEN + 1)"
+}

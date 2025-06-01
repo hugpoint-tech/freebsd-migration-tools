@@ -1,0 +1,8 @@
+{
+ "id": 1051123,
+ "bug_id": 237068,
+ "attachment_id": 0,
+ "creation_time": "2019-05-19T23:25:22Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #11)\n\nI've reduced the link command to:\n\n# /usr/bin/powerpc64-unknown-freebsd13.0-ld \"-Bshareable\" \"-o\" \"lib/libLTO.so.6.0.1\" \"lib/libLLVM-6.0.so\"\n/usr/bin/powerpc64-unknown-freebsd13.0-ld: BFD (GNU Binutils) 2.32 assertion fail elflink.c:2935\n/usr/bin/powerpc64-unknown-freebsd13.0-ld: BFD (GNU Binutils) 2.32 assertion fail elflink.c:2935\n\nThe only reason for -Bsharable is that there are more messages without it,\nrelating to _start, __progname, and environ.\n\nSo it seems lib/libLLVM-6.0.so is sufficient context for the\nBFD_ASSERT to fail.\n\n\n# readelf -sW lib/libLLVM-6.0.so | grep 'get_execution_seed.*seed' | more\n 12020: 0000000003c20f00     8 OBJECT  WEAK   DEFAULT   26 _ZZN4llvm7hashing6detail18get_execution_seedEvE4seed@@LLVM_6.0 (2)\n 21501: 0000000003c20f08     8 OBJECT  WEAK   DEFAULT   26 _ZGVZN4llvm7hashing6detail18get_execution_seedEvE4seed@@LLVM_6.0 (2)\n 68864: 0000000003c20f00     8 OBJECT  WEAK   DEFAULT   26 _ZZN4llvm7hashing6detail18get_execution_seedEvE4seed\n 78345: 0000000003c20f08     8 OBJECT  WEAK   DEFAULT   26 _ZGVZN4llvm7hashing6detail18get_execution_seedEvE4seed\n\n# readelf -sW lib/libLLVM-6.0.so | grep 'bss' | more\n  6278: 0000000003c20f00     0 NOTYPE  GLOBAL DEFAULT   26 __bss_start@@LLVM_6.0 (2)\n 63122: 0000000003c20f00     0 NOTYPE  GLOBAL DEFAULT   26 __bss_start\n\nAlso:\n\n  [26] .bss              NOBITS           0000000003c20f00  03c10f00\n       0000000000056010  0000000000000000  WA       0     0     8"
+}

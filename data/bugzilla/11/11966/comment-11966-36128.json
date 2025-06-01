@@ -1,0 +1,8 @@
+{
+ "id": 36128,
+ "bug_id": 11966,
+ "attachment_id": 0,
+ "creation_time": "1999-05-31T22:20:01Z",
+ "creator": "aron@cs.rice.edu",
+ "text": "TCP (enabled with rfc1323 extensions) exchanges the window scale option\nonly during connection establishment in its SYN packet. Thus, it is \nimperative that applications should set the socket buffer sizes *before*\nestablishing the TCP connection. \n\nHowever, in function tcp_mss() (in netinet/tcp_input.c), the socket\nbuffer size is set from old information contained in the routing tables.\nThus even if the application had set the socketbuffer size, this \npart of the code completely ignores that and goes ahead and sets the\nsocket buffer size itself. As a result, TCP operates with the flow\ncontrol window size determined from past information rather than what\nthe user has set.\n\nFix: \n\nThe socket code should keep track of the fact whether the socket \nbuffer size was set explicitly by the user or whether it contains the\ndefault setting. It should be copied over from the routing information\nonly if it contains the default setting.\nHow-To-Repeat: Start a TCP transfer between two hosts (or just do a telnet) with the\ndefault settings of socket buffer sizes. Then try starting a transfer\nagain transfer and try setting the TCP rcv socket buffer size on the \nTCP receiver to a large value. Check the size of the window scale option\nexchanged - it'll still be small (perhaps 0). This is the result of\nthe user information being completely discarded away."
+}

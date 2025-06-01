@@ -1,0 +1,8 @@
+{
+ "id": 99163,
+ "bug_id": 31432,
+ "attachment_id": 0,
+ "creation_time": "2001-10-22T15:40:00Z",
+ "creator": "vova@express.ru",
+ "text": "\n umount(8) first tries to lookup a mountpoint in result list returned by\n getfsstat() then, if found, calls unmount(2).\n If any directory component above mountpoint was renamed, it is not possible\n to unmount this mountpoint because lookup fails.\n\nSo unmount(2) needs real directory corresponding to the mountpoint to be\nunmounted, but umount(8) tries to compare it with list of paths saved by\nmount(2) and fails in case of rename.\n\nFix: \n\nRemove getfsstat() lookup in umount(8).\nHow-To-Repeat: \n# mount -t linprocfs none /tmp/x/y\n# mv /tmp/x /tmp/z\n# umount /tmp/z/y\numount: /tmp/z/y not found in mount table, unmounted it anyway\n# umount /tmp/x/y\numount: unmount of /usr/tmp/x/y failed: No such file or directory\n# cat \u003e um.c\nmain(int ac, char **av) {\nunmount(av[1], 0);\n}\n^D\n# gcc um.c\n# ./a.out /tmp/z/y\n# mount | grep linproc\n#"
+}

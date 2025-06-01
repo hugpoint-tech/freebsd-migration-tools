@@ -1,0 +1,8 @@
+{
+ "id": 1335427,
+ "bug_id": 282217,
+ "attachment_id": 0,
+ "creation_time": "2024-11-17T19:25:38Z",
+ "creator": "dch@freebsd.org",
+ "text": "looks like `-O3` (used in ports tree build, but not source tree build) causes this\nbehaviour, which probably means its a bug in snappy itself of some sort.\n\nIf you run couchdb interactively[1], you can test this:\n\nS = fun(Doc) -\u003e\n\t{ok, C} = snappy:compress(erlang:term_to_binary(Doc)),\n \ttrue = snappy:is_valid(C),\n\t{ok, U} = snappy:decompress(C),\n\tNew = erlang:binary_to_term(U),\n\tNew == Doc\n\tend.\n\nS([\u003c\u003c\"00000000-7fffffff\"\u003e\u003e]).\nfalse\nS([\u003c\u003c\"zzzzzzzz-7fffffff\"\u003e\u003e]).\nfalse\nS([\u003c\u003c\"00000000-7ffffff\"\u003e\u003e]).\ntrue\n\nI have 2 choices going forwards:\n\n- build the port with CXXFLAGS to include `-O0` (see attached diff)\n- update snappy to 1.1.8 or newer, where this issue has been fixed\n\nThe former is preferable for me, as bumping snappy should be done\nwithin CouchDB project as a whole, rather than in a single down\nstream project."
+}

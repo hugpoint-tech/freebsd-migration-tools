@@ -1,0 +1,8 @@
+{
+ "id": 80353,
+ "bug_id": 25758,
+ "attachment_id": 0,
+ "creation_time": "2001-03-13T04:00:03Z",
+ "creator": "dgilbert@velocet.ca",
+ "text": "The following code in tcp_usrreq.c (line 412)\n\nstatic int\ntcp_usr_accept(struct socket *so, struct sockaddr **nam)\n{\n        int s = splnet();\n        int error = 0;\n        struct inpcb *inp = sotoinpcb(so);\n        struct tcpcb *tp;\n\n        if (so-\u003eso_state \u0026 SS_ISDISCONNECTED) {\n                error = ECONNABORTED;\n                goto out;\n        }\n        COMMON_START();\n        in_setpeeraddr(so, nam);\n        COMMON_END(PRU_ACCEPT);\n}\n\ninvokes COMMON_START() incorrectly:\n\n#define COMMON_START()  TCPDEBUG0; \\\n                        do { \\\n                                     if (inp == 0) { \\\n                                             splx(s); \\\n                                             return EINVAL; \\\n                                     } \\\n                                     tp = intotcpcb(inp); \\\n                                     TCPDEBUG1(); \\\n                     } while(0)\n\nWhere TCPDEBUG0 is\n\n#ifdef TCPDEBUG\n#define TCPDEBUG0       int ostate\n#define TCPDEBUG1()     ostate = tp ? tp-\u003et_state : 0\n#define TCPDEBUG2(req)  if (tp \u0026\u0026 (so-\u003eso_options \u0026 SO_DEBUG)) \\\n                                tcp_trace(TA_USER, ostate, tp, 0, 0, req)\n#else\n#define TCPDEBUG0\n#define TCPDEBUG1()\n#define TCPDEBUG2(req)\n#endif\n\nWhich obviously doesn't work if TCPDEBUG is set.\n\nFix: \n\nI'm not familiar with this code ... or what affects what.\nHow-To-Repeat: Put \"options TCPDEBUG\" in your kernel and try to compile"
+}

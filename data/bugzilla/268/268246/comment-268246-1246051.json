@@ -1,0 +1,8 @@
+{
+ "id": 1246051,
+ "bug_id": 268246,
+ "attachment_id": 0,
+ "creation_time": "2023-02-08T06:08:06Z",
+ "creator": "kp@freebsd.org",
+ "text": "That destination address is a bit odd... Do you have IPv6 traffic? pfsync always uses ip_output() for deferred traffic, which might perhaps explain the panic if we're shoving IPv6 packets through that.\n\nSo let's try to skip IPv6 for now: \n\ndiff --git a/sys/netpfil/pf/if_pfsync.c b/sys/netpfil/pf/if_pfsync.c\nindex 47c3217f399c..a9e6988ff7af 100644\n--- a/sys/netpfil/pf/if_pfsync.c\n+++ b/sys/netpfil/pf/if_pfsync.c\n@@ -2345,6 +2345,15 @@ pfsyncintr(void *arg)\n                        n = m-\u003em_nextpkt;\n                        m-\u003em_nextpkt = NULL;\n\n+                       {\n+                               struct ip *ip = mtod(m, struct ip *);\n+                               if (ip-\u003eip_v != IPVERSION) {\n+                                       printf(\"%s() skipping !IPv4 traffic\\n\", __func__);\n+                                       m_freem(m);\n+                                       continue;\n+                               }\n+                       }\n+\n                        /*\n                         * We distinguish between a deferral packet and our\n                         * own pfsync packet based on M_SKIP_FIREWALL\n\nObviously that's not a fix, but if that stops the panic at least we'll know and we can work on a real fix later."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 386714,
+ "bug_id": 111387,
+ "attachment_id": 0,
+ "creation_time": "2007-04-08T20:20:01Z",
+ "creator": "rea-fbsd@codelabs.ru",
+ "text": "\nAfter the new make's \"Remaking Makefiles\" feature was introduced I\nstarted to see the ports that were unable to build properly and\nmake was terminating with the \"Max recursion level (500) exceeded\".\nThe investigation showed that the problem was in the Makefile targets\nthat were considered out-of-date and had some rules to build them,\nbut the actual rules were not touching the target in any way.\n\nFix: I've been straight: just make two 'stat' calls before and after the\nMakefile build and compare the whole 'struct stat' contents.  If\nsomething has changed -- we're considering the target to be really\nrebuilt and will try to restart make. This helped me to overcome\nthe trouble with my simple example as well as to build the mail/mutt-ng\nand the recent development version of cURL that had this issue too.\n\nThe patch is below.\nHow-To-Repeat: \nThe following shell script will show the essence of the problem.\n--- create-test.sh begins here ---\n#!/bin/sh\n\necho -n \"Creating test files: Makefile and Makefile.in...\"\ncat \u003e Makefile \u003c\u003c \"EOF\"\nall:\tMakefile\n\nMakefile: Makefile.in\n\techo \"Wow, wow! I am the dummy target.\"\nEOF\n\ntouch Makefile\nsleep 2\ntouch Makefile.in\necho \"OK\"\necho\necho \"OK, spawning 'make'\"\nmake\n--- create-test.sh ends here ---\n\nAdditionally, you can try to build the mail/mutt-ng port on the\n7-CURRENT using the tree with src/usr.bin/make/main.c \u003e= 1.161\n(other parts of the \"Remaking Makefiles\" feature should be present\ntoo, but if you have the consistent tree with the aforementioned\nmain.c -- you got the buggy code)."
+}

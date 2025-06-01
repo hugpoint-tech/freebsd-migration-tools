@@ -1,0 +1,8 @@
+{
+ "id": 1146559,
+ "bug_id": 253428,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T23:08:32Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Ok, so now I see that stripping of d_ino == 0\nentries must be done below the VOP_READDIR().\nWhen I did r283330 to get rid of the creation\nof d_ino == 0 entries to fill up the block\nbeing filled in the buffer cache, I\ndid not adjust uio_offset to indicate the\noffset of the next block.\n--\u003e For my 6K/8K case, I could have advanced\n    uio_offset by 8K even though it filled\n    6K into the buffer cache block.\n    That might have made the caching work?\n    I'll give that a try.\n    --\u003e It helps that read(2) is no longer\n        expected to read directories.\n\nman getdirentries should be fixed for the\nd_off == 0 case. I'll come up with a man\npage patch and stick it on phabricator,\nbecause filling in d_off needs some thought\nfor NFS. There may be some cases where the\nserver's directory offset cookie can be\nused.\n\nIgnore trying to revert the change done to UFS in r252438,\nsince the stripping cannot be done above the VOP_READDIR().\nUnless both UFS and ZFS had the property\nthat removal of an entry in a directory\ndoes not change other directory offsets,\nit is not worth worrying about.\n--\u003e It also implies that d_ino == 0\n    dirents will be passed to user space\n    which is not really intended now?\nAt least that's my opinion.\n(And, yes, it was an aside and a separate issue.)"
+}

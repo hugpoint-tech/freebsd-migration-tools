@@ -1,0 +1,8 @@
+{
+ "id": 713528,
+ "bug_id": 178329,
+ "attachment_id": 0,
+ "creation_time": "2013-05-04T02:00:00Z",
+ "creator": "nowak@tepeserwery.pl",
+ "text": "ZFS objects used to store extended attributes are not deleted when parent file/directory is deleted. Those objects still occupy disk space but are otherwise unreferenced and can't be deleted.\n\nSo far I've traced it down to sys\\cddl\\contrib\\opensolaris\\uts\\common\\fs\\zfs\\zfs_dir.c:zfs_rmnode.\nZTOV(zp) is NULL for extended attributes directory (object 9) so zfs_purgedir is not called and object 10 is left alone.\n\nHow-To-Repeat: # zfs create -o mountpoint=/test root/test\n# touch /test/file1\n# setextattr user test abc /test/file1\n# zdb root/test\n    Object  lvl   iblk   dblk  dsize  lsize   %full  type\n         8    1    16K    512      0    512    0.00  ZFS plain file\n         9    1    16K    512     1K    512  100.00  ZFS directory\n        10    1    16K    512    512    512  100.00  ZFS plain file\n\nobject 8 - the file,\nobject 9 - extended attributes directory,\nobject 10 - value of the 'test' extended attribute (\"abc\")\n\n# rm /test/file1\n# zdb root/test\n\n    Object  lvl   iblk   dblk  dsize  lsize   %full  type\n        10    1    16K    512    512    512  100.00  ZFS plain file\n\nobjects 8 and 9 are deleted, object 10 is still there (leaked)."
+}

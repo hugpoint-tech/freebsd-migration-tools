@@ -1,0 +1,8 @@
+{
+ "id": 1075109,
+ "bug_id": 241925,
+ "attachment_id": 0,
+ "creation_time": "2019-11-12T22:16:26Z",
+ "creator": "zi@FreeBSD.org",
+ "text": "This was caused by two things:\n\n1. We don't pass all the correct build flags.  We need to add this to the Makefile:\n\nGO_BUILDFLAGS+=-mod=vendor -a -tags netgo,builtinassets\n\n2. Which causes the build to expect two new go source files which must be provided or build.  In their Makefile, they expect that 'gmake assets' gets called before the build starts, which runs yarn, compiles/downloads a bunch of stuff and creates two required go files for the above to work:\nweb/ui/ui.go\nweb/ui/assets_vfsdata.go\n\nassets_vfsdata.go is ~14M and has all of the HTML from the templates/ dir embedded in it.\n\nWe probably don't want to run `gmake assets` as we do not want to reach out to the Internet during the port build phase.  So, as a workaround, I'd suggest hosting the above two files somewhere.  Then, open a PR with the prometheus developers to request that they build/embed these files in their release tarballs moving forward."
+}

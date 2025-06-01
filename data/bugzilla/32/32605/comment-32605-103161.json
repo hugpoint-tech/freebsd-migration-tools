@@ -1,0 +1,8 @@
+{
+ "id": 103161,
+ "bug_id": 32605,
+ "attachment_id": 0,
+ "creation_time": "2001-12-10T16:35:18Z",
+ "creator": "nsouch@fr.alcove.com",
+ "text": "The following program will show you what can be found on your SMBus. It\nworks here for an\nintel based machine.\n\nOne must note that even if the smbus driver works, lmmon or healthd may\nnot support the\nmonitoring chip (see healthd manpage for more info). Especially, when\nlmmon reports\nIOTCL error it is when the chip at I2C addr 0x5a is not found (see\nperror() call in the lmmon.c).\n\nYou may change the /dev/smb? as needed.\n\n#include \u003cstdlib.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cmachine/smb.h\u003e\n\nint doioctl(int alias, int cmd, caddr_t param)\n{\n        int error = 1;\n        int retry = 3;\n\n        while (error \u0026\u0026 retry--) {\n                usleep(200);\n                error = ioctl(alias, cmd, param);\n        }\n\n        return (error);\n}\n\nint main (int argc,char argv[])\n{\n        int alias, i;\n        unsigned char byte=0;\n        struct smbcmd cmd;\n\n        bzero(\u0026cmd, sizeof(cmd));\n        cmd.data.byte_ptr = \u0026byte;\n        cmd.cmd = 0x0;\n\n        alias = open(\"/dev/smb0\", O_RDWR);\n\n        for (i=2; i\u003c254; i+=2)\n        {\n          if (i != 0xd2) {\n                  cmd.slave=(u_char)i;\n                  if(doioctl(alias, SMB_READB, (caddr_t)\u0026cmd)!=-1){\n                        printf(\"%x found.\\n\",i);\n                  }\n          }\n        }\n\n        close(alias);\n        return 0;\n}\n\n\n--\nAlcôve Technical Manager - Nicolas.Souchu@fr.alcove.com - http://www.alcove.com\nFreeBSD Developer - nsouch@freebsd.org"
+}

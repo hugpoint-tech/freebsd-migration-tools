@@ -1,0 +1,8 @@
+{
+ "id": 972798,
+ "bug_id": 225237,
+ "attachment_id": 0,
+ "creation_time": "2018-01-17T00:20:30Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Firefox 44+ implements WebSpeech API on FreeDesktop platforms via speech-dispatcher. Firefox 49+ itself uses WebSpeech to Narrate a page. Both didn't have any changes in Firefox 58.\n\nSteps To Reproduce:\n1. pkg install firefox mesa-dri speech-dispatcher\n2. firefox -new-instance -profile $(mktemp -d) https://en.wikipedia.org/\n3. Click on Enter Reader View in URL bar\n4. Click Narrate button at left side panel\n5. Click Play\n\nFirefox spawns sd_* processes as soon as step #3 which highlights there maybe an issue with initialization. Let's try to minify:\n\n$ cat a.c\n#include \u003clibspeechd.h\u003e\n#include \u003cunistd.h\u003e\n\nint main(int argc, char *argv[])\n{\n  SPDConnection* mSpeechdClient = spd_open(argv[0], NULL, NULL, SPD_MODE_THREADED);\n  spd_say(mSpeechdClient, SPD_MESSAGE, \"Hello from Speech Dispatcher!\");\n  sleep(600);\n  return 0;\n}\n\n$ pkg install speech-dispatcher pkgconf\n$ cc a.c `pkg-config --cflags --libs speech-dispatcher`\n$ ./a.out \u0026\n$ ps xd\n  PID TT  STAT    TIME COMMAND\n36621  -  SsJ  0:00.00 /usr/local/bin/speech-dispatcher --spawn --communication-method unix_socket -\n36615  6  SJ   0:00.00 /usr/local/lib/speech-dispatcher-modules/sd_generic /usr/local/etc/speech-dis\n36616  6  SJ   0:00.00 /usr/local/lib/speech-dispatcher-modules/sd_dummy /usr/local/etc/speech-dispa\n36618  6  SJ   0:00.01 /usr/local/lib/speech-dispatcher-modules/sd_espeak /usr/local/etc/speech-disp\n36619  6  SJ   0:00.00 /usr/local/lib/speech-dispatcher-modules/sd_cicero /usr/local/etc/speech-disp\n36620  6  ZJ   0:00.00 - \u003cdefunct\u003e"
+}

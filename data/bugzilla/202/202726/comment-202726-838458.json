@@ -1,0 +1,8 @@
+{
+ "id": 838458,
+ "bug_id": 202726,
+ "attachment_id": 0,
+ "creation_time": "2015-08-30T15:59:46Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "Having a cyclic dependency in rc.d is bad because it makes it hard to predict in what order things are started.\n\nThe cycle here is:\n\n* ldconfig depends on mountcritremote via REQUIRE: line in ldconfig. This is needed to allow /usr/local etc to be NFS-mounted on systems that aren't \"diskless\". Perhaps that can be dropped. The actual access happens to allow for libdata/ldconfig files and aout libraries; if those didn't exist, it would be possible to change ldconfig to write pathnames into /var/run/ld-elf.so.hints without checking for existence.\n\n* mountcritremote depends on devd via BEFORE: line in devd. This is clearly correct, to allow mounting filesystems via devices that need devd to load their driver or do other setup.\n\n* devd depends on ldconfig via REQUIRE: line in devd. This is new, to allow calling /usr/local binaries from devd actions.\n\nThere seem valid use cases for all three dependencies, but not all at the same time. The static dependency system is too crude to handle it.\n\nDoing it dynamically seems hard as well -- how should devd know that it needs to wait for ldconfig before running a particular action?\n\nAlternatively, we could run ldconfig twice and satisfy all three dependencies to some degree (obviously, an action to bring up a device needed for some filesystem cannot use libraries on that filesystem)."
+}

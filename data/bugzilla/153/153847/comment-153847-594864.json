@@ -1,0 +1,8 @@
+{
+ "id": 594864,
+ "bug_id": 153847,
+ "attachment_id": 0,
+ "creation_time": "2011-11-19T03:20:28Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: rmacklem\nDate: Sat Nov 19 03:20:15 2011\nNew Revision: 227690\nURL: http://svn.freebsd.org/changeset/base/227690\n\nLog:\n  The old NFS client will crash due to the reply being m_freem()'d\n  twice if the server bogusly returns an error with the NFSERR_RETERR\n  bit (bit 31) set. No actual NFS error has this bit set, but it seems\n  that amd will sometimes do this. This patch makes sure the NFSERR_RETERR\n  bit is cleared to avoid a crash.\n  \n  PR:\t\tkern/153847\n  MFC after:\t2 weeks\n\nModified:\n  head/sys/nfsclient/nfs_krpc.c\n\nModified: head/sys/nfsclient/nfs_krpc.c\n==============================================================================\n--- head/sys/nfsclient/nfs_krpc.c\tSat Nov 19 00:20:28 2011\t(r227689)\n+++ head/sys/nfsclient/nfs_krpc.c\tSat Nov 19 03:20:15 2011\t(r227690)\n@@ -540,6 +540,11 @@ tryagain:\n \t\t\t\t    hz);\n \t\t\tgoto tryagain;\n \t\t}\n+\t\t/*\n+\t\t * Make sure NFSERR_RETERR isn't bogusly set by a server\n+\t\t * such as amd. (No actual NFS error has bit 31 set.)\n+\t\t */\n+\t\terror \u0026= ~NFSERR_RETERR;\n \n \t\t/*\n \t\t * If the File Handle was stale, invalidate the lookup\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

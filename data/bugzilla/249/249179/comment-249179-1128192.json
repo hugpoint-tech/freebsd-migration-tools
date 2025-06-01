@@ -1,0 +1,8 @@
+{
+ "id": 1128192,
+ "bug_id": 249179,
+ "attachment_id": 0,
+ "creation_time": "2020-10-24T00:21:01Z",
+ "creator": "kevans@freebsd.org",
+ "text": "\u003e - all events (at least those in jails) seem to have 'naflags' as opposed to 'flags' applied, even if an audit identifier is available (user names/IDs are shown and correct in the audit log)\n\nYou might try and reproduce what you're doing and take a look at a sample audit record for this; it seems to work as expected here:\n\nheader,147,11,execve(2),0,Sat Oct 24 00:14:50 2020, + 500 msec\nexec arg,/root/grep/a.out\npath,/root/grep/a.out\nattribute,755,root,0,897360606,160136,3214960080\nzone,foo0\nsubject,kevans,root,0,root,0,1937,1921,53793,10.0.2.2\nreturn,success,0\ntrailer,147\n\nNote that flags specifically gets applied if the second field (\"kevans\") in the subject line is not -1. e.g.:\n\nheader,124,11,execve(2),0,Sat Oct 24 00:19:41 2020, + 978 msec\nexec arg,less\npath,/usr/bin/less\nattribute,555,root,0,897360606,1125807,2160857538\nsubject,-1,root,0,root,0,1995,0,0,0.0.0.0\nreturn,success,0\ntrailer,124\n\nThis is considered not-attributable despite being directly executed by me as root.\n\nroot@viper:~/grep# id -A\nauid=-1\nmask.success=0x00000000\nmask.failure=0x00000000\nasid=0\ntermid.port=0x00000000\ntermid.machine=0x00000000"
+}

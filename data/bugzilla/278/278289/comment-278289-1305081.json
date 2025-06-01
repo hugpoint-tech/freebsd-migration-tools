@@ -1,0 +1,8 @@
+{
+ "id": 1305081,
+ "bug_id": 278289,
+ "attachment_id": 0,
+ "creation_time": "2024-04-14T21:36:42Z",
+ "creator": "chuck@FreeBSD.org",
+ "text": "Queue ID 0 is the Admin queue, and per the specification (e.g. section 5.6 in the 1.4 version of the specification):\n\n    Note: It is not possible to delete the Admin Submission Queue.\n\nThe specification (section 5.6.1 in the 1.4 version) also defines the command specific error status 0x1 for Delete I/O Queue:\n\n    Invalid Queue Identifier: The Queue Identifier specified in the command\n    is invalid. This error is also indicated if the Admin Submission Queue\n    identifier is specified.\n\nNot only is the NVMe emulation's behavior correct, but the UNH IOL [1] Command Set Conformance tests check for this behavior in tests 1.4.2-5,7-8. Taking this check out for Windows would make the conformance tests fail.\n\nAs to why Windows is doing this? I don't know and would be curious to find out why.\n\nBut as to the failure you observe, I suspect the I/O queue deletion error isn't the cause,  and it would have occurred prior to the device reset (all the I/O queue delete commands would have failed). It would be interesting to see if any Write commands to the device returned a non-good status as that would more closely match \"ReFS: The file system was unable to write metadata\"\n\n[1] https://www.iol.unh.edu/testing/storage/nvme"
+}

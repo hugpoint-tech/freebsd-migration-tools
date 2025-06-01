@@ -1,0 +1,8 @@
+{
+ "id": 877443,
+ "bug_id": 207464,
+ "attachment_id": 0,
+ "creation_time": "2016-05-05T18:24:18Z",
+ "creator": "karl@denninger.net",
+ "text": "Andy, is that WITH the one-line patch in?\n\nIf so, bummer.\n\nThe pattern for me here on my production machines is that during backup the machine will panic, *always* during the root filesystem backup.\n\nThe system is all-ZFS and the backups are done using zfs send, after creating a snapshot (which rolls so you wind up with a duplicate of the existing file structure over time.)  The system also uses timed snapshots that roll off so recovery of files is simple if they're accidentally deleted or modified without resorting to the backups.\n\nThe panic is usually (but not always) preceded by a snapshot that is present, cannot be destroyed, but *also* cannot be CD'd into.  Once that condition exists the following is also true:\n\n1. If you *reboot* the box the condition is cleared and all is well; the system will *not* panic in that instance.\n\n2. If you attempt to zfs send a stream that *includes* the \"orphan\" snapshot the machine will panic in dounmount (identical behavior to the traces posted here) every time.\n\n3. You cannot zfs destroy the \"rogue\" snapshot that is present in the directory but cannot be cd'd into.\n\nThese three things make it possible for my backup script to, most of the time, detect the panic condition on the backup run *before* the one that blows up.\n\nWhat I've been unable to do, however, is reproduce a test case that reliably leaves the system in the pre-panic state."
+}

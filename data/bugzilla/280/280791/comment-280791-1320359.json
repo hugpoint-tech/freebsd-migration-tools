@@ -1,0 +1,8 @@
+{
+ "id": 1320359,
+ "bug_id": 280791,
+ "attachment_id": 0,
+ "creation_time": "2024-08-13T10:02:33Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "As noted in the libc++ 19 release notes [1], std::char_traits\u003c\u003e is now\nonly provided for char, char8_t, char16_t, char32_t and wchar_t, and any\ninstantiation for other types will fail.\n\nThis causes textproc/zxing-cpp to fail to compile with clang 19 and\nlibc++ 19, resulting in errors similar to:\n\n    /usr/include/c++/v1/string_view:300:42: error: implicit instantiation of undefined template 'std::char_traits\u003cunsigned char\u003e'\n      300 |   static_assert(is_same\u003c_CharT, typename traits_type::char_type\u003e::value,\n          |                                          ^\n    /wrkdirs/usr/ports/textproc/zxing-cpp/work/zxing-cpp-2.2.1/core/src/Utf.cpp:72:42: note: in instantiation of template class 'std::basic_string_view\u003cunsigned char\u003e' requested here\n       72 | static size_t Utf8CountCodePoints(utf8_t utf8)\n          |                                          ^\n    /usr/include/c++/v1/__string/char_traits.h:45:8: note: template is declared here\n       45 | struct char_traits;\n          |        ^\n\n`utf8_t` is effectively defined as `std::basic_string\u003cuint8_t\u003e`, which\nis no longer possible. So redefine it as a `std::vector\u003cuint8_t\u003e`\ninstead.\n\nThis requires only a small adjustment in one other place: replacing the\ninitializer list in the `AppendFromUtf8` call in `FromUtf8`.\n\n[1] https://libcxx.llvm.org/ReleaseNotes/19.html#deprecations-and-removals"
+}

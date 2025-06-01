@@ -1,0 +1,8 @@
+{
+ "id": 1289485,
+ "bug_id": 275958,
+ "attachment_id": 247278,
+ "creation_time": "2023-12-27T05:09:25Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "Created attachment 247278\n[patch] avoid conflicting crypt_data definitions (crypt.h vs unistd.h)\n\nIf libxcrypt is installed, the build for benchmarks/stress-ng fails (after the recent update to 0.17.03 - but it failed with 0.16.02, too).\n\n .\n .\ncc -O2 -pipe  -fstack-protector-strong -isystem /usr/local/include -fno-strict-aliasing  -Wall -Wextra -DVERSION='\"0.17.03\"' -std=gnu99 -fstack-protector-strong -Werror=format-security -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -c -o stress-cyclic.o stress-cyclic.c\nIn file included from stress-crypt.c:24:\n/usr/local/include/crypt.h:73:8: error: redefinition of 'crypt_data'\nstruct crypt_data\n       ^\n/usr/include/unistd.h:489:8: note: previous definition is here\nstruct crypt_data {\n       ^\n1 error generated.\ngmake[2]: *** [Makefile:618: stress-crypt.o] Error 1\n\n\nThe attached patch fixes this by preventing the build from using \u003clocalbase\u003e/include/crypt.h\n\nWhile here, the patch adds do-configure so that the configure is a separate step than 'make build'.  This is more typical of the way most FreeBSD ports work.  But this change is not required to fix the crypt_data namespace conflict.\n\nNo need for PORTREVISION bump as the resulting package is the same before and after the change (assuming your port build did not fail because of the problem described here)."
+}

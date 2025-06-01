@@ -1,0 +1,8 @@
+{
+ "id": 1324729,
+ "bug_id": 281409,
+ "attachment_id": 0,
+ "creation_time": "2024-09-10T07:06:27Z",
+ "creator": "tatsuki_makino@hotmail.com",
+ "text": "pulseaudio-16.1_4 outputs a log similar to the following\n\n(   0.212|   0.000) [tunnel-sink][../src/pulsecore/socket-util.c:172 pa_make_tcp_socket_low_delay()] IP_TOS failed: Invalid argument\n\nThis seems to occur when the socket is for IPv6.\nI don't know if this is something that happens only with FreeBSD, or if it is something that upstream should take care of for all operating systems.\npulseaudio-17.0 still has the same code.\n\nThe following is a program in which only the relevant part is extracted and the difference between PF_INET and PF_INET6 is introduced.\n\n#include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetinet/in.h\u003e\n#include \u003cnetinet/ip.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n\nint\nmain()\n{\n\tint i, fd;\n\tint tos;\n\n#if 1\n\tfd = socket(PF_INET6, SOCK_STREAM, 0);\n#else\n\tfd = socket(PF_INET, SOCK_STREAM, 0);\n#endif\n\n\ttos = IPTOS_LOWDELAY;\n\n\ti = setsockopt(fd, IPPROTO_IP, IP_TOS, (const void *)\u0026tos, sizeof tos);\n\tif (i == -1) {\n\t\tprintf(\"IP_TOS failed: %s\\n\", strerror(errno));\n\t}\n\n\tclose(fd);\n\n\treturn 0;\n}"
+}

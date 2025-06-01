@@ -1,0 +1,8 @@
+{
+ "id": 990782,
+ "bug_id": 228068,
+ "attachment_id": 0,
+ "creation_time": "2018-05-08T13:40:57Z",
+ "creator": "paul.reynolds@redcom.com",
+ "text": "When sending a udp packet from an IPv6 socket to an IPv4 mapped address, I would expect the setting for IPV6_TCLASS to be used in the TOS IP header field. It does not appear to be. A similar mapping for TTL should be present, though I did not check for that.\n\nCan be seen with a simple c program and wireshark:\n\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cnetinet/in.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetdb.h\u003e\n\nint main() {\n\n     int s = socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);\n     if (s \u003c 0) {\n         perror(\"socket\");\n         return -1;\n     }\n\n     int value = (40 \u003c\u003c 2) \u0026 0xFC;\n     int ret = setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, \u0026value, sizeof(value));\n     if (ret \u003c 0) {\n         perror(\"setsockopt\");\n         return -2;\n     }\n\n     struct addrinfo hints;\n     memset(\u0026hints, 0, sizeof(hints));\n     struct addrinfo *res = NULL;\n     ret = getaddrinfo(\"::ffff:10.10.10.10\", \"1234\", \u0026hints, \u0026res);\n     if (ret != 0) {\n         perror(\"getaddrinfo\");\n         return -3;\n     }\n\n     const char *msg = \"hello world\";\n     ssize_t n = sendto(s, msg, strlen(msg), 0, res-\u003eai_addr, res-\u003eai_addrlen);\n     if (n \u003c 0) {\n         freeaddrinfo(res);\n         perror(\"sendto\");\n         return -4;\n     }\n\n     freeaddrinfo(res);\n     return 0;\n}"
+}

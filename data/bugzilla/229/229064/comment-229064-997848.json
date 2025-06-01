@@ -1,0 +1,8 @@
+{
+ "id": 997848,
+ "bug_id": 229064,
+ "attachment_id": 0,
+ "creation_time": "2018-06-16T13:08:22Z",
+ "creator": "rhurlin@FreeBSD.org",
+ "text": "There is a new behaviour of www/firefox, introduced since\nversion 60.x, see [1][2]. Running Firefox as root is not supported any more.\n\nSo, gecko.mk fails, when it tries to run 'firefox --version'. If you use the same command as a regular (non root) user, it does not fail.\n\nI think we have to find another way to do the version check in /usr/ports/Mk/Uses/gecko.mk:48 as root. For me, the following patch helps as a workaround:\n\n--- gecko.mk.orig\t2018-05-01 08:57:58.482882000 +0200\n+++ gecko.mk\t2018-05-23 20:20:53.518158000 +0200\n@@ -45,7 +45,7 @@\n 60_DEPENDS=\t\t${LOCALBASE}/lib/firefox/firefox:www/firefox\n \n .if exists(${LOCALBASE}/bin/firefox)\n-_GECKO_INSTALLED_VER!=\t${LOCALBASE}/bin/firefox --version 2\u003e/dev/null\n+_GECKO_INSTALLED_VER!=\tsu -m www -c '${LOCALBASE}/bin/firefox --version' 2\u003e/dev/null\n _GECKO_INSTALLED_VER:=\t${_GECKO_INSTALLED_VER:M[0-9][0-9]*:C/([0-9][0-9]).*/\\1/g}\n .endif\n\nOf course, that's not optimal and I am not sure, if it brings in new security issues(?).\n\n\n\n[1] https://bugzilla.mozilla.org/show_bug.cgi?id=1323302\n[2] https://hg.mozilla.org/integration/autoland/rev/90a06cdcb48f"
+}

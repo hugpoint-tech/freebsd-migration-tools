@@ -1,0 +1,8 @@
+{
+ "id": 693815,
+ "bug_id": 174011,
+ "attachment_id": 0,
+ "creation_time": "2012-11-30T08:20:00Z",
+ "creator": "petechou@gmail.com",
+ "text": "I find crunchide can't handle the object files generated from other linkers like gold linker and mclinker.\n\nThe crunchide utility presumes the last 3 chunks of an ELF object layout are section headers, symbol table, and then string table. However, this is not specified in the ELF standards, and linkers may generate different layouts when doing partial linking (-r). For example, both gold and mclinker put section headers in the end of file instead.\n\nI also report this at\nhttp://lists.freebsd.org/pipermail/freebsd-toolchain/2012-November/000604.html\n\nFix: Basically, crunchide will only increase the size of string table, so the patch is to move everyting behind string table to the correct position.\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. Use gold linker or mclinker to do partial linking on the attached x86 object files.\n${LD} -dc -r -o cat.lo cat_stub.o cat.o\n\n2. Let crunchide handle the output from previous partial linking\ncrunchide -k _crunched_cat_stub cat.lo\n\nIf using gold linker, we'll find a warning:\n cat.lo: weird executable (string table not last section)\n\nAs for mclinker, crunchide will break the object file."
+}

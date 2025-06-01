@@ -1,0 +1,8 @@
+{
+ "id": 1341532,
+ "bug_id": 283729,
+ "attachment_id": 0,
+ "creation_time": "2024-12-29T21:01:48Z",
+ "creator": "freebsdbugz-20241229@billmail.scconsult.com",
+ "text": "Accidentally embedding a linefeed in a variable setting crashes awk and leaves /etc/rc.conf with only the (BAD) new setting. \n\nHere's a transcript example: \n\n   [root@shinyghost ~]# sysrc -a\n   clamav_clamd_enable: YES\n   clamav_freshclam_enable: YES\n   dovecot_enable: YES\n   firewall_enable: YES\n   firewall_type: /etc/ipfw.rules\n   growfs_enable: YES\n   ifconfig_em0: inet 192.168.254.17 netmask 255.255.255.0\n   ifconfig_em0_alias0: inet 192.168.254.22 netmask 255.255.255.255\n   ifconfig_em0_alias1: inet 192.168.254.26 netmask 255.255.255.255\n   ifconfig_em0_alias2: inet 192.168.254.72 netmask 255.255.255.255\n   ifconfig_em0_alias3: inet 192.168.254.100 netmask 255.255.255.255\n   ifconfig_em0_alias4: inet 192.168.254.111 netmask 255.255.255.255\n   ipfw_enable: YES\n   named_enable: YES\n   nfsv4_server_enable: YES\n   postfix_enable: YES\n   sshd_enable: YES\n   [root@shinyghost ~]# sysrc nfsv4_server_enable=\"YES\n   \"\n   awk: newline in string YES\n   ... at source line 1t\n   nfsv4_server_enable: YES -\u003e YES\n   [root@shinyghost ~]# sysrc -a\n   nfsv4_server_enable: YES\n   [root@shinyghost ~]# cat /etc/rc.conf\n   nfsv4_server_enable=\"YES\n   \"\n\nI know that what I'd do is replace any linefeeds in a setting value with spaces on the input side, and on the output side do all writing of the new rc.conf to a tempfile and then do size sanity checking of it before renaming it into place. As a nice side-effect, the change of rc.conf would then be atomic."
+}

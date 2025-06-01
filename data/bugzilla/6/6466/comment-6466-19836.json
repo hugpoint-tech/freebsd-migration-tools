@@ -1,0 +1,8 @@
+{
+ "id": 19836,
+ "bug_id": 6466,
+ "attachment_id": 0,
+ "creation_time": "1998-04-30T17:30:01Z",
+ "creator": "ru@ucb.crimea.ua",
+ "text": "\n\tLoopback network interface driver (net/if_loop.c) has no\n\tSIOCSIFFLAGS ioctl handler.\n\n\tThis causes bugs.\n\n\tI noticed this after running tcpdump on lo0.\n\tOnce set, IFF_PROMISC flag isn't cleared on lo0.\n\n\tSearching in the source code (net/if.c, net/if_loop.c, net/bpf.c)\n\tI found the problem:\n\n\n\t1. The IFF_PROMISC flag is cleared in ifpromisc(ifp,0).\n\n\t2. ifpromisc(ifp,0) is called from bpf_detach() only if\n           (struct bpf_d).bd_promisc is set to non-zero.\n\n\t3. bd_promisc is set to 1 in bpfioctl() while handling BIOCPROMISC.\n\t   It is set to 1 only if ifpromisc(ifp,1) returns 0.\n\n\t4. ifpromisc(ifp,1) fails on if_ioctl(lo0, SIOCSIFFLAGS)\n\t   because if_loop.c has no handler for SIOCSIFFLAGS.\n\nFix: This patch for RELENG_2_2:\nHow-To-Repeat: \n\t1. Run ``ifconfig lo0'':\n\n\tlo0: flags=8149\u003cUP,LOOPBACK,RUNNING,MULTICAST\u003e mtu 16384\n\t\tinet 127.0.0.1 netmask 0xff000000 \n\n\t2. Run ``tcpdump -i lo0''\n\n\t3. Stop ``tcpdump -i lo0''\n\n\t4. Run ``ifconfig lo0'' again:\n\n\tlo0: flags=8149\u003cUP,LOOPBACK,RUNNING,PROMISC,MULTICAST\u003e mtu 16384\n\t                                    ^^^^^^^\n\t\tinet 127.0.0.1 netmask 0xff000000"
+}

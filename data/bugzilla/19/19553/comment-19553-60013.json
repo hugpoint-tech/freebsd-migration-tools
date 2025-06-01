@@ -1,0 +1,8 @@
+{
+ "id": 60013,
+ "bug_id": 19553,
+ "attachment_id": 0,
+ "creation_time": "2000-06-29T00:44:28Z",
+ "creator": "gnb@itga.com.au",
+ "text": "\u003e You often see panics if you compile with INVARIANTS and then load\n\u003e modules which have not been compiled with INVARIANTS. Could this\n\u003e be the problem?\n\nWell spotted.\n\nI was loading cd9660 from a module.  Once I compiled it into the kernel (with\nINVARIANTS), the recipe no longer panics but works as expected.\n\nThe trick is that isofs/cd9660/cd9660_vnops.c also uses namei_zone, but when\ncompiled without INVARIANTS (in the module), the deallocator is not clearing\nthe \"in use\" flag that the allocator in the kernel (compiled with INVARIANTS)\nis checking at the next allocation, which happens to be inside namei().\n\nnfs.ko and union.ko also use namei_zone and would be vulnerable to the same\nproblem.\n\nPerhaps a note in LINT next to the INVARIANTS entry explaining this? [Patch \nattached]\n\nAnd perhaps whatever mechanism is being worked on to manage the versioning of\nklds can take up this problem?\n\nAnd perhaps namei_zone should be called maxpathlen_zone ! :\u003e\n\nThanks all, this PR can be closed.\n\n\n"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 933785,
+ "bug_id": 219216,
+ "attachment_id": 0,
+ "creation_time": "2017-05-12T11:29:19Z",
+ "creator": "fk@fabiankeil.de",
+ "text": "I can't reproduce the issue either. I'm using a kernel based on r318145:\n\nCPU: Intel(R) Core(TM) i5-2520M CPU @ 2.50GHz (2491.96-MHz K8-class CPU)\n\nI let the script run through 1680 cycles without noticeable issues.\n\nWhile dd keeps a core busy as expected, rand_harvestq stays below 3%\ncpu use according to top. I use vanilla powerd(8) which changes the\ncpu frequency between 800 and 2501.\n\nThe fact that rand_harvestq is busy doesn't necessarily indicate that\nthe entropy pool is starved.\n\nYou could try running:\nsudo dtrace -n 'fbt:kernel:random_harvest_*:entry {@[probefunc, stack()] = count(); } tick-60sec {exit(0)}'\nto see which random_harvest_* functions are called, from where and how often.\n\nAdditionally you could experiment with modifying the entropy sources with:\nkern.random.harvest.mask\nto see if it makes a difference.\n\nNewly harvested entropy is mixed into the pool so adding more shouldn't\nlower the \"entropy quality\" in the pool. Therefore it's not obvious to me how\nthe \"poisoning\" you mentioned would work."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 534525,
+ "bug_id": 141852,
+ "attachment_id": 0,
+ "creation_time": "2009-12-21T20:32:22Z",
+ "creator": "dindin@yandex-team.ru",
+ "text": "now I see, better way:\n\n\n\ndiff -urN fuser/files/patch-fuser.c.orig fuser/files/patch-fuser.c\n--- fuser/files/patch-fuser.c.orig\t1970-01-01 03:00:00.000000000 +0300\n+++ fuser/files/patch-fuser.c\t2009-12-21 22:52:36.000000000 +0300\n@@ -0,0 +1,35 @@\n+--- fuser.c.orig\t2006-03-14 14:07:08.000000000 +0300\n++++ fuser.c\t2009-12-21 22:51:33.000000000 +0300\n+@@ -608,6 +608,7 @@\n+ \tchar\t\t*ep;\n+ \tchar\t\t*kernimg = NULL; /* We are using curr. sys by default */\n+ \tchar\t\t*mcore = NULL;\n++  int     retvalue = 0;\n+ \n+ \twhile ((ch = getopt(argc, argv, \"C:K:cfkms:u\")) != -1)\n+ \t\tswitch(ch) {\n+@@ -696,8 +697,13 @@\n+ \t\t\tif (ufl != 0) {\n+ \t\t\t\tprint_file_info(pinfo-\u003epid, \\\n+ \t\t\t\t    pinfo-\u003euid, ufl);\n+-\t\t\t\tif ((flags \u0026 KFLAG) != 0)\n+-\t\t\t\t\t(void)kill(pinfo-\u003epid, sig);\n++\t\t\t\tif ((flags \u0026 KFLAG) != 0) {\n++            if (geteuid() == getuid() || pinfo-\u003euid == getuid()) {\n++              (void)kill(pinfo-\u003epid, sig);\n++            } else {\n++              retvalue = 1;\n++            }\n++        } \n+ \t\t\t}\n+ \t\t}\n+ \t\t(void)fprintf(stderr, \"\\n\");\n+@@ -707,7 +713,7 @@\n+ \tSLIST_FREE(\u0026prclist, next, pinfo_free);\n+ \t(void)kvm_close(kd);\n+ \n+-\treturn 0;\n++\treturn retvalue;\n+ \t\t\n+ }\n+ \n\n\n\n-- \nCheers\nDenis Barov"
+}

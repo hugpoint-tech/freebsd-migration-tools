@@ -1,0 +1,8 @@
+{
+ "id": 938853,
+ "bug_id": 220151,
+ "attachment_id": 0,
+ "creation_time": "2017-06-20T09:46:27Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Hi!\n\nOur [v]syslog() implementation in src/lib/libc/gen/syslog.c\ntries to be thread-safe and uses \"syslog_mutex\".\n\nIt may lock this mutex then call blocking system calls like sendto().\nIf a thread owning this mutex is pthread_cancel()'d in process,\nthe mutex stays UMUTEX_CONTESTED and every other thread calling [v]syslog() deadlocks.\n\nI can reproduce this with net/mpd5 daemon reliably within some seconds\nfrom the beginning of my stress test involving RADIUS so mpd5 runs multi-threaded.\n\nThis problem seems to be root cause of multiple complaints\nabout mpd5 being unstable under FreeBSD 9.x+ version (PR: 186114, 214482).\n\nThere is a patch by Konstantin Belousov solving this problem attached to the PR 186114: https://bugs.freebsd.org/bugzilla/attachment.cgi?id=183537"
+}

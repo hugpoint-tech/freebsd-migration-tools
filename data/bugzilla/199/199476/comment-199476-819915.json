@@ -1,0 +1,8 @@
+{
+ "id": 819915,
+ "bug_id": 199476,
+ "attachment_id": 155638,
+ "creation_time": "2015-04-16T01:51:33Z",
+ "creator": "ksw.childe@gmail.com",
+ "text": "Created attachment 155638\npatch to fix panic when tasting large compressed filesystems\n\ngeom_uncompress reads the header and all block offsets with a single\ng_read_data() request.  This will fail (panic) if the total data\nrequested is greater then MAXPHYS.  i.e. when the total number of\nblock offsets approaches MAXPHYS / sizeof(uint64). The attached\npatch changes the method of getting the block offsets to be the\nsame as that used by geom_uzip: sector by sector.\n\nPatch attached.\n\nTypical panic (please excuse transcription errors):\n\n# kldload geom_uncompress\nmd0.uncompress: GEOM_UZIP image found\npanic: g_read_data(): invalid length 290816\ncpuid = 1\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x2b/frame 0xfffffe00932a59c0\nvpanic() at vpanic+0x189/frame 0xfffffe00932a5a40\nkassert_panic() at kassert_panic+0x132/frame 0xffffe00932a5ab0\ng_read_data() at g_read_data+0x45/frame 0xffffe00932a5af0\ng_uncompress_taste() at g_uncompress_taste_0x30d/frame 0xfffffe00932a5b40\ng_load_class() at g_load_class+0x1cc/frame 0xfffffe00932a5b70\ng_run_events() at g_run_events_0x1a7/frame 0xfffffe00932a5bb0\nfork_exit() at fork_exit+0x84/frame 0xfffffe00932a5bf0\nfork_trampoline() at fork_trampoline+0xe/frame 0xfffffe00932a5bf0\n--- trap 0, rip = 0, rsp = 0xfffffe00932a5cb0, rbp = 0 ---\nKDB: enter: panic\n[ thread pid 13 tid 100013 ]\nStopped at      kdb_enter+0x3e: movq    $0,kdb_why\ndb\u003e"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1336800,
+ "bug_id": 282993,
+ "attachment_id": 0,
+ "creation_time": "2024-11-26T23:32:27Z",
+ "creator": "riccardo@torrini.org",
+ "text": "I have a very simple parser for windows logs (forwarded as json using nxlog), created on 13.3 or even before. After update to 14.1 it eats all my memory (ram and swap).\n\nHere the script:\n\n# tail -qF {a lot of windows log, rotated every hour} | \\\n    awk -F\" {\" '{printf( \"{%s\\n\", $2 )}' | \\\n    grep --line-buffered 'AUDIT_FAILURE' | jq '{some parsing}' -j -c -M --unbuffered\n\nI can confirm that this script runned for at least 130 days on 13.3 but after 10 hours on 14.1 top showed 17GB used for awk process (confirmed by ps)\n\nActually I changed awk filter to perl (I'm sure it is not the best conversion but works)\n    perl -F\"[[:space:]]{\" -e 'print \"{@F[1]\" ; ' | \\\n(please not that ram also grow up with perl filter, but much slower)\n\nI have tried to reproduce with [1] [2] and [3] but happens only on [3] :-(\n\n[1] ( while true; do cat /etc/motd; done ) | awk -F'-' '{printf( \"%s\\n\", $2 )}' \u003e /dev/null\n[2] cat /dev/random | hd | awk -F' ' '{printf( \"%s\\n\", $0 )}' \u003e /dev/null\n[3] tail -qF /var/log/remote/windows/*log | awk -F' {' '{printf( \"{%s\\n\", $2 )}' \u003e /dev/null\n(while running 1, 2 or 3 use top or ps -o rss to check used ram)\n\nVM used to have 8GB of ram and 17GB of swap when 13.3, now has 32GB of ram\n(but ​​that's not the point, awk behavior is changed somehow or I'm using it a lot bad)\n\n--\nRiccardo."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1100814,
+ "bug_id": 246215,
+ "attachment_id": 0,
+ "creation_time": "2020-05-05T06:55:47Z",
+ "creator": "paulf@free.fr",
+ "text": "I came across this issue whilst working on getting Valgrind to work.\n\nWhen Valgrind runs, the guest application is loaded by Valgrind rather than the usual FreeBSD mechanisms. Thus Valgrind will synthesize an auxv, mmap rtld and run the rtld text in Valgrind's JIT compiled virtual CPU. However, to avoid memory space issues between the host and the guest, Valgrind does not provide auxv entries that contain pointers. This includes PAGESIZES.\n\nNormally rtld obtains the pagesizes from auxv, but it has fallback code to use syscalls. This works OK for an amd64 exe on an amd64 kernel and i386 on i386. But there is a problem for i386 on amd64. The i386 application will see MAXPAGESLEN as 3 from the amd64 headers. But the i386 kernel sees this as only 2 [I might have gotten this the wrong way around]. The sysctl copy out code sees this discrepancy and sets ENOMEM and the application terminates without finishing the execution of rtld.\n\n(I analysed all this with dtrace and looking at the source code, I don't know how to use gdb/lldb to step through rtld code)."
+}

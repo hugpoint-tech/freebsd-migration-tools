@@ -1,0 +1,8 @@
+{
+ "id": 861062,
+ "bug_id": 206552,
+ "attachment_id": 166034,
+ "creation_time": "2016-01-24T01:20:13Z",
+ "creator": "mccoy@doctor.com",
+ "text": "Created attachment 166034\nA test program that demonstrates the buffer overflow\n\nPlease see attached file evil.c for a possible scenario where it's possible to trigger buffer overflow.\n\nIt uses a somewhat contrived example of non-blocking pipes as an underlying file descriptor, mainly because it's easy to trigger (partially) failed writes.\n\nThe defect can be located in the code /usr/src/lib/libc/stdio/fflush.c and function __sflush. Line-buffered files where write(s) has partially succeeded will have their internal write pointer increased, but not getting a corresponding write space decrease.\n\n(so, the defect is: if fp is a FILE *, then fp-\u003e_p is increased but fp-\u003e_w is NOT decreased in this situation)\n\nSample output on my FREEBSD 10.2-RELEASE-p7 amd64 machine:\n\nzsh 1311 % cc evil.c -o evil \u0026\u0026 ./evil\nrc from fread(1): 1\nrc from fwrite(1): 1\nrc from fwrite(1021): 1021\nrc from fflush: -1\nrc from fwrite(1): 1\nrc from fwrite(4): 4\nCanary overwritten: 97 65 98 66"
+}

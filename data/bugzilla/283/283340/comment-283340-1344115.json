@@ -1,0 +1,8 @@
+{
+ "id": 1344115,
+ "bug_id": 283340,
+ "attachment_id": 0,
+ "creation_time": "2025-01-16T19:01:10Z",
+ "creator": "jrtc27@freebsd.org",
+ "text": "\u003e The metalog file should have a:\n\u003e     /set uname=root gname=wheel\n\u003e Definition at the beginning of the file that should prevent this from happening.\n\nNo it shouldn't. That would hide potential bugs. If you want anything it should be to have a validation pass that every entry has uname and gname set.\n\n\u003e At any rate, the patch applied in 10fa3f2518d4 (\"certctl: Set METALOG ownership to root:wheel\") broke my NanoBSD NO_ROOT builds (WIP) because the password database file does not yet exist when certctl.sh is rehashed:\n\u003e     install: Can't open `/usr/obj/jlduran/obj/_.w/etc/group': No such file or directory\n\u003e     install: Unable to use user and group databases in `/usr/obj/jlduran/obj/_.w/etc': No such file or directory\n\u003e \n\u003e One “hack” that could work is to remove the -N flag from the INSTALLFLAGS.\n\u003e Or perhaps move the rehash later in the Makefile?\n\nYes and no; the patch is broken. certctl.sh rehash is run during installworld, but the destination won't have the relevant files until distribution is run, which at least for cheribuild comes after installworld, and I assume is true for your build too. Makefile.inc1 uses -N ${.CURDIR}/etc, i.e. the *source* tree's, DB. I think certctl.sh needs to do the same during installworld."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1046493,
+ "bug_id": 233863,
+ "attachment_id": 203627,
+ "creation_time": "2019-04-12T22:57:58Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "Created attachment 203627\nPatches for investigatory narrowing of slb race on AIM powerpc64: aim/mp_cpudep.c and aim/slb.c (hack that avoids a mis-handled slb-miss)\n\nThis pair of patches narrows the time period over which threads\nfrom the stages:\n\n        SI_SUB_KTHREAD_INIT     = 0xe000000,    /* init process*/\n        SI_SUB_KTHREAD_PAGE     = 0xe400000,    /* pageout daemon*/\n        SI_SUB_KTHREAD_VM       = 0xe800000,    /* vm daemon*/\n        SI_SUB_KTHREAD_BUF      = 0xea00000,    /* buffer daemon*/\n        SI_SUB_KTHREAD_UPDATE   = 0xec00000,    /* update daemon*/\n        SI_SUB_KTHREAD_IDLE     = 0xee00000,    /* idle procs*/\n#ifndef EARLY_AP_STARTUP\n        SI_SUB_SMP              = 0xf000000,    /* start the APs*/\n#endif \n\ncan conflict with starting an AP via an slb replacement position\npicked via expressions like mftb()%n_slbs . It does this by explicitly\npicking and setting up a slot just before starting the AP.\n\n(The AP has to be part way along before it can do its own\nauto-slb-replacements from what I can tell.)\n\nThis does not remove the race and still does sometimes fail to\nprevent getting a hang-up on a AP start. BUt it greatly decreased\nthe rate of hangups in my testing.\n\nIf EARLY_AP_STARTUP was supported and used, this would not be a\nproblem."
+}

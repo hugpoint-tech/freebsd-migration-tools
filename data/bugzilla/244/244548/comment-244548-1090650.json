@@ -1,0 +1,8 @@
+{
+ "id": 1090650,
+ "bug_id": 244548,
+ "attachment_id": 212086,
+ "creation_time": "2020-03-02T02:10:18Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "Created attachment 212086\n[patch] fix gzip \u0026 zutils conflict\n\narchivers/gzip and archivers/zutils install _some_ of the same files (e.g., bin/zgrep).\n\nInstalling gzip-1.10...\npkg-static: gzip-1.10 conflicts with zutils-1.8 (installs files into the same place).  Problematic file: /usr/local/bin/zcat\n\n\nThe attached patch addresses this by creating a ZUTILS option in archivers/gzip.  If ZUTILS is on, gzip will not install the conflicting files and have a run-time dependency on archivers/zutils.  If off, it will install those files and mark archivers/zutils as a conflicting port.\n\nThis (ZUTILS=on) allows archivers/gzip and archivers/zutils to both be installed.\n\nThe patch sets ZUTILS off by default, so there should be no change in the default package.  If we commit a change such that ZUTILS is on by default, PORTREVISION should be bumped since that would mean a package change to the default package.\n\nThere are some differences between the zutils version of the conflicting utilities.  For instance, the zutils version of zgrep supports -r (recursive grep), but the gzip version does not.  For that reason, I personally prefer the zutils version (and so I could see making ZUTILS=on be the default - not to mention, it allows users to install both packages), but that is not an exhaustive comparison.  Generally, my impression is that the differences are small.\n\n\nQA testing:\n\n - poudriere testport WITH=ZUTILS \u0026 WITHOUT=ZUTILS - ok\n - portlint - ok"
+}

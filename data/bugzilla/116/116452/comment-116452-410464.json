@@ -1,0 +1,8 @@
+{
+ "id": 410464,
+ "bug_id": 116452,
+ "attachment_id": 0,
+ "creation_time": "2007-09-19T03:50:01Z",
+ "creator": "wollman@hergotha.csail.mit.edu",
+ "text": "\n\tpkg_create makes an insane number of pointless filesystem\n\toperations (quadratic? exponential?) when being run as part of\n\tthe \"Registering installation\" step of a port install.\n\tIt is definitely a function of the number of ports installed,\n\tas it has gotten much worse since X was fragmented into 200\n\tseparate packages.  ktrace shows:\n\n[root@hergotha /home/wollman]# kdump -t n | wc -l\n  937814\n[root@hergotha /home/wollman]# kdump -t n | sort -u | wc -l\n    1023\n\n\t(This is actually only a partial ktrace, started about halfway\n\tthrough the process.)  What it is actually trying to do, I do\n\tnot know.  A representative sample from the trace:\n\n 97936 pkg_create CALL  lstat(0xbfbfbe20,0xbfbfb990)\n 97936 pkg_create NAMI  \"/var/db/pkg/glitz-0.5.6_1\"\n 97936 pkg_create RET   lstat 0\n 97936 pkg_create CALL  access(0xbfbfbe20,0x4)\n 97936 pkg_create NAMI  \"/var/db/pkg/glitz-0.5.6_1\"\n 97936 pkg_create RET   access 0\n 97936 pkg_create CALL  stat(0xbfbfba20,0xbfbfb990)\n 97936 pkg_create NAMI  \"/var/db/pkg/glitz-0.5.6_1/+CONTENTS\"\n 97936 pkg_create RET   stat 0\n 97936 pkg_create CALL  access(0xbfbfba20,0x4)\n 97936 pkg_create NAMI  \"/var/db/pkg/glitz-0.5.6_1/+CONTENTS\"\n 97936 pkg_create RET   access 0\n\nFix: \n\nEither use a less-stupid algorithm or at least memoize the\n\tresult of whatever it's trying to do with this sequence of\n\tcalls.\nHow-To-Repeat: \tInstall an already-compiled port on a machine that has lots of\n\tpackages.  Wait a few minutes.  Wonder why it's not done yet."
+}

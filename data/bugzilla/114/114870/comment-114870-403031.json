@@ -1,0 +1,8 @@
+{
+ "id": 403031,
+ "bug_id": 114870,
+ "attachment_id": 0,
+ "creation_time": "2007-07-24T17:40:01Z",
+ "creator": "craig@xfoil.gank.org",
+ "text": "tmpfs calculates tm_maxfilesize by first finding the number of usable swap pages in get_swpgtotal(), then multiplying by PAGE_SIZE.  While tm_maxfilesize is a u_int64_t, get_swpgtotal() returns a u_int, and multiplying by a constant may result in an overflow on i386.\n\nIn my case with 12GB of swap, get_swpgtotal() returned 3145944, but tm_maxfilesize ended up as 884736, making it impossible to create files in /tmp larger than 864k without getting \"File too large\" (EFBIG).\n\nThe problem exists on any 32-bit system with \u003e 4GB of swap, though the resulting limit may or may not be noticeable depending on what the final value is.\n\nFix: \n\nCasting the return of get_swpgtotal() to u_int64_t causes the calculation to be made correctly.\n\n=== sys/fs/tmpfs/tmpfs_vfsops.c\n==================================================================\n--- sys/fs/tmpfs/tmpfs_vfsops.c (revision 777)\n+++ sys/fs/tmpfs/tmpfs_vfsops.c (local)\n@@ -268,7 +268,7 @@\n        mtx_init(\u0026tmp-\u003eallnode_lock, \"tmpfs allnode lock\", NULL, MTX_DEF);\n        tmp-\u003etm_nodes_max = nodes;\n        tmp-\u003etm_nodes_inuse = 0;\n-       tmp-\u003etm_maxfilesize = get_swpgtotal() * PAGE_SIZE;\n+       tmp-\u003etm_maxfilesize = (u_int64_t)get_swpgtotal() * PAGE_SIZE;\n        LIST_INIT(\u0026tmp-\u003etm_nodes_used);\n \n        tmp-\u003etm_pages_max = pages;\nHow-To-Repeat: Set up more than 4GB of swap on an i386 system, mount a tmpfs filesystem somewhere, and examine the incorrect value of tm_maxfilesize"
+}

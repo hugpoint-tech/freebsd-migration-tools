@@ -1,0 +1,8 @@
+{
+ "id": 1200277,
+ "bug_id": 262113,
+ "attachment_id": 0,
+ "creation_time": "2022-02-22T00:31:13Z",
+ "creator": "risner@stdio.com",
+ "text": "using an UEFI OS and the commands executed below, you may start bhyve. Regardless of the way you exit (ctrl-c, halt or reboot from inside the vm); when you retry you will get an invalid argument error. Retrying immediately after, it works. The cycle then repeats.\n\nbhyvectl --destroy --vm=test0\nbhyve -AHP -c 1 -m 1024M -S -s 0,hostbridge -s 1,lpc -l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd -s 3,ahci-hd,efiboot.img -s 29,fbuf,tcp=203.0.113.46:5900,w=800,h=600 test0\n\nFrom testing modifications to bhyve, the libvmmapi, and the kernel module I found that line 1006 of bhyverun.c calls vm_create and returns with EEXIST despite there being no entry in /dev/vmm and having ran bhyvectl --destroy immediately before bhyve.\n\nI could not conclusively prove what exactly is going on inside the kernel module.\n\nIt fails on FreeBSD-13 p4 and p7. It failed on two different Cisco amd64 systems I had.\n\nIf you don't have a testing OS with uefi, you can make a temporary one with this:\ndd if=/dev/zero of=efiboot.img bs=300m count=1\nmdconfig -a -t vnode -f efiboot.img\ngpart create -s gpt md0\ngpart add -t efi -s 256m md0\nnewfs_msdos -F 32 -c 1 -m 0xf8 /dev/md0p1 # format efi\nmount -t msdosfs /dev/md0p1 /mnt\nmkdir -p /mnt/EFI/BOOT\nwget -O /mnt/EFI/BOOT/BOOTX64.efi https://sourceforge.net/projects/supergrub2/files/2.04s1/super_grub2_disk_2.04s1/super_grub2_disk_standalone_x86_64_efi_2.04s1.EFI/download\numount /mnt\nmdconfig -d -u 0"
+}

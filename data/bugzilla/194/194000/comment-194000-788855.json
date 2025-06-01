@@ -1,0 +1,8 @@
+{
+ "id": 788855,
+ "bug_id": 194000,
+ "attachment_id": 147763,
+ "creation_time": "2014-09-28T17:32:35Z",
+ "creator": "neal@wanlink.com",
+ "text": "Created attachment 147763\nPatch to add ifgroupnum to private bridge member\n\nAllow bridge span members, marked as private, to forward packets to members of the same group number.\n\nThis is most useful in a configuration as follows;\n\nPrivate network consisting of sk0 and wlan0, Guest nework on wlan1\n\nifconfig bridge0 addm sk0 addm wlan0 addm wlan1 private sk0 private wlan0 private wlan0 ifgroupnum sk0 1 ifgroupnum wlan0 1 192.168.1.1/24\n\nWith a single dhcpd scope running on bridge0\n\nThis allows sk0 and wlan0 to forward traffic to/from each other, but not to/from wlan1\n\nAdd support for implementing arbitrary bridge span member configuration parameters in rc.conf, including the new ifgroupnum parameter\n\n--- example rc.conf ---\ncloned_interfaces=\"bridge0\"\nautobridge_interfaces=\"bridge0\"\nautobridge_bridge0=\"sk0 wlan0 wlan1\"\nbridge0_sk0=\"private ifgroupnum=1\"\nbridge0_wlan0=\"private ifgroupnum=1\"\nbridge0_wlan1=\"private\"\n\nwlans_ath0=\"wlan0 wlan1\"\n\nifconfig_sk0=\"up\"\nifconfig_ath0=\"up\"\nifconfig_bridge0=\"192.168.1.1/24\"\n--- end ---\n\nThis patch touches;\n sys/net/if_bridgevar.h\n sys/net/if_bridge.c\n sbin/ifconfig/ifbridge.c\n sbin/ifconfig/ifconfig.8\n etc/rc.d/bridge\n\nThis patch was developed and tested on 10.0-Release.\nIt cleanly applies to 11.0-Current, and builds, and appears to function."
+}

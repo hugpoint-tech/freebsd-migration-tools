@@ -1,0 +1,8 @@
+{
+ "id": 1245571,
+ "bug_id": 269330,
+ "attachment_id": 0,
+ "creation_time": "2023-02-04T22:30:49Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Similar to 269261, it's possible to trigger data corruption in fusefs by writing via mmap and then doing directish I/O.  The general pattern is this:\n\n1) A write via mmap creates some dirty pages but doesn't flush them\n2) Either a write with O_DIRECT or an fspacectl operation overlaps with the region from step 1.  fspacectl operates similarly to writes with O_DIRECT in this regard, because both bypass the cache and go directly to the fuse daemon.\n2a) fusefs invalidates the cache for all pages in that region, including pages that are only partially written or deallocated.  It checks for pages that are dirty, but the B_CACHE bit apparently isn't set for pages dirtied via mmap\n3) A subsequent read operation reads zeros from the partially deallocated page, including regions of that page that shouldn't have been deallocated.\n\nQuestions:\n1) Why isn't B_CACHE set in pages that were dirtied by mmap?\n2) Is there a better way to find dirty pages?\n3) If I replace fuse_inval_buf_range with vnode_pager_purge_range, similarly to what's done in zfs_free_range, it fixes the interaction of mmap with fspacectl.  However, vnode_pager_purge_range apparently fails to invalidate entire pages that were cached by normal (non-mmap) reads.  Why is that?"
+}

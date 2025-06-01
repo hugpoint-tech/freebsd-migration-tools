@@ -1,0 +1,8 @@
+{
+ "id": 103360,
+ "bug_id": 32666,
+ "attachment_id": 0,
+ "creation_time": "2001-12-10T08:30:00Z",
+ "creator": "chifung@soda.CSUA.berkeley.edu",
+ "text": "When ed0 is connected to a noisy network (e.g. @home network), ed_pio_write_mbufs() frequently fails to \"wait for remote DMA complete.\"\nThe caller ed_start() doesn't free the mbuf when this happens resulting in mbufs leaks.  This would eventually exhaust all the systems mbufs.\n\nFix: \n\nIn /usr/src/sys/dev/ed/if_ed.c function ed_start(ifp), add m_freem(m0)\nbefore go back to loop.\n\nlen = ed_pio_write_mbufs(sc, m, (int)buffer);\nif (len == 0) {\n     m_freem(m0);  /* fix mbufs leak */\n     goto outloop;\n}\nHow-To-Repeat: connect to a noisy network and make sure you see many of\n\"ed0: remote transmit DMA failed to complete\" messages."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 755016,
+ "bug_id": 187552,
+ "attachment_id": 0,
+ "creation_time": "2014-03-13T19:50:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "If multiple interfaces share the same subnet but different fibs, and they both have default routes, then the second and subsequent default routes will erroneously use the same interface as the first default route.  Instead, each default route should use the interface associated with its fib.\n\nFix: \n\nWorking on a patch ...\nHow-To-Repeat: # ifconfig tap0 create\n# ifconfig tap1 create\n# setfib 2 ifconfig tap0 192.0.2.2/24 fib 2\n# setfib 3 ifconfig tap1 192.0.2.3/24 fib 3\n# setfib 2 netstat -rn -f inet\nRouting tables (fib: 2)\n\nInternet:\nDestination        Gateway            Flags    Netif Expire\ndefault            192.0.2.1          UGS      tap0\n192.0.2.0/24       link#3             U        tap0\n# setfib 3 netstat -rn -f inet\nRouting tables (fib: 3)\n\nInternet:\nDestination        Gateway            Flags    Netif Expire\ndefault            192.0.2.1          UGS      tap0\n\n\nNotice that the default route uses tap0 in both fibs.  It should use tap1 in fib 3."
+}

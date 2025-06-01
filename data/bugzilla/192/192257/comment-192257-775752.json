@@ -1,0 +1,8 @@
+{
+ "id": 775752,
+ "bug_id": 192257,
+ "attachment_id": 0,
+ "creation_time": "2014-07-29T23:18:07Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "The code in modevent_nop always returns EBUSY when one tries to unload a module. This doesn't necessarily make sense because it effectively wires the module into the kernel until it's rebooted, making it difficult for developers/testers/users to swap out kernel modules as need be:\n\n 68 static int\n 69 modevent_nop(module_t mod, int what, void *arg)\n 70 {\n 71\n 72         switch(what) {\n 73         case MOD_LOAD:\n 74                 return (0);\n 75         case MOD_UNLOAD:\n 76                 return (EBUSY);\n 77         default:\n 78                 return (EOPNOTSUPP);\n 79         }\n 80 }\n\nIt would make more sense if it returned 0 when MOD_LOAD/MOD_UNLOAD events are passed through, like it used to before r132167, but this requires additional discussion."
+}

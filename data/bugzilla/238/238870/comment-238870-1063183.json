@@ -1,0 +1,8 @@
+{
+ "id": 1063183,
+ "bug_id": 238870,
+ "attachment_id": 0,
+ "creation_time": "2019-08-22T11:31:42Z",
+ "creator": "kp@freebsd.org",
+ "text": "As an additional clue, I tried taking the IFNET_WLOCK in vnet_if_return(), and while that's clearly too crude (if only because that's a non-sleepable lock and we sleep during if_vmove()), but it does prevent these panics:\n\ndiff --git a/sys/net/if.c b/sys/net/if.c\nindex 1abb42893a0..b41a1a102cd 100644\n--- a/sys/net/if.c\n+++ b/sys/net/if.c\n@@ -481,11 +481,13 @@ vnet_if_return(const void *unused __unused)\n {\n        struct ifnet *ifp, *nifp;\n\n+       IFNET_WLOCK();\n        /* Return all inherited interfaces to their parent vnets. */\n        CK_STAILQ_FOREACH_SAFE(ifp, \u0026V_ifnet, if_link, nifp) {\n                if (ifp-\u003eif_home_vnet != ifp-\u003eif_vnet)\n                        if_vmove(ifp, ifp-\u003eif_home_vnet);\n        }\n+       IFNET_WUNLOCK();\n }\n VNET_SYSUNINIT(vnet_if_return, SI_SUB_VNET_DONE, SI_ORDER_ANY,\n     vnet_if_return, NULL);"
+}

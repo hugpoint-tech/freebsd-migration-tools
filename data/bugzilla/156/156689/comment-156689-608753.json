@@ -1,0 +1,8 @@
+{
+ "id": 608753,
+ "bug_id": 156689,
+ "attachment_id": 0,
+ "creation_time": "2011-04-28T08:00:21Z",
+ "creator": "marka@isc.org",
+ "text": "\nThe stf documentation suggests the following configuration.  This\nwill result in traffic originating from the 6to4 address for which\nreply traffic will not be accepted.\n\n     # ifconfig ne0 inet 133.4.5.6 netmask 0xffffff00\n     # ifconfig stf0 inet6 2002:8504:0506:0000:a00:5aff:fe38:6f86 \\\n             prefixlen 16 alias deprecated link0\n     # route add -inet6 2002:: -prefixlen 16 ::1\n     # route change -inet6 2002:: -prefixlen 16 ::1 -ifp stf0\n\nFix: \n\nUse \"anycast\" rather than \"deprecated\" so that the kernel will\nchoose a different IPv6 source address.\n\n     # ifconfig ne0 inet 133.4.5.6 netmask 0xffffff00\n     # ifconfig stf0 inet6 2002:8504:0506:: prefixlen 16 alias anycast link0\n     # route add -inet6 2002:: -prefixlen 16 ::1\n     # route change -inet6 2002:: -prefixlen 16 ::1 -ifp stf0\n\nI tested this on a FreeBSD 4.11 box but I don't believe this part of the\nstack has changed much since then.  The above documentation is from\nFreeBSD 8.\nHow-To-Repeat: \nConfigure the system as above and try to talk to any a machine with\na 6to4 address.  You can observe the traffic with tcpdump.\n\ne.g. \"tcpdump -i ne0 -n -p not udp and not tcp and not arp\" will\nremove most of the extranious packets."
+}

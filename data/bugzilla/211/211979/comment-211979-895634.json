@@ -1,0 +1,8 @@
+{
+ "id": 895634,
+ "bug_id": 211979,
+ "attachment_id": 0,
+ "creation_time": "2016-08-31T19:32:45Z",
+ "creator": "bobf@mrp3.com",
+ "text": "doing some analysis, discovered that GPIO pins that were configured during normal operation as an output are marked as being 'input' by the driver during the shutdown process, but are NOT actually INPUT pins.  So at some point prior to the shutdown message 'MOD_SHUTDOWN', the pin's internal flags were apparently set to mark it as 'GPIO_PIN_INPUT'.  'MOD_SHUTDOWN' occurs some time during the final shutdown phase 'shutdown_final' (I had an event handler registered with printf's to watch it all). If you schedule a handler as 'EVENTHANDLER_PRI_LAST' its message is printed out AFTER the 'MOD_SHUTDOWN' callback event.  This all occurs after the sync, and after the 'uptime' message is displayed.  It's possible that something between these two points (a bus shutdown, perhaps?) causes a disconnect between the GPIO pins and the internal flags, or even resets all of the internal flags without resetting the GPIO pins.\n\nSo, I have to wonder.\n\n1.  Was it INTENDED to convert all of the outputs into inputs?  Otherwise, why were the flags being changed without changing the actual pins?\n\n2.  Will it be necessary to modify the appropriate gpio driver to correct this \"bug\" ?  Or is it a 'feature'?\n\nI'll research this some more.  If changing the point at which the pins are reset fixes the problem, I'll just submit working code as a sample patch.  Otherwise I'll have to dive into the whole GPIO handling system and hopefully won't break anything that this 'feature' is causing..."
+}

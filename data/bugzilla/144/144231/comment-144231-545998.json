@@ -1,0 +1,8 @@
+{
+ "id": 545998,
+ "bug_id": 144231,
+ "attachment_id": 0,
+ "creation_time": "2010-02-23T14:30:01Z",
+ "creator": "axeld@pinc-software.de",
+ "text": "bind(), connect(), and sendto() all have a socklen_t argument specifying the size of the sockaddr buffer passed in.\n\nHowever, with IPv4 at least, passing any other value than 16 (sizeof(sockaddr)) will result in EINVAL.\n\nThere is no reason why this restriction is there, and it's quite unhandy when dealing with the sockaddr_storage structure.\n\n(I have not compiled the test program, but it should be able to reproduce the problem)\n\nHow-To-Repeat: #include \u003cnetinet/in.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003csys/socket.h\u003e\n\nint\nmain()\n{\n  sockaddr_storage buffer;\n  ((sockaddr_in*)\u0026buffer)-\u003esa_family = AF_INET;\n  ((sockaddr_in*)\u0026buffer)-\u003esa_addr.s_addr = INADDR_ANY;\n  ((sockaddr_in*)\u0026buffer)-\u003esa_port = 0;\n\n  int fd = socket(AF_INET, SOCK_DGRAM, 0);\n  if (bind(fd, \u0026buffer, sizeof(buffer)) != 0)\n    perror(\"bind\");\n\n  return 0;\n}"
+}

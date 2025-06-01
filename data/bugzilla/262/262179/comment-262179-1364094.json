@@ -1,0 +1,8 @@
+{
+ "id": 1364094,
+ "bug_id": 262179,
+ "attachment_id": 0,
+ "creation_time": "2025-05-13T19:16:28Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to crest from comment #32)\nThat is surprising and contradicts the documentation in jail(8):\n\nLike the names, a child jail's path appears relative to its creator's own path.  This is by virtue of the child jail being created in the chrooted environment of the first jail.\n\nBut yes, that seems to be the case:\n\nmarkj@xinde\u003e jls -n jid parent path\njid=6 parent=0 path=/jails/foo\njid=7 parent=6 path=/jails/foo.bar\n\nHow does jail(8) even create such an arrangement?\n\n(In reply to Konstantin Belousov from comment #33)\nPassing a dirfd from a parent jail to the child lets the child break out into the parent, yes, same as with a plain chroot.  But the same problem lets e.g., sibling jails with different roots but with a shared channel to escape, which is more surprising.\n\nMaybe another solution is to automatically apply O_RESOLVE_BENEATH to dirfds passed between jails.  That is, O_RESOLVE_BENEATH can become a sticky flag, applied to namei(), and then the receiver cannot use it to perform \"..\" lookups."
+}

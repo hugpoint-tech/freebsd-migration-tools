@@ -1,0 +1,8 @@
+{
+ "id": 721982,
+ "bug_id": 180159,
+ "attachment_id": 0,
+ "creation_time": "2013-07-01T10:20:00Z",
+ "creator": "swhetzel@gmail.com",
+ "text": "Currently, there are 2 versions of JPEG (graphics/jpeg and libjpeg-turbo) that supply their own version of the jpeg library.\n\nWhen attempting to build packages for ports that can use either port, the package fails to build due to one of the dependencies only has:\n\nLIB_DEPENDS= jpeg:${PORTSDIR}/graphics/jpeg\n\nFix: The attached patch adds a new USES feature for jpeg allowing the appropriate jpeg port to be selected.\n\nUSES+= jpeg:[build,run,lib]\n- if ${PREFIX}/include/turbojpeg.h is found\n  use graphics/libjpeg-turbo, otherwise use graphics/jpeg\n\nUSES+= jpeg:[build,run,lib]:jpeg\n- uses graphics/jpeg\n\nUSES+= jpeg:[build,run,lib]:turbo\n- uses graphics/libjpeg-turbo\n\nPorts can use this new feature by adding HPJPG to OPTIONS_DEFINE and the following description:\n\nHPJPG_DESC= Build with High-Performance JPEG support\n\nThen below the '.include \u003cbsd.port.options.mk\u003e' line add the following:\n\n.if ${PORT_OPTIONS:MHPJPG}\nUSES+= jpeg[:lib]:turbo\n.else\nUSES+= jpeg[:lib]\n.endif\n\nNOTE:\n1. the 'lib' arg is optional, as that is the default.\n2. HPJPG was taken from the net/tigervnc port\n\nPatch attached with submission follows:\nHow-To-Repeat: Try to build /usr/ports/net/tigervnc with the HPJPG option enabled.  It will fail to build due to one of the indirect dependencies graphics/jasper (built with the graphics/jpeg port) causes a conflict between graphics/jpeg and graphics/libjpeg-turbo as both ports install the same files.\n\nSee ports/179236"
+}

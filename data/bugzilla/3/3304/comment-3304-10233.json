@@ -1,0 +1,8 @@
+{
+ "id": 10233,
+ "bug_id": 3304,
+ "attachment_id": 0,
+ "creation_time": "1997-04-18T18:04:18Z",
+ "creator": "ponds!rivers@dg-rtp.dg.com",
+ "text": "\u003e \n\u003e Hi,\n\u003e \n\u003e I'm not sure whether this will help you, but could you try the following\n\u003e patch? the latest change to nfs_socket.c was originally made by me.\n\u003e I have been worried about a rare case.\n\n It would be a rare case I believe....\n\n But - I did try your patch; it did not affect the problem.  That is,\nthe hang still occurs.  If you've had a chance to read it; I've posted\nmy current understanding of the problem to freebsd-hackers.  I believe\nit is caused by a nfs_lookup() call that calls nfs_request() before\nthe nfs_request() (which originated in readdirrpc()) has completed.\n\n\t- Dave Rivers -\n\n\u003e \n\u003e /\\ Hidetoshi Shimokawa\n\u003e \\/  simokawa@sat.t.u-tokyo.ac.jp\n\u003e PGP public key: finger -l simokawa@sat.t.u-tokyo.ac.jp\n\u003e \n\u003e --- nfs_socket.c.orig\tFri Oct 11 19:15:33 1996\n\u003e +++ nfs_socket.c\tSat Apr 19 00:43:25 1997\n\u003e @@ -1490,6 +1490,12 @@\n\u003e  \t\tslpflag = PCATCH;\n\u003e  \telse\n\u003e  \t\tslpflag = 0;\n\u003e +#if 1\n\u003e +\tif (!(*flagp \u0026 NFSMNT_RCVLOCK) \u0026\u0026 (rep-\u003er_mrep != NULL)) {\n\u003e +\t\tprintf(\"Oops! I found the bug :-)\\n\");\n\u003e +\t\treturn (EALREADY);\n\u003e +\t}\n\u003e +#endif\n\u003e  \twhile (*flagp \u0026 NFSMNT_RCVLOCK) {\n\u003e  \t\tif (nfs_sigintr(rep-\u003er_nmp, rep, rep-\u003er_procp))\n\u003e  \t\t\treturn (EINTR);\n\u003e \n\u003e \n\u003e"
+}

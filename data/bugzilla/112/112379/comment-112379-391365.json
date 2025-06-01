@@ -1,0 +1,8 @@
+{
+ "id": 391365,
+ "bug_id": 112379,
+ "attachment_id": 0,
+ "creation_time": "2007-05-03T06:50:04Z",
+ "creator": "melkov@comptek.ru",
+ "text": "Because lockf command forks but doesn't close input and output file handles \nin the main process, closing stdin, stdout or stderr inside child processes \ndoesn't cause respective ends of pipes seen as closed by programs that read \nwrite to them.\n\nFor example:\n(script1.sh | lockf foo script2.sh 2\u003e\u00261 \u0026) | mail -s something somewhere\n\nSuppose that script2.sh closes its standard input and continues some long-time \nprocessing before script1.sh completes writing to its stdndard output.\nscript1.sh will hang for a long time (it would not without lockf).\n\nAs a more practical example, script2.sh redirects its output at some point\nand continues its business. Because of lockf, mail will needlessly wait until\nscript2.sh completes.\n\nI think that stdin should always be closed, and -s switch may be used as a flag\nthat closing stdout and stderr is desirable.\n\nFix: This is a patch against src/usr.bin/lockf/lockf.c,v 1.11.8.1"
+}

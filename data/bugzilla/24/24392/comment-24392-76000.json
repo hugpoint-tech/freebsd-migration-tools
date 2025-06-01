@@ -1,0 +1,8 @@
+{
+ "id": 76000,
+ "bug_id": 24392,
+ "attachment_id": 0,
+ "creation_time": "2001-01-16T20:20:02Z",
+ "creator": "nick@netability.ie",
+ "text": "\n\tFreeBSD will reliably panic if ipfw is compiled into the kernel, and\n\tif an attempt is then made to load it dynamically and then unload it\n\tusing kldload/kldunload. Looking at the code, I'd say that there was\n\tnothing particularly special about ipfw, and that it was a more generic\n\tproblem which affects all kernel modules which register sysctls.\n\n\tWhat appears to be happening is this:\n\n\t\"kldload ipfw\" attempts to register ipfw module.  This first\n\tregisters all of the sysctls (kern/kern_linker.c:284 in\n\tlinker_load_file()), and the on the next line attempts to initialise\n\tthe module using linker_file_sysinit().  This function calls\n\tmodule_register() which then returns an error (EEXIST), but this\n\terror is ignored, and the registration of the module completes\n\tfurther on down the function (oopsie - this is bad!)\n\n\t\"kldload ipfw\" then unloads the kernel module and de-registers the\n\tsysctls which are in use by the statically compiled ipfw module, and \n\tpanic occurs (didn't get any time to look into what's going on\n\there).\n\nFix: \n\nRan out of time for a fix. Looks relatively easy to put in a quick\n\tfix, but I'm not familiar enough with the code to feel confident\n\tabout fixing it - it's very likely that some sublety has escaped me.\nHow-To-Repeat: \n\tCreate kernel with ipfw compiled in statically, then:\n\t# kldload ipfw\n\t# kldunload ipfw\n\t\u003cbang!\u003e"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1208326,
+ "bug_id": 254282,
+ "attachment_id": 0,
+ "creation_time": "2022-04-23T22:26:24Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/13 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=92ecb030d2547a95956b3a6e5240e895ad4eed4e\n\ncommit 92ecb030d2547a95956b3a6e5240e895ad4eed4e\nAuthor:     Rick Macklem \u003crmacklem@FreeBSD.org\u003e\nAuthorDate: 2022-01-23 22:17:40 +0000\nCommit:     Rick Macklem \u003crmacklem@FreeBSD.org\u003e\nCommitDate: 2022-04-23 22:21:45 +0000\n\n    mountd: Delay starting mountd until after mountlate\n\n    PR#254282 reports a problem where nullfs mounts cannot be\n    exported via mountd for FreeBSD 13.0.\n\n    The problem seems to be that, to do the nullfs mounts in\n    /etc/fstab, they require the \"late\" mount option, so that the\n    underlying filesystem is mounted (ZFS for the PR).\n\n    Adding \"mountlate\" to the REQUIRE list in /etc/rc.d/mountd\n    fixes the problem, but that results in a dependency cycle\n    because /etc/rc.d/lockd specifies:\n\n    REQUIRE: nfsd\n    BEFORE: DAEMON\n    --\u003e which forces mountd to preceed DAEMON.\n\n    This patch removes \"nfsd\" from REQUIRE for lockd and statd,\n    then adds mountlate to REQUIRE for mountd, to fix this\n    problem.  Having lockd REQUIRE nfsd was done in the NetBSD\n    code when it was pulled into FreeBSD and there does not\n    seem to be a need for this.\n\n    In case this causes problems, a long MFC has been specified.\n\n    PR:     254282\n    (cherry picked from commit f72926eab00ccd956298e44831b519daa704a868)\n\n libexec/rc/rc.d/lockd  | 2 +-\n libexec/rc/rc.d/mountd | 2 +-\n libexec/rc/rc.d/statd  | 2 +-\n 3 files changed, 3 insertions(+), 3 deletions(-)"
+}

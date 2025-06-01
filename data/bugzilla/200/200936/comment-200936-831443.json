@@ -1,0 +1,8 @@
+{
+ "id": 831443,
+ "bug_id": 200936,
+ "attachment_id": 0,
+ "creation_time": "2015-07-10T16:50:32Z",
+ "creator": "sbruno@FreeBSD.org",
+ "text": "slightly more readable:\n\n--- gntmain.c.orig      2014-11-23 11:41:25.000000000 -0500\n+++ gntmain.c   2015-07-10 12:47:59.214456000 -0400\n@@ -406,7 +406,7 @@\n }\n \n #ifdef SIGWINCH\n-static void (*org_winch_handler)(int);\n+static struct sigaction owinch_sa;\n #endif\n \n static void\n@@ -417,8 +417,8 @@\n        case SIGWINCH:\n                erase();\n                g_idle_add((GSourceFunc)refresh_screen, NULL);\n-               if (org_winch_handler)\n-                       org_winch_handler(sig);\n+               //sigaction(SIGWINCH, \u0026owinch_sa, NULL);\n+               //raise(SIGWINCH);\n                signal(SIGWINCH, sighandler);\n                break;\n #endif\n@@ -456,6 +456,9 @@\n {\n        char *filename;\n        const char *locale;\n+#ifdef SIGWINCH\n+       struct sigaction winch_sa;\n+#endif\n \n        if (channel)\n                return;\n@@ -502,7 +505,10 @@\n        wrefresh(stdscr);\n \n #ifdef SIGWINCH\n-       org_winch_handler = signal(SIGWINCH, sighandler);\n+       winch_sa.sa_handler = sighandler;\n+       sigemptyset(\u0026winch_sa.sa_mask);\n+       winch_sa.sa_flags = 0;\n+       sigaction(SIGWINCH, \u0026winch_sa, \u0026owinch_sa);\n #endif\n        signal(SIGCHLD, sighandler);\n        signal(SIGINT, sighandler);"
+}

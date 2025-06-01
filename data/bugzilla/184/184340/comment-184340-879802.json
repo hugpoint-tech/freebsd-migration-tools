@@ -1,0 +1,8 @@
+{
+ "id": 879802,
+ "bug_id": 184340,
+ "attachment_id": 0,
+ "creation_time": "2016-05-22T18:37:52Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "The limit cannot be removed entirely without a severe rework because subsystems like ktrace and audit need a copy of the pathname that the user cannot modify concurrently.\n\nThe kernel rather likes allocating PATH_MAX or MAXPATHLEN sized buffers in general. This is already wasteful with PATH_MAX=1024 and even more so with 4096. Ideally, the majority of short pathnames would not waste so much memory.\n\nFor a local change I would change the one in sys/sys/syslimits.h. Then recompile everything including packages. There are a few nasty APIs like realpath() that implicitly depend on PATH_MAX.\n\nApplications that insist on it can use longer pathnames by passing only short segments to system calls and using openat(2) and other *at functions. For example, find and rm from the base system do this (provided symlinks are not being followed, the current directory can be opened for reading and the pathnames passed to the utility themselves are not too long)."
+}

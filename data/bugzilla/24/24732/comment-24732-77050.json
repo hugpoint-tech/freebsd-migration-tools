@@ -1,0 +1,8 @@
+{
+ "id": 77050,
+ "bug_id": 24732,
+ "attachment_id": 0,
+ "creation_time": "2001-01-30T14:02:21Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Tue, 30 Jan 2001 kazarov@izmiran.rssi.ru wrote:\n\n\u003e And tests shows that cmp cannot mmap two files of silze greate about 1213MB (on my system).\n\nThis seems about right for i386's.  Two files have to be mapped below the\nkernel start address of 3G, so their size is limited to 1.5GB.  Big files,\nat least, have to be mapped after libraries, so there size is further\nlimited.\n\n\u003e So constant should be decreased to 1GB\n\nThis is rather machine-dependent, and probably too large to be optimal\nanyway.\n\nTo fix the machine-dependencies, I think cmp should just try to mmap\nboth files and fall back to c_special() if this fails.  Note that\nthe current check against SIZE_T_MAX is just to prevent overflow,\nbut it is broken in several ways:\n(1) It SIZE_T_MAX with MIN(len1, len2), but it needs to compare with\n    MAX(len1, len2) to prevent overflow when the lengths are cast to\n    size_t.\n(2) It needs comapare SIZE_T_MAX with\n    MAX(len1 + skip1 % pagesize, len2 + skip2 % pagesize) to prevent\n    overflow when the adjusted lengths are passed to mmap().\nThe casts in (1) are bogus anyway.  They are unnecessary if a prototype\nfor mmap() is in scope and are in the wrong place otherwise (the whole\nadjusted lengths should be cast).\n\nBruce"
+}

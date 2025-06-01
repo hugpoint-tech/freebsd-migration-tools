@@ -1,0 +1,8 @@
+{
+ "id": 1181934,
+ "bug_id": 259089,
+ "attachment_id": 0,
+ "creation_time": "2021-10-12T06:40:57Z",
+ "creator": "ohartmann@walstatt.org",
+ "text": "Running www/glpi atop a recent www/apache24 on FreeBSD 13.0-RELENG with the GLPI own cron job results since the last update of www/glpi in a general malfunction of the GLPI service: users are presented with a blank screen as long as the underlying PHP is in configuration mode \"production\", where errors are not exposed.\n\nSwitching to the development configuration were the php errors are exposed to the client, one will face a trivial error:\n\n[...]\nFatal error: Uncaught UnexpectedValueException: The stream or file \"/usr/local/www/glpi/files/_log/php-errors.log\" could not be opened in append mode: failed to open stream: Permission denied\n\nFor security reasons the content of the folder /usr/local/www/glpi/files/_log is not completely accessible by user/group www/www. There are some error log files important to GLPI which have initially access rights www:www, one of them is php-errors.log along with cron.log and others.\n\nResetting ACL of php-errors.log to www:www mitigates the problem but is considered a security risk.\n\nBut the ACL is changed by the periodically running glpi cron job back to root:www:\n\n-rw-r--r--  1 root  www   663168 Oct 12 08:24 php-errors.log\n\nAnd this causes the general malfunction of GLPI.\n\nchanging the ACL manually back to www:www with the result of a working GLPI is periodically overwritten by the GLPI's cron back to root:www as shown above."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 623685,
+ "bug_id": 159612,
+ "attachment_id": 0,
+ "creation_time": "2012-07-02T15:48:50Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "on 24/06/2012 23:57 Fabian Keil said the following:\n\u003e Fabian Keil \u003cfk@fabiankeil.de\u003e wrote:\n\u003e \n\u003e\u003e The attached patch adds support for walltimestamp on amd64 and\n\u003e\u003e i386 by copying the code from mips. I only tested it on amd64.\n\u003e \n\u003e As Andriy suspected, the patch causes the system to\n\u003e panic when using walltimestamp inside probes for\n\u003e \"fbt::getnanotime:\".\n\u003e \n\nI am not sure if this synthetic test is a showstopper here, actually.\nBut what about inlining body of getnanotime into dtrace_gethrestime (while perhaps\napplying some mathematical optimizations) ?\nI think that that should be possible and should solve the problem at hand.\n\nWell, because 'static struct timehands *volatile timehands' is static,\ndtrace_gethrestime would have to go sys/kern/kern_tc.c under KDTRACE_HOOKS.\nOr dtrace_gethrestime would be a wrapper around another \"dtrace_\"-prefixed\nfunction (e.g. dtrace_getnanotime), which would go to sys/kern/kern_tc.c.\nAlternatively, timehands variable can \"unstatisized\" / \"globalized\".\n\nMaybe this is worth discussing on hackers@.\n\nAlso, regarding nanotime() vs getnanotime(), I see that in the latest publicly\navailable version of OpenSolaris code they update time for dtrace_gethrestime()\nonce per tick via dtrace_hres_tick().  So not sure if we should strive to be \"more\ncatholic than Pope\".\n\nP.S. The magic about \"dtrace_\" prefix is that fbt won't created probes for\nfunctions starting with it to avoid the obvious \"self-introspection\" problems.\n\n-- \nAndriy Gapon"
+}

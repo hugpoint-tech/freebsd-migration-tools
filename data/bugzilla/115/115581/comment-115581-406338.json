@@ -1,0 +1,8 @@
+{
+ "id": 406338,
+ "bug_id": 115581,
+ "attachment_id": 0,
+ "creation_time": "2007-08-16T17:50:01Z",
+ "creator": "numisemis@yahoo.com",
+ "text": "32-bit compatibility libraries on FreeBSD/amd64 are compiled using -mfancy-math-387 gcc option. As stated in gcc(1):\n\n       -mno-fancy-math-387\n           Some 387 emulators do not support the \"sin\", \"cos\" and \"sqrt\"\n           instructions for the 387.  Specify this option to avoid generating\n           those instructions.  This option is the default on FreeBSD, OpenBSD\n           and NetBSD.  This option is overridden when -march indicates that\n           the target cpu will always have an FPU and so the instruction will\n           not need emulation.  As of revision 2.6.1, these instructions are\n           not generated unless you also use the -funsafe-math-optimizations\n           switch.\n\nSo, using just -mfancy-math-387 has no effect. It should be used in combination with -funsafe-math-optimizations or it should not be used.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: double test(double x) {\n  return sin(x);\n}\n\nTry to compile using:\ngcc -m32 -S -mfancy-math-387 -funsafe-math-optimizations -O2 -march=athlon64 test.c\n\nand with:\ngcc -m32 -S -mfancy-math-387 -O2 -march=athlon64 test.c\n\nThere will be a difference in assembler output. First one will use machine instruction 'fsin' and the second one will use a libm routine called 'sin'."
+}

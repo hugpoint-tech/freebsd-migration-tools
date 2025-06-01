@@ -1,0 +1,8 @@
+{
+ "id": 505609,
+ "bug_id": 135932,
+ "attachment_id": 0,
+ "creation_time": "2009-06-22T21:20:01Z",
+ "creator": "yuri@tsoft.com",
+ "text": "When strtol is supplied string 2147483647 it's impossible to distinguish between overflow and non-overflow situation since return value is the same one that flags overflow (MAX_INT) and strtol doesn't clear errno in this case.\n\nstrtol should set errno=0 in this case to avoid ambiguity.\n\nerrno can accidentally be set to 34 (ERANGE) before the call and this will affect the conversion decision in this case. And requiring all programs to reset errno before the call isn't right too since the proposed here simple fix fixes this ambiguity for every program.\n\n-- testcase --\n#include \u003cstdlib.h\u003e\n#include \u003climits.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n\nmain() {\n  const char *nptr = \"2147483647\";\n  char *endptr;\n  errno=34; // ERANGE\n  int res = ::strtol(nptr, \u0026endptr, 10);\n  printf(\"res=%i errno=%i\\n\", res, errno);\n}\n\n--- output --- \nres=2147483647 errno=34"
+}

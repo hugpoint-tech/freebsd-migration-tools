@@ -1,0 +1,8 @@
+{
+ "id": 1133489,
+ "bug_id": 251250,
+ "attachment_id": 0,
+ "creation_time": "2020-11-25T19:51:07Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "The boot succeeds if a slice is created for holding the partitions; this is done by splitting the initial 256 sectors as follows:\n\n[0]# gpart show\n=\u003e       1  83886079  vtbd0  MBR  (40G)\n         1        15         - free -  (7.5K)\n        16  83886064      4  freebsd  [active]  (40G)\n\n=\u003e       0  83886064  vtbd0s4  BSD  (40G)\n         0       240           - free -  (120K)\n       240   4194304        1  freebsd-ufs  (2.0G)\n   4194544   4194304        2  freebsd-swap  (2.0G)\n   8388848  75497216        4  freebsd-zfs  (36G)\n\n[0]# bsdlabel vtbd0s4\n# /dev/vtbd0s4:\n8 partitions:\n#          size     offset    fstype   [fsize bsize bps/cpg]\n  a:    4194304        240    4.2BSD        0     0     0\n  b:    4194304    4194544      swap                    \n  c:   83886064          0    unused        0     0     # \"raw\" part, don't edit\n  d:   75497216    8388848       ZFS                    \n[0]# ll /dev/vtbd0*\ncrw-r-----  1 root  operator  0x49 Nov 25 17:56 /dev/vtbd0\ncrw-r-----  1 root  operator  0x4a Nov 25 17:56 /dev/vtbd0s4\ncrw-r-----  1 root  operator  0x4c Nov 25 17:56 /dev/vtbd0s4a\ncrw-r-----  1 root  operator  0x4d Nov 25 17:56 /dev/vtbd0s4b\ncrw-r-----  1 root  operator  0x4e Nov 25 17:56 /dev/vtbd0s4d\n[0]# \n\n(This is from inside the running VM, therefore showing up as vtbd0 instead of da0.)\n\nSo it seems that in FreeBSD 12.2 bhyveload cannot successfully load a purely partitioned disk anymore (as opposed to sliced + partitioned). In 12.1 this wan working.\n\n-- Martin"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 9572,
+ "bug_id": 3104,
+ "attachment_id": 0,
+ "creation_time": "1997-04-02T10:36:01Z",
+ "creator": "hannibal@cyberstation.net",
+ "text": "I (eventually) managed to figure this one out.  The fix is pretty simple:\n\nIndex: src/sys/miscfs/nullfs/null_vnops.c\n===================================================================\nRCS file: /usr/cvs/src/sys/miscfs/nullfs/null_vnops.c,v\nretrieving revision 1.16\ndiff -c -r1.16 null_vnops.c\n*** null_vnops.c\t1997/02/22 09:40:22\t1.16\n--- null_vnops.c\t1997/04/02 09:16:31\n***************\n*** 330,336 ****\n  \t\t\tgoto out;\n  \t\tvppp = VOPARG_OFFSETTO(struct vnode***,\n  \t\t\t\t descp-\u003evdesc_vpp_offset,ap);\n! \t\terror = null_node_create(old_vps[0]-\u003ev_mount, **vppp, *vppp);\n  \t}\n  \n   out:\n--- 330,337 ----\n  \t\t\tgoto out;\n  \t\tvppp = VOPARG_OFFSETTO(struct vnode***,\n  \t\t\t\t descp-\u003evdesc_vpp_offset,ap);\n! \t\tif (*vppp)\n! \t\t\terror = null_node_create(old_vps[0]-\u003ev_mount, **vppp, *vppp);\n  \t}\n  \n   out:\n\nThe problem occurred with the first VOP_BMAP in vnode_pager_haspage(),\nwhich gives a NULL vpp.  The same change also needs to be made to umapfs,\nI believe unionfs is OK though.\n\nIf somebody actually reads this, e-mail me to let me know that I don't\nneed to send this to -hackers for someone to see it.  :)\n\n======================================================================\nDan Walters\nhannibal@cyberstation.net\n======================================================================"
+}

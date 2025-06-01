@@ -1,0 +1,8 @@
+{
+ "id": 1053434,
+ "bug_id": 234949,
+ "attachment_id": 0,
+ "creation_time": "2019-06-06T15:12:06Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Gleb Popov from comment #29)\nHmm, we can do even better.  In r348657 I did not specify a hint for the number of hash table entries: the elftc code automatically resizes the hash table.  I think it's a bit conservative in how it does that though; if I do\n\ndiff --git a/contrib/elftoolchain/elfcopy/sections.c b/contrib/elftoolchain/elfcopy/sections.c\nindex 93dbf4422863..25f3c8c0bac8 100644\n--- a/contrib/elftoolchain/elfcopy/sections.c\n+++ b/contrib/elftoolchain/elfcopy/sections.c\n@@ -1410,7 +1410,7 @@ init_shstrtab(struct elfcopy *ecp)\n        s-\u003eloadable = 0;\n        s-\u003etype = SHT_STRTAB;\n        s-\u003evma = 0;\n-       s-\u003estrtab = elftc_string_table_create(0);\n+       s-\u003estrtab = elftc_string_table_create(1024 * 1024);\n \n        add_to_shstrtab(ecp, \"\");\n        add_to_shstrtab(ecp, \".symtab\");\n\nthen the runtime drops further.  (And we end up being slightly faster than GNU strip on the _p library.)"
+}

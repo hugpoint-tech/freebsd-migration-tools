@@ -1,0 +1,8 @@
+{
+ "id": 961059,
+ "bug_id": 223914,
+ "attachment_id": 188323,
+ "creation_time": "2017-11-27T17:51:02Z",
+ "creator": "justinien.bouron@gmail.com",
+ "text": "Created attachment 188323\nPatch for the ULE load balancer solving the issue of this bug report.\n\nThe load balancer of ULE has a bug which cause it to be executed only once at startup, and it will *never* be executed again.\n\nThe reason is simple, when the sched_balance function is called for the first time, the smp is not yet setup, and the function returns.\nHowever the balance_tick variable is not resetted before the return and thus will remains 0 for ever.\n\nBecause the condition in sched_clock to trigger the load balancer is :\n\" balance_ticks \u0026\u0026 --balance_ticks == 0 \", once balance_ticks is 0, this condition will never be met, and thus the load balancer will never be executed again.\n\nTo convince yourself you can even put a panic right before the call to sched_balance_group in sched_balance, it will never panic ...\n\nThe fix is rather simple, just move the line resetting the balance_ticks value *before* the if branch \"if (smp_started == 0 || rebalance == 0)\". That way we are sure that the load balancer is re-scheduled."
+}

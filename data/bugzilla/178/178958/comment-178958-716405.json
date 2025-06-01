@@ -1,0 +1,8 @@
+{
+ "id": 716405,
+ "bug_id": 178958,
+ "attachment_id": 0,
+ "creation_time": "2013-05-24T20:10:00Z",
+ "creator": "emaste@freebsd.org",
+ "text": "\nI tried to statically link an app against libglib, and it failed due to\nunresolved dependencies from libintl.  Looking at glib's installed .pc\nfile, I see:\n\n% egrep ^Libs /usr/local/libdata/pkgconfig/glib-2.0.pc\nLibs: -L${libdir} -lglib-2.0 -lintl \nLibs.private: -pthread  -L/usr/local/lib -lpcre     -liconv\n\nIndeed, no -lintl there.\n\nThe port's Makefile explicitly adds -lintl to LDFLAGS, and this appears\nto cause configure to decide the gettext API is available without any\nadditional -l flags.  If I remove the the explicit -lintl then the\nconfigure script determines that it's necessary, and adds it to the .pc\nfile:\n\n% egrep ^Libs /usr/local/libdata/pkgconfig/glib-2.0.pc\nLibs: -L${libdir} -lglib-2.0 -lintl \nLibs.private: -pthread  -L/usr/local/lib -lpcre   -lintl  -liconv\n\nFix: feynman% diff -u Makefile.orig Makefile\nHow-To-Repeat: Try to statically link using $(pkg-config --static --libs glib-2.0)"
+}

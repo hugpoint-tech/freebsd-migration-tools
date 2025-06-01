@@ -1,0 +1,8 @@
+{
+ "id": 44983,
+ "bug_id": 14786,
+ "attachment_id": 0,
+ "creation_time": "1999-11-08T20:00:01Z",
+ "creator": "chris@netmonger.net",
+ "text": "\nmmap() doesn't work on files \u003e2GB as documented in its man page.\n\nThe following code is in /usr/src/usr.bin/tail/forward.c:\n\n        if ((start = mmap(NULL, (size_t)size,\n            PROT_READ, MAP_SHARED, fileno(fp), (off_t)0)) == MAP_FAILED) {\n                ierr();\n                return;\n        }\n\nUnfortunately, after returning from the rlines function which contains\nthat code, tail attempts to display any data that has come in \"since\nwe read the file\".  In this case, the file has not been read and tail\nspits out the entire contents of the file.\n\nFix: \n\nProbably one of:\n\n  * Detect sizes \u003e mmap()'s limit and exit with an appropriate message.\n  * Dump out when mmap() fails.\n  * Use a more complicated algorithm that can handle large files.\nHow-To-Repeat: \n$ tail \u003cfile-larger-than-2GB\u003e"
+}

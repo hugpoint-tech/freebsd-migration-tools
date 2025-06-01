@@ -1,0 +1,8 @@
+{
+ "id": 103442,
+ "bug_id": 32680,
+ "attachment_id": 0,
+ "creation_time": "2001-12-13T11:55:44Z",
+ "creator": "evms@cs.bu.edu",
+ "text": "Hello,\n\nAttached is the new, stylized (9) jail.c patch:\n\n--- jail.c\tThu Dec 13 06:50:45 2001\n+++ jail.new\tThu Dec 13 06:52:24 2001\n@@ -17,20 +17,20 @@\n #include \u003carpa/inet.h\u003e\n \n #include \u003cerr.h\u003e\n-#include \u003cstdio.h\u003e\n+#include \u003cnetdb.h\u003e\n #include \u003cstdlib.h\u003e\n-#include \u003cstring.h\u003e\n #include \u003cunistd.h\u003e\n \n int\n main(int argc, char **argv)\n {\n+\tstruct hostent *hp;\n \tstruct jail j;\n \tint i;\n \tstruct in_addr in;\n \n \tif (argc \u003c 5) \n-\t\terrx(1, \"Usage: %s path hostname ip-number command ...\\n\",\n+\t\terrx(1, \"Usage: %s path hostname address command ...\\n\",\n \t\t    argv[0]);\n \ti = chdir(argv[1]);\n \tif (i)\n@@ -40,12 +40,22 @@\n \tj.path = argv[1];\n \tj.hostname = argv[2];\n \ti = inet_aton(argv[3], \u0026in);\n-\tif (!i)\n-\t\terrx(1, \"Couldn't make sense of ip-number\\n\");\n+\n+\tif (i == NULL) {\n+\t        hp = gethostbyname(argv[3]);\n+\n+\t        if (hp == NULL)\n+\t            errx(1, \"gethostbyname(%s): %s (and) inet_aton(%s): Could not make sense of either IP number or hostname.\",\n+                         argv[3], hstrerror(h_errno), argv[3] );\n+\n+\t        else if (hp)\n+\t                in = *(struct in_addr *)hp-\u003eh_addr;\n+        }\n+\t\n \tj.ip_number = ntohl(in.s_addr);\n \ti = jail(\u0026j);\n \tif (i)\n-\t\terr(1, \"Imprisonment failed\");\n+\t        err(1, \"Imprisonment failed\");\n \ti = execv(argv[4], argv + 4);\n \tif (i)\n \t        err(1, \"execv(%s)\", argv[4]);"
+}

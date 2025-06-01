@@ -1,0 +1,8 @@
+{
+ "id": 831119,
+ "bug_id": 201423,
+ "attachment_id": 0,
+ "creation_time": "2015-07-08T11:53:11Z",
+ "creator": "girgen@FreeBSD.org",
+ "text": "Quick question. I get this warning every time I shut down bind910:\n\nStopping named.\numount: /var/namedb/usr/local/lib/engines: statfs: No such file or directory\numount: /var/namedb/usr/local/lib/engines: unknown file system\n\n\nI don't use ports' OpenSSL. When mounting the ports' OpenSSL engines directory, the rc.d/named script checks for -d ${_openssl_engines}. Shouldn't that happen also when unmounting? Something like this:\n\nIndex: files/named.in\n===================================================================\n--- files/named.in\t(revision 391551)\n+++ files/named.in\t(working copy)\n@@ -231,7 +231,7 @@\n\nnamed_poststop()\n{\n-\tif [ -n \"${named_chrootdir}\" -a -c ${named_chrootdir}/dev/null ]; then\n+\tif [ -d ${_openssl_engines} -a -n \"${named_chrootdir}\" -a -c ${named_chrootdir}/dev/null ]; then\n\t\t# unmount OpenSSL engines, if they were not mounted but only\n\t\t# copied, do nothing.\n\t\tif [ `${SYSCTL_N} security.jail.jailed` -eq 0 -o `${SYSCTL_N} security.jail.mount_allowed` -eq 1 ]; then\n\n\n\nBest regards,\nPalle"
+}

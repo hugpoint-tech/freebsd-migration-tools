@@ -1,0 +1,8 @@
+{
+ "id": 1258967,
+ "bug_id": 271288,
+ "attachment_id": 0,
+ "creation_time": "2023-05-09T15:41:51Z",
+ "creator": "martin@bxlr.sk",
+ "text": "I tried to track where the modification of m_data is happening that causes the issue. \n\nThe mbuf in sys/sys/mbuf.h:\n\nstruct mbuf {\n..\n        caddr_t          m_data;        /* location of data */\n..\n\n\nsys/sys/types.h:\n\ntypedef char *          caddr_t;        /* core address */\n\n\nThe pointer to the m_data is being adjusted by m_adj() in sys/kern/uipc_mbuf.c:\n\n     while (m != NULL \u0026\u0026 len \u003e 0) {\n                        if (m-\u003em_len \u003c= len) {\n                                len -= m-\u003em_len;\n                                m-\u003em_len = 0;\n                                m = m-\u003em_next;\n                        } else {\n                                m-\u003em_len -= len;\n                                m-\u003em_data += len;\n                                len = 0;\n                        }\n                }\n\nIn the crashing scenario with virtio it is adjusting the m_data by ETHER_HDR_LEN (14) pointing to an address that is not mod by 4.\n\nThis is a problem later in usr/src/sys/netinet/udp_usrreq.c:409 where m_data is being accessed by ldm instruction.\n\nShouldn't this be caught by compiler? Or is it ok in eyes of the compiler due to the fact it points to char* (and not e.g. void*). ?"
+}

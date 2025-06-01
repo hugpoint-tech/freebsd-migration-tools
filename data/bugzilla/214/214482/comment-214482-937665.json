@@ -1,0 +1,8 @@
+{
+ "id": 937665,
+ "bug_id": 214482,
+ "attachment_id": 0,
+ "creation_time": "2017-06-11T21:28:07Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Our vsyslog() function (and syslog() that is a wrapper for vsyslog) maintain process-global mutex \"syslog_mutex\". They exclusive lock it then call send or _writev kernel functions that may block.\n\nIf one of mpd authorize/acconting threads calls syslog() or vsyslog(), blocks there and is pthread_cancel()'d then \"syslog_mutex\" is left in inconsistent state and another thread calling syslog() may hang forever.\n\nTo verify if this is real reason, we have two ways: either temporary disable thread cancellation before each call to [v]syslog(), or (preferably) fix this part of our libc making it more robust: it should clean its mutex itself if owning thread is canceled.\n\nFirst way needs some changes to mpd itself only. Complete solution requires change, rebuild and reinstall of libc. I'm going to attach preliminary versions of both patches for mpd and libc for testing. Please apply only one at the same time.\n\nThe patches are compile-only tested, so beware."
+}

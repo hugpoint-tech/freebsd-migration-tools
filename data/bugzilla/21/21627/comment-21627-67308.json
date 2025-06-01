@@ -1,0 +1,8 @@
+{
+ "id": 67308,
+ "bug_id": 21627,
+ "attachment_id": 0,
+ "creation_time": "2000-09-28T19:20:00Z",
+ "creator": "roland@serv.ch",
+ "text": "The SiS630E (recognized as SiS 5591) Driver will do only UDMA33.\n\nFix: \n\nIts not a fix but adds UDMA66 to the SiS 5591 for the\nprimary master.\nDont use a UDMA33-Device there because it will fallback\nto plain PIO later and I dont know where to fix this...\nBonnie shows no difference between UDMA33 and UDMA66.\n\nInsert the following in sys/dev/ata/ata-dma.c just bevore line #409:\n\nif (udmamode \u003e= 4 \u0026\u0026 scp-\u003eunit == 0 \u0026\u0026 device == ATA_MASTER ) {\n  error = ata_command(scp, device, ATA_C_SETFEATURES, 0, 0, 0,\n    ATA_UDMA4, ATA_C_F_SETXFER, ATA_WAIT_READY);\n  if (bootverbose)\n  ata_printf(scp, device, \"%s setting UDMA4 on SiS chip\\n\",\n    (error) ? \"failed\" : \"success\");\n  if (!error) {\n    pci_write_config(parent, 0x40 + (devno \u003c\u003c 1), 0xa301, 2);\n    scp-\u003emode[ATA_DEV(device)] = ATA_UDMA4;\n    return;\n  }\n}\n\n\nFrom /var/run/dmesg.boot:\n\nata0-master: success setting UDMA4 on SiS chip\nad0: \u003cQUANTUM FIREBALLP LM15/A35.0700\u003e ATA-5 disk at ata0 as master\nad0: 14324MB (29336832 sectors), 29104 cyls, 16 heads, 63 S/T, 512 B/S\nad0: 16 secs/int, 1 depth queue, UDMA66\nad0: piomode=4 dmamode=2 udmamode=4 cblid=1\n\nata1-master: success setting UDMA2 on SiS chip\nad2: \u003cST313032A/3.09\u003e ATA-4 disk at ata1 as master\nad2: 12419MB (25434228 sectors), 25232 cyls, 16 heads, 63 S/T, 512 B/S\nad2: 16 secs/int, 1 depth queue, UDMA33\nad2: piomode=4 dmamode=2 udmamode=4 cblid=1\nHow-To-Repeat: Install FreeBSD on a ASUS CUSI-FX with UDMA66-Disk."
+}

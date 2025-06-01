@@ -1,0 +1,8 @@
+{
+ "id": 373131,
+ "bug_id": 108390,
+ "attachment_id": 0,
+ "creation_time": "2007-02-01T16:38:48Z",
+ "creator": "alan@pair.com",
+ "text": "Perusing the source of sys/kern/kern_exit.c on the FreeBSD CVSWEB, I\nbelieve I found the problematic change.\n\nThe change is in exit1() and not in wait4() or related functions. The\nchange is between r1.156 and r1.157, as shown here:\n\nhttp://www.freebsd.org/cgi/cvsweb.cgi/src/sys/kern/kern_exit.c.diff?r1=1.156\u0026r2=1.157\u0026f=h\n\n\nHere, exit1() was modified so that if a process has SIGCHLD set to\nSIG_IGN, and it calls exit(), then this is treated the same as if\nSA_NOCLDWAIT was set. That is: the parent process is not notified that\nthe child exited; instead, pid 1 is notified.\n\nI modified my test script to output the return value and errno of the\nfailing wait4() call, and it verifies that when waiting too long for the\nshort-running process, wait4() is returning with ENOCHLD (no child\nprocesses) and not because it received notification of a child process\nexiting.\n\nThe current implementation makes it invalid for any process to execute\na blocking wait() if it is ignoring SIGCHLD. This does not seem\ncorrect. Just because I don't want to receive a signal when my\nchildren exit, this does not mean I won't want to ask them whether\nthey're alive or not.\n\nAlan Ferrency"
+}

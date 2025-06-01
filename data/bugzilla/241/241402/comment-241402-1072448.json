@@ -1,0 +1,8 @@
+{
+ "id": 1072448,
+ "bug_id": 241402,
+ "attachment_id": 0,
+ "creation_time": "2019-10-25T17:42:34Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Ok, I think I have the reproduction scenario:\n* rm -rf /usr/obj/*\n* Build world at base r353357 (so just before clang 9.0.0 import)\n* svn update src to base r353358\n* Build world, now with -DNO_CLEAN\n* Remount /usr/src and /usr/obj read-only\n* Attempt installworld (I did DESTDIR=/foobar)\n\nThis ends with:\n\n===\u003e lib/clang/headers (install)\nclang-tblgen -gen-arm-fp16  -I /usr/src/contrib/llvm/tools/clang/include/clang/Basic -d arm_fp16.h.d  -o arm_fp16.h /usr/src/contrib/llvm/tools/clang/include/clang/Basic/arm_fp16.td\nclang-tblgen: error opening arm_fp16.h.d:Read-only file system\n*** Error code 1\n\nFor some reason, it decides to regenerate those two headers, which are in the Makefile as:\n\nGENINCS+=       arm_fp16.h\nGENINCS+=       arm_neon.h\n\nand later:\n\narm_fp16.h: ${CLANG_SRCS}/include/clang/Basic/arm_fp16.td\n        ${CLANG_TBLGEN} -gen-arm-fp16 \\\n            -I ${CLANG_SRCS}/include/clang/Basic -d ${.TARGET:C/$/.d/} \\\n            -o ${.TARGET} ${CLANG_SRCS}/include/clang/Basic/arm_fp16.td\n\narm_neon.h: ${CLANG_SRCS}/include/clang/Basic/arm_neon.td\n        ${CLANG_TBLGEN} -gen-arm-neon \\\n            -I ${CLANG_SRCS}/include/clang/Basic -d ${.TARGET:C/$/.d/} \\\n            -o ${.TARGET} ${CLANG_SRCS}/include/clang/Basic/arm_neon.td\n\nCLEANFILES=     ${GENINCS} ${GENINCS:C/$/.d/}\n\nI'm unsure why make thinks the headers are not up-to-date."
+}

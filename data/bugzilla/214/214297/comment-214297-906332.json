@@ -1,0 +1,8 @@
+{
+ "id": 906332,
+ "bug_id": 214297,
+ "attachment_id": 176748,
+ "creation_time": "2016-11-07T18:59:48Z",
+ "creator": "vidar@karlsen.tech",
+ "text": "Created attachment 176748\nChange vmstat to iostat\n\nnagios-check_cpu_usage reads output from vmstat in order to report CPU usage.\nvmstat will output straight numbers (not \"easily human readable form\") when the output is not a terminal.\nOn a busy host, this may cause the fre and flt columns to be jammed together with no separating whitespace, which in turn will cause nagios-check_cpu_usage to return bogus values due to a sort of off-by-one error:\n\nNot busy:\nr b w     avm     fre  flt  re  pi  po    fr   sr   in    sy    cs us sy id\n0 0 3  762140  490772  693   0   0   0   863    4   70   833   366  1  0 99\n               ^^^^^^  ^^^\nBusy (just testing running make in security/openssl):\nr b w     avm     fre  flt  re  pi  po    fr   sr   in    sy    cs us sy id\n1 0 3  865856  48101239575   0 121   0 43154    8   72 40026  1357 21  5 74\n               ^^^^^^^^^^^\nnagios-check_cpu_usage reads the 15th, 16th and 17th column, so in the latter case it will report us=\"5\", sy=\"74\", id=\"\".\n\nI propose changing the following line:\ncpu_all=$( vmstat -c 2 -n 0 | tail -n 1 | awk '{print $15 \" \" $16 \" \" $17}' )\nto:\ncpu_all=$( iostat -c 2 -t proc | tail -n 1 | awk '{print $3 \" \" $5 \" \" $7}' )\nor to:\ncpu_all=$( vmstat -h -c 2 -n 0 | tail -n 1 | awk '{print $15 \" \" $16 \" \" $17}' )\n\niostat doesn't appear to have this problem because it outputs much fewer columns, while the second alternative solution bypasses the problem by forcing vmstat to print the memory values as 1M instead of 1048576."
+}

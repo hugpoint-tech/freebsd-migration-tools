@@ -1,0 +1,8 @@
+{
+ "id": 584200,
+ "bug_id": 151758,
+ "attachment_id": 0,
+ "creation_time": "2011-12-08T15:24:56Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "The bug is that during unp_gc(), we pass NULL as the thread to closef() \n(to disable certain locking stuff, and because the thread performing the \ngc doesn't \"own\" orphaned file descriptors in a closed UNIX domain \nsocket).  That resulted in the 'td' argument passed to devfs_close_f() \nbeing NULL, so td-\u003etd_fpop would fault.  The patch I have (untested) is \nto force devfs_close_f() to always use curthread instead of trusting the \ntd argument it is given.\n\nIndex: /home/jhb/work/freebsd/svn/head/sys/fs/devfs/devfs_vnops.c\n===================================================================\n--- /home/jhb/work/freebsd/svn/head/sys/fs/devfs/devfs_vnops.c\t(revision \n228311)\n+++ /home/jhb/work/freebsd/svn/head/sys/fs/devfs/devfs_vnops.c\t(working \ncopy)\n@@ -602,6 +602,11 @@\n  \tint error;\n  \tstruct file *fpop;\n\n+\t/*\n+\t * NB: td may be NULL if this descriptor is closed due to\n+\t * garbage collection from a closed UNIX domain socket.\n+\t */\n+\ttd = curthread;\n  \tfpop = td-\u003etd_fpop;\n  \ttd-\u003etd_fpop = fp;\n  \terror = vnops.fo_close(fp, td);\n\n\n-- \nJohn Baldwin"
+}

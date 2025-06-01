@@ -1,0 +1,8 @@
+{
+ "id": 658985,
+ "bug_id": 166660,
+ "attachment_id": 0,
+ "creation_time": "2012-04-05T08:30:02Z",
+ "creator": "jeremie@le-hen.org",
+ "text": "\tWhen stdin and stdout are not connected to a terminal, the stdio\n\tsubsystem switches automatically stdout buffering mode from\n\tline-buffered to fully-buffered.\n\n\tThis is a problem when trying to watch the real-time output of a\n\tcommand such as vmstat(8) or iostat(8) through multiple filters.\n\n\tFor instance: iostat -x 1 | cat -n | grep -v \"extended\"\n\n\tIn this case, cat(1)'s stdout is fully buffered and iostat(8)\n\tproduces output too slowly, so you have to wait multiple seconds\n\tbefore the buffer is eventually flushed as a block to the last\n\tcommand.\n\nFix: The patch below adds a new shared library \"libstdbuf.so\" which,\n\twhen LD_PRELOAD'ed, can be configured through environment\n\tvariables to override the default buffering mode of either\n\tstdin, stdout or stderr.\n\n\tIn order to avoid the manual setting of LD_PRELOAD and configuration\n\tvariables, an utility is provided: stdbuf(1).  It is named after a\n\tsimilar functionality found on Linux.  Of course, given the\n\tcommand-line interface is sane enough to comply with BSD standards,\n\tI kept it fully compatible.\n\n\tHere is an example of how the above problem can be solved with this\n\tnew utility:\n\t    iostat -x 1 | stdbuf -o L cat -n | grep -v \"extended\"\n\nHow-To-Repeat: \tJust run the command above.  On my system with 4 drives, I have\n\tto wait more than 20 seconds to see something."
+}

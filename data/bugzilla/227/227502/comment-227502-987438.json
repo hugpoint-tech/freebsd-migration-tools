@@ -1,0 +1,8 @@
+{
+ "id": 987438,
+ "bug_id": 227502,
+ "attachment_id": 0,
+ "creation_time": "2018-04-14T21:38:15Z",
+ "creator": "eugen@freebsd.org",
+ "text": "I've reproduced the problem building and running third-party/snmp/test.c from net/ntopng source tree. I run bsnmpd in debug mode:\n\n/usr/sbin/bsnmpd -p /var/run/snmpd.pid -d -D dump,trace=0x30000000\n\nIncoming SNMPv1 GetRequest as captured and decoded by tcpdump:\n\n04:15:32.993260 IP (tos 0x0, ttl 62, id 21558, offset 0, flags [none], proto UDP (17), length 81)\n    X.X.X.X.46351 \u003e X.X.X.X.Y: [udp sum ok]  { SNMPv1 C=\"xxxxxxx\" { GetRequest(34) R=1  .1.3.6.1.2.1.1.5.0 } }\n\nbsnmpd fails to parse it producing errors:\n\nsnmpd[45132]: ASN.1: non-minimal integer at 00 00 00 00 04 07 72 65 77 6f 72 74 68 a0 22 02 04 00 00 00 01 02 04 00 00 00 00 02 04 00 00 00 00 30 0e 30 0c 06 08 2b 06 01 02 01 01 05 00 05 00\nsnmpd[45132]: SNMP: cannot decode version\n\nntopng uses bundled copy of library https://github.com/ejrh/snmp to encode SNMP data into packets and this library seems to produce incorrect DER/ASN.1 packets always encoding integers with 4 bytes per value. The library itself is pretty old, it was not updated for 6 years.\n\nsnmpwalk, on the other hand, produces correct requests and bsnmpd answers just fine.\n\nIt seems, net-snmpd tolerates such standard violation but bsnmpd does not. Please note that other modern software tend to stick to strict validation too. \nFor example, golang's library encoding/asn1 rejects such invalid \"non-minimal integer encodings\" since version 1.7: https://golang.org/doc/go1.7"
+}

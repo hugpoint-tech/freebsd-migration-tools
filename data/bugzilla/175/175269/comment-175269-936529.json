@@ -1,0 +1,8 @@
+{
+ "id": 936529,
+ "bug_id": 175269,
+ "attachment_id": 0,
+ "creation_time": "2017-06-03T15:51:29Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "So when I run this I get an error from kill saying that -\u003cpid\u003e doesn't exist.  And in particular, sh doesn't create a new process group when it runs a script, so there is no process group to kill so this keeps running forever.  When you run rsleeper.sh directly from the shell it is run in a new process group by the shell which is why your 'kill -$$' works.\n\nI tried modifying truss to create a new process group for the child process, but the result of this is that the tty driver in the kernel no longer sends a SIGINT to anything when Ctrl-C is pressed.  (I ktrace'd the shell with inheritance and no processes got a SIGINT when Ctrl-C was hit).  Note also that the problem isn't that truss is stuck trying to detach, the problem is that the child isn't exiting (and the Ctrl-C should be forcing the child to exit).  This probably has something to do with truss being the parent that the shell originally forks rather than being a \"helper\" process.  Hmm, so truss explicitly ignores SIGINT/TERM/QUIT when exec'ing and the comment above that says \"they should be passed off to the process\", but using SIG_IGN doesn't do that.  Instead, it needs to \"forward\" signals to the child process.\n\nSo I did a patch to forward the signals, and then also placed the new process in its own process group.  This fixed the rsleeper.sh case, but probably needs a bit more testing.  Also, I'm not sure why you are using 'truss -ff' as the double -f doesn't mean anything to truss."
+}

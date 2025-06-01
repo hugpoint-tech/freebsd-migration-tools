@@ -1,0 +1,8 @@
+{
+ "id": 402006,
+ "bug_id": 114655,
+ "attachment_id": 0,
+ "creation_time": "2007-07-17T13:40:03Z",
+ "creator": "freebsd@hansmi.ch",
+ "text": "(Copied from freebsd-current@)\nI was working with a company which plans to migrate its FreeBSD servers\nfrom using /etc/{passwd,group} to LDAP. They will have about 45'000\nusers and as much groups in the directory.\n\nTests showed that any function retrieving the groups a user is member\nof, for example getgrouplist(3) or initgroups(3), is very slow. In our\ncase, it was about 7 seconds per invocation. Further investigation\nshowed how inefficient these functions are implemented through\ngetgrouplist(3). FreeBSD's implementation loops through all groups and\ntheir members to check whether a user is member of it, in which case it\nadds the group to a list. In our case, this means retrieving 45'000\nsearch results from the LDAP server.\n\nDirectory services like LDAP or Winbind allow queries to have filters,\nenabling us to write a much more efficient implementation. The attached\npatches (nss-getgroupmembership-try9.diff for FreeBSD 6,\nnss-getgroupmembership-fbsd7-try3.diff for FreeBSD 7) use an nss\nmodule's getgroupmembership(3) function if available. Otherwise it uses\na fallback which then uses the old algorithm with some modifications.\nAfter applying it, getgrouplist(3) takes only a few milliseconds to\nretrieve all groups of a user.\n\nAnother patch, attached as bsdnss.diff, is needed for nss_ldap. It\napplies to the ports/net/nss_ldap/files/bsdnss.c file and exports the\nrequired getgroupmembership function. Most of the code there is from\nNetBSD.\n\nFix: Apply the patch.\n\nPatch attached with submission follows:"
+}

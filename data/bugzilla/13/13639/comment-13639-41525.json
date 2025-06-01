@@ -1,0 +1,8 @@
+{
+ "id": 41525,
+ "bug_id": 13639,
+ "attachment_id": 0,
+ "creation_time": "1999-09-08T13:00:01Z",
+ "creator": "david@inty.net",
+ "text": "If an incoming connection is initiated through natd and deny_incoming is\nnot set, then a new alias_link structure is created to handle the link.\nIf there is nothing listening for the incoming connection, then the kernel\nresponds with a RST for the connection. However, this is not processed\ncorrectly in libalias/alias.c:TcpMonitor{In,Out} and\nlibalias/alias_db.c:SetState{In,Out} as it thinks a connection\nhas been established and therefore applies a timeout of 86400 seconds\nto the link.\n\nIf many of these half-connections are initiated (during, for example, a\nport scan of the host), then many thousands of unnecessary links are\ncreated and the resident size of natd balloons to 20MB or more.\n\nFix: The following patch will tell libalias to realise that a connection\nhasn't, in fact, been completed and thus will give the newly created\nlink a timeout of TCP_EXPIRE_DEAD:\nHow-To-Repeat: Run natd without deny_incoming. Run a TCP port scanner against the machine."
+}

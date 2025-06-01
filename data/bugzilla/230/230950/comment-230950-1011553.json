@@ -1,0 +1,8 @@
+{
+ "id": 1011553,
+ "bug_id": 230950,
+ "attachment_id": 0,
+ "creation_time": "2018-09-17T17:14:32Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Also, given my previous suggested patch to try, I do have a core where the inp is marked INP_FREED.\n\nThat means in_pcbfree() was called which in turn means that (likely) udp6_detach() was called.  Hence the moving of RO_INVALIDATE_CACHE() to in_pcbfree_deferred().  Now in_pcbfree() does assert the INP_WLOCK_ASSERT() which still is an rw_lock and should not \"race\" with the output path even if we are holding an rlock only there.\n\nHowever I also don't see exactly how this should happen given we were in the middle of a kern_sendit() syscall.  I guess solving one problem after the other might help.  Can people try the suggested change to disable the route caching in the udp/udp6_output() functions by passing NULL instead of passing \u0026inp-\u003einp_route / \u0026inp-\u003einp_route6 in and report back (in a day unless it crashes earlier still)?"
+}

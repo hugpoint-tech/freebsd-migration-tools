@@ -1,0 +1,8 @@
+{
+ "id": 1009859,
+ "bug_id": 229826,
+ "attachment_id": 0,
+ "creation_time": "2018-09-03T18:28:23Z",
+ "creator": "dumbbell@FreeBSD.org",
+ "text": "Hi!\n\nI see I never updated this report since I started to work on Rust 1.28.0.\n\nSo, Rust 1.28.0 does not compile out-of-the-box unfortunately.\n\nThe change behind this breakage is probably this one:\nhttps://github.com/rust-lang/rust/commit/7c14a54bc81d8e259b43ac8077f2e851c7769753\n\nIn particular, the way libbacktrace is compiled changed:\n\n* In Rust 1.27.x, `src/libstd/build.rs` runs libbacktrace's `configure` script.\n* In Rust 1.28.0, `src/libstd/build.rs` compiles libbacktrace directory with its own compiler flags and source files list.\n\nThe problem is that the `configure` script was testing the presence and usability of libunwind. This check was always failing on FreeBSD even if libunwind was installed because none of our compilers know about /usr/local... So libbacktrace was compiled without unwind support.\n\nNow `src/libstd/build.rs` assumes libunwind is available somehow and `backtrace.c` is compiled: this fails because the compiler has no idea how to find `unwind.h`.\n\nOnce this is fixed, the build fails later because it doesn't know where to find libunwind.so. I couldn't find a way to extend the search directories so far.\n\nAnyway, libunwind support was never used/tested on FreeBSD so it's probably not a good time to add it. I'm going to try ways to compile libbacktrace as if the `configure` script did run.\n\nAnother fix I had to do is revert the changes made by FreeBSD 10 autotools fix to a few files: they are not used but are verified by Cargo's checksum facility."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 404964,
+ "bug_id": 115293,
+ "attachment_id": 0,
+ "creation_time": "2007-08-08T08:00:04Z",
+ "creator": "pekkas@netcore.fi",
+ "text": "I noticed that in contrast to IPv4, 'ip6fw -ta l' output doesn't seem to\ninclude the base IPv6 header in byte statistics as evidenced by the following\nstats line:\n\n00004      38913          0 Wed Aug  8 09:46:00 2007 deny ipv6 from 2001::/32 to fe80::/10\n\nDigging around, this seems to be a problem in netinet6/ip6_fw.c:\n\n                /* Update statistics */\n                f-\u003efw_pcnt += 1;\n                f-\u003efw_bcnt += ntohs(ip6-\u003eip6_plen)\n\n. but \"ip6_plen\" only includes the length of the next header.  This is\nincorrect in two ways: 1) it doesn't include the base header itself, and\n2) if there are multiple next headers (chained extension headers), this\nwill only list the length of the first one.\n\nLooking at IPv4 code, the latter should probably be something like (not tested):\n\n f-\u003efw_bcnt += (*m)-\u003em_pkthdr.len;\n\n. which should fix both the problems above.\n\nFix: \n\nProbably replace fw_bcnt with m_pkthdr.len.\nHow-To-Repeat: Create an ip6fw rule (e.g. TCP RST reject rule is good) with with it's\neasy to create just one hit.  Run tcpdump and check the byte counter."
+}

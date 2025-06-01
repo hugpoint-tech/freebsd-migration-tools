@@ -1,0 +1,8 @@
+{
+ "id": 1141481,
+ "bug_id": 252541,
+ "attachment_id": 221535,
+ "creation_time": "2021-01-13T17:36:04Z",
+ "creator": "mhorne@freebsd.org",
+ "text": "Created attachment 221535\nfix pmap_mapdev assert\n\nHi Mark,\n\nThank you describing how to reproduce the issue, I was able to trigger the same issue on my rockpro64 with the HDMI cable attached and GDB enabled. Please try the attached patch and let me know if it fixes the issue for you.\n\nIndeed it appears to be an interesting combination of factors. The crux of the issue is that the KASSERT in pmap_mapdev() assumes a static devmap size of 2MB, when really it has grown to 16MB to accommodate large things like framebuffers. You'll note that pmap_mapdev_attr() does not have this issue.\n\nIn my case, the mapped size of the framebuffer (1920x1080 bytes) is slightly smaller than 2MB, meaning it won't trigger the KASSERT if it is the first thing added to the early devmap. The addition of GDB means the uart gets an entry in the static as well, pushing the framebuffer va just below that assertion threshold. Of course, removing the HDMI means the framebuffer isn't mapped, so the issue isn't triggered without it."
+}

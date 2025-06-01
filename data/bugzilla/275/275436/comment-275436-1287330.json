@@ -1,0 +1,8 @@
+{
+ "id": 1287330,
+ "bug_id": 275436,
+ "attachment_id": 0,
+ "creation_time": "2023-12-07T18:42:24Z",
+ "creator": "karels@freebsd.org",
+ "text": "(In reply to Konstantin Belousov from comment #8)\n\n\u003e Proposals to limit max tmpfs page uses to some percentage of the total of\n\u003e memory and swap would not work.\n\nMy proof-of-concept does not use total memory + swap.  Instead, it computes a reserve which is (100 - memlimit%) * (free memory + swap) at time of tmpfs_init().  This seems to work out reasonably in my test cases so far.  I need to try with mapped files too.  I'll attach my current patch.\n\n\u003e There is simply no reasonable answer to question 'how to limit tmpfs physical\n\u003e memory consumption' without knowing the system load pattern.\n\nThere is no perfect solution, that is true.  But when memory + swap is low enough, allowing tmpfs to proceed makes bad things happen, like killing processes and hanging the system.  Backing off a little makes things better in at least some cases, which seems worthwhile to me.  And tmpfs can report a failure (ENOSPC) without being killed, unlike processes touching memory.  Yes, a compile may fail, etc, but at least that is related to the shortage.  It seems bad if writes to /tmp by an unprivileged user cause root or other important processes to be killed."
+}

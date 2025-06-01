@@ -1,0 +1,8 @@
+{
+ "id": 1364722,
+ "bug_id": 262179,
+ "attachment_id": 260491,
+ "creation_time": "2025-05-17T23:14:54Z",
+ "creator": "jamie@FreeBSD.org",
+ "text": "Created attachment 260491\nProof of concept to disallow any jail dotdot escape\n\n(In reply to Konstantin Belousov from comment #49)\nYeah, thanks for pulling me away from that red herring.  So then, back to \"nslookup has to be a little more clever in noticing jail escapes.\"\n\nThis can be solved in the dotdot handling, without having to make any restrictions on descriptor passing.  Currently, we check for traversing up from prison root directories, checking the current prison and its parents, up to prison0.  But with passed descriptors, or with the possibility of sub-jails outside of a parent's file hierarchy, that's not sufficient.\n\nWhat we should be preventing traversal upward from any prison root, with the sole exception of those that are within the current prison's file tree (so using the prison_contains strategy).\n\nA quick test run with a simpler strategy solves the test case: first skip the check for prison0 (common-case performance hack), then block dotdot traversal at any prison root regardless of path containment.  With that, the process in j1 won't get outside of j2's root.  The quick version only changed a few lines in vfs_lookup and matching lines in cache_fplookup_dotdot.\n\nA full version of this would add proper locking (maybe just allprison_lock but I don't know about LOR offhand), and the file containment test.  In the meantime, this patch shows what I intend."
+}

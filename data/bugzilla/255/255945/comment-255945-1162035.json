@@ -1,0 +1,8 @@
+{
+ "id": 1162035,
+ "bug_id": 255945,
+ "attachment_id": 0,
+ "creation_time": "2021-05-19T00:22:36Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Ok, I see the problem now.  There are two relevant changes:\n\n1) In FreeBSD 12.2, the bug would never be triggered because fuse_vnop_advlock would immediately fall back to vop_stdadvlock.  It would be triggered by posix file locks, if the FUSE server enables them, but yours does not.   But revision 542711e52079f65647ac1daadf0c9e74cb221f3e, which fixed an unrelated bug, reordered some code in fuse_vnop_advlock. So in 13.0, it checks the lock parameters before falling back to fuse_vnop_advlock.\n\n2) Revision 929acdb19acb67cc0e6ee5439df98e28a84d4772 fixed bug 253500\n\nSo to summarize the bug's presentation in different versions:\n\n* In FreeBSD 12.2 (and probably 12.1), local posix locks work fine, flocks only work locally, and FUSE POSIX locks suffer from the 253500 bug.\n\n* In FreeBSD 13.0, both local and FUSE, posix and flock locks suffer from the 253500 bug.\n\n* In FreeBSD 14.0-CURRENT and stable/13, local locks and FUSE POSIX locks work fine, and FUSE FLOCK locks are handled locally."
+}

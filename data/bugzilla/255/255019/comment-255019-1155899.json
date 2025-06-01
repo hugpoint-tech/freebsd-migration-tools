@@ -1,0 +1,8 @@
+{
+ "id": 1155899,
+ "bug_id": 255019,
+ "attachment_id": 0,
+ "creation_time": "2021-04-12T20:55:20Z",
+ "creator": "jcaplan@blackberry.com",
+ "text": "Overview\n--------\n\n`ifconfig -f addr:host` does not properly truncate the fully qualify host name.\n\nSteps to Reproduce\n------------------\n\nifconfig vmx0 172.16.129.101/24 up\necho '172.16.129.101 dut.example.com' \u003e\u003e /etc/hosts\nifconfig -f addr:host vmx0 \n\nActual Results\n--------------\ninet dut.example.com netmask 0xffffff00 broadcast 172.16.129.255\n\nExepcted Results\n----------------\ninet dut netmask 0xffffff00 broadcast 172.16.129.255\n\nAdditional Information\n----------------------\nIn getnameinfo_inet(), it seems that NI_NOFQDN flag is deliberately ignored because it's messy to determine whether or not the host is local.\n\n#if 0\n\t\t\t/*\n\t\t\t * commented out, since \"for local host\" is not\n\t\t\t * implemented here - see RFC2553 p30\n\t\t\t */\n\t\t\tif (flags \u0026 NI_NOFQDN) {\n\t\t\t\tchar *p;\n\t\t\t\tp = strchr(hp-\u003eh_name, '.');\n\t\t\t\tif (p)\n\t\t\t\t\t*p = '\\0';\n\t\t\t}\n#endif\n\n\nIf no change is made to getnameinfo_inet(), at the very least ifconfig should perform the truncation."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 869980,
+ "bug_id": 199601,
+ "attachment_id": 0,
+ "creation_time": "2016-03-14T17:48:36Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "liborcus fails with the same error, but in configure.  Configure tries to compile a test program that is basically\n  #include \u003cboost/filesystem/path.hpp\u003e\nwhich ends up including \u003cboost/bind/bind.hpp\u003e resulting in the same breakage as \nseen with akonadi.\n\nMy boost patch doesn't fix that because none of the stdc++ headers that result in __GLIBCXX__ getting defined have been included at that point.\n\nI kind of hate to do a #include inside clang.hpp because of the extra pollution, but that might be the best way forward.  That would fix liborcus as well as\nakonadi.\n\nBoth liborcus and akonadi compile with this patch applied to boost:\n\n--- boost/config/compiler/clang.hpp.orig\t2015-12-08 18:55:19 UTC\n+++ boost/config/compiler/clang.hpp\n@@ -169,6 +169,14 @@\n \n #if !__has_feature(cxx_rvalue_references)\n #  define BOOST_NO_CXX11_RVALUE_REFERENCES\n+#else\n+/*\n+ * Workaround for clang on FreeBSD 9.x using ancient libstdc++.\n+ */\n+#  include \u003cciso646\u003e\n+#  if !defined(_LIBCPP_VERSION)\n+#    define BOOST_NO_CXX11_RVALUE_REFERENCES\n+#  endif\n #endif\n \n #if !__has_feature(cxx_strong_enums)"
+}

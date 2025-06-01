@@ -1,0 +1,8 @@
+{
+ "id": 337768,
+ "bug_id": 100501,
+ "attachment_id": 0,
+ "creation_time": "2006-07-23T10:11:13Z",
+ "creator": "tmseck@netcologne.de",
+ "text": "Ok, do I understand you correctly if I assume that you have two or more\ncopies of the original Squid start script named squid_${instance}?\n\nThen it should be enough if we just pass $squid_flags when calling\n'squid -k reconfigure' and 'squid -k restart' if squid_flags resp.\nsquid_instance_flags in your case contains '-f /path/to/squid_instance.conf'\nso Squid is able to figure out which process it should talk to.\n\nCould you try this patch? It should also fix the issue that the 'stop'\ncommand would probably shutdown all running Squid instances. You need to\nadapt the variable name squid_flags appropriately in every copy of your\nSquid start script so that you can pass the different configuration file\npaths to these scripts individually.\n\nIndex: /home/thomas/svn/ports/experimental/squid/files/squid.sh.in\n===================================================================\n--- /home/thomas/svn/ports/experimental/squid/files/squid.sh.in\t(revision 962)\n+++ /home/thomas/svn/ports/experimental/squid/files/squid.sh.in\t(revision 963)\n@@ -20,7 +20,7 @@\n command=%%PREFIX%%/sbin/squid\n # --begin rcng\n extra_commands=reload\n-reload_cmd=\"${command} -k reconfigure\"\n+reload_cmd=\"${command} ${squid_flags} -k reconfigure\"\n # --end rcng\n stop_cmd=\"squid_stop\"\n squid_chdir=${squid_chdir:-%%PREFIX%%/squid/logs}\n@@ -44,7 +44,7 @@\n # --begin rcng\n squid_stop() {\n \techo \"Stopping ${name}.\"\n-\t${command} -k shutdown\n+\t${command} ${squid_flags} -k shutdown\n \trun_rc_command poll\n }"
+}

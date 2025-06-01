@@ -1,0 +1,8 @@
+{
+ "id": 1235833,
+ "bug_id": 244596,
+ "attachment_id": 0,
+ "creation_time": "2022-11-16T21:11:29Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Looking at the first entry:\n\nerror: entries point to the same inode but have different meta: ./etc/pam.d/ftpd,./etc/pam.d/ftp in line 1997,1998. off by \"mode\"\n\nThis comes from lib/libpam/pam.d/Makefile:\n\nafterinstallconfig:\n        ${INSTALL_LINK} ${TAG_ARGS} ${DESTDIR}${CONFDIR}/ftpd ${DESTDIR}${CONFDIR}/ftp\n\nwhich uses share/mk/bsd.own.mk:\n\nHRDLINK?=       -l h -o ${_LINKOWN} -g ${_LINKGRP} -m ${_LINKMODE}\n...\nINSTALL_LINK?=          ${INSTALL} ${HRDLINK}\n\nresults in METALOG:\n\n./etc/pam.d/ftpd type=file uname=root gname=wheel mode=0644 size=359 tags=package=ftp,config\n./etc/pam.d/ftp type=file uname=root gname=wheel mode=0555 size=359 tags=package=runtime\n\nThe dwatch ones use e.g. `LINKS+= ${LIBEXECDIR}/dwatch/io ${LIBEXECDIR}/dwatch/io-done` rather than INSTALL_LINK explicitly.\n\n(It looks like I've just found again what Martin reported in comment #4.)"
+}

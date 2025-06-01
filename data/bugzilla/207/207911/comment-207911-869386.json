@@ -1,0 +1,8 @@
+{
+ "id": 869386,
+ "bug_id": 207911,
+ "attachment_id": 0,
+ "creation_time": "2016-03-11T19:20:05Z",
+ "creator": "ecturt@gmail.com",
+ "text": "The `kiconv` module doesn't perform checks on the reference count of its converter class before incrementing and decrementing it, sys/libkern/iconv.c:\n\nstatic int\niconv_register_converter(struct iconv_converter_class *dcp)\n{\n\tkobj_class_compile((struct kobj_class*)dcp);\n\tdcp-\u003erefs++;\n\tTAILQ_INSERT_TAIL(\u0026iconv_converters, dcp, cc_link);\n\treturn 0;\n}\n\nstatic int\niconv_unregister_converter(struct iconv_converter_class *dcp)\n{\n\tdcp-\u003erefs--;\n\tif (dcp-\u003erefs \u003e 1) {\n\t\tICDEBUG(\"converter has %d references left\\n\", dcp-\u003erefs);\n\t\treturn EBUSY;\n\t}\n\tTAILQ_REMOVE(\u0026iconv_converters, dcp, cc_link);\n\tkobj_class_free((struct kobj_class*)dcp);\n\treturn 0;\n}\n\nSince `refs` field is declared as `u_int`, if `iconv_register_converter` is called enough times it will overflow from `UINT_MAX` to `0` and then be incremented to `1`. Then when `iconv_unregister_converter` is called, the check against `dcp-\u003erefs` will be bypassed and its converter class will then be freed even though it still has references; leading to use after free behaviour.\n\nThis is mostly theoretical since it is unlikely to be possible to register this many converter classes without encountering other issues, such as running out of memory. In addition, the `iconv_register_converter` is only called on the `MOD_LOAD` event, which is root only, so is unlikely to present a security risk."
+}

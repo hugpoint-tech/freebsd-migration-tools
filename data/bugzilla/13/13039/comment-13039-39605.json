@@ -1,0 +1,8 @@
+{
+ "id": 39605,
+ "bug_id": 13039,
+ "attachment_id": 0,
+ "creation_time": "1999-08-09T09:20:00Z",
+ "creator": "mikko@dynas.se",
+ "text": "\nMake no longer properly parses archive files, so using archive members\nas make targets, as described in PSD:12 section 4.2, does not work.\n\nFix: It looks like \"ar\" and friends from the GNU binutils build SVR4-ish\narchives, with the index list in an entry called \"/\", and the long\nfile name table in one called \"//\".  See the comments in\n\"/usr/src/contrib/binutils/bfd/archive.c\"\n\nMost of the relevant code is already present in \"make\" - it is mainly\na matter of ifdeffing.  For example, like so:\n\nHow-To-Repeat: \n\nCreate a makefile, building a tiny archive. Type \"make\" a couple of\ntimes, and watch make re-build the last target every time (actually,\nnot if make:ing several times within the same second).\n\n  mt% echo 'int foo;' \u003e x.c\n  mt% cat \u003e Makefile\n  OBJS = x.o\n  libx.a: libx.a($(OBJS))\n\t  ar crs $@ $?\n  mt% make\n  cc -O -pipe -c x.c\n  ar crs libx.a x.o\n  mt% make\n  ar crs libx.a x.o\n  mt% make\n  ar crs libx.a x.o\n  mt% make -dm\n  Examining x.c...modified 9:54:47 Aug 9, 1999...up-to-date.\n  Examining x.o...modified 9:55:19 Aug 9, 1999...up-to-date.\n  Examining libx.a(x.o)...non-existent...modified before source...out-of-date.\n\t\t\t  ^^^^^^^^^^^^- not true...\n  update time: 9:55:26 Aug 9, 1999\n  Examining libx.a...modified 9:55:23 Aug 9, 1999...library...out-of-date.\n  ar crs libx.a x.o\n  update time: 9:55:26 Aug 9, 1999\n\nTry the same thing with GNU make:\n\n  mt% gmake\n  gmake: `libx.a' is up to date.\n  \nYou can even remove the object file (as per documentation for pmake):\n  \n  mt% rm x.o\n  mt% gmake\n  gmake: `libx.a' is up to date."
+}

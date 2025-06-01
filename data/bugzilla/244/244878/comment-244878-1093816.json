@@ -1,0 +1,8 @@
+{
+ "id": 1093816,
+ "bug_id": 244878,
+ "attachment_id": 0,
+ "creation_time": "2020-03-24T23:15:12Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "Not a lot to go on from the backtrace.   One thing that can cause this panic is if a thread calls smp_rendezvous_cpus() with local interrupts disabled: if another thread holds smp_ipi_mtx and is trying to IPI the first thread's CPU, the two threads can livelock.\n\nIt doesn't look like the timer callout+in6 route expiration path that panicked should ever call smp_rendezvous_cpus() with interrupts disabled, but I think it's also possible that this thread could have been the victim of two other threads that were livelocked.\n\nr357308 added a check to HEAD (INVARIANTS kernels only) that panics if a thread enters smp_rendezvous_cpus() with interrupts disabled.  If this is at all reproducible, it might be worth trying a kernel with that check backported.\n\nAlso worth noting: in6_mtutimo() was completely removed from HEAD in 355888."
+}

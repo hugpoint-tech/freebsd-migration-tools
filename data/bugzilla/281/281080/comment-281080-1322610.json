@@ -1,0 +1,8 @@
+{
+ "id": 1322610,
+ "bug_id": 281080,
+ "attachment_id": 0,
+ "creation_time": "2024-08-26T22:55:26Z",
+ "creator": "bsdcode@disroot.org",
+ "text": "The relationship between ares and librashader is this: ares bundles a local copy of the complete librashader sourcecode under ${WRKSRC}/thirdparty/librashader. The only things ares really needs and uses from it are the includefiles include/librashader.h and include/librashader_ld.h. But this is mandatory, ares won't compile without them. At runtime it isn't a hard dependency, it tries to dynamically load ${LOCALBASE}/lib/librashader.so and if it succeeds then shaders work, if it doesn't succeed then shaders don't work.\n\nIf it wouldn't be an unconditional build dependency then we could control everything related to librashader behind the SHADER portoption, i.e.\n * use SHADER_LIB_DEPENDS=devel/librashader instead of BUILD_DEPENDS + SHADER_RUN_DEPENDS\n * use SHADER_CFLAGS=-DLIBRA_RUNTIME_OPENGL instead of CFLAGS\n * use ${REINPLACE_CMD} for librashader_ld.h in post-patch-SHADER-on instead of in post-patch\n * use ${REINPLACE_CMD} 's|-I../thirdparty/librashader/include||g' ${WRKSRC}/desktop-ui/GNUmakefile in post-patch-SHADER-on instead of inside the desktop-ui_GNUmakefile patch itself\n\nNow, we can do exactly this, but because librashader is an unconditional build dependency we have the following situation:\n * SHADER on: ares build uses includefiles from devel/librashader\n * SHADER off: ares build uses bundled includefiles\n\nWith my current updatepatch we just always use the includefiles from devel/librashader.\n\nWhat are you recommending?"
+}

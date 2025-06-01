@@ -1,0 +1,8 @@
+{
+ "id": 38225,
+ "bug_id": 12614,
+ "attachment_id": 0,
+ "creation_time": "1999-07-13T02:00:01Z",
+ "creator": "mconst@csua.berkeley.edu",
+ "text": "\n    apm -r sets the machine to wake up from suspend mode after the specified\n    number of seconds.  However, it always calculates the time to wake up in\n    UTC, even if the machine's CMOS clock uses wall time.  The effect is that\n    apm -r will wake up your machine either several hours too late (if you're\n    west of Greenwich) or not at all (if you're east).\n \n    /usr/src/usr.sbin/apm/apm.c includes code to correctly set the wakeup\n    time on wall_cmos_clock machines, controlled by the variable \"cmos_wall\".\n    It never actually sets that variable, though, so it always uses the code\n    path for UTC CMOS clock machines.  I've included a patch for apm below.\n\nFix: The following patch fixes the problem.\n\n    Note: when testing apm (with or without this patch), do not trust the\n    \"Resume timer:\" line it sometimes outputs.  That's also broken, and I've\n    submitted a patch for it as a separate PR.\n\nHow-To-Repeat: \n    $ ls -l /etc/wall_cmos_clock\n    -rw-r--r--  1 root  wheel  0 Jun 19 19:45 /etc/wall_cmos_clock\n    $ apm\n    APM version: 1.2\n    APM Managment: Enabled\n    AC Line status: on-line\n    Battery status: charging\n    Remaining battery life: 92%\n    Remaining battery time: unknown\n    Number of batteries: 2\n    Resume timer: disabled\n    Resume on ring indicator: disabled\n    APM Capacities:\n\t    global standby state\n\t    global suspend state\n\t    resume timer from suspend\n    $ apm -r30\n    $ zzz\n\n    The machine suspends, but does not resume 30 seconds later."
+}

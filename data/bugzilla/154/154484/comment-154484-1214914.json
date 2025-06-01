@@ -1,0 +1,8 @@
+{
+ "id": 1214914,
+ "bug_id": 154484,
+ "attachment_id": 0,
+ "creation_time": "2022-06-08T05:09:51Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "We need \"zfs jail\" between jail(2) and \"jexec sh /etc/rc\". exec.created fits there. This works:\n  exec.created = \"zfs jail $name pool/dataset\"\nFor rc.d/jail though I had to use this patch:\n\n--- /tmp/jail   2022-06-07 21:56:17.886298000 -0700\n+++ /etc/rc.d/jail      2022-06-07 21:56:19.863706000 -0700\n@@ -213,6 +213,7 @@ parse_options()\n                echo \"  exec.system_user = \\\"root\\\";\"\n                echo \"  exec.jail_user = \\\"root\\\";\"\n                extract_var $_jv exec_prestart exec.prestart 0 \"\"\n+               extract_var $_jv exec_created exec.created - \"\"\n                extract_var $_jv exec_poststart exec.poststart 0 \"\"\n                extract_var $_jv exec_prestop exec.prestop 0 \"\"\n                extract_var $_jv exec_poststop exec.poststop 0 \"\"\n\n\nThere is no good place for a \"zfs unjail\" though.\nWe need \"zfs unjail\" between \"jexec sh /etc/rc.shutdown\" and jail_remove(2).\n\n\nI think most of the patch here does not apply anymore and jail(8) handles executing commands itself. If we add a spot between stop and IP__OP that executes in the system it should work. Very incomplete example of where to start on a proper patch:\n\ndiff --git usr.sbin/jail/jail.c usr.sbin/jail/jail.c\nindex 63096146f176..13bbfe5f69e3 100644\n--- usr.sbin/jail/jail.c\n+++ usr.sbin/jail/jail.c\n@@ -114,6 +114,7 @@ static const enum intparam stopcommands[] = {\n     IP_EXEC_PRESTOP,\n     IP_EXEC_STOP,\n     IP_STOP_TIMEOUT,\n+    IP_EXEC_STOPPED,\n     IP__OP,\n     IP_EXEC_POSTSTOP,\n     IP_MOUNT_PROCFS,"
+}

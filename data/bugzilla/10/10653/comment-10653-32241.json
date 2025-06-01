@@ -1,0 +1,8 @@
+{
+ "id": 32241,
+ "bug_id": 10653,
+ "attachment_id": 0,
+ "creation_time": "1999-03-18T18:30:00Z",
+ "creator": "M.Indlekofer@fz-juelich.de",
+ "text": "A char device driver which uses \nCDEV_MODULE(xxx_mod,MYMAJOR,xxx_devsw,xxx_handler,0)\nand wants to prevent an unloading of the module\n(because some devices he offers are still in use e.g.) has a problem:\nkldunload -\u003e /sys/kern/kern_conf.c:cdevsw_module_handler\nwhich calls for MOD_UNLOAD the function cdevsw_add(...,NULL,NULL)\nwhich unregisters our xxx_devsw! AFTERWARDS xxx_handler is asked\nif he wants to unload,...but it's too late...the xxx_devsw is gone,\neven for the case we don't want to unload!\n\nIn my case: A program used a device and kldunload was called.\nxxx_handler returned EBUSY and kldunload said: can't unload, device busy.\nThe next time the program issued a ioctl for the still open device\nthe system crashed in spec_ioctl (gdb -k ...) with an invalid\nentry in the cdevsw for MYMAJOR: Fatal trap 12: page fault in kernel mode.\n\nFix: \n\n/sys/kern/kern_conf.c:???devsw_module_handler should consult the\nmodule handler (data-\u003echainevh) FIRST in the case of MOD_UNLOAD\nwhether the module want's to unload before it \"kills\" the devsw!\nHow-To-Repeat: see example above"
+}

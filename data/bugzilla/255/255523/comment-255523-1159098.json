@@ -1,0 +1,8 @@
+{
+ "id": 1159098,
+ "bug_id": 255523,
+ "attachment_id": 0,
+ "creation_time": "2021-05-01T04:23:30Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "vn_generic_copy_file_range can copy both data and holes.  However, it copies holes much more slowly than theoretically possible.  In my experiments using NFS 4.2 with FreeBSD 13.0-RELEASE servers and clients and ZFS local file systems, I can only achieve about 300 MBps when copying a file from NFS to local disk, when that file consists of a single giant hole.  In theory, the maximum speed should be infinite, given a sufficiently \"large\" sparse file.\n\nSteps to Reproduce\n==================\n1) Mount a ZFS-backed file system using nfsv4 with minorversion=2\n2) On the server, create a giant sparse file with \"truncate -s 1t sparsefile\"\n3) On the client, copy it to local storage with \"cp sparsefile /tmp\"\n\nAnalysis\n========\n\ndtrace shows that vn_rdwr gets called repeatedly with len=64k.  Basically, it extends the file by 64kB at a time.  That's due to the \"xfer = blksize\" assignment in vn_generic_copy_file_range.  vn_generic_copy_file_range proceeds to loop xfer bytes at a time.  Instead, it should write the entire hole at once.\n\nNote that this only happens when the hole extends to EOF.  If instead there is a small data region at EOF, then vn_generic_copy_file_range does indeed handle the hole efficiently."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1202893,
+ "bug_id": 262571,
+ "attachment_id": 232471,
+ "creation_time": "2022-03-15T14:08:19Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Created attachment 232471\nPatch that works around the problem\n\nAs discussed on the freebsd-net mailing list[0]. Also affects CURRENT.\n\nWhen running on multicore systems, epair interfaces stop forwarding traffic even on moderate load and don't recover unless recreated. This is a critical problem, as it breaks vnet jails running non-trivial workloads. The problem can be reproduced easily using a shell script[1].\n\nThis was introduced when adding multi-core improvements to epair[2].\n\nIt happens because work is scheduled in taskqueue(s) based on a check if mbuf ring buffers are empty, a logic which is racy on multi-core systems. The race is happening between epair_menq() and epair_tx_start_deferred().\n\nThe patch attached to this PR addresses the problem, but it needs to be looked at, profiled, and most likely improved by somebody who has a better understanding of both the code in question and writing lock free-code in general.\n\n[0]https://lists.freebsd.org/archives/freebsd-net/2022-March/001449.html\n[1]https://people.freebsd.org/~grembo/hang_epair.sh\n[2]https://cgit.freebsd.org/src/commit/?id=24f0bfbad57b9c3cb9b543a60b2ba00e4812c286"
+}

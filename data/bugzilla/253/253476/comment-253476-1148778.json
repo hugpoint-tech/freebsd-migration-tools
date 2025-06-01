@@ -1,0 +1,8 @@
+{
+ "id": 1148778,
+ "bug_id": 253476,
+ "attachment_id": 0,
+ "creation_time": "2021-02-25T17:58:22Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "We discussed this behavior in the #transport call today.\n\nThe stack behaves according to RFC73232 with the default options.\n\nThe consensus of the groups was that the TCP stack default should not be changed. The current behavior of ipfw with the injected keepalive would break with other (non-fbsd) stacks which adhere to RFC7323 just the same.\n\nTwo other remediation options were discussed: \na) retain more state in ipfw when a timestamp option is present, and use the most recent TSval / ecr combination observed when injecting the keepalive\nb) intercept the 3WHS and remove the timestamp option there.\n\nOption a) was preferred heavily - option b) fails when the firewall only gets to see an ongoing session (e.g. rerouting events) but not the syn, and reduces the information available to the TCP endpoints to run a number of mechanisms designed to improve performance and enhance data integrity at high speeds.\n\noption a) could still fail, for example if ipfw does not see the most recent segment in the direction, where the keepalive is to be injected - as per RFC7323, old timestamp values render the segment not acceptable. But in the vast majority of instances, that approach will make ipfw compliant with RFC7323."
+}

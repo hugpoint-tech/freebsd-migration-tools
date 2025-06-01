@@ -1,0 +1,8 @@
+{
+ "id": 685979,
+ "bug_id": 172113,
+ "attachment_id": 0,
+ "creation_time": "2013-02-21T22:12:55Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "An update on this.  I think we should just use a workaround as this seems to \nbe specific to a certain set of motherboards.  This is the fix I'm using \nlocally:\n\nIndex: if_igb.c\n===================================================================\n--- if_igb.c    (revision 243732)\n+++ if_igb.c    (working copy)\n@@ -1522,6 +1522,15 @@\n        u32             newitr = 0;\n        bool            more_rx;\n \n+       /*\n+        * The onboard adapters on certain SuperMicro X8* boards\n+        * trigger a spurious interrupt during boot.  Since it\n+        * occurs before the interface is fully configured it\n+        * triggers a panic.  Ignore the interrupt instead.\n+        */\n+       if (!(adapter-\u003eifp-\u003eif_drv_flags \u0026 IFF_DRV_RUNNING))\n+               return;\n+\n        E1000_WRITE_REG(\u0026adapter-\u003ehw, E1000_EIMC, que-\u003eeims);\n        ++que-\u003eirqs;\n\n-- \nJohn Baldwin"
+}

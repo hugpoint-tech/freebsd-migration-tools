@@ -1,0 +1,8 @@
+{
+ "id": 1298805,
+ "bug_id": 277336,
+ "attachment_id": 0,
+ "creation_time": "2024-02-27T00:30:18Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "So you are trying to associate (or re-associate).  For as-to-why in that moment is unclear.  wpa suplicant log in syslog may tell you more.  Possibly have to up the -dd there.\n\nWhen that happens iwlwifi says it hasn't seen the necessary state update in time and calls connection loss which will take the session down and the next attempt will likely succeed given you say \"sub-second\".\n\nCould it be you are in a noisy radio environment?  Just checking before further digging in.\n\nAlso which chipset+firmware is this?\nSeems the firmware is not enabling a lot of debugging (seen that for other bits as well and doesn't seem us).\n\nI haven't tested but can you try adding the following one line change.  Will give us at least an idea about why iwlwifi thinks to notify the lost connection. My first thought always is missing beacons but in this case probably a time event?\n\n--- sys/contrib/dev/iwlwifi/mvm/utils.c\n+++ sys/contrib/dev/iwlwifi/mvm/utils.c\n@@ -730,6 +730,7 @@ void iwl_mvm_connection_loss(struct iwl_mvm *mvm, struct ieee80211_vif *vif,\n        iwl_fw_dbg_collect_trig(\u0026mvm-\u003efwrt, trig, \"%s\", errmsg);\n \n out:\n+       printf(\"%s: %s\\n\", __func__, errmsg);\n        ieee80211_connection_loss(vif);\n }"
+}

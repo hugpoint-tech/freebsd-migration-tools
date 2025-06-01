@@ -1,0 +1,8 @@
+{
+ "id": 18753,
+ "bug_id": 6127,
+ "attachment_id": 0,
+ "creation_time": "1998-03-25T08:10:03Z",
+ "creator": "ari@suutari.iki.fi",
+ "text": "\n\tTo be able to use libmd MD5 routines in my user-process\n\timplementation of RFC1828, an additional routine\n\twould be required to be able to pad key data in\n\tsame way as done by MD5Final.\n\nFix: \n\nSplit MD5Final into two functions: MD5Pad and MD5Final. \n\tMD5Pad does the padding currently done by first part\n\tof MD5Final. MD5Final would first call MD5Pad.\n\tLike this:\n\n\tvoid\n\tMD5Final (digest, context)\n\t\tunsigned char digest[16];\n\t\tMD5_CTX *context;\n\t{ \n\t\t/* Padding */\n\t \n\t\tMD5Pad (context);\n \n\t\t/* Store state in digest */\n\t\tEncode (digest, context-\u003estate, 16);\n \n\t\t/* Zeroize sensitive information. */\n\t\tmemset ((void *)context, 0, sizeof (*context));\n\t} \n\n\tvoid\n\tMD5Pad (context)\n\t\tMD5_CTX *context; \n\t{       \n\t\tunsigned char bits[8];\n\t\tunsigned int index, padLen;\n        \n\t\t/* Save number of bits */\n\t\tEncode (bits, context-\u003ecount, 8);\n        \n\t\t/* Pad out to 56 mod 64. */\n\t\tindex = (unsigned int)((context-\u003ecount[0] \u003e\u003e 3) \u0026 0x3f);\n\t\tpadLen = (index \u003c 56) ? (56 - index) : (120 - index);\n\t\tMD5Update (context, PADDING, padLen);\n        \n\t\t/* Append length (before padding) */\n\t\tMD5Update (context, bits, 8);\n\t}"
+}

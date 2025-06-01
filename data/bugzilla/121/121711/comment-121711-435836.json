@@ -1,0 +1,8 @@
+{
+ "id": 435836,
+ "bug_id": 121711,
+ "attachment_id": 0,
+ "creation_time": "2008-03-14T19:20:02Z",
+ "creator": "cp+FreeBSD.org@FreeBSD.org",
+ "text": "When the port is built with USE_SOCKET_SSL, OpenDD has segmentation fault under 7.0-RELEASE when started.\n\n$ opendd -c /usr/local/etc/opendd/opendd.conf -v \n-- running OpenDD 0.7.8 in normal mode\ndrop_privileges() : setgid to nogroup (gid 65533)\ndrop_privileges() : setuid to nobody (uid 65534)\nmain() : getting my ip address : \u003cip\u003e\ndyndns() : Setting SSL trust certificate store to /usr/local/etc/opendd/opendd.pem\nSegmentation fault\n\nThe problem doesn't exist in 6.2-RELEASE.\n\nFix: \n\nAfter some digging, it appears the segmentation fault occurred just before calling SSL_CTX_load_verify_locations():\n\ninclude/socket.c(527): if (!SSL_CTX_load_verify_locations(new_socket-\u003ectx, pathstore, NULL)) {\n\nImmediate before the above line executes, (new_socket-\u003ectx==NULL) is true.\n\nCalling,\n  SSL_load_error_strings();\n  ERR_print_errors_fp(stderr);\njust before the above line will output the following just before segmentation fault,\n\n11038:error:140A90A1:SSL routines:SSL_CTX_new:library has no ciphers:/usr/src/secure/lib/libssl/../../../crypto/openssl/ssl/ssl_lib.c:1424:\n\nHave no idea what the problem is apart from the above.\nHow-To-Repeat: 1. Build and install dns/opendd from the port collection. (Build with USE_SOCKET_SSL during config).\n2. Modify /usr/local/etc/opendd/opendd.conf and change the following parameters:\n  use_ssl = 1\n  runasdaemon = 0\n  iface = \u003cinterface\u003e\n3. Run the opendd program by running\n$ opendd -c /usr/local/etc/opendd/opendd.conf -v"
+}

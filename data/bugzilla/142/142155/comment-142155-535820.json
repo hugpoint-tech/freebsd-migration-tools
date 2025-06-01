@@ -1,0 +1,8 @@
+{
+ "id": 535820,
+ "bug_id": 142155,
+ "attachment_id": 0,
+ "creation_time": "2010-01-04T15:51:17Z",
+ "creator": "gpf.kira@gmail.com",
+ "text": "Hi.\n\nNot sure if this qualifies as a bug, but it's certainly a little\nmisleading if you want to manipulate ufsids.\nThe only issue here is that ufsid is the result of concatenating two\nfs ids, in your example the hex numbers \"4ae2d4ec\" and \"6f7fec5\"\nEach id number has a max length of 8 digits so when concatenating the\ntwo ids to create the ufsid, a 0 is added in front of \"6f7fec5\" to\nmaintain a length of 16 characters total and actually keep the\noriginal numbers in the ufsid. Two possible fixes:\n\n1) Change the way you interpret the output of dumpfs(8) in a way\nsimilar to the one described in the following link\n\nhttp://www.mail-archive.com/freebsd-stable@freebsd.org/msg106566.html\n\nNotice the \"printf %0x $((0x\\1 \u003c\u003c 32 | 0x\\2))/p\" part, simple bitwise operations\n\n2) Apply my patch and recompile dumpfs so that if one of the ids has\nfewer than 8 digits, leading zeros are always printed. That way your\nscript doesn't have to do anything \"special\"\n\nElaboration:\n\nIn dumpfs.c, line 153\n\nprintf(\"superblock location\\t%jd\\tid\\t[ %x %x ]\\n\",\n(intmax_t)afs.fs_sblockloc, afs.fs_id[0], afs.fs_id[1]);\n\nYou can see it's printing two variables in hex (%x = unsigned hex number)\nThe fs_id array is of type int32_t so the maximum value has 8 digits.\n\nHope this helps, reply if somehow you still have a problem.\n\n-- \n\nEfstratios \"GPF\" Karatzas"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 840657,
+ "bug_id": 203162,
+ "attachment_id": 0,
+ "creation_time": "2015-09-16T23:36:28Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Victor Stinner from comment #1)\nI see the 'hang', where the parent is sleeping on open(O_WRONLY), and there is no child.  The situation is not too mysterious, see the explanation below.\n\nTest sets up two processes, parent does open(fifo, O_WRONLY), child does open(fifo, O_RDONLY).  Either process can proceed further if other process enters open(), or a signal is delivered interrupting the sleep waiting for the residual open.  Assume that the parent sleeps in open waiting for child/reader, child enters open and since there is writer waiting, the open in child succeeded.  Child wakes up the parent to notify that open(O_WRONLY) can succeed as well (there is reader after all).  And, the crusial point, assume that the parent gets signal notification before it gets wakeup notice.\n\nIn this setup, open() in parent returns with EINTR.  On the other hand, child successfully opened fifo for read, and after some more work, it exits.  But the parent retries the open(O_WRONLY).  There is no child to open fifo, so open() cannot succeed, it only gets interrupted by signal periodically.  And, parent would not start another child until this open succeed.\n\nHopefully this can be followed.\n\nFWIW, do not use truss, use kdump -i."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 553329,
+ "bug_id": 145748,
+ "attachment_id": 0,
+ "creation_time": "2010-04-16T08:25:16Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "This works however:\n    echo \"$(jot -b a 1024)\" | hexdump  -e '/1 \"%4s\\n\"'\nThe FSM is skipping over the format qualifier for %s in size()\naccording to some basic poking via gdb, because of trailing characters\nafter the qualifier:\n\n(gdb) set args -e '\"%4s\\n\"' foo\n(gdb) r\nStarting program: /usr/src/usr.bin/hexdump/hexdump -e '\"%4s\\n\"' foo\n\nBreakpoint 2, size (fs=0x800c07040) at parse.c:174\n174\t\t\t\twhile (index(spec + 1, *++fmt));\n(gdb) n\n\nBreakpoint 2, size (fs=0x800c07040) at parse.c:174\n174\t\t\t\twhile (index(spec + 1, *++fmt));\n(gdb) n\n175\t\t\t\tif (*fmt == '.' \u0026\u0026 isdigit(*++fmt)) {\n(gdb) p fmt\n$1 = (unsigned char *) 0x800c09062 \"s\\n\"\n\nSo the format strings with the qualifier itself aren't being properly\ndivvied up, which is a more difficult state to deal with than I\noriginally anticipated I'd be dealing with \u003e:(... This comes back to\nthe code mess in add() I have to deal with in several other PRs.\n\nThanks,\n-Garrett"
+}

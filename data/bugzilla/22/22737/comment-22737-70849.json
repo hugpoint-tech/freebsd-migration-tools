@@ -1,0 +1,8 @@
+{
+ "id": 70849,
+ "bug_id": 22737,
+ "attachment_id": 0,
+ "creation_time": "2000-11-10T13:20:01Z",
+ "creator": "langd@leo.org",
+ "text": "\nThe symptom is, that syslog gets filled with the following\nerror message:\n\n/kernel: arp_rtrequest: bad gateway value\n\nmaking the relevant information hard to detect.\n\nIt only occurs if the machine hosts multiple ips\non a single interface, and routed is running. \nThe problem does not happen with \"gated\".\n\nThe error message is created in /usr/src/sys/netinet/if_ether.c,\nonly if a RTM_RESOLVE request is processed and the passed\nrtentry contains a gateway (struct sockaddr), which is either\nnot an address of AF_LINK or, the length-field is smaller than\na empty dummy struct sockaddr (if I interpreted the source right).\nUnfortunately I'm not too familiar with the kernel in general\nand with programming routing stuff.\n\nI did not try to set a breakpoint in the kernel debugger\nand debug the kernel online, to get more hints, where the\nwrong gateway strcut sockaddr is passed from.\n\nI suspect routed has a problem with the alias ips (they have\na 0xffffffff netmask, and itself as gateway) and somehow\nwrites a wrong value to the routing socket?\n\ngated does not seem to have this problem, so you could\nrun gated instead. It also does not occur on machines without\nalias ips.\n\nBy tcpdumping the RIP packets, I detected a few wrong\nconfigured gateways ;-), but the information itself is \nnot malformed, or s.th. so it's not because of\nbogus routes broadcasting crap RIP packets.\n\nFix: \n\nuse gated\nHow-To-Repeat: \nifconfig \u003cif\u003e inet \u003calias ip\u003e netmask 0xffffffff alias\nrouted -q\ntail -f /var/log/messages"
+}

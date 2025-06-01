@@ -1,0 +1,8 @@
+{
+ "id": 1042716,
+ "bug_id": 236581,
+ "attachment_id": 0,
+ "creation_time": "2019-03-17T19:10:39Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Jan Beich from comment #4)\n\u003e (In reply to commit-hook from comment #3)\n\u003e Still no good for LLD_UNSAFE ports.\n\u003e \n\u003e $ cc -fopenmp -fuse-ld=bfd omp_hello.c\n\u003e /usr/local/bin/ld.bfd: /usr/lib/libomp.so: undefined reference to `scalbnl'\n\u003e /usr/local/bin/ld.bfd: /usr/lib/libomp.so: undefined reference to `fmaxl'\n\u003e /usr/local/bin/ld.bfd: /usr/lib/libomp.so: undefined reference to `logbl'\n\u003e /usr/local/bin/ld.bfd: /usr/lib/libomp.so: undefined reference to `scalbnf'\n\u003e /usr/local/bin/ld.bfd: /usr/lib/libomp.so: undefined reference to `scalbn'\n\u003e cc: error: linker command failed with exit code 1 (use -v to see invocation)\n\nHm, this is getting annoying. :-)  It looks like these are transitively pulled in via libcompiler-rt:\n\n0000000000063b70 \u003c__kmpc_atomic_cmplx10_div\u003e:\n[...]\n   63c2d:       e8 4e 50 03 00          callq  98c80 \u003c__divxc3\u003e\n[...]\n0000000000098c80 \u003c__divxc3\u003e:\n[...]\n   98cb5:       e8 86 14 00 00          callq  9a140 \u003cfmaxl@plt\u003e\n   98cba:       db 3c 24                fstpt  (%rsp)\n   98cbd:       e8 8e 14 00 00          callq  9a150 \u003clogbl@plt\u003e\n[...]\n   98d10:       e8 4b 14 00 00          callq  9a160 \u003cscalbnl@plt\u003e\n\nAt some point, we'll have to get libgcc/compiler-rt users automagically pull in -lm.  Or fold libm into libc, like we should also do with libthr. ;-)"
+}

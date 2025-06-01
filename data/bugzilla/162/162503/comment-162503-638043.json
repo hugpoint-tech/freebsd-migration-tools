@@ -1,0 +1,8 @@
+{
+ "id": 638043,
+ "bug_id": 162503,
+ "attachment_id": 0,
+ "creation_time": "2011-11-12T17:40:05Z",
+ "creator": "subbsd@gmail.com",
+ "text": "Looks like makefs(8) tools creates incorrect image with UFS2 file system.\nUFS1 is ok, for example:\n\n# makefs /tmp/test1.img /bin\n\n# file -s /tmp/test1.img \n/tmp/test1.img: Unix Fast File system [v1] (little-endian), last mounted on , last written at Sat Nov 12 21:34:57 2011, clean flag 1, number of blocks 1296, number of data blocks 1255, number of cylinder groups 1, block size 8192, fragment size 1024, minimum percentage of free blocks 8, rotational delay 0ms, disk rotational speed 60rps, TIME optimization\n\nAll fine.\nTry to use makefs for UFS2:\n\n# makefs -t ffs -o version=2 -o label=ROOTFS /tmp/test1.img /bin\n\n# file -s /tmp/test1.img\n/tmp/test1.img: data\n\nTry use mdconfig and newfs instead of makefs:\n# truncate -s 100m /tmp/testme\n# newfs -L ROOTFS `mdconfig -a -t vnode -f /tmp/testme`\n\n# file -s /tmp/testme \n/tmp/testme: Unix Fast File system [v2] (little-endian) last mounted on , volume name ROOTFS, last written at Sat Nov 12 17:38:29 2011, clean flag 1, readonly flag 0, number of blocks 25600, number of data blocks 25095, number of cylinder groups 4, block size 32768, fragment size 4096, average file size 16384, average number of files in dir 64, pending blocks to free 0, pending inodes to free 0, system-wide uuid 0, minimum percentage of free blocks 8, TIME optimization\n\n\nAll fine.\n\nWith this problem it is impossible to create UFS2 (which support LABEL) image which it is possible to use as mfsroot image at loading on UFS Label through\n\nrootfs_type=\"mfs_root\"\nrootfs_name=\"/boot/mfsroot\"\nvfs.root.mountfrom=\"ufs:/dev/ufs/ROOTFS\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1181060,
+ "bug_id": 258932,
+ "attachment_id": 0,
+ "creation_time": "2021-10-05T15:12:08Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Bryan Drewery from comment #7)\nThanks.  So it appears that the referencing pmap belongs to the parent process, another tmux process:\n\ndb\u003e show proc 1634\nProcess 1634 (tmux) at 0xfffff809dd32f000:\n state: NORMAL\n uid: 0  gids: 0, 0, 5, 65531, 65532\n parent: pid 1 at 0xfffff801140cf538\n ABI: FreeBSD ELF64\n flag: 0x10000000  flag2: 0\n arguments: tmux: server (/tmp/tmux-0/default)\n reaper: 0xfffff801140cf538 reapsubtree: 1\n sigparent: 20\n vmspace: 0xfffffe238e741000\n   (map 0xfffffe238e741000)\n   (map.pmap 0xfffffe238e7410c0)\n   (pmap 0xfffffe238e741120)\n threads: 1\n101736                   S       select  0xfffff80a3a993740  tmux\n\nSwitching to that thread,\n\ndb\u003e show pte 0x811be5000                                                                                                                                                                                                                                                                                                      \nVA 0x0000000811be5000 pml4e 0x0000000338dad067 pdpe 0x0000000876895067 pde 0x000000077bde3067 pte 0x800000107d157425\n\nSo the PTE is indeed valid and the paddr matches that of the page in question.\n\nProc 1634 has a very very fragmented vm_map for some reason, tons of small map entries.  I need to let \"show procvm\" run for a while to find the map entry corresponding to 0x811be5000."
+}

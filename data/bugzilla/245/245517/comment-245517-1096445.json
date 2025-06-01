@@ -1,0 +1,8 @@
+{
+ "id": 1096445,
+ "bug_id": 245517,
+ "attachment_id": 213259,
+ "creation_time": "2020-04-10T19:40:46Z",
+ "creator": "vvd@FreeBSD.org",
+ "text": "Created attachment 213259\nUpdate to 2.0.0\n\nFreeRDP 2.0.0 require newer version of libusb compared to base system have.\nThere are several errors during build.\n\n1. Undeclared LIBUSB_CLASS_PHYSICAL, patch (hack?) is:\n--- channels/urbdrc/client/libusb/libusb_udevice.h.orig\n+++ channels/urbdrc/client/libusb/libusb_udevice.h\n@@ -75,4 +75,8 @@\n                            BYTE dev_number);\n const char* usb_interface_class_to_string(uint8_t class);\n \n+#ifndef LIBUSB_CLASS_PHYSICAL\n+#define LIBUSB_CLASS_PHYSICAL 5\n+#endif\n+\n #endif /* FREERDP_CHANNEL_URBDRC_CLIENT_LIBUSB_UDEVICE_H */\n\n2. Undeclared LIBUSB_CAP_HAS_HOTPLUG - doesn't know how to do better than just add:\n#ifndef LIBUSB_CAP_HAS_HOTPLUG\n#define LIBUSB_CAP_HAS_HOTPLUG 0x0001\n#endif\n\n3. No include file mntent.h - got solution from devel/fam.\n\n4. Undeclared O_TMPFILE in FreeBSD. Fix is here: \nPATCHFILES=     3929226.patch:-p1\nhttps://github.com/FreeRDP/FreeRDP/commit/39292268308a3fd6233c2863df22232725d22b3a\n\n--- a/uwac/libuwac/uwac-os.c\n+++ b/uwac/libuwac/uwac-os.c\n@@ -33,6 +33,11 @@\n #define USE_SHM\n #endif\n \n+/* uClibc and uClibc-ng don't provide O_TMPFILE */\n+#ifndef O_TMPFILE\n+#define O_TMPFILE (020000000 | O_DIRECTORY)\n+#endif\n+\n #include \u003csys/types.h\u003e\n #include \u003csys/socket.h\u003e\n #ifdef USE_SHM\n\n5. Doesn't know is msusb.h needed - it was moved in sources, and I removed it from pkg-plist.\n\nAfter that it build fine and connect via rdp to server. Tested on 12.1 amd64."
+}

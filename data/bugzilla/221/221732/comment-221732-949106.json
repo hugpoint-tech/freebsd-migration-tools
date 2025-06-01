@@ -1,0 +1,8 @@
+{
+ "id": 949106,
+ "bug_id": 221732,
+ "attachment_id": 0,
+ "creation_time": "2017-08-23T03:39:51Z",
+ "creator": "thompsa@FreeBSD.org",
+ "text": "Consul will silently fail to load if there is a syntax error in the config, add a precheck to catch this.\n\n\n--- /usr/local/etc/rc.d/consul\t2017-07-19 10:19:37.000000000 +1200\n+++ /tmp/puppet-file20170823-57649-2mf3pd\t2017-08-23 15:29:05.985906660 +1200\n@@ -22,7 +22,7 @@\n \n name=consul\n rcvar=consul_enable\n-extra_commands=\"reload\"\n+extra_commands=\"reload configtest\"\n \n load_rc_config $name\n \n@@ -37,6 +37,10 @@\n command_args=\"-f -p ${pidfile} /usr/bin/env ${consul_env} ${procname} agent -data-dir=${consul_dir} -config-dir=/usr/local/etc/consul.d ${consul_args}\"\n \n start_precmd=consul_startprecmd\n+restart_precmd=consul_checkconfig\n+reload_precmd=consul_checkconfig\n+configtest_cmd=consul_checkconfig\n+upgrade_precmd=consul_checkconfig\n \n consul_startprecmd()\n {\n@@ -47,7 +51,12 @@\n         if [ ! -d ${consul_dir} ]; then\n                 install -d -o ${consul_user} -g ${consul_group} ${consul_dir}\n         fi\n+\tconsul_checkconfig\n+}\n \n+consul_checkconfig()\n+{\n+\t${procname} validate /usr/local/etc/consul.d\n }\n \n run_rc_command \"$1\""
+}

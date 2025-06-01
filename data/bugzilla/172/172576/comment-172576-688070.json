@@ -1,0 +1,8 @@
+{
+ "id": 688070,
+ "bug_id": 172576,
+ "attachment_id": 0,
+ "creation_time": "2012-10-10T23:58:22Z",
+ "creator": "ritesh_shah2000@yahoo.com",
+ "text": "xdrrec_create() routine in lib/libc/xdr/xdr_rec.c returns a void. Under low memory condition this routine can bail out early and leave part of the XDR structrure uninitialized. \n\nThe callers : \n\nclnt_vc_create() in lib/libc/rpc/clnt_vc.c \u0026 \nmakefd_xprt() in lib/libc/rpc/svc_vc.c\n\ndo not check whether failed or not. \n\nThis can lead to segfault when uninitialized pointers are accessed.\n\nThis bug exists in FreeBSD 9 as well.\n\n192\t        rstrm-\u003ein_base = mem_alloc(recvsize);\n193\t        if (rstrm-\u003ein_base == NULL) {\n194\t                warnx(\"xdrrec_create: out of memory\");\n195\t                mem_free(rstrm-\u003eout_base, sendsize);\n196\t                mem_free(rstrm, sizeof(RECSTREAM));\n197\t                return;\n198\t        }\n199\t        /*\n200\t         * now the rest ...\n201\t         */\n202\t        xdrs-\u003ex_ops = \u0026xdrrec_ops;\n203\t        xdrs-\u003ex_private = rstrm;\n204\t        rstrm-\u003etcp_handle = tcp_handle;\n\nFix: \n\nIt has been reported against netbsd as well.\n\nhttp://mail-index.netbsd.org/netbsd-bugs/2012/08/06/msg029375.html\n\nI can provide a patch if there is an agreement on how it should be fixed."
+}

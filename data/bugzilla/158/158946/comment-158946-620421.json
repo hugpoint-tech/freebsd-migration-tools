@@ -1,0 +1,8 @@
+{
+ "id": 620421,
+ "bug_id": 158946,
+ "attachment_id": 0,
+ "creation_time": "2011-07-15T13:42:09Z",
+ "creator": "inyaoo@gmail.com",
+ "text": "It needlessly links against librt on FreeBSD for clock_gettime(2).\nHere are two ways to fix, the second can be sent upstream.\n\n--- a.diff begins here ---\ndiff --git Makefile Makefile\nindex 92ab6d1..d290206 100644\n--- Makefile\n+++ Makefile\n@@ -55,6 +55,7 @@ EXTRA_PATCHES=\t${PATCHDIR}/extra-patch-tty-keys.c\n post-patch:\n \t@${REINPLACE_CMD} -e 's|/etc/tmux.conf|${PREFIX}/etc/tmux.conf|g' \\\n \t\t${WRKSRC}/tmux.1 ${WRKSRC}/tmux.h ${WRKSRC}/CHANGES\n+\t${REINPLACE_CMD} -e '/LIBS=/s/-lrt//' ${WRKSRC}/${CONFIGURE_SCRIPT}\n .if defined(WITH_LIBEVENT_STATIC)\n \t${REINPLACE_CMD} -e '4534s|$$ac_res |${LESTATIC} |' ${WRKSRC}/${CONFIGURE_SCRIPT}\n .endif\n--- a.diff ends here ---\n\n--- b.diff begins here ---\nIndex: configure.ac\n===================================================================\n--- configure.ac\t(revision 2561)\n+++ configure.ac\t(working copy)\n@@ -102,7 +102,7 @@ AM_CONDITIONAL(IS_GLIBC, test \"x$found_glibc\" = xy\n AC_MSG_RESULT($found_glibc)\n \n # Look for clock_gettime. Must come before event_init.\n-AC_CHECK_LIB(rt, clock_gettime)\n+AC_SEARCH_LIBS(clock_gettime, rt)\n \n # Look for libevent.\n AC_SEARCH_LIBS(event_init, [event event-1.4 event2], found_libevent=yes, found_libevent=no)\n--- b.diff ends here ---"
+}

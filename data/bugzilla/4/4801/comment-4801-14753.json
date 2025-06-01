@@ -1,0 +1,8 @@
+{
+ "id": 14753,
+ "bug_id": 4801,
+ "attachment_id": 0,
+ "creation_time": "1997-10-19T03:40:00Z",
+ "creator": "mishania@demos.su",
+ "text": "Original code of login.c, line 555 has a mistake, which leads to having \npasswords always expired, if you don't use LOGIN_CAP \u003ccomments start with :\u003e\u003e:\n\n#define DEFAULT_WARN  (2L * 7L \u0026 86400L)  /* Two weeks */\n\t:\u003e\t\t       ^^!!\n \t:\u003ehere's the mistake - this operation gives null DEFAULT_WARN\n\n#ifdef LOGIN_CAP\n        warntime = login_getcaptime(lc, \"warnpassword\",\n                                    DEFAULT_WARN, DEFAULT_WARN);\n#else\n        warntime = DEFAULT_WARN; \n\t:\u003e i.e. if you don't use LOGIN_CAP, warntime == NULL.\n\n#endif\n\n        changepass=0;\n        if (pwd-\u003epw_change) {\n                if (tp.tv_sec \u003e= pwd-\u003epw_change) {\n                        (void)printf(\"Sorry -- your password has expired.\\n\");\n                        changepass=1;\n                        syslog(LOG_INFO,\n                               \"%s Password expired - forcing change\",\n                               pwd-\u003epw_name);\n                } else if (pwd-\u003epw_change - tp.tv_sec \u003c warntime \u0026\u0026 !quietlog)\n\n\t:\u003e\t           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\t:\u003e  this is always true, since warntime = NULL.\n\n\n\n                    (void)printf(\"Warning: your password expires on %s\",\n                                 ctime(\u0026pwd-\u003epw_change));\n\nFix: \n\nline 555 of login.c should read :\n#define DEFAULT_WARN  (2L * 7L * 86400L)  /* Two weeks */"
+}

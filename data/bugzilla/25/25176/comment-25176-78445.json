@@ -1,0 +1,8 @@
+{
+ "id": 78445,
+ "bug_id": 25176,
+ "attachment_id": 0,
+ "creation_time": "2001-02-17T18:30:01Z",
+ "creator": "xpaint@oldach.net",
+ "text": "\n\tstatic FILE *\n\topenTemp(char **np)\n\t{\n\t    char *n;\n\t    char xx[256];\n\n\t    if ((n = getenv(\"TMPDIR\")) == NULL)\n\t\tn = \"/tmp\";\n\n\t    strcpy(xx, n);\n\t    strcat(xx, \"/XPaintXXXXXXX\");\n\t#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)\n\t    if ((fd = mkstemp(xx) \u003c 0))\n\t\treturn (FILE *) NULL;\n\t    tempName[++tempIndex] = XtNewString(n);\n\t    /********************************* ^^^ ***************************/\n\t    if (np != NULL)\n\t\t*np = tempName[tempIndex];\n\t    return fdopen(fd, \"w\");\n\t#else\n\t    n = mktemp(xx);\n\t    tempName[++tempIndex] = XtNewString(n);\n\t    if (np != NULL)\n\t\t*np = tempName[tempIndex];\n\t    return fopen(tempName[tempIndex], \"w\");\n\t#endif\n\t}\n\nXtNewString(n) basically is (strcpy(XtMalloc((unsigned) strlen(n) + 1), n))\n\nAt the marked line, XtNewString copies n but in fact should copy xx, as\nthis is the temporary file name previously created by mkstemp(). This\napparently is a simple copy error from the non-FreeBSD code.\n\nThe effect is that a too short temporary filename is allocated, in fact\nit's just TMPDIR (or /tmp) which is a directory and not a legal filename.\n\nFix: \n\nReplace \"XtNewString(n)\" with \"XtNewString(xx)\" in\nports/graphics/xpaint/files/patch-ae.\nHow-To-Repeat: \nmake"
+}

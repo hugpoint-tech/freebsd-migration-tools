@@ -1,0 +1,8 @@
+{
+ "id": 1308005,
+ "bug_id": 278655,
+ "attachment_id": 250517,
+ "creation_time": "2024-05-07T15:46:46Z",
+ "creator": "ambrisko@FreeBSD.org",
+ "text": "Created attachment 250517\nAfter running my \"panic.sh\" script several times I hit the cb run after lock is destroyed.\n\nThe script I use to trigger the panic is\n#!/bin/sh\n\nset -x \n\nsync; sync; sync\nsudo /bin/echo || exit 1\n\nsudo /etc/rc.d/dhclient stop wlan0\nsudo /etc/rc.d/wpa_supplicant stop wlan0\nsleep 1\nsudo killall -9 wpa_supplicant\nsleep 2\nsudo ifconfig wlan0 destroy\nif kldstat | grep iwlwifi\nthen\n        sudo devctl detach `pciconf -l | awk '/iwlwifi/ { print $1 }' | sed -e 's/:$//' -e 's/^.*@//'`\nfi\nsudo kldunload if_iwlwifi.ko \nsudo kldload if_iwlwifi.ko\nsudo ifconfig wlan0 create wlandev iwlwifi0 wlanmode sta regdomain FCC country US\nsleep 1\nsudo /etc/rc.d/wpa_supplicant restart wlan0\nsleep 1\nifconfig wlan0\nsleep 1\nifconfig wlan0\nsleep 10\n\nIt doesn't happen every time.  I added debug printf's to trace where the call back gets registered and run after the lock is destroyed.\n\nI've also seen what appears to be leaking in that the init for the psq lock is called more then the clean up.  I don't have that printf enabled in this log."
+}

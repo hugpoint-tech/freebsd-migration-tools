@@ -1,0 +1,8 @@
+{
+ "id": 797098,
+ "bug_id": 194828,
+ "attachment_id": 0,
+ "creation_time": "2014-11-21T20:23:22Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Eh, I had to build the test by hand so I could get debug symbols and then just ran getcontext_test under gdb.\n\nThe error is that the test requires unsupported behavior for amd64.  amd64 passes the first 6 args in registers and the remainder on the stack.  makecontext() on amd64 only handles args in registers.  If you ask it to pass more than 6 arguments (this test asks for 10) to the function, it sabotages the ucontext so that the subsequent setcontext() will fail by setting mc_len to 0.  I noticed this by stepping in gdb and noting that mc_len went to zero after makecontext() was called.  i386 doesn't have this check, so I suspect it will not break with the fix I suggested applied to the kernel.  Relevant code in amd64's makecontext:\n\n\telse if ((argc \u003c 0) || (argc \u003e 6) || (ucp-\u003euc_stack.ss_sp == NULL) ||\n\t    (ucp-\u003euc_stack.ss_size \u003c MINSIGSTKSZ)) {\n\t\t/*\n\t\t * This should really return -1 with errno set to ENOMEM\n\t\t * or something, but the spec says that makecontext is\n\t\t * a void function.   At least make sure that the context\n\t\t * isn't valid so it can't be used without an error.\n\t\t */\n\t\tucp-\u003euc_mcontext.mc_len = 0;\n\t\treturn;\n\t}\n\nWith the test patched to only pass 6 arguments on amd64 it now passes."
+}

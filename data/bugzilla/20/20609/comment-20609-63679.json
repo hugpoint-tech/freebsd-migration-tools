@@ -1,0 +1,8 @@
+{
+ "id": 63679,
+ "bug_id": 20609,
+ "attachment_id": 0,
+ "creation_time": "2001-01-27T20:23:14Z",
+ "creator": "dillon@earth.backplane.com",
+ "text": ":    elements together.  At the moment each buffer cache buffer allocates\n:    its own vm_map_entry, so a system with say 50MB worth of buffers will\n\n    Correction:  The initial allocation of buffers is linear and hits a\n    vm_map_insert() optimization case, so only one vm_map_entry is created\n    to cover the whole buffer map.  However, as time progresses and the\n    buffer map gets fragmented, the act of freeing \u0026 reallocating creates\n    serious fragmentation due to not calling vm_map_simplify_entry().\n\n    The buffer cache code rarely calls bfreekva() - it reuses an existing\n    mapping when possible.  Generally speaking the KVA is only freed when\n    the buffer cache is forced to defragment the buffer_map due to \n    handling filesystems with mixed block sizes.  Since buffers are 16K\n    aligned in KVM, only filesystem mixes with block sizes greater then\n    16K will typically cause this problem to occur.\n\n    However, I did find an edge case in the buffer cache code whereby it\n    might decide to defragment due to a 'bufspace overcommit'.  The edge\n    case can occur under any load condition.  The resulting fragmentation\n    creates a proliferation of vm_map_entry elements associated with the\n    buffer_map due to missing vm_map_simplify_entry() calls (the \n    vm_map_insert() optimization is not an all-encompassing optimization).\n    With Tor's patch fixing the bogus vm_object allocations, and changing\n    the buffer_map to a system map, we can now safely call \n    vm_map_simplify_entry().\n\n\t\t\t\t\t\t-Matt"
+}

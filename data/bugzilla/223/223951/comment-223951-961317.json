@@ -1,0 +1,8 @@
+{
+ "id": 961317,
+ "bug_id": 223951,
+ "attachment_id": 188378,
+ "creation_time": "2017-11-28T22:40:39Z",
+ "creator": "vsasjason@gmail.com",
+ "text": "Created attachment 188378\nfix pool deletion \"try and fallback\" bug\n\nError example:\n/sbin/zfs snapshot -r zroot/root@daily-2017-09-03_03.42.52--1w ... DONE\n/sbin/zfs snapshot -r zroot/var@daily-2017-09-03_03.42.52--1w ... DONE\n/sbin/zfs snapshot -r zroot/usr@daily-2017-09-03_03.42.52--1w ... DONE\n/sbin/zfs snapshot -r zroot/home@daily-2017-09-03_03.42.52--1w ... DONE\n/sbin/zfs snapshot -r zroot/ps@daily-2017-09-03_03.42.52--1w ... DONE\n/sbin/zfs snapshot -r zroot/poudriere@daily-2017-09-03_03.42.52--1w ... DONE\n/sbin/zfs snapshot -r zdata/media@daily-2017-09-03_03.42.52--1w ... DONE\nFATAL: trying to delete zfs pool or filesystem? WTF?\n  This is bug, we definitely don't want that.\n  Please report it to https://github.com/graudeejs/zfSnap/issues\n  Don't panic, nothing was deleted :)\n\nExact problem is that rm_zfs_snapshot() uses variable \"i\" as storage for snapshot name. But if one uses -s/-S options, that function calls skip_pool(), and last function uses variable \"i\" as pool name storage.\nBut the variable is global so its contents become overwritten with pool name instead of snapshot name.\nFix is truly trivial - just make \"i\" local in skip_pool().\n\n// I don't plan to report this problem upstream because zfsnap[1] development fully stopped a few years ago."
+}

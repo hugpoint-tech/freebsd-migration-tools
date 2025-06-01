@@ -1,0 +1,8 @@
+{
+ "id": 710626,
+ "bug_id": 177706,
+ "attachment_id": 0,
+ "creation_time": "2013-04-08T10:50:00Z",
+ "creator": "kis.twb@gmail.com",
+ "text": "According to Solaris Dynamic Tracing Guide[1], in off-cpu, args[0]\nshould point to the lwpsinfo_t (in FreeBSD, it is struct thread)\nstructure of the thread that the current CPU will next execute. But in\nthe current implementation (including -CURRENT), args[0] points to the\nthread that is ending execution.\n\n[1] http://docs.oracle.com/cd/E18752_01/html/817-6223/gelro.html\n\nFix: \n\nJust something like this:\n\n--- a/sys/kern/sched_ule.c\n+++ b/sys/kern/sched_ule.c\n@@ -1903,7 +1903,7 @@ sched_switch(struct thread *td, struct thread *newtd, int\n                if (PMC_PROC_IS_USING_PMCS(td-\u003etd_proc))\n                        PMC_SWITCH_CONTEXT(td, PMC_FN_CSW_OUT);\n #endif\n-               SDT_PROBE2(sched, , , off_cpu, td, td-\u003etd_proc);\n+               SDT_PROBE2(sched, , , off_cpu, newtd, newtd-\u003etd_proc);\n                lock_profile_release_lock(\u0026TDQ_LOCKPTR(tdq)-\u003elock_object);\n                TDQ_LOCKPTR(tdq)-\u003emtx_lock = (uintptr_t)newtd;\n                sched_pctcpu_update(newtd-\u003etd_sched, 0);\nHow-To-Repeat: Using the following scripts can repeat the problem:\n#!/usr/sbin/dtrace -s                       \n\ndtrace:::BEGIN\n{\n        printf(\"%19s %19s  %19s %19s\",\n            \"curthread\", \"curproc\", \"nextthread\", \"nextproc\");\n}\n\nsched:::off-cpu \n{\n        printf(\"%19s %19s  %19s %19s\",\n            curthread-\u003etd_name, curthread-\u003etd_proc-\u003ep_comm,\n            args[0]-\u003etd_name, args[1]-\u003ep_comm);\n}"
+}

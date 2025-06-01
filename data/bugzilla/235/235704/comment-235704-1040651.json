@@ -1,0 +1,8 @@
+{
+ "id": 1040651,
+ "bug_id": 235704,
+ "attachment_id": 0,
+ "creation_time": "2019-03-05T13:21:54Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: kp\nDate: Tue Mar  5 13:21:08 UTC 2019\nNew revision: 344794\nURL: https://svnweb.freebsd.org/changeset/base/344794\n\nLog:\n  tun: VIMAGE fix for if_tun cloner\n\n  The if_tun cloner is not virtualised, but if_clone_attach() does use a\n  virtualised list of cloners.\n  The result is that we can't find the if_tun cloner when we try to remove\n  a renamed tun interface. Virtualise the cloner, and move the final\n  cleanup into a sysuninit so that we're sure this happens after all of\n  the vnet_sysuninits\n\n  Note that we need unit numbers to be system-unique (rather than unique\n  per vnet, as is done by if_clone_simple()). The unit number is used to\n  create the corresponding /dev/tunX device node, and this node must match\n  with the interface.\n  Switch to if_clone_advanced() so that we have control over the unit\n  numbers.\n\n  Reproduction scenario:\n  \tjail -c -n foo persist vnet\n  \tjexec test ifconfig tun create\n  \tjexec test ifconfig tun0 name wg0\n  \tjexec test ifconfig wg0 destroy\n\n  PR:\t\t235704\n  Reviewed by:\tbz, hrs, hselasky\n  MFC after:\t2 weeks\n  Differential Revision:\thttps://reviews.freebsd.org/D19248\n\nChanges:\n  head/sys/net/if_tun.c"
+}

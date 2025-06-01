@@ -1,0 +1,8 @@
+{
+ "id": 722337,
+ "bug_id": 180236,
+ "attachment_id": 0,
+ "creation_time": "2013-07-04T20:01:25Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kib\nDate: Thu Jul  4 19:01:18 2013\nNew Revision: 252714\nURL: http://svnweb.freebsd.org/changeset/base/252714\n\nLog:\n  The tvp vnode on rename is usually unlinked.  Drop the cached null\n  vnode for tvp to allow the free of the lower vnode, if needed.\n  \n  PR:\tkern/180236\n  Tested by:\tsmh\n  Sponsored by:\tThe FreeBSD Foundation\n  MFC after:\t1 week\n\nModified:\n  head/sys/fs/nullfs/null_vnops.c\n\nModified: head/sys/fs/nullfs/null_vnops.c\n==============================================================================\n--- head/sys/fs/nullfs/null_vnops.c\tThu Jul  4 18:59:58 2013\t(r252713)\n+++ head/sys/fs/nullfs/null_vnops.c\tThu Jul  4 19:01:18 2013\t(r252714)\n@@ -554,6 +554,7 @@ null_rename(struct vop_rename_args *ap)\n \tstruct vnode *fvp = ap-\u003ea_fvp;\n \tstruct vnode *fdvp = ap-\u003ea_fdvp;\n \tstruct vnode *tvp = ap-\u003ea_tvp;\n+\tstruct null_node *tnn;\n \n \t/* Check for cross-device rename. */\n \tif ((fvp-\u003ev_mount != tdvp-\u003ev_mount) ||\n@@ -568,7 +569,11 @@ null_rename(struct vop_rename_args *ap)\n \t\tvrele(fvp);\n \t\treturn (EXDEV);\n \t}\n-\t\n+\n+\tif (tvp != NULL) {\n+\t\ttnn = VTONULL(tvp);\n+\t\ttnn-\u003enull_flags |= NULLV_DROP;\n+\t}\n \treturn (null_bypass((struct vop_generic_args *)ap));\n }\n \n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 346569,
+ "bug_id": 102742,
+ "attachment_id": 0,
+ "creation_time": "2006-09-03T12:29:04Z",
+ "creator": "ports@grosbein.net",
+ "text": "Hi!\n\nThere is one more issue with ng_ipacct. Its startup/shutdown script\nruns checkpoint_script too late during stop_cmd() sequence,\nafter stop_script has completed and (possibly) destroyed ng_ipacct(4) node.\n\ncheckpoint_script invocation should be moved before stop_script.\nHere is the obvious patch for this movement:\n\ndiff -ur ng_ipacct.orig/files/ng_ipacct.sh.in ng_ipacct/files/ng_ipacct.sh.in\n--- ng_ipacct.orig/files/ng_ipacct.sh.in\tSun Apr  3 08:31:43 2005\n+++ ng_ipacct/files/ng_ipacct.sh.in\tSun Sep  3 19:20:51 2006\n@@ -146,14 +146,15 @@\n \teval checkpoint_script=\\$ng_ipacct_${iface}_checkpoint_script\n \n \tif ${ngctl} show ${iface}_ip_acct: \u003e/dev/null 2\u003e\u00261; then\n-\t\t${sed} \"s!%%iface%%!${iface}!g\" \u003c\u003c-EOF | ${ngctl_batch}\n-$stop_script\n-EOF\n \t    if [ -n \"${checkpoint_script}\" ]; then\n \t\t(set -T\n \t\ttrap 'exit 1' 2\n \t\t${checkpoint_script})\n \t    fi\n+\n+\t   ${sed} \"s!%%iface%%!${iface}!g\" \u003c\u003c-EOF | ${ngctl_batch}\n+$stop_script\n+EOF\n \n \t    if ${ngctl} show ${iface}_ip_acct: \u003e/dev/null 2\u003e\u00261; then\n \t\twarn \"netgraph node '${iface}_ip_acct' did not destroyed!\"\n\n\n\nEugene Grosbein"
+}

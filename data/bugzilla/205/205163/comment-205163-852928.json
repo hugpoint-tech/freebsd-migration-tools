@@ -1,0 +1,8 @@
+{
+ "id": 852928,
+ "bug_id": 205163,
+ "attachment_id": 0,
+ "creation_time": "2015-12-09T21:06:50Z",
+ "creator": "dustinwenz@ebureau.com",
+ "text": "I was checking out some of the variables as they are set at frame 7 (below). If it's to be believed, zfs_dirty_data_max_internal is much smaller than it should be at that point in the code (maybe due to memory corruption, or a race condition regarding zfs_dirty_data_max_internal). That would cause the subtraction at line 1079 to wrap to some value a bit less than uint64 max, but cast as a long long. I'm pretty sure that isn't how the code is intended to work. If that is a problem, disabling the vfs.zfs_dynamic_write_buffer tunable may help, because it should force zfs_dirty_data_max_internal to be the same as zfs_dirty_data_max.\n\n(kgdb) frame 7\n#7  0xffffffff819f54d4 in dmu_tx_wait (tx=0xfffff805786ae400) at /usr/src/sys/modules/zfs/../../cddl/contrib/opensolaris/uts/common/fs/zfs/dmu_tx.c:1078\n1078\t\tmin_tx_time = zfs_delay_scale *\n(kgdb) list\n1073\t\t * cause a divide-by-zero if it's == the max.\n1074\t\t */\n1075\t\tASSERT3U(dirty, \u003c, zfs_dirty_data_max_internal);\n1076\t\n1077\t\tnow = gethrtime();\n1078\t\tmin_tx_time = zfs_delay_scale *\n1079\t\t    (dirty - delay_min_bytes) / (zfs_dirty_data_max_internal - dirty);\n1080\t\tif (now \u003e tx-\u003etx_start + min_tx_time)\n1081\t\t\treturn;\n1082\t\n(kgdb) print zfs_dirty_data_max \n$1 = 3429452595\n(kgdb) print zfs_dirty_data_max_internal\n$2 = 331001856\n(kgdb) print dirty\n$3 = 336166912"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 442974,
+ "bug_id": 123177,
+ "attachment_id": 0,
+ "creation_time": "2008-04-28T21:30:03Z",
+ "creator": "freebsd-pr08@mlists.homeunix.com",
+ "text": "arc4rand(9) is used as a source of secure random numbers in the kernel.\nAs far as I can tell, it's the source of the disposable keys for \"geli\nonetime\" partitions. It's seeded the first time it's called using\nread_random(), which is implemented by yarrow (except on VIA Nehemiah).\n\nThe problem is that the first call happens before yarrow is seeded and\nthe yarrow cipher-context is initialized. This results in a given kernel\nproducing the same sequence on each boot, and it wont reseed for 5 minutes\nor 64KB.\n\nIt also appears that the use of an uninitialized cipher-context may be\ncausing dubious memory accesses. The sequence alters if the kernel is\nmodified, despite the relevant data structures being static (i.e. pre-zeroed)\nor explicitly set-up.\n\nFix: The patch does two things:\n\n1. Reseeds  arc4rand when root closes /dev/random (just after yarrow is\nreseeded by the entropy file).\n\n2. Provides a provisional yarrow cipher-context to support early calls\nto read_random.\n\nPatch attached with submission follows:\nHow-To-Repeat: In /etc/rc.d/initrandom, add some calls to \"sysctl kern.arandom\" after\nthe line:\n\nfeed_dev_random \"${entropy_file}\"\n\nand cycle the machine a few times. I'm seeing the same sequence each time.\nBy this point in the boot sequence yarrow must have seeded.\n\n(BTW a few lines up \"sysctl -a\" is dumped into /dev/random before the\nentropy file. This does cause a call to arc4rand(), but it's not first.\nYou may wish to remove this.)"
+}

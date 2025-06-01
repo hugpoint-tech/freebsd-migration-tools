@@ -1,0 +1,8 @@
+{
+ "id": 815382,
+ "bug_id": 198045,
+ "attachment_id": 0,
+ "creation_time": "2015-03-16T12:36:44Z",
+ "creator": "m.r.sopacua@gmail.com",
+ "text": "Hi Brian,\n\nI didn't say they make new dependencies. The root cause of at least 1 and 3 and I suspect 2 as well, is that the leaf port's make doesn't re-evaluate a set value when it comes back from visiting it's children.\nBy closing the leaf port's make and executing the dependency builds in their own make process, these bugs are not exposed by the existing tools.\n\nHere's the fix for pango:\n\ndiff --git a/x11-toolkits/pango/Makefile b/x11-toolkits/pango/Makefile\nindex 5a54d96..ce1b839e 100644\n--- a/x11-toolkits/pango/Makefile\n+++ b/x11-toolkits/pango/Makefile\n@@ -54,10 +54,10 @@ PLIST_SUB+= X11=\"@comment \"\n .endif\n\n pre-configure:\n-.if !exists(${LOCALBASE}/libdata/pkgconfig/cairo-gobject.pc)\n-       @${ECHO_CMD} \"${PKGNAME}: Needs cairo with GLIB (GObject) support enabled.\"\n-       @${FALSE}\n-.endif\n+       @if [ ! -f${LOCALBASE}/libdata/pkgconfig/cairo-gobject.pc ]; then \\\n+               ${ECHO_CMD} \"${PKGNAME}: Needs cairo with GLIB (GObject) support enabled.\"; \\\n+               ${FALSE}; \\\n+       fi\n\n .include \u003cbsd.port.mk\u003e"
+}

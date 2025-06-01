@@ -1,0 +1,8 @@
+{
+ "id": 849229,
+ "bug_id": 204340,
+ "attachment_id": 163160,
+ "creation_time": "2015-11-16T00:42:04Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 163160\npatch that might fix this problem\n\nI think this crash might have been caused by a race\nbetween svcpool_destroy() and the socket upcall.\nThe code in svcpool_destroy() assumes that SVC_RELEASE(xprt)\ndrops the ref cnt to 0, so that SVC_DESTROY() is called.\n--\u003eSVC_DESTROY() shuts down the socket upcall.\n--\u003e If the ref cnt doesn't go to 0, svcpool_destroy() will\n    mtx_destroy() the mutexes prematurely.\n\nI am not sure, but the race might have been introduced by\nr267228 since, prior to this there was a single mutex for\nthe pool, held while all xprt's are unregistered.\nAfter r267228, there is a group of mutexes, where the code\nonly held one at a time, so I think an xprt might get re-registered\non another group after that group has had all de-registered.\n\nThe attached little patch moves the mtx_lock() calls to a\nseparate loop before the xprt_unregister loops, so that all\nlocks are held while all are de-registered.\n\nI've added mav@ to the cc list, since he might be the guy\nthat actually understands this.\n\nAnyhow, if you could test the attached patch with msi interrupts\nre-enabled and see if the crashes go away, that would be great.\n(I don't think that this indicates that the em(4) driver is broken.\n I suspect that it just affects timing of the interrupts that tripped\n over this race.)"
+}

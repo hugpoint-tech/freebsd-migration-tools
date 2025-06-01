@@ -1,0 +1,8 @@
+{
+ "id": 1212452,
+ "bug_id": 264094,
+ "attachment_id": 0,
+ "creation_time": "2022-05-22T23:11:15Z",
+ "creator": "jfc@mit.edu",
+ "text": "The problem is introduced in the process of turning the .o into a .ko. Pinpointing the bug requires study of the exact definition of the ARM relocation types, in assembly and in ELF.\n\nIf you change -c to -S in the command for building cc_htcp.o you get two consecutive lines of assembly\n\n        adrp    x11, :got:vnet_entry_htcp_adaptive_backoff\n        ldr     x11, [x11, :got_lo12:vnet_entry_htcp_adaptive_backoff]\n\nIn cc_htcp.o these become (objdump --disassemble --reloc)\n\n 200:\t9000000b \tadrp\tx11, 0 \u003chtcp_mod_init\u003e\n\t\t\t200: R_AARCH64_ADR_GOT_PAGE\tvnet_entry_htcp_adaptive_backoff\n 204:\tf940016b \tldr\tx11, [x11]\n\t\t\t204: R_AARCH64_LD64_GOT_LO12_NC\tvnet_entry_htcp_adaptive_backoff\n\nIn cc_htcp.ko these are incorrectly optimized after the linker determines the variable is close to the instruction:\n\n   10f50:\td503201f \tnop\n   10f54:\t10082f6b \tadr\tx11, 21540 \u003cvnet_entry_htcp_adaptive_backoff\u003e\n\nThis computes the address of the value instead of loading the value.  The optimization would be correct if there were an adrp+adr pair but it is not correct for adrp+ld.  So is :got_lo12: the wrong prefix, is R_AARCH64_LD64_GOT_LO12_NC the wrong binary relocation code, or did the linker forget to check the opcode of the instruction it rewrote?"
+}

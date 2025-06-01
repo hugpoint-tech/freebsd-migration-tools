@@ -1,0 +1,8 @@
+{
+ "id": 67637,
+ "bug_id": 21723,
+ "attachment_id": 0,
+ "creation_time": "2000-10-03T10:40:00Z",
+ "creator": "razuwaev@relex.ru",
+ "text": "f=open(\"/dev/nrsa0\",O_RDWR);\nwrite(f, buf, size);\nioctl(fd, MTIOCRDSPOS, \u0026offs); \nThis sequence hangs up the task on waiting disk operation.\nDriver waits for awake on sys/cam/cam_periph.c : cam_periph_getccb() on\ntsleep(\u0026periph-\u003eccb_list, PRIBIO, \"cgticb\", 0);\n\nFix: \n\nThis problem is fixed by replace :\nccb = cam_periph_getccb(periph, 1); \nif (softc-\u003eflags \u0026 SA_FLAG_TAPE_WRITTEN) {\n\terror = sawritefilemarks(periph, 0, 0);\n\tif (error \u0026\u0026 error != EACCES)\n\t\treturn (error);\n}\nto :\nif (softc-\u003eflags \u0026 SA_FLAG_TAPE_WRITTEN) {\n\terror = sawritefilemarks(periph, 0, 0);\n\tif (error \u0026\u0026 error != EACCES)\n\t\treturn (error);\n}\nccb = cam_periph_getccb(periph, 1);\nHow-To-Repeat: f=open(\"/dev/nrsa0\",O_RDWR);\nwrite(f, buf, size);\nioctl(fd, MTIOCRDSPOS, \u0026offs);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 673217,
+ "bug_id": 169565,
+ "attachment_id": 0,
+ "creation_time": "2012-06-30T10:40:10Z",
+ "creator": "sneakywumpus@googlemail.com",
+ "text": "I'm getting consistent kernel panics on unload of vboxnetadp. Started at around beginning of May 2012.\n\nFix: \n\nLooking at patch-src-VBox-HostDrivers-VBoxNetAdp-freebsd-VBoxNetAdp-freebsd.c in the port, i found something fishy:\n\n@@ -286,7 +304,9 @@ void vboxNetAdpOsDestroy(PVBOXNETADP pTh\n {\n     struct ifnet *ifp;\n \n+    VBOXCURVNET_SET(ifp-\u003eif_vnet);\n     ifp = pThis-\u003eu.s.ifp;\n     ether_ifdetach(ifp);\n     if_free(ifp);\n+    VBOXCURVNET_RESTORE();\n }\n\nlooks like ifp is being used uninitialized. I changed this part of the patch to:\n\n@@ -286,7 +304,8 @@ void vboxNetAdpOsDestroy(PVBOXNETADP pTh\n {\n-    struct ifnet *ifp;\n+    struct ifnet *ifp = pThis-\u003eu.s.ifp;\n\n-    ifp = pThis-\u003eu.s.ifp;\n+    VBOXCURVNET_SET(ifp-\u003eif_vnet);\n     ether_ifdetach(ifp);\n     if_free(ifp);\n+    VBOXCURVNET_RESTORE();\n }\n\nAfter this change the kernel panics stopped.\nHow-To-Repeat: kldload vboxnetadp\nkldunload vboxnetadp"
+}

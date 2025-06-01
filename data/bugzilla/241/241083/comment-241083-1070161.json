@@ -1,0 +1,8 @@
+{
+ "id": 1070161,
+ "bug_id": 241083,
+ "attachment_id": 0,
+ "creation_time": "2019-10-05T18:53:22Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "To learn more about vfs.zfs.vol.mode, read zfs(8) and search for \"volmode\".  Setting it to 2 ought to stop ZFS from scanning zvols during import, because ZFS can only use geom devices as disks, not arbitrary device nodes.  However, I don't know if ctld will be happy about that.\n\nHOWEVER, I think there may be a bug here.  When vfs.zfs.vol.recursive is 0, ZFS isn't supposed to taste zvols when importing a pool.  But catch is that ZFS has to taste disks twice: once from userspace and once from kernelspace.  I think the userspace part is missing the check to exclude zvols.\n\nTo test, run this command.  It will measure how much time ZFS takes to taste devices from userspace, and how much time the kernel module spends importing devices.  If my hunch is correct, you're spending most of your time tasting from userspace.\n\nsudo dtrace -n 'pid$target::zpool_search_import:entry {trace(timestamp);}' -n 'pid$target::zpool_search_import:return {trace(timestamp);}' -n 'pid$target::zfs_ioctl:entry {trace(timestamp)}' -n 'pid$target::zfs_ioctl:return {trace(timestamp)}' -c \"zpool import hal.5\"."
+}

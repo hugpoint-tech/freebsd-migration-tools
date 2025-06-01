@@ -1,0 +1,8 @@
+{
+ "id": 812416,
+ "bug_id": 196290,
+ "attachment_id": 0,
+ "creation_time": "2015-02-27T04:45:54Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: adrian\nDate: Fri Feb 27 04:45:48 UTC 2015\nNew revision: 279350\nURL: https://svnweb.freebsd.org/changeset/base/279350\n\nLog:\n  Fix kern/196290 - don't announce 11n HTINFO rates if the channel is\n  configured as 11b.\n\n  This came up when debugging other issues surrounding scanning and\n  channel modes.\n\n  What's going on:\n\n  * The VAP comes up as an 11b VAP, but on an 11n capable NIC;\n  * .. it announces HTINFO and MCS rates;\n  * The AP thinks it's an 11n capable device and transmits 11n frames\n    to the STA;\n  * But the STA is in 11b mode, and thus doesn't receive/ACK the frames.\n\n  It didn't happen for the ath(4) devices as the AR5416/AR9300 HALs\n  unconditionally enable MCS frame reception, even if the channel\n  mode is not 11n.  But the Intel NICs are configured in 11b/11a/11g\n  modes when doing those, even if 11n is enabled and available.\n\n  So, don't announce 11n capabilities if the VAP isn't on an 11n\n  channel when sending management assocation request / reassociation\n  request frames.\n\n  TODO:\n\n  * Lots more testing - 11n should be \"upgraded\" after association,\n    and I just want to make sure I haven't broken 11n upgrade.\n    I shouldn't have - this is only happening for /sending/ association\n    requests, which APs aren't doing.\n\n  Tested:\n\n  * ath(4) APs (AR9331, AR7161+AR9280, AR934x)\n  * AR5416, STA mode\n  * Intel 5100, STA mode\n\n  PR:\t\tkern/196290\n\nChanges:\n  head/sys/net80211/ieee80211_output.c"
+}

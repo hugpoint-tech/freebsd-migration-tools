@@ -1,0 +1,8 @@
+{
+ "id": 796425,
+ "bug_id": 195128,
+ "attachment_id": 0,
+ "creation_time": "2014-11-18T03:36:10Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "The login_getcapstr function (and other functions in lib/libutil/login_cap.c) call cgetstr under the covers, which according the the manpage mallocs memory on the fly. However, the memory isn't free'd if certain functions are called multiple times, like pam_sm_acct_mgmt. One of the patches Isilon has had for some time doe the following to plug a leak in pam_nologin:\n\n$ git diff lib/libpam/modules/pam_nologin/pam_nolo\ndiff --git a/lib/libpam/modules/pam_nologin/pam_nologin.c b/lib/libpam/modules/pam_nologin/pam_nologin.c\nindex 1be63d2..b4a1421 100644\n--- a/lib/libpam/modules/pam_nologin/pam_nologin.c\n+++ b/lib/libpam/modules/pam_nologin/pam_nologin.c\n@@ -38,6 +38,7 @@\n __FBSDID(\"$FreeBSD$\");\n \n #include \u003csys/types.h\u003e\n+#include \u003csys/cdefs.h\u003e\n #include \u003csys/stat.h\u003e\n #include \u003cfcntl.h\u003e\n #include \u003clogin_cap.h\u003e\n@@ -97,6 +98,8 @@ pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,\n        nologin = login_getcapstr(lc, \"nologin\", nologin_def, nologin_def);\n \n        fd = open(nologin, O_RDONLY, 0);\n+       if (nologin != nologin_def)\n+               free(__DECONST(char *, nologin));\n        if (fd \u003c 0) {\n                login_close(lc);\n                return (PAM_SUCCESS);\n\nBut this is not the right place to fix the issue probably. Memory needs to be handled better in lib/libutil/login_cap.c ."
+}

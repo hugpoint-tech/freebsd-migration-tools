@@ -1,0 +1,8 @@
+{
+ "id": 490997,
+ "bug_id": 132934,
+ "attachment_id": 0,
+ "creation_time": "2009-05-09T13:00:36Z",
+ "creator": "zachary.loafman@isilon.com",
+ "text": "Matthias -\n\nI think I figured it out. As I mentioned last night, the AUTH coming\nfrom the HP-UX 11.11 servers is AUTH_NULL. There's a check in\nnlm_get_vfs_state that'll result in AUTH_NULL requests getting bounced.\n\nTo disable the kernel lock manager completely, you need to comment out\nthe NFSLOCKD option and stop the module from building. One way to do\nthis is to use the MODULE_OVERRIDE directive in your conf file, like:\n\nmakeoptions    MODULES_OVERRIDE=\"acpi\"\n\nThen rebuild and reinstall the kernel. If you go that route, you'll need\nto figure out which modules you need before doing that. A 'kldstat' on\nyour system would tell you if you're using any modules beyond the base.\nThe above is all I really need on my i386 box, but YMMV.\n\nAlternately, for a quick test you could do something like this:\n\n# kldunload nfslockd  # may fail if it's not loaded\n# mv /boot/kernel/nfslockd.ko /boot/kernel/nfslockd.ko.aside\n# rpc.lockd\nCan't find or load kernel support for rpc.lockd - using non-kernel implementation\n\nThat last message should tell you that the userland lockd is running.\n\nPlease note: The userland lockd has many limitations. FreeBSD will\nlikely drop support for it in a later release.\n\n...Zach"
+}

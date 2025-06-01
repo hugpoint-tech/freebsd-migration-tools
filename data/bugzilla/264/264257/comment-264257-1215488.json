@@ -1,0 +1,8 @@
+{
+ "id": 1215488,
+ "bug_id": 264257,
+ "attachment_id": 0,
+ "creation_time": "2022-06-11T17:40:23Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "(In reply to iron.udjin from comment #25)\n\nI've prepared a patch against main (may need some manual tweaking to apply to 13.1-RELEASE as of now) \nwget https://reviews.freebsd.org/D35446?id=106838\u0026download=true\n\nIf the kernel is built with INVARIANTS, it should panic early on, once an inconsistency between the socket sendbuffer and tcp state variables is detected - instead of panicing a few packets later, when that inconsistency results in a invalid pointer access...\n\nIf the kernel is built without INVARIANTS, the kernel log buffer (dmesg) should provide some hints as to when/where the inconsistency first occured, which may gve more indirect clues. But it would address the inconsistency right away, and continue operation.\n\nIf the panic was observed during a DDOS, this strengthens the clue that there exists a race condition (double-accounting for the FIN bit). However, prior to the introduction of SACK rescue retransmissions, this never materially affected TCP operations, as the socket buffer data would be used directly to see what sequence range to send, rather than the SACK scoreboard data."
+}

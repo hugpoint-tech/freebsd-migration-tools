@@ -1,0 +1,8 @@
+{
+ "id": 1291984,
+ "bug_id": 276299,
+ "attachment_id": 0,
+ "creation_time": "2024-01-13T15:41:02Z",
+ "creator": "dmilith@me.com",
+ "text": "I've upgraded my aarch64 box (RockPro64 with 4G RAM) which serves a ZFS pool over NFS.\n\nBefore the upgrade (on FreeBSD 13.2) my upload speed to the share was like 50-70MiB/s. After the upgrade to FreeBSD 14.0, it struggles to get even 10MiB/s write.\n\nI've tried switching from NFSd v3 to v4. It's even worse (6MiB/s write).\n\nThe disk is WD Gold, 10TiB. So I'm quite sure it's not about the disk speed or the network speed (my router has 1G ports).\n\nMy /etc/rc.conf:\n\n# NFS\nhostid_enable=\"YES\"\nnfscbd_enable=\"YES\"\nrpcbind_enable=\"YES\"\nnfs_server_enable=\"YES\"\nnfsv4_server_only=\"NO\"\nnfsv4_server_enable=\"YES\"\nnfsuserd_enable=\"YES\"\nmountd_enable=\"YES\"\nmountd_flags=\"-r\"\nrpc_lockd_enable=\"YES\"\nrpc_statd_enable=\"YES\"\n\n\nI've bumped /etc/sysctl.conf settings to huge values:\n\nnet.inet.raw.maxdgram=262144\nnet.inet.raw.recvspace=1048576\nnet.inet.tcp.sendspace=1048576\nvfs.nfsd.srvmaxio=1048576\nvfs.nfsd.maxthreads=128\nnet.inet.tcp.rfc1323=1\nnet.inet.tcp.sendbuf_max=16777216\nnet.inet.tcp.recvbuf_max=16777216\n\nBut this improved nothing. Maybe it's even worse…\n\n\nMy NFS client (macOS 13+) uses these options:\n\nmount_nfs \\\n  -o \\\n  rw,vers=4,deadtimeout=0,readahead=6,noatime,sync,async,hard,bg,intr,inet,tcp,nfc,rsize=1048576,wsize=1048576,dsize=1048576 \\\n  vks4.home:/Copies/VMs \\\n  /Users/Shared/NFS/VMs\n\n\nMy sequential read from NFS is as before (~50-70MiB/s). Which is \"okay\" for that HW. But what can I do to bring the write speed back to 50MiB/s? Did I do something wrong?\n\nThanks"
+}

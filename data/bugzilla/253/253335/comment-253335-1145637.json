@@ -1,0 +1,8 @@
+{
+ "id": 1145637,
+ "bug_id": 253335,
+ "attachment_id": 0,
+ "creation_time": "2021-02-08T22:45:55Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "We're crashing on a write to 0xf4215a70.  Shortly before, we had mmapped a region containing that address:\n\n71585 mmap(0,65536,7,4098,-1,0) = 0xf4206000\n71585 mprotect(0xf4206000,0x10000,7) = 0\n\nand I can't see any subsequent system calls that would modify that mapping, but procstat -v shows:\n\n71585         0xf4206000         0xf4215000 rwx    1    2   2   0 ----- df\n71585         0xf4215000         0xf4216000 r-x    1    2   2   0 ----- df\n\nso indeed the last page is not writeable.  I'm not sure why libpcre is mprotect()ing a region to set the permissions specified by the preceding mmap() call."
+}

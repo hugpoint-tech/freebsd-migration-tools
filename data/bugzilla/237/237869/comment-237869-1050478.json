@@ -1,0 +1,8 @@
+{
+ "id": 1050478,
+ "bug_id": 237869,
+ "attachment_id": 0,
+ "creation_time": "2019-05-13T07:55:01Z",
+ "creator": "delphij@FreeBSD.org",
+ "text": "I noticed the following on a recent -CURRENT amd64 system, this message on boot:\n\narc4random: WARNING: initial seeding bypassed the cryptographic random device because it was not yet seeded and the knob 'bypass_before_seeding' was enabled.\n\nDespite /boot/entropy is preloaded.  It looks like it was related to r346358.\n\nOn my system, the call path is roughly:\n\nvnet_domain_init_inet_vnet_init -\u003e arc4random()\n\nAt the time, the entropy device have already seen /boot/entropy through random_harvestq_prime(), however, because nobody have read from entropy device, the pre_read method was never called, therefore the device would report itself as unseeded, even though it already have enough entropy to proceed.\n\n(By the way, r346292 should be reverted now that r346358 is landed).\n\nIt looks like is_random_seeded should do something like:\n\nif (__predict_false(!p_random_alg_context-\u003era_seeded())) {\n    p_random_alg_context-\u003era_pre_read();\n    return (p_random_alg_context-\u003era_seeded());\n}\nreturn (true);\n\nInstead of its current form.\n\nNote that random_infra.c needs similar treatment as well; the current form is broken by the way."
+}

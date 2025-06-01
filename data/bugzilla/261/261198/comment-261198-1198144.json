@@ -1,0 +1,8 @@
+{
+ "id": 1198144,
+ "bug_id": 261198,
+ "attachment_id": 0,
+ "creation_time": "2022-02-08T02:23:55Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Looks like there is a lock order reversal: sleepq_signal() selects a thread on the sleepqueue, locks it, and then sleepq_remove_thread() stops the td_slpcallout callout, which requires a per-CPU callout lock.  softclock_thread() locks the per-CPU callout lock and then acquires the current thread's lock.\n\nUsually the thread selected by sleepq_signal() will have its lock set to that of the sleepqueue, and no deadlock is possible.  But if the thread is preparing to go to sleep, its lock will still be a scheduler lock.  So it's not very easy to hit this deadlock."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 61166,
+ "bug_id": 19871,
+ "attachment_id": 0,
+ "creation_time": "2000-07-12T17:50:00Z",
+ "creator": "petervd@vuurwerk.nl",
+ "text": "\nWhen select()'ing on a named pipe for reading, it will *always* return\nimmediately even if no data is waiting. *also* openening the pipe for writing\nwill fix this behaviour.\n\nFix: \n\nThe workaround is to also open the socket for writing, as can be seen in this\npiece of qmail-1.03 code (from trigger.c):\n\nstatic int fd = -1;\n#ifdef HASNAMEDPIPEBUG1\nstatic int fdw = -1;\n#endif\nvoid trigger_set()\n{\n if (fd != -1)\n   close(fd);\n#ifdef HASNAMEDPIPEBUG1\n if (fdw != -1)\n   close(fdw);\n#endif\n fd = open_read(\"lock/trigger\");\n#ifdef HASNAMEDPIPEBUG1\n fdw = open_write(\"lock/trigger\");\n#endif\n}\nHow-To-Repeat: \nThe following snippet of code is stolen from the qmail-1.03 sources and\nchanged slightly to compile standalone:\n\n#include \u003csys/types.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003csys/time.h\u003e\n#include \u003cunistd.h\u003e\n\n#define FN \"temp-trynpbg1.fifo\"\n\nvoid main()\n{\n  int flagbug;\n  struct timeval instant;\n  fd_set rfds;\n \n  flagbug = 0;\n  if (mkfifo(FN,0600) != -1) {\n    close(0);\n    if (open(FN,O_RDONLY|O_NDELAY) == 0) {\n      FD_ZERO(\u0026rfds);\n      FD_SET(0,\u0026rfds);\n      instant.tv_sec = instant.tv_usec = 0;\n      if (select(1,\u0026rfds,(fd_set *) 0,(fd_set *) 0,\u0026instant) \u003e 0)\n        flagbug = 1;\n    }\n    unlink(FN);\n  }\n  _exit(!flagbug);\n}\n\n\nCompile with cc -o namedpipebug namedpipebug.c\nRun with './namedpipebug \u0026\u0026 echo buggy'\n\nWill echo 'buggy' on FreeBSD, and nothing on, for example, Linux."
+}

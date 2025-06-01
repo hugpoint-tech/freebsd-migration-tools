@@ -1,0 +1,8 @@
+{
+ "id": 1077301,
+ "bug_id": 239890,
+ "attachment_id": 0,
+ "creation_time": "2019-11-28T10:15:20Z",
+ "creator": "misc-freebsd-bugzilla@talk2dom.com",
+ "text": "With respect to comment #5, the \"invalid argument\" mentioned in callstack:\n\nCaused by: java.net.ConnectException: Invalid argument (connect failed)\n\nMight be because when preferIPv4Stack is false, openjdk11 creates PF_INET6 domain sockets and subsequent connect()s try to use IPv4-mapped AF_INET6 addresses, as shown by this ktrace snippet:\n\n  2979 java     CALL  socket(PF_INET6,0x1\u003cSOCK_STREAM\u003e,IPPROTO_IP)\n  2979 java     RET   socket 34/0x22\n  2979 java     CALL  fcntl(0x22,F_GETFL)\n  2979 java     RET   fcntl 2\n  2979 java     CALL  fcntl(0x22,F_SETFL,0x6\u003cO_RDWR|O_NONBLOCK\u003e)\n  2979 java     RET   fcntl 0\n  2979 java     CALL  connect(0x22,0x7fffdf663ce0,0x1c)\n  2979 java     STRU  struct sockaddr { AF_INET6, [::ffff:151.101.16.133]:443 }\n  2979 java     RET   connect -1 errno 22 Invalid argument\n\nEven though openjdk11 possibly tries to turn off IPV6_V6ONLY on a per-socket basis[1] (although I'm not seeing that above) IPv4-mapped address use is still blocked by the sysctl net.inet6.ip6.v6only which is set to 1 by default.\n\nIf you set net.inet6.ip6.v6only to 0 then you might find your connection to 127.0.0.1 works with preferIPv4Stack set to false.\n\n[1] Might not be the correct source, but:\nhttps://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/unix/native/libnet/PlainSocketImpl.c#L190"
+}

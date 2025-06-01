@@ -1,0 +1,8 @@
+{
+ "id": 569810,
+ "bug_id": 148960,
+ "attachment_id": 0,
+ "creation_time": "2010-07-26T13:10:04Z",
+ "creator": "dirk.meyer@dinoex.sub.org",
+ "text": "\nThe port does not check the output from \"OPTIONS\"\nif the default of that option in \"on\"\n\nhttp://www.freebsd.org/doc/en/books/porters-handbook/makefile-options.html#AEN2446\n\nThe ghostscript8 port has different defaults in \"OPTIONS\"\n\nOPTIONS=      FOO \"Enable option foo\" ${DEFAULT_ON_OFF}\n\nin case of default \"off\"  the port check the correctly:\n\n.if defined(WITH_FOO)\nCONFIGURE_ARGS+= ....\n.else\nCONFIGURE_ARGS+= ....\n.endif\n\nin case of default \"on\"  the port check the correctly:\n.if defined(WITHOUT_FOO)\nCONFIGURE_ARGS+= ....\n.else\nCONFIGURE_ARGS+= ....\n.endif\n\nWITH_FOO is not defined!\n\nbetter would be:\n\n.if defined(WITH_FOO) || !defined(WITHOUT_FOO)\nCONFIGURE_ARGS+= ....\n.else\nCONFIGURE_ARGS+= ....\n.endif\n\ntestcases:\n1. default \"on\",  Option selected    =\u003e WITH_FOO=true\n2. default \"on\",  Option deselected  =\u003e WITHOUT_FOO=true\n3. default \"off\", Option selected    =\u003e WITH_FOO=true\n4. default \"off\", Option deselected  =\u003e WITHOUT_FOO=true\n5. default \"on\",  BATCH=yes          =\u003e WITH_FOO=true\n5. default \"off\", BATCH=yes          =\u003e WITHOUT_FOO=yes, WITH_FOO=true\n\n\nprint/ghostscript8-nox11# make BATCH=yes -V WITH_X11 -V WITHOUT_X11\ntrue\nyes\n\nprint/ghostscript8# make BATCH=yes -V WITH_X11 -V WITHOUT_X11\ntrue\n\nFix: apply the patch to fix most of the problems:\nHow-To-Repeat: \nghostview fails to display any files,\nreporting \"Unknown device: x11\"\n\nto confirm ghostscript does not list x11 with:\ngs -h"
+}

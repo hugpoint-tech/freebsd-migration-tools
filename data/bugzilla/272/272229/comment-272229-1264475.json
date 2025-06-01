@@ -1,0 +1,8 @@
+{
+ "id": 1264475,
+ "bug_id": 272229,
+ "attachment_id": 0,
+ "creation_time": "2023-06-26T19:09:38Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "Consider this test program:\n\n#include \u003cstdio.h\u003e\n\n\nint main()\n{\n        union intfloat {\n                int i;\n                double f;\n        } intf;\n\n        intf.i = 255;\n\n        printf(\"%g\\n\", intf.f);\n}\n\nThis should print (e.g. on aarch64):\n\n    $ cc -o bug bug.c\n    $ ./bug\n    1.25987e-32\n\nBut on armv7 we get instead:\n\n    $ ./bug\n    e-309\n\nFurthermore, there is an embedded NUL byte in the output:\n\n    $ ./bug | od -c                                                                                   \n    0000000   \\0   e   -   3   0   9  \\n                                    \n    0000007\n\nPreliminary debugging suggests that this could be because dtoa() returns an empty string when vfprintf attempts the conversion.  Further debugging is hindered as gdb cannot find debug symbols for dtoa (it seems to expect a source file of different name than the actual file).\n\nAmong other things, this error causes devel/orc to fail during build."
+}

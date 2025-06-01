@@ -1,0 +1,8 @@
+{
+ "id": 1249326,
+ "bug_id": 269185,
+ "attachment_id": 0,
+ "creation_time": "2023-03-03T08:21:36Z",
+ "creator": "delphij@FreeBSD.org",
+ "text": "(In reply to Dan Kotowski from comment #7)\nHi, it took me some time to set up a test environment and I was able to reproduce it.\n\nLooking deeper into the emulation code, it seems that qemu-bsd-user (in bsd-user/freebsd/os-proc.h) did not implement translation of capability system calls and will return ENOSYS.\n\nOn the other hand, other system utilities would simply ignore failed cap_enter() calls when errno was ENOSYS, which seems to be a reasonable compromise:\n\ndiff --git a/contrib/xz/src/xz/file_io.c b/contrib/xz/src/xz/file_io.c\nindex a5841b370302..0af3a4885bd3 100644\n--- a/contrib/xz/src/xz/file_io.c\n+++ b/contrib/xz/src/xz/file_io.c\n@@ -209,7 +209,7 @@ io_sandbox_enter(int src_fd)\n                        CAP_WRITE)))\n                goto error;\n \n-       if (cap_enter())\n+       if (cap_enter() \u0026\u0026 errno != ENOSYS)\n                goto error;\n \n #elif defined(HAVE_PLEDGE)\n\n\nI'll send an email to xzutil's author and see if they would adopt a similar change."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 38358,
+ "bug_id": 12660,
+ "attachment_id": 0,
+ "creation_time": "1999-07-16T09:00:01Z",
+ "creator": "Andre.Albsmeier@mchp.siemens.de",
+ "text": "\nWhen trying to socksify (with runsocks) a program that uses gethostbyname2(),\nsometimes the program fails. This is due to the following reason:\n\n1. the program calls gethostbyname2() which is not socksified\n2. gethostbyname2() starts his work and calls other functions\n   that are socksified (e.g. sendto)\n3. sendto (from the sockslib) now starts its work and, as part of\n   that, itself does a gethostbyname().\n4. gethostbyname() from libc does nothing more than calling gethostbyname2().\n5. Now we have entered gethostbyname2() again and that fails...\n\nFix: I have tried to implement the gethostbyname2() call the same way as\ngethostbyname() is done in the sockslib. In case socks5 is configured to\nfake DNS calls, we call the daemon if the af argument is AF_INET. If\nwe don't fake DNS calls, we call the original gethostbyname2() function.\n\nHow-To-Repeat: \nAs I said above, the program not always fails. I can make it fail\nhere when I have only one nameserver in /etc/resolv.conf. With three\nnameservers (even if they are the same), it works. I could make\nit fail by running \"runsocks whois blahblah\" with only one\nnameserver in /etc/resolv.conf."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1018774,
+ "bug_id": 231472,
+ "attachment_id": 0,
+ "creation_time": "2018-10-28T07:01:49Z",
+ "creator": "woodsb02@freebsd.org",
+ "text": "I just came across this issue also, and have solved it by following the Samba4ZFS guide on the FreeBSD wiki:\nhttps://wiki.freebsd.org/Samba4ZFS\n\n\"Enable NFSv4 ACLs in your ZFS volume\"\n   1 sudo zfs set aclmode=passthrough zroot\n   2 sudo zfs set aclinherit=passthrough zroot\n\n\"Setup UFS system volume\"\n\nSamba's upgrade script is not smart enough (yet) to enable zfsacl automatically so it's simpler to have a POSIX ACL enabled UFS file system as sysvol.\nToggle line numbers\n\n   1 sudo zfs create -V 2G zroot/samba4sysvol\n   2 sudo newfs /dev/zvol/zroot/samba4sysvol\n   3 \n   4 # Add to /etc/fstab\n   5 sudo sh -c 'cat \u003e\u003e/etc/fstab' \u003c\u003cEOF\n   6 /dev/zvol/zroot/samba4sysvol /var/db/samba4/sysvol ufs       rw,acls 0       0\n   7 EOF\n   8 \n   9 sudo mkdir -p /var/db/samba4/sysvol\n  10 sudo mount /var/db/samba4/sysvol"
+}

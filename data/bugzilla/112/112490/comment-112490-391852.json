@@ -1,0 +1,8 @@
+{
+ "id": 391852,
+ "bug_id": 112490,
+ "attachment_id": 0,
+ "creation_time": "2007-10-15T21:20:09Z",
+ "creator": "john@baldwin.cx",
+ "text": "ru@ pointed out a problem in my earlier patch that could result in some double \nfrees.  Here is an update:\n\nIndex: route.c\n===================================================================\nRCS file: /usr/cvs/src/sys/net/route.c,v\nretrieving revision 1.120\ndiff -u -r1.120 route.c\n--- route.c\t11 Jun 2007 12:19:34 -0000\t1.120\n+++ route.c\t15 Oct 2007 19:50:53 -0000\n@@ -1304,6 +1304,7 @@\n \t\tif ((rt-\u003ert_flags \u0026 RTF_UP) == 0) {\n \t\t\tRTFREE_LOCKED(rt);\t/* unlock gwroute */\n \t\t\trt = rt0;\n+\t\t\trt-\u003ert_gwroute = NULL;\n \t\tlookup:\n \t\t\tRT_UNLOCK(rt0);\n \t\t\trt = rtalloc1(rt-\u003ert_gateway, 1, 0UL);\n@@ -1314,6 +1315,8 @@\n \t\t\t\treturn (ENETUNREACH);\n \t\t\t}\n \t\t\tRT_LOCK(rt0);\n+\t\t\tif (rt0-\u003ert_gwroute != NULL)\n+\t\t\t\tRTFREE(rt0-\u003ert_gwroute);\n \t\t\trt0-\u003ert_gwroute = rt;\n \t\t\tif (rt == NULL) {\n \t\t\t\tRT_UNLOCK(rt0);\n\n-- \nJohn Baldwin"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1224535,
+ "bug_id": 265974,
+ "attachment_id": 0,
+ "creation_time": "2022-08-28T21:30:39Z",
+ "creator": "pierre@habouzit.net",
+ "text": "`atomic_thread_fence_rel()` is a `dmb sy` ? I would have expected that to be a `dmb st` ..\n\nbut indeed it shows I'm not familiar with with FreeBSD:\n\n```C\nstatic __inline void\natomic_thread_fence_rel(void)\n{\n\n\tdmb(sy);\n}\n```\n\nand indeed it makes the deferred advance correct then.\n\nIt also means smr_synchronize() has a stronger semantics than I expected already and makes the smr_poll barrier on entry useless because the `atomic_load_acq_int()` in smr_poll() already give the semantics I was after on entry.\n\nI think you might be right that the one on exit of smr_poll() isn't quite needed. I think I just didn't think it through and just took `ck_epoch_synchronize_wait` as an example and just was like \"it needs one so smr_scan does too\" but trying to come up with a reason why it breaks yields nothing.."
+}

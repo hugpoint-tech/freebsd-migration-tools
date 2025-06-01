@@ -1,0 +1,8 @@
+{
+ "id": 85573,
+ "bug_id": 27370,
+ "attachment_id": 0,
+ "creation_time": "2001-06-29T21:14:51Z",
+ "creator": "ianlogan@qwest.net",
+ "text": "Hi,\nOn my current box (running current from yesterday)  the problem seems to be \nthat uhid.c's attach function is trying to free the same memory twice.\nuhid_attach calls usbd_alloc_report_desc (line 229 or so), \nusbd_alloc_report_desc calls usbd_get_report_desc which fails.\nThe usbd_alloc_report_desc free's the descriptor, and then\nuhid_attach tries to free it again.  uhid_attach seems to be the only function\nwhich tries to free the descriptor if usbd_alloc_report_desc fails. Removing\nthe free fixes this.  \nThanks,\nIan\n\n*** uhid.c.orig\tFri Jun 29 13:43:28 2001\n--- uhid.c\tFri Jun 29 13:43:46 2001\n***************\n*** 230,237 ****\n  \tif (err) {\n  \t\tprintf(\"%s: no report descriptor\\n\", USBDEVNAME(sc-\u003esc_dev));\n  \t\tsc-\u003esc_dying = 1;\n- \t\tif (desc != NULL)\n- \t\t\tfree(desc, M_USBDEV);\n  \t\tUSB_ATTACH_ERROR_RETURN;\n  \t}\n  \t\n--- 230,235 ----\n;"
+}

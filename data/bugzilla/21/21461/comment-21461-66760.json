@@ -1,0 +1,8 @@
+{
+ "id": 66760,
+ "bug_id": 21461,
+ "attachment_id": 0,
+ "creation_time": "2000-09-21T20:00:01Z",
+ "creator": "D.Rock@gmx.de",
+ "text": "if a resource is already held by another PnP device, the code in\n/sys/kern/subr_rman.c automatically tries to find another region, but\ndoesn't honour alignment requirements. The code in /sys/isa/isa_common.c\n(function isa_find_port()) is therefor pretty useless.\n\nThis code is present in the system since FreeBSD switched to the new PnP\ncode (about a year ago)\n\nFix: The following code releases the region if it is not exactly the one\nrequested, which was the original intention of the code but didn't\nwork because of the additional \"intelligence\" by the resource allocator.\n\nQuick - but ugly - hack (worked for me since I discovered the bug):\nHow-To-Repeat: I have different ISA PnP devices in my system (output from pnpinfo):\n\n   I/O Range 0x100 .. 0x3ff, alignment 0x1, len 0x1\n        [16-bit addr]\n\n   I/O Range 0x100 .. 0x3f0, alignment 0x8, len 0x8\n        [not 16-bit addr]\n\nFor the first device the I/O port 0x100 is allocated. This port isn't\navailable for the second device, but the code in /sys/kern/subr_rman.c\nautomatically \"finds\" an area large enough at 0x101, but doesn't know\nthe alignment constraint. Instead the second device should be allocated\nat 0x108-0x10f\n\nWrong boot output:\nunknown10: \u003cEEPROM\u003e at port 0x100 on isa0\nisic0: \u003cSedlbauer WinSpeed\u003e at port 0x101-0x108 irq 11 on isa0\n\nshould be:\nunknown10: \u003cEEPROM\u003e at port 0x100 on isa0\nisic0: \u003cSedlbauer WinSpeed\u003e at port 0x108-0x10f irq 11 on isa0"
+}

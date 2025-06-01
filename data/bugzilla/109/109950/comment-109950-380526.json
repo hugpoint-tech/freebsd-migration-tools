@@ -1,0 +1,8 @@
+{
+ "id": 380526,
+ "bug_id": 109950,
+ "attachment_id": 0,
+ "creation_time": "2008-03-07T01:56:11Z",
+ "creator": "admin@su29.net",
+ "text": "Problem relies in multi threaded disk access.\nI've got similar issue trying to run mysql 5.0.\nInnoDB startup complains on fsync() returning EBADF\n\nAfter looking into unionfs code I've discovered the following:\nunionfs_get_node_status() used in functions like unionfs_fsync()\nchecks list in unionfs_node for items belonging to the same LWP.\nE.g. if we open file from one kernel thread and then will try to do\nwrite() and fsync() on that fd in another [kernel] thread \nunionfs_get_node_status() will return new blank structure with\nuns_upper_opencnt/uns_lower_opencnt fields set to 0, so\nunionfs_fsync() will see that file has been opened 0 times and throw EBADF.\nProposed fix is to change unionfs_get_node_status() check to be \nprocess-based instead of thread-based.\n\n\n"
+}

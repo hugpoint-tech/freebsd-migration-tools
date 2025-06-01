@@ -1,0 +1,8 @@
+{
+ "id": 781887,
+ "bug_id": 192950,
+ "attachment_id": 0,
+ "creation_time": "2014-08-25T07:16:45Z",
+ "creator": "adrian@freebsd.org",
+ "text": "The problem seems to be a lack of correct feedback to the AMRR rate control code. It doesn't get informed of the correct number of transmissions, failures and retries, leading to it believing the correct thing to do is continue bumping up the rate.\n\nIf you enable IEEE80211_DEBUG in your kernel config, rebuild, then enable debugging via 'wlandebug +rate', you'll likely see the MCS rate continue climbing towards MCS7 or MCS15. This only works in a very clean environment - definitely not with 2GHz.\n\nIf you compile with IWN_DEBUG, then sysctl dev.iwn.0.debug=0x1, you'll see information about transmissions and transmit completions. You'll likely see the TX PLCP climb to MCS rate 0xf (MCS15) - with the retry and duration counts will be very high.\n\nI'm not sure if there's a quick fix. I think I'm going to have to add some 11n awareness to the ratectl API (ie, so we can tell it how many retries, how many successes, how many failures, the transmit duration) and then ensure it really is being called upon completion of each sent frame - aggregate or otherwise.\n\nAs for the driver - there seems to be multiple places where frame transmisson completes and the rate control code gets called. I'll have to audit these to ensure it's, well, \"right\"."
+}

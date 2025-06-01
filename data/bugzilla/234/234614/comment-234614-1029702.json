@@ -1,0 +1,8 @@
+{
+ "id": 1029702,
+ "bug_id": 234614,
+ "attachment_id": 200770,
+ "creation_time": "2019-01-04T14:35:00Z",
+ "creator": "kevans@freebsd.org",
+ "text": "Created attachment 200770\ngit(1) diff against rc.subr\n\nSome rc scripts in ports (e.g. uwsgi, apache, openvpn) allow for 'application profiles' that usually require the rc script to be invoked again for each active profile. Because there's no consistent way to determine the path because it differs between manual/service(8) invocations and /etc/rc invocations, this leads to patterns like these:\n\nhttps://svnweb.freebsd.org/ports/head/www/uwsgi/files/uwsgi.in?revision=473044\u0026view=markup#l104 (hardcoded script path)\nhttps://svnweb.freebsd.org/ports/head/security/openvpn/files/openvpn.in?revision=420825\u0026view=markup#l73 (guessing a $_file or $0 based on $0 = /etc/rc)\n\nWe should provide something similar to OpenRC's RC_SERVICE that rc scripts can consistently use to re-invoke themselves as needed, rather than having to play guessing games.\n\nI'm attaching a diff that approximately does ${_file-$0}, but instead sets up an rc_service var as execution goes. It will get set initially to $0, which may be a terrible guess if we're being executed via /etc/rc, but this guess later gets corrected for that case in run_rc_script before the script actually gets sourced.\n\nWhether we're directly executing and sourcing rc.subr for the first time, or whether rc.subr is sourcing the script, rc_service provided by rc.subr should be correct and available in the rc script."
+}

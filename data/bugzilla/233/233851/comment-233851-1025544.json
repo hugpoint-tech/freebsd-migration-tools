@@ -1,0 +1,8 @@
+{
+ "id": 1025544,
+ "bug_id": 233851,
+ "attachment_id": 0,
+ "creation_time": "2018-12-08T16:24:47Z",
+ "creator": "Trond.Endrestol@ximalas.info",
+ "text": "(In reply to Trond.Endrestol from comment #3)\nAfter some thinking, this startup script, named /etc/rc.d/ifconfig_cc0_up_before_swap, seems appropriate for my case, at least until t4_crypto.c is updated in head, and later in stable/12. Running rcorder manually places this script near the top of the list, well before /etc/rc.d/swap. I'll try to pop in at $WORK on Sunday to give the script a spin. The alternative, I figured, is to run \"kldload ccr\" in /etc/rc.local or some other script placed in either /etc/rc.d or /usr/local/etc/rc.d. I opted for covering the case where ccr(4) is part of the static kernel.\n\n#!/bin/sh\n\n# PROVIDE: ifconfig_cc0_up_before_swap\n# REQUIRE: geli\n# BEFORE: swap\n\n# Set\n# ifconfig_cc0_up_before_swap_enable=\"YES\"\n# in /etc/rc.conf.\n\n. /etc/rc.subr\n\nname=\"ifconfig_cc0_up_before_swap\"\ndesc=\"Ensure interface cc0 is up before utilizing any crypto(4) services handled by ccr(4), including geli(8) encrypted swap devices\"\nstart_cmd='/sbin/ifconfig cc0 up || true' # Any errors are usually tolerable.\nstop_cmd=':'\n\nload_rc_config $name\nrun_rc_command \"$1\"\n\n# EOF"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1145608,
+ "bug_id": 253318,
+ "attachment_id": 0,
+ "creation_time": "2021-02-08T20:09:51Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Looking at the stack trace, it seems the line editor was processing a tab keypress (while being in libedit via el_wgets), and then the autocompletion stuff got some error, which it tried to print via PrintAsync.\n\nThat uses a non-recursive mutex 'm_output_mutex' in the EditLine class, which is also locked just before calling into el_wgets(). So I think it's getting a EDEADLK, as described in lib/libthr/thread/thr_mutex.c:\n\n   885  static int\n   886  mutex_self_lock(struct pthread_mutex *m, const struct timespec *abstime)\n   887  {\n   888          struct timespec ts1, ts2;\n   889          int ret;\n   890\n   891          switch (PMUTEX_TYPE(m-\u003em_flags)) {\n   892          case PTHREAD_MUTEX_ERRORCHECK:\n   893          case PTHREAD_MUTEX_ADAPTIVE_NP:.\n   894                  if (abstime) {\n...\n   904                  } else {\n   905                          /*\n   906                           * POSIX specifies that mutexes should return\n   907                           * EDEADLK if a recursive lock is detected.\n   908                           */\n   909                          ret = EDEADLK;\n   910                  }\n\nI think this is an upstream bug. But it would be handy to have an easier reproduction scenario."
+}

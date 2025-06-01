@@ -1,0 +1,8 @@
+{
+ "id": 1042753,
+ "bug_id": 236585,
+ "attachment_id": 202946,
+ "creation_time": "2019-03-18T03:34:47Z",
+ "creator": "john@cybersashi.com",
+ "text": "Created attachment 202946\nPatch for crash\n\nHere's what seems to be happening ...\n\n  1) bd_init calls bd_int13probe which creates entries for the various\n     drives, including the card reader.  Unfortunately bd_sectorsize\n     is set to zero for the card reader (presumably because no media\n     is present).\n\n  2) zfs_dev_init calls i386_zfs_probe which uses zfs_probe_dev to\n     probe all the drives.\n\n  3) zfs_probe_dev -\u003e open -\u003e disk_open -\u003e ptable_open -\u003e ptable_iso9660read\n     at which point things go splat due to cdb2devb attempting to divide\n     by the sector size (which is zero).\n\nFixed by having disk_open check for a sector size of zero."
+}

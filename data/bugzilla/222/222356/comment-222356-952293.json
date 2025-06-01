@@ -1,0 +1,8 @@
+{
+ "id": 952293,
+ "bug_id": 222356,
+ "attachment_id": 0,
+ "creation_time": "2017-09-17T11:25:22Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Tijl Coosemans from comment #2)\n\nWhich file system do you use ?  The supposed mechanism is that when last on-disk link goes away, vp-\u003ev_vflag gets VV_NOSYNC bit set.  Look for instance at the ufs_remove().  Then, vm_object_page_clean() skips such vnodes, and this function is exactly what syncer calls to clean vnode' cached pages.\n\nHow did you ensured that there is an io caused by the write-out of the data ?  The metadata must be written on the unmap, and even unlinked vnode removal causes a lot of metadata writes on UFS.  The inode must be prepared for reuse by writing initial data, all inode data blocks must be marked as free in the cylinder group bitmask, the inode must be marked as free in another bitmask, then cg summary must be updated indicating new amount of free blocks and inodes.\n\nAs a side note, I do not see how could my patch cause failures which you described.  All it does is preventing msync(2) from actually write pages to disk for the unlinked file."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1166599,
+ "bug_id": 256658,
+ "attachment_id": 0,
+ "creation_time": "2021-06-16T19:58:16Z",
+ "creator": "dvl@FreeBSD.org",
+ "text": "This has affect hosts installed with FreeBSD 13 and upgraded from 12 to 13.\n\nA summary of the discovery process appears first, followed by the complicating factors which colluded to create the problem.\n\nInitial symptom was inability of non-root to use / access Kerberos. With a valid ticket on your laptop, you could ssh to a host where klist should show no valid ticket (we ssh'd in via ssh-keys).\n\n$ id dvl\nid: dvl: no such user\n\n$ truss id dvl\n....\nconnect(3,{ AF_UNIX \"/var/run/nslcd/nslcd.ctl\" },26) ERR#13 'Permission denied'\n....\n\nPermissions on that directory and its contents matched that on 12.x hosts which did not have this issue.\n\nAn IRC guru suggested:\n\n$ sysctl security.mac | grep enabled\nsecurity.mac.bsdextended.firstmatch_enabled: 1\nsecurity.mac.bsdextended.enabled: 1\n\nLooking at bsdextended_script within /etc/rc.conf led to rules which impose restrictions upon /usr/home\n\nLet's try: service ugidfw restart\n\nid dvl - now works.\n\nsummary of complicating factors:\n\n* /usr/home is mounted by NFS with: \n\nfoo.example.com:/home \t /usr/home \t nfs \t hard,late,intr,wsize=65536,rsize=65536,port=2049,rw 0 0\n\n* bsdextended_script points to rules which impose restrictions upon /usr/hom\n\n* FreeBSD 12 does not show this issue\n\n* FreeBSD 13 has this issue\n\n* new 13 installs and upgrades from 12 have the same problem\n\n* restating ugidfw after boot solves the issue\n\n* removing hard,late from NFS did not solve the issue\n\n* adding mountlate to the REQUIRES in /etc/rc.d/ugidfw solves the issue"
+}

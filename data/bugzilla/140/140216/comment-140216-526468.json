@@ -1,0 +1,8 @@
+{
+ "id": 526468,
+ "bug_id": 140216,
+ "attachment_id": 0,
+ "creation_time": "2009-11-02T11:10:03Z",
+ "creator": "henry.hu.sh@gmail.com",
+ "text": "After upgrading to 8.0-RC2, I found firefox using 100% of one CPU core.\nThe problem appears if I use one PAC file to configure proxy, and it returns \"localhost:8119\".\nLater, I found that firefox tried to connect to ::1:8119 first. Since the proxy listens on 127.0.0.1:8119, it fails with a connection reset. However, firefox continues to poll the file descriptor.\nAfter enabling the debug flag, firefox abort() with an assertion failure in nspr mozilla/nsprpub/pr/src/pthreads/ptio.c:1626, which asserts out_flags to be 0. However, out_flags is PR_POLL_HUP, which means the socket is disconnected. Without the debug flag enabled, the function sets error to PR_IN_PROGRESS_ERROR, and returns. I think firefox keeps polling the fd since it is the \"in progress\" error.\nAfter patching the function to check PR_POLL_HUP, the problem disappeared. The code after it checks for connection error, which sets the error to the right value, and firefox realizes the real condition.\nI can't explain why this problem did not appear while I was using 7.2-STABLE.\n\nFix: Apply the following patch to devel/nspr\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. Install FreeBSD 8.0-RC2\n2. Install firefox 3.5\n3. Install foxyproxy\n4. Use a PAC file, contains\n\nfunction FindProxyForURL(url, host)\n{\nreturn \"PROXY localhost:8119\";\n}\n\n5. Try to navigate somewhere"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1099613,
+ "bug_id": 225934,
+ "attachment_id": 0,
+ "creation_time": "2020-04-28T15:15:23Z",
+ "creator": "jan.kokemueller@gmail.com",
+ "text": "I've seen some places in sys_pipe.c where operations are delegated to vnode operations (in the fifo case). Could something like the following work?\n\n\n--- a/sys/kern/sys_pipe.c\n+++ b/sys/kern/sys_pipe.c\n@@ -1707,6 +1707,10 @@ pipe_kqfilter(struct file *fp, struct knote *kn)\n                cpipe = PIPE_PEER(cpipe);\n                break;\n        default:\n+               if (cpipe-\u003epipe_state \u0026 PIPE_NAMED) {\n+                       PIPE_UNLOCK(cpipe);\n+                       return (vnops.fo_kqfilter(fp, kn));\n+               }\n                PIPE_UNLOCK(cpipe);\n                return (EINVAL);\n        }\n\n\nMaybe vop_kqfilter/VOP_KQFILTER could be removed completely in favor of vfs_kqfilter() as the only implementation? It looks like this mechanism was only needed to forward *_kqfilter calls to fifo's vop_kqfilter. But now it's done the other way around in a sense."
+}

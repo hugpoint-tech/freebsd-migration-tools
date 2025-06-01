@@ -1,0 +1,8 @@
+{
+ "id": 1033741,
+ "bug_id": 235097,
+ "attachment_id": 0,
+ "creation_time": "2019-01-24T22:31:40Z",
+ "creator": "kp@freebsd.org",
+ "text": "I think I understand the use-after-free bug, and it's a pf problem.\nPatching the counter increment code to check for 0xdeadc0dedeadc0de (and panicing) produces this backtrace:\n\npanic: Incrementing freed counter!\ncpuid = 0\ntime = 1548368229\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x2b/frame 0xfffffe00a94da210\nvpanic() at vpanic+0x1b4/frame 0xfffffe00a94da270\npanic() at panic+0x43/frame 0xfffffe00a94da2d0\npf_purge_expired_src_nodes() at pf_purge_expired_src_nodes+0x1f4/frame 0xfffffe00a94da320\npf_unload_vnet_purge() at pf_unload_vnet_purge+0x2b/frame 0xfffffe00a94da330\nvnet_pf_uninit() at vnet_pf_uninit+0x74a/frame 0xfffffe00a94da7d0\nvnet_destroy() at vnet_destroy+0x124/frame 0xfffffe00a94da800\nprison_deref() at prison_deref+0x29d/frame 0xfffffe00a94da840\nsys_jail_remove() at sys_jail_remove+0x28e/frame 0xfffffe00a94da890\namd64_syscall() at amd64_syscall+0x29b/frame 0xfffffe00a94da9b0\nfast_syscall_common() at fast_syscall_common+0x101/frame 0xfffffe00a94da9b0\n\nEssentially, pf frees its counters before it's all the way done cleaning up, and it can end up incrementing a counter."
+}

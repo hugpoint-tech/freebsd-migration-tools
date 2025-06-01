@@ -1,0 +1,8 @@
+{
+ "id": 840454,
+ "bug_id": 203131,
+ "attachment_id": 161071,
+ "creation_time": "2015-09-15T16:19:15Z",
+ "creator": "matthew@FreeBSD.org",
+ "text": "Created attachment 161071\nupdate to sysutils/rsyslog8 port\n\nUpdate to 8.12.0\n\n  - Remove most of the required patches as the code has been incorporated\n    upstream\n  - Set MAKE_JOBS_UNSAFE as there's a race condition that breaks compilation\n    otherwise\n  - Patch configure.ac so it can detect pthread_setschedparam(3) correctly --\n    function needs -lpthread on FreeBSD.\n  - Add a new INOTIFY option, but mark it BROKEN for now.\n\nThe new (optional) support for 'notify' mode in the imfile module provided by linking against devel/libinotify will compile perfectly and the resulting binary runs happily.  Unfortunately the 'notify' mode does not notice any changes to the monitored file, *unless* rsyslogd is started with the '-n' (no auto-background) flag.  Which makes it pretty useless, especially since it is so frustratingly close to working correctly.\n\nThe INOTIFY option works because rsyslog8's configure mechanism is broken with respect to testing for inotify_init() functionality where that function is not in libc. (Ref: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=202862) Enabling the option adds a fix to configure.ac so it can properly detect inotify_init() in libinotify.so, but this would compile in inotify support unconditionally if that library happens to be present on the system.\n\nThis update should also fix https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=202932 -- that patch has apparently been included upstream."
+}

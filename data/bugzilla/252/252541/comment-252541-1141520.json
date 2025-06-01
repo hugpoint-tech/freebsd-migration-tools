@@ -1,0 +1,8 @@
+{
+ "id": 1141520,
+ "bug_id": 252541,
+ "attachment_id": 0,
+ "creation_time": "2021-01-13T21:40:10Z",
+ "creator": "mhorne@freebsd.org",
+ "text": "This should be fixed by the following commit. Unfortunately, I incorrectly tagged the PR number. Thanks everyone for your reports and testing.\n\ncommit 818390ce0ca539300dd15d7a817784f1e3f7a9b8\nAuthor:     Mitchell Horne \u003cmhorne@FreeBSD.org\u003e\nAuthorDate: 2021-01-13 18:30:50 +0000\nCommit:     Mitchell Horne \u003cmhorne@FreeBSD.org\u003e\nCommitDate: 2021-01-13 21:27:44 +0000\n\n    arm64: fix early devmap assertion\n\n    The purpose of this KASSERT is to ensure that we do not run out of space\n    in the early devmap. However, the devmap grew beyond its initial size of\n    2MB in r336519, and this assertion did not grow with it.\n\n    A devmap mapping of a 1080p framebuffer requires 1920x1080 bytes, or\n    1.977 MB, so it is just barely able to fit without triggering the\n    assertion, provided no other devices are mapped before it. With the\n    addition of `options GDB` in GENERIC by bbfa199cbc16, the uart is now\n    mapped for the purposes of a debug port, before mapping the framebuffer.\n    The presence of both these conditions pushes the selected virtual\n    address just below the threshold, triggering the assertion.\n\n    To fix this, use the correct size of the devmap, defined by\n    PMAP_MAPDEV_EARLY_SIZE. Since this code is shared with RISC-V, define\n    it for that platform as well (although it is a different size).\n\n    PR:             25241\n    Reported by:    gbe\n    MFC after:      3 days\n    Sponsored by:   The FreeBSD Foundation"
+}

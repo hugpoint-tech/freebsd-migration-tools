@@ -1,0 +1,8 @@
+{
+ "id": 37036,
+ "bug_id": 12252,
+ "attachment_id": 0,
+ "creation_time": "1999-06-17T03:10:01Z",
+ "creator": "jrd@cc.usu.edu",
+ "text": "netstat shows UDP and Unix but not TCP connections. The problem is\nthe TCP protocol value is not set in the xt_socket structure\npassed back to netstat routines. See horrid workaround below (one\nline). The value returned in the structure looks rather like an\naddress or left over un-inited garbage.\n\nFix: \n\nMy dirty but quick fix, to netstat/inet.c:\n\n        oxig = xig = (struct xinpgen *)buf;\n        for (xig = (struct xinpgen *)((char *)xig + xig-\u003exig_len);\n             xig-\u003exig_len \u003e sizeof(struct xinpgen);\n             xig = (struct xinpgen *)((char *)xig + xig-\u003exig_len)) {\n                if (istcp) {\n                        tp = \u0026((struct xtcpcb *)xig)-\u003ext_tp;\n                        inp = \u0026((struct xtcpcb *)xig)-\u003ext_inp;\n                        so = \u0026((struct xtcpcb *)xig)-\u003ext_socket;\n/* JRD */\nso-\u003exso_protocol = proto;       /* correct uninited value */\n/* JRD */\n                } else {\n                        inp = \u0026((struct xinpcb *)xig)-\u003exi_inp;\n                        so = \u0026((struct xinpcb *)xig)-\u003exi_socket;\n                }\n\n                /* Ignore sockets for protocols other than the desired one. */\n                if (so-\u003exso_protocol != proto)\n                        continue;\nHow-To-Repeat: Type netstat with TCP connections active"
+}

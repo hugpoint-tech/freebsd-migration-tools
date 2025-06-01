@@ -1,0 +1,8 @@
+{
+ "id": 1364295,
+ "bug_id": 241106,
+ "attachment_id": 0,
+ "creation_time": "2025-05-15T07:30:18Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to lenzi.sergio from comment #4)\n\u003e system panics on rtsock.c for the reason that rt-\u003ert_ifp-\u003eif_addr have a null pointer. \n\u003e It is not clear the reason rt-\u003ert_ifp-\u003eif_addr have a null pointer but when \n\u003e try to access rt-\u003ert_ifp-\u003eif_addr-\u003eifa_addr near line 1578 of rtsock.c the system panics... \n\nI'm recently reviewing the attaching progress of net interfaces ( if_attach() ), and the link-layer address `ifp-\u003eif_addr` is initialized and will never be NULL, even after the interface been detached ( then ifp-\u003eif_addr may point to freed memory, if not within the net epoch section ).\n\n\u003e I also insert code of RTSOCK_LOCK/RTSOCK_UNLOCK  on any ioctl call, and since than,\n\u003e the system does not panic any more..\n\n\u003e A more study must be done where/why rt-\u003ert_ifp-\u003eif_addr comes NULL,  and in that\n\u003e case the colunm Netif from the command: netstat -4rn  either shows \"\" (nothing)  \n\u003e or \"---\".  when this happens, the system panics some minutes later...\n\nThe \"\" or \"---\" name of the interface drive me to presume that the route entry is actually referring to previously freed interface, probably tun1 in your case.\n\nSince the introduction of scalable route multipath [1] in stable/13, `sysctl_dumpentry()` was heavily rewrote, so I'm closing this. 12.4 has reached its EoL.\n\n[1] https://cgit.freebsd.org/src/commit/?id=fedeb08b6a58e708e1153224d37ad26bdc1062a2"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1244394,
+ "bug_id": 268717,
+ "attachment_id": 0,
+ "creation_time": "2023-01-25T11:07:37Z",
+ "creator": "dfr@rabson.org",
+ "text": "As far as I understand the code (which is not very well TBH), both nat and rdr rules rely on both PF_IN and PF_OUT events but differ on which event triggers state creation: PF_IN for rdr and PF_OUT for nat with the opposite event matching the other direction to reverse the re-write.\n\nFor connections initiated locally, this symmetry is broken since we generate PF_IN events for the SYN causing the re-write and creating the state but since there is no corresponding PF_OUT for the SYN+ACK reply, the connection fails. This is why I think we need PF_OUT for packets which will be delivered to the local stack rather than routed onward.\n\nI thought about whether it makes sense for rdr state creation to happen on PF_OUT but wouldn't that have other problems since the un-redirected destination address may direct the packet to the wrong outgoing interface?\n\nI haven't looked closely at upstream OpenBSD pf but it seems they have changed the rule language considerably which would likely be a problem for FreeBSD unless there is a compability mode. I seem to remember that they support tables for rdr target addresses which may be useful for managing a pool of load-balanced replicas.\n\nAnyway, for now I have a workable solution for my two (related) use-cases: 'publishing' container ports to the host for podman and mapping service VIPs to containers for kubernetes. I'm looking forward to seeing the right solution for this merged into main (and maybe stable/13)."
+}

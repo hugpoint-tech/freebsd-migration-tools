@@ -1,0 +1,8 @@
+{
+ "id": 709481,
+ "bug_id": 177456,
+ "attachment_id": 0,
+ "creation_time": "2013-04-03T16:21:12Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "  Hi!\n\nOn Wed, Apr 03, 2013 at 07:52:42AM +0800, ?????? wrote:\n?\u003e I mean there is a bug in FreeBSD's tcp code.  I'm trying to describe it by pictuer. Pelease see the attachments??\n\nI am trying to model what you are describing in the picture by\nspecial crafted code.\n\nI intentionally model memory allocation failure on first two\npackets for a connection that has special socket option.\n\nI'm modelling allocation failure at tcp_output.c near line 900:\n\nIndex: tcp_output.c\n===================================================================\n--- tcp_output.c        (revision 249051)\n+++ tcp_output.c        (working copy)\n@@ -898,6 +898,13 @@ send:\n                else\n                        TCPSTAT_INC(tcps_sndwinup);\n \n+               /* Fail allocating first 2 packets. */\n+               if (tp-\u003et_flags \u0026 TF_ZHOPA \u0026\u0026 tp-\u003et_zhopa \u003c 2) {\n+                       tp-\u003et_zhopa++;\n+                       m = NULL;\n+                       error = ENOBUFS;\n+                       goto out;\n+               } else\n                m = m_gethdr(M_NOWAIT, MT_DATA);\n                if (m == NULL) {\n                        error = ENOBUFS;\n\n\nI have no success in reproducing your problems. With above code,\nfirst 2 packets are failing to allocate, but third retransmission\nsucceeds and connection is established with no problems.\n\nMay be I incorrectly understand your description :( Please don't\ngive up and try to explain again.\n\nA modelling code that demonstrates problem would be appreciated.\n\n-- \nTotus tuus, Glebius."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 341526,
+ "bug_id": 101462,
+ "attachment_id": 0,
+ "creation_time": "2006-08-06T14:10:14Z",
+ "creator": "jgordeev@dir.bg",
+ "text": "When the variable \"arpwatch_interfaces\" is set to a list of interfaces in /etc/rc.conf and \"arpwatch_enable\" is set to \"YES\" the rc script of arpwatch should start multiple copies of arpwatch, one for each interface. But upon reboot the rc script is normally called with \"faststart\" (not \"start\") as the sole argument, which the script does not handle correctly. As a result only one copy of arpwatch is started, with no arguments.\n\nFix: The simplest fix is to make the rc script handle \"faststart\" the same as \"start\".\nA patch follows.\n\n\n*)\n-        if [ \"$1\" = \"start\" ]; then\n+        if [ \"$1\" = \"start\" -o \"$1\" = \"faststart\" ]; then\n             for interface in ${arpwatch_interfaces}; do\n                 eval options=\\$arpwatch_${interface}_options\n                 command_args=\"-i ${interface} ${options} -f arp.${interface}.dat\"\n\n\nAnother fix is to rewrite the rc script or rewrite arpwatch so that single process monitors multiple interfaces.--1jM9vDt4oIuLW87HN9oFC3ets5cKuUO4hC8jca2Fo0o1SsTX\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- arpwatch.old        Sun Aug  6 15:02:21 2006\n+++ arpwatch    Sun Aug  6 15:10:59 2006\n@@ -63,7 +63,7 @@\n     ;;\nHow-To-Repeat: Set the following in /etc/rc.conf:\narpwatch_enable=\"YES\"\narpwatch_interfaces=\"fxp0 rl0\" #a list of two or more interfaces\n\nThen reboot the machine. Alternatively try starting arpwatch with \"/usr/local/etc/rc.d/arpwatch faststart\"\nAfter the reboot verify that only one copy of arpwatch is running."
+}

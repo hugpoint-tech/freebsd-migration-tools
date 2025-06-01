@@ -1,0 +1,8 @@
+{
+ "id": 1072011,
+ "bug_id": 241373,
+ "attachment_id": 0,
+ "creation_time": "2019-10-22T06:12:53Z",
+ "creator": "mckusick@FreeBSD.org",
+ "text": "Your test passes on a filesystem without soft updates which was my first clue. It also passes if you add to your test program a usleep(1000000) call after the call to rename() which was the second clue. When running with soft updates, the ctime is not updated until the soft updates background process has settled all the needed I/O operations. Your test program stat()s it immediately after the rename() has returned, but soft updates has not finished with the processing, so the ctime has not yet been updated.\n\nThe attached patch causes the ctime to be updated immediately during the rename() which makes your test happy. The ctime will be updated again when soft updates has finished its processing because that is the time that is correct from the perspective of programs that look at the disk (like dump). This change does not cause any extra I/O to be done, it just ensures that stat() updates the ctime before handing it back to you."
+}

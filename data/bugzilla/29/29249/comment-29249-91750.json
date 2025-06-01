@@ -1,0 +1,8 @@
+{
+ "id": 91750,
+ "bug_id": 29249,
+ "attachment_id": 0,
+ "creation_time": "2001-07-26T23:20:08Z",
+ "creator": "jmcgrath@sitaranetworks.com",
+ "text": "miibus_attach() in sys/dev/mii/mii.c makes an assumption about the location of the arpcom structure in the softc structure.  See the line\n\n\tmii-\u003emii_ifp = device_get_softc(device_get_parent(dev));\n\nHowever, softc, which has struct wxmdvar as its first element, doesn't have struct arpcom as the first element of struct wxmdvar.\n\nThis problem is not encountered in the fiber version of the NIC because no use is made of the mii.\n\nstruct wxmdvar {\n\tstruct device *\t\tdev;\t/* backpointer to device */\n\tstruct arpcom \t\tarpcom;\t/* per-interface network data */\n\tstruct resource *\tmem;\t/* resource descriptor for registers */\n\nFix: \n\nI moved the struct arpcom to the first location of struct wxmdvar and this solved my problems.  I did not find any positional dependencies for struct device *dev;\nHow-To-Repeat: Try to get LIVENGOOD_CU working."
+}

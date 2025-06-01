@@ -1,0 +1,8 @@
+{
+ "id": 1120562,
+ "bug_id": 249056,
+ "attachment_id": 0,
+ "creation_time": "2020-09-02T15:04:14Z",
+ "creator": "novel@FreeBSD.org",
+ "text": "(In reply to ddrinnon from comment #3)\n\nThanks, looks like libutil.so is fine.\n\nI've actually was able to reproduce this in my poudiere jail. I noticed the following difference in commands between successfull and the failing build:\n\n--- cmd1.split  2020-09-02 15:21:47.764180000 +0400\n+++ cmd2.split  2020-09-02 15:21:52.656649000 +0400\n@@ -26,6 +26,7 @@\n -fstack-protector-strong\n src/libvirt.so.0.6007.0\n src/bhyve/libvirt_driver_bhyve_impl.a\n+-Wl,--no-copy-dt-needed-entries\n -Wl,-export-dynamic\n -ldl\n /usr/local/lib/libglib-2.0.so\n@@ -37,9 +38,11 @@\n -Wl,--end-group\n -Wl,-z,relro\n -Wl,-z,now\n+-Wl,--no-copy-dt-needed-entries\n -Wl,-export-dynamic\n -Wl,-export-dynamic\n -Wl,-export-dynamic\n '-Wl,-rpath,$ORIGIN/../src:$ORIGIN/../src/bhyve'\n -Wl,-rpath-link,/wrkdirs/usr/ports/devel/libvirt/work/libvirt-6.7.0/_build/src\n -Wl,-rpath-link,/wrkdirs/usr/ports/devel/libvirt/work/libvirt-6.7.0/_build/src/bhyve\n\nSo it seems that my system uses \"-Wl,--no-copy-dt-needed-entries\", and that's the only difference. Also, I can see the matching checks:\n\nSuccessful build:\n\nCompiler for C supports link arguments -Wl,--no-copy-dt-needed-entries: YES\n\nFailing build:\n\nCompiler for C supports link arguments -Wl,--no-copy-dt-needed-entries: NO\n\nLooking further."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 940118,
+ "bug_id": 220380,
+ "attachment_id": 0,
+ "creation_time": "2017-06-30T08:39:49Z",
+ "creator": "bartosz.sobczak@intel.com",
+ "text": "In case when the addr and port is bound, but the rdma_destroy_id is called instead of connection establishment, there is no possibility of binding to this port anymore.\n\nReproduce procedure:\n1. cm_id = rdma_create_id( cma_event_handler, cb, ...);\n2. rdma_bind_addr(cm_id, (struct sockaddr *)addr);\n3. rdma_listen(cm_id, backlog);\n4. rdma_destroy_id(cm_id);\n5. cm_id = rdma_create_id( cma_event_handler, cb, ...);\n6. rdma_bind_addr(cm_id, (struct sockaddr *)addr);  //bind unsuccessfull\n\nIt seems the issue comes from the fact, that in cma_release_port from sys/ofed/drivers/infiniband/core/cma.c a sock_release call has been moved to iw_destroy_cm_id from iwcm.c file. It does work for normal operation, but the function is never reached when no connection is established. (compare rdma_destroy_id function in cma.c)"
+}

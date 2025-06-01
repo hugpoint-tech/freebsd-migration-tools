@@ -1,0 +1,8 @@
+{
+ "id": 49053,
+ "bug_id": 16113,
+ "attachment_id": 0,
+ "creation_time": "2000-01-13T22:50:01Z",
+ "creator": "stenn@whimsy.udel.edu",
+ "text": "\n\tWrote a perl script to wiggle the timer frequency, based on ntpd's\n\t/etc/ntp.drift file and input from PHK.  It seems to work fine on\n\t2-STABLE and -CURRENT, but it panics a 3-STABLE kernel with a\n\tpage fault.\n\nHow-To-Repeat: \n\tRun ntpd long enough to get a valid /etc/ntp.drift file.\n\tRun the following script.\n\n\t#! /usr/bin/perl -w\n\n\t$driftfile = \"/etc/ntp.drift\";\n\n\topen(DF, $driftfile) || die \"Can't open driftfile ($driftfile): $!\\n\";\n\twhile(\u003cDF\u003e) {\n\t    chop;\n\t    if (/^-?\\d+\\.\\d+$/) {\n\t\t$drift = $_;\n\t    } else {\n\t\tdie \"Bogus value in driftfile $driftfile: \u003c$_\u003e\\n\";\n\t    }\n\t}\n\tclose(DF);\n\n\tprint \"drift is      \u003c$drift\u003e\\n\";\n\n\t$freq_adj = 1 - $drift / 1000000;\n\n\tprint \"freq_adj is \u003c$freq_adj\u003e\\n\";\n\n\tchop($i8254_freq = `sysctl -n machdep.i8254_freq`);\n\tchop($tsc_freq = `sysctl -n machdep.tsc_freq 2\u003e /dev/null`);\n\n\tprint \"i8254_freq is \u003c$i8254_freq\u003e\\n\";\n\tprint \"tsc_freq is   \u003c$tsc_freq\u003e\\n\";\n\n\tif ($i8254_freq \u003e 1) {\n\t    $i8254_freq = int $i8254_freq * $freq_adj;\n\t    print \"i8254_freq -\u003e \u003c$i8254_freq\u003e\\n\";\n\t    print \"i8254: \".`sysctl -w machdep.i8254_freq=$i8254_freq`;\n\t}\n\n\tif ($tsc_freq \u003e 1) {\n\t    $tsc_freq = int $tsc_freq * $freq_adj;\n\t    print \"tsc_freq -\u003e   \u003c$tsc_freq\u003e\\n\";\n\t    print \"tsc: \".`sysctl -w machdep.tsc_freq=$tsc_freq`;\n\t}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1255546,
+ "bug_id": 270810,
+ "attachment_id": 0,
+ "creation_time": "2023-04-16T21:05:49Z",
+ "creator": "geoffrey@dommett.com",
+ "text": "The smallest test program that I have replicated this with is below.\nWhen run on a linux machine the problem does not occur, when writing to the nfs server running bsd.\nWhen run on a bsd machine, the problem seems to occur if the number of instances run is sufficient that the machine has insufficient ram that it must page between the files and the in memory copy to complete the operation. When running 50 instances is enough on the machine in front of me with 8gb of ram about 30% of them are corrupt at the end. It does not occur running just a few instances. \nRunning 50 instances of this test on a bsd machine with 96Gb ram, 1 of them is corrupt. This same machine exhibits a lot of corruption when 300+ Gb of files are mapped.\nI think all times I have encountered this have been when the total files mapped exceed the physical ram of the machine.\n\nleaving in or commenting out the msync, fsync and ftruncate at the end does not stop the file corruption. \n\n#include \u003cstdio.h\u003e\n#include \u003csys/mman.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n\nint main (int argv , char** argc )\n{\nint fl=open(argc[1] , O_RDWR | O_CREAT , 0644 ) ;\nlseek(fl,1000000000 , SEEK_SET);\nwrite(fl, \"\", 1);\nint * ttv = (int*)  mmap(0,100000000 , PROT_WRITE | PROT_READ ,MAP_SHARED, fl , 0) ;\n\n\nfor (int j=0 ; j\u003c10 ; j++) {\nfor (int ii = j ; ii\u003c100000000/4 ; ii+=10 )\n        ttv[ii]=ii ;\n}\n//msync(ttv  , 10000000000, MS_SYNC ) ;\n\n//fsync(fl) ;\n//ftruncate(fl ,9000000000) ;\nclose(fl) ;\n}"
+}

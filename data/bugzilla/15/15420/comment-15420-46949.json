@@ -1,0 +1,8 @@
+{
+ "id": 46949,
+ "bug_id": 15420,
+ "attachment_id": 0,
+ "creation_time": "1999-12-13T17:36:32Z",
+ "creator": "mitja@ksop-cscp.si",
+ "text": "After rerunning the tests with more processes (10+) I noticed that random\nkernel freezes were still happening. After digging a bit around the swapper\ncode I came up with a third patch.  My machine with this patch applied is\nstable although running for three hours with 15 memory hogs.\n--------------------------------\u003e8-------------------------------------------\n        diff -u sys.orig/vm/vm_pageout.c sys/vm/vm_pageout.c\n        --- sys.orig/vm/vm_pageout.c    Sun Aug 29 18:33:38 1999\n        +++ sys/vm/vm_pageout.c Mon Dec 13 17:20:38 1999\n        @@ -1136,8 +1136,9 @@\n                 * make sure that we have swap space -- if we are low on memory and\n                 * swap -- then kill the biggest process.\n                 */\n-       if ((vm_swap_size == 0 || swap_pager_full) \u0026\u0026\n-           ((cnt.v_free_count + cnt.v_cache_count) \u003c cnt.v_free_min)) {\n+       if (vm_swap_size == 0 \u0026\u0026\n+           (cnt.v_free_count + cnt.v_cache_count) \u003c cnt.v_free_min ||\n+           swap_pager_full) {\n                bigproc = NULL;\n                bigsize = 0;\n                for (p = allproc.lh_first; p != 0; p = p-\u003ep_list.le_next) {\n@@ -1174,7 +1175,7 @@\n                        bigproc-\u003ep_nice = PRIO_MIN;\n                        resetpriority(bigproc);\n                        wakeup(\u0026cnt.v_free_count);\n-               }\n+               }\n        }\n        return force_wakeup;\n }\n--------------------------------\u003e8-------------------------------------------\nRegards,\nMitja"
+}

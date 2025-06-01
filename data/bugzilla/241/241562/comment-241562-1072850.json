@@ -1,0 +1,8 @@
+{
+ "id": 1072850,
+ "bug_id": 241562,
+ "attachment_id": 0,
+ "creation_time": "2019-10-29T06:00:40Z",
+ "creator": "cem@freebsd.org",
+ "text": "Thanks for the report and quick CI bypass, Li-Wen Hsu.  I'll investigate tomorrow.  Of course, the test passed locally (outside of Kyua sandbox).\n\nIt looks like the CI build is stripping test binaries more aggressively than on my machine; when I strip(1) the test binary, I can reproduce the failure.  I have WITH_DEBUG_FILES=1 in my /etc/src.conf, but I don't believe that's important here -- I think the install(1) step is where the test binary gets stripped (further).\n\nHere's an extremely high-level sketch:\nOBJDIR:\nbacktrace_test.full:  34k\nbacktrace_test:       23k\nbacktrace_test.debug: 19k\n\nSomehow, test + test.debug is substantially larger than test.full (+8k).\n\nMeanwhile, the installed binary is only 20k.  So 3kB more has been stripped from the version I tested.  It looks like that's .symtab and .strtab, so, I guess that's not too surprising.\n\n(The full binary has additional .debug_{str,loc,abbrev,info,ranges,macinfo,line,aranges} sections that neither stripped version has.)  The \"debug\" setaside has duplicate .shstrtab, .SUNW_ctf, .symtab, and .strtab (the latter two are only duplicates of the OBJDIR program) sections that likely explain the extra 8k.\n\n\"myfunc{1,2,3}\" are in .symtab only, and that gets stripped.\n\nThe test looks pretty fragile but relies on finding all of the myfuncs, plus some assumptions about how ATF tests are named.  So at least one thing it needs is those functions in a symbol table (.dynsym or unstripped .symtab).\n\nAgain, thanks for the report and quick workaround!"
+}

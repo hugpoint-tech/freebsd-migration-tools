@@ -1,0 +1,8 @@
+{
+ "id": 1072925,
+ "bug_id": 241577,
+ "attachment_id": 0,
+ "creation_time": "2019-10-29T21:26:22Z",
+ "creator": "mi@FreeBSD.org",
+ "text": "I'm forced to use an NFS-share as home directory for a while. The mount is using default options -- nothing fancy:\n\n         narawntapu:/green/home  /home    nfs     rw  0 0\n\nHowever, various things (browsers, Thunderbird) aren't working -- manifesting all sorts of very strange problems.\n\nApparently, the underlying reason is the same for all of them -- SQLite3 can not operate on its database-files, which are used for much of the software's configuration nowadays.\n\nA very simple test-case is:\n\n        % echo .databases | sqlite3 ~/meow.db\n        Error: disk I/O error\n\nUsing /tmp -- or any other local filesystem instead of ~/ -- works as expected.\n\nI used ktrace to see, what exactly is failing in sqlite3, and found this:\n\n 43469 sqlite3  CALL  fcntl(0x3,F_SETLK,0x7fffffffb920)\n 43469 sqlite3  RET   fcntl -1 errno 45 Operation not supported\n 43469 sqlite3  CALL  write(0x2,0x7fffffffc8c0,0x16)\n 43469 sqlite3  GIO   fd 2 wrote 22 bytes\n       \"Error: disk I/O error\n\nThe NFS-server (narawntapu) has lock-daemon running:\n   PID TT  STAT    TIME COMMAND\n   785  -  Ss   0:02,00 /usr/sbin/rpc.lockd\n\nNeither the client nor the server have any kernel messages in the logs relating to this problem.\n\nWhy is not F_SETLK working? I'm not expecting high performance, but I expect it to work..."
+}

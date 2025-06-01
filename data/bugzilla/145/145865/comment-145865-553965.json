@@ -1,0 +1,8 @@
+{
+ "id": 553965,
+ "bug_id": 145865,
+ "attachment_id": 0,
+ "creation_time": "2010-04-20T18:33:28Z",
+ "creator": "mjguzik@gmail.com",
+ "text": "devctl_queue_length is checked twice.\n\n1)\n if (devctl_queue_length == 0)\n                return;\n\nSo we leak message passed by the caller.\n\n2)\nmtx_lock(\u0026devsoftc.mtx);\n if (devctl_queue_length == 0) {\n                free(n1-\u003edei_data, M_BUS);\n                free(n1, M_BUS);\n                return;\n}\n\nSo we can return with lock held where we shouldn't (or I'm\nmisinterpreting something).\n\nHow about this patch then:\nhttp://student.agh.edu.pl/~mjguzik/subr_bus.diff\n\n--\nMateusz Guzik"
+}

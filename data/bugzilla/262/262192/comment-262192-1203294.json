@@ -1,0 +1,8 @@
+{
+ "id": 1203294,
+ "bug_id": 262192,
+ "attachment_id": 0,
+ "creation_time": "2022-03-18T00:06:18Z",
+ "creator": "olce@FreeBSD.org",
+ "text": "This is on a relatively recent 13-STABLE. I'll repeat this process with CURRENT's GENERIC kernel when possible.\n\nI'm wondering if it is possible, or even desirable, to initialize the seeds later on. I've not taken the time yet to figure out at which point in the boot TCP connections may be established, and I'm not sure it's not before KICK_SCHEDULER. Moreover, splitting the initialization code is a cognitive burden, so it would be best to avoid it (if possible).\n\nThe last two stacks above correspond to random values that are generated each time a new FS is mounted/a process started. They happen after KICK_SCHEDULER. However, in my tests, I introduced code to make the kernel panic if, on the first call to the random dev, seeding doesn't happen within 10s (to catch the earlier stacks, where anyway no harvesting takes place, so the random calls block indefinitely). And I got panics indeed for these two stacks as well, so entropy isn't accumulating \"fast enough\" (would be interesting to see how long the calls would block before enough entropy is available; waiting tens of seconds might be tolerable at boot in some scenarios, but probably not much more).\n\nIf some entropy source could be made available very early, all these considerations and problems would be avoided."
+}

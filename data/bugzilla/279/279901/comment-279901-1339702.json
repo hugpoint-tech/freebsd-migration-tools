@@ -1,0 +1,8 @@
+{
+ "id": 1339702,
+ "bug_id": 279901,
+ "attachment_id": 0,
+ "creation_time": "2024-12-17T21:08:02Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Florian Weimer from comment #36)\nDo you see which CPUID leaf causes the trouble?\n\nAs a guess, I wonder if the following bhyve patch helps (it tries to fix\nCPUID leaf 0x8000_001D %ecx 3):\n\ndiff --git a/sys/amd64/vmm/x86.c b/sys/amd64/vmm/x86.c\nindex a833b61786e7..8474666b5e6f 100644\n--- a/sys/amd64/vmm/x86.c\n+++ b/sys/amd64/vmm/x86.c\n@@ -256,7 +256,7 @@ x86_emulate_cpuid(struct vcpu *vcpu, uint64_t *rax, uint64_t *rbx,\n \t\t\t\tfunc = 3;\t/* unified cache */\n \t\t\t\tbreak;\n \t\t\tdefault:\n-\t\t\t\tlogical_cpus = 0;\n+\t\t\t\tlogical_cpus = sockets * threads * cores;\n \t\t\t\tlevel = 0;\n \t\t\t\tfunc = 0;\n \t\t\t\tbreak;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 574832,
+ "bug_id": 149980,
+ "attachment_id": 0,
+ "creation_time": "2010-08-29T21:00:22Z",
+ "creator": "vwe@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eanalyzed\n\ndouble checked that and it's looking reasonable \nI think the checks for 'tv_nsec \u003c 0' and 'tv_sec \u003c 0' can be made in one go, \nbut IMO it should not make a difference (assembler wise): \n\nIndex: sys/kern/kern_time.c \n=================================================================== \n--- sys/kern/kern_time.c\t(revision 211522) \n+++ sys/kern/kern_time.c\t(working copy) \n@@ -362,9 +362,9 @@ \nstruct timeval tv; \nint error; \n\n-\tif (rqt-\u003etv_nsec \u003c 0 || rqt-\u003etv_nsec \u003e= 1000000000) \n+\tif (rqt-\u003etv_nsec \u003c 0 || rqt-\u003etv_nsec \u003e= 1000000000 || rqt-\u003etv_sec \u003c 0) \nreturn (EINVAL); \n-\tif (rqt-\u003etv_sec \u003c 0 || (rqt-\u003etv_sec == 0 \u0026\u0026 rqt-\u003etv_nsec == 0)) \n+\tif (rqt-\u003etv_sec == 0 \u0026\u0026 rqt-\u003etv_nsec == 0) \nreturn (0); \ngetnanouptime(\u0026ts); \ntimespecadd(\u0026ts, rqt);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1124285,
+ "bug_id": 249871,
+ "attachment_id": 0,
+ "creation_time": "2020-09-26T15:48:44Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Yep, that is weird.\nAssuming the clients are FreeBSD and not Linux,\nthe only thing I can think of to try is take\nthe \"intr\" option off the mounts.\nThe BUGS section of \"man mount_nfs\" notes it\nshould never be used.\n\nIf somehow a signal were to be posted to\nthe process on the client, that might\nexplain this, if a sleep() returns ERESTART\nor something like that.\n--\u003e Anyhow, for reasons mostly related to\n    sessions (or lock sequencing for NFSv4.0)\n    you should never use \"intr\" nor \"soft\"\n    on NFSv4 mounts.\n\nI'll look through the code, but the NFSv3\nand NFSv4 code is very similar for Readdir.\nOne more question:\n- Are you using nfsuserd or uids in strings?\nIf the former, you could try setting\nvfs.nfs.enable_uidtostring=1\nvfs.nfsd.enable_stringtouid=1\nand then don't run nfsuserd.\n(When the uid\u003c-\u003ename cache misses, the\n upcall to the nfsuserd could take a long\n time on the heavily loaded server.\n However, I cannot think why slow response\n could cause this unless it is related to\n using \"intr\" on the mounts.\n\nIf the clients are Linux, then I vaguely\nrecall mention of problems with reading\nlarge directories being discussed on\nlinux-nfs@vger.kernels.org."
+}

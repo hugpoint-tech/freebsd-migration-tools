@@ -1,0 +1,8 @@
+{
+ "id": 7276,
+ "bug_id": 2393,
+ "attachment_id": 0,
+ "creation_time": "1997-01-07T10:20:02Z",
+ "creator": "peter.jeremy@alcatel.com.au",
+ "text": "\nWhen the system is shut down and halted from multi-user mode, the mounted\nfilesystems are not unmounted cleanly.  This causes an fsck on the next\nreboot.  When the system is brought down to single-user, the filesystems\nmanually unmounted and then the system is halted, there is no problem\n(/ unmounts cleanly).\n\nI added some code to /sys/i386/i386/machdep.c:boot() to display dirty\nbuffers (see below) after the `giving up' message.  This showed the\nfollowing quite consistently (there were almost always 4 busy buf's):\n\nb_flags == B_ASYNC | B_BUSY | B_CACHE (mostly) | B_WRITEINPROG\nb_resid == 0\nb_bcount == 0x400, 0x800, 0x1800, 0x2000\nb_lblkno == b_blkno = 1984, 16, 48, 64 (respectively)\nb_pblkno varies widely.  I haven't seen any pattern\nb_dev = 0xff00\n\nFix: [from multi-user mode]\n# shutdown now\n[select shell]: sh\n# umount -av\n# halt\n...\nsyncing disks ... done\n\nThe added code in machdep.c is:\nHow-To-Repeat: \n[from multi-user mode]\n# shutdown -h now\n...\nsyncing disks ... 4 4 4 4 ... giving up"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 783637,
+ "bug_id": 193221,
+ "attachment_id": 0,
+ "creation_time": "2014-09-01T14:14:31Z",
+ "creator": "lists@rewt.org.uk",
+ "text": "I'm using relayd-5.5.20140810 with the config below, when relayd receives a request on TLS, the process consumes 100% cpu after the client sends a hello:\n\n(ip addresses changed to protect the innocent)\n\next_addr=\"10.0.0.1\"\nwebhost1=\"192.168.0.1\"\nwebhost2=\"192.168.0.1\"\n\ntable \u003cwebhosts\u003e { $webhost1 $webhost2 }\n\ninterval 10\ntimeout 200\nprefork 5\nlog updates\n\nhttp protocol http {\n        match request header append \"X-Forwarded-For\" value \"$REMOTE_ADDR\"\n        match request header append \"X-Forwarded-By\" value \"$SERVER_ADDR:$SERVER_PORT\"\n        match request header set \"Connection\" value \"close\"\n        tcp { nodelay, sack, socket buffer 65536, backlog 128 }\n       ssl { no sslv2, sslv3, tlsv1, ciphers HIGH }\n#      ssl session cache disable\n}\n\nrelay www {\n        listen on $ext_addr port 80\n        protocol http\n        forward to \u003cwebhosts\u003e port http mode loadbalance check http \"/\" code 200\n}\n\nhttp protocol httpssl {\n        match request header append \"X-Forwarded-For\" value \"$REMOTE_ADDR\"\n        match request header append \"X-Forwarded-By\" value \"$SERVER_ADDR:$SERVER_PORT\"\n        match request header set \"Connection\" value \"close\"\n        tcp { nodelay, sack, socket buffer 65536, backlog 128 }\n        ssl { no sslv2, sslv3, tlsv1, ciphers HIGH }\n#        ssl session cache disable\n}\n\nrelay wwwssl {\n        listen on $ext_addr port 443 ssl\n        protocol httpssl\n        forward to \u003cwebhosts\u003e port http mode loadbalance \\\n                check http \"/\" code 200\n}"
+}

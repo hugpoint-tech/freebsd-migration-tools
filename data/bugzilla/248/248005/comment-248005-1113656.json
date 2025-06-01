@@ -1,0 +1,8 @@
+{
+ "id": 1113656,
+ "bug_id": 248005,
+ "attachment_id": 216476,
+ "creation_time": "2020-07-15T18:44:23Z",
+ "creator": "mjanelle@blackberry.com",
+ "text": "Created attachment 216476\nProposed patch\n\nThe issue is that if_attach is called prior to setting the interface MTU, which will cause nd6_ifattach to attach the interface with an uninitialized MTU value(0).\n\nThis issue will typically go unnoticed unless you start adding new network interface after the system has finished starting-up since drivers are mounted/attached then at some time after domainattach will explicitly be called by:\nSYSINIT(domainifattach, SI_SUB_PROTO_IFATTACHDOMAIN, SI_ORDER_SECOND,\n    if_attachdomain, NULL);\n\nTo reproduce the observed behaviour:\n1. Start-up without a USB Ethernet device plugged in\n2. Insert one and load the driver.\n3. ndp -i \u003cifname\u003e will show maxmtu=0 and not maxmtu=1500.\n\nI've attached a diff that will resolve the issue."
+}

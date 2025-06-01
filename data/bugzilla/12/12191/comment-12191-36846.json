@@ -1,0 +1,8 @@
+{
+ "id": 36846,
+ "bug_id": 12191,
+ "attachment_id": 0,
+ "creation_time": "1999-06-13T19:10:01Z",
+ "creator": "ap@bnc.net",
+ "text": "\n\t\n\nWARNING: This problem should probably appear in category kern too...\n\nwcol is starting a number of child processes. It´s using a shared memory segment for\ncommunication with these children so it´s trying to allocate a shared memory\nsegment in shm.c:\n\nint assign_pool(key_t shmkey)\n{\n    int chk;\n    int flg;\n\n    flg = 0666;\n    /*\n    flg = flg | IPC_CREAT;\n    */\n\n    chk = shmget(shmkey, (int)0, flg);\n    if(chk==-1) {\n        fprintf(stderr, \"assign_pool: fail shmget() (%d)\\n\", errno);\n        return chk;\n    }\n    return chk;\n}\n\nAllocation of a segment of size 0 is always returning ENOENT in 4.0-CURRENT\nwhile in 3.2 it is working. I might have understood an EINVAL though...\n\nFix: \n\nRight now I´m requesting a segment of the size which will later on be\nrequested anyway (after using this piece of code to make sure the key is\nnot already allocated).\nA better fix was using ftok but I wouldn´t know which path to use for it.\nHow-To-Repeat: \n\t\n\nInstall wcol and run it (under a debugger) or just run the above piece of\ncode."
+}

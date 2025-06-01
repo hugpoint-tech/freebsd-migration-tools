@@ -1,0 +1,8 @@
+{
+ "id": 1029036,
+ "bug_id": 234523,
+ "attachment_id": 0,
+ "creation_time": "2018-12-31T11:20:12Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "KERN_PROC_AUXV allows accessing arbitrary AT_* vectors but libc exposes only few via elf_aux_info(3). For example, one may want to rely on libc caching AT_EXECPATH instead of retrieving KERN_PROC_PATHNAME directly.\n\n  $ cat elf_aux_info.c\n  #include \u003csys/auxv.h\u003e\n  #include \u003climits.h\u003e\n  #include \u003cstdio.h\u003e\n\n  int main()\n  {\n      char exe[PATH_MAX + 1] = {0};\n      elf_aux_info(AT_EXECPATH, \u0026exe, sizeof(exe));\n      printf(\"%s\\n\", exe);\n      return 0;\n  }\n\n  $ make elf_aux_info\n  $ ./elf_aux_info\n\n  $\n\nvs.\n\n  $ cat getauxval_naive.c\n  #include \u003csys/param.h\u003e\n  #include \u003csys/sysctl.h\u003e\n  #include \u003celf.h\u003e\n  #include \u003cerrno.h\u003e\n  #include \u003cunistd.h\u003e\n  #include \u003cstdio.h\u003e\n\n  static unsigned long getauxval(unsigned long type) {\n    Elf_Auxinfo auxv[AT_COUNT];\n    size_t len = sizeof(auxv);\n    int mib[] = {\n      CTL_KERN,\n      KERN_PROC,\n      KERN_PROC_AUXV,\n      getpid(),\n    };\n\n    if (sysctl(mib, nitems(mib), auxv, \u0026len, NULL, 0) != -1) {\n      for (size_t i = 0; i \u003c nitems(auxv); i++)\n\tif ((unsigned long)auxv[i].a_type == type)\n\t  return auxv[i].a_un.a_val;\n\n      errno = ENOENT;\n    }\n    return 0;\n  }\n\n  int main()\n  {\n      printf(\"%s\\n\", (char *)getauxval(AT_EXECPATH));\n      return 0;\n  }\n\n  $ make getauxval_naive\n  $ ./getauxval_naive\n  /home/foo/getauxval_naive\n  $"
+}

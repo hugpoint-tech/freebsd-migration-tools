@@ -1,0 +1,8 @@
+{
+ "id": 1188440,
+ "bug_id": 260126,
+ "attachment_id": 0,
+ "creation_time": "2021-11-30T00:13:23Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "So the problem seems to be that:\n\n* The default receive buffer size for a unix domain socket is 4 kB\n* connectlog() sets SO_SNDBUF to 8 kB\n* BUT, unix domain datagram sockets don't really have a send buffer.  Unlike inet sockets, they stay on one host, so everything goes straight to the receive buffer.  See uipc_send(); it writes into so2-\u003eso_rcv, not so-\u003eso_snd.\n* syslogd sets SO_RCVBUF to 80 kB, which is why nobody noticed the problem there.\n* rsyslogd uses the default SO_RCVBUF of 4 kB\n* syslog(3) chops up messages that are longer than MAXLINE.  But now MAXLINE is 8 kB, and the SO_RCVBUF is only 4 kB.  So the chopped up messages are too large for the buffer.\n* syslog(3) loops while (errno == ENOBUFS), which is not appropriate if the message is too big to ever fit.  BUT, it fails fast if the socket is privileged.  Many daemons are, so their operators won't notice this bug, but my daemon is not."
+}

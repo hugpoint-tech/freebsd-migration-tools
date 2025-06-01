@@ -1,0 +1,8 @@
+{
+ "id": 664052,
+ "bug_id": 167685,
+ "attachment_id": 0,
+ "creation_time": "2012-05-11T22:41:03Z",
+ "creator": "freebsd@wagsky.com",
+ "text": "Problem can be replicated by booting of a \"memstick\" (with a \"spare\" USB \nstick as /dev/da1) and then executing\n\n# dd if=/dev/zer of=/dev/da1 bs=64k\n# zpool create stick /dev/da1\n# reboot\n\nProblem has been reliably reproduced on the Atom 330 previously \nmentioned, as well as on an AMD A8-3870 with A75 chipset. It also can be \nreplicated using VirtualBox running under Ubuntu on the AMD A8-3870 \nsystem. It does not seem specific to one \"flavor\" of USB controller or \ndriver.\n\nUsing /usr/src/release/generate_release.sh and bisection, I have \nconfirmed that\n\n* r227445 does not exhibit the behavior (\"Copy stable/9 to releng/9.0 as \npart of the FreeBSD 9.0-RELEASE release cycle)\n* r229097 does not exhibit the behavior\n* r229281 -- FAIL by not rebooting under the conditions described above.\n\nBased on these results, I am suspicious of\n\nr229100 | hselasky | 2011-12-31 06:33:15 -0800 (Sat, 31 Dec 2011) | 6 lines\n\nMFC r228709, r228711 and r228723:\n- Add missing unlock of USB controller's lock, when\ndoing shutdown, suspend and resume.\n- Add code to wait for USB shutdown to be executed at system shutdown.\n- Add sysctl which can be used to skip this waiting.\n\n\nas being what brought the issue to the forefront.\n\nI am presently building r229099 and r229100 to confirm this suspicion.\n\nA potential, though untested workaround would be\n# sysctl hw.usb.no_shutdown_wait=1\n\n"
+}

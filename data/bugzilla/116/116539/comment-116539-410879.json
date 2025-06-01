@@ -1,0 +1,8 @@
+{
+ "id": 410879,
+ "bug_id": 116539,
+ "attachment_id": 0,
+ "creation_time": "2007-11-06T13:25:58Z",
+ "creator": "kostikbel@gmail.com",
+ "text": "device_busy() is counted. Try the following patch:\n\ndiff --git a/sys/dev/fdc/fdc.c b/sys/dev/fdc/fdc.c\nindex ea033a5..812823a 100644\n--- a/sys/dev/fdc/fdc.c\n+++ b/sys/dev/fdc/fdc.c\n@@ -1383,6 +1383,7 @@ fd_access(struct g_provider *pp, int r, int w, int e)\n \tstruct fd_data *fd;\n \tstruct fdc_data *fdc;\n \tint ar, aw, ae;\n+\tint busy;\n \n \tfd = pp-\u003egeom-\u003esoftc;\n \tfdc = fd-\u003efdc;\n@@ -1403,6 +1404,7 @@ fd_access(struct g_provider *pp, int r, int w, int e)\n \t\treturn (0);\n \t}\n \n+\tbusy = 0;\n \tif (pp-\u003eacr == 0 \u0026\u0026 pp-\u003eacw == 0 \u0026\u0026 pp-\u003eace == 0) {\n \t\tif (fdmisccmd(fd, BIO_PROBE, NULL))\n \t\t\treturn (ENXIO);\n@@ -1415,10 +1417,14 @@ fd_access(struct g_provider *pp, int r, int w, int e)\n \t\t\tmtx_unlock(\u0026fdc-\u003efdc_mtx);\n \t\t}\n \t\tdevice_busy(fd-\u003edev);\n+\t\tbusy = 1;\n \t}\n \n-\tif (w \u003e 0 \u0026\u0026 (fd-\u003eflags \u0026 FD_WP))\n+\tif (w \u003e 0 \u0026\u0026 (fd-\u003eflags \u0026 FD_WP)) {\n+\t\tif (busy)\n+\t\t\tdevice_unbusy(fd-\u003edev);\n \t\treturn (EROFS);\n+\t}\n \n \tpp-\u003esectorsize = fd-\u003esectorsize;\n \tpp-\u003estripesize = fd-\u003eft-\u003eheads * fd-\u003eft-\u003esectrac * fd-\u003esectorsize;"
+}

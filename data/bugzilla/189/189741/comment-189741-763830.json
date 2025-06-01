@@ -1,0 +1,8 @@
+{
+ "id": 763830,
+ "bug_id": 189741,
+ "attachment_id": 0,
+ "creation_time": "2014-05-15T12:32:53Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "\u003e /usr/src/sys/amd64/amd64/exception.S:232\n\u003e #7  0xffffffff8033d350 in pf_addrcpy (dst=0xfffffe010c6416b8,\n\u003e src=0x10, af=2 '\\002') at /usr/src/sys/contrib/pf/net/pf.c:522\n\nA 'src' pointer of 0x10 here would explain the crash (and is consistent\nwith the fault address).\n\n\u003e #8  0xffffffff8034872d in pf_test_rule (rm=0xffffff8354538788,\n\u003e sm=0xffffff8354538780, direction=1, kif=0xfffffe0007d08100,\n\u003e m=0xfffffe0030555d00, off=20, h=0xfffffe0030bad00e,\n\u003e     pd=0xffffff83545386c0, am=0xffffff8354538790,\n\u003e rsm=0xffffff8354538778, ifq=0x0, inp=0x0) at\n\u003e /usr/src/sys/contrib/pf/net/pf.c:3900\n\nThis is actually in pf_create_state(), and it would seem that 'nk' would\nhave to be NULL for this to happen.  However, 'nsn' would have\nto be non-NULL.\n\nI think I see a possible bug that is fixed in 10.  Try this:\n\nIndex: 9/sys/contrib/pf/net/pf_lb.c\n===================================================================\n--- 9/sys/contrib/pf/net/pf_lb.c\t(revision 266119)\n+++ 9/sys/contrib/pf/net/pf_lb.c\t(working copy)\n@@ -788,6 +788,7 @@\n \t\t\tpool_put(\u0026pf_state_key_pl, *skp);\n #endif\n \t\t\t*skw = *sks = *nkp = *skp = NULL;\n+\t\t\t*sn = NULL;\n \t\t\treturn (NULL);\n \t\t}\n \t}\n\n\n-- \nJohn Baldwin"
+}

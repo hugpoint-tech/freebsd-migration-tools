@@ -1,0 +1,8 @@
+{
+ "id": 1246047,
+ "bug_id": 269328,
+ "attachment_id": 239981,
+ "creation_time": "2023-02-08T04:45:16Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 239981\nchange ncl_flush() so that it does not clear the page dirty bit for commit\n\nI think this large complex (1 line) patch fixes\nthe problem. It works for the variants of the\ntest program I have. (The original plus one that\ndoes do_write() instead of fspacectl() and one that\ndoes the mmap() in main instead of per-do_mapread()\nand do_mapwrite().)\n\nThanks go to Kostik's explanation which allowed me\nfind it.  Basically, when ncl_flush() was called\nit would do vfs_busy_pages(vp, 1) before doing a\ncommit RPC. However, the commit RPC does not write\ndata to the server, it tells the server to commit\ndata it already has to stable storage.\n--\u003e As such, it should not clear the dirty bits on\n    the pages.\n\nI will look through the commit logs to see how long\nthis has been broken.  I suspect a long time."
+}

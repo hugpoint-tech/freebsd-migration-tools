@@ -1,0 +1,8 @@
+{
+ "id": 506814,
+ "bug_id": 136176,
+ "attachment_id": 0,
+ "creation_time": "2009-06-30T03:40:02Z",
+ "creator": "bryan@shatow.net",
+ "text": "The combined patch for OUTGOING_IP and QMTPC (qmail-1.03-qmtpc_outgoingip.patch) fails to pass the 'outip' parameter to timeoutconn() which results in a segfault.\n\nFix: \n\nThe current combined patch has this block:\n+\n+    if (qmtp_priority(ip.ix[i].pref)) {\n+      if (timeoutconn(smtpfd,\u0026ip.ix[i].ip,(unsigned int) qmtp_port,timeoutconnect) == 0) {\n+      tcpto_err(\u0026ip.ix[i].ip,0);\n+      partner = ip.ix[i].ip;\n+      qmtp(); /* does not return */\n+      }\n+      close(smtpfd);\n+      smtpfd = socket(AF_INET,SOCK_STREAM,0);\n+      if (smtpfd == -1) temp_oserr();\n+    }\n\n-    if (timeoutconn(smtpfd,\u0026ip.ix[i].ip,(unsigned int) port,timeoutconnect) == 0) {\n+    if (timeoutconn(smtpfd,\u0026ip.ix[i].ip,\u0026outip,(unsigned int) smtp_port,timeoutconnect) == 0) {\n------------------------\n\nThe first timeoutconn should be fixed to:\nif (timeoutconn(smtpfd,\u0026ip.ix[i].ip,\u0026outip, (unsigned int) qmtp_port,timeoutconnect) == 0)\n\nNote the \u0026outip being passed in, same as the smtp timeoutconn() call.\n\nNo patch attached. Let me know if you would like one.\nHow-To-Repeat: Enable OUTGOING_IP and QMTPC. Send an email to a server with QMTP support enabled. 12801 in its MX. Tracing with gdb shows that the crash is in timeoutconn() as the 'outip' param is 0xd1 (209)."
+}

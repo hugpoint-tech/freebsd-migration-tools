@@ -1,0 +1,8 @@
+{
+ "id": 361362,
+ "bug_id": 105925,
+ "attachment_id": 0,
+ "creation_time": "2007-06-02T16:43:42Z",
+ "creator": "yar@comp.chem.msu.su",
+ "text": "It appears that this problem is not limited to vlan(4), any cloned\ninterface can suffer from it.  The cause of the problem hides in\nrev. 1.2 of sbin/ifconfig/ifclone.c.  Due to that change, interface\ncreation is handled now by a callback, which is invoked after all\nparameters were processed.  E.g., if one writes \"ifconfig lo5 create\nmtu 1500 up\", ifconfig will try to set the mtu and flags from the\nmain command loop and fail before the create callback has a chance\nto bring the interface into existence.\n\nA possible workaround for vlan(4) is to avoid such parameters as\n\"mtu\" or \"up\" in \"ifconfig vlanX create ...\".  The \"vlan\" and\n\"vlandev\" parameters are processed from a callback, too, so they\ndon't fail.  I.e., the following command will work:\n\nifconfig vlan55 create 10.55.55.1/24 vlan 55 vlandev em0\n\nNote that you don't need an explicit \"up\" as long as an IP address\nis assigned to the interface -- the IP layer will bring it up anyway.\n\n-- \nYar"
+}

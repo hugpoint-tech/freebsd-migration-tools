@@ -1,0 +1,8 @@
+{
+ "id": 478570,
+ "bug_id": 130381,
+ "attachment_id": 0,
+ "creation_time": "2009-01-11T15:20:03Z",
+ "creator": "sdalu@sdalu.com",
+ "text": "After a boot/reboot pf filter doesn't take into account ipv6 addresses (except link local), which seems to be due by network_ipv6 not being run before pf startup script\n\nfor example the pf.conf file contains the following rule:\n pass in proto tcp from any to net0 port http\n\nwhich is translated into (as shown by pcftl -s rules)\n pass in on net0 inet6 proto tcp from any to fe80::21c:c0ff:fe52:1234 port = http flags S/SA keep state\n pass in inet proto tcp from any to 192.168.2.2 port = http flags S/SA keep state\n pass in inet proto tcp from any to 192.168.1.2 port = http flags S/SA keep state\n\nthe following ipv6 line is missing\n (with ipv6_ifconfig_net0=\"2001:1234:1234:1234::1/56\" in rc.conf):\n pass in inet6 proto tcp from any to 2001:1234:1234:1234::1 port = http flags S/SA keep state\n\nFix: \n\nafter boot, manually running: /etc/rc.d/pf restart\nHow-To-Repeat: Enable ipv6 and pf, configure ipv6 on network interface (net0 for example), add pf rule in pf.conf for net0. After boot/reboot pfctl -s rules won't show the corresponding rule for ipv6"
+}

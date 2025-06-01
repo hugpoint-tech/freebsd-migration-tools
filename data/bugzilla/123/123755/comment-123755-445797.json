@@ -1,0 +1,8 @@
+{
+ "id": 445797,
+ "bug_id": 123755,
+ "attachment_id": 0,
+ "creation_time": "2008-05-17T12:00:05Z",
+ "creator": "tss@iki.fi",
+ "text": "I have a file that gets updated by writing to a temp file and then being rename()d over. In another process I want to know if the file got replaced so I can reopen and read the updated contents. So I do this check by:\n\n1. Flush NFS caches (not really relevant)\n2. stat(file, \u0026st1)\n3. fstat(opened_file_fd, \u0026st2)\n - if it failed with ESTALE, it means the file was replaced\n4. if (st1.st_ino != st2.st_ino) then file was replaced\n\nThe problem with FreeBSD is that both stats successfully return the same inode even if the file has been replaced already. This is probably because the old file has been deleted from the server and the inode has been reused for the new file. But in that condition the fstat() in 3. check should fail with ESTALE, which it doesn't in my rename() tests (but it does in my unlink() tests, so it's not completely broken).\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: 1. Compile the attached test program\n2. Run it without any parameters on a FreeBSD NFS client\n3. Run it with some parameters on either another NFS client or on the NFS server (doesn't matter which OS)\n4. See that with FreeBSD it immediately starts reporting \"inodes match, sizes don't\" errors and \"errors\" counter never increases from zero (no commands fail with ESTALE).\n\nIf the same program is run on Linux NFS client it doesn't give size mismatch errors and error counter increases, as expected. (I'm pretty sure Solaris NFS client also works, but I couldn't verify it right now.)"
+}

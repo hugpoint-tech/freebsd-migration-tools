@@ -1,0 +1,8 @@
+{
+ "id": 455587,
+ "bug_id": 125739,
+ "attachment_id": 0,
+ "creation_time": "2008-08-03T17:35:21Z",
+ "creator": "timur@FreeBSD.org",
+ "text": "Responsible Changed\nFrom-To: timur-\u003erwatson\n\nRobert, can you please take a look onto this PR? Logically, and \ncomparing with Linux implementation, changes to ACLs shouldn't affect \nmtime, as file data doesn't change, only inode info(hence ctime is \naffected). \n\nThanks, Timur. \n\n#include \u003csys/types.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003csys/extattr.h\u003e\n#include \u003csys/uio.h\u003e\n\nint main() {\nchar *file=\"test.txt\";\nchar buf[512];\nstruct stat sb;\n\nstat(file, \u0026sb);\nprintf(\"Mtime: %ld, Ctime: %ld\\n\", sb.st_mtime, sb.st_ctime);\nextattr_get_file(file, EXTATTR_NAMESPACE_USER, \"dosattr\", (void*)\u0026buf, sizeof(buf));\nstat(file, \u0026sb);\nprintf(\"Mtime: %ld, Ctime: %ld\\n\", sb.st_mtime, sb.st_ctime);\nmemcpy(buf, \"1234567890\", 10);\nextattr_set_file(file, EXTATTR_NAMESPACE_USER, \"dosattr\", (void*)\u0026buf, sizeof(buf));\nstat(file, \u0026sb);\nprintf(\"Mtime: %ld, Ctime: %ld\\n\", sb.st_mtime, sb.st_ctime);\nextattr_get_file(file, EXTATTR_NAMESPACE_USER, \"dosattr\", (void*)\u0026buf, sizeof(buf));\nstat(file, \u0026sb);\nprintf(\"Mtime: %ld, Ctime: %ld\\n\", sb.st_mtime, sb.st_ctime);\n}"
+}

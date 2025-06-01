@@ -1,0 +1,8 @@
+{
+ "id": 1011260,
+ "bug_id": 231291,
+ "attachment_id": 0,
+ "creation_time": "2018-09-15T00:16:20Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "So your system doesn't support APIC.  I believed I had tested that case, but I think while working on the dynamic IRQ patches I introduced a regression and ended up not retesting the final result.  This patch fixed a non-APIC boot for me:\n\nIndex: sys/x86/isa/atpic.c\n===================================================================\n--- atpic.c\t(revision 338687)\n+++ atpic.c\t(working copy)\n@@ -221,14 +221,20 @@ atpic_register_sources(struct pic *pic)\n \t * that APIC ISA routing and allowing the ATPIC source for that IRQ\n \t * to leak through.  We used to depend on this feature for routing\n \t * IRQ0 via mixed mode, but now we don't use mixed mode at all.\n+\t *\n+\t * To avoid the slave not register sources after the master\n+\t * registers its sources, register all IRQs when this function is\n+\t * called on the master.\n \t */\n+\tif (ap != \u0026atpics[MASTER])\n+\t\treturn;\n \tfor (i = 0; i \u003c NUM_ISA_IRQS; i++)\n \t\tif (intr_lookup_source(i) != NULL)\n \t\t\treturn;\n \n \t/* Loop through all interrupt sources and add them. */\n-\tfor (i = 0, ai = atintrs + ap-\u003eat_irqbase; i \u003c 8; i++, ai++) {\n-\t\tif (ap-\u003eat_irqbase + i == ICU_SLAVEID)\n+\tfor (i = 0, ai = atintrs; i \u003c NUM_ISA_IRQS; i++, ai++) {\n+\t\tif (i == ICU_SLAVEID)\n \t\t\tcontinue;\n \t\tintr_register_source(\u0026ai-\u003eat_intsrc);\n \t}"
+}

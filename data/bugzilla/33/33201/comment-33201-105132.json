@@ -1,0 +1,8 @@
+{
+ "id": 105132,
+ "bug_id": 33201,
+ "attachment_id": 0,
+ "creation_time": "2001-12-26T16:00:01Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "\nWhile it doesn't actually currently result in a failure that I can find,\nif_name() is written in a very failure-prone style:\n\nconst char *\nif_name(ifp)\n        struct ifnet *ifp;\n{\n#define MAXNUMBUF       8\n        static char nam[MAXNUMBUF][IFNAMSIZ + 10];      /*enough?*/\n        static int ifbufround = 0;\n        char *cp;\n\n        ifbufround = (ifbufround + 1) % MAXNUMBUF;\n        cp = nam[ifbufround];\n\n        snprintf(cp, IFNAMSIZ + 10, \"%s%d\", ifp-\u003eif_name, ifp-\u003eif_unit);\n        return((const char *)cp);\n#undef MAXNUMBUF\n}\n\nReturning pointers into the stack space of a function that is exiting\nis *never* a good idea.\n\nAlso, this code suffers from a continuing confusion about the possible\nsize of interface name strings that seems widespread through the sack.\nIFNAMSIZ should either be sufficient and used everywhere, or be fixed.\nAs it stands, I found several hard-coded variants on the them, and\nthe ifunit() code to build a device name also looked fairly suspect."
+}

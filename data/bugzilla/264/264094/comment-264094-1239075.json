@@ -1,0 +1,8 @@
+{
+ "id": 1239075,
+ "bug_id": 264094,
+ "attachment_id": 0,
+ "creation_time": "2022-12-12T20:08:16Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Jessica Clarke from comment #20)\nOh, right.  So kmod_syms.awk is defeating the hack in VNET_DEFINE_STATIC.  That can be bandaged easily enough.\n\nI tried implementing your suggestion of adding an explicit offset with each VNET definition.  It's a bit painful due to consumers doing things like:\n\nVNET_DEFINE(LIST_HEAD(, foo), n) = LIST_HEAD_INITIALIZER();\n\nI don't think it's possible to implement VNET_DEFINE this way without either outlawing static initializers (or making them an argument to the macro itself instead of using assignment), or outlawing anonymous types, i.e., the above would have to be:\n\nLIST_HEAD(foo_list, foo);\nVNET_DEFINE(struct foo_list, n) = LIST_HEAD_INITIALIZER();\n\nI would go with the second option, but it does require a bunch of consumers to be patched.\n\nI haven't yet compared the generated code with what we had before."
+}

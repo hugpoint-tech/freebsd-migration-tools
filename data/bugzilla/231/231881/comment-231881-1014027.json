@@ -1,0 +1,8 @@
+{
+ "id": 1014027,
+ "bug_id": 231881,
+ "attachment_id": 0,
+ "creation_time": "2018-10-02T16:39:23Z",
+ "creator": "lev@FreeBSD.org",
+ "text": "boot0/boot0sio have disk serial number compiled-in by default. It is named \"version 2\" boot block by boot0cfg(8) and this format places 4 byte Disk Serial Number where \"version 1\" boot block contains options.\n\nSupport for disk serial number in boot0/boot0sio is optional, and could be turned off to save some bytes, needed for other options.\n\nboot0cfg(8) properly supports old placement of boot block options, properly detect boot block without disk serial number support and properly prepare options for it.\n\nProblem is, boot0cfg(8) uses \"gpart bootcode\" command to wriet boot block with new options back to disk.\n\nAnd gmart_mbr always try to save disk serial number, which kills options if boot block is \"version 1\":\n\nstatic int\ng_part_mbr_bootcode(struct g_part_table *basetable, struct g_part_parms *gpp)\n{\n\tstruct g_part_mbr_table *table;\n\tuint32_t dsn;\n\n\tif (gpp-\u003egpp_codesize != MBRSIZE)\n\t\treturn (ENODEV);\n\n\ttable = (struct g_part_mbr_table *)basetable;\n\tdsn = *(uint32_t *)(table-\u003embr + DOSDSNOFF);\n\tbcopy(gpp-\u003egpp_codeptr, table-\u003embr, DOSPARTOFF);\n\tif (dsn != 0)\n\t\t*(uint32_t *)(table-\u003embr + DOSDSNOFF) = dsn;\n\treturn (0);\n}\n\nSometimes, it leads to complete bogus options written which kill boot0/boot0sio (it have invalid slice mask, for example, and is unable to boot at all) and sometimes it simply didn't give user ability to change boot0/boot0sio options."
+}

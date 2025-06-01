@@ -1,0 +1,8 @@
+{
+ "id": 1270690,
+ "bug_id": 273192,
+ "attachment_id": 244181,
+ "creation_time": "2023-08-18T03:40:31Z",
+ "creator": "lars@oddbit.com",
+ "text": "Created attachment 244181\nPatch to prevent floating point exception in distextract\n\nIn the file ./usr.sbin/bsdinstall/distextract/distextract.c, we find:\n\n        /* Calculate [overall] percentage of completion (if possible) */\n        if (file-\u003esize \u003e= 0)\n                return (file-\u003eread * 100 / file-\u003esize);\n        else\n                return (-1);\n\nThat conditional is incorrect; if distextract encounters a zero-length file, it will attempt to divide by file-\u003esize, which is 0, which will cause distextract fail error out with:\n\n    Floating point exception (core dumped)\n\nThe attached patch prevents this error.\n\nAddendum: I'm unclear why we use distextract. The \"script\" automated install script already includes an alternate code path that uses tar if the install isn't running on a tty; if we used this in all cases we could completely drop distextract."
+}

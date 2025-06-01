@@ -1,0 +1,8 @@
+{
+ "id": 661212,
+ "bug_id": 167103,
+ "attachment_id": 0,
+ "creation_time": "2013-01-27T17:02:25Z",
+ "creator": "markjdb@gmail.com",
+ "text": "I've managed to come up with proper fixes for the problems here. With\nthem, the dtrace step completes properly, but the perl build fails later\non for an unrelated reason which I haven't looked into. However, my\nlittle test program (which just has a probe in a static function) works\nproperly now.\n\nI've attached two patches. The first one changes libdtrace to do the\nwork in process_obj() using offical libelf APIs; it supersedes the\nearlier patch attached to this PR. Currently, dtrace adds new symbol\ntable entries by copying the old symbol table into a larger buffer,\nadding symbols at the end, and reinserting it into a libelf data\nstructure. This approach works, but it's not clear who's responsible for\nfreeing the new buffer. This patch changes things so that dtrace\nallocates a new data descriptor for the symbol table and adds new\nsymbols there. It's a bit more code than the previous patch, but it has\nthe benefit of not depending on libelf internals.\n\nThe second patch is a partial merge of r1712 from elftoolchain. Without\nthis, libelf doesn't seem to handle section size changes when\nrecomputing the section extents and elf_update() will fail. It looks\nlike FreeBSD's libelf hasn't been kept in sync with upstream libelf; I'm\nnot sure why that is.\n\nThanks,\n-Mark"
+}

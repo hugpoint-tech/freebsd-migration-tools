@@ -1,0 +1,8 @@
+{
+ "id": 948198,
+ "bug_id": 221588,
+ "attachment_id": 0,
+ "creation_time": "2017-08-17T17:26:32Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "So what this test case causes is:\n\nfatal error: error in backend: No open frame\n\nThis happens with most versions of clang that I could test, and is due to the following inline assembly:\n\nhttps://sourceforge.net/p/angelscript/code/HEAD/tree/trunk/sdk/angelscript/source/as_callfunc_x86.cpp#l1454\n\n#ifdef __OPTIMIZE__\n                // Epilogue\n                \"movl %%ebp, %%esp         \\n\"\n                \".cfi_def_cfa_register esp \\n\"\n                \"popl %%ebp                \\n\"\n                \".cfi_adjust_cfa_offset -4 \\n\"\n                \".cfi_restore ebp          \\n\"\n#endif\n\nBasically, it finds a 'naked' .cfi_restore directive, and it chokes on that. It is probably possible to work around this by disabling the epilogue part, but I am not familiar with this angelscript stuff at all...\n\nWe do have a lang/angelscript port, maintained by vg@, maybe he knows how we can work around this problem?"
+}

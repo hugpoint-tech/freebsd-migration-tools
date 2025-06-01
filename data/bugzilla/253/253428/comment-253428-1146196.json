@@ -1,0 +1,8 @@
+{
+ "id": 1146196,
+ "bug_id": 253428,
+ "attachment_id": 0,
+ "creation_time": "2021-02-11T23:13:17Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I suppose the simple answer to this is \"yes\".\n\nThe layer in NFS below the buffer cache does know\n\"physical\" (as returned by an NFS server) offset\ncookies, but then each buffer cache block is filled\nin (completely filled, which is why the full block\nis always returned) with \"fake\" UFS directory blocks.\n\nThe d_off field could be filled in with the byte offset\nwithin the \"logical block\", but that would just break\nfor lseek(), etc.\n\nThe only case that work is an lseek() to the beginning\nof the block, because the NFS client maintains a cache\nof directory offset cookies, one for each block returned.\n\nI suppose the bug is in the man page, in that it does\nnot state the NFS client as an exception.\n\nOpenBSD does not cache directory blocks in the server\nand, as such, can return d_off values that are the\ndirectory offset cookies that work on the NFS server.\nI have resisted making this change for FreeBSD, becuase\nit could have a major impact on performance in certain\nscenarios.\n\nThe man page should probably note that only the libc\ncalls opendir(3) should ever use getdirentries(2)\nfor NFS mounts."
+}

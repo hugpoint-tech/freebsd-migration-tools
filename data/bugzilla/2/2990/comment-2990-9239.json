@@ -1,0 +1,8 @@
+{
+ "id": 9239,
+ "bug_id": 2990,
+ "attachment_id": 0,
+ "creation_time": "1997-03-15T03:40:01Z",
+ "creator": "gbuchanan@sympatico.ca",
+ "text": "\nI noticed that the DEC FDDI driver (if_fpa, if_pdq) does not \ncorrectly validate incoming frames against the hardware address \nwhen the interface is promiscuous.  If IP packet forwarding is\nturned on, this results in the whole FDDI being sucked up and pushed\nout the default route.  Talk about drinking from a firehose.\n\nI doubt that this is intentional.  The Ethernet drivers seem to \nhave code to match incoming frames to the physical address - or a\nmulti/broadcast address - and only pass the matching frames to the\nhigher level protocols.\n\nFix: \n\nAdd a verification of the destination hardware address such as can be\nsee at line 2303 of if_de.c:\n\n     $Id: if_de.c,v 1.29.2.7 1996/11/10 13:35:49 davidg Exp $\n\n     if ((sc-\u003etulip_if.if_flags \u0026 IFF_PROMISC)\n          \u0026\u0026 (eh.ether_dhost[0] \u0026 1) == 0\n          \u0026\u0026 !TULIP_ADDREQUAL(eh.ether_dhost, sc-\u003etulip_ac.ac_enaddr))\n          goto next;\n\nto the FDDI driver module pdq_ifsubr.c ($Id: pdq_ifsubr.c,v 1.8 1996/07/31\n21:38:44 thomas Exp $) somewhere near line 202.\nHow-To-Repeat: \nSend your default route over an Ethernet, hook your FDDI interface\nto a busy network and put it in promiscuous mode.  Watch your Ethernet\nget busy all of a sudden.  Panic."
+}

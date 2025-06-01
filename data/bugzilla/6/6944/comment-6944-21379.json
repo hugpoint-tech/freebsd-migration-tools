@@ -1,0 +1,8 @@
+{
+ "id": 21379,
+ "bug_id": 6944,
+ "attachment_id": 0,
+ "creation_time": "1998-06-14T11:00:01Z",
+ "creator": "dillon@backplane.com",
+ "text": "\n\tIf FreeBSD is running cpu-bound processes and a network interrupt\n\toccurs, causing an swi_net to occur, if the network swi queues an\n\tAST (for example, if it wakes up nfsd), the AST will get lost and\n\tthe nfsd will not get the cpu until the next clock interrupt.\n\n\tThis can create severe NFS slowdowns as well as slowdowns to processes\n\tbeing woken up from the network (or even other interrupts).\n\n\tThe problem is in icu_ipl.s.  The situation:\n\n\t    cmpl\t$SWI_AST,%ecx\n     \t    je\t\tsplz_nextx\t\t/* \"can't happen\" */\n\n\tActually can happen.  I'm not exactly sure how it happens, but the\n\tresult is that that AST gets cleared from ipending without being run.\n\n\tThe patch I include re-sets the bit in ipending and also sets the\n\tbit in the temporary CPL to prevent it from trying to dispatch it\n\tagain in the routine. \n\n\tThis fixes the problem completely on my machine... now I can run\n\tcpu bound programs and bring up xterms and nfsd is no longer effects\n\tby the cpu-bound processes.  I am marking the bug critical \u0026 high\n\tpriority because it's in the core interrupt code, but the bug does\n\tnot cause a fatal condition to occur (it just slows down process\n\twakeups massively in the face of a cpu-bound program).\n\nFix: Notice!  This patch fixes icu_ipl.s.  apic_ipl.s might have the\n\tsame problem.\n\t\nHow-To-Repeat: \n\tI noticed this trying to run an xterm on my diskless workstation \n\twhile running crack in the background on my server.  The xterm took \n\t30 seconds to come up.  Killing the cpu-bound crack and the xterm \n\ttook 2 seconds to come up."
+}

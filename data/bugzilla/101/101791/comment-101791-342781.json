@@ -1,0 +1,8 @@
+{
+ "id": 342781,
+ "bug_id": 101791,
+ "attachment_id": 0,
+ "creation_time": "2006-08-11T01:30:16Z",
+ "creator": "freebsd@simplerezo.com",
+ "text": "The /etc/rc.subr script contains a function check_pidfile that calls _find_processes to check if a file containing a pid is referencing a running process matching a specific name.\n\nIt's due to /bin/sh 'case' struct.\n\nTry:\n\n#!/bin/sh\nmy=\"[tcp]\"\ncase ${my} in\n  ${my}) echo no;;\n  \"${my}\") echo yes;;\nesac\n\n\nIn /etc/rc.subr:\n_fp_match='case \"$_arg0\" in\n                    $_procname|$_procnamebn|${_procnamebn}:|\"(${_procnamebn})\")'\n\nBTW, i don't understand why both $_procnamebn and ${_procnamebn} are there...\n\nFix: \n\nIn /etc/rc.subr:\n\n-_fp_match='case \"$_arg0\" in\n                    $_procname|$_procnamebn|${_procnamebn}:|\"(${_procnamebn})\")'\n+_fp_match='case \"$_arg0\" in\n                    $_procname|\"$_procnamebn\"|${_procnamebn}:|\"(${_procnamebn})\")'\n\nOr maybe...\n\n+_fp_match='case \"$_arg0\" in\n                    \"$_procname\"|\"$_procnamebn\"|\"${_procnamebn}:\"|\"(${_procnamebn})\")'\nHow-To-Repeat: Try to manage with an rcNG script a daemon who display in ps in \"[]\", ie tcpserver:\n\n21478  p0  I      0:00,00 [tcpserver]\n\n\ncheck_pidfile ${pidfile} '[tcpserver]'\n\nThis call doesn't returns any result."
+}

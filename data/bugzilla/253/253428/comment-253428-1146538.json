@@ -1,0 +1,8 @@
+{
+ "id": 1146538,
+ "bug_id": 253428,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T20:28:14Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #9)\nLike this, untested.\n\ndiff --git a/sys/ufs/ufs/ufs_vnops.c b/sys/ufs/ufs/ufs_vnops.c\nindex 301c583291d1..bfdc16a1df72 100644\n--- a/sys/ufs/ufs/ufs_vnops.c\n+++ b/sys/ufs/ufs/ufs_vnops.c\n@@ -2391,11 +2391,23 @@ ufs_readdir(ap)\n \t\t\t\terror = EIO;\n \t\t\t\tbreak;\n \t\t\t}\n-\t\t\tif (offset \u003c startoffset || dp-\u003ed_ino == 0)\n+\t\t\tif (offset \u003c startoffset)\n \t\t\t\tgoto nextentry;\n+\n+\t\t\t/*\n+\t\t\t * In case of NFS server calling us, do not\n+\t\t\t * skip empty entries, since this keeps\n+\t\t\t * offsets consistent.\n+\t\t\t */\n+\t\t\tif (cookies == NULL \u0026\u0026 dp-\u003ed_ino == 0)\n+\t\t\t\tgoto nextentry;\n+\n \t\t\tdstdp.d_fileno = dp-\u003ed_ino;\n \t\t\tdstdp.d_reclen = GENERIC_DIRSIZ(\u0026dstdp);\n-\t\t\tbcopy(dp-\u003ed_name, dstdp.d_name, dstdp.d_namlen);\n+\t\t\tif (dp-\u003ed_ino == 0)\n+\t\t\t\tbzero(dp-\u003ed_name, dstdp.d_namlen);\n+\t\t\telse\n+\t\t\t\tbcopy(dp-\u003ed_name, dstdp.d_name, dstdp.d_namlen);\n \t\t\t/* NOTE: d_off is the offset of the *next* entry. */\n \t\t\tdstdp.d_off = offset + dp-\u003ed_reclen;\n \t\t\tdirent_terminate(\u0026dstdp);"
+}

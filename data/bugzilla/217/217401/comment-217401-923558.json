@@ -1,0 +1,8 @@
+{
+ "id": 923558,
+ "bug_id": 217401,
+ "attachment_id": 0,
+ "creation_time": "2017-02-27T16:51:27Z",
+ "creator": "FreeBSD-prs@Vitsch.nl",
+ "text": "The code in if_clone.c uses the unit number allocator subsystem to keep track of free unit numbers when allocating interfaces. This can get out of sync with reality since interfaces can be renamed after creation. When this happens, the retry loop in if_alloc_unit() can deadlock a system.\n\nThe following set of commands will deadlock FreeBSD:\n  ifconfig bridge create\n  ifconfig bridge create\n  ifconfig bridge1 name bridge3\n  ifconfig bridge create\n  ifconfig bridge create\n  ifconfig bridge create\n  # (deadlock at this point)\n\nThe deadlock happens when alloc_unr_specific() returns an unused unit number, but the later call to ifunit(name) sees that the unit is already in use.\nIn this case, the code will increase '*unit' and loop back to 'retry:'. If this increased '*unit' number is already allocated, the return value of the next call to alloc_unr_specific() will override '*unit' and leave it at -1.\nThe code will then increase '*unit' again and loop back to 'retry:' again with '*unit' now set to 0. If unit number 0 also already exists, we'll be caught in an infinite loop.\n\nThe attached patch fixes the deadlock by simply not destroying the value of '*unit' before incrementing it in the 'retry' path.\n(This is a slight variant of kern/162789. The same use case that triggered that bug now also triggers this deadlock.)"
+}

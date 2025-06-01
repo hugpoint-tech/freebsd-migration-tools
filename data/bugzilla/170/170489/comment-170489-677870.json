@@ -1,0 +1,8 @@
+{
+ "id": 677870,
+ "bug_id": 170489,
+ "attachment_id": 0,
+ "creation_time": "2012-08-08T21:30:01Z",
+ "creator": "dan.mcgregor@usask.ca",
+ "text": "mkcsmapper doesn't use the \"input\" function emitted by lex.  Since it's not needed clang throws a warning (new gcc does too), and FreeBSD is compiled with -Werror by default, causing a build error.\n\n(148) dan@current:/usr/src% make buildenv\nEntering world for amd64:amd64\n(%h) %n@%m:%~%# cd usr.bin/mkcsmapper\n(%h) %n@%m:%~%# make\nlex -t  /usr/src/usr.bin/mkcsmapper/lex.l \u003e lex.c\nyacc -d -o yacc.c /usr/src/usr.bin/mkcsmapper/yacc.y\nclang -O2 -pipe  -I/usr/src/usr.bin/mkcsmapper -I/usr/src/usr.bin/mkcsmapper/../mkcsmapper  -I/usr/src/usr.bin/mkcsmapper/../../lib/libc/iconv  -I/usr/src/usr.bin/mkcsmapper/../../lib/libiconv_modules/mapper_std  --param max-inline-insns-single=64 -g -std=gnu99 -Qunused-arguments -fstack-protector -Wsystem-headers -Werror -Wall -Wno-format-y2k -W -Wno-unused-parameter -Wstrict-prototypes -Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch -Wshadow -Wunused-parameter -Wcast-align -Wchar-subscripts -Winline -Wnested-externs -Wredundant-decls -Wold-style-definition -Wno-pointer-sign -Wno-empty-body -Wno-string-plus-int -c lex.c\n/usr/src/usr.bin/mkcsmapper/lex.l:493:12: error: function 'input' is not needed and will not be emitted\n      [-Werror,-Wunneeded-internal-declaration]\nstatic int input(void)\n           ^\n1 error generated.\n*** [lex.o] Error code 1\n\nStop in /usr/src/usr.bin/mkcsmapper.\n\nFix: #define-ing YY_NO_INPUT in the lex input file solves this.  Patch attached.\n\nPatch attached with submission follows:\nHow-To-Repeat: Try to build current with WITH_ICONV set and CC/CXX set to clang."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1199725,
+ "bug_id": 262024,
+ "attachment_id": 0,
+ "creation_time": "2022-02-17T21:54:22Z",
+ "creator": "erj@freebsd.org",
+ "text": "We saw an issue where the em(4) interface would flap repeatedly, and the root cause was that the SBP flag was enabled, causing the hardware to send bad packets to the driver.\n\nIt appears that if the driver's isc_rxd_pkt_get() handler (e.g. in em here: https://cgit.freebsd.org/src/tree/sys/dev/e1000/em_txrx.c#n692) returns EBADMSG (because the hardware said the packet was bad), the iflib function that calls that will immediately jump to resetting the hardware.\n\nWe don't think that this should be the case (especially if the driver is explicitly allowing bad packets) and think it should be changed.\n\nA previous bug report/commit changed the em(4) driver's default SBP setting to false, so that future users probably won't encounter this behavior unless they manually set it back to true.\n\nIn this case we've seen it em(4) specifically, but it could affect other iflib-using drivers that allow hardware to forward bad packets to the driver."
+}

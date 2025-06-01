@@ -1,0 +1,8 @@
+{
+ "id": 47373,
+ "bug_id": 15553,
+ "attachment_id": 0,
+ "creation_time": "1999-12-18T21:30:00Z",
+ "creator": "kumabu@t3.rim.or.jp",
+ "text": "Linux's accept(2) seems new socket doesn't inherit listening\nsocket's file flags.(though RedHat's accept(2) man describes\n``creates a new socket with the same properties of s ...'')\nBut FreeBSD's accept(2) creates new socket with the exactly\nsame properties of parent. And same the Linux Emulation.\n(SunOS 5.x is same, 4.x not)\nSo some Linux program under emulation doesn't work correctly.\n\nFix: I modified /sys/i386/linux/linux_socket.c(1.16) as below diff\nand Linux (blackdown's)JDK works expectedly.\nI don't know this is appropriate at all,\nbut the least O_NONBLOCK shouldn't be inherited to new socket\nin Linux Emulation mode.\nHow-To-Repeat: // simple test code in C\nsocket() \u0026 bind() \u0026 listen()\nfcntl(sock, F_SETFL, O_NONBLOCK | fcntl(sock, F_GETFL, 0));\nprintf(\"0x%08x\\n\", fcntl(sock, F_GETFL));\nnew_sock = accept(...);\nprintf(\"0x%08x\\n\", fcntl(new_sock, F_GETFL));\n// Linux(non emulation) blocks here, but emulation occurs EAGAIN\nread(new_sock, buf, 1);\n\nI found this in linux JDK1.2pre-v2(\u0026 1.2.2-RC3) with emulation.\n// in Java code\nSocket sock = new ServerSocket(3000).accept();\n// read() causes Exception on Linux Emulation,\n// if no available data has received\nsock.getInputStream().read();"
+}

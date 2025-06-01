@@ -1,0 +1,8 @@
+{
+ "id": 909524,
+ "bug_id": 214911,
+ "attachment_id": 0,
+ "creation_time": "2016-11-28T17:39:09Z",
+ "creator": "freebsd@tim.thechases.com",
+ "text": "Attempting to create a `md0` drive image to upload to my hosting service, I'm using `bsdinstall` to try and do the install. This worked in 10.3, but changes in 11 trigger issues.  To repeat, issue the following on an existing 11.0 system installed on a ZFS-on-GELI configuration:\n\n    ## show the current system is on GELI\n    # geli list | grep Name\n    Name: ada0p4.eli\n    Name: ada0p4\n    Name: ada0p3.eli\n    Name: ada0p3\n\n    ## show that ada0p4.eli is the only backing member of zroot\n    # zpool status zroot\n    ...\n        NAME          STATE     READ WRITE CKSUM\n        zroot         ONLINE       0     0     0\n          ada0p4.eli  ONLINE       0     0     0\n\n    ## create a 10GB disk image file\n    dd if=/dev/zero of=freebsd.img bs=10m count=1k\n\n    ##turn it into a disk\n    # mdconfig -f freebsd.img -u 0\n\n    ## run bsdinstall\n    # bsdinstall\n\nSpecify guided ZFS-on-root, a single stripe backed by `md0` and encrypt both the pool and the swap.  Proceeding with install the will show messages on the console that *ada0p4.eli* has been detached and the host machine will hang for the obvious reason that its underlying GEOM_ELI has been forcibly detached and there's no longer any root file-system.\n\nDigging further shows that /usr/src/usr.sbin/bsdinstall/scripts/zfsboot is forcibly detaching *all* GELI providers (around line 793, using GELI_DETACH_F), not just those that it created during the install process."
+}

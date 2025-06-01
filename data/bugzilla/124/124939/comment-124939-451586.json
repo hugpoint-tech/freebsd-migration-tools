@@ -1,0 +1,8 @@
+{
+ "id": 451586,
+ "bug_id": 124939,
+ "attachment_id": 0,
+ "creation_time": "2008-06-24T15:50:01Z",
+ "creator": "naddy@FreeBSD.org",
+ "text": "If the k8temp(4) driver is loaded as a module early on from\n/boot/loader.conf, it fails to create the dev.cpu.N.temperature entries\nin the sysctl tree.\n\ndmesg shows this attach order:\n\n..\nk8temp0: \u003cAMD K8 Thermal Sensors\u003e on hostb3\nacpi_hpet0: \u003cHigh Precision Event Timer\u003e iomem 0xfefff000-0xfefff3ff on acpi0\nTimecounter \"HPET\" frequency 25000000 Hz quality 900\ncpu0: \u003cACPI CPU\u003e on acpi0\npowernow0: \u003cPowerNow! K8\u003e on cpu0\ncpu1: \u003cACPI CPU\u003e on acpi0\npowernow1: \u003cPowerNow! K8\u003e on cpu1\n..\n\nApparently k8temp attaches right _before_ cpu and thus can't add its\nentries to the dev.cpu subtree, which doesn't exist yet.  Note that the\ndev.k8temp subtree is correctly created.\n\nIf k8temp.ko is loaded manually after the system has booted, all entries\nare properly created.\n\nHow-To-Repeat: # echo 'k8temp_load=\"YES\"' \u003e\u003e/boot/loader.conf\n# reboot\n..\n# sysctl dev.cpu"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 889515,
+ "bug_id": 202304,
+ "attachment_id": 0,
+ "creation_time": "2016-07-22T23:33:27Z",
+ "creator": "bas.bossink+freebsd@gmail.com",
+ "text": "In virtualbox; uname -a:\nFreeBSD fb11 12.0-CURRENT FreeBSD 12.0-CURRENT #0 r303113: Thu Jul 21 22:42:16 CEST 2016    bas@fb11:/usr/obj/usr/src/sys/GENERIC  amd64\n\nThis problem also occurs only when executing the test program using kyua.\nWhen using the debugger to see where the test executable is hanging, it reveals:\n--\n(lldb) bt\n* thread #1: tid = 100089, 0x0000000800b8e3ea libc.so.7`_select + 10\n  * frame #0: 0x0000000800b8e3ea libc.so.7`_select + 10\n    frame #1: 0x00000000004012f8 pidfile_test`common_test_pidfile_child(fn=\"test_pidfile_contested\", parent_open=0) + 616 at pidfile_test.c:172 [opt]\n    frame #2: 0x0000000000400e37 pidfile_test`main [inlined] test_pidfile_contested + 12 at pidfile_test.c:236 [opt]\n    frame #3: 0x0000000000400e2b pidfile_test`main + 139 at pidfile_test.c:272 [opt]\n    frame #4: 0x0000000000400cbf pidfile_test`_start + 383\n--\nLooking at the code we see:\nselect(0,0,0,0); at line 172\n\nI don't claim to understand the specifics of this bug but in general I would say that blocking with no timeout is a bad idea. I think this test should be changed to include a timeout at line 172.\nNext to that the reason why the behavior is different between running the test app with or without kyua still needs to be investigated."
+}

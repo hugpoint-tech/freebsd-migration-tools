@@ -1,0 +1,8 @@
+{
+ "id": 1304517,
+ "bug_id": 278281,
+ "attachment_id": 249865,
+ "creation_time": "2024-04-09T21:51:53Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 249865\nfile system image that causes fstyp's fstyp_ntfs() to crash\n\nThis code in fstyp's ntfs.c fstyp_ntfs():\n\n        filerecp = read_buf(fp, voloff, recsize);\n        ...;\n        for (ap = filerecp + fr-\u003efr_attroff;\n            atr = (struct ntfs_attr *)ap, (int)atr-\u003ea_type != -1;\n            ap += atr-\u003ereclen) {\n\ncan cause ap and atr to have crazy values if the filesystem being\ninspected provides something bad for atr-\u003ereclen.\n\nIf atr-\u003ereclen == 0, it's an infinite loop.\n\nSeparately, in hammer2.c read_label(), \"vols[i] = read_buf(...)\" can\nbe NULL, but the next line dereferences vols[i] without checking.\n\nI've attached a demo for the first bug:\n\n# uname -a\nFreeBSD stock14 15.0-CURRENT FreeBSD 15.0-CURRENT #21 main-n269145-3e1c8a35f741-dirty: Sat Apr  6 15:52:00 AST 2024     root@stock14:/usr/obj/usr/src/amd64.amd64/sys/GENERIC amd64\n# gunzip fstyp6b.img.gz \n# fstyp -u -l fstyp6b.img \nSegmentation fault\n\n\nProgram received signal SIGSEGV, Segmentation fault.\nAddress not mapped to object.\nfstyp_ntfs (fp=0x80131f330, label=0x7fffffffe7f0 \"\", size=257)\n    at /usr/src/usr.sbin/fstyp/ntfs.c:169\n169                 atr = (struct ntfs_attr *)ap, (int)atr-\u003ea_type != -1;\n(gdb) where\n#0  fstyp_ntfs (fp=0x80131f330, label=0x7fffffffe7f0 \"\", size=257)\n    at /usr/src/usr.sbin/fstyp/ntfs.c:169\n#1  0x0000000001024a6c in main (argc=\u003coptimized out\u003e, argv=\u003coptimized out\u003e)\n    at /usr/src/usr.sbin/fstyp/fstyp.c:240"
+}

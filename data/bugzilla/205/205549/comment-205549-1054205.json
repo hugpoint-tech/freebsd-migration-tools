@@ -1,0 +1,8 @@
+{
+ "id": 1054205,
+ "bug_id": 205549,
+ "attachment_id": 0,
+ "creation_time": "2019-06-13T18:36:18Z",
+ "creator": "ark@dudevich.dn.ua",
+ "text": "Hmm....I don't see in the file usr.sbin/bhyve/pci_passthru.c (origin) bellow strings\n642\tpci_set_cfgdata16(pi, PCIR_COMMAND, read_config(\u0026sc-\u003epsc_sel,\n643\t    PCIR_COMMAND, 2));\n\n# patch \u003c D20623.diff \nHmm...  Looks like a unified diff to me...\nThe text leading up to this was:\n--------------------------\n|Index: usr.sbin/bhyve/pci_passthru.c\n|===================================================================\n|--- usr.sbin/bhyve/pci_passthru.c\n|+++ usr.sbin/bhyve/pci_passthru.c\n--------------------------\nPatching file pci_passthru.c using Plan A...\nHunk #1 succeeded at 615 (offset -3 lines).\nHunk #2 succeeded at 625 (offset -3 lines).\nHunk #3 failed at 648.\n1 out of 3 hunks failed--saving rejects to pci_passthru.c.rej\ndone\n\ncat /usr/src/usr.sbin/bhyve/pci_passthru.c.rej\n@@ -636,8 +648,13 @@\n                goto done;\n        }\n \n-       pci_set_cfgdata16(pi, PCIR_COMMAND, read_config(\u0026sc-\u003epsc_sel,\n-           PCIR_COMMAND, 2));\n+       /*\n+        * Fetch the updated virtual command register and write it to\n+        * the device if needed.\n+        */\n+       cmd = pci_get_cfgdata16(pi, PCIR_COMMAND);\n+       if (cmd != orig_cmd)\n+               write_config(\u0026sc-\u003epsc_sel, PCIR_COMMAND, 2, cmd);\n \n        error = 0;                              /* success */\n done:\n\nuname -srv\nFreeBSD 12.0-RELEASE-p5 FreeBSD 12.0-RELEASE-p5 r349013"
+}

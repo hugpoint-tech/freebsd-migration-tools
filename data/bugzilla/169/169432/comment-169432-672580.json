@@ -1,0 +1,8 @@
+{
+ "id": 672580,
+ "bug_id": 169432,
+ "attachment_id": 0,
+ "creation_time": "2012-06-26T08:30:13Z",
+ "creator": "adrian@freebsd.org",
+ "text": "When doing some iperf testing from a FreeBSD 802.11n station -\u003e FreeBSD 802.11n AP, I noticed the AP would get wedged. When I flushed the interface, the STA node was showing as 'BAR wait' - ie, it was paused due to a pending BAR TX.\n\nEnabling \"wlandebug +11n\" showed that the AP would start sending BAR frames and would get about 20 or 30 of them in (with failed retries), then stop sending them. The hardware was reporting a TX failure, but something was disabling it.\n\nAfter much printf debugging on the AP, I finally figured it out.\n\nHere's what was going on.\n\n* The STA was going deaf, so all TX to it was failing;\n* The AP would start sending BAR TX frames;\n* The STA would hit a beacon miss and rescan, and reassociate to the AP;\n* The reassociation request was going via ieee80211_ht_node_init();\n* .. and that called ieee80211_ht_node_cleanup() to reset the existing state;\n* .. which reset the TX/RX aggregation state, stopped the timer.\n\n. and unfortunately, my ath_addba_stop() routine wasn't undoing a BAR suspended pause.\n\nFix: \n\nThe fix is to check if the node is currently undergoing bar_wait and if so, unpause it.\n\nThe trick however is handling the tiny race condition where this occurs between the bar TX being in flight and having completed TX."
+}

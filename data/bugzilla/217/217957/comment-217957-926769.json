@@ -1,0 +1,8 @@
+{
+ "id": 926769,
+ "bug_id": 217957,
+ "attachment_id": 181005,
+ "creation_time": "2017-03-20T16:19:29Z",
+ "creator": "tobik@freebsd.org",
+ "text": "Created attachment 181005\ndiff.diff\n\nThis happens while running 'diff -u file1 file2' (file1 and file2 need\nto actually differ).\n\nAfter cap_enter() and after reading file1, diff(1) will try to open\nthe following files which isn't allowed in capability mode:\n\naccess(\"/etc/localtime\",R_OK)\t\t\t ERR#94 'Not permitted in capability mode'\nissetugid()\t\t\t\t\t = 0 (0x0)\nopen(\"/usr/share/zoneinfo/UTC\",O_RDONLY,00)\t ERR#94 'Not permitted in capability mode'\nissetugid()\t\t\t\t\t = 0 (0x0)\nopen(\"/usr/share/zoneinfo/posixrules\",O_RDONLY,06423226000) ERR#94 'Not permitted in capability mode'\n\nUnfortunately when kern.trap_enotcap=1 is accidentally still set, it\nmeans diff will die immediately after access().\n\nTo workaround this we could initialize time conversion information with tzset(3)\njust before cap_enter()."
+}

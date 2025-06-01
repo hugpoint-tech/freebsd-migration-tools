@@ -1,0 +1,8 @@
+{
+ "id": 1296099,
+ "bug_id": 276732,
+ "attachment_id": 0,
+ "creation_time": "2024-02-09T20:28:06Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "(Hit Enter too soon, ignore previous comment)\n\nI agree with the diagnosis.  I suspect though that the bug is a bit bigger as currently we always skip over the first action opcode.  The fact that 'match' is set to 1 allows this to \"work\" if the first action is \"accept\" which is usually the action for keep-state rules.  However, I suspect that if you have a 'log' action on a keep-state rule we don't actually log packets that match an existing dynamic rule since we skip over the \"log\" opcode due to this bug.\n\nA bit more background: in this set of loops in the kernel, you can think of 'cmd' as being a program counter (PC) for an ISA and 'cmdlen' is the implicit PC increment to perform after handling the current opcode.  Since this action is triggering the equivalent of a branch, it resets 'cmd' and 'l' as is done at the start of the inner for loop and sets 'cmdlen' to 0 to avoid turn the implicit PC increment at the end of the for loop into a nop.\n\nI think though that the patch should drop the 'match = 1' as that is now just noise.  Also, there is no need to keep the dead 'break' statement.  I've cc'd ae@ to see if he has any thoughts, but if there's no other feedback in the next week or so I'll commit the tweaked fix."
+}

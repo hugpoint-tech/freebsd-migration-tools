@@ -1,0 +1,8 @@
+{
+ "id": 1052663,
+ "bug_id": 237300,
+ "attachment_id": 0,
+ "creation_time": "2019-05-30T11:36:16Z",
+ "creator": "rodrigo@FreeBSD.org",
+ "text": "The failure was caused because your jail doesn't expose the required devfs devices; in that case /dev/bpf.\n\nYou can solve the problem by creating a /etc/devfs.rules file in the host, and add the following lines :\n\n[devfsrules_jail=4]\nadd include $devfsrules_hide_all\nadd include $devfsrules_unhide_basic\nadd include $devfsrules_unhide_login\nadd path fuse unhide\nadd path zfs unhide\nadd path 'bpf*' unhide\n\nThis is a copy of the /etc/default/devfs.rules with an extra line to allow bpf devices.\n\nNow you can restart your jail, see if the /dev/bpf is available and build your port again. The error was caused by a failed test during the configure step (take a look in the configure file at line 17256 who set ac_cv_dnet_bsd_bpf to false.\n\nLater in line 17311, the variable is tested, and the error message displayed.\n\nI consider this issue solved, but I will wait for your feedback to close it.\nPlease test and le me know if it's ok for you.\n\nCheers,\n-- rodrigo"
+}

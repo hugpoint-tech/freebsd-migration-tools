@@ -1,0 +1,8 @@
+{
+ "id": 1240789,
+ "bug_id": 268580,
+ "attachment_id": 239046,
+ "creation_time": "2022-12-26T22:08:30Z",
+ "creator": "nhuff@acm.org",
+ "text": "Created attachment 239046\nDiff to add shutdown_delay to daemon utility\n\nCurrently if daemon is supervising a process and it receives SIGTERM it sends SIGTERM to the supervised process and then immediately exits.  This has a couple potential issues.\n\n1. If the daemon process is writing the stdout/stderr of the process to a log file or syslog it can miss messages that are generated after the supervised process receives SIGTERM.\n\n2. If the daemon process is maintaining a PID file for the supervised process it can get removed before the supervised process actually exits. This can cause issues with processes that expect the PID file to be there while the previously supervised process is running.\n\nThis patch adds a -d \u003cshutdown_delay\u003e option to daemon.  If daemon receives SIGTERM it will send SIGTERM to the supervised process and then continue collecting and outputting stdout/stderr.  After shutdown_delay seconds if the process hasn't already exited it will send SIGKILL to the process and then wait for it to exit.  This will potentially cause the daemon process to hang around indefinitely if the supervised process is wedged somewhere deep in the kernel with signals blocked, but this way it will properly keep the PID file around while the supervised process is running."
+}

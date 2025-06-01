@@ -1,0 +1,8 @@
+{
+ "id": 81304,
+ "bug_id": 26034,
+ "attachment_id": 0,
+ "creation_time": "2001-03-23T21:50:52Z",
+ "creator": "peter@netplex.com.au",
+ "text": "jtrainor@fastekintl.com wrote:\n\u003e \n\u003e \u003eNumber:         26034\n\u003e \u003eCategory:       kern\n\u003e \u003eSynopsis:       kldload() panics if error code is returned from \u003cmodule_name\n    \u003e_load().\n\n\u003e \u003eDescription:\n\u003e panic trap 12 (page fault) in kldload while attempting to return an error fro\n    m \u003cmodule_name\u003e_load.  If I set the return value prior to entering the case\n     statement, proper behavior is observed.  If I set the return value inside \n    the case statement, panic occurs.  See code below.\n\nThis is because if you fail on the MOD_LOAD case, the linker calls all the\nMOD_UNLOADs for the modules in the kld file.  In your case, you\nare calling \"destroy_dev(sdev);\" on MOD_UNLOAD, which is panicing since\nsdev is uninitialized.  This is actually a bug in your module due to the\nexisting module load/unload semantics.  Remember, there can be more than\none module inside a .ko kld file.\n\nOne could argue that a MOD_UNLOAD event should be skipped for modules that\nhave failed to load successfully..  I think this change needs to happen.\n\nCheers,\n-Peter\n--\nPeter Wemm - peter@FreeBSD.org; peter@yahoo-inc.com; peter@netplex.com.au\n\"All of this is for nothing if we don't go to the stars\" - JMS/B5"
+}

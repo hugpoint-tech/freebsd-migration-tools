@@ -1,0 +1,8 @@
+{
+ "id": 826334,
+ "bug_id": 200589,
+ "attachment_id": 0,
+ "creation_time": "2015-06-02T09:38:06Z",
+ "creator": "martin@mber.cz",
+ "text": "Our Kernun HTTP proxy performs Kerberos (Negotiate) authentication in Active Directory by calling gss_acquire_cred, gss_accept_sec_context. When there are many (several thousand) proxy processes authenticating simultaneously, authentication operation becomes slow. \n\nA probable cause is in the Kerberos library, which uses exclusive fcntl lock on the keytab file. It is slow when many processes are trying to obtain the lock simultaneously. Moreover, gss_acquire_cred reads the keytab file twice and gss_accept_sec_context once. Each reading of the keytab file consists of may read syscalls, each reading a few bytes. Maybe it would be more efficient to lock the keytab using a shared lock, or, optionally, not to lock it. Also, the keytab could be read by larger blocks, using fewer read syscalls.\n\nObserved with Heimdal Kerberos from the base system."
+}

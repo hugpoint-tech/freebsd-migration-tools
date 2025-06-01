@@ -1,0 +1,8 @@
+{
+ "id": 428068,
+ "bug_id": 120128,
+ "attachment_id": 0,
+ "creation_time": "2009-02-11T14:24:08Z",
+ "creator": "jh@saunalahti.fi",
+ "text": "On 2009-02-10, Juli Mallett wrote:\n\u003e ^_^ (mallettj@alala:~/tst2)8% tcsh -c 'mkdir foo ; cd foo ; mkdir bar\n\u003e ; rm -rf bar ; pwd -P ; cd .. ; rm -rf foo'\n\u003e pwd: .: Permission denied\n\n\u003e drwx--x--x  11 root      wheel      512 Dec 10 13:14 /data/home\n\nThanks for the info. I think I know what's going on: UFS purges the\nparent directory from cache when you do rmdir(2) (\"rm -rf bar\" in your\ncase). This causes __getcwd() to fail and getcwd(3) reverts to userspace\ntraversal method which fails because of insufficient permissions to read\n/data/home directory.\n\nThe behavior is allowed by SUSv3: \"If a program is operating in a\ndirectory where some (grand)parent directory does not permit reading,\ngetcwd() may fail, as in most implementations it must read the directory\nto determine the name of the file. This can occur if search, but not\nread, permission is granted in an intermediate directory, or if the\nprogram is placed in that directory by some more privileged process (for\nexample, login).\"\n\nCurrent __getcwd() implementation is not guaranteed to succeed.\nAccording to kib@ there is ongoing work to improve __getcwd(). See this\nmessage:\n\nhttp://lists.freebsd.org/pipermail/freebsd-fs/2009-February/005675.html\n\n-- \nJaakko"
+}

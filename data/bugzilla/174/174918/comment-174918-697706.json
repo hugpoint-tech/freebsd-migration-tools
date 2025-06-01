@@ -1,0 +1,8 @@
+{
+ "id": 697706,
+ "bug_id": 174918,
+ "attachment_id": 0,
+ "creation_time": "2013-01-03T01:00:00Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Error messages printed out by mount(2) are unfortunately not helpful when\ntrying to determine whether or not an unsupported (or non-existent)\nfilesystem is invoked. Example:\n\n$ sudo mount -t foobarfs foo $PWD\nmount: foo: Operation not supported by device\n\nThe issue is with the following call in vfs_mount.c:\n\n1079                 if (vfsp == NULL)\n1080                         return (ENODEV);\n1081                 if (jailed(td-\u003etd_ucred) \u0026\u0026 !(vfsp-\u003evfc_flags \u0026 VFCF_JAIL))\n1082                         return (EPERM);\n\nand this call in vfs_init.c:\n\n131         /* Try to load the respective module. */\n132         *error = kern_kldload(td, fstype, \u0026fileid);\n133         if (*error)\n134                 return (NULL);\n\nIt seems like the error should be either EINVAL or ENOENT, but doing the latter\nin mount(2) would be bad form.\n\nHow-To-Repeat: mount -t foobarfs foo /"
+}

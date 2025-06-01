@@ -1,0 +1,8 @@
+{
+ "id": 584026,
+ "bug_id": 151725,
+ "attachment_id": 0,
+ "creation_time": "2010-11-05T17:24:10Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "on 05/11/2010 18:34 Andriy Gapon said the following:\n\u003e Run started hald-probe-scsi (20000) (0)\n\u003e !  full path is '/usr/local/libexec/hald-probe-scsi', program_dir is\n\u003e '/usr/local/libexec'\n\u003e 18:30:33.136 [I] hald_runner.c:110: runner_server_message_handler:\n\u003e destination=(null) obj_path=/org/freedesktop/DBus/Local\n\u003e interface=org.freedesktop.DBus.Local method=Disconnected\n\u003e 18:30:33.136 [I] hald_runner.c:151: runner process disconnected\n\u003e *** [DIE] hald_runner.c:runner_died():204 : Runner died\n\u003e \n\nNot sure what is the problem, perhaps someone who knows the code better can come\nup with an explanation, but the following informally specified patch seems to fix\nthe issue for me (verified with 24 hald start-ups):\n\nIn hald-runner/runner.c, function run_request_run():\n\ng_free (program_dir);\n\n-if (r-\u003einput) {\n+if (r-\u003einput \u0026\u0026 strlen(r-\u003einput) \u003e 0) {\n        if (write(stdin_v, r-\u003einput, strlen(r-\u003einput)) != (ssize_t) strlen(r-\u003einput))\n                printf(\"Warning: Error while writing r-\u003einput (%s) to stdin_v.\\n\",\nr-\u003einput);\n        close(stdin_v);\n}\n\nI hope that it's easy to apply this change by hand.\nI will have a proper patch once I clean out all my debugging modifications from\nthe sources.\n\nIt looked like the issue was caused by the above write() call after a sufficiently\nquick child process had already exited.\n\n-- \nAndriy Gapon"
+}

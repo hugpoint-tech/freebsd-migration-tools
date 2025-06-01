@@ -1,0 +1,8 @@
+{
+ "id": 1229036,
+ "bug_id": 266236,
+ "attachment_id": 0,
+ "creation_time": "2022-10-06T15:57:12Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I can reproduce this with a loopback NFSv3 mount of a dataset containing a snapshot.  Some dtracing shows the ESTALE comes from nfs_access(), the RPC is returning the error because it can't translate the file handle to a vnode.  In particular, I can see zfs_fhtovp() is returning EINVAL when dealing with a \"long\" FID, used for files under .zfs/snapshot.\n\n  1  70351                 zfs_fhtovp:entry fid_t {\n    u_short fid_len = 0x12 \u003c-- LONG_FID_LEN\n    u_short fid_data0 = 0x22\n    char [16] fid_data = [ \"\" ]\n}\n  1  70352                zfs_fhtovp:return nfsd 22\n              kernel`nfsvno_fhtovp+0x3d\n              kernel`nfsrvd_dorpc+0x120\n              kernel`nfssvc_program+0x68c\n              kernel`svc_run_internal+0xb4f\n              kernel`svc_thread_start+0xb\n              kernel`fork_exit+0x7e\n              kernel`0xffffffff8107803e\n\nWith DTrace I can see that vfs_hash_get() and VOP_LOOKUP are not getting called from zfs_fhtovp(), which means the error is probably coming from a recently added check:\n\n1821         if (fidp-\u003efid_len == LONG_FID_LEN \u0026\u0026 (fid_gen \u003e 1 || setgen != 0)) {\n1822                 dprintf(\"snapdir fid: fid_gen (%llu) and setgen (%llu)\\n\",\n1823                     (u_longlong_t)fid_gen, (u_longlong_t)setgen);\n1824                 return (SET_ERROR(EINVAL));\n1825         }\n\nThat came in with https://github.com/openzfs/zfs/pull/12905 but let me see first if that really is the source of the error."
+}

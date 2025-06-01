@@ -1,0 +1,8 @@
+{
+ "id": 2354,
+ "bug_id": 901,
+ "attachment_id": 0,
+ "creation_time": "1995-12-18T07:37:12Z",
+ "creator": "davidg@Root.COM",
+ "text": "\u003e\u003eDescription:\n\u003e\n\u003evm_page_free() in vfs_bio.c has an incorrent index of the free(?) pages. When\n\u003evm_hold_free_pages() calls vm_page_free() it points to the wrong page due to\n\u003ethe index being a signed datatype.\n\u003e\n\u003e\u003eHow-To-Repeat:\n\u003e\n\u003eDo a lot of activity, in order to get the paging moving. Usually ls -lR / has\n\u003ebeen sufficient.\n\u003e\n\u003e\u003eFix:\n\u003e\n\u003eApply the included patch.\n\u003e\t\n\u003e--- kern/vfs_bio.c      Sun Dec 17 02:51:17 1995\n\u003e+++ kern/vfs_bio.c~     Sun Dec 17 02:51:04 1995\n\u003e@@ -1634,7 +1634,7 @@\n\u003e        vm_offset_t to = round_page(toa);\n\u003e \n\u003e        for (pg = from; pg \u003c to; pg += PAGE_SIZE) {\n\u003e-               int index = ((caddr_t) pg - bp-\u003eb_data) \u003e\u003e PAGE_SHIFT;\n\u003e+               unsigned int index = ((caddr_t) pg - bp-\u003eb_data) \u003e\u003e PAGE_SHIFT;\n\u003e                p = bp-\u003eb_pages[index];\n\u003e                bp-\u003eb_pages[index] = 0;\n\u003e                pmap_kremove(pg);\n\n   I must be really missing something. The index that is calculated should\nalways be between 0 and 1 (or some small number). I don't understand why\nmaking index unsigned would make any difference since it should always be\npositive. If it's ever negative, well then that's quite another problem.\n\n-DG"
+}

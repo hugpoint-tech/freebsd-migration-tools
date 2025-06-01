@@ -1,0 +1,8 @@
+{
+ "id": 978563,
+ "bug_id": 115361,
+ "attachment_id": 0,
+ "creation_time": "2018-02-20T16:34:19Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "To restate the bug:\n\n\"zfs mount -o update,setuid \u003cFILESYSTEM\u003e\" works, but \"zfs get setuid \u003cFILESYSTEM\u003e\" doesn't reflect the new state of the mount option.  Steps to reproduce:\n\n$ sudo zpool create foo da1\n$ sudo zfs create foo/fs\n$ sudo cp -a /sbin/ping /foo/fs\n$ zfs get setuid foo/fs\nNAME    PROPERTY  VALUE   SOURCE\nfoo/fs  setuid    on      default\n$ mount | grep foo.fs\nfoo/fs on /foo/fs (zfs, local, nfsv4acls)\n$ /foo/fs/ping -c 1 8.8.8.8\nPING 8.8.8.8 (8.8.8.8): 56 data bytes\n64 bytes from 8.8.8.8: icmp_seq=0 ttl=55 time=3.419 ms\n\n--- 8.8.8.8 ping statistics ---\n1 packets transmitted, 1 packets received, 0.0% packet loss\nround-trip min/avg/max/stddev = 3.419/3.419/3.419/0.000 ms\n$ sudo zfs mount -o update,nosetuid foo/fs\n$ mount | grep foo.fs\nfoo/fs on /foo/fs (zfs, local, nosuid, nfsv4acls)\n# XXX \"zfs get\" will return the wrong value\n$ zfs get setuid foo/fs\nNAME    PROPERTY  VALUE   SOURCE\nfoo/fs  setuid    on      default\n$ /foo/fs/ping -c 1 8.8.8.8\nping: ssend socket: Operation not permitted\n\nIn the above transcript, the output of \"mount\" matches what is expected, as does the behavior of ping (which requires setuid to run).  Only the output of \"zfs get\" is wrong."
+}

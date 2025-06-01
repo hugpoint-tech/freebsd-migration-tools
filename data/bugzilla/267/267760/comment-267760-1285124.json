@@ -1,0 +1,8 @@
+{
+ "id": 1285124,
+ "bug_id": 267760,
+ "attachment_id": 0,
+ "creation_time": "2023-11-22T12:12:30Z",
+ "creator": "jamie@catflap.org",
+ "text": "I stumbled across this happening with FreeBSD-14.\n\nHopefully this is the same issue you guys have seen, as I include the fix.\n\nBasically, it's only a problem if you have NULLFS mounted filesystems.\n\nI noticed it when a lot of files were open on such a filesystem (doing a software build which used parallel compiles)\n\nAs seen in the attached patch, the problem code replaces the nullfs mounted fullpathname with the \"real\" full pathname:\n\n  memmove(\u0026vfs_path[strlen(vfs-\u003efsname) + 1], \u0026vfs_path[strlen(vfs-\u003edir) + 1],\n       strlen(vfs_path) - strlen(vfs-\u003edir) + 1);\n  memcpy(vfs_path, vfs-\u003efsname, strlen(vfs-\u003efsname));\n\n\nHowever, sometimes this is called with a pathname of NULL. If your real mountpoint has a length shorter than the nullfs mountpoint, this causes an attempt to memmove a negative number of bytes.\n\nThe attached fix doesn't attempt the memmove/memcpy if the size would be negative.\n\nAlso, please note, this also fixes an \"off by one\" error in the same code - it wasn't actually producing the correct result even when it wasn't SIGSEGV'ing !"
+}

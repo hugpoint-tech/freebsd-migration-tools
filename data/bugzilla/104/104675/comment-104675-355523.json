@@ -1,0 +1,8 @@
+{
+ "id": 355523,
+ "bug_id": 104675,
+ "attachment_id": 0,
+ "creation_time": "2006-10-22T14:24:10Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Sun, 22 Oct 2006, Jukka A. Ukkonen wrote:\n\n\u003e\u003e Description:\n\u003e \tIt seems that the bktr driver cannot change the input connector\n\u003e \tused when using a card with multiple connectors.\n\u003e \tWhen I used ktrace to see what happens at the kernel API level\n\u003e \tI got somewhat disturbing output...\n\u003e\n\u003e 56314 try      CALL  ioctl(0x3,METEORGINPUT,0xbfbfed24)\n\u003e 56314 try      RET   ioctl 0\n\u003e 56314 try      CALL  ioctl(0x3,SERIAL_SETINVCLK,0xbfbfed20)\n\u003e 56314 try      RET   ioctl 0\n\u003e 56314 try      CALL  ioctl(0x3,METEORGINPUT,0xbfbfed20)\n\u003e 56314 try      RET   ioctl 0\n\u003e\n\u003e      It seems that METEORGINPUT is recognized properly but its\n\u003e      complement METEORSINPUT is not. Instead METEORSINPUT gets\n\u003e      mapped to something completely unrelated (SERIAL_SETINVCLK).\n\nThis is probably not the real problem.  There are too many ambiguous\nioctls for kdump to fix, so kdump carefully avoids seeing the problem\nby not invoking mkioctls with -s.  But this is only a debugging problem.\nThe ioctl numbers are unique for each device, so device drivers have\nno problems with their ambiguity.  To do the same for just the above,\nkdump would have to determine that fd 0x3 is for bktr and use bktr's\nioctl switch statement instead of Cronyx serial's one.  It now just\nuses an elseif ladder that has all the ioctls but only finds the\nfirst match.\n\nBruce"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 81149,
+ "bug_id": 25986,
+ "attachment_id": 0,
+ "creation_time": "2013-02-19T18:28:39Z",
+ "creator": "fodillemlinkarim@gmail.com",
+ "text": "Hi,\n\nHopefully this can help, where I work we have been using the patch below \nfor years now. Please note the slight difference with the proposed \npatch. We found that after a connection close (which sends a FIN and \nputs the tcpcb in FIN_WAIT_1 state) if the other end never ACK the FIN \nor sends a FIN for that matter we would also see lingering FIN_WAIT_1 \nconnections.\n\n@@ -1543,16 +1926,19 @@\n                 tp-\u003et_state = TCPS_LAST_ACK;\n                 break;\n         }\n+\n         if (tp-\u003et_state \u003e= TCPS_FIN_WAIT_2) {\n                 soisdisconnected(tp-\u003et_inpcb-\u003einp_socket);\n-               /* Prevent the connection hanging in FIN_WAIT_2 forever. */\n-               if (tp-\u003et_state == TCPS_FIN_WAIT_2) {\n-                       int timeout;\n-\n-                       timeout = (tcp_fast_finwait2_recycle) ?\n-                           tcp_finwait2_timeout : tcp_maxidle;\n-                       tcp_timer_activate(tp, TT_2MSL, timeout);\n-               }\n+       }\n+\n+       /* kfl: To prevent the connection hanging in half closed states \nforever. */\n+       if ((tp-\u003et_state == TCPS_FIN_WAIT_1) ||\n+           (tp-\u003et_state == TCPS_FIN_WAIT_2) ||\n+           (tp-\u003et_state == TCPS_LAST_ACK)) {\n+         int timeout;\n+\n+         timeout = (tcp_fast_finwait2_recycle) ? tcp_finwait2_timeout : \ntcp_maxidle;\n+         tcp_timer_activate(tp, TT_2MSL, timeout);\n         }\n  }"
+}

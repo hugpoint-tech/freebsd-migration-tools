@@ -1,0 +1,8 @@
+{
+ "id": 479267,
+ "bug_id": 130526,
+ "attachment_id": 0,
+ "creation_time": "2009-01-20T12:08:12Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kib\nDate: Tue Jan 20 12:07:49 2009\nNew Revision: 187470\nURL: http://svn.freebsd.org/changeset/base/187470\n\nLog:\n  The context switch to the 32bit binary does not properly restore\n  the fsbase value. The switch loads the fs segment register, that\n  invalidates the value in fsbase msr, thus value in %r9 can not be\n  considered the current value for fsbase anymore.\n  \n  Unconditionally reload fsbase when switching to 32bit binary.\n  \n  PR:\t130526\n  MFC after:\t3 weeks\n\nModified:\n  head/sys/amd64/amd64/cpu_switch.S\n\nModified: head/sys/amd64/amd64/cpu_switch.S\n==============================================================================\n--- head/sys/amd64/amd64/cpu_switch.S\tTue Jan 20 11:34:28 2009\t(r187469)\n+++ head/sys/amd64/amd64/cpu_switch.S\tTue Jan 20 12:07:49 2009\t(r187470)\n@@ -199,6 +199,7 @@ done_load_seg:\n \tcmpq\tPCB_FSBASE(%r8),%r9\n \tjz\t1f\n \t/* Restore userland %fs */\n+restore_fsbase:\n \tmovl\t$MSR_FSBASE,%ecx\n \tmovl\tPCB_FSBASE(%r8),%eax\n \tmovl\tPCB_FSBASE+4(%r8),%edx\n@@ -281,7 +282,7 @@ load_seg:\n \tmovl\tPCB_DS(%r8),%ds\n \tmovl\tPCB_ES(%r8),%es\n \tmovl\tPCB_FS(%r8),%fs\n-\tjmp\tdone_load_seg\n+\tjmp\trestore_fsbase\n \t/* Restore userland %gs while preserving kernel gsbase */\n 2:\tmovq\tPCPU(GS32P),%rax\n \tmovq\tPCB_GS32SD(%r8),%rcx\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

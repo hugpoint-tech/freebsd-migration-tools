@@ -1,0 +1,8 @@
+{
+ "id": 411210,
+ "bug_id": 116608,
+ "attachment_id": 0,
+ "creation_time": "2007-09-25T16:32:15Z",
+ "creator": "ports@grosbein.net",
+ "text": "On Mon, 24 Sep 2007, Bruce Evans wrote:\n\n\u003e I saw similar bogus errors and panics for the bug in rev.1.152 (-current)\n\u003e and 1.144.2.5 (RELENG_6).  This bug is for remounting from rw to ro.\n\u003e markvoldirty() is called after changing to to, so it creates an unflushable\n\u003e buffer.  Unflushable buffers are supposed to be retried endlessly, but\n\u003e another bug causes a panic.  Committing of fixes for these bugs are\n\u003e pending.\n\nWhile the patch I've sent in the PR is correct, it discovers another\npanic if there is mountd process running at the moment of mount.\nOr if it's run later. Here is a scenario:\n\n1. mount_msdosfs(8) calls nmount() with options \"ro\" and \"rw\" (in this order).\n2. vfs_donmount() notes \"rw\", clears MNT_RDONLY flag and adds \"noro\"\n   to the option list.\n3. So, msdosfs_mount() is called without MNT_UPDATE flag, without MNT_RDONLY\n   flag and with options \"ro\", \"rw\" and \"noro\". It ignores \"noro\",\n   and with mentioned patch it ignores \"ro\" also and does read-write mount.\n4. mountd(8) calls nmount() with exactly same options but adds\n   MNT_UPDATE flag\n5. So, msdosfs_mount() is called second time, now with MNT_UPDATE,\n   ignores options \"noro\" and \"rw\", notes option \"ro\", tries to remount\n   filesystem from read-write to read-only and hits another unfixed bug\n   in the kernel you mentioned above and kernel panices a couple of second\n   later.\n\nWell, I think that vfs_donmount() has to be fixed to remove \"ro\"\nwhen it adds \"noro\", hasn't it?\n\nEugene Grosbein"
+}

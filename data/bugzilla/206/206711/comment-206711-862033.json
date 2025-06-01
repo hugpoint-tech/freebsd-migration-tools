@@ -1,0 +1,8 @@
+{
+ "id": 862033,
+ "bug_id": 206711,
+ "attachment_id": 166235,
+ "creation_time": "2016-01-28T13:54:28Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 166235\n[workaround] nvidia linux_ioctl global handler (for both linux and linux64)\n\n(In reply to ohartman from bug 201340 comment #17)\n\u003e on CURRENT amd64 I would at least expect linux64.ko\n\nnvidia-driver requires kernel to provide linux_ioctl_{,un}register_handler to allow linux userland access /dev/nvidia*. According to /sys/modules/linux/Makefile the symbol is only exported for 32bit version. Obviously, linux64 needs to export 64bit symbol. And its not possible to export by building into kernel: option COMPAT_LINUX doesn't exist on amd64.\n\nHow to make 64bit OpenGL apps work with nvidia \u0026 linuxulator:\n1. Switch to 64bit linux_base or populate manually (I've used CentOS 7)\n2. Apply *attached* patch and rebuild kernel or just linux* modules\n3. Disable linux_ioctl handler in nvidia-driver (i.e. rebuild with LINUX=off)\n4. Install 64bit linux driver under /compat/linux\n5. Remove sbin/nvidia-modprobe binary to enable userland fallback (as used by FreeBSD driver)\n\nCUDA 64bit may still not work e.g.,\n\n  $ export PATH=/compat/linux/bin:/usr/local/cuda/bin:$PATH\n  $ nvcc -o foo -m32 -lcuda a.c\n  $ nvcc -o bar -lcuda a.c\n\n  $ ./foo\n  $ ./bar\n  cuInit failed: 999\n\n  $ cat a.c\n  #include \u003ccuda.h\u003e\n  #include \u003cstdio.h\u003e\n\n  int main()\n  {\n      CUresult r = cuInit(0);\n      if (r != CUDA_SUCCESS) {\n          printf(\"cuInit failed: %d\\n\", r);\n          return 1;\n      }\n      return 0;\n  }"
+}

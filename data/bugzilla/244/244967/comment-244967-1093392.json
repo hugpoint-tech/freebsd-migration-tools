@@ -1,0 +1,8 @@
+{
+ "id": 1093392,
+ "bug_id": 244967,
+ "attachment_id": 212604,
+ "creation_time": "2020-03-22T04:03:55Z",
+ "creator": "eric@erichanneken.com",
+ "text": "Created attachment 212604\nPatch to pw(8)\n\nAccording to the man page for pw(8), pw userdel -n name -r\n\n    will only remove files and directories that are actually owned by the\n    user, or symbolic links owned by anyone under the user's\n    home directory.\n\nThe man page for rmuser(8), which wraps pw(8), makes a similar promise. In reality, the ownership check is performed only for files in the user's home directory. The home directory itself, and any subdirectories, are deleted without regard to who owns them. In most cases this is harmless because a directory not owned by the user will usually also contain files not owned by the user. pw won't delete the files, and its attempt to remove a non-empty directory will fail.\n\nBut if the other-owned home directory is empty (or if its files are weirdly all owned by the user being deleted), pw will delete it:\n\n    # mkdir /var/shared\n    # ls -ld /var/shared\n    drwxr-xr-x  2 root  wheel  2 Mar 21 23:40 /var/shared\n    # pw useradd -n testuser1 -d /var/shared\n    # pw useradd -n testuser2 -d /var/shared\n    # grep 'testuser' /etc/passwd\n    testuser1:*:1002:1002:User \u0026:/var/shared:/bin/sh\n    testuser2:*:1003:1003:User \u0026:/var/shared:/bin/sh\n    # pw userdel -n testuser1 -r\n    # grep 'testuser' /etc/passwd\n    testuser2:*:1003:1003:User \u0026:/var/shared:/bin/sh\n    # ls -ld /var/shared\n    ls: /var/shared: No such file or directory\n\nI have attached a patch which adds the ownership check to directories. It was made against revision 359195."
+}

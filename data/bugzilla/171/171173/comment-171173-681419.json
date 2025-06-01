@@ -1,0 +1,8 @@
+{
+ "id": 681419,
+ "bug_id": 171173,
+ "attachment_id": 0,
+ "creation_time": "2012-08-29T21:20:01Z",
+ "creator": "harm@weites.com",
+ "text": "I'm observing the following issue when using etherswitchcfg on my TP-Link 1043ND embedded MIPS device. The default vlan configuration is done in the dev/etherswitchcfg init, creating vlan1 (wan port) and vlan2 (ports 1-4) with corresponding vlangroups. Those work as expected.\n\nWhen configuring the switch to have a vlan(group) per physical port, I receive the following error:\n\netherswitchcfg: ioctl(IOETHERSWITCHGETPORT): Bad address\n\nFix: While going through etherswitchcfg.c I noticed a subtle difference with set_port_vlangroup() and set_port_media(); the latter also uses ioctl(IOETHERSWITCHGETPORT) but does not fail and works just fine. \nIt looks like there is a missing bzero() in set_port_vlangroup(), I've attached a patch to address that. While at it, I've also added a print to tell the user what'll happen, and a fix to prevent the function to segfault when a vlangroup is not supplied.\n\nResult of my fixed code:\n\n# ./etherswitchcfg port3 vlangroup 3\nSet vlangroup of port 3 to 3\nport3:\n\tvlangroup: 3\n\tmedia: Ethernet autoselect (100baseTX \u003cfull-duplex\u003e)\n\tstatus: active\n\n\n\nPatch attached with submission follows:\nHow-To-Repeat: # /sbin/etherswitchcfg port3 vlangroup 3\netherswitchcfg: ioctl(IOETHERSWITCHGETPORT): Bad address"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 103876,
+ "bug_id": 32809,
+ "attachment_id": 0,
+ "creation_time": "2001-12-15T02:32:55Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Thu, 13 Dec 2001, Yar Tikhiy wrote:\n\n\u003e \u003eDescription:\n\u003e\n\u003e After any panic, the system tries to sync disks,\n\u003e but gets yet another panic as follows:\n\u003e\n\u003e stylish# sysctl debug.debugger_on_panic=0\n\u003e debug.debugger_on_panic: 1 -\u003e 0\n\u003e stylish# ./666\n\u003e panic: test panic\n\u003e\n\u003e syncing disks... panic: bremfree: bp 0xc217a428 not locked\n\u003e Uptime: 4m43s\n\u003e pfs_vncache_unload(): 1 entries remaining\n\nsync() from panic() only works accidentally.  I'ts like calling a\nnon-signal safe function from a signal handler -- when the system\npanics, it quite likely to be executing filesystem code or holding a\nlock that should prevent filesystem code being run, but panic()\nexecutes filesystem code (the sync()) unless the panic is recursive.\nAddition of locks has greatly increased the chance that the sync()\nin panic will deadlock instead of appearing to work.\n\n\u003e dumping to dev ad0s1b, offset 139376\n\u003e dump ata0: resetting devices ..\n\u003e [the system hangs dead at this point sometimes]\n\naddump() seems to have regressed relative to wddump().  Dump routines\nshould not use any normal i/o routines.\n\nBruce"
+}

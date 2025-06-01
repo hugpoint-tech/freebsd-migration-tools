@@ -1,0 +1,8 @@
+{
+ "id": 627046,
+ "bug_id": 160283,
+ "attachment_id": 0,
+ "creation_time": "2011-08-29T17:00:24Z",
+ "creator": "stef@thewalter.net",
+ "text": "After a failed zfs receive, zfs list now aborts in make_dataset_handle()\nin libzfs.so.2.\n\n# zfs list\nAbort trap: 6 (core dumped)\n\nThe backtrace is:\n\n#0  0x0000000800fe63cc in kill () from /lib/libc.so.7\n#1  0x0000000800fe51cb in abort () from /lib/libc.so.7\n#2  0x000000080067400f in make_dataset_handle () from /lib/libzfs.so.2\n#3  0x0000000800674346 in zfs_iter_filesystems () from /lib/libzfs.so.2\n#4  0x000000000040ad51 in ?? ()\n#5  0x0000000800674354 in zfs_iter_filesystems () from /lib/libzfs.so.2\n#6  0x000000000040ad51 in ?? ()\n#7  0x000000080066642c in zfs_iter_root () from /lib/libzfs.so.2\n\nRunning on:\n\nFreeBSD m1.bay.npubs.net 8.2-RELEASE-p2 FreeBSD 8.2-RELEASE-p2 #0: Wed Jul 27 12:49:35 UTC 2011     sam@m1.bay.npubs.net:/usr/obj/usr/src/sys/RACK1  amd64\n\n'zfs scrub' did not fix the error. 'zfs create' and other zfs commands\nstill work, as do access to the various zfs file systems on this system.\n\nAfter poking around a bit, I find that in make_dataset_handle()\nzhp-\u003ezfs_dmustats.dds_type is equal to 0 (and this is the cause of the\nabort). Additionally zhp-\u003ezfs_dmustats.dds_inconsistent is not TRUE.\n\nFix: Will attach a patch which fixes the issue.\n\nPatch attached with submission follows:\nHow-To-Repeat: Hard to repeat. Depends on zfs recv aborting at specific times in specific circumstances, possibly involving prior reboots."
+}

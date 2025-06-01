@@ -1,0 +1,8 @@
+{
+ "id": 390633,
+ "bug_id": 112212,
+ "attachment_id": 0,
+ "creation_time": "2007-04-28T20:20:04Z",
+ "creator": "jschauma@netmeister.org",
+ "text": "When using touch(1) on a directory that I can't update the timestamp on (say, if the filesystem is mounted read-only), it will return 0 as the return value, even though it failed.\n\nThe reason this happens is in touch.c#225:\n\n    /* Try reading/writing. */\n    if (!S_ISLNK(sb.st_mode) \u0026\u0026 !S_ISDIR(sb.st_mode) \u0026\u0026\n        rw(*argv, \u0026sb, fflag))\n            rval = 1;\n    else\n            warn(\"%s\", *argv);\n\nAt this point, it tries to update the timestamp using utimes(2), which\nfailed, so it would continue to try to update it by reading and writing\nthe file.\n\nHowever, since the file in question is a directory, it doesn't try this\nand simply warns instead of setting the return value to 1.\n\nFix: \n\nSee NetBSD's touch(1):\n\n                /* Try reading/writing. */\n                if (!S_ISLNK(sb.st_mode) \u0026\u0026 rw(*argv, \u0026sb, fflag))\n                        rval = 1;\n\n\nThis still is slightly suboptimal, since the error message will be\n\n$ touch foo\ntouch: foo: Is a directory\n$ echo $?\n1\n$ \n\nBut that's better than returning 0.\nHow-To-Repeat: $ mkdir foo\n$ touch foo/bar\n$ mount -u -o ro /\n$ touch foo/bar\ntouch: foo/bar: Read-only file system\n$ echo $?\n1\n$ touch foo\ntouch: foo: Read-only file system\n$ echo $?\n0\n$"
+}

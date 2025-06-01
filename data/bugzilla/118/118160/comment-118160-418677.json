@@ -1,0 +1,8 @@
+{
+ "id": 418677,
+ "bug_id": 118160,
+ "attachment_id": 0,
+ "creation_time": "2007-11-21T07:42:27Z",
+ "creator": "bde@FreeBSD.org",
+ "text": "On Wed, 21 Nov 2007, Bruce Evans wrote:\n\n\u003e I can now see a plausible way to reach the bad state:\n\u003e - after booting, the root device is mounted on / r/o with no problems\n\u003e - mistype a mount command or have $true generate a wrong mount command,\n\u003e  so that the root device is mounted somewhere else (I don't know how\n\u003e  it can be on \"\", but it could be on \" \" or on any valid pathname).\n\u003e  If you preemptively mount it r/w, then this other mount will fail\n\u003e  -- look in the logs for messages about this.\n\u003e - now try to remount / r/w normally.  This will fail due to the r/o mount\n\u003e  not on /.\n\u003e - if there is only 1 extra r/o mount of /, then the r/w mount should work\n\u003e  after unmounting the extra.  If there are several extras, then unmounting\n\u003e  them in a certain order should give the bufobj panic.\n\nThe bufobj panic actually happens in the only possible order for trying to\nfix the simulated problem: after booting with -s:\n\n     # mount -o ro /dev/ad0s2a /mnt     # create extra mount (ad0s2a is root dev)\n     #                                  # like a runaway script might\n     # umount /mnt                      # get rid of the extra mount\n     # fsck -p /\n     --- panic\n\nand\n\n     # mount /dev/ad0s2a /mnt           # I forgot the ro\n     --- this succeeds due to the hack that lets fsck succeed, but it shouldn't\n\nBruce"
+}

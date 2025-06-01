@@ -1,0 +1,8 @@
+{
+ "id": 1285612,
+ "bug_id": 275322,
+ "attachment_id": 246554,
+ "creation_time": "2023-11-25T03:42:00Z",
+ "creator": "cheyenne.wills@gmail.com",
+ "text": "Created attachment 246554\nC code to demonstrate the problem\n\nThere is improper handling of the mxcsr register when debugging.  It appears that the current mxcsr register is not being given to the debugger.\n\nThe attached program illustrates the problem.\n\ncompile the attached program:lang -mfpmath=sse -mlong-double-64 -g -lm -o {x} {x.c}\n\nRun the following debug session:\n\ngdb ./{x}\nbreak main\nrun\n** program should run to end with the following output:\n\nra=7.01209994486364354e-310 reatt=10000000000 ra * reatt-\u003e result =0 savemxcsr 00001f80 mxcsr_set 00009fc0 showmxcsr 00009fc0 mxcsr 00001f80\n\ndisassemble main\n** set a break at the mulsd instruction (should be around offset +81)\nrun\n** should now be at the mulsd instruction\ncontinue\n** output should be the same as above\n\nrun\n** should now be at the mulsd instruction\ninfo register mxcsr\n** output should be:\nmxcsr          0x1f80              [ IM DM ZM OM UM PM ]\n** which is incorrect since it there was a ldmxcsr instruction around offset +39 and the result should be:\nmxcsr          0x9fc0              [ DAZ IM DM ZM OM UM PM FZ ]\n\ncontinue\n** output shows incorrect output:\nra=7.01209994486364354e-310 reatt=10000000000 ra * reatt-\u003e result =7.01209994486364403e-300 savemxcsr 00001f80 mxcsr_set 00009fc0 showmxcsr 00009fc0 mxcsr 00001fa2\n** since it appears that the mxcsr register is being reset back to the 0x1f80 value after it was displayed"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1065103,
+ "bug_id": 240294,
+ "attachment_id": 0,
+ "creation_time": "2019-09-03T05:54:27Z",
+ "creator": "darius@dons.net.au",
+ "text": "Hi,\nI have this port on a Supermicro X11SSH-F and it doesn't work, it hands the X server (kill -9 required to recover).\n\nI did some debugging and found it is stuck here..\n0x0000000801ae1d86 in ASTGetDRAMInfo (pScrn=0x801af7000) at ast_vgatool.c:439\n439\t    } while (*(volatile ULONG *) (pAST-\u003eMMIOVirtualAddr + 0x10000) != 0x01);\n\n(gdb) print/x *(volatile ULONG *) (pAST-\u003eMMIOVirtualAddr + 0x10000)\n$2 = 0xffffffff\n\nReading around this area also reads 0xffffffff all the time.\n\nie it is like that memory is not correctly mapped.\nI added some debugging to the mapping process in ASTMapMMIO:\n[ 71021.555] (II) AST(0): pci_device_map_range Addr 0xdf000000 size 0x20000, err 0 result 0x01b30000\n\nBut when I check ASTGetDRAMInfo()..\n(gdb) print/x pAST-\u003eMMIOVirtualAddr\n$2 = 0x801b30000\n\n(gdb) print/x *(0x01b30000)\nCannot access memory at address 0x1b30000\n\nThe mappings look to match dmesg:\nvgapci0: \u003cVGA-compatible display\u003e port 0xc000-0xc07f mem 0xde000000-0xdeffffff,0xdf000000-0xdf01ffff irq 18 at device 0.0 on pci4\n\nCuriously on the working machine with an identical motherboard with FreeBSD 11 it is at a different location:\nvgapci0: \u003cVGA-compatible display\u003e port 0xd000-0xd07f mem 0xf6000000-0xf6ffffff,0xf7000000-0xf701ffff irq 16 at device 0.0 on pci4\n\nI extracted the values from the working system and hard coded them into the FreeBSD 12 one and while it starts it is very slow (same speed as VESA)\n\nThe VESA driver is significantly slower than I expect, I am not sure if that is related or just it sucking harder in new systems.."
+}

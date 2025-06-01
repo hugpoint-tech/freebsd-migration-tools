@@ -1,0 +1,8 @@
+{
+ "id": 1215405,
+ "bug_id": 264257,
+ "attachment_id": 0,
+ "creation_time": "2022-06-10T22:18:57Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "The current thinking is, that SACK rescue retransmissions (in FBSD13 this is gated by net.inet.tcp.rfc6675_pipe=1) very rarely creates an entry, which apparently is beyond the valid data range. \n\nWhile under most common circumstances, a final FIN bit in the sequence space is taken care of, it seems that there may be some double-counting for the FIN bit.\n\nIn most of the inspected cores, we found:\n\nTCP state: LAST_ACK (FIN received and also FIN sent)\nSACK loss recovery triggered\nA cumulative ACK before all outstanding data was received\nThe remote cliet \"disappears\" for a significant amount of time (7 to 12 retransmission timeouts), but may re-appear again just prior.\nsnd_max consistently 2 counts above the last data, instead of the expected 1 (for the FIN bit).\n\nHowever, it is still unclear under what circumstances this double-counting happens, possibly when the persist timer triggers, and a few other conditions are also fulfilled - maybe a race condition between normal packet processing and a timer firing.\n\nIn short: disabling rfc6675 enhanced SACK features (more correct pipeline accounting, rescue retransmissions) should address the cause of the panic, while not addressing the root cause of when/why there is the double-accounting of the FIN bit...\n\nWould you be willing to run an intrumented kernel, which either panics (full core dump), or spews out various state, when inconsistencies are detected in this space - while ignoring/addressing them \"on the fly\" without panicing?"
+}

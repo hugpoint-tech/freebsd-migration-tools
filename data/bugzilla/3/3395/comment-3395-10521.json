@@ -1,0 +1,8 @@
+{
+ "id": 10521,
+ "bug_id": 3395,
+ "attachment_id": 0,
+ "creation_time": "1997-05-06T02:48:28Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\u003eFix:\n\u003ein /sys/i386/isa/sio.c, apply this patch:\n\u003e\n\u003eDELAY(10000);           /* Some internal modems need this time */\n\u003e        if (idev-\u003eid_irq != 0)\n\u003e-                failures[3] = isa_irq_pending(idev) ? 0 : 1;\n\u003e+                failures[3] = isa_irq_pending(idev) ? 1 : 0;\n\u003e        failures[4] = (inb(iobase + com_iir) \u0026 IIR_IMASK) - IIR_TXRDY;\n\u003e\n\u003eAnyhow, this is what my sio.c said.  In the above at '-', it is implying\n\u003ethat probe test 3 will fail if there is no irq pending, which is\n\u003ethe opposite of what we want.       \n\nNormally there is an irq pending.  Reversing the test would break it for\nfew hundred thousand sio ports where it usually works :-).  For a better\nwork around, just ignore the result of the test.  isa_irq_pending() has\nno side effects, so you could omit the whole test in this case, but some\nof the other tests have side effects, so it is simplest to set failures[N]\nback to 0 if test N doesn't work (or do all the tests and ignore all the\nresults).\n\nIf you have other sio ports, then you should configure them even if you\ndon't use them, since their IRQs may conflict.\n\nBruce"
+}

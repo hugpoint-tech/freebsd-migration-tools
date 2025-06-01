@@ -1,0 +1,8 @@
+{
+ "id": 909862,
+ "bug_id": 214896,
+ "attachment_id": 177536,
+ "creation_time": "2016-11-30T21:25:17Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Comment on attachment 177536\npatch-mplayer2-ffmpeg3\n\n\u003e +++ libmpcodecs/ad_ffmpeg.c\n[...]\n\u003e -    lavc_context-\u003erequest_channels = opts-\u003eaudio_output_channels;\n\nWhy remove and not replace? Maybe use mplayer fix\n\n  $ svn di -c37447 svn://svn.mplayerhq.hu/mplayer/trunk\n\n\u003e +++ libmpdemux/demux_lavf.c\n[...]\n\u003e +    char mime[] = \"\";\n[...]\n\u003e +        avpd.mime_type = mime;\n\nHmm, mplayer fixed in a different way.\n\n  $ svn di -c37251 svn://svn.mplayerhq.hu/mplayer/trunk\n\n\u003e +++ libmpcodecs/vf_lavcdeint.c\n[...]\n\u003e -  if (avpicture_deinterlace(\u0026pic, \u0026lavc_picture,\n\u003e -\t\t\t    priv-\u003epix_fmt, priv-\u003ewidth, priv-\u003eheight) \u003c 0)\n\u003e     {\n\nmplayer turned vf_lavcdeint into nop as fixing requires converting to libavfilter (incompatible). Maybe do the same instead of silently breaking put_image.\n\n  $ svn di -c37388 svn://svn.mplayerhq.hu/mplayer/trunk\n\n\u003e +++ screenshot.c\n[...]\n\u003e -    int size = avcodec_encode_video(avctx, outbuffer, outbuffer_size, pic);\n\u003e +    av_init_packet(\u0026pkt);\n\u003e +    pkt.data = outbuffer;\n\u003e +    pkt.size = outbuffer_size;\n\u003e +    int size = avcodec_encode_video2(avctx, \u0026pkt, pic, \u0026got_pkt);\n\nLooks wrong given \"size\" is later used as an argument for fwrite(). See libvo/vo_png.c for an example."
+}

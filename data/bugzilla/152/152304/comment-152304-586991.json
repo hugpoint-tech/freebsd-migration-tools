@@ -1,0 +1,8 @@
+{
+ "id": 586991,
+ "bug_id": 152304,
+ "attachment_id": 0,
+ "creation_time": "2010-12-09T15:39:16Z",
+ "creator": "chris@geonumerical.org",
+ "text": "I have found the cause of this bug. When subs.c is compiled the\nfollowing warning message is generated:\n\nsubs.c: In function 'open_as_user':\nsubs.c:124: warning: 'mode_t' is promoted to 'int' when passed through\n'...'\nsubs.c:124: warning: (so you should pass 'int' not 'mode_t' to 'va_arg')\nsubs.c:124: note: if this code is reached, the program will abort\n\ngcc generates a ud2a instruction in the resulting subs.o object file and\nthe program indeed aborts when it hits this instruction.\n\nThis is a temporary patch that resolves this problem:\n\n--- subs.c.orig\t2010-12-09 14:41:13.000000000 +0000\n+++ subs.c\t2010-12-09 14:41:46.000000000 +0000\n@@ -121,7 +121,7 @@\n \n     if (flags \u0026 O_CREAT) {\n         va_start(ap, flags);\n-        mode = va_arg(ap, mode_t);\n+        mode = va_arg(ap, int);\n         va_end(ap);\n     }\n \n@@ -179,7 +179,7 @@\n \n     if (flags \u0026 O_CREAT) {\n         va_start(ap, flags);\n-        mode = va_arg(ap, mode_t);\n+        mode = va_arg(ap, int);\n         va_end(ap);\n     }\n \nI have reported the above to the fcron developer in addition.\n\nRegards\n\nChris"
+}

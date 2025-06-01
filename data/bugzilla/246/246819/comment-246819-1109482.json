@@ -1,0 +1,8 @@
+{
+ "id": 1109482,
+ "bug_id": 246819,
+ "attachment_id": 0,
+ "creation_time": "2020-06-19T17:49:07Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Ashish Gupta from comment #2)\nLooks like we are panicking because the counters in the in6_ifstat block are freed.  In particular, the panic happens while executing:\n\n 790                 in6_ifstat_inc(ifp, ifs6_out_request);\n\nwhich expands to\n\n545 #define in6_ifstat_inc(ifp, tag) \\                                                                                                                        \n546 do {                                                            \\                                                                                         \n547         if (ifp)                                                \\                                                                                         \n548                 counter_u64_add(((struct in6_ifextra *)         \\                                                                                         \n549                     ((ifp)-\u003eif_afdata[AF_INET6]))-\u003ein6_ifstat[  \\                                                                                         \n550                     offsetof(struct in6_ifstat, tag) / sizeof(uint64_t)], 1);\\                                                                            \n551 } while (/*CONSTCOND*/ 0)\n\nand the fault address is 0, so it shouldn't be from the if_afdata dereference or the in6_ifstat dereference (since ifs6_out_request is not the first counter in the block).\n\nSo the interface is already destroyed, but we are sending TCP keepalives through it."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1269916,
+ "bug_id": 271069,
+ "attachment_id": 244033,
+ "creation_time": "2023-08-11T21:04:40Z",
+ "creator": "me@svmhdvn.name",
+ "text": "Created attachment 244033\nsleep in parent\n\n(In reply to Siva Mahadevan from comment #3)\n\nI was able to find the race condition inside the usr.sbin/jail command and narrow it down to the area highlighted by the attached patches. Basing the following commentary on the minimal repro from comment #3.\n\nThe confirmed issue is that the jail's start command (in this case, `rc`) runs before the IPv6 alias address is set in the jail by `ifconfig`. This causes the `sshd` service to be started before the IPv6 address is available.\nWhen I add a sleep of 350 milliseconds or more to *either* the parent or the child as shown in the above patches, the above issue does not occur and the IPv6 alias address is available before `rc` starts the `sshd` service. This is sensitive to timing; I found that if I change the sleep to 300 milliseconds or less, the race condition consistently repros.\n\nI tried adding a `waitpid(pid, NULL, 0)` in the parent immediately after the `fork()` call, but that doesn't seem to work. I am not sure how to proceed in the debug. I think that the solution here is to ensure that each setup command runs to completion *serially* before the jail's `start.command` is run. The code seems to already do this by tracking the process and waiting on it in `next_proc()` at command.c:275, but I can't see why this doesn't work.\n\nI will continue to debug further in the meantime; please let me know if there are any ideas here and I will prepare a patch to fix the issue."
+}

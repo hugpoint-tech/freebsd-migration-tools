@@ -1,0 +1,8 @@
+{
+ "id": 1048682,
+ "bug_id": 237576,
+ "attachment_id": 0,
+ "creation_time": "2019-04-26T08:30:58Z",
+ "creator": "smaryus@gmail.com",
+ "text": "On the UART NS8250 errors (parity/frame) are not detected when data is received because every time there is a read on LSR register the errors bit is removed. See [1]\nCurrent UART core implementation relies on the LSR register to detect if data is received. If data is received LSR is read again in pair with DATA register to determine if the received byte generate any errors. At this time LSR error bit is clear so no errors are reported.\n\nIn code:\n1. uart_core.c: `uart_intr()` calls `UART_IPEND` which will go into `ns8250_bus_ipend()`. Here LSR register is read and returns data received.\n2. `uart_intr` calls `uart_intr_rxready` -\u003e `UART_RECEIVE` -\u003e `ns8250_bus_receive`. Here LSR is read again to check if the received byte generated error, but error bit from LSR is now 0. It was cleared by step 1.\n\n\n[1] https://en.wikibooks.org/wiki/Serial_Programming/8250_UART_Programming#Line_Status_Register"
+}

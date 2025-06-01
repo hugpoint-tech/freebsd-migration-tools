@@ -1,0 +1,8 @@
+{
+ "id": 1278732,
+ "bug_id": 274324,
+ "attachment_id": 0,
+ "creation_time": "2023-10-07T11:53:33Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "Author of the mentioned commit here, let's try to find the issue together...I highly doubt that it is related to the commit because it does not use libfetch.\n\nLooking at socket.c:\n==================\n\t\ttmp = getenv(\"FETCHMAIL_INCLUDE_DEFAULT_X509_CA_CERTS\");\n\t\tif (want_default_cacerts || (tmp \u0026\u0026 tmp[0])) {\n#ifdef USING_WOLFSSL\n\t\t\t/* wolfSSL 5.0.0 does not implement\n\t\t\t * SSL_CTX_set_default_verify_paths(). Use something\n\t\t\t * else: */\n\t\t\tconst char *tmp = WOLFSSL_TRUST_FILE;\n\t\t\tl1 = tmp; l2=NULL;\n\t\t\tif (*tmp)\n\t\t\t\tr = SSL_CTX_load_verify_locations(_ctx[sock],\n\t\t\t\t\t\ttmp, NULL);\n#else\n\t\t\tr = SSL_CTX_set_default_verify_paths(_ctx[sock]);\n\t\t\tif (1 != r) goto no_verify_load;\n#endif\n\t\t}\n=============\nThis code looks correct. You should check what is in your default trust store and what \"openssl s_client -connect \u003ctarget\u003e\" tells you and whether it can verify intermediate and root CAs."
+}

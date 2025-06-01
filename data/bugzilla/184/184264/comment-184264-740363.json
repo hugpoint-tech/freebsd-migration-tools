@@ -1,0 +1,8 @@
+{
+ "id": 740363,
+ "bug_id": 184264,
+ "attachment_id": 0,
+ "creation_time": "2013-11-25T01:50:00Z",
+ "creator": "lchen@zen.lhaven.homeip.net",
+ "text": "\t\n\tBeen seeing this in my periodic weekly output for the last few weeks:\n\n\tmakewhatis: /usr/local/man/man7/soxeffect.7.gz: No such file or directory\n\n\tFinally looked at it, and found that it is a symbolic link of:\n\n\tsoxeffect.7.gz -\u003e sox.1.gz\n\n\tWhich should be:\n\n\tsoxeffect.7.gz -\u003e ../man1/sox.1.gz\n\n\tEventually trace the install process and it appears that it installs\n\tto stage and then get's compressed altering\n\t\"soxeffect.7 -\u003e ../man1/sox.1\" into \"soxeffect.7.gz -\u003e sox.1.gz\"\n\n\tSetting NO_STAGE, it installs into /usr/local/man, uncompressed man\n\tpages so the link remains functional.  Which looks strange since\n\teverything else is compressed.\n\nFix: \n\nWork around is use NO_STAGE.  Haven't delved into staging much yet.\n\n\tLooks like the culprit is in bsd.stage.mk, strips off the any path\n\tinformation on both the link and the dest.\n\n\t   link=\"/usr/ports/audio/sox/work/stage/usr/local/man/man7/soxeffect.7\"\n\t   dest=$(readlink $link) # dest=\"../man1/sox.1\"\n\t   cd ${link%/*} # cd /usr/ports/.../man7\n\t   ln -sf ${dest##*/}.gz ${link##*/}.gz\n\n\tProbably needs to test if the $dest is a relative or absolute link.\n\tThough if its an absolute link, it should check whether the path is\n\tthe same or not."
+}

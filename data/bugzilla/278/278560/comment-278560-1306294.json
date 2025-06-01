@@ -1,0 +1,8 @@
+{
+ "id": 1306294,
+ "bug_id": 278560,
+ "attachment_id": 0,
+ "creation_time": "2024-04-24T00:24:49Z",
+ "creator": "george@m5p.com",
+ "text": "../../third_party/ffmpeg/libavutil/thread.h:228:19: error: call to undeclared function 'pthread_setname_np'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]\n  228 |     ret = AVERROR(pthread_setname_np(pthread_self(), name));\n      |                   ^\nm../../third_party/ffmpeg/libavutil/thread.h:228:19: note: did you mean 'pthread_set_name_np'?\n/usr/include/pthread_np.h:67:6: note: 'pthread_set_name_np' declared here\n   67 | void pthread_set_name_np(pthread_t, const char *);\n      |      ^\n1 error generated.\n\n\nIn short, the problem seems to be that HAVE_PTHREAD_SETNAME_NP was set during the configuration phase of things instead HAVE_PTHREAD_SET_NAME_NP.  In order to be able to compile, I changed lines 225 and following of third_party/ffmpeg/libavutil/thread.h to:\n\nstatic inline int ff_thread_setname(const char *name)\n{\n    int ret = 0;\n\n    pthread_set_name_np(pthread_self(), name);\n\n    return ret;\n}\n\n\nClearly not the right fix!  But I'm testing right now (i.e. for at least the next couple of hours) to see if it lets me finish the compile.  Perhaps an expert on the configuration phase can point me in the right direction."
+}

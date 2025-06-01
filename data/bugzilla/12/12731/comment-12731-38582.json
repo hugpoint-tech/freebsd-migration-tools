@@ -1,0 +1,8 @@
+{
+ "id": 38582,
+ "bug_id": 12731,
+ "attachment_id": 0,
+ "creation_time": "1999-07-21T10:30:01Z",
+ "creator": "sheldonh@uunet.co.za",
+ "text": "\n\tWhen a wrapping inetd adds a new service during a SIGHUP-induced\n\tconfig(), and when the rule pertaining to that service in\n\t/etc/hosts.allow uses the hosts_options(3) spawn option, inetd\n\tis unable to run the associated daemon for that service.\n\nFix: \n\nNot known at this time.\n\n\tAlthough the failure that causes the syslog message happens in\n\tflag_signal() at line 769 of inetd.c, I'm not sure why the\n\tpipe(2) call fails. Obviously, main() and config() are the two\n\tsuspects to look at. ;-)\n\n\tI'll look at it when I have a moment, unless David Malone and\n\tthe boys beat me to it. ;-)\nHow-To-Repeat: \n\tIn /etc/inetd.conf:\n\t# telnet service commented out:\n\t#telnet  stream  tcp  nowait  root  /usr/libexec/telnetd  telnet\n\n\tIn /etc/hosts.allow:\n\ttelnetd: ALL : \\\n\t    spawn (/bin/echo \"Something or other\") \u0026 \\\n\t    : ALLOW\n\n\tMake sure no inetd daemon is running and do:\n\t# inetd -w\n\t# telnet localhost\n\tTrying 127.0.0.1...\n\ttelnet: Unable to connect to remote host: Connection refused\n\n\tNow, change /etc/inetd.conf:\n\t# bind to telnet port:\n\ttelnet  stream  tcp  nowait  root  /usr/libexec/telnetd  telnet\n\n\tDo:\n\t# kill -HUP `cat /var/run/inetd.pid`\n\t# telnet localhost\n\tTrying 127.0.0.1...\n\tConnected to localhost.\n\tEscape character is '^]'.\n\tConnection closed by foreign host.\n\t\n\tNotice in /var/log/messages:\n\tJul 21 11:11:04 axl inetd[18062]: write: Bad file descriptor"
+}

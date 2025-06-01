@@ -1,0 +1,8 @@
+{
+ "id": 1126732,
+ "bug_id": 250178,
+ "attachment_id": 0,
+ "creation_time": "2020-10-13T23:12:06Z",
+ "creator": "emaste@freebsd.org",
+ "text": "  1281  TEST(Capability, NoBypassDAC) {\n  1282    REQUIRE_ROOT();\n  1283    int fd = open(TmpFile(\"cap_root_owned\"), O_RDONLY|O_CREAT, 0644);\n  1284    EXPECT_OK(fd);\n  1285    cap_rights_t rights;\n  1286    cap_rights_init(\u0026rights, CAP_READ, CAP_WRITE, CAP_FCHMOD, CAP_FSTAT);\n  1287    EXPECT_OK(cap_rights_limit(fd, \u0026rights));\n  1288\n  1289    pid_t child = fork();\n  1290    if (child == 0) {\n  1291      // Child: change uid to a lesser being\n  1292      setuid(other_uid);\n  1293      // Attempt to fchmod the file, and fail.\n  1294      // Having CAP_FCHMOD doesn't bypass the need to comply with DAC policy.\n  1295      int rc = fchmod(fd, 0666);\n  1296      EXPECT_EQ(-1, rc);\n  1297      EXPECT_EQ(EPERM, errno);\n  1298      exit(HasFailure());\n  1299    }\n  1300    int status;\n  1301    EXPECT_EQ(child, waitpid(child, \u0026status, 0));\n  1302    EXPECT_TRUE(WIFEXITED(status)) \u003c\u003c \"0x\" \u003c\u003c std::hex \u003c\u003c status;\n  1303    EXPECT_EQ(0, WEXITSTATUS(status));\n  1304    struct stat info;\n  1305    EXPECT_OK(fstat(fd, \u0026info));\n  1306    EXPECT_EQ((mode_t)(S_IFREG|0644), info.st_mode);\n  1307    close(fd);\n  1308    unlink(TmpFile(\"cap_root_owned\"));\n  1309  }"
+}

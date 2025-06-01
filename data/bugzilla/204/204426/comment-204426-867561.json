@@ -1,0 +1,8 @@
+{
+ "id": 867561,
+ "bug_id": 204426,
+ "attachment_id": 0,
+ "creation_time": "2016-02-29T15:14:48Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Robert Blayzor from comment #55)\nThe uprintf_signal data was useful, thanks.\n\nIt is quite clean that the issue occured in the child after the\nmultithreaded fork.  An evidence is in the 'CN' flags (copy on write\nand need copy) for all map entries of the process, except the stack.\nThe number of stacks mapped also suggests that the parent only had one\nthread executing during the fork.  This is confirmed also by the\nbacktrace from the core, but for different reasons I trust the core\nless.\n\nThe fault occured on the stack access, as indicated by the fault\naddress.  What is very interesting is the error code 7, which is\nhardware data indicating that this was user-mode write to the page\nmapped read-only.  Which is again consistent with the state after\nfork.\n\nWhat I do not understand is why page fault handler did not performed\nCOW and changed the page permission to writeable, which it should, due\nto rw permission on the map entry.\n\nCould you, please, apply the attached debugging patch on top of the\nused source and provide me the same data as now, i.e. procstat -v code\nand kernel messages from the patch and uprintf_signal."
+}

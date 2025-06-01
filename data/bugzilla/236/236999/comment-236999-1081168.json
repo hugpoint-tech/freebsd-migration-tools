@@ -1,0 +1,8 @@
+{
+ "id": 1081168,
+ "bug_id": 236999,
+ "attachment_id": 0,
+ "creation_time": "2019-12-28T04:52:38Z",
+ "creator": "pkelsey@freebsd.org",
+ "text": "Repeating here what I just said on -net (basically, I think there is at least this bug in the TSO path of the current vmxnet3 driver):\n\nI am not able to test this at the moment, nor likely in the very near future, but I did have a few minutes to do some code reading and now believe that the following is part of the problem, if not the entire problem.  Using r353803 as a reference, I believe line 1323 in sys/dev/vmware/vmxnet3/if_vmx.c (in vmxnet3_isc_txd_encap()) should be:\n\nsop-\u003ehlen = hdrlen + ipi-\u003eipi_tcp_hlen;\n\ninstead of the current:\n\nsop-\u003ehlen = hdrlen;\n\nThis can be seen by going back to r333813 and examining the CSUM_TSO case of vmxnet3_txq_offload_ctx().  The final increment of *start in that case is what was literally lost in translation when converting the driver to iflib."
+}

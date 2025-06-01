@@ -1,0 +1,8 @@
+{
+ "id": 1066,
+ "bug_id": 452,
+ "attachment_id": 0,
+ "creation_time": "1995-05-28T06:10:01Z",
+ "creator": "pb@fasterix.freenix.fr",
+ "text": "\n\tSwapping works for awhile (swapinfo indicates 10-15% used).\n\tAfter some short time (apparently when a big amount of pages\n\tis swapped out at the same time to make room, e.g. to start\n\t\"vi\") the same panic occurs.\n\nHand-copied from DDB :\n\ntrap 12\npage fault while in kernel mode\nsupervisor read, page not present\nprocess 2 (pagedaemon)\n\nStack trace:\n\nbcopy\t\t(apparently in macro nfsm_fhtom() in nfs_vnops.c:912)\nnfs_writerpc\nnfs_doio\nnfs_strategy\nvnstrategy\nspec_strategy\nswstrategy\nspec_strategy\nswap_pager_output\nswap_pager_putmulti\nvm_pager_put_pages\nvm_pageout_clean\nvm_pageout_scan\nvm_pageout\ngetpbuf\n\nFix: \n\nNone known.\n\tDirect NFS-swap doesn't help : many processes get a SIGSEGV\n\tand the kernel quickly panics too.\n\tProbably local swap works, I'll try that next.\nHow-To-Repeat: \n\tMake /swp a 8Mb file.\n\n\tBoot the diskless (4Mb) PC.\n\n\t# vnconfig -e /dev/vn0c /swp swap\n\t# swapinfo\n\t# vi something"
+}

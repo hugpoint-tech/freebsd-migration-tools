@@ -1,0 +1,8 @@
+{
+ "id": 933461,
+ "bug_id": 217261,
+ "attachment_id": 0,
+ "creation_time": "2017-05-09T20:58:39Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "I'm pretty sure that this is happening due to r303154:\n\n-       if (!enable_aio_unsafe)\n+       safe = false;\n+       if (fp-\u003ef_type == DTYPE_VNODE) {\n+               vp = fp-\u003ef_vnode;\n+               if (vp-\u003ev_type == VREG || vp-\u003ev_type == VDIR) {\n+                       mp = fp-\u003ef_vnode-\u003ev_mount;\n+                       if (mp == NULL || (mp-\u003emnt_flag \u0026 MNT_LOCAL) != 0)\n+                               safe = true;\n+               }\n+       }\n+       if (!(safe || enable_aio_unsafe))\n\nI'm not entirely sure that that commit accounted for these cases noted in aio(4) (in particular, the second paragraph):\n\n     Asynchronous I/O operations on some file descriptor types may block an\n     AIO daemon indefinitely resulting in process and/or system hangs.\n     Operations on these file descriptor types are considered \"unsafe\" and\n     disabled by default.  They can be enabled by setting the\n     vfs.aio.enable_unsafe sysctl node to a non-zero value.\n\n     Asynchronous I/O operations on sockets, raw disk devices, and regular\n     files on local filesystems do not block indefinitely and are always\n     enabled.\n\nVBLK and VSOCK doesn't seem to be handled appropriately. VCHR seems trickier to handle, depending on the input device (pty's for instance could block).\n\nThe second paragraph is ambiguous too -- are block devices ok, but not character devices, or vice versa, or are all forms ok?"
+}

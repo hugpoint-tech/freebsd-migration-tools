@@ -1,0 +1,8 @@
+{
+ "id": 1296163,
+ "bug_id": 268005,
+ "attachment_id": 0,
+ "creation_time": "2024-02-10T09:34:01Z",
+ "creator": "se@FreeBSD.org",
+ "text": "(In reply to wbe from comment #12)\ni think that I fully understand the issue, but have not identified the exact source code line that is causing it.\n\nI can reproduce the corrupt directory entry (that later leads to a FAT block being freed twice) with a simple shell script, which creates and renames files in the same way as rsync does.\n\nIf I remove the destination file before renaming, no error occurs. Therefore, I know that the cause is a missing case in the rename code, which leaves an extra directory entry behind. That directory entry is partially overwritten (the long file name fragments don't match the 8.3 DOS name), but it should just be marked as deleted.\n\nThis case is only triggered if e.g. the length of the source and destination file names differ enough to require a different number of directory entries to store the long file name fragments.\n\nI'll attach my test script to this PR, a regression test could be based on it (by removing the trace and dump commands)."
+}

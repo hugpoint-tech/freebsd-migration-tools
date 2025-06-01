@@ -1,0 +1,8 @@
+{
+ "id": 921859,
+ "bug_id": 211746,
+ "attachment_id": 0,
+ "creation_time": "2017-02-14T16:56:04Z",
+ "creator": "marcel@FreeBSD.org",
+ "text": "I just realized that efi_copy_finish() is called via trampoline(). I presume that this means that it runs with the temporary mapping that was created in elf64_exec(). We only map the 1GB of physical memory (using 2MB pages). This means that the EFI allocation must be placed below 0x40000000. However, it is placed at 0xf37cb000.\n\nMaybe the problem is that for smaller allocations, EFI assigns low memory (i.e. under 1GB), but for larger allocations it favors high memory?\n\nTo test this theory, change efi_copy_init() and instead of passing AllocateAnyPages as the first argument, pass AllocateMaxAddress as the first argument and put a maximum address of 1GB in the staging variable before the call to AllocatePages (see also elf64_exec).\n\nEither the allocation fails, or we're guaranteed to have memory below 1GB.\n\nHTH,"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 45902,
+ "bug_id": 15071,
+ "attachment_id": 0,
+ "creation_time": "1999-11-24T09:10:00Z",
+ "creator": "itojun@itojun.org",
+ "text": "\n\tin tcp_input() (sys/netinet/tcp_input.c) there are two places\n\t\"goto findpcb\" is used.  They are for aceepting new connction\n\twhile tcb is in TIME_WAIT state.\n\n\tHowever, because FreeBSD tcp_input strips off mbuf until\n\ttcp data segment at the following line, \"goto findpcb\" attempt\n\twill never success.\n  \n\t/*\n\t * Drop TCP, IP headers and TCP options.\n\t */\n\tm-\u003em_data += sizeof(struct tcpiphdr)+off-sizeof(struct tcphdr);\n\tm-\u003em_len  -= sizeof(struct tcpiphdr)+off-sizeof(struct tcphdr);\n\nFix: There are two possible fixes to this.  I prefer the latter one\n\tas we will need to introduce the latter one anyways for IPv6 support.\n\t\n\tShort term fix will be to compute m_data and m_len back to the\n\toriginal:\n\nLong-term (and more clean) fix would be to avoid modifying m_len and\n\tm_data.\nHow-To-Repeat: \n\tDue to this we KAME team encountered panic in IPsec policy management\n\tengine.  I dunno if there's any problem with normal FreeBSD.  Serious\n\tcracker may try to hand-cruft tcp data segment that contains wrong\n\ttcp header (to be uesd when \"goto findpcb\" is kicked)."
+}

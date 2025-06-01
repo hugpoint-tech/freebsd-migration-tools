@@ -1,0 +1,8 @@
+{
+ "id": 1103647,
+ "bug_id": 246597,
+ "attachment_id": 0,
+ "creation_time": "2020-05-20T09:56:14Z",
+ "creator": "patrykkotlowski@gmail.com",
+ "text": "While using mountd I noticed that if there is changes in exports file and SIGHUP sent to mountd sometimes it omits some lines. It turned out that there is race condition in mountd.c file.\n\n\t/* Expand svc_run() here so that we can call get_exportlist(). */\n\tfor (;;) {\n\t\tif (got_sighup) {\n\t\t\tget_exportlist();\n\t\t\tgot_sighup = 0; //TODO raise!!!\n\t\t}\n\t\treadfds = svc_fdset;\n\t\tswitch (select(svc_maxfd + 1, \u0026readfds, NULL, NULL, NULL)) {\n\t\tcase -1:\n\t\t\tif (errno == EINTR)\n                                continue;\n\t\t\tsyslog(LOG_ERR, \"mountd died: select: %m\");\n\t\t\texit(1);\n\t\tcase 0:\n\t\t\tcontinue;\n\t\tdefault:\n\t\t\tsvc_getreqset(\u0026readfds);\n\t\t}\n\t}\n\nIf mountd is processing get_exportlist and receives SIGHUP it will omit next SIGHUP handle.\n\nIn my opinion this loop should look like this:\n\n\t/* Expand svc_run() here so that we can call get_exportlist(). */\n\tfor (;;) {\n\t\tif (got_sighup) {\n\t\t\tgot_sighup = 0; //No race :)\n\t\t\tget_exportlist();\n\t\t}\n\t\treadfds = svc_fdset;\n\t\tswitch (select(svc_maxfd + 1, \u0026readfds, NULL, NULL, NULL)) {\n\t\tcase -1:\n\t\t\tif (errno == EINTR)\n                                continue;\n\t\t\tsyslog(LOG_ERR, \"mountd died: select: %m\");\n\t\t\texit(1);\n\t\tcase 0:\n\t\t\tcontinue;\n\t\tdefault:\n\t\t\tsvc_getreqset(\u0026readfds);\n\t\t}\n\t}\n\nI tested it in my production environment."
+}

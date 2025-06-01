@@ -1,0 +1,8 @@
+{
+ "id": 411594,
+ "bug_id": 116684,
+ "attachment_id": 0,
+ "creation_time": "2007-10-10T06:23:19Z",
+ "creator": "mgrooms@shrew.net",
+ "text": "Alejandro Pulver wrote:\n\u003e Hello.\n\u003e \n\u003e The port fails to build because modifies the filesystem (outside\n\u003e WRKDIR) before installing. The log is attached.\n\u003e \n\u003e As a reference, the ${PREFIX}/etc/settings directory seems to be used\n\u003e by Qt.\n\u003e \n\u003e Could you please investigate?\n\u003e \n\nAle,\n\nI tracked down this problem to the Qt user interface compiler ( uic ) \nwhich manipulates a plugin lock file. If you do a google search \nregarding this you will find several posts on the subject :/\n\nHere is the relevant ktrace/kdump excerpt from the build ...\n\n  95971 uic      NAMI  \"/usr/X11R6/etc/settings/qt_plugins_3.3rc\"\n  95971 uic      RET   access 0\n  95971 uic      CALL  open(0x80b3b80,0x202,0x180)\n  95971 uic      NAMI  \"/usr/X11R6/etc/settings/.qt_plugins_3.3rc.lock\"\n  95971 uic      RET   open 5\n  95971 uic      CALL  fcntl(0x5,0x9,0xbfbfd7b0)\n  95971 uic      RET   fcntl 0\n  95971 uic      CALL  open(0x80b3b80,0,0x1b6)\n  95971 uic      NAMI  \"/usr/X11R6/etc/settings/qt_plugins_3.3rc\"\n\nNot sure how I can avoid this issue as uic is part of the official qt \ndistribution, is required to build user interface components and has the \nlock file functionality built into the tool binary without any \ndocumented switch to disable the behavior.\n\nAny suggestions?\n\nThanks,\n\n-Matthew"
+}

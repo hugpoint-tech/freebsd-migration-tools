@@ -1,0 +1,8 @@
+{
+ "id": 705486,
+ "bug_id": 176636,
+ "attachment_id": 0,
+ "creation_time": "2013-03-05T10:55:22Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "Please try the following patch.\n\n--- a/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zfs_vnops.c\n+++ b/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/zfs_vnops.c\n@@ -543,7 +543,9 @@ mappedread_sf(vnode_t *vp, int nbytes, uio_t *uio)\n \t\t\tvm_page_io_finish(pp);\n \t\t\tvm_page_lock(pp);\n \t\t\tif (error) {\n-\t\t\t\tvm_page_free(pp);\n+\t\t\t\tif (pp-\u003ewire_count == 0 \u0026\u0026 pp-\u003evalid == 0 \u0026\u0026\n+\t\t\t\t    pp-\u003ebusy == 0 \u0026\u0026 !(pp-\u003eoflags \u0026 VPO_BUSY))\n+\t\t\t\t\tvm_page_free(pp);\n \t\t\t} else {\n \t\t\t\tpp-\u003evalid = VM_PAGE_BITS_ALL;\n \t\t\t\tvm_page_activate(pp);\n\nAdditionally, if possible, I would like to see the following information from\n\"Crash 3\":\n- value of 'pg' in kern_sendfile frame\n- output of 'info reg' command in zfs_freebsd_read frame\n\nThank you.\n-- \nAndriy Gapon"
+}

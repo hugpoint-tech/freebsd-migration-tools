@@ -1,0 +1,8 @@
+{
+ "id": 1154406,
+ "bug_id": 254737,
+ "attachment_id": 0,
+ "creation_time": "2021-04-03T08:38:53Z",
+ "creator": "cutesmilee.research@protonmail.com",
+ "text": "ieee80211_ioctl_set80211() can be called with ioctl() with SIOCS80211 type by root user (there's ieee80211_priv_check_vap_manage() which checks for PRIV_NET80211_VAP_MANAGE, and from my understading it's root only).\nwith i_type set to IEEE80211_IOC_MLME, ieee80211_ioctl_setmlme() will be called using user provided ireq and vap structs.\nireq-\u003ei_data (which is user controlled) is copied to a stack struct struct ieee80211req_mlme, and if (vap-\u003eiv_opmode is set to IEEE80211_M_IBSS or IEEE80211_M_AHDEMO and mlme.im_op is set to IEEE80211_MLME_ASSOC, setmlme_assoc_adhoc() will be called with mlme fields which are user controlled (mlme.im_macaddr, mlme.im_ssid_len and mlme.im_ssid).\nnow struct ieee80211_scan_req is allocated in the heap (it's 128 bytes large), and some memcpy()s are performed, the last one is the most interesting one since it copies user provided ssid, with ssid_len (which is a uint8_t so can be 255 at max) to the previously allocated struct (actually to the last field, which is a 108 bytes struct), since the size can be 255, and there're no bounds checks (just one that checks that it isn't 0) an heap overflow up to 147 bytes (255 - 108) can be triggered, and I think it's big enough to be exploited.\nat the moment I wasn’t able to make a poc."
+}

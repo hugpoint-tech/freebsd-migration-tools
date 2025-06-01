@@ -1,0 +1,8 @@
+{
+ "id": 1032491,
+ "bug_id": 233535,
+ "attachment_id": 201220,
+ "creation_time": "2019-01-17T17:27:45Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "Created attachment 201220\nFix MLD refcounting in IPv6 code (including additional debugging).\n\nHi @ae,\n\nFound one more bug. According to the logs you provided I figured out the inm leaks when entering mld_v1_process_group_timer() and looking at the version history this function should not disconnect the inm, only queue a v1_transmit.\n\nI've uploaded a new patch. Can you re-test?\n\nThank you!\n\n--HPS\n\n@@ -1488,8 +1493,7 @@ mld_v1_process_group_timer(struct in6_multi_head *inmh, struct in6_multi *in\nm)\n        case MLD_REPORTING_MEMBER:\n                if (report_timer_expired) {\n                        inm-\u003ein6m_state = MLD_IDLE_MEMBER;\n-                       in6m_disconnect(inm);\n-                       in6m_rele_locked(inmh, inm);\n+                       SLIST_INSERT_HEAD(inmh, inm, in6m_nrele);"
+}

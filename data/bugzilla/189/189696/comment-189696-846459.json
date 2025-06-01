@@ -1,0 +1,8 @@
+{
+ "id": 846459,
+ "bug_id": 189696,
+ "attachment_id": 0,
+ "creation_time": "2015-10-29T21:20:51Z",
+ "creator": "dteske@FreeBSD.org",
+ "text": "Fixed in HEAD. See SVN r290163. Will merge to stable/10 and stable/9 after 3-day minimum MFC requirement.\n\nNote to Denis...\nYou can't use grep (nor egrep) in these boot scripts. Reason being two-fold:\n1. grep/egrep is in /usr/bin\n2. The mdconfig boot script runs before filesystems are mounted (see below)\n\n$ rcorder /etc/rc.d/* 2\u003e /dev/null | grep -n '\\(FILE\\|mount\\|mdc\\)'\n14:/etc/rc.d/mdconfig\n16:/etc/rc.d/mountcritlocal\n20:/etc/rc.d/FILESYSTEMS\n60:/etc/rc.d/mountcritremote\n63:/etc/rc.d/mdconfig2\n103:/etc/rc.d/mountd\n120:/etc/rc.d/mountlate\n\nNOTE: mountcritlocal is the script that mounts /usr/bin on systems that have legacy partitioning (e.g., UFS with separate /, /usr, /var, and /tmp bsdlabels).\n\nNOTE: In the situation where /usr/bin is part of /, you won't see the problem with using grep/egrep in the mdconfig boot script.\n\nNote to OP...\nOriginal patch could be fooled into thinking mdconfig_md0_setting8 was a unit to allocate (wherein mdconfig would attempt to allocate md0_setting8; the patch in committed SVN rev is not fooled by this and would skip md0_setting8 but catch the mdconfig_md0 setting to cause allocation of md0)."
+}

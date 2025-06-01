@@ -1,0 +1,8 @@
+{
+ "id": 821961,
+ "bug_id": 199174,
+ "attachment_id": 0,
+ "creation_time": "2015-05-01T22:22:03Z",
+ "creator": "david.keller@litchis.fr",
+ "text": "Intel device Errata 17 (http://www.intel.fr/content/dam/www/public/us/en/documents/specification-updates/82574-gbe-controller-spec-update.pdf) says:\n\n\u003e When using TSO, a situation can occur where a PCIe MRd request is repeated with \n\u003e the same address, resulting in data corruption. At the end of the TCP packet, \n\u003e the Tx DMA hangs because the length doesn't match. This can only occur when \n\u003e the following are true:\n\u003e * The first buffer of the packet is larger than [3 * (max_read_request - 4)].\n\u003e * There is a 4 KB boundary within 64 bytes following the end of the header bytes in\n\u003e   the buffer\n\nOn my device, PCIe max_read_request is 512. Hence first buffer has to be \u003c= 1524.\nInterface mtu is 9000.\n\nHence it seems to me that the first buffer can be greater than the 1524 if the \nFreeBSD stack doesn't split header into a dedicated mbuf\n\nThe dma alignement requirement is not met on bus_dma_tag_create() where alignement \nargument is 1. (https://svnweb.freebsd.org/base/head/sys/dev/e1000/if_em.c?view=markup#l3260).\n\nMaybe bus_dma_tag_create() should use an alignement of 128 bytes as explained in \nerrata:\n\n\u003e The alignment of the buffer containing the headers should be such that there is no \n\u003e 4 KB boundary within 64 bytes following the end of the header bytes. Assuming \n\u003e standard \u003e Ethernet/IP/TCP headers of 54 bytes, this means that the buffer should \n\u003e not start 54-118 bytes before a 4 KB boundary. For example, 128-byte alignment \n\u003e for this buffer could be used to fulfill this condition"
+}

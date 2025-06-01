@@ -1,0 +1,8 @@
+{
+ "id": 1277967,
+ "bug_id": 273715,
+ "attachment_id": 0,
+ "creation_time": "2023-10-02T16:40:45Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "A minimal snip to repeat this bug:\n\n```\n# dumpon -i 0 -c 192.168.255.3 -g 192.168.255.1 -s 192.168.255.1 nonexist\n```\n\n\u003e I see various options how to resolve this:\n\n\u003e 1. Always allow using the physical device name (so it would somehow poke around and find it)\n\u003e 2. Add a flag to dumpon (e.g., `-f` for force) to skip the device exists/device supports debugnet check\n\u003e 3. Allow specifying multiple devices netdump_client to try when dumping\n\u003e 4. Determine based on the device name if it can exist early (feels wonky)\n\nThe `dumpon` start quite early, even before `FILESYSTEMS`. At that time `netif` (interface renaming) has no chances to run.\n\nI guess it is intended to let dumpon run as early as possible so that almost all kernel panics can be caught rightly.\n\nWell for netdump(4), if a pubkey is requested, then dumpon requires `FILESYSTEMS`.\n\nI guess we want to defer the setup of netdump(4), until `FILESYSTEMS` (probably also `netif`) is/are ready.\n\nOr we can split the rc.d/dumpon into `rc.d/dumpon` and `rc.d/netdump`."
+}

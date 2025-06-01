@@ -1,0 +1,8 @@
+{
+ "id": 1240202,
+ "bug_id": 268497,
+ "attachment_id": 0,
+ "creation_time": "2022-12-21T02:04:22Z",
+ "creator": "nicholas.h.briggs@gmail.com",
+ "text": "This appears to be a variant of #254714 coming back to life with clang15 -- Compiling\n\n  int foo(void) { return isfinite(1.0f); }\n\nwith\n\n  clang15  -c isfinitetest.c -o isfinitetest.o\n\ngenerates\n\n% clang15  -c isfinitetest.c -o isfinitetest.o \nisfinitetest.c:2:24: warning: due to lvalue conversion of the controlling expression, association of type 'volatile float' will never be selected because it is qualified [-Wunreachable-code-generic-assoc]\nint foo(void) { return isfinite(1.0f); }\n                       ^\n/usr/include/math.h:110:21: note: expanded from macro 'isfinite'\n#define isfinite(x) __fp_type_select(x, __isfinitef, __isfinite, __isfinitel)\n                    ^\n/usr/include/math.h:85:14: note: expanded from macro '__fp_type_select'\n    volatile float: f(x),                                               \\\n             ^\n\n(and so on for 8 more errors with all combinations of (volatile, const) x (float, double))\n\nThis was not an issue with clang 13, but clang 15 introduced -Wunreachable-code-generic-assoc and enabled it by default."
+}

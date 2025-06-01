@@ -1,0 +1,8 @@
+{
+ "id": 518283,
+ "bug_id": 138526,
+ "attachment_id": 0,
+ "creation_time": "2009-09-04T11:10:05Z",
+ "creator": "Petr.Salinger@seznam.cz",
+ "text": "/dev/null does not support nonblocking operation, \nfcntl(0,F_SETFL,O_NONBLOCK) fails\n\nThe testsuite of coreutils 7.5 fails due to this.\n\nIt is related also to \nhttp://www.freebsd.org/cgi/query-pr.cgi?pr=standards/94729\n\nI see no reason, why /dev/null and /dev/zero should operate differently\nin blocking and non-blocking mode, it should be sufficient to just ignore\ncorresponding ioctl/fcntl in kernel.\n\nFix: \n\nIn src/sys/dev/null/null.c\nadd #include \u003csys/filio.h\u003e\n\nand into begining of null_ioctl() function\n\n+       if (cmd == FIONBIO)\n+               return 0;\n+       if ((cmd == FIOASYNC) \u0026\u0026 ((*(int *)data) == 0))\n+               return 0;\n\nMay be even \n\n+       if (cmd == FIONBIO)\n+               return 0;\n+       if (cmd == FIOASYNC)\n+               return 0;"
+}

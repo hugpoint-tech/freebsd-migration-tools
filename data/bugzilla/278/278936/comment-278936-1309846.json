@@ -1,0 +1,8 @@
+{
+ "id": 1309846,
+ "bug_id": 278936,
+ "attachment_id": 0,
+ "creation_time": "2024-05-20T13:29:41Z",
+ "creator": "rbranco@suse.com",
+ "text": "I managed to crash -STABLE (didn't try -RELEASE) like this:\n\n$ sudo mount -t mqueuefs none /mnt\n\n$ touch /mnt/{1..101}  # Needs Bash I think\ntouch: /mnt/101: Resource temporarily unavailable\n\n$ sysctl kern.mqueue\nkern.mqueue.curmq: 100\nkern.mqueue.maxmq: 100\nkern.mqueue.maxmsgsize: 16384\nkern.mqueue.maxmsg: 100\n\n$ rm -f /mnt/*\n\n$ sysctl kern.mqueue\nkern.mqueue.curmq: 0\nkern.mqueue.maxmq: 100\nkern.mqueue.maxmsgsize: 16384\nkern.mqueue.maxmsg: 100\n\n$ for i in {1..101} ; do posixmqcontrol create -d /$i -s 1 -d 1; done\nposixmqcontrol: mq_open(create): Too many open files in system\n\n$ rm -f /mnt/*\n\n\n\nPOSIX message queues seem broken on FreeBSD. There's no limit per-user. I tried this on Linux and it only allowed me to create only 10 messages queues as user, without limiting root."
+}

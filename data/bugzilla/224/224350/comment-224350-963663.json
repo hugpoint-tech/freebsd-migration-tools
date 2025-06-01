@@ -1,0 +1,8 @@
+{
+ "id": 963663,
+ "bug_id": 224350,
+ "attachment_id": 0,
+ "creation_time": "2017-12-15T04:12:14Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: jhibbits\nDate: Fri Dec 15 04:11:20 UTC 2017\nNew revision: 326870\nURL: https://svnweb.freebsd.org/changeset/base/326870\n\nLog:\n  Handle the Facility Unavailable exception as a SIGILL\n\n  Currently Facility Unavailable is absent and once an application\n  tries to use or access a register from a feature disabled in the\n  CPU it causes a kernel panic.\n\n  A simple test-case is:\n\n  int main() { asm volatile (\"tbegin.;\"); }\n\n  which will use TM (Hardware Transactional Memory) feature which\n  is not supported by the kernel and so will trigger the following\n  kernel panic:\n\n  ----\n\n  fatal user trap:\n\n      exception       = 0xf60 (unknown)\n      srr0            = 0x10000890\n      srr1            = 0x800000000000f032\n      lr              = 0x100004e4\n      curthread       = 0x5f93000\n      pid = 1021, comm = htm\n\n  panic: unknown trap\n  cpuid = 40\n  KDB: stack backtrace:\n  Uptime: 3m18s\n  Dumping 10 MB (3 chunks)\n      chunk 0: 11MB (2648 pages) ... ok\n      chunk 1: 1MB (24 pages) ... ok\n      chunk 2: 1MB (2 pages)panic: IOMMU mapping error: -4\n\n  cpuid = 40\n  Uptime: 3m18s\n\n  ----\n\n  Since Hardware Transactional Memory is not yet supported by FreeBSD, treat\n  this as an illegal instruction.\n\n  PR:\t\t224350\n  Submitted by:\tGustavo Romero \u003cgromero_AT_ibm_DOT_com\u003e\n  MFC after:\t2 weeks\n\nChanges:\n  head/sys/powerpc/include/trap.h\n  head/sys/powerpc/powerpc/trap.c"
+}

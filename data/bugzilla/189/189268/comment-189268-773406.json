@@ -1,0 +1,8 @@
+{
+ "id": 773406,
+ "bug_id": 189268,
+ "attachment_id": 0,
+ "creation_time": "2014-07-15T17:34:50Z",
+ "creator": "dreamcat4@gmail.com",
+ "text": "(In reply to Benjamin Kaduk from comment #12)\n\u003e (In reply to dreamcat4 from comment #11)\n\u003e No, this is still incorrect.  The point I was making, is that the ai_addr\n\u003e field must be cast to the type 'struct sockaddr_in6 *' (note the '6') when\n\u003e it is in the INET6 family.  Your code is still using 'struct sockaddr_in *',\n\u003e which is incorrect.\n\nThanks Ben! I am pleased to say that with that change, the new version of 'test.c' and test result you can see here:\n\nhttps://gist.github.com/dreamcat4/86706bba25c468fc0ecc\n\nSo this proves that there is no bug in getaddrinfo. My bug report is invalid. This also proves there is definitely some bug in GSOAP library (which the previous version of this 'test.c' program was exactly reproducing).\n\nMany thanks.\n\nBug is on GSOAP. As previously stated in my very 1st comment:\n\n\nstdsoap2.cpp:4143:\n  err = getaddrinfo(host, soap_int2s(soap, port), \u0026hints, \u0026addrinfo);\n\nIs passing in \"localhost\", is told \"0.0.0.0\". Then later on in soap_bind(), the returned address \"0.0.0.0\" is passed into bind(). And bind() then binds to ALL interfaces. \n\nWe can see as of today, comparing before and after, the '0.0.0.0' is occur because incorrect cast of structure members. When the INET6 structure actually contain '::1' ipv6 address for localhost.\n\nAppreciate this. It clarifies the issue totally."
+}

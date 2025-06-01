@@ -1,0 +1,8 @@
+{
+ "id": 1241621,
+ "bug_id": 268702,
+ "attachment_id": 239189,
+ "creation_time": "2023-01-02T05:06:41Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 239189\nv1 (apply via \"git am\")\n\nAfter bug 227509 Wayland is supposed to be enabled by default to make binary package(s) usable for more users (aka \"batteries included\"). Blender uses dlopen() via WITH_GHOST_WAYLAND_DYNLOAD for Wayland support, so there would be no extra dependencies... except libxkbcommon.\n\n\"poudriere bulk -t\" passed on 12.3/13.1 amd64. Runtime tested inside 12.3/13.1 jails on 14.0 host under Sway with X11/Wayland/DBus sockets passed through.\n\nTo test Wayland support from X11 (Xorg) comfort zone:\n\n$ pkg install cage blender\n$ export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR=/tmp}\n$ cage -d env -u DISPLAY blender \u0026\n$ sockstat -cu | (read h; echo \"$h\"; fgrep blender)\nUSER     COMMAND    PID   FD  PROTO  LOCAL ADDRESS         FOREIGN ADDRESS\nfoo      blender-bi 1234  3   stream -\u003e /tmp/wayland-0\nfoo      blender-bi 1234  6   stream -\u003e /tmp/pulse/native\n\nNote, on NVIDIA without nvidia-drm.ko (for DMABUF) GPU acceleration may not work, so set WLR_RENDERER=pixman for Cage to use more efficient software rendering.\nNote2, Cage is minimalistic and doesn't require configuration. Other Wayland compositors can also run from X11, see \"pkg rquery %ro wlroots wlroots015\" for a list.\nNote3, \"env -u DISPLAY\" force-disables X11 connection. DISPLAY is path to X11 socket, by default under /tmp/.X11-unix; WAYLAND_DISPLAY is a path to Wayland socket, by default under XDG_RUNTIME_DIR.\n\nDisclaimer: I don't use Blender, so my runtime testing maybe superficial."
+}

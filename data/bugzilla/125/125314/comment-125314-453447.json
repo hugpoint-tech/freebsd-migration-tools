@@ -1,0 +1,8 @@
+{
+ "id": 453447,
+ "bug_id": 125314,
+ "attachment_id": 0,
+ "creation_time": "2008-07-06T11:14:46Z",
+ "creator": "gonzo@FreeBSD.org",
+ "text": "    It looks like stack exhaustion to me. Try following patch:\n\n=== sys/netgraph/ng_iface.c\n==================================================================\n--- sys/netgraph/ng_iface.c\t(revision 180269)\n+++ sys/netgraph/ng_iface.c\t(local)\n@@ -755,7 +755,7 @@\n \t/* First chunk of an mbuf contains good junk */\n \tif (harvest.point_to_point)\n \t\trandom_harvest(m, 16, 3, 0, RANDOM_NET);\n-\tnetisr_dispatch(isr, m);\n+\tnetisr_queue(isr, m);\n \treturn (0);\n }\n \n=== sys/netgraph/ng_ip_input.c\n==================================================================\n--- sys/netgraph/ng_ip_input.c\t(revision 180269)\n+++ sys/netgraph/ng_ip_input.c\t(local)\n@@ -120,7 +120,7 @@\n \n \tNGI_GET_M(item, m);\n \tNG_FREE_ITEM(item);\n-\tnetisr_dispatch(NETISR_IP, m);\n+\tnetisr_queue(NETISR_IP, m);\n \treturn 0;\n }\n \n-- \ngonzo"
+}

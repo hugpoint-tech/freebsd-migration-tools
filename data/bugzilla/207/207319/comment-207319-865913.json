@@ -1,0 +1,8 @@
+{
+ "id": 865913,
+ "bug_id": 207319,
+ "attachment_id": 0,
+ "creation_time": "2016-02-18T23:38:54Z",
+ "creator": "Mammootty.Muthira@emc.com",
+ "text": "I have been doing stress testing with SPECSFS on AWS with SRIOV feature with ixv driver and getting into issues. Further debugging showed this problem in the driver.\n\nWhen mbuf chain in the ixgbe_xmit() path contains large number of segments, mapping for dma through bus_dmamap_load_mbuf_sg() will fail with EFBIG and will try the mapping after m_defrag(). If the total size of the data is more than 64K mapping will fail again and ixgbe_xmit() will fail. This failed packet will be put back to the queue and the xmit failure and retry will continue indefinitely.\n\nProposed fix is to drop the packet when mapping fails with EFBIG after defragmentation.\n\n\ndiff --git a/sys/dev/ixgbe/ix_txrx.c b/sys/dev/ixgbe/ix_txrx.c\nindex 35c1ddd..d9254e2 100644\n--- a/sys/dev/ixgbe/ix_txrx.c\n+++ b/sys/dev/ixgbe/ix_txrx.c\n@@ -389,8 +389,11 @@ retry:\n                                }\n                                *m_headp = m;\n                                goto retry;\n-                       } else\n-                               return (error);\n+                       }\n+                       txr-\u003eno_tx_dma_setup++;\n+                       m_freem(*m_headp);\n+                       *m_headp = NULL;\n+                       return (error);\n                case ENOMEM:\n                        txr-\u003eno_tx_dma_setup++;\n                        return (error);"
+}

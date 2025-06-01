@@ -1,0 +1,8 @@
+{
+ "id": 1100776,
+ "bug_id": 246206,
+ "attachment_id": 214136,
+ "creation_time": "2020-05-05T01:42:48Z",
+ "creator": "kevinz5000@gmail.com",
+ "text": "Created attachment 214136\nDemonstration of issue\n\nIn sys/soundcard.h, PCM_CAP_VIRTUAL is documented as \"Virtual device\":\n\n#\tdefine PCM_CAP_VIRTUAL\t\t0x00040000\t/* Virtual device */\n\nWhen SNDCTL_AUDIOINFO is called on /dev/mixer, no virtual devices have have PCM_CAP_VIRTUAL set. This means, apart from being smart, consumers of the OSS4 API can't tell virtual devices from real devices. This leads to a confusing choice in, say, audio programs that allow selection of vchans.\n\nA short example program that demonstrates the issue is attached. Example output on my computer is:\n\n$ clang vpctest.c -o vpctest\n$ ./vpctest\ndev /dev/dsp0.p0        virtual 0\ndev /dev/dsp0.vp0       virtual 0\ndev /dev/dsp0.vp1       virtual 0\ndev /dev/dsp0.r0        virtual 0\ndev /dev/dsp0.vr0       virtual 0\ndev /dev/dsp0.vr1       virtual 0\n\nThe vp* and vr* devices are virtual, but PCM_CAP_VIRTUAL is not set.\n\nThe root cause of this issue appears to be in dev/sound/pcm/dsp.c:\n\n\tai-\u003ecaps = PCM_CAP_REALTIME | PCM_CAP_MMAP | PCM_CAP_TRIGGER | CHANNEL_GETCAPS(ch)\n\t\t((ch-\u003edirection == PCMDIR_PLAY) ? PCM_CAP_OUTPUT : PCM_CAP_INPUT);\n\nMost notably, PCM_CAP_VIRTUAL is never set. Further, the channel capabilities queried earlier:\n\ncaps = chn_getcaps(ch);\n\nDo not appear to be used, either.\n\nI suggest that virtual channels return PCM_CAP_VIRTUAL in vchan_getcaps() (dev/sound/pcm/vchan.c), and then channel capabilities get OR'ed into ai-\u003ecaps."
+}

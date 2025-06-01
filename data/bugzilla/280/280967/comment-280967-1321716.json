@@ -1,0 +1,8 @@
+{
+ "id": 1321716,
+ "bug_id": 280967,
+ "attachment_id": 252976,
+ "creation_time": "2024-08-21T05:58:47Z",
+ "creator": "john@jmarshall.id.au",
+ "text": "Created attachment 252976\n[PATCH] Silence rc script warning unless dovecot_enable = YES\n\nIf the dovecot rc script cannot find a dovecot configuration file, it will complain - even if there are no dovecot_* variables defined in rc.conf (or friends).\n\n----------------\nrwsrv08# service dovecot rcvar\n==Error==\nConfig file /local/etc/dovecot/dovecot.conf does not exist. If this is\na new installation, please create the config files as outlined in\n\t# pkg info -D dovecot\n# dovecot\n#\ndovecot_enable=\"NO\"\n#   (default: \"\")\n----------------\n\nI don't see the point of complaining loudly about a missing configuration file unless the user is trying to start the product.\n\nThe attached patch skips emitting the missing file warning unless:\n - dovecot_enable = YES; or\n - $1 = onestart.\n\n[I build dovecot on the base system, package it, and install that package in a jail. I don't have it configured to run on the base system. It irritates me seeing that warning message whenever I boot the base system.]\n\nWITH PATCH APPLIED\n------------------\nrwsrv08# service dovecot rcvar\n# dovecot\n#\ndovecot_enable=\"NO\"\n#   (default: \"\")\n\nrwsrv08# \nrwsrv08# \nrwsrv08# service dovecot onestart\n==Error==\nConfig file /local/etc/dovecot/dovecot.conf does not exist. If this is\na new installation, please create the config files as outlined in\n\t# pkg info -D dovecot\n/usr/local/etc/rc.d/dovecot: WARNING: /local/etc/dovecot/dovecot.conf is not readable.\n/usr/local/etc/rc.d/dovecot: WARNING: failed precmd routine for dovecot\nrwsrv08# \n------------------\n\nThank you for maintaining this port."
+}

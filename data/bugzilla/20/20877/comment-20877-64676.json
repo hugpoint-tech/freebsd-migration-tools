@@ -1,0 +1,8 @@
+{
+ "id": 64676,
+ "bug_id": 20877,
+ "attachment_id": 0,
+ "creation_time": "2000-08-27T02:40:01Z",
+ "creator": "volf@oasis.IAEhv.nl",
+ "text": "\nWhen a UDP packet is send to a port that is unreachable (which is a common \nfeature used in e.g. traceroute) an ICMP error message is returned (icmp \nport unreachable) which includes (part of) the original IP packet.\n\nThe problem is that this (part of) the original IP packet is not completely\ncorrect. The ip_id field is not in network byte order (in ip_input(), ip_id\nis translated to host byte order), but this is never reverted before the\nIP packet is send to icmp_error for generation of the ICMP error message.\nThe following patch (relative to 4.1 stable source code) fixes the problem:\n\nIndex: udp_usrreq.c\n===================================================================\nRCS file: /home2/CVS/src/sys/netinet/udp_usrreq.c,v\nretrieving revision 1.64.2.3\ndiff -u -u -r1.64.2.3 udp_usrreq.c\n--- udp_usrreq.c\t2000/08/03 00:09:36\t1.64.2.3\n+++ udp_usrreq.c\t2000/08/27 01:02:35\n@@ -358,8 +358,10 @@\n \t\tif (badport_bandlim(0) \u003c 0)\n \t\t\tgoto bad;\n #endif\n-\t\tif (!blackhole)\n+\t\tif (!blackhole) {\n+\t\t\tHTONS(ip-\u003eip_id);\n \t\t\ticmp_error(m, ICMP_UNREACH, ICMP_UNREACH_PORT, 0, 0);\n+\t\t}\n \t\telse\n \t\t\tgoto bad;\n \t\treturn;\n\n\nPlease commit this patch to the FreeBSD source code repository.\n\nMany thanks,\n\n               Frank"
+}

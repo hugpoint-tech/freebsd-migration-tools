@@ -1,0 +1,8 @@
+{
+ "id": 1129010,
+ "bug_id": 250707,
+ "attachment_id": 0,
+ "creation_time": "2020-10-29T04:26:11Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "I have a reproducer without rspamd:\n\n#include \u003clua.h\u003e\n#include \u003clauxlib.h\u003e\n\nint main(void)\n{\n    lua_State *L = luaL_newstate();\n    if (!luaL_loadstring(L, \"error([[foo!]])\"))\n        lua_pcall(L, 0, 0, 0);\n    return 0;\n}\n\ncc -g -I/usr/local/include/luajit-2.0 luaexc.c -L/usr/local/lib -lluajit-5.1\n\nThis segfaults if built against the 12.1-built luajit package, even when building on 12.2. But it works fine if built against a 12.2-built luajit.\n\nThe problem here is an alignment restriction on the _Unwind_Exception structure. The compiler (both on 12.1 and 12.2) and luajit itself declare this structure to require 16-byte alignment, but for whatever reason, the 12.1 build when running on 12.2 is getting an alignment of only 8 bytes from the thread-local storage pointer returned by __tls_get_addr. The misalignment causes a bus error when a Lua error is thrown. When luajit is rebuilt on 12.2, the alignment is correct.\n\nPossibly relevantly, this is an entry from objdump of the program headers of the 12.1-built libluajit.so:\n\n     TLS off    0x0000000000084578 vaddr 0x0000000000084580 paddr 0x0000000000084580 align 2**4\n         filesz 0x0000000000000000 memsz 0x0000000000000020 flags r--\n\nnotice the offset is not 16-byte aligned, I have no idea if this even matters, while the 12.2-built one has this:\n\n     TLS off    0x0000000000082470 vaddr 0x0000000000083470 paddr 0x0000000000083470 align 2**4\n         filesz 0x0000000000000000 memsz 0x0000000000000020 flags r--"
+}

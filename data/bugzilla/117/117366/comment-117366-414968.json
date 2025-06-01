@@ -1,0 +1,8 @@
+{
+ "id": 414968,
+ "bug_id": 117366,
+ "attachment_id": 0,
+ "creation_time": "2007-10-29T06:17:59Z",
+ "creator": "emil@cs.rmit.edu.au",
+ "text": "This has been bugging me for a while also.  I would like to contribute a\ndata point:\n\nFreeBSD 7.0-BETA1 (RELENG_7 as of last week) on i386.\nHP xw4200 workstation, usbdevs -v reports:\n[...]\nController /dev/usb2:\naddr 1: full speed, self powered, config 1, UHCI root hub(0x0000), Intel(0x0000), rev 1.00\n port 1 addr 2: low speed, power 100 mA, config 1, HP Basic USB Keyboard(0x0024), CHICONY(0x03f0), rev 3.00\n[...]\n\nI have similar symptoms to Bruce although different (but still wrong)\ncombination of LEDs on.\n\nThe no-async one-line patch suggested by Alexander Stepanov seems to\ncure the problem.\n\nAs does 'set hint.atkbd.0.disabled=\"1\"' at the loader prompt (without\nthe async patch)\n\nInstrumenting bits of kbdmux, ukbd and atkbd suggests that, without the\nabove hint, when I hit NumLock, roughly the following happens:\n\nkbdmux_ioctl cmd=KDSETLED, arg=2\nukbd:set_leds leds=1\natkbd_ioctl cmd=KDSETLED, arg=2\n\nHitting NumLock again to turn it off:\n\nkbdmux_ioctl cmd=KDSETLED, arg=0\nukbd:set_leds leds=0\natkbd_ioctl cmd=KDSETLED, arg=0\n\nIn atkbd_ioctl(), KBD_HAS_DEVICE(kbd) evaluates to false, so write_kbd()\nisn't called.  I'm not sure which code path is disabled by the hint that\nmakes the LEDs behave.\n\nRegardless of whether NumLock is on or off, the LEDs on the keyboard\nshow Caps is on and Num and Scroll are off.  This probably doesn't mean\nmuch.\n\nThis is all on the text console.  I haven't tried X11 yet on this\nworkstation.\n\n--Emil"
+}

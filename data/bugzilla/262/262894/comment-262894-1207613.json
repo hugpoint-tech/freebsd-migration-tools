@@ -1,0 +1,8 @@
+{
+ "id": 1207613,
+ "bug_id": 262894,
+ "attachment_id": 0,
+ "creation_time": "2022-04-18T21:58:18Z",
+ "creator": "mav@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #28)\nWhile it seems like a good catch on a first look, I doubt it is exploitable.  The code uses unmapped I/O only if all boundaries within the ABD except the first and the last are page aligned.  The case of \"addr \u0026 PAGE_MASK is 2048 and len is 4096\" can fit into this only if it is the only chunk in ABD, but then it should be a linear buffer, not requiring unmapped I/O.  Fitting case of addr \u0026 PAGE_MASK is 2048 and len is 6144 should work fine, producing two pages.\n\nPlus TrueNAS for many years uses ashift=12, which means all offsets in RAIDZ and gang blocks should be multiple of 4K and so page-aligned on x86.\n\nBut still, just in case, what would you say about this patch:\n\ndiff --git a/module/os/freebsd/zfs/vdev_geom.c b/module/os/freebsd/zfs/vdev_geom.c\nindex 2ef4811a8..5447eb922 100644\n--- a/module/os/freebsd/zfs/vdev_geom.c\n+++ b/module/os/freebsd/zfs/vdev_geom.c\n@@ -1132,8 +1132,12 @@ vdev_geom_fill_unmap_cb(void *buf, size_t len, void *priv)\n        vm_offset_t addr = (vm_offset_t)buf;\n        vm_offset_t end = addr + len;\n \n-       if (bp-\u003ebio_ma_n == 0)\n+       if (bp-\u003ebio_ma_n == 0) {\n                bp-\u003ebio_ma_offset = addr \u0026 PAGE_MASK;\n+               addr \u0026= ~PAGE_MASK;\n+       } else {\n+               ASSERT0(P2PHASE(addr, PAGE_SIZE));\n+       }\n        do {\n                bp-\u003ebio_ma[bp-\u003ebio_ma_n++] =\n                    PHYS_TO_VM_PAGE(pmap_kextract(addr));"
+}

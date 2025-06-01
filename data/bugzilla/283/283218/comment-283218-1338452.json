@@ -1,0 +1,8 @@
+{
+ "id": 1338452,
+ "bug_id": 283218,
+ "attachment_id": 0,
+ "creation_time": "2024-12-09T20:56:35Z",
+ "creator": "mav@FreeBSD.org",
+ "text": "The panic is related to block cloning.  That is why in your test you mention that image must be copied at least once.  The mentioned merge commit though 7a7741af18d6c8a804cc643cb7ecda9d730c6aa6 is from October 11, after which I rewritten the block cloning quite significantly, and the panic provided can not apply to that version. So it would be good to know what exactly version you are testing.\n\nMeanwhile, if we ignore the revision specified and assume that you are running latest main, then I think there might be a race when pool that had nothing cloned before getting something cloned and within same transaction group something else deleted withing the same 16MB disk blocks.  This patch might address the issue:\n\n--- a/sys/contrib/openzfs/module/zfs/brt.c\n+++ b/sys/contrib/openzfs/module/zfs/brt.c\n@@ -859,6 +859,9 @@ brt_entry_lookup(brt_vdev_t *brtvd, brt_entry_t *bre)\n {\n        uint64_t off = BRE_OFFSET(bre);\n \n+       if (brtvd-\u003ebv_mos_entries == 0)\n+               return (SET_ERROR(ENOENT));\n+\n        return (zap_lookup_uint64_by_dnode(brtvd-\u003ebv_mos_entries_dnode,\n            \u0026off, BRT_KEY_WORDS, 1, sizeof (bre-\u003ebre_count), \u0026bre-\u003ebre_count));\n }\n\nPlease let me know how it goes, so that I could upstream it."
+}

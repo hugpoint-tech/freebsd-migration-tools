@@ -1,0 +1,8 @@
+{
+ "id": 1080738,
+ "bug_id": 242841,
+ "attachment_id": 0,
+ "creation_time": "2019-12-23T20:08:45Z",
+ "creator": "cperciva@FreeBSD.org",
+ "text": "This is admittedly partly a case of \"don't do that\" (I tripped over it due to a bug in code I was writing), but it seems like the kernel should handle it a bit more gracefully.\n\nIf you:\n\n1. Create a tun device (via SIOCIFCREATE),\n2. Open the tun device (via open(\"/dev/tun#\")), and then\n3. Attempt to destroy the tun device (via SIOCIFDESTROY),\n\nthe SIOCIFDESTROY ioctl will block on tun_condvar until the last file descriptor holding the device open has been closed.  Generally sensible... except that the file descriptor in question is owned by the process which called the ioctl, and it's stuck inside the kernel now and will never be able to close the device.  This results in a process which cannot be killed.\n\nA better solution might be to detect when the process calling SIOCIFDESTROY is the same as the process which owns the tunnel device, and return an error (maybe EBUSY) rather than blocking indefinitely."
+}

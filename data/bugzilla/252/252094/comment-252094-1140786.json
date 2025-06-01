@@ -1,0 +1,8 @@
+{
+ "id": 1140786,
+ "bug_id": 252094,
+ "attachment_id": 0,
+ "creation_time": "2021-01-09T16:29:06Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Viktor Dukhovni from comment #13)\nThanks.  At the end of both files_group() and compat_group() we have some confusing code:\n\nif (st-\u003efp != NULL \u0026\u0026 how != nss_lt_all)\n    fseeko(st-\u003efp, pos, SEEK_SET);\nif (rv == NS_SUCCESS \u0026\u0026 retval != NULL)\n    *(struct group **)retval = grp;\nelse if (rv == NS_RETURN \u0026\u0026 *errnop == ERANGE \u0026\u0026 st-\u003efp != NULL)\n    fseeko(st-\u003efp, pos, SEEK_SET);\n\nSo if we're doing a name or gid lookup and the caller-provided buffer is not large enough to store the result, we'll seek twice.  This seems to be a minor issue though.\n\nI think the original problem with interleaved getgrent_r() and getgr(gid|name)_r() calls is also not solved, since in the latter case we will close st-\u003efp if stayopen == 0.  I suspect the close should be conditional on \"fresh \u0026\u0026 how != nss_lt_all \u0026\u0026 !stayopen\"."
+}

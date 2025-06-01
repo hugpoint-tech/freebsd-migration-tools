@@ -1,0 +1,8 @@
+{
+ "id": 615322,
+ "bug_id": 157946,
+ "attachment_id": 0,
+ "creation_time": "2011-06-17T14:10:09Z",
+ "creator": "ihmccreery@gmail.com",
+ "text": "Running FreeBSD with auditing turned on, and flags and naflags both set\nto 'all' (in /etc/security/audit_control).  I'm getting two very similar\nmessages:\n\n   BSM conversion requested for unknown event 43143\n\nand\n\n   BSM conversion requested for unknown event 43196\n\nThe first occurs whenever I ssh into the server (which succeeds), and\nthe second crops up when doing ls -l.  I and some coworkers have looked\nthrough the source, and it seems that both are occuring because syscalls\nare falling through in /sys/security/audit/audit_bsm.c (from the source).\nNeither number nor its label as defined in /etc/security/audit_event\n(43143=AUE_CLOSEFROM and 43196=AUE_LPATHCONF) show up in a search of\naudit_bsm.c.\n\nFix: \n\nIt seems that the source in /sys/security/audit/audit_bsm.c prints this\nmessage if an audit request falls through (to line 1585) in the big switch\nstatement in the file.  Perhaps it is missing these two cases.\nHow-To-Repeat: Configure auditing as follows in /etc/security/audit_control:\n\ndir:/var/audit\nflags:all\nminfree:5\nnaflags:all\npolicy:all\nfilesz:2M\nexpire-after:10M\n\nTurn on auditing by running '/etc/rc.d/auditd start'.\n\nRunning 'ls -l' should give an error (43196), as should ssh-ing into\nthe machine (43143)."
+}

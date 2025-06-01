@@ -1,0 +1,8 @@
+{
+ "id": 371338,
+ "bug_id": 108020,
+ "attachment_id": 0,
+ "creation_time": "2007-01-16T21:50:21Z",
+ "creator": "bjoern@cs.tu-berlin.de",
+ "text": "I reviewed the code of comsat (/usr/src/libexec/comsat/comsat.c).\n\nThere are two potential problems in function jkfprintf():\n\n[...]\n        /* Set effective uid to user in case mail drop is on nfs */\n        if ((p = getpwnam(user)) != NULL)\n                (void) setuid(p-\u003epw_uid);\n[...]\n\n1) If getpwnam() fails the function is continued without dropping privileges.\n2) The return value of setuid() is not checked. The manual page says that\n   setuid() could only fail for non-root. Anyway, it's no good style to\n   ignore the result of setuid().\n\nFix: \n\ngetpwnam problem:\nI suggest to return function jkfprintf() if getpwnam() fails.\n\nsetuid problem:\nI suggest to return function jkfprintf() if getpwnam() fails and if getuid()\nreturns 0 (root). The check for user root may not be necessary since normal\nusers can not really switch the uid with setuid() if the program is not\ninstalled with set-uid (as far as I know).\n\nI could help with a patch and with testing.\nHow-To-Repeat: Faked comsat requests could be generated with \"nc\" (netcat). A \"bad\" user\ncould send non-existing user names (getpwnam() will fail and setuid() will\nnot be called). He could also send file names which should not be readable\nby the user with receives the biff messages. \n\nnetcat could be used this way (tested with netcat from ports collection):\n\n$ /usr/local/bin/nc -u localhost 512\nuser@0:/some/file\nControl-c\n(Mail for \"user\", offset byte 0, mailbox \"/some/file\")"
+}

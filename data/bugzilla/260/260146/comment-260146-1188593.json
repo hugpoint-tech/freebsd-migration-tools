@@ -1,0 +1,8 @@
+{
+ "id": 1188593,
+ "bug_id": 260146,
+ "attachment_id": 0,
+ "creation_time": "2021-12-01T12:53:14Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Hmm, looks like you are using NFSv3. If you are running\nrpc.lockd, it is a fundamentally broken protocol (NLM).\n- If this is the case, try either the \"nolockd\" mount\n  option or \"nfsv4,minorversion=1\" for your mount.\n\nIf this doesn't resolve the problem, please provide the\noutput for all of the following when the hang has occurred.\n\nnfsstat -m\nps axHl\nprocstat -kk\nnetstat -a\nnfsstat -E -c  \u003c-- done at least twice about a minute apart\n\nAlso, since you know how to reproduce the problem, you can\ncapture packets while it happens. Before the hang run:\ntcpdump -s 0 -w out.pcap host \u003cnfs-server\u003e\n--\u003e Then reproduce the problem and kill the tcpdump 1 minute\n    after the hang has occurred.\nPut out.pcap here as an attachment.\n(Btw, if you want to look at out.pcap, use wireshark. tcpdump\n knows almost nothing about NFS packets, whereas wireshark\n can decode them nicely.)\n\nI have not heard of a FreeBSD client hang problem. There is\na known TCP layer issue, but it causes hangs when the server\nis running 13.0 and I do not think the problem occurs when\nthe server is 12.3.\n\nI have heard of issues when using vnet jails, but I doubt you\nare doing that.\n\nAlso, hangs are often network fabric related. Disabling TSO on\nboth client and server often helps. Of using a different network\ndriver/chip if that is feasible (for example, for re devices the\ndriver in ports sometimes works better than what is in the system,\ndepending on which re chip you have.)"
+}

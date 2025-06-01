@@ -1,0 +1,8 @@
+{
+ "id": 1292452,
+ "bug_id": 276251,
+ "attachment_id": 0,
+ "creation_time": "2024-01-15T23:50:39Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "That bug may have been 02fa548cde3215113a7004f60bf8597a8a7d50cd... \n\nThe tl;dr on the bug is that we carefully single step during the device probe. There are times, though, when we poll the device. These two things can race and can lead to either abandoned I/O or extra I/Os being processes (I/O here should be read as cam ccb processing).\n\nThis could be a race in cd too. We start the media polling timeout in cdregister, just after we create the disk.\n\nBut unlike da, cd makes sure that we are in state CD_STATE_NORMAL before we set tur = true and do a xpt_schedule().\n\nBut there's a fair number of xpt_schedule() that happen, maybe in CD_STATE_MEDIA_SIZE and/or cdcheckmedia? Or maybe in response to AC_SCSI_AEN from AHCI?\n\nIt's unclear to me right now which of these are happening, if any. The schedule would cause more threads to run at the same time, perhaps, leading to this situation?\n\nI chased this bug in da for years until I could find this was the race I was looking for."
+}

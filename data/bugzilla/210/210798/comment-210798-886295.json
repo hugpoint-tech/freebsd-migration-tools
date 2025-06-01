@@ -1,0 +1,8 @@
+{
+ "id": 886295,
+ "bug_id": 210798,
+ "attachment_id": 0,
+ "creation_time": "2016-07-03T20:06:06Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #0)\n\nAnother compiler-reported uninitialized value use follows.\n\n/usr/obj/portswork/usr/ports/devel/gdb/work/gdb-7.11.1/gdb/rs6000-tdep.c (note ra initialzxiation status):\n\nstatic int\nppc_process_record_op31 (struct gdbarch *gdbarch, struct regcache *regcache,\n                           CORE_ADDR addr, uint32_t insn)\n{\n. . .\n  ULONGEST rb, ra, xer;\n. . .\n  switch (ext \u0026 0x1ff)\n    {\n. . .\n    case 1014:          /* Data Cache Block set to Zero */\n. . .\n      if (PPC_RA (insn) != 0)\n        regcache_raw_read_unsigned (regcache,\n                                    tdep-\u003eppc_gp0_regnum + PPC_RA (insn), \u0026ra);\n. . .\n      ea = (ra + rb) \u0026 ~((ULONGEST) (at_dcsz - 1));\n      record_full_arch_list_add_mem (ea, at_dcsz);\n. . .\n\nThat last \"ra\" is always used in  case 1014 but was not potentially initialized unless the shown regcache_raw_read_unsigned call was made."
+}

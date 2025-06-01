@@ -1,0 +1,8 @@
+{
+ "id": 478346,
+ "bug_id": 130330,
+ "attachment_id": 0,
+ "creation_time": "2009-05-21T14:22:18Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: attilio\nDate: Thu May 21 13:22:07 2009\nNew Revision: 192535\nURL: http://svn.freebsd.org/changeset/base/192535\n\nLog:\n  Move the M_WAITOK flag in notify() into an M_NOWAIT one in order to match\n  the behaviour alredy present with the further malloc() call in\n  devctl_notify().\n  This fixes a bug in the CAM layer where the camisr handler finished to\n  call camperiphfree() (and subsequently destroy_dev() resulting in a new\n  dev notify) while the xpt lock is held.\n  \n  PR:\t\tkern/130330\n  Tested by:\tRiccardo Torrini \u003criccardo dot torrini at esaote dot com\u003e\n\nModified:\n  head/sys/kern/kern_conf.c\n\nModified: head/sys/kern/kern_conf.c\n==============================================================================\n--- head/sys/kern/kern_conf.c\tThu May 21 12:36:40 2009\t(r192534)\n+++ head/sys/kern/kern_conf.c\tThu May 21 13:22:07 2009\t(r192535)\n@@ -491,7 +491,9 @@ notify(struct cdev *dev, const char *ev)\n \tif (cold)\n \t\treturn;\n \tnamelen = strlen(dev-\u003esi_name);\n-\tdata = malloc(namelen + sizeof(prefix), M_TEMP, M_WAITOK);\n+\tdata = malloc(namelen + sizeof(prefix), M_TEMP, M_NOWAIT);\n+\tif (data == NULL)\n+\t\treturn;\n \tmemcpy(data, prefix, sizeof(prefix) - 1);\n \tmemcpy(data + sizeof(prefix) - 1, dev-\u003esi_name, namelen + 1);\n \tdevctl_notify(\"DEVFS\", \"CDEV\", ev, data);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

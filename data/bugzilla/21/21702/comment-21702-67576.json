@@ -1,0 +1,8 @@
+{
+ "id": 67576,
+ "bug_id": 21702,
+ "attachment_id": 0,
+ "creation_time": "2000-10-02T15:30:01Z",
+ "creator": "sanpei@FreeBSD.org",
+ "text": "   I created below patch for Per Andersson's bug report.\n   How about this patch, Warner-san and Andersson-san? obtained from\n PAO3\n ---\n MIHIRA, Sanpei Yoshiro\n Yokohama, Japan.\n \n \n Index: src/usr.sbin/pccard/pccardd/cardd.c\n ===================================================================\n RCS file: /home/ncvs/src/usr.sbin/pccard/pccardd/cardd.c,v\n retrieving revision 1.60\n diff -u -r1.60 cardd.c\n --- src/usr.sbin/pccard/pccardd/cardd.c\t2000/10/01 12:36:14\t1.60\n +++ src/usr.sbin/pccard/pccardd/cardd.c\t2000/10/02 14:24:39\n @@ -192,6 +192,7 @@\n  card_removed(struct slot *sp)\n  {\n  \tstruct card *cp;\n +\tstruct allocblk *sio;\n  \tint in_use = 0;\n  \n  \tif (sp-\u003econfig \u0026\u0026 sp-\u003econfig-\u003edriver \u0026\u0026 sp-\u003ecard)\n @@ -210,10 +211,14 @@\n  \tsp-\u003ecis = 0;\n  \tsp-\u003econfig = 0;\n  \t/* release io */\n -\tbit_nset(io_avail, sp-\u003eio.addr, sp-\u003eio.addr + sp-\u003eio.size - 1);\n +\tif (sp-\u003eflags \u0026 IO_ASSIGNED) \n +            for (sio = \u0026sp-\u003eio; sio; sio = sio-\u003enext)\n +                if (sio-\u003eaddr \u0026\u0026 sio-\u003esize)\n +\t\t\tbit_nset(io_avail, sio-\u003eaddr, sio-\u003eaddr + sio-\u003esize - 1);\n  \t/* release irq */\n -\tif (sp-\u003eirq)\n -\t\tpool_irq[sp-\u003eirq] = 1;\n +\tif (sp-\u003eflags \u0026 IRQ_ASSIGNED)\n +\t\tif (sp-\u003eirq \u003e= 1 \u0026\u0026 sp-\u003eirq \u003c= 15)\n +\t\t\tpool_irq[sp-\u003eirq] = 1;\n  }\n  \n  /* CIS string comparison */"
+}

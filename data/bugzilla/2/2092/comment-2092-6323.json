@@ -1,0 +1,8 @@
+{
+ "id": 6323,
+ "bug_id": 2092,
+ "attachment_id": 0,
+ "creation_time": "1996-12-22T14:10:13Z",
+ "creator": "joerg@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003efeedback\n\nThe behaviour described in this PR cannot be seen on any other FreeBSD system \naround.  Please make sure that your sysstem has not been hacked. \n\nTry adding some debugging syslog() lines to rlogind, to make sure \nwhat's happening.  REplace the function do_rlogin() in \n/usr/src/libexec/rlogind/rlogind.c with: \n\nint \ndo_rlogin(dest) \nstruct sockaddr_in *dest; \n{ \nint rv; \n\ngetstr(rusername, sizeof(rusername), \"remuser too long\"); \ngetstr(lusername, sizeof(lusername), \"locuser too long\"); \ngetstr(term+ENVSIZE, sizeof(term)-ENVSIZE, \"Terminal type too long\"); \n\npwd = getpwnam(lusername); \nif (pwd == NULL) \nreturn (-1); \n/* XXX why don't we syslog() failure? */ \nrv = (iruserok(dest-\u003esin_addr.s_addr, pwd-\u003epw_uid == 0, \nrusername, lusername)); \nsyslog(LOG_DEBUG, \n\"do_rlogin(): from %s, ruser %s, luser %s, iruserok(): %d\", \ninet_ntoa(dest-\u003esin_addr.s_addr), rusername, \nlusername, rv); \nreturn (rv); \n} \n\n\nMake sure to catch the syslog output somewhere, prefarably on \nanother host.  You might want to make the logging conditional \non some username or IP address. \n"
+}

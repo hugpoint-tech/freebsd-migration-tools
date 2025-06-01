@@ -1,0 +1,8 @@
+{
+ "id": 984285,
+ "bug_id": 226909,
+ "attachment_id": 0,
+ "creation_time": "2018-03-26T11:20:24Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "I found the cause. My initial suspicion was confirmed.\n\nFor the record, the asterisk code in asterisk15 is calling getopt(3) two times in a row. To make this work they need to reset the \"optind\" variable, they do it here at [1], setting the value to 0. This is a mistake.\n\nglibc implementation of getopt forces that 0 value to 1 at [2], while our implementation does not have such a check.\n\nUsing optind = 0 causes our getopt to check if argv[0] (the command being run, in this case usually \"asterisk\" or \"rasterisk\") is an option, by checking if it starts with a '-' at [3], which is not the case, causing getopt to exit early without performing the second round of command line parsing.\n\nChanging the asterisk code to use \"optind = 1\" fixes the issue.\n\n\n[1] https://github.com/asterisk/asterisk/blob/f13131b5cdee219841cc767e01101472ebd46606/main/asterisk.c#L3998\n\n[2] https://github.com/bminor/glibc/blob/2d813d7b77ba8341a0a982d74bb59f5a0d775784/posix/getopt.c#L387\n\n[3] https://github.com/freebsd/freebsd/blob/5c40d602eef148e8d4231cda313ea122738096f4/lib/libc/stdlib/getopt.c#L72"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 949413,
+ "bug_id": 221803,
+ "attachment_id": 0,
+ "creation_time": "2017-08-25T13:01:29Z",
+ "creator": "emaste@freebsd.org",
+ "text": "I've been investigating the state of the ports tree with LLVM's lld installed as /usr/bin/ld (from the exp-run in PR 214864).\n\nNormally LDFLAGS contains flags passed to the compiler driver when invoked for linking. One issue that affects a small number of ports is passing $LDFLAGS to direct linker invocation (i.e, $LD), where it contains flags that are appropriate only for the compiler driver, not the linker.\n\nIn several instances this comes from bsd.ssp.mk, which adds -fstack-protector to LDFLAGS.  GNU BFD ld accepts the flag but produces undesired output, while lld produces an error:\n\nld -fstack-protector -shared -o libcfg+.so.0 ../src/cfg+.o ../src/parse.o ../src/props.o ../src/cmdline.o ../src/cfgfile.o ../src/shared.o ../src/platon/str/strplus.o ../src/platon/str/strctype.o ../src/platon/str/strdyn.o ../src/platon/str/dynfgets.o\nld: error: unknown argument: -fstack-protector\n(from devel/libcfg)\n\n(GNU ld produces output with a bogus DT_AUXILIARY \"stack-protector\" entry for this case.)\n\nThis affects at least the following ports:\nwww/mod_jk\ndevel/libcfg\narabic/libitl\nwww/tdom\nwww/dummyflash\nftp/rexx-curl\n\nftp/rexx-curl build log excerpt when linking with lld:\nld -Bdynamic -Bshareable   -fstack-protector  -fstack-protector  -o librexxcurl.so rexxcurl.so.o rxpack.so.o rxmt_posix.so.o -L/usr/local/lib -lcurl -L/usr/local/lib -lregina   -lm\nld: error: unknown argument: -fstack-protector\nld: error: unknown argument: -fstack-protector"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 999707,
+ "bug_id": 229092,
+ "attachment_id": 0,
+ "creation_time": "2018-06-29T12:37:37Z",
+ "creator": "vegeta@tuxpowered.net",
+ "text": "I found another bug: states synced during initial bulk update are considered to come from incompatible ruleset, even if ruleset *is* compatible. I also must raise a question why the initial sync is \"update\" and not \"insert\".\n\n\n--- a/sys/netpfil/pf/if_pfsync.c\n+++ b/sys/netpfil/pf/if_pfsync.c\n@@ -874,21 +874,21 @@ pfsync_in_upd(struct pfsync_pkt *pkt, struct mbuf *m, int offset, int count)\n                                printf(\"pfsync_input: PFSYNC_ACT_UPD: \"\n                                    \"invalid value\\n\");\n                        }\n                        V_pfsyncstats.pfsyncs_badval++;\n                        continue;\n                }\n\n                st = pf_find_state_byid(sp-\u003eid, sp-\u003ecreatorid);\n                if (st == NULL) {\n                        /* insert the update */\n-                       if (pfsync_state_import(sp, 0))\n+                       if (pfsync_state_import(sp, pkt-\u003eflags))\n                                V_pfsyncstats.pfsyncs_badstate++;\n                        continue;\n                }\n\n                if (st-\u003estate_flags \u0026 PFSTATE_ACK) {\n                        PFSYNC_LOCK(sc);\n                        pfsync_undefer_state(st, 1);\n                        PFSYNC_UNLOCK(sc);\n                }\n\n\n\nThis bug is fixed in OpenBSD some time ago: https://github.com/openbsd/src/commit/ddb7828bc6708358e6c08caaf09e3524e8cab7b4"
+}

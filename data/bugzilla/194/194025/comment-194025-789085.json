@@ -1,0 +1,8 @@
+{
+ "id": 789085,
+ "bug_id": 194025,
+ "attachment_id": 147818,
+ "creation_time": "2014-09-30T04:14:12Z",
+ "creator": "dpejesh@yahoo.com",
+ "text": "Created attachment 147818\nset timeout properly\n\nSo, I've noticed nscd hasn't worked right for awhile now.  Since I\nupgraded to 10.0 it never seemed to cache properly but I never bothered\nto really dig into it until recently and here's what I've found.  In my\nenvironment I have nsswitch set to use caching and LDAP as such:\n\ngroup: files cache ldap\npasswd: files cache ldap\n\nThe LDAP part works fine, but caching didn't on 10.0 for some reason.\nOn my 9.2 machines it works as expected though.  What I've found is in\nusr.sbin/nscd/query.c\n\nstruct query_state *\ninit_query_state(int sockfd, size_t kevent_watermark, uid_t euid, gid_t\negid)\n{\n  ...\n    memcpy(\u0026retval-\u003etimeout, \u0026s_configuration-\u003equery_timeout,\n        sizeof(struct timeval));\n  ...\n}\n\ns_configuration-\u003equery_timeout is an 'int' which is being memcpy'd into\na 'struct timeval' causing it to grab other parts of the s_configuration\nstruct along with the query_timeout value and polluting retval-\u003etimeout.\nIn this case it appears to be grabbing s_configuration-\u003ethreads_num and\nshoving that into timeout.tv_sec along with the query_timeout. This ends\nup confusing nscd later on (instead of being 8 it ends up being set to\n34359738376) and breaks it's ability to cache.  I've attached a patch to\nset the retval-\u003etimeout properly and gets nscd working again.  I'm\nguessing gcc was handling this differently from clang which is why it\nwasn't a problem before 10.0."
+}

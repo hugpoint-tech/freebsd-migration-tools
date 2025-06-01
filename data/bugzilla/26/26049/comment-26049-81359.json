@@ -1,0 +1,8 @@
+{
+ "id": 81359,
+ "bug_id": 26049,
+ "attachment_id": 0,
+ "creation_time": "2001-03-24T12:00:02Z",
+ "creator": "chervarium@nove.bg",
+ "text": "incorrectly modularised vn driver causes a fatal trap 12 due to when module is unloaded, it's entry in cdevsw[] array is left unchanged. afterward, any lstat-ting /dev/vn0 result in unresolved page fault and crash. last in chain function devsw from /usr/src/sys/kerc/kern_conf.c returns invalid (struct cdevsw *) pointer to vn_isdisk from vfs_subr.c, and that pointer is accessed (i'm not describing the whole functions chain, everyone can see it in the sources):\n        if (!devsw(vp-\u003ev_rdev)) {\n                if (errp != NULL)\n                        *errp = ENXIO;\n                return (0);\n        }\n        if (!(devsw(vp-\u003ev_rdev)-\u003ed_flags \u0026 D_DISK)) {\n                if (errp != NULL)\n                        *errp = ENOTBLK;\n                return (0);\n        }\n(watch the second major if statement)\nthis problem may be found in other modular disk drivers. patch available (posted in the \"Fix to the problem if known\" part)...\n\nHow-To-Repeat: almost any loading of vn, using it and unloading it, followed by lstat syscall to \"/dev/vn0\" result in activating the bug and fatal trap 12 (page fault exception on x86 in protected mode with paging bit in %cr0 = 1 ;)..."
+}

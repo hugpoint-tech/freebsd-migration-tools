@@ -1,0 +1,8 @@
+{
+ "id": 654733,
+ "bug_id": 165819,
+ "attachment_id": 0,
+ "creation_time": "2012-03-10T17:09:11Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: iwasaki\nDate: Sat Mar 10 17:08:57 2012\nNew Revision: 232785\nURL: http://svn.freebsd.org/changeset/base/232785\n\nLog:\n  Fix wrong asresp frame parsing in iwi_checkforqos().\n  \n  After 8.0-RELEASE, iwi(4) doesn't send any data frames in infrastructure\n  mode.\n  \n  Bacause of the condition `while (frm \u003c efrm)', IEEE80211_VERIFY_LENGTH()\n  was checking item length beyond the ieee80211_frame region, and returned\n  from iwi_checkforqos() without setting flags, capinfo and associd.\n  \n  In infrastructure mode associd is required, so this problem causes\n  discarding mbuf in ieee80211_start().\n  \n  PR:\tkern/165819\n  Tested/Reviewed/Supported by: bschmidt and adrian\n  MFC after:\t1 week\n\nModified:\n  head/sys/dev/iwi/if_iwi.c\n\nModified: head/sys/dev/iwi/if_iwi.c\n==============================================================================\n--- head/sys/dev/iwi/if_iwi.c\tSat Mar 10 15:08:37 2012\t(r232784)\n+++ head/sys/dev/iwi/if_iwi.c\tSat Mar 10 17:08:57 2012\t(r232785)\n@@ -1357,8 +1357,8 @@ iwi_checkforqos(struct ieee80211vap *vap\n \tfrm += 2;\n \n \twme = NULL;\n-\twhile (frm \u003c efrm) {\n-\t\tIEEE80211_VERIFY_LENGTH(efrm - frm, frm[1], return);\n+\twhile (efrm - frm \u003e 1) {\n+\t\tIEEE80211_VERIFY_LENGTH(efrm - frm, frm[1] + 2, return);\n \t\tswitch (*frm) {\n \t\tcase IEEE80211_ELEMID_VENDOR:\n \t\t\tif (iswmeoui(frm))\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

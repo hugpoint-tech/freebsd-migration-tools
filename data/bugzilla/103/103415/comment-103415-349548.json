@@ -1,0 +1,8 @@
+{
+ "id": 349548,
+ "bug_id": 103415,
+ "attachment_id": 0,
+ "creation_time": "2006-09-20T06:40:21Z",
+ "creator": "jinmei@kame.net",
+ "text": "\nRecent FreeBSD kernels (6-STABLE and probably 5-STABLE also) fail to\naccept IPv6 packets assigned on an stf (6to4) interface of the\nreceiving node.\n\nThis is a (buggy) side-effect of a fix to netinet6/in6.c (rev. 1.61).\nWith this fix the in6_ifaddr structure corresponding to the IPv6\naddress configured on the stf interface won't have the ifa_rtrequest\nfunction (since nd6_need_cache() returns false for the interface).  As\na side-effect that was not expected at that time, the loopback route\nto the configured address generated via in6_ifaddloop() is not\ninstalled properly.\n\nip6_input() requires the loopback route to accept incoming packets to\nthe receiving node, so this change caused the problem reported here.\n\nFix: Apply the patch below.\nHow-To-Repeat: \n# ifconfig stf0 create\n# ifconfig stf0 inet6 2002:c000:0201::1 prefixlen 16\n% ping6 2002:c000:0201::1\n\nAnd you'll notice the ping6 doesn't receive the echo-replies.\nnetstat -s -p ip6 should indicate the echo-requests are dropped in\nip6_input()."
+}

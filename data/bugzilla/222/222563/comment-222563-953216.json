@@ -1,0 +1,8 @@
+{
+ "id": 953216,
+ "bug_id": 222563,
+ "attachment_id": 186671,
+ "creation_time": "2017-09-24T17:19:59Z",
+ "creator": "ian@FreeBSD.org",
+ "text": "Created attachment 186671\nSmall c++ program to demonstrate the problem\n\nThe attached small c++ program should print the demangled names of a couple symbols when it runs, but it does not:\n\n# make tester \u0026\u0026 ./tester\nc++ -O -pipe  tester.cc  -o tester\nname '3Foo' = '3Foo' status=-2\nname 'Z4mainE3Bar' = '(null)' status=-2\n\nThe current demangling code in libcxxrt is a snapshot of the libelftc demangler from 10-ish years ago.  If you replace it with the current libelftc demangling code and make some other small changes you can get abi::__cxa_demangle() to the point where it returns the same slightly-less-wrong results as c++filt (see PR 222562).\n\nPart of the problem with abi::__cxa_demangle() is that it is not correctly glued to the libelftc demangling code.  The demangler wants to see a prefix on the symbol name, like what you see in nm(1) output.  That is, typeid(bar).name() returns \"Z4mainE3Bar\" and the demangle code expects \"_ZTSZ4mainE3Bar\".  (This is the small change I referred to above.)\n\nOne potential fix for this would be to examine llvm's libcxxabi and possibly import its demangler (or maybe the entire library).  I gather this libcxxabi didn't exist when we created/imported libcxxrt."
+}

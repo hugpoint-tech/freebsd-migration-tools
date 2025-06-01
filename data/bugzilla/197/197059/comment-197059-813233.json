@@ -1,0 +1,8 @@
+{
+ "id": 813233,
+ "bug_id": 197059,
+ "attachment_id": 0,
+ "creation_time": "2015-03-04T11:20:26Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: ae\nDate: Wed Mar  4 11:20:03 UTC 2015\nNew revision: 279588\nURL: https://svnweb.freebsd.org/changeset/base/279588\n\nLog:\n  Fix deadlock in IPv6 PCB code.\n\n  When several threads are trying to send datagram to the same destination,\n  but fragmentation is disabled and datagram size exceeds link MTU,\n  ip6_output() calls pfctlinput2(PRC_MSGSIZE). It does notify all\n  sockets wanted to know MTU to this destination. And since all threads\n  hold PCB lock while sending, taking the lock for each PCB in the\n  in6_pcbnotify() leads to deadlock.\n\n  RFC 3542 p.11.3 suggests notify all application wanted to receive\n  IPV6_PATHMTU ancillary data for each ICMPv6 packet too big message.\n  But it doesn't require this, when we don't receive ICMPv6 message.\n\n  Change ip6_notify_pmtu() function to be able use it directly from\n  ip6_output() to notify only one socket, and to notify all sockets\n  when ICMPv6 packet too big message received.\n\n  PR:\t\t197059\n  Differential Revision:\thttps://reviews.freebsd.org/D1949\n  Reviewed by:\tno objection from #network\n  Obtained from:\tYandex LLC\n  MFC after:\t1 week\n  Sponsored by:\tYandex LLC\n\nChanges:\n  head/sys/netinet6/in6_pcb.c\n  head/sys/netinet6/ip6_input.c\n  head/sys/netinet6/ip6_output.c\n  head/sys/netinet6/ip6_var.h"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 764200,
+ "bug_id": 189845,
+ "attachment_id": 0,
+ "creation_time": "2014-05-18T23:05:07Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In FreeBSD PR kern/189845, you wrote:\n\u003e _kvm_open in libkvm always returns 0 on a failure. So writing a\n\u003e message to kd is pointless because it is immediately passed to\n\u003e kvm_close() and the memory is freed. Se the code snippet below from\n\u003e _kvm_open.\n\n\u003e\t/*\n\u003e\t * Copy out the error if doing sane error semantics.\n\u003e\t */\n\u003e\tif (errout != 0)\n\u003e\t\tstrlcpy(errout, kd-\u003eerrbuf, _POSIX2_LINE_MAX);\n\u003e\t(void)kvm_close(kd);\n\u003e\treturn (0);\n\nThe error message is written to errout (if _kvm_open() was called via\nkvm_openfiles()), which stays around.\n\nIt may be a bit strange to write an error message to kd-\u003eerrbuf first\nand then copy it to the user's buffer, but it works fine and may\nslightly reduce code duplication from the two types of error handling\navailable to the API client.\n\n-- \nJilles Tjoelker"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1332511,
+ "bug_id": 282413,
+ "attachment_id": 0,
+ "creation_time": "2024-10-30T20:36:28Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Uh, thanks for sharing the wolfSSL finding. \n\nLooks like an oversight, in two ways:\n\n- I can work around the missing openssl compatible defaults with SSL_CTX_set_mode(SSL_MODE_AUTO_RETRY). We use that since 6.4.25, but the compile-time check is in a different file, and when I merged that into the 6.5 branch, I forgot to manually remove the run-time check from tls-aux.h.\n\n- The HAVE_EX_DATA stuff that results in ./tls-aux.h:25:5: error: \"wolfSSL was configured without --enable-context-extra-user-data. Recompile and reinstall wolfSSL!\" is checked here but I would consider this a mis-merge from the \"next\" branch that is to spawn fetchmail 7.0 later, X509_STORE_CTX_get_ex_data and thereabouts, 6.5 does not use that but sticks to the file-global variables fetchmail has used for ages.\n\nBottom line: both checks will be removed upstream and I will add a patch to kill them for our 6.5.0 port, too, but we need wolfSSL to provide the other in the future when fetchmail 7.0 materializes, so I have filed https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=282430 to ask about adding that compile-time option so we have it by the time we will need it.\n\nThanks for the review, I'll fix these tls-aux.h errors and commit."
+}

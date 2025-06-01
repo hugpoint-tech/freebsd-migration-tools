@@ -1,0 +1,8 @@
+{
+ "id": 96069,
+ "bug_id": 30524,
+ "attachment_id": 0,
+ "creation_time": "2001-09-17T19:21:31Z",
+ "creator": "larse@isi.edu",
+ "text": "FWIW, here's the updated patch.\n\n--- /usr/src/sys/netinet/ip_icmp.c.orig Mon Sep 17 09:57:37 2001\n+++ /usr/src/sys/netinet/ip_icmp.c      Mon Sep 17 10:14:32 2001\n@@ -640,8 +640,13 @@\n         * The following happens if the packet was not addressed to us,\n         * and was received on an interface with no IP address.\n         */\n-       if (ia == (struct in_ifaddr *)0)\n+       if (ia == (struct in_ifaddr *)0) {\n+               if (TAILQ_EMPTY(\u0026in_ifaddrhead)) {\n+                       m_freem(m);     /* Cannot find interface address\n*/\n+                       goto done;      /* to send ICMP packet from. */\n+               }\n                ia = in_ifaddrhead.tqh_first;\n+       }\n        t = IA_SIN(ia)-\u003esin_addr;\n        ip-\u003eip_src = t;\n        ip-\u003eip_ttl = ip_defttl;\n\nWill this issue be resolved before 4.4? Either with this patch, or with a\nbetter solution?\n\nThanks,\nLars\n--\nLars Eggert \u003clarse@isi.edu\u003e               Information Sciences Institute\nhttp://www.isi.edu/larse/              University of Southern California"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 9917,
+ "bug_id": 3206,
+ "attachment_id": 0,
+ "creation_time": "1997-04-05T18:30:00Z",
+ "creator": "blank@fox.uni-trier.de",
+ "text": "\nCalling su with an invalid command line like this one\n\n\tsu --\n\nor this one\n\n\tsu --m\n\nmakes su quit with a segmentation fault:\n\nApr  5 19:00:56 sliphost37 /kernel: pid 20268 (su), uid 0: exited on signal 11\n\nFix: The reason for the fault is easy to find. The variable \"user\" is supposed\nto hold the user name given on the command line (or \"root\" if none is\ngiven). In case of an invalied argument like above \"user\" is set to NULL,\nwhich will later make the \"getpwnam(user)\"-call fail.\n\nMy little diff below fixes this problem by explicitely checking if \"user\"\nhas been set to NULL. If so, it makes the program show \"usage...\" and\nexit properly.\n\n\n\n\n--\n             Sascha Blank - mailto:blank@fox.uni-trier.de\n  Student and System Administrator at the University of Trier, Germany\n            Finger my account to receive my Public PGP key\n   I don't speak for my employers, they don't pay me enough for that.--5NhL7dqjlEtYsphCRxD2rZwyAxOhthQDYM5AHM7chfj1Fsrl\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n*** su.c.CURRENT\tSat Apr  5 18:55:03 1997\n--- su.c\tSat Apr  5 19:06:21 1997\n***************\n*** 137,142 ****\n--- 137,148 ----\n  \t\tbreak;\n  \t    }\n  \n+ \tif(user == NULL) {\n+ \t    (void)fprintf(stderr, \"usage: su [%s] [login]\\n\",\n+ \t\t          ARGSTR);\n+ \t    exit(1);\n+ \t}\n+ \n  \tif((nargv = malloc (sizeof (char *) * (argc + 4))) == NULL) {\n  \t    errx(1, \"malloc failure\");\n  \t}\nHow-To-Repeat: \nSee above."
+}

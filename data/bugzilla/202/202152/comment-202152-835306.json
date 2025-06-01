@@ -1,0 +1,8 @@
+{
+ "id": 835306,
+ "bug_id": 202152,
+ "attachment_id": 159633,
+ "creation_time": "2015-08-07T07:45:08Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 159633\nv0\n\nLooking under tests/ directory there're none for -P option, so not surprising based 286289 regressed it. The issue appears to be improper rebase against base r285552.\n\n$ getconf CHILD_MAX\n100\n\n$ printf 'a\\nb\\nc\\n' | xargs -P0 echo\nxargs: -P 0: too small\n\n# -O2 build (default)\n$ printf 'a\\nb\\nc\\n' | xargs -P2 echo\nSegmentation fault\n\n# -O0 build\n$ printf 'a\\nb\\nc\\n' | xargs -P2 echo\nxargs: invalid number for -P option\n\n$ lldb ./xargs --core /path/to/xargs.core\n(lldb) target create \"./xargs\" --core \"/path/to/xargs.core\"\nCore file '/path/to/xargs.core' (x86_64) was loaded.\nProcess 0 stopped\n* thread #1: tid = 0, 0x00000000004019aa xargs`main + 570, name = 'xargs', stop reason = signal SIGSEGV\n    frame #0: 0x00000000004019aa xargs`main + 570\n-\u003e 0x4019aa \u003cmain+570\u003e: cmpb   $0x0, (%rax)\n   0x4019ad \u003cmain+573\u003e: jne    0x402426                  ; main + 3254\n   0x4019b3 \u003cmain+579\u003e: movslq 0x201d06(%rip), %rcx      ; maxprocs\n   0x4019ba \u003cmain+586\u003e: testq  %rcx, %rcx\n(lldb) bt\n* thread #1: tid = 0, 0x00000000004019aa xargs`main + 570, name = 'xargs', stop reason = signal SIGSEGV\n  * frame #0: 0x00000000004019aa xargs`main + 570\n    frame #1: 0x000000000040168f xargs`_start + 367"
+}

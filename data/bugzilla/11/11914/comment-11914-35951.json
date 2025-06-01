@@ -1,0 +1,8 @@
+{
+ "id": 35951,
+ "bug_id": 11914,
+ "attachment_id": 0,
+ "creation_time": "1999-05-28T19:00:01Z",
+ "creator": "dima@server.ru",
+ "text": "During makeworld makewhatis is being copied to the tool tree 'as is':\nit's first line is\n    #!/usr/bin/perl\nline #454 is\n    $ENV{'PATH'} = \"/bin:/usr/bin:$ENV{'PATH'}\";\n\nThese lines causes usage /usr/bin/perl and /usr/bin/gzip instead of \n/usr/obj/usr/src/tmp/usr/bin/perl and /usr/obj/usr/src/tmp/usr/bin/gzip\n\nThis causes problem when I install system by booting from floppies,\npartitioning disk, mounting partitions under /newroot,\n mounting /usr/src and /usr/obj with ready buildworld \nvia NFS and running 'make DESTDIR=/newroot installworld' because \nthe FreeBSD's boot floppies has no perl.\n\nFix: \n\nchange beforeinstall targed in /usr/src/gnu/man/makewhatis/Makefile\nto something like this \n\nbeforeinstall:\n.ifdef _BUILD_TOOLS\n        echo '#!'${DESTDIR}${BINDIR}'/perl' \u003e makewhatis\n        grep -Fv \"ENV{'PATH'} =\" ${.CURDIR}/makewhatis.perl \u003e\u003e makewhatis\n        echo '#!'${DESTDIR}${BINDIR}'/sh' \u003e makewhatis.local\n        grep -v '^PATH=' ${.CURDIR}/makewhatis.local.sh \u003e\u003e makewhatis.local\n        ${INSTALL} ... makewhatis ${DESTDIR}${BINDIR}/makewhatis\n        ${RM} makewhatis\n        ${INSTALL} ... makewhatis.local ${DESTDIR}${libexecdir}/makewhatis.local\n        ${RM} makewhatis.local\n.else\n        ${INSTALL} ... ${.CURDIR}/makewhatis.perl ....\n        ${INSTALL} ... ${.CURDIR}/makewhatis.local.sh ...\n.endif\nHow-To-Repeat: # make buildworld\n# make installworld\n...\n----------------------------------------"
+}

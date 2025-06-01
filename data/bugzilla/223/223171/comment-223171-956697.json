@@ -1,0 +1,8 @@
+{
+ "id": 956697,
+ "bug_id": 223171,
+ "attachment_id": 187372,
+ "creation_time": "2017-10-22T16:28:00Z",
+ "creator": "thierry@FreeBSD.org",
+ "text": "Created attachment 187372\nLink with ssl in $OPENSSLBASE\n\nUSES=ssl is set correctly in Makefile, but configure ignore it, and libunbound.so is always linked against libssl.so provided by the base SSL:\n\nldd /usr/local/lib/libunbound.so\n/usr/local/lib/libunbound.so:\n        libssl.so.8 =\u003e /usr/lib/libssl.so.8 (0x8012bf000)\n        libutil.so.9 =\u003e /lib/libutil.so.9 (0x801531000)\n        libevent-2.1.so.6 =\u003e /usr/local/lib/libevent-2.1.so.6 (0x801745000)\n        libcrypto.so.8 =\u003e /lib/libcrypto.so.8 (0x801a00000)\n        libthr.so.3 =\u003e /lib/libthr.so.3 (0x801e69000)\n        libc.so.7 =\u003e /lib/libc.so.7 (0x800825000)\n\nWhen you link it from another port, you get this warning:\n\n/usr/bin/ld: warning: libssl.so.8, needed by /usr/local/lib/libunbound.so, may conflict with libssl.so.9\n/usr/bin/ld: warning: libcrypto.so.8, needed by /usr/local/lib/libunbound.so, may conflict with libcrypto.so.9\n\nand actually this might cause hard to debug problems.\n\nThe proposed patch fixes the problem. After this fix:\n\nldd /usr/local/lib/libunbound.so\n/usr/local/lib/libunbound.so:\n        libssl.so.9 =\u003e /usr/local/lib/libssl.so.9 (0x8012c0000)\n        libutil.so.9 =\u003e /lib/libutil.so.9 (0x801535000)\n        libevent-2.1.so.6 =\u003e /usr/local/lib/libevent-2.1.so.6 (0x801749000)\n        libcrypto.so.9 =\u003e /usr/local/lib/libcrypto.so.9 (0x801a00000)\n        libthr.so.3 =\u003e /lib/libthr.so.3 (0x801e75000)\n        libc.so.7 =\u003e /lib/libc.so.7 (0x800825000)"
+}

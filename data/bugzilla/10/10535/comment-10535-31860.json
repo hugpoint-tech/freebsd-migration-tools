@@ -1,0 +1,8 @@
+{
+ "id": 31860,
+ "bug_id": 10535,
+ "attachment_id": 0,
+ "creation_time": "1999-03-11T10:01:22Z",
+ "creator": "peter.jeremy@auss2.alcatel.com.au",
+ "text": "Doug Rabson \u003cdfr@nlsystems.com\u003e wrote:\n\u003eThe fix looks correct to me but as DG noted when the last change was made\n\u003eto this driver, it should be using DELAY to avoid future problems with\n\u003eprocessor speeds.\n\nI think that's a separate issue.  The current code is incorrect because\nreferences to H/W registers aren't marked volatile - and are therefore\nlikely to be optimised away.  Andreas' change made the problem show\nup because of the extra delay.  I'm surprised that the only symptom\nwas poor performance.\n\n\u003eIf these are changed to call DELAY(1) in the loop, I think the original\n\u003epatch to increase the loop in epic_init_phy wouldn't be needed either.\n\nI agree that delays should be done using DELAY().  The problem is that\nDELAY() isn't really ideal for the situation in\nepic_{read,write}_phy_register: The code is polling a `ready' bit and\nthe limit just makes sure that things don't lock up.  (I'm sure\nthere's similar code in lots of device drivers).  It would be nice if\nthe kernel supported something equivalent to setitimer(2)/SIGALRM for\nthis purpose.\n\nBased on a quick look at DELAY() (and without knowing the range of\nexpected delay's), I suspect that changing the code to do DELAY(1) on\neach loop would worsen the performance - particularly on slow\nprocessors where the overheads in DELAY() are significant (\u003e1us).\n(Once the bit becomes ready in the PHY, it will typically be (1usec +\nDELAY() overhead)/2 before the state change is seen - compared with\n~10 clocks for the current code).\n\nPeter"
+}

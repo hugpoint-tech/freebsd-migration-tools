@@ -1,0 +1,8 @@
+{
+ "id": 1171308,
+ "bug_id": 257316,
+ "attachment_id": 0,
+ "creation_time": "2021-07-21T17:42:39Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "FreeBSD exports statistics about pools and datasets via sysctl, in a tree rooted at \"kstat.zfs.\u003cpool_name\u003e\".  One problem: \".\" is a legal character in pool names but it's the separator for sysctl trees.  When a pool has \".\" in the name its stats will still be exported and they can be viewed by iterating through all of \"kstat.zfs\".  However, they won't be addressable by pool, and interpreting the output of \"kstat.zfs\" is difficult.  For example:\n\n# I have a pool named \"foo.bar\"\n$ zpool list\nNAME       SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT\nfoo.bar   9.50G   720K  9.50G        -         -     0%     0%  1.00x    ONLINE  -\ntestpool  9.50G  1.45M  9.50G        -         -     0%     0%  1.00x    ONLINE  -\n\n# Its statistics are exported\n$ sysctl kstat.zfs | grep foo.bar.dataset\nkstat.zfs.foo.bar.dataset.objset-0x36.nunlinked: 0\nkstat.zfs.foo.bar.dataset.objset-0x36.nunlinks: 0\nkstat.zfs.foo.bar.dataset.objset-0x36.nread: 0\nkstat.zfs.foo.bar.dataset.objset-0x36.reads: 0\nkstat.zfs.foo.bar.dataset.objset-0x36.nwritten: 0\nkstat.zfs.foo.bar.dataset.objset-0x36.writes: 0\nkstat.zfs.foo.bar.dataset.objset-0x36.dataset_name: foo.bar\n\n# But they aren't individually addressable\n$ sysctl kstat.zfs.foo.bar\nsysctl: unknown oid 'kstat.zfs.foo.bar'\n$ sysctl kstat.zfs.foo\nsysctl: unknown oid 'kstat.zfs.foo'\n\nI think a proper solution would involve some kind of escaping of the \".\" character in the name."
+}

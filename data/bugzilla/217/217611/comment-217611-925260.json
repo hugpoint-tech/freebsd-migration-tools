@@ -1,0 +1,8 @@
+{
+ "id": 925260,
+ "bug_id": 217611,
+ "attachment_id": 0,
+ "creation_time": "2017-03-09T22:22:49Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "(In reply to Mark Millard from comment #11)\n\nThe existing exception handling so far handles exactly two cases:\n\n1. The VFP is disabled because the current thread might not own the hardware, in which case the exception handler clears the exception, restores the registers from the pcb to the hardware if necessary, and turns the VFP on;\n\n2. The VFP is enabled, in which case the exception handler clears the exception and sends SIGFPE to the process\n\nIn either event, the exception must be cleared before we return to user mode, and it's at that point that signal delivery happens. Hence, no need to preserve the exception state.\n\nThe code in vfp.c that preserves fpexc/fpinst/fpinst2 has to do so because of the possibility that the thread gets preempted inside the kernel while handling an exception (i.e. before reaching the critical_enter() in vfp_bounce), This doesn't apply to signal delivery into user space.\n\nSo unless I'm badly misunderstanding the existing code, what I've done should be sufficient. It might not be optimal - it would perhaps make sense to have (as other targets do) a flag to indicate that the VFP state is present, and use that to decide whether to restore the state to the registers rather than just to the pcb; my version currently always returns from signals with the VFP off and the state in the pcb rather than the hardware."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1141208,
+ "bug_id": 252579,
+ "attachment_id": 0,
+ "creation_time": "2021-01-12T05:12:52Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "I can reproduce this 100% of the time on a -current VM using the supplied test code.   I noticed a few things:\n\n--for me, the parent process seems to be hanging during fork(); I see no evidence the child process is ever spawned.\n\n--wmesg for the process is 'umtxn', and ddb shows what looks like the main thread attempting to take a userspace lock, going through umtxq_lock(), and sleeping in sleepq_wait_sig()\n\n--I tried to write a smaller test program to reproduce the failure by simulating the locking done by the NS dispatcher and the pthread_create() issued by the stub, but this did not reproduce the hang.\n\n--However, if I just link the original test program against libpthread ('cc -o bug -pthread bug.c), then I can no longer reproduce the hang.   This tells me the problem might have something to do with some bit of static umtx initialization that happens when linking against libpthread/libthr.   If this initialization hasn't happened by the time the NS dispatcher (which loads the stub through dlopen()) is invoked, then fork() ends up stuck in a umtx wait that never gets signaled.  It might also be related to the __isthreaded checks made by lib/libc/net/nsdispatch.c, which smell fishy to me.\n\nAt the very least, it might be possible to make a smaller repro case by writing a test program (that does not link libpthread) which dlopen()s a simple library (which does link libpthread) and calls an entry point that spawns a thread."
+}

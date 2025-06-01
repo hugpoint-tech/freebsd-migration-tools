@@ -1,0 +1,8 @@
+{
+ "id": 614923,
+ "bug_id": 157871,
+ "attachment_id": 0,
+ "creation_time": "2011-06-14T11:30:11Z",
+ "creator": "Petr.Salinger@seznam.cz",
+ "text": "Between 8.1 and 8.2 have been in linprocfs added support for $PID/environ and changed implementation of $PID/cmdline. Now it for kernel-only processes returns EFAULT instead of empty string. It breaks at least \"pstree -a\".\n\nSee Debian GNU/kFreeBSD bug #630104\nhttp://bugs.debian.org/cgi-bin/bugreport.cgi?bug=630104\n\nFix: \n\n--- a/sys/compat/linprocfs/linprocfs.c\n+++ b/sys/compat/linprocfs/linprocfs.c\n@@ -1044,6 +1044,10 @@\n                PROC_UNLOCK(p);\n                return (ret);\n        }\n+       if (p-\u003ep_flag \u0026 P_KTHREAD) {\n+               PROC_UNLOCK(p);\n+               return (0);\n+       }\n        if (p-\u003ep_args != NULL) {\n                sbuf_bcpy(sb, p-\u003ep_args-\u003ear_args, p-\u003ep_args-\u003ear_length);\n                PROC_UNLOCK(p);\n@@ -1068,6 +1072,10 @@\n                PROC_UNLOCK(p);\n                return (ret);\n        }\n+       if (p-\u003ep_flag \u0026 P_KTHREAD) {\n+               PROC_UNLOCK(p);\n+               return (0);\n+       }\n        PROC_UNLOCK(p);\n\n        ret = linprocfs_doargv(td, p, sb, ps_string_env);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 821326,
+ "bug_id": 199729,
+ "attachment_id": 0,
+ "creation_time": "2015-04-27T10:21:22Z",
+ "creator": "bas@nimrev.com",
+ "text": "I've run into the problem where I'm no longer able to boot a FreeBSD installation USB with UEFI.\n\nI get the following message:\n\n\u003e\u003e FreeBSD EFI boot block\n   Loader path: /boot/loader.efi\nFile /boot/loader.efi not found\npanic: Load failed\n\n\nI have a Macbook Pro (late 2013) with my SSD partitioned to have room for both OS X and FreeBSD. This means that there is a UFS partition on the SSD in my Macbook.\n\nI've possibly traced the problem down to boot1.c. Inside the efi_main function, line 157 there a loop that loops through all the device partitions found by the UEFI firmware. After it finds a valid UFS partition it will try to find /boot/loader.efi.\n\nIt seems to loop though the partitions on my SSD first, finds a valid UFS partition, and tries to read loader.efi, which does not exist. Instead it should find the loader.efi on the USB stick, but it doesn't.\n\nProblem is solved when removing the UFS partition from the SSD.\n\n\nI suppose this problem could be reproduced by creating a disk with two UFS partitions, an empty UFS partition before the partition containing loader.efi.\n\n\nPossible solutions could be:\n- Loop through the partitions on the disk it's booting from first.\n- Don't panic when the first partition doesn't have loader.efi, check the other UFS partitions also"
+}

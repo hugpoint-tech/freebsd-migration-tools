@@ -1,0 +1,8 @@
+{
+ "id": 817287,
+ "bug_id": 198789,
+ "attachment_id": 0,
+ "creation_time": "2015-03-28T17:38:00Z",
+ "creator": "stefan.berndt@imoriath.com",
+ "text": "After some research i figured something out. Seems the used buffers are moved from in-core to not-in-core. The function \"getblk\" in src/sys/kern/vfs_bio.c (line 3064-3308) now needs to create a new buffer instead of using a existing in-core-buffer. This requires an correct set sector size in line 3230, but it is 0.\n\nIndex: src/sys/fs/nandfs/nandfs_subr.c\n===================================================================\n--- src/sys/fs/nandfs/nandfs_subr.c\t(revision 280320)\n+++ src/sys/fs/nandfs/nandfs_subr.c\t(working copy)\n@@ -210,6 +210,9 @@\n \tDPRINTF(BLOCK, (\"%s: vp:%p lbn:%#jx\\n\", __func__, NTOV(node),\n \t    blocknr));\n \n+\tif (node-\u003enn_vnode-\u003ev_bufobj.bo_bsize == 0)\n+\t\tnode-\u003enn_vnode-\u003ev_bufobj.bo_bsize = 512;\n+\n \terror = bread(NTOV(node), blocknr, node-\u003enn_nandfsdev-\u003end_blocksize,\n \t    cred, bpp);\n \n\nThis does the job, it is now working, but i don't belive it's the right way to do this."
+}

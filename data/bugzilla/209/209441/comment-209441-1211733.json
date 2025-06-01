@@ -1,0 +1,8 @@
+{
+ "id": 1211733,
+ "bug_id": 209441,
+ "attachment_id": 0,
+ "creation_time": "2022-05-18T17:34:17Z",
+ "creator": "emaste@freebsd.org",
+ "text": "It looks like this originated in\n\ncommit a2438bbd28eb35a8968d193ac89b30a90e96f719\nAuthor: Damien Miller \u003cdjm@mindrot.org\u003e\nDate:   Fri Mar 15 10:23:07 2013 +1100\n\n     - (djm) [configure.ac] Disable utmp, wtmp and/or lastlog if the platform\n        is unable to successfully compile them. Based on patch from des AT\n        des.no\n\nwhich added\n\n+AC_CHECK_MEMBER([struct lastlog.ll_line], [], [\n+       AC_DEFINE([DISABLE_LASTLOG])       \u003c-------\n+       ], [\n+#ifdef HAVE_SYS_TYPES_H\n+#include \u003csys/types.h\u003e\n+#endif\n+#ifdef HAVE_UTMP_H\n+#include \u003cutmp.h\u003e\n+#endif\n+#ifdef HAVE_UTMPX_H\n+#include \u003cutmpx.h\u003e\n+#endif\n+#ifdef HAVE_LASTLOG_H\n+#include \u003clastlog.h\u003e\n+#endif\n+       ])\n\n\nthis defines DISABLE_LASTLOG if we don't have lastlog.ll_line, but this is used only in (the two implementations of) lastlog_get_entry; utmpx_get_entry is still functional.\n\nCan you try building with this change?\n\ndiff --git a/crypto/openssh/config.h b/crypto/openssh/config.h\nindex 943f8c6e4b6e..4e0261b6a60a 100644\n--- a/crypto/openssh/config.h\n+++ b/crypto/openssh/config.h\n@@ -113,7 +113,7 @@\n /* #undef DISABLE_FD_PASSING */\n \n /* Define if you don't want to use lastlog */\n-#define DISABLE_LASTLOG 1\n+/* #undef DISABLE_LASTLOG */\n \n /* Define if you don't want to use your system's login() call */\n /* #undef DISABLE_LOGIN */"
+}

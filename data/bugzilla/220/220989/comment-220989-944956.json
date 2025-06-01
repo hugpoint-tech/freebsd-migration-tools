@@ -1,0 +1,8 @@
+{
+ "id": 944956,
+ "bug_id": 220989,
+ "attachment_id": 0,
+ "creation_time": "2017-07-29T21:23:42Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Dimitry Andric from comment #4)\n\u003e This is the difference in assembly output for s_sinl.pico\n\nIn particular, the moving of shll $16, %ebx does not matter for the end result, but the following change does:\n\n\u003e @@ -194,18 +193,19 @@\n\u003e         movsd   %xmm0, -48(%rbp)\n\u003e         movsd   %xmm0, -152(%rbp)\n\u003e         fsubl   -152(%rbp)\n\u003e -       flds    .LCPI0_1(%rip)\n\u003e -       fmul    %st(0), %st(1)\n\u003e         fnstcw  -66(%rbp)\n\u003e +       flds    .LCPI0_1(%rip)\n\u003e         movzwl  -66(%rbp), %eax\n\u003e         movw    $3199, -66(%rbp)        # imm = 0xC7F\n\u003e         fldcw   -66(%rbp)\n\u003e +       fmul    %st(0), %st(1)\n\u003e         movw    %ax, -66(%rbp)\n\u003e         fxch    %st(1)\n\u003e         fistl   -76(%rbp)\n\u003e         fldcw   -66(%rbp)\n\u003e         xorps   %xmm0, %xmm0\n\u003e         cvtsi2sdl       -76(%rbp), %xmm0\n\nE.g. the fld and fmul are moved around, and that botches things up.  This particular part corresponds to the following loop in lib/msun/ld80/e_rem_pio2l.h:\n\n        for(i=0;i\u003c2;i++) {\n                tx[i] = (double)((int32_t)(z));\n                z     = (z-tx[i])*two24;\n        }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1168594,
+ "bug_id": 256838,
+ "attachment_id": 0,
+ "creation_time": "2021-07-01T11:35:12Z",
+ "creator": "arrowd@FreeBSD.org",
+ "text": "In further debugging I stumbled upon gdb/thread.c:1280 and following two functions:\n\n\nvoid\nswitch_to_thread_no_regs (struct thread_info *thread)\n{\n  ...\n}\n\n\nand\n\n\nvoid\nswitch_to_no_thread ()\n{\n  ...\n}\n\n\nThe latter fills inferior_ptid variable with 0 and the former restores its value.\n\nI verified that upon start, inferior_ptid contains correct PID of the debuggee. While running, these functions are occasionally being called. I put debugging printfs inside and this is what I get:\n\n\n16^running\n*running,thread-id=\"all\"\n(gdb) \nswitch_to_thread_no_regs\nswitch_to_no_thread\nswitch_to_thread_no_regs\nswitch_to_no_thread\nswitch_to_thread_no_regs\nswitch_to_no_thread\nswitch_to_thread_no_regs\n=library-loaded,id=\"/lib/libc.so.7\",target-name=\"/lib/libc.so.7\",host-name=\"/lib/libc.so.7\",symbols-loaded=\"0\",thread-group=\"i1\",ranges=[{from=\"0x00000008010f1610\",to=\"0x0000000801250f8c\"}]\nswitch_to_no_thread\nswitch_to_thread_no_regs\nswitch_to_no_thread\nswitch_to_thread_no_regs\nswitch_to_thread_no_regs\nswitch_to_no_thread\n^C\n\n\nAs you can see, while debugged program is running, the inferior_ptid is zeroed out, which is expected. However, upon receiving Ctrl+C the switch_to_thread_no_regs function doesn't get called, leaving inferior_ptid with zeroes. I believe this is the root cause of the issue, but I still have no idea how to fix it and why it works on !FreeBSD platforms."
+}

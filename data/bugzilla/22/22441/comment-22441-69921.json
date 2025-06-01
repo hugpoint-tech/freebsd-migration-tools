@@ -1,0 +1,8 @@
+{
+ "id": 69921,
+ "bug_id": 22441,
+ "attachment_id": 0,
+ "creation_time": "2001-11-17T22:07:42Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "I think the change proposed by this PR corresponds to the following\npatch; pmap_growkernel's `addr' argument is one past the last valid\noffset, so we don't want to change it if it is already at the start\nof a 4M region. The roundup2() macro does the right thing in this\ncase, whereas the existing code may increase kernel_vm_end 4M too\nfar, so it can potentially wrap around to 0.\n\n(See the PR for further details, though dispite what it says, I think\nonly the following rounding should be changed).\n\nIan\n\nIndex: pmap.c\n===================================================================\nRCS file: /dump/FreeBSD-CVS/src/sys/i386/i386/pmap.c,v\nretrieving revision 1.297\ndiff -u -r1.297 pmap.c\n--- pmap.c\t17 Nov 2001 01:56:04 -0000\t1.297\n+++ pmap.c\t17 Nov 2001 21:38:25 -0000\n@@ -1587,7 +1587,7 @@\n \t\t\tnkpt++;\n \t\t}\n \t}\n-\taddr = (addr + PAGE_SIZE * NPTEPG) \u0026 ~(PAGE_SIZE * NPTEPG - 1);\n+\taddr = roundup2(addr, PAGE_SIZE * NPTEPG);\n \twhile (kernel_vm_end \u003c addr) {\n \t\tif (pdir_pde(PTD, kernel_vm_end)) {\n \t\t\tkernel_vm_end = (kernel_vm_end + PAGE_SIZE * NPTEPG) \u0026 ~(PAGE_SIZE * NPTEPG - 1);"
+}

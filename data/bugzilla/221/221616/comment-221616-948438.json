@@ -1,0 +1,8 @@
+{
+ "id": 948438,
+ "bug_id": 221616,
+ "attachment_id": 185557,
+ "creation_time": "2017-08-18T21:00:21Z",
+ "creator": "kinjal.patel@taec.toshiba.com",
+ "text": "Created attachment 185557\npatch to correct the NVMe driver init sequence\n\nAt present, the NVMe driver init sequence is,\n1)      Enable controller (CC.EN=1)\n2)      Wait for controller ready (CSTS.RDY=1)\n3)      Set PCI bus master enable (BME=1)\n\nAs per NVMe spec, when NVMe controller becomes ready it has to process command.\n\n\"Enable (EN): When set to '1', then the controller shall process commands based on Submission Queue Tail doorbell writes\"\n\nAnd per PCI Express spec when BME is not set, the PCI Express Function is not allowed to issue any Memory or I/O requests.\n\"Bus Master Enable - Controls the ability of a PCI Express Endpoint to issue Memory95 and I/O Read/Write Requests, and\nthe ability of a Root or Switch Port to forward Memory and I/O Read/Write Requests in the Upstream direction\"\n\nEnabling controller before setting BME=1 is violation of spec, as controller \nhas to accept commands but BME is prerequisite for that.\n\nThe FreeBSD NVMe driver sequence should be changed to set BME=1 before attempting to enable controller.\n\nThe Linux device driver init sequence also does the same. That is,\n1)     Set PCI bus master enable (BME=1)\n2)     Enable Controller (CC.EN=1)\n3)     Wait for controller ready (CSTS.RDY=1)\n\nPlease find attached patch to correct the NVMe driver init sequence.\nThe patch is based on \"FreeBSD 10.3-STABLE amd64\" source.\n\nThanks,\nKinjal Patel"
+}

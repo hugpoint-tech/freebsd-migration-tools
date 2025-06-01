@@ -1,0 +1,8 @@
+{
+ "id": 1274485,
+ "bug_id": 273081,
+ "attachment_id": 0,
+ "creation_time": "2023-09-13T06:47:37Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #4)\n\nThe backtrace indicates that:\n\nstatic bool\ndump_sa(struct nl_writer *nw, int attr, const struct sockaddr *sa)\n{\n        uint32_t addr_len = 0;\n        const void *addr_data = NULL;\n#ifdef INET6\n        struct in6_addr addr6;\n#endif\n\n        if (sa == NULL)\n                return (true);\n\n        switch (sa-\u003esa_family) {\n\nfailed at the sa-\u003e dereference.\n\nIt was called from dump_iface:\n\n/*\n        nlattr_add_u8(nw, IFLA_PROTO_DOWN, val);\n        nlattr_add_u8(nw, IFLA_LINKMODE, val);\n*/\n        if (if_getaddrlen(ifp) != 0) {\n                struct ifaddr *ifa = if_getifaddr(ifp);\n\n                dump_sa(nw, IFLA_ADDRESS, ifa-\u003eifa_addr);\n\nSo: ifa-\u003eifa_addr had the bad value: 0x44572d4338374143\n\nfar: is 1 larger: 0x44572d4338374144 in:\n\nspsr: 0x0000000000400045\n far: 0x44572d4338374144\n esr: 0x0000000096000004\n\nIn the debug kernel register dump that was: 0xdeadc0dedeadc0df\nand x2 was without the increment:  x2: 0xdeadc0dedeadc0de\n\nSo the debug kernel has ifa-\u003eifa_addr==0xdeadc0dedeadc0de at\nthe failure. As I understand that means a use-after-free."
+}

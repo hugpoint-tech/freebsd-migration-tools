@@ -1,0 +1,8 @@
+{
+ "id": 914094,
+ "bug_id": 212283,
+ "attachment_id": 0,
+ "creation_time": "2016-12-30T16:05:00Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Michael Tuexen from comment #31)\n\u003e (In reply to Andrey V. Elsukov from comment #30)\n\u003e Wasn't the original problem that the length given by the send() call is not\n\u003e in tune with the length given in the IP header (because in the header is\n\u003e wasn't in the expected byte order)?\n\nYes, this is half of the problem. ip_off is also in wrong byte order. And this is the cause of generating of hundreds mbufs. Application wants determine MTU and it starts trying from 32k with DF flag set. But the kernel doesn't see this DF flag, it does IP fragmentation. App sends a much more data (it is interesting, so big MTU!), this produces much more fragments, and again, and again. So we get watchdog timeout and NIC reset.\n\n\u003e I was assuming that on the send path fragmentation is done by the kernel\n\u003e even if I have the IP_HDRINCL option enabled.\n\nThen I don't know how to fix this.\nI tried the unpatched ntraceroute on ixgbe(4). It doesn't complain, but it just hangs, only ifconfig ix0 down/up helped ressurect it."
+}

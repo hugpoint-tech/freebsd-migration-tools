@@ -1,0 +1,8 @@
+{
+ "id": 818963,
+ "bug_id": 199321,
+ "attachment_id": 0,
+ "creation_time": "2015-04-09T16:59:08Z",
+ "creator": "jimharris@FreeBSD.org",
+ "text": "System Configuration:\n2x 18C E5-v3 CPU (SMT enabled)\n2x X520 Intel Ethernet 10Gb Adapter (4 ports total)\n11.0-CURRENT (r281283)\n\nixgbe driver tries to allocate full range of 64 MSI-X vectors per port - first two ports succeed, but third and fourth ports fail and fall back to a single MSI vector.\n\nmsix_alloc() tries to use intr_next_cpu() to round-robin MSI-X vectors across all cores.  But driver initialization happens before APs are started, so intr_next_cpu() just returns the BSP's apic ID 0.  Each local APIC is limited to APIC_NUM_IOINTS==191 vectors, so a single local APIC cannot handle the 64 vectors for each of the 4 ports.\n\nintr_shuffle_irqs runs in SI_SUB_SMP phase and is intended to shuffle iras off of core 0 to APs, but at this point it is too late - pci_alloc_msix() already reported to ixgbe(4) that it could not allocate all 64 vectors.\n\nx86 defines NUM_MSI_INTS as 512, but this bug really restricts number of MSI-X vectors to APIC_NUM_IOINTS (191).  Impact is that some drivers/devices which can take advantage of multiple queues and one interrupt per queue must fall back to a single interrupt.  There may also be inconsistency across platforms based on device enumeration - whichever devices enumerate first will get its allotment of MSI-X vectors.\n\nThis problem will become exacerbated as NVMe SSDs become more prevalent, which also try to allocate 32-64 MSIx vectors each.  There are systems available already with 8 NVMe SSDs in a single system."
+}

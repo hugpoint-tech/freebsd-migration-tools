@@ -1,0 +1,8 @@
+{
+ "id": 391845,
+ "bug_id": 112490,
+ "attachment_id": 0,
+ "creation_time": "2007-05-07T15:40:04Z",
+ "creator": "mehuljv@yahoo.com",
+ "text": "Current implementation of rt_check() routine defined in route.c is\nnot completely  MPSAFE. I found an issue when i started routing with\n\"directisr\" enabled. For the first rcvd packet this function initializes\nrt_gateway of the passed rt_entry. This is done by calling \"rtalloc1\"\nroutine. But \"rt_check\" function doesnt hold any lock while calling this\nfunction. So incase if we have multiple instances of \"ip_input - netisr\"\nrunning than more than one thread can call this routine which may lead\nto some corruption, in my case it leads to a dead lock. Problem doesn't\nhappen if first a single route packet sent and than heavy traffic. But\nif initially itself i send heavy traffic than this happens immediately.\nI have fixed this and it works well after it. Patch is attached here\nwith. This is just a workaround for this issue. Probably we need to\ndefine few macros in route.h for the hardcoded values in the patch.\n\nFix: \n\n1260a1261\n\u003e try_again:\n1280a1282,1289\n\u003e\n\u003e               if(rt0-\u003ert_flags \u0026 0x80000000U){\n\u003e                       /*This rt is under process...*/\n\u003e                       RT_UNLOCK(rt);\n\u003e                       RT_UNLOCK(rt0);\n\u003e                       goto try_again;\n\u003e               }\n\u003e\n1281a1291\n\u003e                       rt0-\u003ert_flags |= 0x80000000U;\n1288a1299\n\u003e                       rt0-\u003ert_flags \u0026= (~0x80000000U);"
+}

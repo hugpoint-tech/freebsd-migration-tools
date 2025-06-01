@@ -1,0 +1,8 @@
+{
+ "id": 884028,
+ "bug_id": 210380,
+ "attachment_id": 171560,
+ "creation_time": "2016-06-19T00:27:39Z",
+ "creator": "allanjude@FreeBSD.org",
+ "text": "Created attachment 171560\npatch for net/nload\n\nnet/nload gets the network interface device names via struct sockaddr_dl\n\nstruct sockaddr_dl {\n        u_char  sdl_len;        /* Total length of sockaddr */\n        u_char  sdl_family;     /* AF_LINK */\n        u_short sdl_index;      /* if != 0, system given index for interface */\n        u_char  sdl_type;       /* interface type */\n        u_char  sdl_nlen;       /* interface name length, no trailing 0 reqd. */\n        u_char  sdl_alen;       /* link level address length */\n        u_char  sdl_slen;       /* link layer selector length */\n        char    sdl_data[46];   /* minimum work area, can be larger;\n                                   contains both if name and ll address */\n};\n\n\nThe name is stored in sdl_data, but is no longer null terminated. The first sdl_nlen bytes are the device name, the sdl_alen bytes after that are the link level address (MAC address), etc.\n\nThis small patch makes nload read only the first sdl_alen bytes as the device name, instead of reading binary data as a string until it finds a null byte.\n\nThis happens to often work if the first byte of the mac address is 0.\n\nbefore:\nDevice alc0~P+49▒d (1/11):\nDevice em0h^EÊ^W·o (2/11):\n\nafter:\nDevice alc0 (1/11):\nDevice em0 (2/11):"
+}

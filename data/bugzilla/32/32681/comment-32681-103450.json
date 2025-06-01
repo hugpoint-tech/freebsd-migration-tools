@@ -1,0 +1,8 @@
+{
+ "id": 103450,
+ "bug_id": 32681,
+ "attachment_id": 0,
+ "creation_time": "2001-12-11T17:30:30Z",
+ "creator": "des@ofug.org",
+ "text": "Stefan.Esser@o-tel-o.de writes:\n\u003e In order to check for the presence of some process %PID%, nessusd performs an\n\u003e opendir(\"/proc/%PID%\"), which can lead to a panic in fstafs(), if the\n\u003e corresponding process just finishes just before the call to fstatfs ...\n\nAh, OK, I see.  First, if nessus needs to check for the existence of a\nprocess with a given PID, it should kill(pid, 0) instead of relying on\nprocfs.  Second, the problem seems to be insufficient locking -\npossibly in pseudofs, but equally possibly in the VFS system.  When a\nprocess terminates, pseudofs automatically reclaims all vnodes\nassociated with it, which leads to an obvious race condition which can\nonly be avoided through proper locking.\n\nLooking at the pseudofs code, it doesn't seem to be at fault.  When\nthe process exits, pfs_exit() removes all vnodes associated with it\nfrom pseudofs' vnode cache, and vgone()s them.\n\nI'm starting to think that the race might be in namei(), actually -\nsince the namei() call from fstatfs() succeeds, it means namei() found\na vnode, but that vnode's v_mount is NULL, which means it's been\nreclaimed, which can't happen if it's referenced (can it?), and\nnamei() is supposed to reference the vnode before it returns it.  My\nbet is that there is a small race between namei() finding a vnode and\nreferencing it, but I'm getting out of my depth.  Does anybody else\nhave any ideas?\n\nDES\n-- \nDag-Erling Smorgrav - des@ofug.org"
+}

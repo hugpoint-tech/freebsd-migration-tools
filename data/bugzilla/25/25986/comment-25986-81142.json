@@ -1,0 +1,8 @@
+{
+ "id": 81142,
+ "bug_id": 25986,
+ "attachment_id": 0,
+ "creation_time": "2001-03-22T16:07:54Z",
+ "creator": "wollman@khavrinen.lcs.mit.edu",
+ "text": "\u003c\u003cOn Thu, 22 Mar 2001 01:10:02 -0800 (PST), David Xu \u003cbsddiy@21cn.com\u003e said:\n\n\u003e  Thank you!\n\u003e  it's a long standing bug, but seems no one want to fix it, don't know why!\n \nProbably because this ``fix'' would violate the TCP specification.\n(Not that we don't do that already for FINWAIT-2.)  See the state\ndiagram in RFC 793, page 23.\n\nThere are three states in TCP in which the specification requires that\nwe wait indefinitely for the other end to say something on the way to\nshutdown.  In FINWAIT-2, we are waiting for a FIN from the other side,\nbut they have already acknowledged our FIN).  Since TCP models a\ndual-simplex octet stream, it is entirely legitimate for the other end\nto continue to transmit data after it has acknowledged our FIN and\nbefore it gives up itself.  (They will be in CLOSE-WAIT when we are in\nFINWAIT-2.)  In CLOSING and LAST-ACK we are waiting for the other end\nto acknowledge our FIN, them having already sent a FIN of their own.\n\nCLOSING is an exceedingly difficult state to get into, since most TCPs\nwill ACK a FIN immediately, before delivering the end-of-session\nindication to the listening process.\n\nIt is more dangerous to time out LAST-ACK than FINWAIT-2, because\nFINWAIT-2 sockets normally transition into TIME-WAIT whereas LAST-ACK\nsockets are destroyed immediately.\n\n-GAWollman"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 20790,
+ "bug_id": 6759,
+ "attachment_id": 0,
+ "creation_time": "1998-05-26T15:20:01Z",
+ "creator": "seggers@semyam.dinoco.de",
+ "text": "\n\tThe file /usr/src/lib/libdisk/disk.c contains a confusing loop\nwhich seems not to do what it is expected to do.  It is this one:\n\n        p = read_block(fd,0);\n        dp = (struct dos_partition*)(p+DOSPARTOFF);\n        for(i=0;i\u003cNDOSPART;i++) {\n                if (dp-\u003edp_start \u003e= size) continue;\n                if (dp-\u003edp_start+dp-\u003edp_size \u003e= size) continue;\n                if (!dp-\u003edp_size) continue;\n\n                if (dp-\u003edp_typ == DOSPTYP_ONTRACK) {\n                        d-\u003eflags |= DISK_ON_TRACK;\n                        offset = 63;\n                }\n\n        }\n\n\tThis loop just increments i but besides setting d-\u003eflags and\noffset if the structure pointed to by dp contains DOSPTYP_ONTRACK in\ndp_typ it does nothing.  It just works on the same entry NDOSPART\ntimes which can't be right.\n\n\tMy guess is dp should have either be used as array with i as\nindex or should have been incremented after each iteration.  Anyway,\nsomething is wrong here.\n\nHow-To-Repeat: \n\tTake a look at FreeBSD 2.2-release libdisk in file disk.c at\nabout line 100."
+}

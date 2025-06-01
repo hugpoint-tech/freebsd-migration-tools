@@ -1,0 +1,8 @@
+{
+ "id": 862327,
+ "bug_id": 206754,
+ "attachment_id": 0,
+ "creation_time": "2016-01-30T09:33:55Z",
+ "creator": "ecturt@gmail.com",
+ "text": "`iicrdwr` in `/sys/dev/iicbus/iic.c` incorrectly handles iteration over buffer.\n\nFirstly, no bound checks are supplied on the user controlled `d-\u003enmsgs`.\n\nThis field is declared as type `uint32_t`, in `struct iic_rdwr_data` (`sys/dev/iicbus/iic.h`):\n\nstruct iic_rdwr_data {\n\tstruct iic_msg *msgs;\n\tuint32_t nmsgs;\n};\n\nHowever, the `i` variable in this function is declared as a `signed int`:\n\nint error, i;\n\nWhen `i` iterates over buffers, since it is `signed`, it can wrap around to a negative value, for example here:\n\n\tfor (i = 0; i \u003c d-\u003enmsgs; i++) {\n\t\tm = \u0026(buf[i]);\n\t\tusrbufs[i] = m-\u003ebuf;\n\nAnd here:\n\n\tfor (i = 0; i \u003c d-\u003enmsgs; i++) {\n\t\tm = \u0026(buf[i]);\n\t\tif ((error == 0) \u0026\u0026 (m-\u003eflags \u0026 IIC_M_RD))\n\t\t\terror = copyout(m-\u003ebuf, usrbufs[i], m-\u003elen);\n\t\tfree(m-\u003ebuf, M_IIC);\n\t}\n\n`i` will be converted to `unsigned` type for the conversion, however, will still be `signed` when indexing `buf`. This would result in a read out of bounds of the `buf` allocation.\n\nThis situation seems unlikely to be triggerable, because the code would wait for `buf` allocation to succeed (`M_WAITOK`):\n\nbuf = malloc(sizeof(*d-\u003emsgs) * d-\u003enmsgs, M_IIC, M_WAITOK);\n\nWhich would be unlikely to succeed if `d-\u003enmsgs` is something like `0x80000001`."
+}

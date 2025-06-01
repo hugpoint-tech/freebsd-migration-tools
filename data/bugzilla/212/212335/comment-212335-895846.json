@@ -1,0 +1,8 @@
+{
+ "id": 895846,
+ "bug_id": 212335,
+ "attachment_id": 0,
+ "creation_time": "2016-09-02T16:28:45Z",
+ "creator": "adamw@FreeBSD.org",
+ "text": "When spamd gets reinstalled (including by upgrade), the /etc/services entries are deleted during deinstall but not recreated during reinstall. As a result, spamd won't start after an upgrade. It looks like it is happening because the pkg-* scripts are not run in the order than spamd is anticipating.\n\n[root@lockup ~] poudriere bulk -j 10amd64 -i mail/spamd\n[...]\nroot@lockup:~ # grep spamd /etc/services\nspamd   8025/tcp   # spamd(8)\nspamd-sync      8025/udp   # spamd(8) synchronisation\nspamd-cfg       8026/tcp   # spamd(8) configuration\nroot@lockup:~ # pkg upgrade -f spamd\n[...]\n[lockup] [1/1] Reinstalling spamd-4.9.1_3...\n===\u003e Creating groups.\nUsing existing group '_spamd'.\n===\u003e Creating users\nUsing existing user '_spamd'.\nChecking /etc/services for missing service entries   \u003c-- pkg-install\n[lockup] [1/1] Extracting spamd-4.9.1_3: 100%\n===\u003e   Removing spamd entries from /etc/services   \u003c-- pkg-deinstall\n[...]\nroot@lockup:~ # grep spamd /etc/services\nroot@lockup:~ #\n\nIt looks as if pkg-deinstall is being run after the pkg-install, which seems strange... I would have thought that the deinstall should run before the install. I'm not sure whether this is a problem with spamd or with pkg, so I'm Cc'ing portmgr for input."
+}

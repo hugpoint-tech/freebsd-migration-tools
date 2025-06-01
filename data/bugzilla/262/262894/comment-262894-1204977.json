@@ -1,0 +1,8 @@
+{
+ "id": 1204977,
+ "bug_id": 262894,
+ "attachment_id": 0,
+ "creation_time": "2022-03-30T21:33:15Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Krautmaster from comment #4)\nLet's focus on the GELI panic first.  The fault address is 0xfffff80e00000004, which is in the direct map range, but with 32GB of RAM the direct map should end roughly at 0xfffff80800000000.  Maybe there is some large discontiguity.\n\nSome questions:\n- Which HBA driver is used?\n- Can you please attach output from \"sysctl vm.pmap.kernel_maps\"?\n- Do any of your GELI volumes use authentication?  \"geli list | grep AuthenticationAlgorithm\" will print some output if so.  If not, please try the patch below.\n\ndiff --git a/sys/geom/eli/g_eli.c b/sys/geom/eli/g_eli.c\nindex 4978523cbebe..9698cb2fdbc8 100644\n--- a/sys/geom/eli/g_eli.c\n+++ b/sys/geom/eli/g_eli.c\n@@ -1137,6 +1137,7 @@ g_eli_create(struct gctl_req *req, struct g_class *mp, struct g_provider *bpp,\n         */\n        pp = g_new_providerf(gp, \"%s%s\", bpp-\u003ename, G_ELI_SUFFIX);\n        pp-\u003eflags |= G_PF_DIRECT_SEND | G_PF_DIRECT_RECEIVE;\n+#if 0\n        if (CRYPTO_HAS_VMPAGE) {\n                /*\n                 * On DMAP architectures we can use unmapped I/O.  But don't\n@@ -1146,6 +1147,7 @@ g_eli_create(struct gctl_req *req, struct g_class *mp, struct g_provider *bpp,\n                 if ((sc-\u003esc_flags \u0026 G_ELI_FLAG_AUTH) == 0)\n                        pp-\u003eflags |= G_PF_ACCEPT_UNMAPPED;\n        }\n+#endif\n        pp-\u003emediasize = sc-\u003esc_mediasize;\n        pp-\u003esectorsize = sc-\u003esc_sectorsize;\n        LIST_FOREACH(gap, \u0026bpp-\u003ealiases, ga_next)"
+}

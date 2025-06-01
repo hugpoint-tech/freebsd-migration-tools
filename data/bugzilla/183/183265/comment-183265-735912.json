@@ -1,0 +1,8 @@
+{
+ "id": 735912,
+ "bug_id": 183265,
+ "attachment_id": 0,
+ "creation_time": "2013-10-24T10:20:00Z",
+ "creator": "lrevardel@nvidia.com",
+ "text": "This issue occurs when running in multifib (MAXROUTES=11)\n\nUpon reception of an ICMP6 PACKET_TOO_BIG, the hostcache isn't updated with the MTU provided by the ICMP error message.\nSubsequent IPv6 packet are not fragmented according to the new MTU value as they should be.\n\nFix: \n\nIt looks like the fibnum isn't managed by icmp6_mtudisc_update.\ntcp_macmtu6 doesn't find a route matching the searched address.\n\nFixing inc.inc_fibnum in icmp6_mtudisc_update() seems to solve the problem:\n\nicmp6_mtudisc_update()\n[...]\n\tbzero(\u0026inc, sizeof(inc));\n\tinc.inc_flags |= INC_ISIPV6;\n\tinc.inc6_faddr = *dst;\n+\tinc.inc_fibnum = M_GETFIB(ip6cp-\u003eip6c_m);\n\tif (in6_setscope(\u0026inc.inc6_faddr, m-\u003em_pkthdr.rcvif, NULL))\n\t\treturn;\n\n\tif (mtu \u003c tcp_maxmtu6(\u0026inc, NULL)) {\n\t\ttcp_hc_updatemtu(\u0026inc, mtu);\n\t\tICMP6STAT_INC(icp6s_pmtuchg);\n\t}\n[...]\nHow-To-Repeat: Ensure the kernel is compiled with MAXROUTES\u003e1.\n\nPing a remote destination on the internet using large ping packets (\u003e1500). The route to the destination should contain a segment on which the MTU is smaller than 1500 (say X) in order to reproduce the problem.\n\nFirst ping packet (IPv6 fragment)should be emitted with a size of 1500.\nThe host shold receive an ICMP6 packet with a smaller MTU (X).\nNext ping packet will be re-emitted with a size of 1500 instead of X."
+}

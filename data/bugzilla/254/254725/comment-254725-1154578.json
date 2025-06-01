@@ -1,0 +1,8 @@
+{
+ "id": 1154578,
+ "bug_id": 254725,
+ "attachment_id": 0,
+ "creation_time": "2021-04-05T09:03:36Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "Extracted a more complete set of packet headers belonging to the problematic session from the privately provided core.\n\nThe session is ECN-enabled\n\nAt the time of the panic, SENTFIN was set\n\nBased on the Timestamp option of the incoming ACKs, serious reordering and spurious retransmissions were going on.\n\nThe final packet with FIN originally has a payload of 1 byte. (TSopt val ..5625), but that is apparently lost and not received by the client.\n\nSusequently (based on TSopt val), just the FIN is retransmitted twice, with TSopt val ..5861 and ..5979 (e.g. when a transmission opportunity would be there, but no new data is available).\n\nThe RTT appears to be nearly 100ms from the very last round, sRTT is averaged at 275ms\n\nAt the panic, TSval would have been ..5988\n\nThis is for retransmitting the final payload byte, as the client only SACKed the 1st FIN retransmission. \n\nHowever, for some reason that byte is no longer available in the send socket buffer, causing the crash.\n\n\nSrv -\u003e clnt F. 9999:10000(1) //dropped\nClnt -\u003e Srv E. 1:1(0) ack -26seg \u003csack -25seg:9999\u003e\n(unobserved retransmission Srv-\u003eClnt)\nClnt -\u003e Srv E. 1:1(0) ack 9999\nSrv -\u003e cnt F. 10000:10000(0)\nClnt -\u003e Srv E. 1:1(0) ack 9999 \u003csack 10000:10001\u003e\nattempt to retransmit 10000:10001(1) -\u003e crash.\n\nHowever, current attempts to recreate this misbehavior were unsuccessful in recreating the panic."
+}

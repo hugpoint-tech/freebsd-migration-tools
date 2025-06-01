@@ -1,0 +1,8 @@
+{
+ "id": 980515,
+ "bug_id": 226323,
+ "attachment_id": 0,
+ "creation_time": "2018-03-03T11:43:38Z",
+ "creator": "freebsd@michael-bueker.de",
+ "text": "After the 28.02.2018 update of dovecot, I saw errors in maillog and was unable to login:\n\nMar  1 09:21:21 server roundcube: IMAP Error: Login failed for XXX from XXX. Failed to send LOGIN command in /var/www/rc/program/lib/Roundcube/rcube_imap.php on line 196 (POST /?_task=mail\u0026_action=refresh) \nMar  1 09:21:22 server dovecot: imap-login: Fatal: Unknown ssl_protocols setting: Unrecognized protocol 'SSLv2' \nMar  1 09:21:22 server dovecot: imap-login: Fatal: Unknown ssl_protocols setting: Unrecognized protocol 'SSLv2' \nMar  1 09:21:22 server dovecot: master: Error: service(imap-login): command startup failed, throttling for 2 secs \nMar  1 09:21:30 server dovecot: imap-login: Fatal: Unknown ssl_protocols setting: Unrecognized protocol 'SSLv2' \nMar  1 09:21:30 server dovecot: master: Error: service(imap-login): command startup failed, throttling for 4 secs \n\nI traced the problem to this report, which talks about the default config option \"ssl_protocols = !SSLv2\", which fails if SSL has dropped all support for SSLv2: https://dovecot.org/list/dovecot/2016-November/106114.html\n\nOn my system, surprisingly, I found that \"ssl_protocols = !SSLv2\" is really in the default config:\n\n# doveconf -d ssl_protocols\nssl_protocols = !SSLv2 !SSLv3\n\nSo I followed the workaround advice of overriding the default in 10-ssl.conf:\n\n# doveconf ssl_protocols\nssl_protocols = !SSLv3\n\nIn conclusion, since LibreSSL 2.6.4 dropped all support for SSLv2, but dovecot includes \"ssl_protocols = !SSLv2\" as a default config option, these errors occur when logging in."
+}

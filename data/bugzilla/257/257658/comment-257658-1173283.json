@@ -1,0 +1,8 @@
+{
+ "id": 1173283,
+ "bug_id": 257658,
+ "attachment_id": 0,
+ "creation_time": "2021-08-06T14:08:15Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "lang/crystal's openssl integration is unable to work with OpenSSL providers that do not provide a pkg-config.\n\nTrigger:\ncompile avalanchemq from https://reviews.freebsd.org/D31410 and see linker errors that look like the OpenSSL module is expecting an ancient OpenSSL API, not 1.1.1's.\n\nDebugging this with dch on IRC, I find this on FreeBSD 13.0:\n\n1. Crystal's openssl modules, through /usr/local/lib/crystal/openssl/lib_ssl.cr, tries to derive the OpenSSL version like so:\n    {% ssl_version = `hash pkg-config 2\u003e /dev/null \u0026\u0026 pkg-config --silence-errors --modversion libssl || printf %s 0.0.0`.split.last.gsub(/[^0-9.]/, \"\") %}\n\nNow, FreeBSD's base OpenSSL does not provide the typical libssl.pc, libcrypto.pc or openssl.pc files, so this line comes up with version 0.0.0 as a fallback.\n\nThis however causes the Crystal OpenSSL code to use an old OpenSSL API version which expects all sorts of outdated symbols from the libraries, which 1.1.1 no longer provides.\n\nI am unaware of the Crystal language, so I cannot provide a fix.\n\nPlease patch Crystal in a way that it properly detects the OpenSSL version (1.1.1k as of 13.0-RELEASE) and uses the right API."
+}

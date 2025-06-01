@@ -1,0 +1,8 @@
+{
+ "id": 929065,
+ "bug_id": 218392,
+ "attachment_id": 0,
+ "creation_time": "2017-04-05T07:27:41Z",
+ "creator": "topical@gmx.net",
+ "text": "If you harden your FreeBSD system by enabling security.bsd.see_other_uids (or security.bsd.see_other_uids), dovecot locking gets broken leading to data loss. \n\nDovecot uses lock files to make sure at most one process writes to a data file. In case the writer process has died unexpectedly and didn't remove the lock file, the file would be locked forever. To handle this, dovecot always checks the PID existence of the lock owner and wipes the lock if the PID doesn't exist.\n\nIf security.bsd.see_other_uids is active, the PID existence always fails if the process owning the lock (\"A\") runs with a different UID then the process that wants to acquire the lock (\"B\"). The second process (\"B\") thus assumes that the current owner (\"A\") has died, wipes the lock and writes concurrently(!) to the data file. This means that locking doesn't work at all and data loss is unevitable. \n\nLater on, the original owner (\"A\") will generate a syslog warning that its lock file got lost somehow, but it's too late and the data file has been broken already leading to further problems like lost mailboxes etc.\n\nWorkaround is to disable this hardening.\n\nAs this side-effect is far from obvious, I suggest to add a clearly visible hint to the release notes of dovecot2."
+}

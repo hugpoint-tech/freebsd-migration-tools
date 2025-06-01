@@ -1,0 +1,8 @@
+{
+ "id": 1170535,
+ "bug_id": 254695,
+ "attachment_id": 0,
+ "creation_time": "2021-07-15T15:42:28Z",
+ "creator": "gallatin@FreeBSD.org",
+ "text": "Rather than adding additional epoch enters to the critical path, I'd strongly prefer the hyperv driver be fixed to respect the network epoch.\n\nMost network drivers pass packets into the network stack as part of their receive interrupt processing.  Code has been added to automatically enter the network epoch in the FreeBSD ithread code, so that the epoch is held for the duration of the interrupt handler's execution on each interrupt delivered.\n\nFor drivers which use special mechanisms (like, taskqueues), it would be best if they marked themselves with IFF_KNOWSEPOCH and then called NET_EPOCH_ENTER() around calls into the network stack.  Since entering an EPOCH uses atomic operations, its best to take and release the epoch as infrequently as possible.   Eg, around the loop that processes packets and passes them to lro or if_input().\n\nSee iflib for an example."
+}

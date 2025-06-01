@@ -1,0 +1,8 @@
+{
+ "id": 60185,
+ "bug_id": 19603,
+ "attachment_id": 0,
+ "creation_time": "2000-06-30T14:40:01Z",
+ "creator": "dgilbert@velocet.ca",
+ "text": "\nWith 20 dc interfaces in my machine and \"option BRIDGE\" in the kernel,\nI was crashing whenever I typed ifconfig -a... and about once a day\notherwise.  This was stack smashing for some reason\n\nFix: I'm not 100% happy with this fix.  The bdg_stats structure is used in:\n\nSYSCTL_STRUCT(_net_link_ether, PF_BDG, bdgstats,\n        CTLFLAG_RD, \u0026bdg_stats , bdg_stats, \"bridge statistics\");\n\nand I'm not sure how to handle that.  The most eggregarious error, \nhowever, is that BDG_MAX_PORTS was defined and the status structure\nwas still defined with a constant 16 entries (not only that, but\nabsolutely no bounds checking was done, *ever*).\n\nIt would seem smart that this should be dynamic.  I thought about\nthat... and I just completely don't know what SYSCTL_STRUCT does ...\n\nBut even if I did, it would only be half the job to allocate things\nhere --- you really need to think about what happens when devices\ncome or leave (leaving is fine, I suppose).  Besides cardbus, we\nhave hotswap PCI to worry about :).\nHow-To-Repeat: \noption BRIDGE in a kernel and 20 interfaces (it would appear any\ntype of ethernet interface will do) in the kernel.\n\n(I'm guessing that bridging doesn't work with vlans?  sigh.\n would be nice)."
+}

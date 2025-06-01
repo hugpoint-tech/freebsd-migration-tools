@@ -1,0 +1,8 @@
+{
+ "id": 1040023,
+ "bug_id": 235876,
+ "attachment_id": 0,
+ "creation_time": "2019-03-01T18:14:06Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "So this ASL is definitely using the flag explicitly.  None of them are in ExtendedAddressSpaces, and some of them appear to be correct (e.g. the Host-PCI bridge is using ResourceProducer in the way the non-arm-specific ACPI Host-PCI bridge driver expects: to list ranges it decodes that are then used by child devices).  It seems that a couple of the uses of ResourceProducer in this ASL are just wrong though.  First, numbers of times the flag is used vs not used:\n\n\u003e grep ResourceConsumer tx2.asl  | wc -l\n      53\n\u003e grep ResourceProducer tx2.asl  | wc -l\n      11\n\nOf those 11 cases, SB.ECAM is probably a consumer, not a producer, though we already treat acpi_sysres devices special.\n\nSB.PCI0 resources should be producers.  If the committed patch actually worked fully it would have broken booting completely since PCI0 would have claimed all the resources for all its children blocking all of them from being able to alloc bars.  We probably skip resources for PCI bridges which is why this might still be working.\n\nThe URT0 device's memory should be a consumer.  Note that the interrupt resource is a consumer, and other similar devices use consumer.  This is just firmware writer incompetence.\n\nURT1, URT2, and URT3 are same as URT0.\n\nPCI1 is same as PCI0.\n\nSo really, the real issue on the Cavium box is that the UART _CRS buffers have a typo.  I think the commit should be changed so that we just ignore 'ResourceProducer' on devices with the ARMH0011 _HID but otherwise leave it in place."
+}

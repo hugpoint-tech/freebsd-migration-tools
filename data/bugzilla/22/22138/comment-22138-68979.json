@@ -1,0 +1,8 @@
+{
+ "id": 68979,
+ "bug_id": 22138,
+ "attachment_id": 0,
+ "creation_time": "2000-10-20T05:50:01Z",
+ "creator": "mcerha@mcerha-dsl2.cisco.com",
+ "text": "\nIt appears that tcpdump does not properly interpret the -v (verbose) option\nfor TCP packet decodes. There appears to be a flaw in the flow control. \n\nIn src/contrib/tcpdump/print-tcp.c:\n\n497         if (!qflag \u0026\u0026 vflag \u0026\u0026 length \u003e 0\n498          \u0026\u0026 (sport == TELNET_PORT || dport == TELNET_PORT))\n499                 telnet_print(bp, length);\n500         else if (sport == BGP_PORT || dport == BGP_PORT)\n501                 bgp_print(bp, length);\n502         else if (sport == NETBIOS_SSN_PORT || dport == NETBIOS_SSN_PORT)    503                 nbt_tcp_print(bp, length);\n504         return;\n\nThe first section doesn't make sense. The sport and dport clauses should be\ngrouped together and not with the flag clause.\n\nPS Jerry found this bug. I'm just trying to report it :)\n\nFix: \n\nApply the diff to src/contrib/tcpdump/print-tcp.c.\n\n497,498c497,498\nA\n\u003c \tif (!qflag \u0026\u0026 vflag \u0026\u0026 length \u003e 0) {\n\u003c \t if (sport == TELNET_PORT || dport == TELNET_PORT)\n---\n\u003e \tif (!qflag \u0026\u0026 vflag \u0026\u0026 length \u003e 0\n\u003e \t \u0026\u0026 (sport == TELNET_PORT || dport == TELNET_PORT))\n504d503\n\u003c \t}\nHow-To-Repeat: \nJust run tcpdump -v."
+}

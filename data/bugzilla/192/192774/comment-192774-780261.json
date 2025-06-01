@@ -1,0 +1,8 @@
+{
+ "id": 780261,
+ "bug_id": 192774,
+ "attachment_id": 145951,
+ "creation_time": "2014-08-18T04:08:20Z",
+ "creator": "john@cybersashi.com",
+ "text": "Created attachment 145951\npatch for problem.\n\nConsider an IPSEC policy such as:\n\n spdadd 0.0.0.0/0 XXX.XXX.XXX.XXX/32[1701] udp -P out ipsec\n   esp/transport//require;\n spdadd XXX.XXX.XXX.XXX/32[1701] 0.0.0.0/0 udp -P in ipsec\n   esp/transport//require;\n\nWhen triggered it sends a PF_KEY ACQUIRE message that causes ISAKMP \nnegotiations to occur with the remote.  Unfortunately the key_acquire \nroutine in sys/netipsec/key.c doesn't contain any code to propagate \nthe port / protocol information as part of the ACQUIRE message ... as \na result racoon sees an ACQUIRE message for all traffic to the remote\nsystem and supplies that as the proposal which fails since the remote \nsystem is only willing to protect L2TP with IPSEC ... not all traffic.\n\nNote that RFC 2367 3.1.6 SADB_ACQUIRE says:\n\n  The address(SD) extensions MUST have the port fields\n  filled in with the port numbers of the session requiring\n  keys if appropriate.\n\nWith the supplied patch I'm able to successfully establish a L2TP protected\nby IPSEC connection from FreeBSD 10-stable to a Cisco 3845 router."
+}

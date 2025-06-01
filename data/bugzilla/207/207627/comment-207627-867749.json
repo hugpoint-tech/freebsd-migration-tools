@@ -1,0 +1,8 @@
+{
+ "id": 867749,
+ "bug_id": 207627,
+ "attachment_id": 0,
+ "creation_time": "2016-03-01T21:11:42Z",
+ "creator": "ecturt@gmail.com",
+ "text": "`struct ctl_be_arg` from `sys/cam/ctl/ctl_ioctl.h` declares its sizes as `signed` integers:\n\nstruct ctl_be_arg {\n\tint\tnamelen;\n\tchar\t*name;\n\tint\tflags;\n\tint\tvallen;\n\tvoid\t*value;\n\n\tchar\t*kname;\n\tvoid\t*kvalue;\n};\n\n`ctl_copyin_args` from `sys/cam/ctl/ctl.c` copies these values directly from userland with no bound checks, and then goes on to use them in array indexes:\n\nstatic struct ctl_be_arg *\nctl_copyin_args(int num_args, struct ctl_be_arg *uargs,\n\t\tchar *error_str, size_t error_str_len)\n{\n\tstruct ctl_be_arg *args;\n\tint i;\n\n\targs = ctl_copyin_alloc(uargs, num_args * sizeof(*args),\n\t\t\t\terror_str, error_str_len);\n\n\t...\n\n\tfor (i = 0; i \u003c num_args; i++) {\n\t\tuint8_t *tmpptr;\n\n\t\targs[i].kname = ctl_copyin_alloc(args[i].name,\n\t\t\targs[i].namelen, error_str, error_str_len);\n\t\t...\n\t\tif (args[i].kname[args[i].namelen - 1] != '\\0') {\n\t\t...\n\t\tif (args[i].flags \u0026 CTL_BEARG_RD) {\n\t\t\t...\n\t\t\t \u0026\u0026 (tmpptr[args[i].vallen - 1] != '\\0')) {\n\nFor example, if a `args[i].namelen` of 0 is supplied, a read will be performed from `args[i].kname[-1]`. Similarly for `tmpptr` and `vallen`.\n\nThis range could be extended by supplying negative lengths, however this would be less likely to be triggerable since the size is converted to `unsigned` for the allocation and so an allocation of at least 4GB would need to succeed first."
+}

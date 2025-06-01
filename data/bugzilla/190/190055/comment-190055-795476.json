@@ -1,0 +1,8 @@
+{
+ "id": 795476,
+ "bug_id": 190055,
+ "attachment_id": 0,
+ "creation_time": "2014-11-11T17:58:30Z",
+ "creator": "osharoiko@gmail.com",
+ "text": "Just dug a bit more and found that in my case the problem appeared because of\n\nnss_connect_policy oneshot\n\nWith\n\nnss_connect_policy persist\n\n_nss_ldap_initgroups_dyn returns the correct set of groups.\n\nLooking at some debugging output that I gathered when `nss_connect_policy' is set to `oneshot' then do_result() will successfully read the first result (first group the user is a member of) but then on next invocation it will fail the  condition shown below (ldap-nss.c line 2443) and that will terminate the loop in _nss_ldap_getent_ex() and cause _nss_ldap_initgroups_dyn() to return NSS_UNAVAIL (-1).\n\n  if (__session.ls_state != LS_CONNECTED_TO_DSA)\n    {\n      debug (\"\u003c== do_result\");\n      return NSS_UNAVAIL;\n    }\n\nI would be surprised if this is a intended behaviour for _nss_ldap_initgroups_dyn to fail in `oneshot' mode but maybe I'm just missing something."
+}

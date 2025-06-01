@@ -1,0 +1,8 @@
+{
+ "id": 26226,
+ "bug_id": 8609,
+ "attachment_id": 0,
+ "creation_time": "1998-11-13T21:49:13Z",
+ "creator": "n@nectar.com",
+ "text": "The same behavior is seen under -CURRENT.\n\nThe patch in question defines HAVE_OPENPTY.  This causes\nthe Kerberos utility library to use openpty rather than\nthe code built into Kerberos (pty_getpty) for allocating \na master pty.\n\nI've determined that the difference that tickles this bug\nbetween the openpty code and the pty_getpty code is that\nopenpty opens the slave as well as the master, while pty_getpty\njust opens the master.  \n\nI was able to recreate the bug by undefining HAVE_OPENPTY (so\nthat the built-in pty_getpty code would be used), but adding\na gratuitous open/close of the slave pty in krlogind.c. i.e.\nsomething like:\n   \n   if ((retval = pty_getpty(\u0026p,line, sizeof(line)))) { \n        com_err(progname, retval, \"while getting master pty\");\n        exit(2);  \n   } \n+  {\n+\tint dummy = open(line, O_RDWR, 0);\n+       if (dummy)\n+\t\tclose(dummy);\n+  }\n\nSo I am theorizing that some state change caused by the open\nand/or close of the tty is occurring that is tickling some\nbug.  Unfortunately, I'm not familiar enough with the terminal\ndrivers to understand what.\n\n-- \nJacques Vidrine / n@nectar.com / nectar@FreeBSD.org"
+}

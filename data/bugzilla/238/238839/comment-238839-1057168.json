@@ -1,0 +1,8 @@
+{
+ "id": 1057168,
+ "bug_id": 238839,
+ "attachment_id": 0,
+ "creation_time": "2019-07-09T12:10:27Z",
+ "creator": "cy@FreeBSD.org",
+ "text": "(In reply to WHR from comment #9)\nThis is why this happened. We have a race condition. The interface was torn down and the mbuf deleted before ipfilter's entry point to push the arguments on the stack got it.\n\nAt frame 12\np **m\n\n*ifp doesn't point to a valid device. It appears that the ifp structure was already freed and reused for a disk I/O. The problem is in if_tun somewhere.\n\nCan you show the command that was issued when tun0 was deleted? Also the command that was issued to set up the VPN.\n\nWhy ppp over ssh? Can ou describe this in detail? Do you create a tun interface through ssh and tunnel ppp through it?\n\nI set up VPN tunnels through ssh directly:\n\n  LocalCommand /bin/echo \u003e /dev/null; /sbin/ifconfig tun3 10.2.2.6/32 10.2.2.5 m\ntu 1450; for I in 10.1.1.0 10.1.2.0 10.1.3.0; do route add -net $I/24 10.2.2.5;\ndone; # for I in svn.freebsd.org 192.30.253.112; do route add -host $I 10.2.2.5;\n done"
+}

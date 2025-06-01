@@ -1,0 +1,8 @@
+{
+ "id": 723215,
+ "bug_id": 180419,
+ "attachment_id": 0,
+ "creation_time": "2013-07-10T00:10:00Z",
+ "creator": "wollman@khavrinen.csail.mit.edu",
+ "text": "\nLogins with delegated credentials result in the creation of a new\nKerberos credential cache.  This file is stored in /tmp, and is\nsupposed to be unique for each ssh session; the name is stored in the\nenvironment variable KRB5CCNAME.\n\nAt some point (I think with the upgrade to 6.2), openssh-portable\nstopped calling mktemp() on the ccache name, with the result that\nmultiple ssh sessions now step on each other's credentials.  For\nexample:\n\n$ klist\nklist: No credentials cache found (ticket cache FILE:/tmp/krb5cc_12369_XXXXXXXXXX)\n\nThis session should still have a ccache (I haven't run kdestroy), but\nthe file was deleted when another ssh session on the same server\nexited.\n\nI'm fairly certain that this is coming from the openssh side rather\nthan pam_krb5 because an inspection of the pam_krb5 source code\nreveals that it always uses a six-X template for the ccache file, and\nthe actual ccache name used has ten X's.\n\nFix: \n\n???\nHow-To-Repeat: \nssh to some server with delegated credentials.  Run klist, note that\nthe ccache name looks like an un-randomized mktemp(3) template.  Run\nanother ssh in parallel and note that it is exactly the same."
+}

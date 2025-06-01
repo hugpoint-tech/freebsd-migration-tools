@@ -1,0 +1,8 @@
+{
+ "id": 969984,
+ "bug_id": 224975,
+ "attachment_id": 0,
+ "creation_time": "2018-01-07T18:27:32Z",
+ "creator": "wosch@FreeBSD.org",
+ "text": "While analysing the bug #224479 I noticed that `shutdown -r now’ runs to fast and failed to swapoff a swap device or swap file.\n\nI see on the console the error message:\n\n  swapoff: /dev/md99: Cannot allocate memory\n\nand soon later a kernel panic. Not good.\n\nThis happens when more swap space is in use than free memory is available. E.g. you have 2.5GB swap space, 69MB are in use and only 49MB Free memory is available (according to the top(1) command).\n\nHow to repeat:\n\n# start some processes, which need a little bit more RAM than available\nfor i in $(seq 1 20);do perl -e '$a=`man tcsh`; for(0..100) { $b.=$a}; sleep 100' \u0026 done\n\ntop(1) reports:\n\nMem: 611M Active, 51M Inact, 112M Laundry, 142M Wired, 103M Buf, 49M Free\nSwap: 2500M Total, 69M Used, 2431M Free, 2% Inuse\n\n\n# now reboot with shutdown\n$ shutdown -r now\n\n\nyou will see the “swapoff: /dev/md99: Cannot allocate memory” error message because 49M Free Mem is \u003c than 69M used swap.\n\nfollowed by a kernel swap_pager I/O error message\n\nIn case of low memory I think that shutdown/reboot needs to wait a little bit (3..10 seconds) after we kill the processes. Then there will be enough free memory available, and the swapoff call will run successfully."
+}

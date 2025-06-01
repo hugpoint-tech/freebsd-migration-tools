@@ -1,0 +1,8 @@
+{
+ "id": 685975,
+ "bug_id": 172113,
+ "attachment_id": 0,
+ "creation_time": "2013-01-20T04:26:17Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I was able to finally reproduce this panic today.  It seems to require\na server configured for PXE but that receives no DHCP reply (and\npossibly with the requisite SuperMicro X8 board).  I was able to\nprevent the panic with a subset of the referenced patch by only adding\nthe 'if_drv_flags \u0026 IFF_DRV_RUNNING' check to the start of\nigb_msix_que().  The rest of the patch was unnecessary.  I also added\nsome debugging to print out the ICR, EICR, IMS, and EIMS registers in\nthis case.  It does look like the hardware is sending an interrupt that\nis not enabled in the interrupt mask (specifically LSC).  In fact, the\n82576 datasheet specifically mentions masking LSC until initialization\nis complete to avoid spurious interrupts during boot and AFAICT igb(4)\ndoes this since e1000_reset_hw() clears the interrupt mask via writes\nto IMC and doesn't re-enable interrupts until igb_init_locked() is\ninvoked via 'ifconfig up'.  Here is my debug output:\n\nSMP: AP CPU #6 Launched!\nSMP: AP CPU #4 Launched!\nstray irq0\nigb0: interrupt on que 0: icr 0x1000004 eicr 0\n     ims 0 eims 0x80000000\n\nHmmm.   Nothing clears EIMS.  After some more debugging, I determined\nthat e1000_reset_hw() always turns this bit in EIMS on, even if it is\noff before e1000_reset_hw() is called(!).  I added explicit calls to\nigb_disable_intr() to clear EIMS after each call to e1000_reset_hw().\nThis removes the 'stray irq0', but I still get a spurious interrupt\nduring boot (albeit with eims 0).  I can use the IFF_DRV_RUNNING hack\nfor now, but I think the real fix is something else.\n\n-- \nJohn Baldwin"
+}

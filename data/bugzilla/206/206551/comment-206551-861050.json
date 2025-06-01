@@ -1,0 +1,8 @@
+{
+ "id": 861050,
+ "bug_id": 206551,
+ "attachment_id": 0,
+ "creation_time": "2016-01-24T00:13:59Z",
+ "creator": "ecturt@gmail.com",
+ "text": "After loading the iconv kernel module, a new sysctl name, \"kern.iconv.add\" is accessible for `root` user.\n\nThis is handled with the following code:\n\n    static int\n    iconv_sysctl_add(SYSCTL_HANDLER_ARGS)\n    {\n        ...\n        if (din.ia_datalen \u003e ICONV_CSMAXDATALEN)\n            return EINVAL;\n        ...\n        if (din.ia_datalen) {\n            csp-\u003ecp_data = malloc(din.ia_datalen, M_ICONVDATA, M_WAITOK);\n            error = copyin(din.ia_data, csp-\u003ecp_data, din.ia_datalen);\n            if (error)\n                goto bad;\n        }\n        ...\n    }\n\nSince the `ia_datalen` member of `struct iconv_add_in` is signed:\n\n    struct iconv_add_in {\n    \tint\tia_version;\n    \tchar\tia_converter[ICONV_CNVNMAXLEN];\n    \tchar\tia_to[ICONV_CSNMAXLEN];\n    \tchar\tia_from[ICONV_CSNMAXLEN];\n    \tint\tia_datalen;\n    \tconst void *ia_data;\n    };\n\nThe check on user supplied `din.ia_datalen` is insufficient. If a negative value is passed, it will bypass the check, and then wraparound to a huge value when converted to an `unsigned` type to be passed to `malloc` and `copyin`. For example, passing `-1` will bypass the check, and then attempt to allocate and copy to a buffer of size `0xffffffff`.\n\nThe impact of this is low, since it is only triggerable as `root`, and could at most result in DoS.\n\nThe solution is to replace this check:\n\n    if (din.ia_datalen \u003e ICONV_CSMAXDATALEN)\n\nWith this:\n\n    if (din.ia_datalen \u003e ICONV_CSMAXDATALEN || din.ia_datalen \u003c 0)"
+}

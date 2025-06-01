@@ -1,0 +1,8 @@
+{
+ "id": 1053617,
+ "bug_id": 238412,
+ "attachment_id": 204897,
+ "creation_time": "2019-06-08T04:23:14Z",
+ "creator": "takahiro.kurosawa@gmail.com",
+ "text": "Created attachment 204897\nproposed patch\n\nlibusb_get_config_descriptor() in FreeBSD issues a get_config_descriptor       \nrequest even if the config_index argument is out of range.  On the other       \nhand, the function in Linux checks the config_index argument against           \nbNumConfigurations in the device descriptor and returns LIBUSB_ERROR_NOT_FOUND \nwithout issuing get_config_descriptor requests.                                \n\nIt seems that get_config_descriptor requests with invalid config_index         \nvalues for most USB devices fail, but there is a device (USB DrDAQ from        \nPico Technology) that does not check the config_index value.  The request      \nfor USB DrDAQ succeeds even if the config_index value is invalid.              \nAs a result, the behavior of libusb_get_config_descriptor() in FreeBSD         \ndiffers from the one in Linux on such a device.                                \nThis makes qemu hang on FreeBSD with USB passthrough enabled because qemu      \nrepeats libusb_get_config_descriptor() with incrementing config_index until    \nthe function returns an error.\n\nThe specification of libusb_get_config_descriptor():                           \n  http://libusb.sourceforge.net/api-1.0/group__libusb__desc.html#gaa635d9aec77d\\e4895dd0896ccf001532\nThe implementation in Linux:\n  https://github.com/libusb/libusb/blob/v1.0.22/libusb/descriptor.c#L625"
+}

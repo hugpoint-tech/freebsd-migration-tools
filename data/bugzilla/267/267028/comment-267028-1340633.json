@@ -1,0 +1,8 @@
+{
+ "id": 1340633,
+ "bug_id": 267028,
+ "attachment_id": 0,
+ "creation_time": "2024-12-24T04:55:56Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #260)\n(In reply to satanist+freebsd from comment #259)\n\nI was mistaken about:\n\n        mod = malloc(sizeof(struct modlist), M_LINKER, M_NOWAIT | M_ZERO);\n        if (mod == NULL)\n                panic(\"no memory for module list\");\n        mod-\u003econtainer = container;\n        mod-\u003ename = modname;\n        mod-\u003eversion = version;\n        TAILQ_INSERT_TAIL(\u0026found_modules, mod, link);\n        return (mod);\n\nif something similar to mod == 0xfffff80000000007 resulted:\n\nIt appears that an assignment to the likes of\nmod-\u003econtainer might well be allowed without a general\nprotection trap at the time. The actual fault is from\nthe likes of the strcmp being given\nname == 0xe987f000fea5f0 in:\n\n{link = {tqe_next = 0xeef3f000e2c3f0, tqe_prev = 0xff54f000eef3f0}, container = 0x322ff0003287f0, name = 0xe987f000fea5f0 \u003cerror: Cannot access memory at address 0xe987f000fea5f0\u003e, \n  version = 15660016}\n\nfrom having dereferenced 0xfffff80000000007.\n\nHowever:\n\n        mod-\u003econtainer = container; // 0x322ff0003287f0\n        mod-\u003ename = modname;        // 0xe987f000fea5f0\n        mod-\u003eversion = version;     // 0xEEF3F0\n\ndoes not seem likely for what that code would be assigning.\nSo it still appears that the mod value from this code is\nlater replaced with the junk 0xfffff80000000007 ."
+}

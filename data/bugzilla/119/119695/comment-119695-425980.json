@@ -1,0 +1,8 @@
+{
+ "id": 425980,
+ "bug_id": 119695,
+ "attachment_id": 0,
+ "creation_time": "2008-01-15T19:20:01Z",
+ "creator": "sven@berkvens.net",
+ "text": "I was installing the print/cups port when the portupgrade failed because\nthe group 'cups' disappeared after it was added.\n\nThis happened because I have a /etc/nsswitch.conf with the following in it:\n\n#\n# nsswitch.conf(5) - name service switch configuration file\n# $FreeBSD: src/etc/nsswitch.conf,v 1.1 2006/05/03 15:14:47 ume Exp $\n#\ngroup: cache compat\ngroup_compat: nis\nhosts: cache files dns\nnetworks: cache files\npasswd: cache compat\npasswd_compat: nis\nshells: files\nservices: cache compat\nservices_compat: nis\nprotocols: cache files\nrpc: cache files\n\nThis causes the following line, which the port tried to do:\n\n    if ! pw groupshow cups ; then pw groupadd cups -g 193 ; fi\n\nto fail, because the groupshow command causes the nscd to cache a\nnegative lookup entry. The groupadd command then adds the user to the\n/etc/group file, but FAILS to inform the nscd(8) daemon that all cached\nentries in the group file should be purged from memory. Next, the port\nchecks whether the group 'cups' now exists, but gets a 'NO' because the\nnegative answer is still in the cache.\n\nI'm not sure whether the vipw(8) utility or similar other utilities\nexhibit the same problems.\n\nFix: \n\nThe pw(8) utility should inform the nscd(8) daemon of the changes that\nit makes. So should any system utilities that edit the password or group\nfiles in any way.\nHow-To-Repeat: Set up the /etc/nsswitch.conf file as above (or similar, at least adding\n'cache' to the passwd or group lines). Make sure the nscd daemon is\nrunning. Then try something similar to the command above."
+}

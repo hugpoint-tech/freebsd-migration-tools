@@ -1,0 +1,8 @@
+{
+ "id": 1146610,
+ "bug_id": 253500,
+ "attachment_id": 222425,
+ "creation_time": "2021-02-14T11:25:33Z",
+ "creator": "jmillikin@gmail.com",
+ "text": "Created attachment 222425\nquick-n-dirty patch to fix fcntl locking in FUSE\n\nThere's at least two bugs in fcntl lock handling that get tickled by FUSE:\n\n  1. Calls to `fcntl(fd, F_SETLKW, \u0026lock)` are showing up in the FUSE server as\n     a FUSE_SETLK (should be FUSE_SETLKW).\n\n  2. fcntl calls to _clear_ a lock, by using F_SETLK with `l_type = F_UNLCK`,\n     never get passed to userspace at all.\n\nIt looks like both incorrect behaviors are caused by `kern_fcntl()`:\n\n  * F_SETLKW is handled by a switch-case fallthrough to the F_SETLK path, but the\n    `VOP_ADVLOCK()' call is hardcoded to use `F_SETLK'.\n\n  * In the nested switch over the lock type, several calls to `VOP_ADVLOCK()' are\n    performed using the lock type (e.g. `F_UNLCK') where they should use the fcntl\n    opcode. This causes `fuse_vnop_advlock()' to return EINVAL.\n\nAttached is a patch that fixes both issues according to my test suite. I'm not very familiar with the FreeBSD kernel, so note that this patch might not do the right thing for other filesystem drivers."
+}

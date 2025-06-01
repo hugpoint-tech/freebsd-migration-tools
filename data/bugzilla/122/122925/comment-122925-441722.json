@@ -1,0 +1,8 @@
+{
+ "id": 441722,
+ "bug_id": 122925,
+ "attachment_id": 0,
+ "creation_time": "2008-05-18T23:52:40Z",
+ "creator": "bcran@FreeBSD.org",
+ "text": "This is occurring because sftp-server expects readdir(3) to return NULL \nfor a given DIR* twice in a row after all the files have been retrieved. \nIt seems that under certain conditions that isn't true.\n\nThe client sends an FXP_READDIR command; the server loops calling \nreaddir() until it gets a NULL back.  At this point it sends the results \nback to the client, but doesn't appear to tell it it already has all the \nentries. Instead, the client sends another FXP_READDIR, at which point \nthe server again calls readdir() with the existing DIR*, which has \nalready once before returned NULL.  Normally readdir() does return NULL \nfor a second time and the client gets back SSH2_FX_EOF.  Occasionally \nhowever, readdir will just start reading the directory contents all over \nagain.\n\nThe following program also shows the same behaviour, but less regularly.\n\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cdirent.h\u003e\n\nint main()\n{\n\tDIR *dp = opendir(\"/cdrom/\");\n\n\tif (dp == NULL)\n\t\treturn (-1);\n\n\tstruct dirent *d = NULL;\n\n\tdo {\n\t\td = readdir(dp);\n\t} while (d != NULL);\n\n\td = readdir(dp);\n\tif (d != NULL)\n\t\tprintf(\"readdir is starting again\\n\");\n\n\tclosedir(dp);\n\treturn 0;\n}"
+}

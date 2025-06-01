@@ -1,0 +1,8 @@
+{
+ "id": 863512,
+ "bug_id": 206886,
+ "attachment_id": 0,
+ "creation_time": "2016-02-05T10:13:12Z",
+ "creator": "rakuco@FreeBSD.org",
+ "text": "Hi,\n\nThe patch from comment #5 fails to build on 9.3 because base's GCC is too old:\n\nmemory.c:1341: error: wrong number of arguments specified for 'constructor' attribute\nmemory.c:1384: error: wrong number of arguments specified for 'destructor' attribute\n\nLine 1341 is:\nvoid CONSTRUCTOR gotoblas_init(void) {\n\nAnd the failure comes from the fact that CONSTRUCTOR is being defined like this:\n#if defined(_MSC_VER) \u0026\u0026 !defined(__clang__)\n#define CONSTRUCTOR __cdecl\n#define DESTRUCTOR __cdecl\n#elif defined(OS_DARWIN) \u0026\u0026 defined(C_GCC)\n#define CONSTRUCTOR     __attribute__ ((constructor))\n#define DESTRUCTOR      __attribute__ ((destructor))\n#else\n#define CONSTRUCTOR     __attribute__ ((constructor(101)))\n#define DESTRUCTOR      __attribute__ ((destructor(101)))\n#endif\n\nGCC 4.2.1 does not understand the constructor(priority) syntax, which is likely why there's an OS X-specific definition before that.\n\nYou need to either add a patch to use that one when an old GCC is being used (or just check for __FreeBSD_version) or require a more recent compiler."
+}

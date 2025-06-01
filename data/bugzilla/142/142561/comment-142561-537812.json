@@ -1,0 +1,8 @@
+{
+ "id": 537812,
+ "bug_id": 142561,
+ "attachment_id": 0,
+ "creation_time": "2010-01-15T17:13:00Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "My current analysis of the issue.\n\nApparently, the primary trigger for the issue is inability to resolve\n\\_PR.CPU0._PPC when EC0._REG is called in acpi_ec_attach.\nI think that \\_PR.CPU0._PPC should come from SSDT.  Currently I am not sure why\nthat doesn't happen - either it is genuinely not present in SSDT, or there is (or\nwas) some ACPI-CA issues with bringing in SSDT or, at least, with doing that on\ntime.  I said that, because the second attach attempt appears to work fine, so it\nlooks like _REG is executed properly at that time.\n\nAlex,\nI would like to see acpidump -dt output for this system (using FreeBSD acpidump).\n\nFreeBSD acpi driver performs two bus_generic_attach() passes for a good reason.\nIt seems that there is insufficient cleanup in acpi_ec_attach after the first\nattach failure which leads to a crash on the second probe/attach pass.\n\nAlex,\nwould you be able to test the following patch and report back the results?\n(please don't forget to clean up any local changes/fixes/patches/rollbacks)\n\n--- a/sys/dev/acpica/acpi_ec.c\n+++ b/sys/dev/acpica/acpi_ec.c\n@@ -470,6 +470,7 @@ acpi_ec_attach(device_t dev)\n     sc-\u003eec_uid = params-\u003euid;\n     sc-\u003eec_suspending = FALSE;\n     free(params, M_TEMP);\n+    acpi_set_private(dev, NULL);\n\n     /* Attach bus resources for data and command/status ports. */\n     sc-\u003eec_data_rid = 0;\n\nThanks!\n-- \nAndriy Gapon"
+}

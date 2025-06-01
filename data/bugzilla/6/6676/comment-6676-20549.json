@@ -1,0 +1,8 @@
+{
+ "id": 20549,
+ "bug_id": 6676,
+ "attachment_id": 0,
+ "creation_time": "1998-05-18T11:40:01Z",
+ "creator": "luoqi@chen.ml.org",
+ "text": "\n\tWhen all of the following conditions are true,\n\t    o same in \u0026 out divert port (default)\n\t    o alias_address is used instead of an interface name\n\t    o there is no ip divert traffic (e.g. ipfw divert rule is removed)\n\tnatd won't respond to SIGTERM. I have a natd shutdown script which\n\tremoves ipfw divert rule first, then terminate natd with kill -TERM.\n\tI could reverse the order, kill natd first, then removes divert rule,\n\tsince natd has a 10 sec grace period before shutdown, but this is\n\tnevertheless a bug.\n\n\tThe cause of the problem is that by default signal handlers are\n\tinstalled with SA_RESTART flag set, under aforementioned conditions,\n\trecvfrom() syscall in DoAliasing() will block forever.\n\nFix: Set SIGTERM interruptable. (There's similar problem with SIGHUP,\n\tin this case, refresh of address is delayed and the first packet\n\tafter an address change might be mistranslated.)\nHow-To-Repeat: \n\tStart natd with alias_address option, e.g.\n\t\tnatd -alias_address ${public_ip_address}\n\n\tNow in my shutdown script, I first removes ipfw divert rule, then\n\t\tkillall natd\n\tnatd won't go away."
+}

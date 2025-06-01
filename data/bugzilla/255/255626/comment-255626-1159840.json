@@ -1,0 +1,8 @@
+{
+ "id": 1159840,
+ "bug_id": 255626,
+ "attachment_id": 0,
+ "creation_time": "2021-05-05T22:38:38Z",
+ "creator": "timur@FreeBSD.org",
+ "text": "Thanks, Mark, your fix, seems, pretty trivial to apply :)\n\nI was trying to translate to `make` this shell construction:\n\n```\nfind /usr/local/bin /usr/local/sbin /usr/local/libexec -type f -print0 | \\\n        ${XARGS} -0 -I % -S 1024 -n 1 ${SH} -c \"case \\\"\\`${FILE} --brief --mime-type '%'\\`\\\" in 'application/'*) ${ECHO_CMD} '%' \u0026\u0026 ${STRIP_CMD} '%';; esac\" STRIP\n```\n\nBut got lost in additional escapes...\n\nAs Dmitry pointed me privately before all the problem exposes itself in FreeBSD 13 environment due clash of two issues:\n\n1. `strip` creates temporary file before it actually starts the processing of the file and, in case it is not strippable(shell script, for example) just leave this temporary file around, without proper cleanup.\n\n2. Before 13 it used to create that temporary file in /tmp, which was excluded from poudriere monitoring, but now the file is created in the same directory where original file is, hence leaving those orphaned temporary files around.\n\n\nI guess it's worth a separate PR against the bin*, really."
+}

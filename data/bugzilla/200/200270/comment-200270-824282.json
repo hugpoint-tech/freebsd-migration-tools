@@ -1,0 +1,8 @@
+{
+ "id": 824282,
+ "bug_id": 200270,
+ "attachment_id": 156857,
+ "creation_time": "2015-05-17T16:55:58Z",
+ "creator": "fbsd.bugzilla@fenyo.net",
+ "text": "Created attachment 156857\nrsyslog patch to correct this bug\n\nThe attached patch is written to work correctly for each of the 4 rsyslog ports: sysutils/rsyslog8, sysutils/rsyslog7, sysutils/rsyslog8-devel, sysutils/rsyslog7-devel\n\nWhen logging on the console, rsyslog writes \"\\n\" (NL) instead of \"\\r\\n\" (CRNL). Therefore, console output is made of lines that do not start at the first column.\n\nThis bug in rsyslog is linked to the bug report 199767 about getty and has been confirmed by Konstantin Belousov on comment 4: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=199767#c4\n\nOne may think it is not necessary to patch rsyslog since it could be possible to automatically convert any \"\\n\" char that rsyslog writes to the console to \"\\r\\n\", simply setting the opost and onlcr output mode flags on the console (using /etc/gettytab).\n\nBut for some tricky reasons that are explained in bug report 199767, it is not possible for those flags to be set at any time, specifically because of this getty behaviour: when getty is waiting for a login, it clears the opost flag to handle the line-mode by itself (the terminal device is in raw mode during this step, the output flag opost is cleared and line-mode processing, like handling backspaces or ^U, is done by getty, not by the terminal driver).\n\nSo, rsyslog must be patched because it can not work correctly on a console attached to getty.\n\nthe corresponding patch is attached to this bug report. It must be added to the files directory of each rsyslog port."
+}

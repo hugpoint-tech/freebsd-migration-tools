@@ -1,0 +1,8 @@
+{
+ "id": 1084057,
+ "bug_id": 240608,
+ "attachment_id": 0,
+ "creation_time": "2020-01-16T11:52:57Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "As to why the hardware can exhaust all descriptors in a free list.\nI think that there is a certain impedance mismatch.  iflib_rxeof() takes its budget in terms of full packets and also iflib_rxd_avail() works in the same terms. __iflib_fl_refill_lt() is called with a limit equal to budget + 8. \nBut the descriptors are used by packet fragments and a single packet may have many fragments.  Also, a driver like vmx may waste some descriptors[*] for reasons that are known only to vmware.\n\nFor example, in one crash dumps that I have here I see that iflib_rxeof() was processing its 11th packet (rx_pkts = 11, avail = 7, budget = 16) and that packet had iri_nfrags = 14.\nIt's conceivable that such a batch could exhaust all descriptors populated by the last refill.\n\n[*]\neop=1, sop=1, len=0 but a command descriptor 141 in rx queue 0 is \"consumed\":\n\n(kgdb) p $19.vxcr_u.rxcd[475]\n$22 = {rxd_idx = 141, pad1 = 0, eop = 1, sop = 1, qid = 0, rss_type = 0, no_csum = 0, pad2 = 0, rss_hash = 0, len = 0, error = 0, vlan = 0, vtag = 0, csum = 0, csum_ok = 0, udp = 0, tcp = 0, ipcsum_ok = 0, ipv6 = 0, ipv4 = 0,\n  fragment = 0, fcs = 0, type = 3, gen = 1}"
+}

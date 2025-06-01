@@ -1,0 +1,8 @@
+{
+ "id": 843258,
+ "bug_id": 203644,
+ "attachment_id": 0,
+ "creation_time": "2015-10-08T18:33:23Z",
+ "creator": "scdbackup@gmx.net",
+ "text": "usr.sbin/makefs/ffs/ffs_bswap.c\n\nCID 974635 : Destination buffer too small (BUFFER_SIZE)\n  10. buffer_size: You might overrun the 48 byte destination\n  string n-\u003edi_db by writing the maximum 60 bytes from o-\u003edi_db.\n\n138        memcpy(n-\u003edi_db, o-\u003edi_db, (NDADDR + NIADDR) * sizeof(u_int32_t));\n\nCID 974636 : Destination buffer too small (BUFFER_SIZE)\n  20. buffer_size: You might overrun the 16 byte destination string\n  n-\u003edi_extb by writing the maximum 136 bytes from o-\u003edi_extb.\n\n168        memcpy(n-\u003edi_extb, o-\u003edi_extb, (NXADDR + NDADDR + NIADDR) * 8);\n\n--------------- Source analysis:\n\nsys/ufs/ufs/dinode.h defines\n\n  typedef int32_t ufs1_daddr_t;\n  ...\n  struct ufs1_dinode {\n          ...\n          ufs1_daddr_t di_db[NDADDR]; /* 40: Direct disk blocks. */\n          ufs1_daddr_t di_ib[NIADDR]; /* 88: Indirect disk blocks. */\n          ...\n\nSo both arrays get copied in one memcpy() operation.\n\nSame with CID 974636:\n\n  typedef int64_t ufs2_daddr_t;\n  ...\n  struct ufs2_dinode {\n          ...\n          ufs2_daddr_t di_extb[NXADDR];/* 96: External attributes block. */\n          ufs2_daddr_t di_db[NDADDR]; /* 112: Direct disk blocks. */\n          ufs2_daddr_t di_ib[NIADDR]; /* 208: Indirect disk blocks. */\n\nThree arrays, one memcpy().\n\n--------------- Remedy proposal:\n\nOne should consider to use two or three separate memcpy() calls.\n(I cannot judge whether the alignment of 40 and 88 needs\n padding bytes on any architecture.)"
+}

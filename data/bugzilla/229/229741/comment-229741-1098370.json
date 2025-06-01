@@ -1,0 +1,8 @@
+{
+ "id": 1098370,
+ "bug_id": 229741,
+ "attachment_id": 0,
+ "creation_time": "2020-04-22T01:06:30Z",
+ "creator": "kevans@freebsd.org",
+ "text": "The root of the problem here is that EV_RECEIPT on the first event will halt processing because nevents == 0; this is common amongst {Net,Free,Open}BSD, at least.\n\nEV_RECEIPT should only be set on the last event you're passing in to get the semantics you're wanting; if an error happens on any event before that one you'll get the same EV_ERROR return (if feasible) and will not drain the queue. If no error happens, you'll hit that one and still not drain the queue because EV_RECEIPT is set.\n\nHere's the diff I applied to your example:\n\n\u003c\u003c\u003cEOF\n--- kq.c.orig\t2020-04-21 20:02:08.123750000 -0500\n+++ kq.c\t2020-04-21 20:02:24.577357000 -0500\n@@ -108,7 +108,7 @@\n \n \t\tkq = kqueue();\n \n-\t\tEV_SET(kev, client, EVFILT_READ, EV_ADD | EV_CLEAR | EV_RECEIPT, 0, 0, 0);\n+\t\tEV_SET(kev, client, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, 0);\n \t\tEV_SET(kev + 1, client, EVFILT_WRITE, EV_ADD | EV_CLEAR | EV_RECEIPT, 0, 0, 0);\n \t\tkevent(kq, kev, 2, NULL, 0, NULL);\n \n@@ -131,7 +131,7 @@\n \n \t\tkq = kqueue();\n \n-\t\tEV_SET(kev, client, EVFILT_WRITE, EV_ADD | EV_CLEAR | EV_RECEIPT, 0, 0, 0);\n+\t\tEV_SET(kev, client, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, 0);\n \t\tEV_SET(kev + 1, client, EVFILT_READ, EV_ADD | EV_CLEAR | EV_RECEIPT, 0, 0, 0);\n \t\tkevent(kq, kev, 2, NULL, 0, NULL);\n \nEOF\n\nI'm tentatively closing this as \"works as intended,\" but please do feel free to re-open if you believe a change is necessary here after this explanation."
+}

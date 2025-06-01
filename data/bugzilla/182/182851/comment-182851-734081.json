@@ -1,0 +1,8 @@
+{
+ "id": 734081,
+ "bug_id": 182851,
+ "attachment_id": 0,
+ "creation_time": "2013-10-09T08:00:00Z",
+ "creator": "slw@zxy.spb.ru",
+ "text": "sys/net/radix.c contains\n\n/*\n * Work area -- the following point to 3 buffers of size max_keylen,\n * allocated in this order in a block of memory malloc'ed by rn_init.\n * rn_zeros, rn_ones are set in rn_init and used in readonly afterwards.\n * addmask_key is used in rn_addmask in rw mode and not thread-safe.\n */\nstatic char *rn_zeros, *rn_ones, *addmask_key;\n\naddmask_key used by rn_addmask (called from rn_lookup, rn_addroute and rn_delete).\nIn all cases rn_addmask used in RW mode w/o proper locking.\n\naddmask_key is absolutly globaly used -- for IPv4, IPv6 and other at once.\n\nAs result -- incorrect routing lookup, routing update and so.\n(for example: kernel: rn_addmask: mask impossibly already in tree)\n\nFix: \n\nDelete global addmask_key.\nUse local (on stack in rn_addmask) buffer."
+}

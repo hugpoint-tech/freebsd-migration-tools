@@ -1,0 +1,8 @@
+{
+ "id": 1149786,
+ "bug_id": 253992,
+ "attachment_id": 0,
+ "creation_time": "2021-03-03T18:34:43Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "Generally, I agree that we should not do malloc(M_WAITOK) under vnode lock.\nThe main reason for this is that we might own vnode lock for the vnode which\nowns too many pageable pages and that prevents pagedaemon from making progress,\nor at least makes it life significantly harder.\n\nThat said, in your case there are two things that are questionable:\n- we default to round-robin policy for zones which do not specify policy\n  explicitly (what is isi_kern_openat, is it for isilon?)\n- this is not real OOM, it is due to partitioning and strange policy that\n  allocator has to wait for pagedaemon.  And still, pagedaemon must be able\n  to make some progress, for overloaded domain.\n\nI.e. I am leery of the necessity of the proposed change."
+}

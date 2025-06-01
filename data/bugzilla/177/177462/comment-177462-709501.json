@@ -1,0 +1,8 @@
+{
+ "id": 709501,
+ "bug_id": 177462,
+ "attachment_id": 0,
+ "creation_time": "2013-04-09T07:55:45Z",
+ "creator": "svvord@ulona.org",
+ "text": "Backtrace from [work dia]/objects/custom/shape_typeinfo.c:shape_typeinfo_load -\u003e g_fopen -\u003e fopen\n\n/usr/src/lib/libc/stdio/fopen.c:\n\u003c\u003c\u003c===\n(gdb) n\n99      }\n(gdb) l\n94               * fseek and ftell.)\n95               */\n96              if (oflags \u0026 O_APPEND)\n97                      (void)_sseek(fp, (fpos_t)0, SEEK_END);\n98              return (fp);\n99      }\n(gdb) print fp\n$17 = (FILE *) 0x807eb0740\n(gdb) n\nshape_typeinfo_load (info=0x80a3ead00) at shape_typeinfo.c:200\n200       if (!f)\n(gdb) print f\n$18 = (FILE *) 0x7eb0740\n===\u003e\u003e\u003e\n\nfopen return (FILE *) 0x807eb0740 but g_fopen return (FILE *) 0x7eb0740\n\nSo after call fread:\n\nProgram received signal SIGSEGV, Segmentation fault.\n__fread (buf=0x7fffffffce20, size=512, count=1, fp=0x7eb0740) at /usr/src/lib/libc/stdio/fread.c:95\n95              ORIENT(fp, -1);\n\nThis patch solves problem for me:\n\n--- objects/custom/shape_typeinfo.c.orig\t2013-04-09 01:48:15.838095782 +1100\n+++ objects/custom/shape_typeinfo.c\t2013-04-09 16:21:37.840874850 +1100\n@@ -196,7 +195,7 @@\n     saxHandler.warning = _warning;\n     once = TRUE;\n   }\n-  f = g_fopen (info-\u003efilename, \"rb\");\n+  f = fopen (info-\u003efilename, \"rb\");\n   if (!f)\n     return FALSE;\n   while ((n = fread (buffer, 1, BLOCKSIZE, f)) \u003e 0) {"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 978126,
+ "bug_id": 226004,
+ "attachment_id": 0,
+ "creation_time": "2018-02-18T17:24:07Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "tftpd(8)'s man page says that files may be written only if they already exist and are publicly writable.  However, it doesn't correctly validate public writability when given a relative pathname.  In validate_access at line 746, it checks for the S_IROTH bit, regardless of the mode.  It should check for S_IWOTH when the mode is WRQ.\n\nSteps to reproduce:\n1) In inetd.conf, ensure that the \"-s\" option is lacking\n2) In an authorized directory (such as /tftpboot), create a file named \"world_readable\" with mode 444\n3) From a client, create a file named foo.txt and do \"echo put foo.txt world_readable | tftp \u003chostname\u003e\"\n4) Check the server's /var/log/xferlog.  It should show something like this:\n\nFeb 17 21:49:37 fbsd12 tftpd[1512]: Filename: 'world_readable'\nFeb 17 21:49:37 fbsd12 tftpd[1512]: Mode: 'netascii'\nFeb 17 21:49:37 fbsd12 tftpd[1512]: 192.168.0.16: write request for /tmp/tftpboot/world_readable: success\n\nNote that this is not a security vulnerability, because the transfer ultimately doesn't work unless the file already exists and is owned by user nobody."
+}

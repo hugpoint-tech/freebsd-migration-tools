@@ -1,0 +1,8 @@
+{
+ "id": 362240,
+ "bug_id": 106109,
+ "attachment_id": 0,
+ "creation_time": "2006-12-01T04:20:03Z",
+ "creator": "sa2c@sa2c.net",
+ "text": "\nPOSIX style signal handers expect that the faulting address is stored\nin si_addr member of siginfo_t.\n\nBut the address is passed to signal handler only as non-portable\nfourth argument on FreeBSD/amd64.\n\nHow-To-Repeat: Following program produces\ni386: \u0026main=0x80485e8, si_addr=0x80485e8, fourth_arg=0x0\namd64: \u0026main=0x400780, si_addr=0x0, fourth_arg=0x400780\n\n#include \u003csignal.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n\nint main();\n\nvoid\nhandler(int sig, siginfo_t *siginfo, void *context, void *addr)\n{\n\tfprintf(stderr, \"\u0026main=%p, si_addr=%p, fourth_arg=%p\\n\",\n\t\t\u0026main, siginfo-\u003esi_addr, addr);\n\texit(1);\n}\n\nint\nmain()\n{\n\tstruct sigaction sa;\n\n\tsa.sa_flags = SA_SIGINFO;\n\tsigemptyset(\u0026sa.sa_mask);\n\tsa.sa_sigaction = (void (*)(int, siginfo_t *, void *))handler;\n\n\tsigaction(SIGBUS, \u0026sa, NULL);\n\tsigaction(SIGSEGV, \u0026sa, NULL);\n\t*(int *)main = 1;\n\n\treturn 0;\n}"
+}

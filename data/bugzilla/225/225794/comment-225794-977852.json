@@ -1,0 +1,8 @@
+{
+ "id": 977852,
+ "bug_id": 225794,
+ "attachment_id": 0,
+ "creation_time": "2018-02-17T02:02:02Z",
+ "creator": "jdc@koitsu.org",
+ "text": "freebsd-stable mailing list also has this, indicating an MFC has now caused this problem in -STABLE: https://lists.freebsd.org/pipermail/freebsd-stable/2018-February/088393.html\n\n\"VM image for 11.1-STABLE began exhibiting same dislike for USB 3.0\nports as problem reported in PR 225794 for 12.0-CURRENT.\n\nPrior to FreeBSD-11.1-STABLE-amd64-20180215-r329320.vmdk.xz no such\nproblem was observed.\"\n\nCAM status 0x44 refers to done_ccb-\u003eccb_h.status per sys/cam/scsi/scsi_da.c, function dadone().  done_ccb is declared as \"union ccb *done_ccb\".  Field ccb_h is likely declared as \"struct ccb_hdr ccb_h\" (this is commonplace).  Field status is therefore \"u_int32_t status\" per sys/cam/scsi/cam_ccb.h, which should correlate with the cam_status enum per sys/cam/scsi/cam.h.  I had to write a small program to dump all the enum names and values because the ordering and mid-struct value assignments result in hard-to-read code.  Text strings come directly from cam_status_table[] per sys/cam/cam.c, except for QFRZN, which comes from the .h file itself.\n\n0x04 = CAM_REQ_CMP_ERR = CCB request completed with an error\n0x40 = CAM_DEV_QFRZN   = The DEV queue is frozen w/this err\n\nSuggest involving avg@, hselasky@, and emaste@  You will probably be asked to try older commits to try and narrow down what exact commit broke things.\n\nstable/11 commits: http://www.freshbsd.org/search?branch=RELENG_11\u0026project=freebsd\nHEAD commits: http://www.freshbsd.org/?branch=HEAD\u0026project=freebsd"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1111024,
+ "bug_id": 247626,
+ "attachment_id": 0,
+ "creation_time": "2020-06-29T18:49:01Z",
+ "creator": "jdc@koitsu.org",
+ "text": "(In reply to Hiroo Ono from comment #1)\nIn general, this rc script provided by the vendor is pretty bad.  Your modification fixes a long-standing problem of the daemon not TRULY being stopped properly, which is great!\n\nThe vendor version has an unnecesary dependency on Samba (testparm) just for something like \"set the workgroup name\", and does not let you set your own flags in rc.conf for wsdd (often needed for things like \"-i em0\").  That's a feature I really, really needed.\n\nWhat I use is below, named \"wsdd_alternate\" as to not conflict with the port/pkg one.  It allows me to do this in rc.conf:\n\nwsdd_alternate_enable=\"yes\"\nwsdd_alternate_args=\"-w WORKGROUP -4 -i em0 -v -v -v\"\n\nKeep in mind I COULD NOT call the variable wsdd_alternate_flags because that ends up adding the flags to daemon(8) as well (bad).  I don't know how to override that behaviour without writing a bunch of wsdd_alternate_prestart() etc. nonsense.\n\n\n\n#!/bin/sh\n\n# PROVIDE: wsdd_alternate\n# REQUIRE: DAEMON NETWORKING SERVERS\n# BEFORE: LOGIN\n# KEYWORD: shutdown\n\n. /etc/rc.subr\n\nname=wsdd_alternate\nrcvar=wsdd_alternate_enable\n\nload_rc_config $name\n\n: ${wsdd_alternate_enable:=\"NO\"}\n: ${wsdd_alternate_args:=\"\"}\n\npidfile=\"/var/run/${name}.pid\"\nprocname=\"python3\"\ncommand=\"/usr/sbin/daemon\"\ncommand_args=\"-f -S -p ${pidfile} -u daemon -T wsdd /conf/ME/scripts/wsdd.py ${wsdd_alternate_args}\"\n\nrun_rc_command \"$1\""
+}

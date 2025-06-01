@@ -1,0 +1,8 @@
+{
+ "id": 1048984,
+ "bug_id": 200319,
+ "attachment_id": 0,
+ "creation_time": "2019-04-28T21:29:29Z",
+ "creator": "osharoiko@gmail.com",
+ "text": "Hello,\n\nI can reliably reproduce this problem on three systems running 12.0 and 11.2. To reproduce it one needs to send a non negligible amount of traffic towards the system under test so I cannot provide the exact script but I hope my instructions are clear and I’m happy to provide as much details as I can.\n\nTo reproduce a problem configure the system in the following way:\n\nifconfig ue0 up # Or any other ethernet interface that you have in the system\nifconfig bridge0 create\nifconfig bridge0 addm ue0\nifconfig bridge0 inet 192.168.0.111/24 vhid 1 advskew 100 pass mekmitasdigoat\npkg install iperf3\niperf3 -s\n\nFrom some other machine send traffic towards system under test:\n\niperf3 -c 192.168.0.111 -u -t 120 -Z -b 100m \n\nIn all of my tests this resulted in immediate (within 2 seconds) lockup of the network stack on the target system. Excluding bridge interface from the picture and configuring CARP directly on top of ue0 (also tested with rl0) eliminates the problem.\n\nI will try to look more into this problem but I'm not familiar with locking in the kernel. Are there any documents/exmaples/kernel options which can help find where deadlock happens?\n\nAlso, https://reviews.freebsd.org/D3133 had no attention for over a year. But looks like it has been applied in pfSense and works there (https://redmine.pfsense.org/issues/8056) is that something woth looking into?\n\nKind regards,\nOleg"
+}

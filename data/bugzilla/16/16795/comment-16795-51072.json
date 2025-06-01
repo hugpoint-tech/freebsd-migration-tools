@@ -1,0 +1,8 @@
+{
+ "id": 51072,
+ "bug_id": 16795,
+ "attachment_id": 0,
+ "creation_time": "2000-02-17T23:30:02Z",
+ "creator": "ben@scientia.demon.co.uk",
+ "text": "\nIf /var is a symlink (e.g., to /usr/var to keep /var off the root partition\nwhen there are just / and /usr partitions), pkg_add will fail to record data\ninto /var/db/pkg. This is because isdir(), called by make_hierarchy() uses\nlstat() to determine if a path is a directory without checking if it is a\nsymlink or not.\n\nFix: (apply in src/usr.sbin/pkg_install/lib, sorry about this not being a\nproper \"cvs diff\" type thing.)\n\n\n\nthis may have other effects somewhere else, though it shouldn't (why should\nanything in pkg_* care if something is a directory as opposed to a symlink\nto one?).--A4cZFm30JhoTSuSQqwsgOltYFtTy3AYuwgjtYCEzPVM1KhmN\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- file.c.orig\tThu Feb 17 21:36:42 2000\n+++ file.c\tThu Feb 17 21:39:12 2000\n@@ -47,7 +47,7 @@\n {\n     struct stat sb;\n \n-    if (lstat(fname, \u0026sb) != FAIL \u0026\u0026 S_ISDIR(sb.st_mode))\n+    if (stat(fname, \u0026sb) != FAIL \u0026\u0026 S_ISDIR(sb.st_mode))\n \treturn TRUE;\n     else\n \treturn FALSE;\nHow-To-Repeat: \nmv /var /var.old \u0026\u0026 ln -s /var.old /var\npkg_add \u003csomething\u003e\n\n(I'm not guaranteeing this will show the failure, but it certainly fails\nin my case (it should), and doing this is probably easier for people to\ncheck than moving all of /var to another filesystem.)"
+}

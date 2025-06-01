@@ -1,0 +1,8 @@
+{
+ "id": 5461,
+ "bug_id": 1812,
+ "attachment_id": 0,
+ "creation_time": "1996-10-15T17:20:01Z",
+ "creator": "Tor.Egge@idt.ntnu.no",
+ "text": "\n\tWriting to memory regions corresponding to a few hundred mmapped files \n        and using msync() to flush the file system may cause the process\n\tto hang.\n\n\tThe process is unkillable, in diskwait. \n\n\tps xl outout shows \n  UID   PID  PPID CPU PRI NI   VSZ  RSS WCHAN  STAT  TT       TIME COMMAND\n26850 24861 24860  45 -18 19   612 38132 vmiorl DN    ??    2:02.79 bin/domainhelp\n\n\tOne of the vnodes for the mmapped files is left in a locked state, \n        i.e. lstat() hangs :-(\n\n  UID   PID  PPID CPU PRI NI   VSZ  RSS WCHAN  STAT  TT       TIME COMMAND\n26850 25492 25098 145 -14  0   204  592 uihget D+    p9    0:00.03 ls -F -ld h.de (ls@386freebsd)\n\n\tAs a side effect of this, the vnode for the directory in which \n\tthe file resides\n\t(/export/akg2/ftpsearch/datasets/datasets/dataset2/domain) \n\tbecomes locked. :-(\n\nFix: \n\nTemporary workaround: reboot the system whenever this occurs.\nHow-To-Repeat: \topen and mmap 250 files, each 1.2 MB in size.\n\n\tWrite to the first 32 KB on each of the 250 mmapped memory regions,\n\tthen use msync() with the MS_ASYNC flag and fsync() for each of the 250\n\tmmapped memory regions.\n\tContinue with the next 32 KB, until all of the mmapped regions have\n\tbeen written to disk."
+}

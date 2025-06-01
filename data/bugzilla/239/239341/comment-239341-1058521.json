@@ -1,0 +1,8 @@
+{
+ "id": 1058521,
+ "bug_id": 239341,
+ "attachment_id": 205930,
+ "creation_time": "2019-07-20T13:14:13Z",
+ "creator": "shamaz.mazum@gmail.com",
+ "text": "Created attachment 205930\nPatch that fixes the problem for me\n\nHello. I am running FreeBSD 12.0-RELEASE and want to try hda (audio) support, which was added to CURRENT recently (base r349335). So I have cherry-picked that commit (I use git mirror on github) and rebuilt bhyve.\n\nWhen I add HDA device, bhyve aborts on assertion:\n\nroot@vonbraun:~ # bhyve -c 1 -m 2G -w -H -s 0,hostbridge -s 4,ahci-cd,/home/vasily/Fedora-Workstation-Live-x86_64-30-1.2.iso -s 6,hda,play=/dev/dsp -s 29,fbuf,tcp=127.0.0.1:5900,w=1920,h=1080 -s 30,xhci,tablet -s 31,lpc -l com1,stdio -l bootrom,BHYVE_UEFI.fd fedora\n(Fedora is booting. Some messages skipped.)\nAssertion failed: (!err), function hda_set_sdctl, file /usr/src/usr.sbin/bhyve/pci_hda.c, line 1072.\n\nHere are the last lines is bhyve_hda.log:\n\nhda_set_sdctl-1063: stream_ind: 0x4 old: 0x50001c value: 0x50001e\nhda_stream_start-677: stream: 0x4 bdl_cnt: 0x3 bdl_paddr: 0x773c5000\nhda_stream_start-706: Fail to get the guest virtual address\n\nSo I have examined pci_hda.c and discovered that bdle pointer in hda_stream_start function is shifted by 4 bytes from actual position of that structure in memory. I cannot explain it, but the following patch fixes the problem. Maybe it's because I did not rebuild the whole system, but maybe it's a bug in bhyve. Please tell me is HDA support work on your machine."
+}

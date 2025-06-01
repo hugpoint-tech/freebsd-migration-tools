@@ -1,0 +1,8 @@
+{
+ "id": 879588,
+ "bug_id": 209661,
+ "attachment_id": 0,
+ "creation_time": "2016-05-20T13:44:55Z",
+ "creator": "ecturt@gmail.com",
+ "text": "The privileged `sysarch` handler, `amd64_set_ioperm`, performs an incorrect bound check on user arguments supplied to it.\n\nThe `uap-\u003estart + uap-\u003elength \u003e ...` check can be bypassed if the two user controlled values overflow when added together.\n\nFor example, `uap-\u003estart = 0xffffffff` and `uap-\u003elen = 1` will overflow to 0 when added together, which will bypass the check.\n\nLater on, there is a signed array index with a loop starting from `uap-\u003estart`. If `uap-\u003estart` is negative, this would index `iomap` negatively.\n\nsys/amd64/amd64/sys_machdep:\n\nint\namd64_set_ioperm(td, uap)\n\tstruct thread *td;\n\tstruct i386_ioperm_args *uap;\n{\n\tint i, error;\n\tchar *iomap;\n\tstruct amd64tss *tssp;\n\tstruct system_segment_descriptor *tss_sd;\n\tstruct pcb *pcb;\n\n\tif ((error = priv_check(td, PRIV_IO)) != 0)\n\t\treturn (error);\n\tif ((error = securelevel_gt(td-\u003etd_ucred, 0)) != 0)\n\t\treturn (error);\n\tif (uap-\u003estart + uap-\u003elength \u003e IOPAGES * PAGE_SIZE * NBBY)\n\t\treturn (EINVAL);\n\n\t...\n\n\tfor (i = uap-\u003estart; i \u003c uap-\u003estart + uap-\u003elength; i++) {\n\t\tif (uap-\u003eenable)\n\t\t\tiomap[i \u003e\u003e 3] \u0026= ~(1 \u003c\u003c (i \u0026 7));\n\t\telse\n\t\t\tiomap[i \u003e\u003e 3] |= (1 \u003c\u003c (i \u0026 7));\n\t}\n\treturn (error);\n}"
+}

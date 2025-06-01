@@ -1,0 +1,8 @@
+{
+ "id": 345142,
+ "bug_id": 102412,
+ "attachment_id": 0,
+ "creation_time": "2006-10-20T04:06:41Z",
+ "creator": "db@db.net",
+ "text": "This diff fixes this bug.\n\n--- patch.diff begins here ---\n--- kern/uipc_socket.c.orig\tMon Oct 16 21:07:02 2006\n+++ kern/uipc_socket.c\tMon Oct 16 21:09:49 2006\n@@ -1559,10 +1559,14 @@\n\n \terror = 0;\n \tif (sopt-\u003esopt_level != SOL_SOCKET) {\n+\t\tint res=ENOPROTOOPT;\n+\t\tSOCK_LOCK(so);\n \t\tif (so-\u003eso_proto \u0026\u0026 so-\u003eso_proto-\u003epr_ctloutput)\n-\t\t\treturn ((*so-\u003eso_proto-\u003epr_ctloutput)\n+\n+\t\t\tres= ((*so-\u003eso_proto-\u003epr_ctloutput)\n \t\t\t\t  (so, sopt));\n-\t\terror = ENOPROTOOPT;\n+\t\tSOCK_UNLOCK(so);\n+\t\treturn res;\n \t} else {\n \t\tswitch (sopt-\u003esopt_name) {\n #ifdef INET\n--- patch.diff ends here ---\n\nResult of live testing on this server:\n\n*** Server Up 1 days, 1:16:00\n*** Highest connection count:  4122 (4121 clients)\n\nWe are in the process of testing this fix still, but so far it has been up\nthe longest it has ever been.\n\n- Diane\n\n- db@db.net http://www.db.net/~db"
+}

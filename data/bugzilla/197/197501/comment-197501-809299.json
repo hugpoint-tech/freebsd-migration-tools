@@ -1,0 +1,8 @@
+{
+ "id": 809299,
+ "bug_id": 197501,
+ "attachment_id": 152824,
+ "creation_time": "2015-02-09T23:00:27Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Created attachment 152824\ngdb_port_xsave.patch\n\nThis patch to the port adds support for XSAVE on amd64 and i386 using the recently added PTRACE_GET/SETXSTATE in HEAD.  (I will soon merge those changes to stable/10 as well.)\n\nIt also adds kern.proc.sigtramp usage on i386 fixing unwinding across signal frames for i386 binaries after the shared page signal code changes.\n\nAs part of the XSAVE changes it also fixes the amd64 FreeBSD ABI to return an i386 target description when debugging a 32-bit process.  This allows XSAVE debugging to work for an i386 binary on amd64 (though threads cannot be debugged still).\n\nThe threads patches have been reworked to pull threads-related patches out of the main port patches and into a single patch that is applied when the THREAD option is enabled.  In part this is to make it easier to update the port in the hopeful case that other patches (like the signal trampoline fixes and XSAVE) can be upstreamed.\n\nOne additional change to the threads patches to allow them to work with XSAVE is that the fbsd-threads target no longer uses ptrace to fetch registers for LWPs directly.  Instead, the x86 nat.c files are updated to pass the lwp id to ptrace if the inferior has an lwp id instead of always passing the PIDs.  This means that for LWP-backed threads, the fbsd-threads target now passes all register requests down to the native method.  The supply/collect regset stubs are now only needed to support userland threads for libkse."
+}

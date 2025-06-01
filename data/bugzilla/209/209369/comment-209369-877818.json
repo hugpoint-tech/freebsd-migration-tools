@@ -1,0 +1,8 @@
+{
+ "id": 877818,
+ "bug_id": 209369,
+ "attachment_id": 170103,
+ "creation_time": "2016-05-07T20:27:16Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 170103\nExplicitly call float versions of log, exp, etc.\n\nDuring the exp-run in bug 208158, it was found that chinese/sunpinyin gives errors with libc++ 3.8.0 [1]:\n\ngmake[2]: Entering directory '/wrkdirs/usr/ports/chinese/sunpinyin/work'\nslmpack lm_sc.3gm.arpa dict.utf8 lm_sc.3gm\nLoading lexicon...done.\nLoading ARPA slm...\nWriting out...done!\nslmthread lm_sc.3gm lm_sc.t3g.orig\nLoading original slm...\nfirst pass...\nCompressing pr values...65536 float values ==\u003e 65536 values\nCompressing bow values...16384 float values ==\u003e 16384 values\nThreading the new model...Assertion failed: (prit != pr_map.end()), function main, file src/slm/thread/slmthread.cpp, line 364.\n/wrkdirs/usr/ports/chinese/sunpinyin/work/sunpinyin-a8bd811/src/sunpinyin-dictgen.mk:51: recipe for target 'lm_sc.t3g.orig' failed\n\nThis is because the code mostly uses floats, but in some parts it uses log(), exp(), etc, which return doubles.  During the parts where it does lookups in std::map\u003cfloat, int\u003e constructs, this leads to it not being able to find the expected entries.  Fix this by using logf(), expf() and similar, which explicitly return floats.\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR208158-default/2016-05-01_10h29m48s/logs/errors/zh-sunpinyin-2.0.4.r3.log"
+}

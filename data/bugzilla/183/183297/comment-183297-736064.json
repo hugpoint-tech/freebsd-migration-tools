@@ -1,0 +1,8 @@
+{
+ "id": 736064,
+ "bug_id": 183297,
+ "attachment_id": 0,
+ "creation_time": "2013-10-25T12:40:00Z",
+ "creator": "harti@FreeBSD.org",
+ "text": "When building a C++ program both the compiler and link are identified as /usr/bin/CC. The compiling works fine - CC seems to be able to figure out the language from the extension. When linking, however, CC refuses the -stdlib=libc++ option. Looks like it doesn't know when parsing the command line.\n\nFix: \n\nIn analogy to Linux create a Platform/FreeBSD-CXX.cmake:\n\nif(NOT CMAKE_CXX_COMPILER_NAMES)\n  set(CMAKE_CXX_COMPILER_NAMES c++)\nendif()\n\nThis seems to make the default c++ compiler and linker /usr/bin/c++ and the problem disappears.\nHow-To-Repeat: CMakeLists.txt:\ncmake_minimum_required(VERSION 2.8)\nproject(test CXX)\nadd_executable(test test.cc)\nset(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS} -stdlib=libc++ -std=c++11\")\n\ntest.cc:\nint\nmain()\n{\n}\n\nRun\ncmake .\nmake VERBOSE=1\nand observe the warning message from the linker:\nCC: warning: argument unused during compilation: '-stdlib=libc++'"
+}

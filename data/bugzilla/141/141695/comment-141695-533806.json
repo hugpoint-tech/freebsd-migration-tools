@@ -1,0 +1,8 @@
+{
+ "id": 533806,
+ "bug_id": 141695,
+ "attachment_id": 0,
+ "creation_time": "2009-12-17T03:20:00Z",
+ "creator": "bcran@FreeBSD.org",
+ "text": "When running lots of copies (\u003e100) of the SCTP API tester application 'api_tests' the following panic occurs:\n\nKernel page fault with the following non-sleepable locks held:\nexclusive sleep mutex sctp-inp (inp) r = 0 (0xffffff011bb97960) locked @ /usr/src/sys/netinet/sctp_input.c:93\nKDB: stack backtrace:\ndb_trace_self_wrapper() at db_trace_self_wrapper+0x2a\n_witness_debugger() at _witness_debugger+0x2e\nwitness_warn() at witness_warn+0x2c2\ntrap() at trap+0x2ce\ncalltrap() at calltrap+0x8\n--- trap 0xc, rip = 0xffffffff806c1cab, rsp = 0xffffff800003d420, rbp = 0xffffff800003d990 ---\nsctp_process_control() at sctp_process_control+0x3eeb\nsctp_common_input_processing() at sctp_common_input_processing+0x1b1\nsctp_input_with_port() at sctp_input_with_port+0x388\nip_input() at ip_input+0xbc\nswi_net() at swi_net+0x151\nintr_event_execute_handlers() at intr_event_execute_handlers+0x66\nithread_loop() at ithread_loop+0xb2\nfork_exit() at fork_exit+0x12a\nfork_trampoline() at fork_trampoline+0xe\n--- trap 0, rip = 0, rsp = 0xffffff800003dd30, rbp = 0 ---\n\nThe same panic and stack trace also occurs with the sctp-tcb lock held from /usr/src/sys/netinet/sctp_pcb.c:1892\n\nThe message from sctp_pcb.c \"This conflict in free SHOULD not be happening!\" is also occasionally displayed, though the system doesn't panic at that point.\n\nHow-To-Repeat: Run a shell script containing around 100 copies of the command:\n\n./api_tests \u003e /dev/null \u0026\n\nIt takes a minute or so of running the script, waiting for most of the api_test processes to quit then running the script again before the system panics."
+}

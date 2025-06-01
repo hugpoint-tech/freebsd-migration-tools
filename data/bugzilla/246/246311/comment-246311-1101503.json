@@ -1,0 +1,8 @@
+{
+ "id": 1101503,
+ "bug_id": 246311,
+ "attachment_id": 214280,
+ "creation_time": "2020-05-08T15:43:13Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "Created attachment 214280\nDecrease the procstat fd access restriction to PGET_CANSEE\n\nCurrently \"procstat fd [pid]\" cannot view anything, even for other processes owned by the user making the call, not even their current working directory (CWD), unless it has PGET_CANDEBUG permission.\n\nlinprocfs however allows reading the CWD for any process because it doesn't perform that check (sys/compat/linprocfs/linprocfs.c, function linprocfs_doproccwd()).\n\nApplications use this, eg. xfce4-terminal relies on /compat/linux/proc/\u003cpid\u003e/cwd to find the shell's CWD, so that when you open a new tab, it starts in the same CWD as the tab you opened it from (https://github.com/xfce-mirror/xfce4-terminal/blob/master/terminal/terminal-screen.c#L2343). I would like to patch xfce4-terminal to use libprocstat for that instead of needing linprocfs to be mounted, but since procstat is more restrictive, it will break it.\n\nCan we please downgrade PGET_CANDEBUG to at least PGET_CANSEE, so you can view the CWD for processes you own? Maybe other open files still need to be hidden, but the CWD doesn't seem like a major security concern.\n\nLinux's own /proc filesystem never hides the CWD (lrwxrwxrwx), and only hides file descriptors for processes you don't own.\n\nThe attached patch decreases the access restriction to PGET_CANSEE, and works as intended in my tests."
+}

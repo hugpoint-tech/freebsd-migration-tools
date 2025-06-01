@@ -1,0 +1,8 @@
+{
+ "id": 890372,
+ "bug_id": 211441,
+ "attachment_id": 173093,
+ "creation_time": "2016-07-29T13:30:14Z",
+ "creator": "prabhat@mtree.co.in",
+ "text": "Created attachment 173093\ntcp state diagram for quick reference\n\n1) For TCPS_SYN_SENT:\n\nAs per TCP state diagram, TCPS_SYN_SENT should switch to TCPS_CLOSED state on appl:close call or timeout. In current code, at SYN_SENT state, a FIN message is initiated instead of call to tcp_close() to release PCB and TCP control block, which leads to incorrect states.\n\nTo fix the issue, \"case TCPS_SYN_SENT:\" must be shifted with the case \"case TCPS_LISTEN:\".\n\n\n2) For TCPS_SYN_RECEIVED:\n\nAs per TCP state diagram, on appl:close call, if we are at TCPS_SYN_RECEIVED state then we just need to send FIN and switch to FIN_WAIT_1 state. In current code, we are not switching to TCPS_FIN_WAIT_1 state.\n\nTo fix this issue, \"break;\" statement should be removed in the case \"case TCPS_SYN_RECEIVED:\" so that it falls through \"case TCPS_ESTABLISHED:\" where we are changing state to TCPS_FIN_WAIT_1.\n\nCode fix:\n\tcase TCPS_SYN_RECEIVED:\n\t\ttp-\u003et_flags |= TF_NEEDFIN;\n\t\t//break;"
+}

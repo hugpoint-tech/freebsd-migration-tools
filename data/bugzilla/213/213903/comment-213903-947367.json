@@ -1,0 +1,8 @@
+{
+ "id": 947367,
+ "bug_id": 213903,
+ "attachment_id": 0,
+ "creation_time": "2017-08-12T20:38:05Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to muxx.dev from comment #54)\\\n\nLooks  to me like ts==0x0 was the starting value\ngiven to turnstile_broadcast in each backtrace\nlisted in this buzilla bug (213903), for example:\n\n(kgdb) list *0xffffffff80b3a89c\n0xffffffff80b3a89c is in turnstile_broadcast (/usr/src/sys/kern/subr_turnstile.c:837).\n832\n833             /*\n834              * Transfer the blocked list to the pending list.\n835              */\n836             mtx_lock_spin(\u0026td_contested_lock);\n837             TAILQ_CONCAT(\u0026ts-\u003ets_pending, \u0026ts-\u003ets_blocked[queue], td_lockq);\n838             mtx_unlock_spin(\u0026td_contested_lock);\n839\n840             /*\n841              * Give a turnstile to each thread.  The last thread gets\nCurrent language:  auto; currently minimal\n(kgdb) backtrace\n. . .\n#8  0xffffffff80b3a89c in turnstile_broadcast (ts=0x0, queue=1) at /usr/src/sys/kern/subr_turnstile.c:837\n#9  0xffffffff80ad48cf in __rw_wunlock_hard (c=0xfffff800437de858, tid=\u003cvalue optimized out\u003e, file=\u003cvalue optimized out\u003e, line=\u003cvalue optimized out\u003e) at /usr/src/sys/kern/kern_rwlock.c:1027\n. . .\n\nNote that ts==0x0 would be a problem for:\n\nTAILQ_CONCAT(\u0026ts-\u003ets_pending, \u0026ts-\u003ets_blocked[queue], td_lockq);\n\nSo I wonder if __rw_wunlock_hard is providing a bad ts\nvalue. If yes: the problem then occurs before the\nturnstile_broadcast call is made."
+}

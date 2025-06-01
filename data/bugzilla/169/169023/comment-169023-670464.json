@@ -1,0 +1,8 @@
+{
+ "id": 670464,
+ "bug_id": 169023,
+ "attachment_id": 0,
+ "creation_time": "2012-06-21T09:36:03Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kib\nDate: Thu Jun 21 08:35:47 2012\nNew Revision: 237361\nURL: http://svn.freebsd.org/changeset/base/237361\n\nLog:\n  MFC r237061:\n  Make sure that fstab fd is not leaked on exec.\n  \n  PR:\tkern/169023\n\nModified:\n  stable/9/lib/libc/gen/fstab.c\nDirectory Properties:\n  stable/9/lib/libc/   (props changed)\n\nModified: stable/9/lib/libc/gen/fstab.c\n==============================================================================\n--- stable/9/lib/libc/gen/fstab.c\tThu Jun 21 07:48:14 2012\t(r237360)\n+++ stable/9/lib/libc/gen/fstab.c\tThu Jun 21 08:35:47 2012\t(r237361)\n@@ -39,6 +39,7 @@ __FBSDID(\"$FreeBSD$\");\n #include \u003csys/stat.h\u003e\n \n #include \u003cerrno.h\u003e\n+#include \u003cfcntl.h\u003e\n #include \u003cfstab.h\u003e\n #include \u003cpaths.h\u003e\n #include \u003cstdio.h\u003e\n@@ -246,6 +247,8 @@ getfsfile(name)\n int \n setfsent()\n {\n+\tint fd;\n+\n \tif (_fs_fp) {\n \t\trewind(_fs_fp);\n \t\tLineNo = 0;\n@@ -257,11 +260,18 @@ setfsent()\n \t\telse\n \t\t\tsetfstab(getenv(\"PATH_FSTAB\"));\n \t}\n-\tif ((_fs_fp = fopen(path_fstab, \"r\")) != NULL) {\n+\tfd = _open(path_fstab, O_RDONLY | O_CLOEXEC);\n+\tif (fd == -1) {\n+\t\terror(errno);\n+\t\treturn (0);\n+\t}\n+\t_fs_fp = fdopen(fd, \"r\");\n+\tif (_fs_fp  != NULL) {\n \t\tLineNo = 0;\n \t\treturn(1);\n \t}\n \terror(errno);\n+\t_close(fd);\n \treturn(0);\n }\n \n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 955810,
+ "bug_id": 223015,
+ "attachment_id": 0,
+ "creation_time": "2017-10-15T11:41:14Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "Well, tmpfs does support spare files.\n\nWhat you reported is indeed the wrong behavior, but it is caused not by supposed lack of support for spares, but due to wrong code what tries to avoid OOM situations due to over-committing the file backing for tmpfs files.  See sys/fs/tmpfs_subr.c, functions tmpfs_pages_check_avail() and functions tmpfs_mem_avail() and tmpfs_pages_used() referenced from there.\n\nIn particular, tmpfs_mem_avail() is completely wrong, it mis-interprets v_free_count.\n\nI think that tmpfs should only check the current page usage by specific mount point against per-mount point limit, if any.  Trying to formulate a limit against some formula involving v_free_count and other VM metrics cannot work, due to the VM algorithms.  The main reason is that we support paging memory to the backing store, so v_free_count indicates wasted memory (as opposed to the free or free-able memory in the common sense of the word)."
+}

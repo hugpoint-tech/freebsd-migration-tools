@@ -1,0 +1,8 @@
+{
+ "id": 91182,
+ "bug_id": 29074,
+ "attachment_id": 0,
+ "creation_time": "2001-07-19T04:23:27Z",
+ "creator": "keramida@ceid.upatras.gr",
+ "text": "From: Chad David \u003cdavidc@acns.ab.ca\u003e\nSubject: bin/29074: banner seg faults on Ctrl-D\nDate: Wed, Jul 18, 2001 at 09:03:56PM -0600\n\n\u003e \u003eDescription:\n\u003e \tWhen banner is run without any arguments it displays a\n\u003e \tMessage: prompt.  If Ctrl-D is entered at that point the\n\u003e \tprogram core dumps.\n\u003e \t\n\u003e \u003eHow-To-Repeat:\n\u003e \tRun banner without any arguments and press Ctrl-D at the\n\u003e \tMessage: prompt.\n\u003e \t\n\u003e \u003eFix:\n\u003e \tZero the buffer prior to calling fgets() or check the return\n\u003e \tvalue of fgets(), the later is probably more correct.\n\nTry the following patch.  It seems to solve problems on my banner.\n\nIndex: banner.c\n===================================================================\nRCS file: /home/ncvs/src/usr.bin/banner/banner.c,v\nretrieving revision 1.11\ndiff -u -r1.11 banner.c\n--- banner.c    2001/05/28 03:49:23     1.11\n+++ banner.c    2001/07/19 03:21:08\n@@ -1075,7 +1075,8 @@\n                if ((message = malloc((size_t)MAXMSG)) == NULL)\n                        err(1, \"malloc\");\n                fprintf(stderr,\"Message: \");\n-               (void)fgets(message, MAXMSG, stdin);\n+               if (fgets(message, MAXMSG, stdin) == NULL)\n+                       exit(0);\n                nchars = strlen(message);\n                message[nchars--] = '\\0';       /* get rid of newline */\n        }"
+}

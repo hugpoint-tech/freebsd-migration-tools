@@ -1,0 +1,8 @@
+{
+ "id": 838087,
+ "bug_id": 202691,
+ "attachment_id": 0,
+ "creation_time": "2015-08-27T12:11:38Z",
+ "creator": "yizhouzhou@ict.ac.cn",
+ "text": "by examine the lock mechanism in if_lagg.c, I find race conditions as follows:\n\nin function lagg_port_destroy: \n890         ifp-\u003eif_lagg = NULL;\nis protected by rm_wlock on its sc\n\nwhile in function lagg_input:\n1656         struct lagg_port *lp = ifp-\u003eif_lagg;\n1657         struct lagg_softc *sc = lp-\u003elp_softc;\nis not protected by any locks.\n\n\npossible fixed:\nreplace the locks in if_lagg.c with a global rmlock\nand check the value of ifp-\u003eif_lagg in lagg_input\nto be not null after read locked\n\n\n\n\nMany thanks\nZhouyi"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1005527,
+ "bug_id": 229824,
+ "attachment_id": 0,
+ "creation_time": "2018-08-08T18:10:32Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "FreeBSD doesn't have a way to let external hypervisors like vbox work across suspend and resume.  I did add a hook for bhyve in https://svnweb.freebsd.org/base?view=revision\u0026revision=259782.  We would need something similar.  The same issue matters for permitting multiple hypervisors being active at the same time (e.g. you can't run both bhyve and vbox at the same time currently).  I had been thinking of adding a kind of hypervisor framework to let hypervisors allocate the VMX region and then permit associating it with a given process so that you could do the right vmxon/vmxoff during context switch.  Having that would also allow us to more cleanly handle suspend/resume for arbitrary hypervisors.\n\nOne thing you might be able to do for now is change the vbox driver to set the same vmm_resume_p pointer that bhyve's vmm.ko sets during MOD_LOAD to a function that reinvokes vmxon with the right address on each CPU during resume.  Probably both bhyve and vbox should also fail to load in MOD_LOAD if that pointer is already non-NULL which would enforce only one could be used at a time."
+}

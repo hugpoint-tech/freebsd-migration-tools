@@ -1,0 +1,8 @@
+{
+ "id": 1142001,
+ "bug_id": 235016,
+ "attachment_id": 221648,
+ "creation_time": "2021-01-16T23:04:36Z",
+ "creator": "david@dcrosstech.com",
+ "text": "Created attachment 221648\nPatch to fix uart_bus_pci.c\n\nThis is my working patch.  After consulting with the pci_alloc_msi and freebsd MSI page as well as looking at other drivers I think this is probably the 'best' patch at this point.\n\nGiven: https://people.freebsd.org/~grehan/msi_api.txt  (yes, it looks a bit dated), that makes it explicitly clear that if you get back fewer MSI resources than the device expects the driver is responsible for ensuring the device doesn't generate MSI greater than has been allocated.. There is no such code in the UART space.  Additionally there are numerous other drivers that expect a single MSI count and if they get it establish MSI for that, and if not fall back to legacy IRQ.\n\nI couldn't get anything resembling \"real\" documentation out of ASIX for what is going on, but given a few facts: That MSI interrupts must be allocated in powers of 2, that NO MSI interrupts are visible on this device when it is enabled (that I have ben able to find), and there are 5 UART interrupt registers (tx, rx, sigchange, overrun, break) I am *guessing* they map 5 MSI interrupts to each of those individual serial interrupt registers.  I briefly contemplated attempting to wire these directly to the uart_intr_* calls, or all of them to uart_intr itself, but there were too many questions about the right way to pass this along, to abstract it, and the concurrency (multiple interrupts firing at once on different cores).. given that, i think this is the best patch.\n\nThanks!"
+}

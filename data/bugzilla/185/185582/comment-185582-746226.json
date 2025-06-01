@@ -1,0 +1,8 @@
+{
+ "id": 746226,
+ "bug_id": 185582,
+ "attachment_id": 0,
+ "creation_time": "2014-01-08T14:40:00Z",
+ "creator": "kaktus@FreeBSD.org",
+ "text": "rpcgen generates almost correct ANSI C code. The problem is that in generated sample client main function lacks proper declaration by omitting return type. Incorrect declaration also makes it impossible to compile generated code with c++ compiler. Another problem is that sample makefile uses $(RM) macro, but does not define it. Let's change it to just rm as in src/Makefile.inc1.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: $ cat test.x\nprogram TEST_PROG {\n    version TEST_VERS {\n        int TEST(int) = 1;\n    } = 1;\n} = 0x23456789;\n$ rpcgen -aC test.x\n$ make -f makefile.test\ncc -O3 -fstrict-aliasing -pipe -march=native -fno-omit-frame-pointer  -c test_clnt.c\ncc -O3 -fstrict-aliasing -pipe -march=native -fno-omit-frame-pointer  -c test_client.c\ntest_client.c:37:1: warning: type specifier missing, defaults to 'int' [-Wimplicit-int]\nmain(int argc, char *argv[])\n^~~~\n1 warning generated.\ncc -o test_client  test_clnt.o test_client.o\ncc -O3 -fstrict-aliasing -pipe -march=native -fno-omit-frame-pointer  -c test_svc.c\ncc -O3 -fstrict-aliasing -pipe -march=native -fno-omit-frame-pointer  -c test_server.c\ncc -o test_server  test_svc.o test_server.o\n$ make -f makefile.test clean\n-f core test.h   test_clnt.c test_svc.c test_client.c test_server.c  test_clnt.o test_client.o  test_svc.o test_server.o test_client test_server\nmake: exec(-f) failed (No such file or directory)\n*** Error code 1\n\nStop.\nmake: stopped in /usr/home/kaktus/kodzik/rpc/test"
+}

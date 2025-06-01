@@ -1,0 +1,8 @@
+{
+ "id": 25399,
+ "bug_id": 8324,
+ "attachment_id": 0,
+ "creation_time": "2000-03-18T02:27:56Z",
+ "creator": "bright@wintelcom.net",
+ "text": "* Archie Cobbs \u003carchie@whistle.com\u003e [000317 17:55] wrote:\n\u003e This bug has been around since at least 2.2.6 and is still present\n\u003e in RELENG_3, RELENG_4, and -current.\n\u003e \n\u003e   http://www.freebsd.org/cgi/query-pr.cgi?pr=8324\n\u003e \n\u003e Is anyone planning to tackle it? What would be required to fix it?\n\u003e (it's not clear (to me anyway) from Bruce's description how hard\n\u003e this is to fix..)\n\nI think Bruce sort of went off into a tangent with his diagnosis,\nanyhow this is untested (of course :) ), but looks like the right\nthing to do (from sys_pipe.c).\n\nPerhaps the fcntls and ioctls aren't being propogated enough to set\nthe flags properly, but if they are then it should work sort of the\nway SIGIO does, basically generating a signal for /some condition/\non a descriptor.\n\n-- \n-Alfred Perlstein - [bright@wintelcom.net|alfred@freebsd.org]\n\nIndex: tty_pty.c\n===================================================================\nRCS file: /home/ncvs/src/sys/kern/tty_pty.c,v\nretrieving revision 1.74\ndiff -u -u -r1.74 tty_pty.c\n--- tty_pty.c\t2000/02/09 03:32:11\t1.74\n+++ tty_pty.c\t2000/03/18 06:12:55\n@@ -337,6 +337,8 @@\n \t\tselwakeup(\u0026pti-\u003ept_selw);\n \t\twakeup(TSA_PTC_WRITE(tp));\n \t}\n+\tif ((tp-\u003et_state \u0026 TS_ASYNC) \u0026\u0026 tp-\u003et_sigio)\n+\t\tpgsigio(tp-\u003et_sigio, SIGIO, 0);\n }\n \n static\tint"
+}

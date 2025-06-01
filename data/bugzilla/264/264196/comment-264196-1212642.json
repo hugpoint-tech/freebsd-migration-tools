@@ -1,0 +1,8 @@
+{
+ "id": 1212642,
+ "bug_id": 264196,
+ "attachment_id": 234168,
+ "creation_time": "2022-05-24T04:11:08Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "Created attachment 234168\nDemo program that does the read(2)\n\nWith the recent 14.0-CURRENT (n255230) and fusefs-ntfs-2017.3.23 (UBLIO=off), I'm frequently getting errors when copying not-very-small files with scp(1) to remote machines, but not with rsync(1); cat(1)ing file e.g. to /dev/null also fails.  Running those programs under truss(1) reveals interesting bug: reading the files on Windows 10 formatted NTFS with block of size 32768 and smaller (stat(2) returns optimal size of 4096 bytes, which both scp(1) and cat(1) use) fails after several blocks; rsync(1) uses 262144 and does not fail.  Even more interestingly, it does not fail on first couple of blocks and on previously read ones, i.e. once the file had been read, it can be read again with smaller block size.  I've written a program to demonstrate this (attached):\n\n$ ls -l xorgproto-2021.5.tbz\n-rw-r--r--  1 danfe  wheel  245998 21 янв.  14:11 xorgproto-2021.5.tbz\n$ /tmp/a.out xorgproto-2021.5.tbz 32768\nusing i/o size 32768 (optimal 4096)\nread: Invalid argument\n1 reads were successful\n\n$ /tmp/a.out xorgproto-2021.5.tbz 32768\nusing i/o size 32768 (optimal 4096)\nread: Invalid argument\n3 reads were successful\n\n$ /tmp/a.out xorgproto-2021.5.tbz 32768\nusing i/o size 32768 (optimal 4096)\n\n$ /tmp/a.out xorgproto-2021.5.tbz -1\nusing i/o size 4096 (optimal 4096)\n\nI'm not sure if the bug is in the port or fusefs(5) implementation, so I'm CC'ing Alan in case he might have a clue."
+}

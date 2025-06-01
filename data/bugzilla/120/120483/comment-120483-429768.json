@@ -1,0 +1,8 @@
+{
+ "id": 429768,
+ "bug_id": 120483,
+ "attachment_id": 0,
+ "creation_time": "2008-02-09T20:30:01Z",
+ "creator": "swhetzel@gmail.com",
+ "text": "After the lockmgr changes on  Jan 08 23:49 UTC 2008, when a NTFS filesystem is mounted a panic will occur:\n\npanic: System call lstat returning with 1 locks held\n cpuid = 0\n KDB: enter: panic\n [thread ; pid 1240 tid 10031]\n stopped at kdb_enter+0x3d: movq $0,0x41b048(%rip)\n db\u003e show alllocks\n db\u003e show locks\n db\u003e bt\n tracing pid 1240 tid 10031 td 0xffffff001c1ad360\n kdb_enter() at kdb_enter+0x3d\n panic() at panic+0x176\n syscalls() at syscalls+0x66d\n Xfast_syscalls() at Xfast_syscalls+0xab\n --- syscall (0, FreeBSD ELF64, nosys), rip = 0x8009e87ec, rsp=\n 0x72ec50, rbp = 0x72ed28 ---\n \neven though the NTFS filesystem wasn't being accessed at the time.\n\nThrough the help of Attilio Rao (who had made the changes to lockmgr), and several other users experiencing the problem, we were able to isolate the problem to the NTFS filesystem as the cause of the problem.\n\nFix: I looked at the NetBSD NTFS implementation and noticed that they had replaced the lockmgr locking with mutex locking.\n\nAfter porting the lockmgr -\u003e mutex related changes to FreeBSD, I can no longer cause these panics to occur with a mounted NTFS filesystem after applying the attached patch.\n\nPatch attached with submission follows:\nHow-To-Repeat: There are several ways to cause the panic:\n\nRunning PREFIX/etc/cvsup/update.sh from a non-NTFS filesystem\nRunning find on a non-NTFS filesystem (cd /usr/ports ; find . -print) or on the NTFS filesystem."
+}

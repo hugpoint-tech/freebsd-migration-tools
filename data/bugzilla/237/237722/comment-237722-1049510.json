@@ -1,0 +1,8 @@
+{
+ "id": 1049510,
+ "bug_id": 237722,
+ "attachment_id": 0,
+ "creation_time": "2019-05-03T08:16:00Z",
+ "creator": "jon@herrskogen.se",
+ "text": "Hi,\n\nWhen compiling this package using this port on a amd64/x86_64 machine, no JIT support will be compiled for PCRE2.\n\n\u003e checking for JIT support in PCRE2... no\n\nPCRE2 JIT is supported on amd64/x86_64 and this not being compiled can cause a (sometimes huge) performance decrease in certain PHP scripts relying on regex matching.\n\nIn the Makefile the following line is specified:\n\nGNU_CONFIGURE=  yes\n\nThis option will append this to the configure arguments.\n\n--build=${CONFIGURE_TARGET}\n\nWhere CONFIGURE_TARGET defaults to ${ARCH}-portbld-${OPSYS:tl}${OSREL}, and $ARCH in our case is \"amd64\".\n\nSpecifying --build to the PHP configure script will override PHP:s \"config.guess\" which otherwise will try to find out which machine it's building for. If \"config.guess\" HAD run, it whould have discovered \"amd64\" but then translated it to \"x86_64\" before returning it. Now instead, because of the --build is stating the target architecture, the configure script have the value \"amd64\".\n\nLater in the script, when deciding if it should compile with HAVE_PCRE_JIT_SUPPORT, it runs the following check.\n \n19706         case $host_cpu in\n19707         arm*|i3456786|x86_64|mips*|powerpc*|sparc)\n\nThe check will fail as $host_cpu is \"amd64\" which it doesn't think is a supported architecture and no JIT support will be compiled into the binary."
+}

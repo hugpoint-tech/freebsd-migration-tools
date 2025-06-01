@@ -1,0 +1,8 @@
+{
+ "id": 1195760,
+ "bug_id": 261377,
+ "attachment_id": 231210,
+ "creation_time": "2022-01-21T13:16:57Z",
+ "creator": "chandrakanth.patil@broadcom.com",
+ "text": "Created attachment 231210\nrefrain firing DCMDs if controller reset is in progress\n\nWhen controller reset is in progress, a few of the firmware registers are in-accessible state so if drivers access any of those registers at that time will result in undefined behaviour in firmware.\n\nIn this case, controller reset is in progress, and system shutdown is issued, then the shutdown function in the driver will be invoked where it is waiting for a max of 15 sec for a reset to finish and if reset is not finished within that time frame then it is going ahead and firing the flush cache and shutdown DCMDs to firmware which will end up accessing the queues which are not initialised due to undergoing reset leads to FMU error in firmware\n\nSo fix is to return to OS with proper error from shutdown if controller reset is not finished after waiting 15 sec.\n\nI have attached the patch which will fix this issue. \n\nThis issue is applicable to variants: 13.0, 13.1, 12.3, 12.1\nIf possible we can back-port other required variants."
+}

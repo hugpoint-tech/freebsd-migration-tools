@@ -1,0 +1,8 @@
+{
+ "id": 64615,
+ "bug_id": 20861,
+ "attachment_id": 0,
+ "creation_time": "2000-08-26T15:00:00Z",
+ "creator": "jml@cubical.fi",
+ "text": "read(), write(), et al. in libc_r do not honor socket timeouts set via\nsetsockopt(sd, SOL_SOCKET, SO_{SND,RCV}TIMEO, ...). Timeout is always\nset to NULL and the read loops consume EAGAIN.\n\nFix: \n\nIn read/write/etc. implementation, do a S_ISSOCK() on the descriptor,\nand if true, get a proper timeout value using _thread_sys_getsockopt()\ninstead of assuming NULL. When the timeout expires, return EAGAIN if\na proper timeout was used.\nHow-To-Repeat: s = socket(...);\nsetsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (void*) \u0026timeout, sizeof(timeout));\nconnect(s, ...);\nread(s, buf, nbytes); \u003c-- blocks and never returns EAGAIN"
+}

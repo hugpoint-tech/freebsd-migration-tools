@@ -1,0 +1,8 @@
+{
+ "id": 1275555,
+ "bug_id": 273418,
+ "attachment_id": 0,
+ "creation_time": "2023-09-18T21:29:04Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "No, checking at list addition or removal is to late.\nProblem is clearly that device is dereferenced while active, i.e. it sounds\nas if somebody did dev_rel() manually.\n\nSo IMO the following assert is due, and it is indeed should be added to\nthe tree:\n\ndiff --git a/sys/fs/devfs/devfs_devs.c b/sys/fs/devfs/devfs_devs.c\nindex c6efd0d421b1..f91e6e29b35d 100644\n--- a/sys/fs/devfs/devfs_devs.c\n+++ b/sys/fs/devfs/devfs_devs.c\n@@ -175,6 +175,8 @@ devfs_free(struct cdev *cdev)\n        struct cdev_priv *cdp;\n \n        cdp = cdev2priv(cdev);\n+       KASSERT((cdp-\u003ecdp_flags \u0026 CDP_ACTIVE) == 0,\n+           (\"cdev %p %s active and freed\", cdp, cdev-\u003esi_name));\n        if (cdev-\u003esi_cred != NULL)\n                crfree(cdev-\u003esi_cred);\n        devfs_free_cdp_inode(cdp-\u003ecdp_inode);"
+}

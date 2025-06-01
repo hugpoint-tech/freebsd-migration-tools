@@ -1,0 +1,8 @@
+{
+ "id": 1040444,
+ "bug_id": 236221,
+ "attachment_id": 0,
+ "creation_time": "2019-03-04T15:11:16Z",
+ "creator": "a.krasotin@yahoo.com",
+ "text": "I found out PF's ruleset optimization spoils rule into anchor. It replaces list of addresses with autotable but doesn't create this one, so rule doesn't work.\n\nI tested with the following configs:\n\n# uname -a\nFreeBSD test 12.0-RELEASE FreeBSD 12.0-RELEASE r341666 GENERIC  amd64\n\n# cat /etc/pf.conf\ntable \u003cUser2\u003e persist { 10.10.12.49 }\ntable \u003cNatFrom\u003e persist { 10.10.12.49/24 }\n\nnat on em0 from \u003cNatFrom\u003e to any -\u003e { 192.168.170.199 }\n\nanchor user_profiles in on { em1 } {\n  anchor User2 from \u003cUser2\u003e {\n    block quick log from \u003cUser2\u003e to {87.250.250.242, 74.125.131.94, 4.2.2.2, 8.8.8.8, 217.69.139.202, 81.19.82.10}\n  }\n}\n\n# cat /etc/rc.conf\nhostname=\"test\"\nifconfig_em0=\"inet 192.168.170.199 netmask 255.255.255.0\"\ndefaultrouter=\"192.168.170.254\"\nifconfig_em1=\"inet 10.10.12.1 netmask 255.255.255.0\"\nsshd_enable=\"YES\"\ndumpdev=\"NO\"\nzfs_enable=\"YES\"\n\npf_enable=\"YES\"\ngateway_enable=\"YES\"\n\n\n\nYou can see there is an autotable into the rule:\n\n# pfctl -a 'user_profiles/*' -sr\nanchor \"User2\" from \u003cUser2\u003e to any {\n  block drop log quick inet from \u003cUser2\u003e to \u003c__automatic_c789788_0\u003e\n}\n\nBut there isn't autotable at all:\n\n# pfctl -sTables\nNatFrom\nUser2"
+}

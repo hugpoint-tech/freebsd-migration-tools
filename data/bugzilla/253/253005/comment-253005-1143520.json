@@ -1,0 +1,8 @@
+{
+ "id": 1143520,
+ "bug_id": 253005,
+ "attachment_id": 0,
+ "creation_time": "2021-01-25T21:30:52Z",
+ "creator": "dmytro@shytyi.net",
+ "text": "Overview:\n \nReceived IPv6 prefix via Prefix Information Option in RA message is not processed (Even when presented code seems to have this ability).\nThere is function \"in6_ifadd()\" referenced in the: source/netinet6/nd6_rtr.c Line: 1624\nThis function seems to allow configuration of the prefix and IID with length !=64.\nThe code responsible for setting prefix and IID with length !=64 is presented inline and below: source/netinet6/nd6_rtr.c Lines: 2233-2244\n\nActual Results:\nWhen FreeBSD receives an RA message with prefix len == 80, no ipv6 address with plen = 80 is autoconfigured on the interfaces.\n\nExpected Results: \nIpv6 address with plen == 80 autoconfigured on the interfaces.\n\nCode:\n 2232         /* make ifaddr */\n 2233         in6_prepare_ifra(\u0026ifra, \u0026pr-\u003endpr_prefix.sin6_addr, \u0026mask);\n 2234 \n 2235         IN6_MASK_ADDR(\u0026ifra.ifra_addr.sin6_addr, \u0026mask);\n 2236         /* interface ID */\n 2237         ifra.ifra_addr.sin6_addr.s6_addr32[0] |=\n 2238             (ib-\u003eia_addr.sin6_addr.s6_addr32[0] \u0026 ~mask.s6_addr32[0]);\n 2239         ifra.ifra_addr.sin6_addr.s6_addr32[1] |=\n 2240             (ib-\u003eia_addr.sin6_addr.s6_addr32[1] \u0026 ~mask.s6_addr32[1]);\n 2241         ifra.ifra_addr.sin6_addr.s6_addr32[2] |=\n 2242             (ib-\u003eia_addr.sin6_addr.s6_addr32[2] \u0026 ~mask.s6_addr32[2]);\n 2243         ifra.ifra_addr.sin6_addr.s6_addr32[3] |=\n 2244             (ib-\u003eia_addr.sin6_addr.s6_addr32[3] \u0026 ~mask.s6_addr32[3]);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1144041,
+ "bug_id": 252913,
+ "attachment_id": 0,
+ "creation_time": "2021-01-29T12:54:27Z",
+ "creator": "iron.udjin@gmail.com",
+ "text": "(In reply to Michael Tuexen from comment #23)\n1. For such looping TCP connections at Nov 16 2020 I wrote script which checks if SENDQ greater 1700000 and drop them use tcpdrop:\n\nnetstat -p tcp -n | awk '{print $3\" \"$5\" \"$6}' | egrep \"^[0-9]\" | grep -v '^0\\ ' | while read line;\ndo\n\tSENDQ=`echo $line | awk '{print $1}'`\n\tif [ \"$SENDQ\" -gt \"1700000\" ];\n\tthen\n\t\techo $line | awk '{print $2}' | awk -F\\. '{print $1\".\"$2\".\"$3\".\"$4\" \"$5}' | xargs tcpdrop XXX.XXX.XXX.XXX 443 \u003e /dev/null\n\t\techo -n \"`date`: \" \u003e\u003e /root/check_drop.log\n\t\techo \"$line - DROPPED\" \u003e\u003e /root/check_drop.log\n\tfi\ndone\n\n# cat /root/check_drop.log | wc -l\n     460\n\nSometimes the script kills 5-10 connections/hour. Sometimes nothing in a day.\nI'll disable this script and when I catch such connection, I'll post sysctl net.inet.tcp.rack output.\n\n\u003eSo could you start without enabling RACK, start capturing traffic with tcpdump, enable RACK, ensure that some connection hit the bug, and stop the capturing.\n\n2. It's impossible because very low percent of connections hit such looping state. And that's happening not right after enabling RACK. On the picture I wanted to show how looping connections increases traffic volume. I assume the connection should hit a few conditions to start looping.\n\nI can write script which with a certain frequency will collect network vaiables and write output to the log file. Tell me please frequency and variables which you need to see and I'll share logs via private link by webserver (will email you credentials)."
+}

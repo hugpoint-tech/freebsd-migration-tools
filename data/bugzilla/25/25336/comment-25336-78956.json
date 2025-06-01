@@ -1,0 +1,8 @@
+{
+ "id": 78956,
+ "bug_id": 25336,
+ "attachment_id": 0,
+ "creation_time": "2001-02-24T07:20:00Z",
+ "creator": "mitsuru@riken.go.jp",
+ "text": " Submitter-Id:   current-users\n Originator:     Mitsuru Yoshida\n Organization:   RIKEN\n Confidential:   no\n Synopsis:       dmesg -a should be restricted \n Severity:       serious\n Priority:       medium\n Category:       bin\n Release:        FreeBSD 4.2-STABLE i386\n Class:          change-request\n Environment: \n \n         FreeBSD 4.2-STABLE i386\n \n Description: \n \n         Using dmesg -a, any user can get all data in the message buffer, \n         and it may cause security problem. Especially all messages written to \n         the console are stored in the message buffer during single user mode,\n         and any user can get them later. The use of -a option should be \n         restricted to root user.\n \n How-To-Repeat: \n \n \tdmesg -a\n \n Fix: \n \n --- dmesg.c.dist\tWed Feb 21 10:00:26 2001\n +++ dmesg.c\tWed Feb 21 10:02:11 2001\n @@ -56,6 +56,7 @@\n  #include \u003cunistd.h\u003e\n  #include \u003cvis.h\u003e\n  #include \u003csys/syslog.h\u003e\n +#include \u003csys/types.h\u003e\n  \n  struct nlist nl[] = {\n  #define\tX_MSGBUF\t0\n @@ -87,6 +88,10 @@\n  \twhile ((ch = getopt(argc, argv, \"aM:N:\")) != -1)\n  \t\tswitch(ch) {\n  \t\tcase 'a':\n +\t\t\tif (getuid() != (uid_t)0) {\n +\t\t\t  fprintf(stderr,\"dmesg: must be root to get all data in the message buffer\\n\");\n +\t\t\t  exit(1);\n +\t\t\t}\n  \t\t\tall++;\n  \t\t\tbreak;\n  \t\tcase 'M':"
+}

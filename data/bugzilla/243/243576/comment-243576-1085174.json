@@ -1,0 +1,8 @@
+{
+ "id": 1085174,
+ "bug_id": 243576,
+ "attachment_id": 0,
+ "creation_time": "2020-01-24T23:50:37Z",
+ "creator": "gdinolt@pacbell.net",
+ "text": "The VM command fails with error:\n\n/usr/local/sbin/vm: ERROR: unable to load vmm.ko!\n\nThe error occurs because (at least in FreeBSD 13)\n\nkldstat -qm vmm.ko\n\nreturns a value of 1, even if vmm.ko is already loaded.\n\nThe error is in /usr/local/lib/vm-bhyve/vm-util\n\n-- vm-util\t2020-01-24 15:43:46.495030000 -0800\n+++ vm-util-new\t2020-01-24 15:44:07.662656000 -0800\n@@ -46,7 +46,7 @@\n #\n util::load_module(){\n     local _mod=\"$1\"\n-    kldstat -qm ${_mod} \u003e/dev/null 2\u003e\u00261\n+    kldstat -qn ${_mod} \u003e/dev/null 2\u003e\u00261\n     if [ $? -ne 0 ]; then\n         kldload ${_mod} \u003e/dev/null 2\u003e\u00261\n         [ $? -eq 0 ] || util::err \"unable to load ${_mod}.ko!\"\n\nI replaced the -qm with -qn, which seems to work at least as far as getting vm to start."
+}

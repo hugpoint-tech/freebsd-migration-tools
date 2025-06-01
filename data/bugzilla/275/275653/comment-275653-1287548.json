@@ -1,0 +1,8 @@
+{
+ "id": 1287548,
+ "bug_id": 275653,
+ "attachment_id": 0,
+ "creation_time": "2023-12-09T11:31:11Z",
+ "creator": "ehaupt@FreeBSD.org",
+ "text": "I've noticed the following entry in the socat 1.8.0.0 release notes (http://www.dest-unreach.org/socat/CHANGES):\n\n\tconfigure option --enable-default-ipv allows to specify at build time if\n\tIPv4, IPv6, or none of these is the preferred default; this is related\n\tto environment variables SOCAT_PREFERRED_RESOLVE_IP and\n\tSOCAT_DEFAULT_LISTEN_IP, and to Socat option -4, -6.\n\tFurthermore, mechanism of IPv4 vs.IPv6 selection has been reworked.\n\tWhen no IP version is preferred by these mechanism, passive Socat\n\taddresses (LISTEN, RECV, RECVFROM) default to IPv6 because it might\n\tsupport both versions (but checkout option ipv6-v6only).\n\tFor client addresses, when one of these mechanisms applies and name\n\tresolution gives addresses of both IP versions, the addresses of the\n\tpreferred versions are tried first.\n\n\nSure enough by default socat now binds to IPv6:\n\nRunning\n$ /usr/local/bin/socat TCP-LISTEN:12345,reuseaddr,fork -\n\nDifferent terminal shows:\n$ sockstat -46l | grep 12345\nroot     socat      15152 5   tcp6   *:12345               *:*\n\nSending data:\n$ echo foo | nc -6 -v -w2 ::1 12345\nConnection to ::1 12345 port [tcp/*] succeeded!\n\nYou can specify -4 to explicitly listen to IPv4:\n\n$ /usr/local/bin/socat -4 TCP-LISTEN:12345,reuseaddr,fork -\n...\n\n$ sockstat -46l | grep 12345\nroot   socat      17447 5   tcp4   *:12345               *:*\n\n$ echo foo | nc -4 -v -w2 0 12345\nConnection to 0 12345 port [tcp/*] succeeded!\n\nThis seems like a POLA violation to me. I am going patch the port."
+}

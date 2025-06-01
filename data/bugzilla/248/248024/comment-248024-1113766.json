@@ -1,0 +1,8 @@
+{
+ "id": 1113766,
+ "bug_id": 248024,
+ "attachment_id": 0,
+ "creation_time": "2020-07-16T18:50:36Z",
+ "creator": "val@packett.cool",
+ "text": "So I've been debugging why a certain BLE device (https://github.com/open-homeautomation/miflora) did not respond to my commands on FreeBSD.\n(bug 248015 for the ability to talk ACL via raw HCI socket was needed for that debugging.)\n\nReplaying the ACL packet Linux was sending via the raw HCI socket I do get replies. Sending its L2CAP payload via an L2CAP socket.. no reply. Difference? One bit:\n\n(good)   02 00 00 0b 00 07 00 04 00 10 01 00 ff ff 00 28\n(bad)    02 00 20 0b 00 07 00 04 00 10 01 00 ff ff 00 28\n\n               ^ that's the PB flag set to 2!\n\nSo turns out ng_l2cap_lp_send does `flag = NG_HCI_PACKET_START`.\n\nBut our NG_HCI_PACKET_START (2) doesn't just mean \"packet start\"!\n\nAccording to the Bluetooth Core Spec v5.2 (Vol 4, Part E, 5.4.2, page 1893) it means \"First automatically flushable packet of a higher layer message (start of an automatically flushable L2CAP PDU)\" and it's *not allowed for LE*!\n\nThe laziest solution would be `flag = 0`, where 0 means \"First non-automatically-flushable packet of a higher layer message (start of a non-automatically-flushable L2CAP PDU) from Host to Controller\".\n\nBut then there's the question: is there any benefit from the automatic flushing thing on Bluetooth Classic?? Maybe we should only use 0 on LE?"
+}

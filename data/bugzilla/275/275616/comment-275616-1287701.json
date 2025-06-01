@@ -1,0 +1,8 @@
+{
+ "id": 1287701,
+ "bug_id": 275616,
+ "attachment_id": 0,
+ "creation_time": "2023-12-10T15:56:33Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Hmm, for bwn vap-\u003eiv_ic-\u003eic_headroom is pretty big, it's equal to sizeof(struct bwn_txhdr), which is 118 bytes.\n\nSo, ieee80211_mbuf_adjust() is going to set needed_space = 118 + 24 + 8 for CCMP. If ieee80211_mbuf_adjust() needs to allocate a new mbuf header, the header will have MHLEN - 150 = 10 bytes of space.\n\nThe assertion \"needed_space \u003c= MHLEN\" should actually be \"needed_space + sizeof(struct ether_header) \u003c= MHLEN\", and I suspect that that assertion would fail for bwn.  I'm not sure what changed in 14.0 to break - maybe struct mbuf layout changes that made MHLEN smaller?"
+}

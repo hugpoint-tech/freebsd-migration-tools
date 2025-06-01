@@ -1,0 +1,8 @@
+{
+ "id": 632018,
+ "bug_id": 161278,
+ "attachment_id": 0,
+ "creation_time": "2011-10-06T09:45:33Z",
+ "creator": "rpolzer@one-it.de",
+ "text": "I tried to trace this in gdb.\n\nWith another dante (1.1) as SOCKS5 client, the issue happens and looks like=\n this in gdb (attached to the first \"requestcompleter\" process sockd spawne=\nd):\n\n\nBreakpoint 1, getoutaddr (src=3D{s_addr =3D 2201200832}, dst=3D{s_addr =3D =\n775042865}) at getoutaddr.c:262\n262\t   if (sockscf.external.addrc \u003c=3D 1\n(gdb) print/x dst.s_addr\n$1 =3D 0x2e323731\n(gdb) print (char[4])dst.s_addr\n$2 =3D \"172.\"\n\n\nI think it's quite obvious that for some reason, the ASCII address got copi=\ned into s_addr instead of converted to four bytes.\n\nSimilar:\n\n\nnc -x 192.168.51.131:1080 -X 5 bamgmtRESTOFHOSTNAMEDELETED 22\n\nBreakpoint 1, getoutaddr (src=3D{s_addr =3D 2201200832}, dst=3D{s_addr =3D =\n1735221602}) at getoutaddr.c:262\n262\t   if (sockscf.external.addrc \u003c=3D 1\n(gdb) print (char[4])dst.s_addr\n$3 =3D \"bamg\"\n(gdb)=20\n\n\nThe issue does not happen when using netcat and an explicit IP address as d=\nestination, or -X 4 (SOCKS4 protocol).="
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1205965,
+ "bug_id": 263029,
+ "attachment_id": 0,
+ "creation_time": "2022-04-06T19:39:15Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Starting with a 1G file of all zeros and converting I see:\n\n$ mkimg -f qcow2 -o mkimg.qcow2.out -s gpt -p freebsd-ufs:=sparse\n-rw-r--r--  1 emaste  emaste      524288 Apr  6 15:28 mkimg.qcow2.out\n\n$ mkimg -f raw -o mkimg.raw.out -s gpt -p freebsd-ufs:=sparse\n-rw-r--r--  1 emaste  emaste  1073744384 Apr  6 15:28 mkimg.raw.out\n\n$ qemu-img convert -S 1k -p -f raw -O qcow2 -c mkimg.raw.out qemu-img.out\n-rw-r--r--  1 emaste  emaste      458752 Apr  6 15:30 qemu-img.out\n\n$ hexdump -Cv mkimg.qcow2.out\n00000000  51 46 49 fb 00 00 00 02  00 00 00 00 00 00 00 00  |QFI.............|\n00000010  00 00 00 00 00 00 00 10  00 00 00 00 40 01 00 00  |............@...|\nmkimg indeed produces V2\n\n$ hexdump -Cv qemu-img.out\n00000000  51 46 49 fb 00 00 00 03  00 00 00 00 00 00 00 00  |QFI.............|\n00000010  00 00 00 00 00 00 00 10  00 00 00 00 40 00 0a 00  |............@...|\nqemu-img produces V3\n\nWe can ask for qcow2 compat:\n$ qemu-img convert -S 1k -p -f raw -O qcow2 -o compat=0.10 -c mkimg.raw.out qemu-img.compat.out\n-rw-r--r--  1 emaste  emaste      458752 Apr  6 15:36 qemu-img.compat.out\n\n$ hexdump -Cv qemu-img.compat.out\n00000000  51 46 49 fb 00 00 00 02  00 00 00 00 00 00 00 00  |QFI.............|\n00000010  00 00 00 00 00 00 00 10  00 00 00 00 40 00 0a 00  |............@...|\n\nIt is now V2."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 563050,
+ "bug_id": 147647,
+ "attachment_id": 0,
+ "creation_time": "2010-06-07T13:10:03Z",
+ "creator": "martin@lispworks.com",
+ "text": "The select system call wakes indicating timeout after 24 hours even if the timeout specifies a longer delay.\n\nFix: \n\nI think the problem is that seltdwait is implemented using cv_timedwait_sig, which returns EWOULDBLOCK on timeout.  The calls to seltdwait in kern_select etc limit the timeout to a maximum of 24 * 60 * 60 * hz but interpret EWOULDBLOCK as a reason to exit rather than checking the actual timeout.\nHow-To-Repeat: Running the code below with argument 10000000 exits after 24 hours with:\nres = 0 delay = 86398 fd = 3, fd active = 0\n\n\n#include \u003csys/select.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003ctime.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n\nint main(int argc, char **argv)\n{\n  fd_set fdset;\n  struct timeval tv;\n  int fds[2], fd, res;\n  time_t start, end;\n\n  pipe(fds);\n  fd = fds[0];\n\n  tv.tv_sec = atoi(argv[1]);\n  tv.tv_usec = 0;\n  FD_ZERO(\u0026fdset);\n  FD_SET(fd, \u0026fdset);\n\n  start = time(NULL);\n  res = select(fd + 1, \u0026fdset, NULL, NULL, \u0026tv);\n  end = time(NULL);\n\n  printf(\"res = %d delay = %ld fd = %d, fd active = %d\\n\",\n\t res, (long)(end - start), fd, FD_ISSET(fd, \u0026fdset));\n\n  return 0;\n}"
+}

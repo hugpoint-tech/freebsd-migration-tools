@@ -1,0 +1,8 @@
+{
+ "id": 1051494,
+ "bug_id": 238012,
+ "attachment_id": 0,
+ "creation_time": "2019-05-22T14:43:05Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Ok,\n\nI tried this one and that currently does the trick for me after recompiling my kernel with all modules and installing it (full build).\n\n\ndiff --git a/sys/netipsec/xform_ipcomp.c b/sys/netipsec/xform_ipcomp.c\nindex df09eb36cfa..0bbeed1f678 100644\n--- a/sys/netipsec/xform_ipcomp.c\n+++ b/sys/netipsec/xform_ipcomp.c\n@@ -87,6 +87,22 @@ SYSCTL_VNET_PCPUSTAT(_net_inet_ipcomp, IPSECCTL_STATS, stats,\n     struct ipcompstat, ipcompstat,\n     \"IPCOMP statistics (struct ipcompstat, netipsec/ipcomp_var.h\");\n\n+\n+#ifdef VIMAGE\n+#if defined(__i386__)\n+/*\n+ * XXX This is a hack to work around an absolute relocation outside\n+ * set_vnet by one (on the stop symbol) for carpstats.  Add a dummy variable\n+ * to the end of the file in the hope that the linker will just keep the\n+ * order (as it seems to do at the moment).  It is understood to be fragile.\n+ * See PR 230857 for a longer discussion of the problem and the referenced\n+ * review for possible alternate solutions.  Each is a hack; we just need\n+ * the least intrusive one for the next release.\n+ */\n+VNET_DEFINE(char, zzz_xform_ipcomp) = 0xde;\n+#endif\n+#endif\n+\n static int ipcomp_input_cb(struct cryptop *crp);\n static int ipcomp_output_cb(struct cryptop *crp);"
+}

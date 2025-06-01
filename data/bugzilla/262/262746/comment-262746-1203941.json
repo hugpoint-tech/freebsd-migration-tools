@@ -1,0 +1,8 @@
+{
+ "id": 1203941,
+ "bug_id": 262746,
+ "attachment_id": 0,
+ "creation_time": "2022-03-23T18:05:23Z",
+ "creator": "np@FreeBSD.org",
+ "text": "mkioctls uses a \"find | sort | tee | xargs egrep -l | awk\" pipeline to generate a list of header files.  This pipeline fails spuriously if the shell's pipefail option is enabled and one of the egrep launched by xargs returns 1 because there are no _IO* markers in that particular batch of files.\n\nset -o pipefail was added in ec45ce6222366e69adf1fad1b33ec8598229c8c0\npipefail support was added to /bin/sh in 484160a9cf236a5892c1ab8344de287d7a1472c1\nThis also means the comment about /bin/bash in mkioctls is now stale.\n\nHere is a DTrace script (and its output) that shows the failure when \"sh ./lib/libsysdecode/mkioctls .\" is run inside a tree with this problem.\n\ncat mkioctl.d\n#!/usr/sbin/dtrace -s\nsyscall:freebsd:exit:entry\n/execname == \"awk\" || \\\n execname == \"egrep\" || \\\n execname == \"find\" || \\\n execname == \"grep\" || \\\n execname == \"sh\" || \\\n execname == \"tee\" || \\\n execname == \"xargs\"/\n{\n        trace(execname);\n        trace(arg0)\n}\n\n\ndtrace: script '/tmp/mkioctl.d' matched 1 probe\nCPU     ID FUNCTION:NAME\n  3  88534 exit:entry   sh     0\n  1  88534 exit:entry   grep   0\n  4  88534 exit:entry   find   0\n  2  88534 exit:entry   egrep  1\n  0  88534 exit:entry   egrep  0\n  2  88534 exit:entry   egrep  0\n  7  88534 exit:entry   tee    0\n  4  88534 exit:entry   egrep  0\n  6  88534 exit:entry   xargs  1\n  2  88534 exit:entry   awk    0\n  0  88534 exit:entry   sh     1\n  3  88534 exit:entry   sh     1"
+}

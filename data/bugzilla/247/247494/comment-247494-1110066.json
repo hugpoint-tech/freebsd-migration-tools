@@ -1,0 +1,8 @@
+{
+ "id": 1110066,
+ "bug_id": 247494,
+ "attachment_id": 0,
+ "creation_time": "2020-06-23T15:40:09Z",
+ "creator": "cem@freebsd.org",
+ "text": "Hm we actually do bucket same-byte values in add_to_sublevel.  Why do we call strcmp eventually?\n\nah:\n\n  379         default:\n  380                 if (TINY_NODE(sl) || (sl-\u003elevel \u003e 15)) {\n  381                         listcoll_t func;\n  382\n  383                         func = get_list_call_func(sl-\u003elevel);\n\n( == list_coll_offset(,, sl-\u003elevel))\n\n...\n  385                         sl-\u003eleaves = sl-\u003etosort;\n  386                         sl-\u003eleaves_num = sl-\u003etosort_num;\n  387                         sl-\u003eleaves_sz = sl-\u003eleaves_num;\n...\n  403                                 DEFAULT_SORT_FUNC_RADIXSORT(sl-\u003eleaves, sl-\u003eleaves_num,\n  404                                     sizeof(struct sort_list_item *),\n  405                                     (int(*)(const void *, const void *)) func);\n\nThis appears to be a fast path when sorting a relatively small number of strings (\u003c 65), or a degenerate case for comparing string bytes beyond 15 bytes.\n\nWhen I input 100 1-wchar strings to radixsort, it attempts to radix sort, but does so incorrectly.\n\nSo there are several bugs:\n\n1. radixsort does not process wchar strings correctly.\n2. radixsort's fastpath does not invoke collate correctly for wchar strings."
+}

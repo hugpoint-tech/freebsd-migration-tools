@@ -1,0 +1,8 @@
+{
+ "id": 782117,
+ "bug_id": 193005,
+ "attachment_id": 146286,
+ "creation_time": "2014-08-26T02:27:40Z",
+ "creator": "keithr@freebsd.keithr.com",
+ "text": "Created attachment 146286\nPatch for the problems described in this bug.\n\nThere are several problems with m_copymdata() that prevent it from working properly.  The first one is always fatal, the others cause it to copy improperly in specific cases.\n\n1. The m_bcopyxxx() function interprets its arguments in the incorrect order, so it copies from the destination buffer to the source.\n2. Because a pointer to the destination buffer is passed through m_apply() to m_bcopyxxx(), if the source spans multiple mbufs, the contents of each source mbuf will be copied to the same place in the destination mbuf, rather than being concatenated.\n3. In some places m_copymdata() checks for M_PKTHDR before performing pkthdr manipulations, but in other places it does not.\n4. In the shortcut that is taken if data is being appended and the last mbuf has enough free space, the m_pkthdr.len field of the last mbuf in the chain is incremented.  The correct thing to do in this case is to increment m_pkthdr.len in the first mbuf in the chain.\n\nI have attached a patch that provides one approach to fixing these problems.  The fix for problem 2 involved changing m_bcopyxxx() to take a pointer to the destination mbuf, determine the destination within its buffer to copy into, and increment its m_len by the amount copied.  It does not check that there is enough space in the destination; the code in m_copymdata() that passes m_bcopyxxx to m_apply() ensures that there is enough space."
+}

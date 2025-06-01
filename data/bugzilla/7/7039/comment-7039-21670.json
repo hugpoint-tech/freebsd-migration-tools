@@ -1,0 +1,8 @@
+{
+ "id": 21670,
+ "bug_id": 7039,
+ "attachment_id": 0,
+ "creation_time": "1998-08-24T17:18:38Z",
+ "creator": "eischen@vigrid.com",
+ "text": "I've got a patch to libc_r that implements sigwait.  This\nfixes this PR and should also partially fix PR kern/7586\n(the reported MySQL pthread problem).\n\nI just this MySQL bug report, and it looks like sigsuspend\ncan be fixed in a similar fashion as sigwait.  I can take\na crack at it if needed.\n\nPlease note the comments in the patch.  I don't have the\nPOSIX spec, but what information I do have (from Solaris\n2.5 sigwait functionality/manpage and Programming with\nPOSIX threads), indicates that sigwait should work for\nsignals that do not have signal handlers installed (SIG_DFL).\n\nThe patch also places the burden of installing and uninstalling\nsignal handlers for SIG_DFL signals in the waiting mask.  It\nmight be a better idea to install a dummy handler at init\ntime, and then if there are no threads in sigwait/sigsuspend\nat the time of the signal, the dummy handler could uninstall\nthe handler and resignal the process.  This would also force\nthe threads implementation to be knowledgeable about what the\ndefault action for each signal is.  IOW, it shouldn't propagate\nthe signal to the process if the default action for a signal\nis to discard it.\n\nDan Eischen\neischen@vigrid.com"
+}

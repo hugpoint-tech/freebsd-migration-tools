@@ -1,0 +1,8 @@
+{
+ "id": 1351524,
+ "bug_id": 283903,
+ "attachment_id": 0,
+ "creation_time": "2025-02-23T22:19:34Z",
+ "creator": "guillaume-freebsd@outters.eu",
+ "text": "(In reply to Bjoern A. Zeeb from comment #32)\n\nIT WORKS!\n\nThank you very much for having taken the time to review the whole code, putting the missing spin_locks where necessary. It reminds me those good old times of courses about mutex locking…\n\n-----------------\nMy test procedure\n\nOn kernels:\n- I (14.1-RELEASE + my printf traces A, B, C, D of comment #29, systematic (not conditioned to any compat.linuxkpi.skb.debug bit, thus outputing since boot))\n- II (I + your D49101 patch, hand-reworked to minimize changes in order not to conflict with my own traces (removing of hunks of only comments, const, variables rename as head -\u003e q, and translation of functions (instead of moving them I let them in place but added the necessary declaration)))\n\nFor each test I did:\n# boot\n# wayfire\n# foot terminal:\nsudo sysctl compat.linuxkpi.skb.debug=0x10\nscp /tmp/1 mb:/tmp/1 \u0026 # My 10 MiB file born from /dev/random\nscp mb:/tmp/1 /tmp/2 \u0026 # 10 MiB too, as the file is already in place and the previous scp works inplace.\ndate\nwhile true ; do vmstat -m | grep skb | tr \\\\012 \\\\011 ; date ; sleep 5 ; done\n\nTests:\n- ✗ I:  /!\\ vmstat -m | grep skb instantly grew up\n            (from 16 MB to 100 MB at the time the scp finished)\n- ✓ II: stable even after the scps\n- ✗ I:  /!\\ freeze\n- ✓ II: stable\n- ✗ I:  /!\\ vmstat -m instantly grew up\n- ✓ II: stable\n        (in fact I'm browsing to write this comment\n         while still not having unset compat.linuxkpi.skb.debug)"
+}

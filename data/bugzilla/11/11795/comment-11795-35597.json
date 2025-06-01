@@ -1,0 +1,8 @@
+{
+ "id": 35597,
+ "bug_id": 11795,
+ "attachment_id": 0,
+ "creation_time": "1999-05-20T05:50:00Z",
+ "creator": "aheffner@lakefield.net",
+ "text": "When using splash screens, loading the raw module object code splash_image_data with the file name of the splash screen image, should set the module name (m_name) to that of the image file name. It does within the scope of command_load(), but when leaving this function, the value is lost. When you attempt to unload modules, it will panic while trying to free() the name (mp-\u003em_name) of the splash_image_data module. This panic occurs in mod_discard(). The system will immediately reboot.\n\nFix: \n\nThis might not be the _best_ fix, but it works:\nYou need to change /usr/src/sys/boot/common/module.c\nwith this diff:\n$ diff module.c.fixed module.c\n267c267\n\u003c     mp-\u003em_name = strdup(name);\n---\n\u003e     mp-\u003em_name = name;\n\nand then recompile the /usr/src/boot sources.\nHow-To-Repeat: Use splash_image_data along with splash_bmp modules, and drop to \nthe command prompt. Enter 'unload' to unload the modules. You should get:\npanic: free: guard1 fail @ 0x----- \u003c some memory address\nyou can also tell if it will fail when you check dmesg:\nPreloaded splash_image_data \" \" at 0xc032709c.\nshould be:\nPreloaded splash_image_data \"/path/to/splash.bmp\" at 0xc032709c."
+}

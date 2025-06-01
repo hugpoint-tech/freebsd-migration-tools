@@ -1,0 +1,8 @@
+{
+ "id": 796295,
+ "bug_id": 195097,
+ "attachment_id": 0,
+ "creation_time": "2014-11-17T10:01:16Z",
+ "creator": "stefanf@FreeBSD.org",
+ "text": "With the update to nvidia-driver-340.46 on HEAD amd64, I now have a ~50% chance\nof a kernel panic at `startx'. Just before the panic I get the errors\n\nNVRM: RmInitAdapter failed! (0x26:0x2a:1224)\nnvidia0: NVRM: rm_init_adapter() failed!\n\nfollowed immediately by\n\nfatal trap 12: page fault while in kernel mode within rm_free_unused_clients.\n\nI took a look at the open source parts of the driver and found an invalid null\npointer usage, I think.\n\nThe driver does roughly this:\n\ndevfs_open\n    nvidia_dev_open\n        devfs_set_cdevpriv\n        nvidia_open_dev\n            NV_UMA_ZONE_ALLOC_STACK(sc-\u003eapi_sp);\n            rm_init_adapter -\u003e fail\n            NV_UMA_ZONE_FREE_STACK(sc-\u003eapi_sp);\n\nHere sc-\u003eapi_sp is set to NULL after the rm_init_adapter failure.\n\n    devfs_clear_cdevpriv\n        devfs_fpdrop\n            devfs_destroy_cdevpriv\n                nvidia_dev_dtor\n                    nvidia_close_dev\n                        rm_free_unused_clients(sc-\u003eapi_sp)\n\nHere rm_free_unused_clients is called with a null pointer. This function is not\nopen source, but from the panic my guess is it's not happy being called with a\nnull pointer.\n\nI'm not sure about the best possible fix, but calling nvidia_close_dev after an\nunsuccessful nvidia_open_dev seems wrong and also wraps the refcnt to \n(uint32_t)-1.  Maybe nvidia_dev_dtor simply needs to check the refcnt and avoid\ncalling nvidia_close_dev if it's already 0."
+}

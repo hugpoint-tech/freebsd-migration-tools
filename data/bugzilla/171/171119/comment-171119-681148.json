@@ -1,0 +1,8 @@
+{
+ "id": 681148,
+ "bug_id": 171119,
+ "attachment_id": 0,
+ "creation_time": "2012-08-27T17:10:04Z",
+ "creator": "dan.mcgregor@usask.ca",
+ "text": "libxine fails with the following error when build with clang:\n\n\nifs.c:534:2: error: clobbers must be last on the x87 stack\n        emms();/*__asm__ __volatile__ (\"emms\");*/\n        ^\n./mmx.h:733:38: note: expanded from macro 'emms'\n#define emms() __asm__ __volatile__ (\"emms\"::: \\\n                                     ^\ncc: warning: argument unused during compilation: '-fexpensive-optimizations'\ncc: warning: argument unused during compilation: '-fno-force-addr'\n1 error generated.\n\n\nThe offending part of mmx.h is:\n\n#define emms() __asm__ __volatile__ (\"emms\"::: \\\n                      \"st(1)\",\"st(2)\",\"st(3)\",\"st(4)\",\"st(5)\",\"st(6)\",\"st(7)\")\n\nFix: \n\nThe easiest solution for me was to add USE_GCC=4.4+ to the Makefile, which brought in gcc as a dependency.\n\nThe other solution is to remove the clobber list from the emms asm directive.  I don't know what that does to building with gcc, though.\nHow-To-Repeat: Build libxine with CC=clang CXX=clang++ or build world with WITH_CLANG_IS_CC and WITHOUT_GCC then build libxine."
+}

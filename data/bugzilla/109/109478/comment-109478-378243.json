@@ -1,0 +1,8 @@
+{
+ "id": 378243,
+ "bug_id": 109478,
+ "attachment_id": 0,
+ "creation_time": "2014-04-06T20:32:34Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In FreeBSD PR bin/109478, you wrote:\n\u003e The patch essentially takes OpenBSD's reentrant syslog functions\n\u003e (openlog_r, closelog_r, syslog_r and vsyslog_r) and makes them\n\u003e available in FreeBSD. Hopefully this will make building of packages\n\u003e such as spamd under FreeBSD easier since the source shouldn't require\n\u003e modifications.\n\nThere may be some point in syslog functions without global data, but I\nthink OpenBSD's API exposes way too much information about the\nimplementation and is therefore bad for ABI stability and encapsulation.\n\nSpecifically, this kind of struct seems bad (in the header file):\n\u003e +/* Used by reentrant functions */\n\u003e +\n\u003e +struct syslog_data {\n\u003e +        int     log_file;\n\u003e +        int     connected;\n\u003e +        int     opened;\n\u003e +        int     log_stat;\n\u003e +        const char      *log_tag;\n\u003e +        int     log_fac;\n\u003e +        int     log_mask;\n\u003e +};\n\u003e +\n\u003e +#define SYSLOG_DATA_INIT {-1, 0, 0, 0, (const char *)0, LOG_USER, 0xff}\n\nA better way would be for openlog_r() to allocate something and\ncloselog_r() to free it again.\n\nI don't really like the word \"reentrant\"; I prefer terms like\n\"thread-safe\" and \"async-signal safe\" with clear definitions. It seems\nthat async-signal safe is meant here, since our syslog implementation is\nthread-safe by locking.\n\n-- \nJilles Tjoelker"
+}

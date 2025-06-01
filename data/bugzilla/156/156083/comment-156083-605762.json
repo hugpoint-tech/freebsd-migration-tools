@@ -1,0 +1,8 @@
+{
+ "id": 605762,
+ "bug_id": 156083,
+ "attachment_id": 0,
+ "creation_time": "2011-04-07T07:01:18Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: ae\nDate: Thu Apr  7 06:01:09 2011\nNew Revision: 220408\nURL: http://svn.freebsd.org/changeset/base/220408\n\nLog:\n  MFC r220203:\n    Fix a memory leak. Memory that is allocated for schedulers hash table\n    was not freed.\n  \n    PR:\t\tkern/156083\n\nModified:\n  stable/8/sys/netinet/ipfw/ip_dummynet.c\nDirectory Properties:\n  stable/8/sys/   (props changed)\n  stable/8/sys/amd64/include/xen/   (props changed)\n  stable/8/sys/cddl/contrib/opensolaris/   (props changed)\n  stable/8/sys/contrib/dev/acpica/   (props changed)\n  stable/8/sys/contrib/pf/   (props changed)\n\nModified: stable/8/sys/netinet/ipfw/ip_dummynet.c\n==============================================================================\n--- stable/8/sys/netinet/ipfw/ip_dummynet.c\tThu Apr  7 05:58:21 2011\t(r220407)\n+++ stable/8/sys/netinet/ipfw/ip_dummynet.c\tThu Apr  7 06:01:09 2011\t(r220408)\n@@ -747,9 +747,10 @@ schk_delete_cb(void *obj, void *arg)\n #endif\n \tfsk_detach_list(\u0026s-\u003efsk_list, arg ? DN_DESTROY : 0);\n \t/* no more flowset pointing to us now */\n-\tif (s-\u003esch.flags \u0026 DN_HAVE_MASK)\n+\tif (s-\u003esch.flags \u0026 DN_HAVE_MASK) {\n \t\tdn_ht_scan(s-\u003esiht, si_destroy, NULL);\n-\telse if (s-\u003esiht)\n+\t\tdn_ht_free(s-\u003esiht, 0);\n+\t} else if (s-\u003esiht)\n \t\tsi_destroy(s-\u003esiht, NULL);\n \tif (s-\u003eprofile) {\n \t\tfree(s-\u003eprofile, M_DUMMYNET);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

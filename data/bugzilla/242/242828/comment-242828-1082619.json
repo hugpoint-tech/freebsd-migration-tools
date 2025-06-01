@@ -1,0 +1,8 @@
+{
+ "id": 1082619,
+ "bug_id": 242828,
+ "attachment_id": 0,
+ "creation_time": "2020-01-08T01:09:52Z",
+ "creator": "fnoyanisi@yahoo.com",
+ "text": "It appears BSD diff keeps working on the the files even after it knows whether the files are identical or not. \n\nIn diffreg(), which is called by diff() we have [1]\n\n\tswitch (files_differ(f1, f2, flags)) {\n\tcase 0:\n\t\tgoto closem;\n\tcase 1:\n\t\tbreak;\n\tdefault:\n\t\t/* error */\n\t\tstatus |= 2;\n\t\tgoto closem;\n\t}\n\nfiles_differ() returns 0 when the files are identical and 1 when they are different. For the cases when files_differ() returns 1, instead of just a single break statement, we can add a check for the command line arguments and if '-q' supplied, i.e. D_BRIEF, then we should return from diffred() (after doing some housekeeping if necessary - or add another 'goto' label at the end of the function).\n\nInstead, BSD diff carries on and hashes each line in both files, sorts them and do more checks, hence taking more time.\n\nIf this sounds reasonable, I can work on a patch.\n\n[1] http://src.illumos.org/source/xref/freebsd-head/usr.bin/diff/diffreg.c#341"
+}

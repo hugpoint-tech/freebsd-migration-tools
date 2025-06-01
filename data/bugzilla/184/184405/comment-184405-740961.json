@@ -1,0 +1,8 @@
+{
+ "id": 740961,
+ "bug_id": 184405,
+ "attachment_id": 0,
+ "creation_time": "2013-12-01T05:30:00Z",
+ "creator": "zurvan.akarana@gmail.com",
+ "text": "Upgraded to 9.2-RELEASE on Nov. 29, 2013.\n\nHave an LSI-2108-based raid controller supported without issues by mfi(4).\n\nPrior to upgrade 'mfiutil show drives' showed drive sizes correctly.\n\nAfter upgrade the output became like this\n\n 0 (   0.0) ONLINE \u003c[redacted] serial=[redacted]\u003e SATA E1:S4\n\nI.e., drive size was reported to be 0.0.\n\nAll other aspects of mfi(4) that I have tested so far seem to work fine, as they did before.\n\nFix: Traced the problem to usr.sbin/mfiutil/mfi_show.c file, function print_pd.\n\nIt makes a call to humanize_number(3) from libutil and supplies a 256-byte buffer named 'buf' to be filled for this purpose. Then prints it with format string '%6s' which results in this incorrect behavior.\n\nJust using a 6-byte buffer, supplying it to humanize_number(3), and printing it fixes the problem. As seen in the other function print_ld in the same source file.\n\nThis bug has been introduced as the larger sized 'buf' was added to source to allow for formatting status messages for foreign configurations present in the array, a new mfiutil functionality.\n\nPatch attached with submission follows:\nHow-To-Repeat: Any run of 'mfiutil show drives' reproduces the problem. I use 3 TB drives connected to the controller but the problem is unaffected by drive size."
+}

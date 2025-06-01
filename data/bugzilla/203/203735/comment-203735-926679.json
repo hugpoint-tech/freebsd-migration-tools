@@ -1,0 +1,8 @@
+{
+ "id": 926679,
+ "bug_id": 203735,
+ "attachment_id": 0,
+ "creation_time": "2017-03-20T04:41:03Z",
+ "creator": "kp@freebsd.org",
+ "text": "The good news is this no longer panics, but it still doesn't work.\n\nThis turns out to be somewhat tricky. \nThe underlying problem is one of address scope.\n\nIt can be fixed on the receive side with a patch like this:\n\ndiff --git a/sys/netpfil/pf/pf.c b/sys/netpfil/pf/pf.c\nindex 81290f91b40..d68f81ddf15 100644\n--- a/sys/netpfil/pf/pf.c\n+++ b/sys/netpfil/pf/pf.c\n@@ -6538,8 +6538,12 @@ done:\n            pd.proto == IPPROTO_UDP) \u0026\u0026 s != NULL \u0026\u0026 s-\u003enat_rule.ptr != NULL \u0026\u0026\n            (s-\u003enat_rule.ptr-\u003eaction == PF_RDR ||\n            s-\u003enat_rule.ptr-\u003eaction == PF_BINAT) \u0026\u0026\n           IN6_IS_ADDR_LOOPBACK(\u0026pd.dst-\u003ev6))\n-               m-\u003em_flags |= M_SKIP_FIREWALL;\n+               m-\u003em_flags |= M_SKIP_FIREWALL | M_FASTFWD_OURS;\n\nThis tells ip6_input() to skip the scope checks, which seems appropriate.\nIt still fails on the reply packet though, so this doesn't actually fix the whole use case."
+}

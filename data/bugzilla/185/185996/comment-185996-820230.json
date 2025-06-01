@@ -1,0 +1,8 @@
+{
+ "id": 820230,
+ "bug_id": 185996,
+ "attachment_id": 0,
+ "creation_time": "2015-04-18T16:59:07Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: ae\nDate: Sat Apr 18 16:58:36 UTC 2015\nNew revision: 281695\nURL: https://svnweb.freebsd.org/changeset/base/281695\n\nLog:\n  Change ipsec_address() and ipsec_logsastr() functions to take two\n  additional arguments - buffer and size of this buffer.\n\n  ipsec_address() is used to convert sockaddr structure to presentation\n  format. The IPv6 part of this function returns pointer to the on-stack\n  buffer and at the moment when it will be used by caller, it becames\n  invalid. IPv4 version uses 4 static buffers and returns pointer to\n  new buffer each time when it called. But anyway it is still possible\n  to get corrupted data when several threads will use this function.\n\n  ipsec_logsastr() is used to format string about SA entry. It also\n  uses static buffer and has the same problem with concurrent threads.\n\n  To fix these problems add the buffer pointer and size of this\n  buffer to arguments. Now each caller will pass buffer and its size\n  to these functions. Also convert all places where these functions\n  are used (except disabled code).\n\n  And now ipsec_address() uses inet_ntop() function from libkern.\n\n  PR:\t\t185996\n  Differential Revision:\thttps://reviews.freebsd.org/D2321\n  Reviewed by:\tgnn\n  Sponsored by:\tYandex LLC\n\nChanges:\n  head/sys/netipsec/ipsec.c\n  head/sys/netipsec/ipsec.h\n  head/sys/netipsec/ipsec_input.c\n  head/sys/netipsec/ipsec_output.c\n  head/sys/netipsec/xform_ah.c\n  head/sys/netipsec/xform_esp.c\n  head/sys/netipsec/xform_ipcomp.c"
+}

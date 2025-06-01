@@ -1,0 +1,8 @@
+{
+ "id": 1207057,
+ "bug_id": 262862,
+ "attachment_id": 0,
+ "creation_time": "2022-04-14T15:37:41Z",
+ "creator": "adridg@freebsd.org",
+ "text": "Similarly, removing qt5-declarative shows POST-DEINSTALL script failed as well. Actually all of the Qt5 packages do this. I guess it's a recent(ish) change to pkg to print the failure message.\n\nThe post-deinstall script looks like this (extracted from the pkg database):\n\n```\n#!/bin/sh\nqi=\"/usr/local/include/qt5\"\nqc=\"$qi/QtCore/qconfig-modules.h\"\nqm=\"declarative-test\"\ncase $2 in\nPOST-DEINSTALL)\n[ \\! -e \"$qc\" ] \u0026\u0026 touch \"$qc\"\nsed  \"/qconfig-$qm\\.h/ d\" \"$qc\"\n[ \\! -e \"$qi/QtCore/qconfig.h\" ] \u0026\u0026 \\\n[ \\! -s \"$qc\" ] \u0026\u0026 (\nrm -f \"$qc\"\nrmdir \"$qi/QtCore\"\nrmdir \"$qi\"\n) \u003e /dev/null 2\u003e\u00261\n;;\nesac\n```\n\nWhat's going \"wrong\" is after the sed, it checks if QtCore/qconfig.h no-longer-exists. It does, so `[ ! -e \"$qi/QtCore/qconfig.h\" ]` is false; that pipeline exits with a non-zero code. There's nothing **after** that pipeline to reset the exit code, and so the result of the whole script is non-zero -- and pkg prints a failure."
+}

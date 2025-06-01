@@ -1,0 +1,8 @@
+{
+ "id": 867291,
+ "bug_id": 197498,
+ "attachment_id": 0,
+ "creation_time": "2016-02-28T09:43:48Z",
+ "creator": "avos@freebsd.org",
+ "text": "Before https://reviews.freebsd.org/D5145, scanning and \u003csmth\u003e -\u003e INIT (FEXT REINIT) -\u003e \u003csmth2\u003e state transition were two solid parts. How things were worked:\n1) network.subr executes 'ifconfig \u003ciface\u003e up', INIT -\u003e SCAN (w/ FEXT_REINIT flag) state transition happens;\n2) INIT -\u003e INIT, FEXT_REINIT dropped;\n3) INIT -\u003e SCAN, scanning starts (and cannot be interrupted, since newstate_cb() uses the same taskqueue)\n4) network.subr executes hostapd / wpa_supplicant -\u003e interface reinitializes.\n5) SCAN -\u003e SCAN (w/ FEXT_REINIT flag); the task was enqueued, but (!) will not be executed untill scan ends;\n6) scan ends (no networks were seen, so it decides to create another one); SCAN -\u003e RUN state transition is enqueued (FEXT_REINIT is still here, but nstate will be changed to RUN).\n7) newstate_cb() is executed, SCAN -\u003e INIT state transition (everything is dropped via ieee80211_reset_bss() call).\n8) and INIT -\u003e RUN state transition is issued (with corresponding result).\n\nNote: FEXT_REINIT is not added in STA mode, so it's not affected by this bug."
+}

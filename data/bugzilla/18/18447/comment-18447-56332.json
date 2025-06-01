@@ -1,0 +1,8 @@
+{
+ "id": 56332,
+ "bug_id": 18447,
+ "attachment_id": 0,
+ "creation_time": "2000-05-08T12:40:02Z",
+ "creator": "mori@tri.asanuma.co.jp",
+ "text": "\nThis problem is on /bin/sh.\n\nIf /bin/sh evaluates a string with `eval' statement and the string\nhas semicolon at the end, then /bin/sh doesn't process the `eval'\nstatement.\n\nfor example:\n\n  $ /bin/sh -c 'eval echo t'\n  t\n  $ /bin/sh -c 'eval echo t;'\n  $\n\nor\n\n  $ cat test.sh\n  #! /bin/sh\n  cmd1='eval echo 1;'\n  cmd2='eval echo 2'\n  eval $cmd1\n  eval $cmd2\n  $ /bin/sh test.sh\n  2\n  $\n\nAnd if the string has multiplue eval statement, then /bin/sh doesn't\nprocess first eval statements, but processes others.\n\nfor example:\n\n  $ /bin/sh -c 'eval echo 1; eval echo 2; eval echo 3;'\n  2\n  3\n  $\n\nI think its behavior is /bin/sh's bug.  Other shells reading Bourne\nshell script, such as bash or SunOS's /bin/sh, process all eval\nstatement for above cases.  But NetBSD's /bin/sh is same as FreeBSD.\n\nFix: To fix, apply this patch to src/bin/sh/parser.c\nHow-To-Repeat: \nSimple example is\n\n $ /bin/sh -c 'eval echo 1; eval echo 2;'\n\nThe result is\n\n 2\n\nbut we expected \n\n 1\n 2"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 488213,
+ "bug_id": 132344,
+ "attachment_id": 0,
+ "creation_time": "2009-03-05T21:10:01Z",
+ "creator": "dhorn2000@gmail.com",
+ "text": "The query-pr.cgi script interface to gnats tries very hard to decode and display attachments properly.\n\nwww/en/cgi/query-pr.cgi\n\nUnfortunately, MIME headers do not always play nice, and there are many instances of inproper display of base64 encoded attachments.\n\nThe real issue is that if either \"X-Attachment-Id:\" or \"Content-Disposition:\" headers occur after \"Content-Transfer-Encoding\" headers, then decode_base64() fails, and displays unprintable characters.\n\nexample pr's that do not display base64 attachments properly:\n\nports/130991\nports/130144\nports/130000\n\nFix: -Parse out the X-Attachment-Id header if found\n-do not assume that content-transfer-encoding is the last header\n-Check for nonprintables on result of decode_base64()\n\nThis fix seems to work for all broken base64 attachment pr's that I have found.  To test the check for nonprintables, just mangle one of the prs by adding \"X-Broken-Header: asdfasdf\" to the end of the mime header just before the base64 payload starts, and the code will break again, but at least will be caught by the :isascii: check for nonprintables\n\nUnified diff attached.\n\nPatch attached with submission follows:\nHow-To-Repeat: Go to http://www.freebsd.org/cgi/query-pr.cgi?pr=130144 in your web browser, and notice that the attachment displays unprintable characters.\n\nRepeat for 130144 and 130000 as slightly different examples."
+}

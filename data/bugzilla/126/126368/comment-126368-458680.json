@@ -1,0 +1,8 @@
+{
+ "id": 458680,
+ "bug_id": 126368,
+ "attachment_id": 0,
+ "creation_time": "2008-08-08T18:30:22Z",
+ "creator": "mjguzik@gmail.com",
+ "text": "Err, I made a mistake. crfree() will be called in case of failure\n(loop starting at line 959), so the following patch should be ok:\n\n--- sys/kern/kern_ktrace.c.orig\t2008-08-08 16:37:45.000000000 +0200\n+++ sys/kern/kern_ktrace.c\t2008-08-08 19:25:16.000000000 +0200\n@@ -933,12 +933,14 @@\n \t\terror = VOP_WRITE(vp, \u0026auio, IO_UNIT | IO_APPEND, cred);\n \tVOP_UNLOCK(vp, 0, td);\n \tvn_finished_write(mp);\n \tvrele(vp);\n \tVFS_UNLOCK_GIANT(vfslocked);\n-\tif (!error)\n+\tif (!error) {\n+\t\tcrfree(cred);\n \t\treturn;\n+\t}\n \t/*\n \t * If error encountered, give up tracing on this vnode.  We defer\n \t * all the vrele()'s on the vnode until after we are finished walking\n \t * the various lists to avoid needlessly holding locks.\n \t */"
+}

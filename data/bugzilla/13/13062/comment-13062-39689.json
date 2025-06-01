@@ -1,0 +1,8 @@
+{
+ "id": 39689,
+ "bug_id": 13062,
+ "attachment_id": 0,
+ "creation_time": "1999-08-11T02:20:00Z",
+ "creator": "rajit@csl.cornell.edu",
+ "text": "\nThe PCI lnc driver on the Kayak reports transmit underflow errors. The\nfollowing message appears on console repeatedly:\n\nAug  6 12:00:00 \u003chost\u003e /kernel: lnc1: Transmit underflow error -- Resetting\n\nThe system also exhibits poor throughput; an ftp between two Kayaks\nresults in transmit rates of between 300KB/sec and 700KB/sec, well\nbelow the 100Mbps transfer rate.\n\nFix: It appears that under certain cases, the data being transferred from\nmemory to the nic does not arrive in time for the transmitter,\nresulting in the underflow. The Am79C972 nic has a bus control bit\nthat can be set to prevent any message transmits until the entire\nmessage is DMAed to the network card SRAM. Setting this bit solves\nboth the transmit underflow problem as well as the throughput problem,\nsince the card is no longer periodically reset. I've included a patch\nfor i386/isa/if_lnc.c for 3.2-RELEASE.\n\nI check that the nic # is \u003e PCnet_FAST (i.e. == PCnet_FASTplus) before \nchanging the bus control register. This might work on the Am79C97x,\nbut I only have Am79C972 nics.\n\nAfter the modifications, I no longer get any transmit underflow\nerrors, and I can ftp files at 10MB/sec between the Kayaks. :)\n\n-Rajit Manohar \u003crajit@csl.cornell.edu\u003e\n\nHow-To-Repeat: \nftp a file (like /kernel) from one machine to another. Any sustained\nnetwork activity results in the above problem."
+}

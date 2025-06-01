@@ -1,0 +1,8 @@
+{
+ "id": 977829,
+ "bug_id": 225960,
+ "attachment_id": 0,
+ "creation_time": "2018-02-16T21:44:37Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "I now think that this could be a / the deep problem in GEOM.\nThe problem is that g_access() must be called with the GEOM topology lock held.\nAnd that gives a false impression that the lock is indeed held across the call.\nBut this isn't true because many classes, ZVOL being one of the many, need to perform I/O in their access method.  So, they must drop and pick up the topology lock.\nThat, of course, can break many assumptions.\n\nSpecifically, looking at g_slice_access() we can see that the code assumes that all invocations are serialized.  Indeed, if another call to g_slice_access() is permitted while the consumer's access bits are not updated yet, then the following condition can be true multiple times:\n\n        /* On first open, grab an extra \"exclusive\" bit */\n        if (cp-\u003eacr == 0 \u0026\u0026 cp-\u003eacw == 0 \u0026\u0026 cp-\u003eace == 0)\n                de++;\n\nAnd if that ever happens and we have extra grabs on cp-\u003eace, then the following condition will never be true (because cp-\u003eace + de \u003e 1):\n\n        /* ... and let go of it on last close */\n        if ((cp-\u003eacr + dr) == 0 \u0026\u0026 (cp-\u003eacw + dw) == 0 \u0026\u0026 (cp-\u003eace + de) == 1)\n                de--;"
+}

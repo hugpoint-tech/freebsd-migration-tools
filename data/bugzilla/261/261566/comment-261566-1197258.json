@@ -1,0 +1,8 @@
+{
+ "id": 1197258,
+ "bug_id": 261566,
+ "attachment_id": 0,
+ "creation_time": "2022-01-31T21:57:21Z",
+ "creator": "kp@freebsd.org",
+ "text": "Thanks for the report.\n\nI distinctly recall looking at the Wireshark code before implementing the BPF_WORDALIGN(), however it clearly does `padded_length = WS_ROUNDUP_4(length);`, so I don't know what happened there.\n\nHow does this look to you:\n\ndiff --git a/sys/net/if_pflog.h b/sys/net/if_pflog.h\nindex 0406f78474a8..443c1cc36cf6 100644\n--- a/sys/net/if_pflog.h\n+++ b/sys/net/if_pflog.h\n@@ -33,7 +33,6 @@\n\n #include \u003csys/types.h\u003e\n\n-#include \u003cnet/bpf.h\u003e\n #include \u003cnet/if.h\u003e\n\n #define        PFLOGIFS_MAX    16\n@@ -60,7 +59,9 @@ struct pfloghdr {\n        u_int8_t        pad2[3];\n };\n\n-#define        PFLOG_HDRLEN            BPF_WORDALIGN(offsetof(struct pfloghdr, pad2))\n+#define PFLOG_ALIGNMENT                sizeof(uint32_t)\n+#define PFLOG_ALIGN(x)         (((x) + PFLOG_ALIGNMENT - 1) \u0026 ~(PFLOG_ALIGNMENT - 1))\n+#define        PFLOG_HDRLEN            PFLOG_ALIGN(offsetof(struct pfloghdr, pad2))\n /* minus pad, also used as a signature */\n #define        PFLOG_REAL_HDRLEN       offsetof(struct pfloghdr, pad2)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 722062,
+ "bug_id": 180178,
+ "attachment_id": 0,
+ "creation_time": "2014-04-05T13:56:55Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In FreeBSD PR ports/180178, you wrote:\n\u003e zsh hangs when commands involving '\u003e(command)' are involved:\n\n\u003e [[[\n\u003e % ssh loki.apache.org 'zsh -fc \"echo \u003e(wc -l)\"'\n\u003e /tmp/zshJHGd5f\n\u003e ]]]\n\n\u003e It responds to ^C and ^Z but not to ^D or ^\\.\n\n\u003e Using ':' or 'true' inside the parentheses yields the same behaviour.\n\nA construct like \u003e(CMD) is called process substitution and expands to a\npathname that, when opened, writes to the standard input of CMD. In zsh\n(but not bash), the shell also waits for CMD to terminate when the outer\ncommand is done.\n\nThe similar \u003c(CMD) expands to a pathname that reads from the standard\noutput of CMD; the shell does not wait for CMD to terminate.\n\nDepending on whether the full /dev/fd was available when zsh was\ncompiled (look for zsh_cv_sys_path_dev_fd in configure.ac), zsh uses\neither /dev/fd or a fifo to generate the pathname. There is a special\ncase for redirecting to or from a process substitution which uses an\nunnamed pipe.\n\nIf zsh uses a fifo, the child process will block until the generated\npathname is opened. If the pathname is never opened, such as when you\necho it, the child process blocks indefinitely. It might be possible to\nfix this in zsh by opening the fifo with O_NONBLOCK before deleting it.\n\nIf zsh uses /dev/fd, such as when the port is compiled using poudriere,\nprocess substitution does not work unless the full /dev/fd (fdescfs) is\nmounted (by default, only /dev/fd/0, /dev/fd/1 and /dev/fd/2 are\navailable which is not good enough).\n\n-- \nJilles Tjoelker"
+}

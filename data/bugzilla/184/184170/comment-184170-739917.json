@@ -1,0 +1,8 @@
+{
+ "id": 739917,
+ "bug_id": 184170,
+ "attachment_id": 0,
+ "creation_time": "2013-11-22T13:00:00Z",
+ "creator": "kamikaze@bsdforen.de",
+ "text": "# make DESTDIR=/root/tmpdest install\n===\u003e  Creating some important subdirectories\nrealpath: /root/tmpdest/___temp___: No such file or directory\n\n*** Error code 1\nStop.\nmake: stopped in /usr/ports/ports-mgmt/pkg\n\n\nThe cause for this problem is that bsd.destdir.mk gets a list of mount directories, containing of triplets:\n\u003cpath variable\u003e:\u003cpath\u003e:\u003cmountdir in the chroot\u003e\n\nThe list is usually just PORTSDIR and DISTDIR, which is then automatically\ncompleted to a triplet. If the triplet is not predefined ___temp___ is used\nas the mount dir, which is handled later in the code to call \"mktemp -d\"\n(line 147).\n\nHowever before it is handled, the path is accessed by realpath (line 143),\nwhich causes make to fail, because the new BSD make in FreeBSD 10 invokes\n/bin/sh with the -e argument by default (see the .SHELL target in the manual\npage).\n\nThe attached patch prevents shell failure by silencing the error and appending\n||: to the realpath call (in case of failure call :, which simply returns 0).\n\nThis allows proper handling of the ___temp___ case later in the code.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: Create a FreeBSD environment:\n# cd /usr/src\n# make installworld distdribution DESTDIR=/root/tmpdest\n# chroot /root/tmpdest\n# /etc/rc.d/ldconfig start\n# exit\n\nAfterwards try installing something from ports.\n# cd /usr/ports/ports-mgmt/pkg\n# make DESTDIR=/root/tmpdest install"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 821468,
+ "bug_id": 199739,
+ "attachment_id": 0,
+ "creation_time": "2015-04-28T09:32:14Z",
+ "creator": "onwahe@gmail.com",
+ "text": "Thank you for your patch. While fixing it, I'm adding some tweaks. Someone with commit bit, commit it please.\n\nIndex: sys/arm/arm/pmap-v6-new.c\n===================================================================\n--- sys/arm/arm/pmap-v6-new.c\t(revision 282129)\n+++ sys/arm/arm/pmap-v6-new.c\t(working copy)\n@@ -6094,13 +6094,13 @@\n \n \n /*\n- *  Clean L1 data cache range on a single page, which is not mapped yet.\n+ *  Clean L1 data cache range by physical address.\n+ *  The range must be within a single page.\n  */\n static void\n pmap_dcache_wb_pou(vm_paddr_t pa, vm_size_t size, vm_memattr_t ma)\n {\n \tstruct sysmaps *sysmaps;\n-\tvm_offset_t va;\n \n \tKASSERT(((pa \u0026 PAGE_MASK) + size) \u003c= PAGE_SIZE,\n \t    (\"%s: not on single page\", __func__));\n@@ -6111,9 +6111,8 @@\n \tif (*sysmaps-\u003eCMAP3)\n \t\tpanic(\"%s: CMAP3 busy\", __func__);\n \tpte2_store(sysmaps-\u003eCMAP3, PTE2_KERN_NG(pa, PTE2_AP_KRW, ma));\n-\tva = (vm_offset_t)sysmaps-\u003eCADDR3;\n-\ttlb_flush_local(va);\n-\tdcache_wb_pou(va, size);\n+\ttlb_flush_local((vm_offset_t)sysmaps-\u003eCADDR3);\n+\tdcache_wb_pou((vm_offset_t)sysmaps-\u003eCADDR3 + (pa \u0026 PAGE_MASK), size);\n \tpte2_clear(sysmaps-\u003eCMAP3);\n \tsched_unpin();\n \tmtx_unlock(\u0026sysmaps-\u003elock);"
+}

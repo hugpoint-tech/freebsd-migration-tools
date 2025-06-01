@@ -1,0 +1,8 @@
+{
+ "id": 1038252,
+ "bug_id": 102834,
+ "attachment_id": 0,
+ "creation_time": "2019-02-18T18:24:57Z",
+ "creator": "longwitz@incore.de",
+ "text": "The problem in this PR is the fact that in the functions wait_child() and free_child() of source popen.c the call of findchild() must be done after the call of the sigfunctions. For wait_child() this was solved with commit 236286. For free_child() this was solved together with some other changes in STABLE 10 and 11 but reverted because of another problem reported in PR 230196. \n\nFor Stable 11 the following patch would be enough to close this PR:\n\n--- popen.c.orig        2019-02-18 19:07:59.043267000 +0100\n+++ popen.c     2019-02-18 19:09:25.226232000 +0100\n@@ -359,12 +359,14 @@\n free_child(int pid)\n {\n        sigset_t nset, oset;\n-       struct child *cp = findchild(pid);\n+       struct child *cp;\n\n        (void)sigemptyset(\u0026nset);\n        (void)sigaddset(\u0026nset, SIGCHLD);\n        (void)sigprocmask(SIG_BLOCK, \u0026nset, \u0026oset);\n\n+       cp = findchild(pid);\n+\n        if (cp-\u003edone)\n                delchild(cp);\n        else"
+}

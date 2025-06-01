@@ -1,0 +1,8 @@
+{
+ "id": 640391,
+ "bug_id": 162991,
+ "attachment_id": 0,
+ "creation_time": "2012-03-08T18:09:51Z",
+ "creator": "jkim@FreeBSD.org",
+ "text": "On Thursday 08 March 2012 02:50 am, Volodymyr Kostyrko wrote:\n\u003e  Ok, I found time to investigate it.\n\u003e\n\u003e  Everything is about arch guessing. java/openjdk7 substitutes amd64\n\u003e for x86_64 while java/openjdk6 doesn't. I just added missing bits\n\u003e from correspondent java/openjdk7 patch.\n\u003e\n\u003e  Redports build:\n\u003e https://redports.org/buildarchive/20120307160255-45601\n\u003e\n\u003e  Patch attached.\n\nSorry but it doesn't make any sense.  I guess you are patching this:\n\n...\n# Platform settings specific to BSD\nifeq ($(PLATFORM), bsd)\n  OS_VERSION := $(shell uname -r)\n  # Arch and OS name/version\n  mach := $(shell uname -m)\n  archExpr = case \"$(mach)\" in \\\n                i[3-9]86) \\\n                    echo i586 \\\n                    ;; \\\n                *) \\\n                    echo $(mach) \\\n                    ;; \\\n      esac\n  ARCH        := $(shell $(archExpr) )\n  ARCH_FAMILY := $(ARCH)\n...\n\nUnless \"UNAME_m\" environment variable is set, there is no way that \nthis patch does anything at all.\n\n% uname -r\n10.0-CURRENT\n% uname -m\namd64\n% env UNAME_m=x86_64 uname -m\nx86_64\n\nI believe OpenJDK7 added it because some BSDs (e.g., DragonFlyBSD) \nreturn x86_64 for \"uname -m\".\n\nBTW, does \"make DISABLE_MAKE_JOBS=yes\" make any difference?\n\nThanks,\n\nJung-uk Kim"
+}

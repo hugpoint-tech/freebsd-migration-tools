@@ -1,0 +1,8 @@
+{
+ "id": 1144228,
+ "bug_id": 216316,
+ "attachment_id": 0,
+ "creation_time": "2021-01-31T00:03:18Z",
+ "creator": "emaste@freebsd.org",
+ "text": "It appears that each section is copied to the output binary at an offset specified by the section's Addr, in an some (unspecified) order - i.e., both .textdata and .zinfo specify an address of 0, and the output is .textdata overlaid with .zinfo.\n\n  [ 6] .textdata         PROGBITS        00000000 001830 0c9ec8 00 WAX  0   0  4\n  [ 8] .zinfo            PROGBITS        00000000 0cb6f8 000080 00   A  0   0  1\n\n$ readelf -x .zinfo ipxe.pxe.tmp | less\n\nHex dump of section '.zinfo':\n  0x00000000 434f5059 00000000 b10c0000 10000000 COPY............\n...\n  0x00000070 41444457 db030000 10000000 00000000 ADDW............\n\n$ readelf -x .textdata ipxe.pxe.tmp\n\nHex dump of section '.textdata':\n  0x00000000 00000000 8b542404 8b042489 02896204 .....T$...$...b.\n...\n  0x00000070 68830000 0089c1ba 3f000000 e8cac002 h.......?.......\n  0x00000080 00c9c353 89c389d0 0fb75260 895314c6 ...S......R`.S..\n  0x00000090 431800ba 01000000 e8adab01 00b9fff0 C...............\n...\n  0x000c9ec0 d5570300 dd520300                   .W...R..\n\n$ hexdump -Cv output\n00000000  43 4f 50 59 00 00 00 00  b1 0c 00 00 10 00 00 00  |COPY............|\n...\n00000070  41 44 44 57 db 03 00 00  10 00 00 00 00 00 00 00  |ADDW............|\n00000080  00 c9 c3 53 89 c3 89 d0  0f b7 52 60 89 53 14 c6  |...S......R`.S..|\n...\n000c9ec0  d5 57 03 00 dd 52 03 00                           |.W...R..|\n000c9ec8"
+}

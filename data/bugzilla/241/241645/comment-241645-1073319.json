@@ -1,0 +1,8 @@
+{
+ "id": 1073319,
+ "bug_id": 241645,
+ "attachment_id": 208771,
+ "creation_time": "2019-11-01T16:39:22Z",
+ "creator": "cmt@freebsd.org",
+ "text": "Created attachment 208771\nreturn error if cam_open_spec_device() fails\n\nbsdisks opens devices with cam_open_spec_device() - \"opens the pass(4) device that correspinds to the device name ...\" as per the man page. nvme disks (nvd*) do not have a pass device as per \"camcontrol devlist\" on my system. cam_open_spec_device() returns NULL in that case, which triggers an error message but is then passed on to other functions, until bsdisks crashes in camlib; backtrace is:\n\n(gdb) bt\n#0  cam_getccb (dev=0x0) at /usr/src/lib/libcam/camlib.c:85\n#1  0x00000000002622ec in scsiinquiry (device=0x0, task_attr=32,\n    retry_count=1, timeout=0, result=0x7fffdf9fadcc)\n    at /wrkdirs/usr/ports/sysutils/bsdisks/work/bsdisks-0.9/camcontrol.c:596\n#2  0x00000000002621ec in cam_is_removable (device_path=0x80191f818 \"nvd0\")\n    at /wrkdirs/usr/ports/sysutils/bsdisks/work/bsdisks-0.9/camcontrol.c:177\n#3  0x000000000025932f in CamControlProber::run (this=0x80186eb10)\n    at /wrkdirs/usr/ports/sysutils/bsdisks/work/bsdisks-0.9/camcontrolprober.cpp:40\n#4  0x0000000800671ffd in ?? () from /usr/local/lib/qt5/libQt5Core.so.5\n#5  0x000000080066d4a4 in ?? () from /usr/local/lib/qt5/libQt5Core.so.5\n#6  0x0000000800e76776 in thread_start (curthread=0x801854400)\n    at /usr/src/lib/libthr/thread/thr_create.c:292\n#7  0x0000000000000000 in ?? ()\n\nAttached patch (to be dropped into files/ - bump PORTREVISION!) catches that NULL and returns an error, thus making bsdisks survive."
+}

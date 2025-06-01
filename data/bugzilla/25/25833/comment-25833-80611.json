@@ -1,0 +1,8 @@
+{
+ "id": 80611,
+ "bug_id": 25833,
+ "attachment_id": 0,
+ "creation_time": "2001-03-15T19:20:01Z",
+ "creator": "dot@dotat.at",
+ "text": "\nThere was recently a problem with syslogd looping messages that were\nprinted to the console, because of the following code:\n\tif (LOG_FAC(pri) == LOG_CONSOLE)\n\t\t/* blah */;\nthe problem being that the value of the LOG_FAC() macro cannot be\ncompared with a facility value, which is bogus.\n\nThere are still a couple of harmless instances of this brokenness\n(in syslogd.c and dmesg.c) where the facility in question is\nLOG_KERN, which is fortunately zero.\n\nFix: This patch sanitizes LOG_FAC(), and adds a LOG_FACSHIFT macro to\nreplace the lost semantics. I have also replaced uses of LOG_FACMASK\nthat are now more correctly done with LOG_FAC() (where before that\nwould have been broken).\n\nAn alternative fix would be to replace the code in syslogd.c and\ndmesg.c that bogusly compares the value of LOG_FAC() with LOG_KERN.\n\nThere's also some code in src/contrib/ipfilter which uses\nLOG_PRIMASK and LOG_FACMASK instead of LOG_PRI() and LOG_FAC()\nbut I haven't touched it since it is contrib code."
+}

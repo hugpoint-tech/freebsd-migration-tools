@@ -1,0 +1,8 @@
+{
+ "id": 1222178,
+ "bug_id": 265714,
+ "attachment_id": 235773,
+ "creation_time": "2022-08-08T12:40:20Z",
+ "creator": "mike@sentex.net",
+ "text": "Created attachment 235773\ndiff of output of sysctl dev.igc before and after link drop\n\nUsing a combo of netperf3 on 2 back to back RELENG_13 machines, the link will drop both at 1G and 2.5G link speeds.  Trying without FC does seem to reduce the instances of the drop, but it still happens.\nRunning a simple shell script to do\n\nTARGET=10.1.255.168\nI=/usr/local/bin/iperf3\nREPDIR=/var/tmp/reports\n\nwhile true \ndo\nd=`date \"+%s\"`\n$I -t 60 -c $TARGET\nsleep 2\n/sbin/sysctl -a dev.igc.1 \u003e $REPDIR/${d}a\n$I -P4 -t 60 -c $TARGET\n/sbin/sysctl -a dev.igc.1 \u003e $REPDIR/${d}b\nsleep 2\n$I -R -t 60 -c $TARGET\n/sbin/sysctl -a dev.igc.1 \u003e $REPDIR/${d}c\nsleep 2\n$I  -R -P4 -t 60 -c $TARGET\n/sbin/sysctl -a dev.igc.1 \u003e $REPDIR/${d}d\ndone\n\nwill result in random drops of the link\n\nigc1: link state changed to DOWN\nigc1: link state changed to UP\nigc1: link state changed to DOWN\nigc1: link state changed to UP\nigc1: link state changed to DOWN\nigc1: link state changed to UP\n\n\nits not clear if its the receiver or sender thats dropping it as the 2 machines are on xover cable. Discussion at \nhttps://lists.freebsd.org/archives/freebsd-stable/2022-August/000835.html"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 655121,
+ "bug_id": 165895,
+ "attachment_id": 0,
+ "creation_time": "2012-03-10T01:50:01Z",
+ "creator": "adrian@freebsd.org",
+ "text": "In a congested air environment with a very busy broadcast traffic LAN (in my instance, a _lot_ of IPv4 ARP and IPv6 ND frames) the CABQ can fill up with traffic and tie up all the tx buffers.\n\nThis stops things such as management traffic (ie, probe response/authentication frames) from successfully transmitting.\n\nFix: \n\nIn the short term, we should just limit the amount of data going into the multicast queue. This includes power save traffic, so we need to be careful.\n\nIn the longer term, when we decouple ath_buf TX from actual software TX queues, we may wish to buffer some frames in the avp-\u003eav_mcastq before we assign them a hardware TX ath_buf + descriptor. We still will have a problem with traffic filling up.\n\nThere may be a radio configuration issue causing it to think the air is overly congested. I'll investigate that in a separate PR.\nHow-To-Repeat: * AR9130 AP\n* _VERY_ busy 2.4GHz environment\n* configure in HT/40 mode\n* inject a lot of broadcast traffic\n\nsysctl dev.ath.0.txagg will show the CABQ (queue 8) will be constantly filled with traffic."
+}

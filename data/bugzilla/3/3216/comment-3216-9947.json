@@ -1,0 +1,8 @@
+{
+ "id": 9947,
+ "bug_id": 3216,
+ "attachment_id": 0,
+ "creation_time": "1997-04-07T05:30:12Z",
+ "creator": "Tor.Egge@idi.ntnu.no",
+ "text": "\nwhile the processor is clearing pages in vm_page_zero_idle, interrupts are\nenabled. This might cause an attempt to call pmap_zero_page while it\ncannot be called.\n\t\ndb\u003e trace\nvget\nffs_sync\nsync\nboot\npanic\npmap_zero_page    (probably via inlined vm_page_zero_fill) \nvm_fault\ntrap_pfault\ntrap\ncalltrap\ntrap 0xc, ...\nip_input\nipintr\nswi_net_next\nvm_page_zero_idle\nidle_loop\n\nFix: Alternative 1:\n\nBlock some interrupts during the call to pmap_zero_page in vm_page_zero_idle.\n\n\n\nAlternative 2:\n\nIntroduce a modified clone of pmap zero_page, using CMAP3/CADDR3 instead of\nCMAP2/CADDR2, and call that clone in vm_page_zero_idle instead of the \noriginal.--diduatwmzxiLtPiSdISKudtt4NgD6sL0C43PBodpDHAEuGpv\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n*** vm_machdep.c.orig\tMon Apr  7 02:34:29 1997\n--- vm_machdep.c\tMon Apr  7 03:07:49 1997\n***************\n*** 883,889 ****\n--- 883,891 ----\n  \t\t--(*vm_page_queues[m-\u003equeue].lcnt);\n  \t\tTAILQ_REMOVE(vm_page_queues[m-\u003equeue].pl, m, pageq);\n  \t\tsplx(s);\n+ \t\t(void)splvm();\n  \t\tpmap_zero_page(VM_PAGE_TO_PHYS(m));\n+ \t\tsplx(s);\n  \t\t(void)splvm();\n  \t\tm-\u003equeue = PQ_ZERO + m-\u003epc;\n  \t\t++(*vm_page_queues[m-\u003equeue].lcnt);\nHow-To-Repeat: \nHigh system load, causing the queues of pages to be zero-filled to be long.\nThen lower load, causing the idle_loop to be activated. Then a interrupt while\npmap_zero_page is using CMAP2."
+}

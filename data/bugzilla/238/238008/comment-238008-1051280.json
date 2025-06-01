@@ -1,0 +1,8 @@
+{
+ "id": 1051280,
+ "bug_id": 238008,
+ "attachment_id": 0,
+ "creation_time": "2019-05-21T03:47:38Z",
+ "creator": "jhale@FreeBSD.org",
+ "text": "(In reply to Yuri Victorovich from comment #5)\nOf course I have MPI installed. Otherwise, I wouldn't have been able to get it to eventually build.\n\nHere is the output from config.log with your original port:\nconfigure:4847: result: no\nconfigure:4818: checking for function MPI_Init in -lmpi\nconfigure:4840: cc -o conftest -O2 -pipe -march=broadwell  -fstack-protector-strong -isystem /usr/local/include -fno-strict-aliasing  -isystem /usr/local/include  -fstack-protector-strong -L/usr/local/lib  conftest.c -lmpi  \u003e\u00265\nld: error: unable to find library -lmpi\ncc: error: linker command failed with exit code 1 (use -v to see invocation)\n\nYou can see that the linker can't find -lmpi. This information needs to be supplied to the linker:\nCFLAGS+= -I${LOCALBASE}/mpi/openmpi/include\nLDFLAGS+= -L${LOCALBASE}/mpi/openmpi/lib\n\nThis was your error from comment #1:\nconfigure:20330: cc -o conftest -O2 -pipe -fno-omit-frame-pointer -fstack-protector-strong -isystem /usr/local/include -fno-strict-aliasing -fno-omit-frame-pointer -isystem /usr/local/include -fstack-protector-strong -L/usr/local/lib conftest.c -lfftw3_mpi -lfftw3 -lm **-lmpi** \u003e\u00265\n\nAgain, it is trying to link to -lmpi without telling the linker where -lmpi is. Nowhere on that line is there a path to the mpi library.\n\nYou port is missing dependencies and needs USES=libtool, BTW."
+}

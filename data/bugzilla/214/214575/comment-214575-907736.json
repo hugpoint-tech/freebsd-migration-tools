@@ -1,0 +1,8 @@
+{
+ "id": 907736,
+ "bug_id": 214575,
+ "attachment_id": 177081,
+ "creation_time": "2016-11-16T16:43:31Z",
+ "creator": "rakuco@FreeBSD.org",
+ "text": "Created attachment 177081\nProposed patch\n\nUsing ports libc++ on non-leaf ports is problematic, as the requirement basically flows to all ports that depend on gpgme-{cpp,qt5}. In particular, sysutils/kf5-kwallet was breaking in FreeBSD 9.x because mismatches between libc++ and libstdc++ from gcc48 were causing a gpgme symbol not to be found:\n\n  backendpersisthandler.cpp:(.text+0xf61): undefined reference to `GpgME::Context::encrypt(std::vector\u003cGpgME::Key, std::allocator\u003cGpgME::Key\u003e \u003e const\u0026, GpgME::Data const\u0026, GpgME::Data\u0026, GpgME::Context::EncryptionFlags)'\n\nThe attached patch switches the build of both ports to lang/gcc on FreeBSD 9 and the system compiler on FreeBSD 10:\n* Use USES:compiler-c++11-lib instead of compiler-c++11-lang, as we do need a C++11-compatible standard library. This causes the right compiler to be chosen as described above.\n* Set _GLIBCXX_USE_C99 so that gpgme-cpp builds with GCC 4.8 (std::to_string() is not exposed by default on FreeBSD). Several other ports need to do the same.\n* Add a few patches to fix the gpgme-qt5:\n** patch-git_b4658f6a1 is a backport from an upstream commit to make the port build with GCC 4.8 without errors.\n** patch-lang_qt_src_qgpgmeencryptjob.cpp is a local workaround for the std::bind() bug mentioned in ports r424451.\n\nI've verified both ports to build on 9.3 and 10.3."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 31764,
+ "bug_id": 10508,
+ "attachment_id": 0,
+ "creation_time": "1999-03-09T16:00:01Z",
+ "creator": "junki@qn-lpr2-98.quicknet.inet.fi",
+ "text": " \n     isc-dhcp V2.0b1pl17 sometimes messes textual DHCP options.\n     In my case, prepending stuff to domain_name-option revealed the bug,\n     garbage appeared at the end.\n     Options are not C strings, but counted arrays, it seems,\n     but strcpy() was used to move the fields.\n\nFix: \n\nIn /usr/src/contrib/isc-dhcp/common/options.c:\n \n \n     /* Cycle through the array (or hunk) printing the data. */\n     for (i = 0; i \u003c numhunk; i++) {\n         for (j = 0; j \u003c numelem; j++) {\n             switch (fmtbuf [j]) {\n             case 't':\n                 if (emit_quotes)\n                     *op++ = '\"';\n -               strcpy (op, (char *)dp);\n -               op += strlen ((char *)dp);\n +               while (len-- \u0026\u0026 *dp) /* counted array, but might end in \\0 */\n +                   *op++ = *dp++;\n                 if (emit_quotes)\n                     *op++ = '\"';\n                 *op = 0;\n             break;\nHow-To-Repeat:  \n     In /etc/dhclient.conf:\n \n     interface \"ep0\" {\n        prepend domain-name \"oh5nxo.ampr.org \";\n        prepend domain-name-servers 127.0.0.1;\n        script \"/etc/dhclient-script\";\n     }\n \n     # dhclient -d -D ep0\n \n     /tmp/dcsXXX might now contain garbage at the end of some textual fields,\n     or in /etc/resolv.conf."
+}

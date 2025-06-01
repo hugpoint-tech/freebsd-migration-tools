@@ -1,0 +1,8 @@
+{
+ "id": 1097643,
+ "bug_id": 245689,
+ "attachment_id": 0,
+ "creation_time": "2020-04-17T17:09:36Z",
+ "creator": "cem@freebsd.org",
+ "text": "The bulk of the 'access'es are from VOP_LOOKUP checking that the directories of the path to the file has +x permission(s) for the current user.  FUSE does this a little weirdly (it basically has an inlined copy of vn_dir_check_exec() embedded, instead of calling the helper) but regardless, this is canonical for FreeBSD lookup.\n\nIf FUSE(5) can rely on filesystems to do their own checking as part of lookup, then that is probably an easy optimization.  (Apparently Linux does so.)\n\nchmod =\u003e VOP_SETATTR =\u003e fuse_vnop_setattr.  At the bottom (success case) we send fuse_internal_access(), then fuse_internal_setattr().  UFS does something similar in ufs_chmod().\n\nBasically: FreeBSD's VOP model has ACCESS as a separate vop, and this is the common pattern.\n\nProbably we can bypass these ACCESS checks in the ~FSESS_DEFAULT_PERMISSIONS case."
+}

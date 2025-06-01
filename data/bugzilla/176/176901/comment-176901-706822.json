@@ -1,0 +1,8 @@
+{
+ "id": 706822,
+ "bug_id": 176901,
+ "attachment_id": 0,
+ "creation_time": "2013-03-13T01:50:00Z",
+ "creator": "amdmi3@FreeBSD.org",
+ "text": "When cmake builds a binary or a library, it adds an RPATH to it pointing to the build directory. This is needed so when a binary is ran from the build directory, it's able to find all its libraries without using LD_LIBRARY_PATH.\n\nWhen cmake installs binaries, RPATHs are removed, as installed software will pick its libraries from the systemwide path known to dynamic linker. However, cmake removes _all_ RPATHs, including ones explicitly provided via e.g. LDFLAGS.\n\nThe problem arises when the port is build with newer gcc (USE_GCC=4.6+). The resulting binaries may depend on C++ features (for example, C++11 bits) support for whuch is only present in newer gcc's libstdc++ (/usr/local/lib/gcc46/libstdc++.so), but not in the base system /usr/lib/libstdc++.so. The former rpath is added by bsd.gcc.mk, but it has no effect as cmake removes it. In result, a binary will use /usr/lib/libstdc++.so, and won't run with the following message:\n\n/usr/lib/libstdc++.so.6: version GLIBCXX_3.4.11 required by \u003cbinary\u003e not found\n\nThis may be fixed by adding LD_LIBRARY_PATH=/usr/local/lib/gcc46 to the environement.\n\nTo fix that globally I propose the attached path. It disables adding build rpath to the binaries (we don't need it since ports are not intended to be ran from work/ anyway), which as well makes cmake _not_ remove RPATHs from installed binaries. With it, binaries use correct libstdc++ from the newer gcc and run without LD_LIBRARY_PATH hacks.\n\nI'm not sure which side effects it may have, so exp-run is advised."
+}

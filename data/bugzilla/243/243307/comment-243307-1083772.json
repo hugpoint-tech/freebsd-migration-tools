@@ -1,0 +1,8 @@
+{
+ "id": 1083772,
+ "bug_id": 243307,
+ "attachment_id": 0,
+ "creation_time": "2020-01-14T16:40:18Z",
+ "creator": "martymac@FreeBSD.org",
+ "text": "Hello,\n\nFrom what I understand, the order of initialization of global variables in different translation units (source files) is unspecified in C++ and global variables from network.cc (which leads to calling NetworkInit::NetworkInit() constructor) seem to be initialized *before* types_by_name gets instanciated.\n\nFind attached a quick and dirty patch that fixes the problem by forcing types_by_name instanciation before each pointer de-reference. Unfortunately, it is not optimal: it avoids NULL pointer de-refencing but some resources may remain unset.\n\nIn our case, src/resource.cc has not yet declared global lftp_vars so NetworkInit::NetworkInit() from src/network.cc cannot yet find and set \"dns:order\", so it remains unset (and this is not what we want). This could theoretically be the same problem for any resource set before it has been globally declared.\n\nThe good fix would probably be to ensure that lftp resources get always declared before the get accessed, so I'll submit bu report upstream to get feedback from the original author.\n\nBest regards,\nGanael."
+}

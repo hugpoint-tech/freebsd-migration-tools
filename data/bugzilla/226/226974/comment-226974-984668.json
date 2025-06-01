@@ -1,0 +1,8 @@
+{
+ "id": 984668,
+ "bug_id": 226974,
+ "attachment_id": 0,
+ "creation_time": "2018-03-27T21:23:51Z",
+ "creator": "leandro.lupori@gmail.com",
+ "text": "After some more investigation, I found that the part of the commit that \"broke\" the boot on powerpc64 with FDT (that is the default now) was the bdomain[BUF_DOMAINS] array.\n\nBy simply adding this array in vfs_bio.c in the previous commit I'm able to reproduce the issue.\n\nOn powerpc64 this array has a size of about 520KB, mainly because the default MAXCPU value for it is 256, which makes the following bufdomain field take a lot of space:\nstruct bufqueue bd_subq[MAXCPU + 1]; /* Per-cpu sub queues + global */\n\nIf I change bd_subq size to 17, for instance, then I'm able to go further, but then I get stuck after this message:\nusb_needs_explore_all: no devclass\nI don't know if this is related to same issue or not.\n\nHowever, it is still not clear to me why this extra KBs are a problem for powerpc64. It is probably something related to FDT, because unsetting \"usefdt\" in the bootloader makes the system bootable again, even without the change above."
+}

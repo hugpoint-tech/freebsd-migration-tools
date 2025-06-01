@@ -1,0 +1,8 @@
+{
+ "id": 857151,
+ "bug_id": 205883,
+ "attachment_id": 0,
+ "creation_time": "2016-01-04T16:54:40Z",
+ "creator": "marino@FreeBSD.org",
+ "text": "rrdtool makefile has these lines in it:\n\n.if exists(${LOCALBASE}/share/fonts/dejavu) || ${PORT_OPTIONS:MDEJAVU}\nRUN_DEPENDS+=   dejavu\u003e0:${PORTSDIR}/x11-fonts/dejavu\n.endif\n\nBesides being a questionable technique, it doesn't work as intended.  The dejavu dependency will be packaged 100% of the time regardless of value of the option or if the rrdtool is built in a clean jail (where share/fonts/dejavu doesn't exist in theory)\n\nWhy?\n\nbecause xorg-fonts-truetype (from pango) pulls it in, and by the time it's packaged, share/fonts/dejavu exists.\n\n`-- Installing xorg-fonts-truetype-7.7_1...\n|   `-- Installing font-misc-meltho-1.0.3_3...\n|   | `-- Installing mkfontdir-1.0.7...\n|   |   `-- Installing mkfontscale-1.1.2...\n|   |   | `-- Installing libfontenc-1.1.3...\n|   |   | `-- Extracting libfontenc-1.1.3: ...... done\n|   |   `-- Extracting mkfontscale-1.1.2: .. done\n|   | `-- Extracting mkfontdir-1.0.7: .. done\n|   `-- Extracting font-misc-meltho-1.0.3_3: .......... done\n|   `-- Installing font-bh-ttf-1.0.3_3...\n|   `-- Extracting font-bh-ttf-1.0.3_3: .......... done\n|   `-- Installing font-misc-ethiopic-1.0.3_3...\n|   `-- Extracting font-misc-ethiopic-1.0.3_3: .. done\n|   `-- Installing dejavu-2.35...\n|   `-- Extracting dejavu-2.35: .......... done\n\n\n\nI think the best approach is remove the override of the dejavu option.  Either that, or force it as an unconditional RUN depends.  The current method is broken."
+}

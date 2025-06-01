@@ -1,0 +1,8 @@
+{
+ "id": 992875,
+ "bug_id": 228384,
+ "attachment_id": 193578,
+ "creation_time": "2018-05-20T22:52:30Z",
+ "creator": "bsd.gaijin@gmail.com",
+ "text": "Created attachment 193578\nprocstat output\n\nzpool status hangs on [spa_namespace_lock]. Output of the procstat -a -kk and pictures of the stack trace from thread holding the lock attached.\n\nFrom Andriy Gapon \u003cavg@FreeBSD.org\u003e:\n\nSo, it's:\n   13 100015 geom                g_event             mi_switch+0xe6\nsleepq_wait+0x2c _sx_xlock_hard+0x314 zvol_geom_access+0x148 g_access+0x1fd\ng_eli_read_metadata+0x249 g_eli_config+0x3ed g_run_events+0x13e fork_exit+0x83\nfork_trampoline+0xe\n  930 100354 zfsd                -                   mi_switch+0xe6\nsleepq_wait+0x2c _sleep+0x23e g_access+0xf7 vdev_geom_attach+0x61c\nvdev_attach_ok+0x29 vdev_geom_open+0x394 vdev_open+0x115\nvdev_open_children+0x30 vdev_root_open+0x3a vdev_open+0x115\nspa_ld_open_vdevs+0x5e spa_ld_mos_init+0x1be\nspa_ld_mos_with_trusted_config+0x19 spa_load+0x5c spa_load_best+0x6b\nspa_open_common+0x11d spa_get_stats+0x4f\n\nI think I know what's going on in your case (not sure if it's the same a as\nprevious reports in this bug).  It's probably a consequence of base r330977, a\nfix to bug 225960.\nI didn't fully realize at that time, but that commit introduced a \"g_access\nlock\" in disguise.\nSo, we went from a LOR between geom topology lock and spa_namespace_lock to a\nrace caused by dropping the topology lock to a LOR between spa_namespace_lock\nand \"g_access lock\".\n\nThe toughest part now is to decide how to solve the LOR without re-introducing\nthe race.  Or alternatively, how to solve the race without introducing a\ndeadlock."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 419529,
+ "bug_id": 118322,
+ "attachment_id": 0,
+ "creation_time": "2007-12-26T18:28:12Z",
+ "creator": "avg@icyb.net.ua",
+ "text": "http://www.freebsd.org/cgi/query-pr.cgi?pr=118322\n\nThis panic looks like dereferencing a NULL pointer to a structure:\n\u003e fault virtual address = 0x2c\n44 is exactly an offset of 'perm' field in file_entry structure and\nfentry is a field of 'struct file_entry *' type in udf_node structure.\n\nFrom the code it seems that fentry field can not be NULL during \"normal\"\nlife-cycle of udf_node. Memory allocation is properly checked for errors.\n\nThe only suspicious place is udf_reclaim() where memory is freed. It\nseems that some race condition could have allowed access to that udf\n(v)node while it was being reclaimed.\n\nComparing udf_reclaim (and cd9660_reclaim for that matter) with\nufs_reclaim I see that the latter has the following code:\n        /*\n         * Lock the clearing of v_data so ffs_lock() can inspect it\n         * prior to obtaining the lock.\n         */\n        VI_LOCK(vp);\n        vp-\u003ev_data = 0;\n        VI_UNLOCK(vp);\n\nImportant difference is that UFS code has the lock and it frees the\nactual data after setting v_data pointer to NULL, UDF and CD9660 do not\nhave any locks and free the data before resetting v_data.\n\nI am no filesystem expert, but I suspect that the above might be\nimportant in the mpsafe vfs world. But maybe this is just a red herring.\n\nP.S. author of the quoted ufs code, Jeff Roberson, is bcc-ed\n\n-- \nAndriy Gapon"
+}

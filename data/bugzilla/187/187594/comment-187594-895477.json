@@ -1,0 +1,8 @@
+{
+ "id": 895477,
+ "bug_id": 187594,
+ "attachment_id": 174231,
+ "creation_time": "2016-08-30T20:23:02Z",
+ "creator": "karl@denninger.net",
+ "text": "Created attachment 174231\nSecond cut against 11.0-STABLE\n\nSecond cut; makes the following changes in addition to the above:\n\n1. Sets arc_free_target's default to slightly above the paging threshold instead of equal to it.  (This remains tunable if you don't like the defaults.)\n\n2. When the system invades vm.v_free_target (note: still above arc_free_target by a decent amount, especially on larger systems) we start *slowly* cleaning up UMA; one zone is chased down per 500ms \"window\" on a rotary basis.  (For future: I will be looking into the \"vmstat\" code to see how to determine the \"in use\" .vs. \"free\" count and targeting only those UMA buckets where a \"material\" [e.g. more than 10%?] of the allocated is free and unused in this circumstance.)\n\n3. If we detect an invasion of arc_free_target then the previous algorithm (aggressively clearing down UMA) is employed.\n\nThe code is a bit rough on a style basis but should be ok execution wise.\n\nAs with the previous rev this has been tested modestly here without ill effect, but is not guaranteed ok -- use with care, especially on a production machine.  The Dtrace script has been updated to show whether the non-aggressive or aggressive reclaim fires, and the former appears to be very effective in limiting the need for the latter to be executed.\n\nEvaluation continues."
+}

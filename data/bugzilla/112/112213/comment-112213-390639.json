@@ -1,0 +1,8 @@
+{
+ "id": 390639,
+ "bug_id": 112213,
+ "attachment_id": 0,
+ "creation_time": "2008-06-10T16:38:30Z",
+ "creator": "jh@saunalahti.fi",
+ "text": "The if statement you are referring to seems to be incorrect.\n\n   202\t\t\t/* Try reading/writing. */\n   203\t\t\tif (!S_ISLNK(sb.st_mode) \u0026\u0026 !S_ISDIR(sb.st_mode) \u0026\u0026\n   204\t\t\t    rw(*argv, \u0026sb, fflag))\n   205\t\t\t\trval = 1;\n   206\t\t\telse\n   207\t\t\t\twarn(\"%s\", *argv);\n\nrval is correctly set to 1 if rw() fails but if rw() succeeds a bogus\nwarning is printed. Secondly rval is not set at all when *argv is a\nsymbolic link or directory. (It should be set because earlier attempts\nto set times failed.)\n\nI think that the following patch fixes the bug and it definitely fixes\nthe case you gave:\n\n$ touch foo/bar ; echo $?\ntouch: foo/bar: Read-only file system\n1\n$ touch foo ; echo $?\ntouch: foo: Read-only file system\n1\n\n\n\nIndex: usr.bin/touch/touch.c\n===================================================================\n--- usr.bin/touch/touch.c\t(revision 179703)\n+++ usr.bin/touch/touch.c\t(working copy)\n@@ -222,11 +222,13 @@\n \t\t\tcontinue;\n \n \t\t/* Try reading/writing. */\n-\t\tif (!S_ISLNK(sb.st_mode) \u0026\u0026 !S_ISDIR(sb.st_mode) \u0026\u0026\n-\t\t    rw(*argv, \u0026sb, fflag))\n+\t\tif (!S_ISLNK(sb.st_mode) \u0026\u0026 !S_ISDIR(sb.st_mode)) {\n+\t\t\tif (rw(*argv, \u0026sb, fflag))\n+\t\t\t\trval = 1;\n+\t\t} else {\n \t\t\trval = 1;\n-\t\telse\n \t\t\twarn(\"%s\", *argv);\n+\t\t}\n \t}\n \texit(rval);\n }"
+}

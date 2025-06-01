@@ -1,0 +1,8 @@
+{
+ "id": 699355,
+ "bug_id": 175276,
+ "attachment_id": 0,
+ "creation_time": "2013-01-14T03:00:00Z",
+ "creator": "jhein@symmetricom.com",
+ "text": "\ndevel/py-gobject looks for options settings in one filename and then\ngenerates an options file of a different name.\n\nThat is, su -c 'make config' will allow the user to create an options\nfile, but that file is not the one included by bsd.options.mk\n\nThere is a fundamental evaluation order issue with OPTIONSFILE and\nUNIQUENAME when using knobs that affect UNIQUENAME such as\nPKGNAMEPREFIX.  In this case, it causes bsd.options.mk to look for\ngobject/options, but py\u003cver\u003e-gobject/options to be generated (by\ndo-config in bsd.port.mk).\n\n% cd devel/py-gobject\n% make -V PORTNAME -dd | \u0026 grep /options; echo ===; make -V PORTNAME -V OPTIONSFILE\nSearching for /var/db/ports/gobject/options...Looking for \"/var/db/ports/gobject/options\"...failed. Returning NULL\nSearching for /var/db/ports/gobject/options.local...Looking for \"/var/db/ports/gobject/options.local\"...failed. Returning NULL\nSearching for /var/db/ports/py27-gobject/options...Looking for \"/var/db/ports/py27-gobject/options\"...failed. Returning NULL\n===\ngobject\n/var/db/ports/py27-gobject/options\n\nThis started happening with r309649 (OPTIONSng conversion) on 2012-12-29.\n\nBut even if that is solved (so PKGNAMEPREFIX is not ignored in the\nfirst evaluation of OPTIONSFILE), I think we still want to override\nthe OPTIONSFILE value to remove the python version (e.g.,\npy-gobject/options, not py27-gobject/options).  So we want to override\nthe default OPTIONSFILE here.  See attached patch which solves both\nthe eval order issue and the removal of \u003cver\u003e in py\u003cver\u003e-gobject."
+}

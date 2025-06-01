@@ -1,0 +1,8 @@
+{
+ "id": 392514,
+ "bug_id": 112634,
+ "attachment_id": 0,
+ "creation_time": "2007-05-13T18:20:02Z",
+ "creator": "dan@obluda.cz",
+ "text": "On Wed Jun 30 21:38:08 2004 UTC (2 years, 10 months ago) phk commited into tty.h\nnew optional tty's driver supplied method - t_ioctl() with the comment:\n\n ====\nAdd t_ioctl (more about this later).\n ====\n\n\tUnfortunately, the \"later\" still not arrived. As far as I know, the t_ioctl()\nis not called by current code. Even I run the grep for entire sys tree, \nthe t_ioctl() seems to be really ignored.\n\n\tTo be more interesting, there are two system drivers implementing\nthis driver method - digi and ucom (ucom doesn't use callback for self \nit pass the call to underlying drivers where only umodem tried to use it).\n\n\tThe ioctls implemented in digi and umodem seems to be umimportant and \nother drivers doesn't implement the method at all, so nobody complained until now.\n\nFix: 1. Call t_ioctl (unless not set) in apropriate place (tty.c diff)\n\tThe driver routine need to return ENOIOCTL for IOCTL's not processed within \n\tit (the same behavior as ttyld_ioctl() and ttioctl()).\n\n2. as side efect of [1] the umodem.c, ucom.c and digi.c ioctl routines need to be\npatched (those routines has been never called until [1] fix) - \n- routines need to return ENOIOCTL for unhandled IOCTLs instead of ENOTTY \n(umodem.c, ucom.c \u0026 digi.c diff). \n\n\nHow-To-Repeat: \tWrote own tty driver with t_ioctl function. Use a printf when called. \nYou will never see the output."
+}

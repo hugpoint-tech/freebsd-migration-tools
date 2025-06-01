@@ -1,0 +1,8 @@
+{
+ "id": 1142500,
+ "bug_id": 252835,
+ "attachment_id": 0,
+ "creation_time": "2021-01-19T17:27:24Z",
+ "creator": "brian90013@gmail.com",
+ "text": "Hello,\n\nI have been testing an Intel E810-CQDA 2x100GbE network card using FreeBSD-12.2 (GERNRIC+INVARIANTS). When using both ports in netmap mode with 16 queues, I have observed a panic after seeing messages like:\n\nice1: Rx queue 13 disable timeout\n\n(seen on both ice0 and ice1, different queue numbers) print to the console. Digging into the cause of that error message, I discovered it is printed when ice_is_rxq_ready() returns ETIMEDOUT because the queue is not in a consistent state after looping ICE_Q_WAIT_RETRY_LIMIT(5) times with a delay of 10us each loop.\n\nFor testing, I increased ICE_Q_WAIT_RETRY_LIMIT to 500 (total delay of 5ms possible) and returned the index from ice_is_rxq_ready() when the state became consistent so I could view the actual delays required.\n\nA few minute test starting and stopping pkt-gen instances on both ice0 and ice1 gave me the following data. Second column is delay in us; first column is count of rows.\n\n4952 0\n2561 10\n 186 20\n  92 40\n  78 30\n  22 50\n   5 60\n   2 130\n   1 70\n   1 90\n   1 100\n   1 120\n   1 150\n   1 190\n\nSo the default timeout of 50us does cover the majority of queue commands but in just a few minutes I observed the driver needing up to 190us for a queue to become consistent. This testing was performed on an AMD Threadripper 3990x supporting PCIe4."
+}

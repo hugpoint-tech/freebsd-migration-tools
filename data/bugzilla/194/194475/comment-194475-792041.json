@@ -1,0 +1,8 @@
+{
+ "id": 792041,
+ "bug_id": 194475,
+ "attachment_id": 0,
+ "creation_time": "2014-10-20T03:44:56Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "The heimdal port is not self contained and relies upon parts (libcom_err.*) of the heimdal base to function.\n\nThe heimdal port pulls in /usr/lib/libcom_err which is installed via heimdal base. When heimdal port builds, configure performs a test for libcom_err, if it exists link to it, otherwise fail.\n\nTo ensure that the heimdal port is not dependent on the heimdal base, the following 3 steps are required:\n\n1) Have this in the /usr/ports/security/heimdal/Makefile:\nPLIST_SUB+=    LIBCOM_ERR=\"\"\n2) and remove /usr/ports/security/heimdal/files/patch-lib-com_err-Makefile.in\n\nAs I build ports on a development machine which has heimdal from base installed, the heimdal package expects /usr/lib/libcom_err.* to exist.  However our production systems have /etc/src.conf containing:\nWITHOUT_GSSAPI=yes\nWITHOUT_KERBEROS=yes\nWITHOUT_KERBEROS_SUPPORT=yes\nSo for our development machine we remove /usr/lib/libcom_err.* to enable the heimdal port's configure script to NOT detect /usr/lib/libcom_err.*\n\n3) Either build a base system without /usr/lib/libcom_err.* or remove the files prior to building the heimdal port, to ensure that the heimdal port is entirely self-contained; particularly when heimdal is NOT part of the base system or the target system.  If I was more technical, I would see about eliminating configure's test for the existence of /usr/lib/libcom_err.* files and to unconditionally build its own from its library; ideally build its own libcom_err files, similar to the way samba41 does this."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1051315,
+ "bug_id": 238020,
+ "attachment_id": 204507,
+ "creation_time": "2019-05-21T12:34:19Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "Created attachment 204507\nProposed patch\n\nThere is a memory leak in gss_release_oid_set in crypto/heimdal/lib/gssapi/mech/gss_release_oid_set.c\n\nGSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL\ngss_release_oid_set(OM_uint32 *minor_status,\n    gss_OID_set *set)\n{\n\n        *minor_status = 0;\n        if (set \u0026\u0026 *set) {\n                if ((*set)-\u003eelements)\n                        free((*set)-\u003eelements);\n                free(*set);\n                *set = GSS_C_NO_OID_SET;\n        }\n        return (GSS_S_COMPLETE);\n}\n\n\ntypedef struct gss_OID_desc_struct {\n      OM_uint32 length;\n      void      *elements;\n} gss_OID_desc, *gss_OID;\ntypedef const gss_OID_desc * gss_const_OID;\n\ntypedef struct gss_OID_set_desc_struct  {\n      size_t     count;\n      gss_OID    elements;\n} gss_OID_set_desc, *gss_OID_set;\n\nSince set is the pointer that points to gss_OID_set, then *set is the pointer that points to gss_OID_set_desc. There are two elements in the struct named count and elements. And elements is the pointer that points to gss_OID_desc. There are two elements named length and *elements. Therefore, we should free all elements in gss_OID_desc.\n\nset -\u003e gss_OID_set -\u003e gss_OID_set_desc |count   |\n                                       |elements| -\u003e gss_OID_desc | length    |\n                                                                  | *elements |\n\nThe attachment is the proposed patch."
+}

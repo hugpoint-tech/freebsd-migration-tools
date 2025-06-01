@@ -1,0 +1,8 @@
+{
+ "id": 48656,
+ "bug_id": 15981,
+ "attachment_id": 0,
+ "creation_time": "2000-01-08T12:49:24Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Sat, 8 Jan 2000 klh@netcom.com wrote:\n\n\u003e \u003eDescription:\n\u003e This code fragment should be using %ul instead of %ld for both fields.\n\u003e \n\u003e \tif (pflag) {\n\u003e \t\t(void)snprintf(path, sizeof(path), \"T%ld 0 %ld 0\\n\",\n\u003e \t\t    (long)statp-\u003est_mtimespec.tv_sec,\n\u003e \t\t    (long)statp-\u003est_atimespec.tv_sec);\n\u003e \t\t(void)write(rem, path, strlen(path));\n\nNot under systems with signed time_t like FreeBSD.  Using %ul would\nbreak times before the epoch (about 1970).\n\n\u003e \u003eHow-To-Repeat:\n\u003e Create a file with a st_mtime that has the high bit set.  Attempt\n\u003e to copy it with \"rcp -p foo target:.\"\n\u003e where target is a 64-bit system such as an Alpha (running D/U in this\n\u003e case).  Will fail with a \"mtime.sec not delimited\" screwup message\n\u003e due to presence of a minus sign.\n\nThis seems to be a defect in D/U :-).  An st_mtime with the high bit set\nis negative.  Negative times give undefined behaviour in POSIX.1.  FreeBSD\nsupports them, but actually using them gives interoperability problems like\nthe one you noticed.\n\n\u003e \u003eFix:\n\nDon't create files with an st_mtime that is before the epoch.\n\nRelated bugs:\n\nFreeBSD's rcp.c lacks range checking of times sent by the target system.\nLarge times are silently truncated to (time_t)LONG_MAX, i.e., to LONG_MAX\non i386's and -1 on alphas.  Large negative times are silently truncated\nto (time_t)LONG_MIN, i.e., to LONG_MIN on i386's and 0 on alphas.\n\nBruce"
+}

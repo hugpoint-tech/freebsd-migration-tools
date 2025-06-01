@@ -1,0 +1,8 @@
+{
+ "id": 557380,
+ "bug_id": 146539,
+ "attachment_id": 0,
+ "creation_time": "2010-07-27T11:05:49Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: glebius\nDate: Tue Jul 27 10:05:27 2010\nNew Revision: 210529\nURL: http://svn.freebsd.org/changeset/base/210529\n\nLog:\n  When installing a new ARP entry via 'arp -S', lla_lookup() will\n  either find an existing entry, or allocate a new one. In the latter\n  case an entry would have flags, that were supplied as argument to\n  lla_lookup(). In case of an existing entry, flags aren't modified.\n  \n  This lead to losing LLE_PUB and/or LLE_PROXY flags.\n  \n  We should apply these flags either in lla_rt_output() or in the\n  in.c:in_lltable_lookup(). It seems to me that lla_rt_output() is\n  a more correct choice.\n  \n  PR:\t\tkern/148784, kern/146539\n  Silence from:\tqingli, 5 days\n\nModified:\n  head/sys/net/if_llatbl.c\n\nModified: head/sys/net/if_llatbl.c\n==============================================================================\n--- head/sys/net/if_llatbl.c\tTue Jul 27 09:22:41 2010\t(r210528)\n+++ head/sys/net/if_llatbl.c\tTue Jul 27 10:05:27 2010\t(r210529)\n@@ -337,6 +337,7 @@ lla_rt_output(struct rt_msghdr *rtm, str\n \t\t\t * LLE_DELETED flag, and reset the expiration timer\n \t\t\t */\n \t\t\tbcopy(LLADDR(dl), \u0026lle-\u003ell_addr, ifp-\u003eif_addrlen);\n+\t\t\tlle-\u003ela_flags |= (flags \u0026 (LLE_PUB | LLE_PROXY));\n \t\t\tlle-\u003ela_flags |= LLE_VALID;\n \t\t\tlle-\u003ela_flags \u0026= ~LLE_DELETED;\n #ifdef INET6\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1302115,
+ "bug_id": 277908,
+ "attachment_id": 0,
+ "creation_time": "2024-03-23T16:58:39Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Ahh, so it's ECAPMODE instead of ENOTCAPABLE.  I missed that at first.  Here's what I've learned through some more dtracing:\n\nZFS has two ways to store extended attributes: SA or dir.  IIRC, \"dir\" is intended for large attributes, which this is not.  But zfs_getextattr_sa returns ENOENT, so ZFS then tries zfs_getextattr_dir.  But that does vn_open_cred, which calls namei.  namei is normally used to look up path names.  Looking up absolute pathnames is forbidden in capability mode, so namei returns ECAPMODE.  What remains to be determined is why namei thinks we're doing an absolute lookup.\n\nI tested this on FreeBSD stable/12, which was before the openzfs import, and got the same result.  So the bug has probably been there forever."
+}

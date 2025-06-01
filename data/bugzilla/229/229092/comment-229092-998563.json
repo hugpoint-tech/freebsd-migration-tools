@@ -1,0 +1,8 @@
+{
+ "id": 998563,
+ "bug_id": 229092,
+ "attachment_id": 0,
+ "creation_time": "2018-06-21T12:59:21Z",
+ "creator": "vegeta@tuxpowered.net",
+ "text": "While looking on possibility of recreating src_nodes I found that the way src nodes are created is rather sketchy. For example when a new state is created with new src_node, first a node is searched for, if none is found then it is created and inserted, each of those operation with its own locking and unlocking src_node hash. Operations within pf_map_addr operate on unlocked src_node which probably explain crashes I had when flushing nodes on heavily loaded system. Then there is the issue that each locking and unlocking operation requires computing the hash again, why not compute it once and store it within the node, this way unlocking could be a bit faster. Creation of node could return it locked as now it needs to be re-locked for any further operations. Then there is the issue that pf_state-\u003ert_kif is copied from pf_rule-\u003erpool.cur which might not be the same as during pf_map_addr() (there is no locking inside that function so it might be inconsistent anyway). And last but not the least is that it seems to me that pf_src_node-\u003e*kif is not used at all. And src_node itself never stores information about interface choosen for route-to targets, it is only copied to state instead.\n\nI will prepare a patch addressing those issues first and then work on recreating redirection interface as originally this issue was about.\n\nThe proof of concept patch seems generally working, I configured my firewall service to start before pfsync and I could reboot my load balancers as I pleased and traffic was correctly forwarded."
+}

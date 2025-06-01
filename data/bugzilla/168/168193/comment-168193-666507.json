@@ -1,0 +1,8 @@
+{
+ "id": 666507,
+ "bug_id": 168193,
+ "attachment_id": 0,
+ "creation_time": "2012-05-21T10:40:01Z",
+ "creator": "daniel@benzedrine.cx",
+ "text": " It looks like the byte order of ip_len is wrong, htons(334) = 19969,\n triggering fragmentation (334 \u003c if_mtu, but 19969 \u003e if_mtu).\n \n The reason is most likely the recursive pf_route() call:\n \n \u003e m_copym() at m_copym+0x280\n \u003e ip_fragment() at ip_fragment+0x1e5\n \u003e pf_route() at pf_route+0x75c\n \u003e pf_test() at pf_test+0xc29\n \u003e pf_route() at pf_route+0x30a\n \u003e pf_test() at pf_test+0xc29\n \u003e pf_check_out() at pf_check_out+0x3a\n \u003e pfil_run_hooks() at pfil_run_hooks+0xd2\n \u003e ip_output() at ip_output+0x655\n \n i.e. the packet is filtered when going out on some interface, matching a\n route-to rule.\n \n Now the packet is filtered again on the routed-to interface. So far ok,\n this is expected.\n \n But now it matches a route-to rule again, possibly the same one, because\n it doesn't restrict the interface.\n \n Usually, this is not intentional (double route-to), and can be fixed by\n checking the route-to rule(s) and making them more restrictive.\n \n Semantics of such route-to chains are not well defined. There's an mbuf\n tag to prevent endless loops, but obviously even short chains are not\n working properly. I'd try to avoid them.\n \n Daniel"
+}

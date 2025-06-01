@@ -1,0 +1,8 @@
+{
+ "id": 1009865,
+ "bug_id": 231116,
+ "attachment_id": 0,
+ "creation_time": "2018-09-03T18:46:38Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "It happens with blist_create(128, 1) too.  In that case, we need two leaf nodes, an internal parent node, and a terminator.  However, we end up with nodes == 3 since last_block \u003c blocks.  That is, we're missing a case where nodes should be initialized to 2 instead of 1.  The problem is triggered when \"blocks\" is the sum of powers of 2 \u003e= BLIST_BMAP_RADIX.\n\nIndex: subr_blist.c\n===================================================================\n--- subr_blist.c        (revision 338446)\n+++ subr_blist.c        (working copy)\n@@ -244,7 +244,10 @@\n         * Count the meta-nodes in the expanded tree, including the final\n         * terminator, from the bottom level up to the root.\n         */\n-       nodes = (last_block \u003e= blocks) ? 2 : 1;\n+       nodes = 1;\n+       if (last_block \u003e= blocks || (last_block != radix - 1 \u0026\u0026\n+           (last_block \u0026 (radix - 1)) == last_block))\n+               nodes++;\n        last_block /= BLIST_BMAP_RADIX;\n        while (last_block \u003e 0) {\n                nodes += last_block + 1;"
+}

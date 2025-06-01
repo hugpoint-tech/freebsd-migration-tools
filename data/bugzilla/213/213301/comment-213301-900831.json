@@ -1,0 +1,8 @@
+{
+ "id": 900831,
+ "bug_id": 213301,
+ "attachment_id": 175523,
+ "creation_time": "2016-10-08T00:42:28Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Created attachment 175523\nSimple patch to stop configure detecting libressl as openssl 1.1.0\n\nThe configure script determines the OpenSSL version used based on OPENSSL_VERSION \u003e= X. In case of LibreSSL, X is 0x20000000L, so configure assumes the OPENSSL_VERSION to be 1.10 and then makes assumptions about the existence of various functions like X509_REVOKED_get0_serialNumber and EVP_CIPHER_CTX_encrypting.\n\nThis only hits one when linking against libxmlsec1-openssl.so, in which case you'll see errors like this one:\n/usr/local/lib/libxmlsec1-openssl.so: undefined reference to `EVP_CIPHER_CTX_encrypting'\n\nThe attached patch is checks if libressl is used and if yes, fall through to openssl 1.0.0 detection, which makes sure that xmlsec puts proper macros in place.\n\n(it's not clear why the library builds in the first place, it's probably pulling in headers from base OpenSSL. I didn't investigate this any further, as the result seemed to work ok)."
+}

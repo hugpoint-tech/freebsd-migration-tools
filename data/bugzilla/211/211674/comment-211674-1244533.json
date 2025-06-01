@@ -1,0 +1,8 @@
+{
+ "id": 1244533,
+ "bug_id": 211674,
+ "attachment_id": 0,
+ "creation_time": "2023-01-26T18:36:43Z",
+ "creator": "arrowd@FreeBSD.org",
+ "text": "Ok, the bug report seems to still be relevant.\n\nPreparation steps:\n\n1. pkg install fusefs-ntfs.\n2. Insert an USB flash disk. A memory device should probably be fine too.\n3. mkntfs -f /dev/da0\n4. ntfs-3g /dev/da0 /mnt\n5. cp -r /usr/include /mnt\n6. umount /mnt\n\nThe copying took quite a time for me, but maybe it is just the stick.\n\nReproduction steps:\n\n1. kldunload fusefs\n2. kldload fusefs\n3. ntfs-3g /dev/da0 /mnt\n4. vmstat | head -n1 ; vmstat -m | sed 1d | sort -hk 3,3 | grep fuse\n\nprocs     memory       page                      disks     faults       cpu\n   fuse_vnode     1     1K        1  384\n  fuse_msgbuf   265    67K      265  256,384\n\n5. find /mnt -exec touch {} \\;\n6. Wait the find process to finish.\n7. vmstat | head -n1 ; vmstat -m | sed 1d | sort -hk 3,3 | grep fuse\n\nprocs     memory       page                      disks     faults       cpu\nfuse_filefilehandle     1     1K      327  64\n  fuse_msgbuf   881   269K     1309  256,384,512,1024,2048,4096\n   fuse_vnode  2763  1037K     2763  384\n\n8. umount /mnt\n\nUmounting takes considerable amount of time.\n\n9. vmstat | head -n1 ; vmstat -m | sed 1d | sort -hk 3,3 | grep fuse\n\nprocs     memory       page                      disks     faults       cpu\n   fuse_vnode     0     0K     2763  384\nfuse_filefilehandle     0     0K      327  64\n  fuse_msgbuf  3256   863K     3685  256,384,512,1024,2048,4096\n\n\nHope this helps."
+}

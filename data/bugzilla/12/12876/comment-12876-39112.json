@@ -1,0 +1,8 @@
+{
+ "id": 39112,
+ "bug_id": 12876,
+ "attachment_id": 0,
+ "creation_time": "1999-07-29T22:40:00Z",
+ "creator": "jin@iss-p2.lbl.gov",
+ "text": "\nop2.lbl.gov: make x\ncc -O x.c  -o x -lm\nx.c: In function `main':\nx.c:8: warning: left shift count \u003e= width of type\n*** Error code 1\n\nTwo problems:\n\n(1) off_t is an 8 byte type, so it should be able to handle more than 32-bit\ndata. I test this because the lseek() cannot seek beyond the 2GB range.\nI am not sure if off_t causes this proble, or lseek() is not implemented\nto do so; the vfs_syscall.c:lseek() seems no problem, but depends on off_t.\n\n(2) lseek fails to seek beyond 2GB range; but fseek works OK.\n\n(3) There is no correct format for I/O off_t data in 2.2.x releases.\n\nFix: \n\nNot clear if this is a GNU CC problem or kernel type-definition issue.\nHow-To-Repeat: \n\t\n/* x.c\t*/\n#include \u003csys/types.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003climits.h\u003e\n\nmain ( int c, char **v )\n{\noff_t\tlret = 5 + (1\u003c\u003c33), bottom = 12345;\t/* line 8\t*/\nchar\tfoo[64];\n\n\tif (c \u003c= 1)\t{\n\t\tprintf(\"%s #\\n\", v[0]);\n\t\texit(1);\n\t}\n\tbottom = strtouq(v[1], \u0026foo, 10);\n\tprintf(\"lret = %lld, bt = %lld : extra %ld\\n\", lret, bottom);\n\tprintf(\"lret = %ld, bt = %ld : extra %ld\\n\", lret, bottom);\n}"
+}

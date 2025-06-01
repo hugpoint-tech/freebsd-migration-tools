@@ -1,0 +1,8 @@
+{
+ "id": 699560,
+ "bug_id": 175323,
+ "attachment_id": 0,
+ "creation_time": "2013-01-15T12:00:00Z",
+ "creator": "softkot@gmail.com",
+ "text": "kernel: GEOM_MIRROR (error=45) while trying to use ZFS volumes (ZVOL) geoms as a geom_mirror component.\n\nHow-To-Repeat: # zfs create -V10G tank0/vol0\n# diskinfo -v /dev/zvol/tank0/vol0\n/dev/zvol/tank0/vol0\n        512             # sectorsize\n        10737418240     # mediasize in bytes (10G)\n        20971520        # mediasize in sectors\n        0               # stripesize\n        0               # stripeoffset\n\n# gmirror label mirror0 /dev/zvol/tank0/vol0\nGEOM_MIRROR: Cannot add disk zvol/tank0/vol0 to mirror0 (error=45).\nGEOM_MIRROR: Device mirror0 destroyed.\n\ngmirror list is empty and gmirror list -a shows:\n\nGeom name: mirror0\nConsumers:\n1. Name: zvol/tank0/vol0\n   Mediasize: 10737418240 (10G)\n   Sectorsize: 512\n   Mode: r1w1e1\n\nRight after the sequence above, the block device zvol/tank0/vol0 is not any more available for writing it (seems to be locked by geom_mirror)\n\n# dd if=/dev/zero of=/dev/zvol/tank0/vol0\ndd: /dev/zvol/tank0/vol0: Operation not permitted\n\n\nAnd i was not able to release it.\n\n# gmirror forget mirror0\ngmirror: No such device: mirror0.\n\n# gmirror clear /dev/zvol/tank0/vol0\nCan't clear metadata on /dev/zvol/tank0/vol0: Operation not permitted.\ngmirror: Not fully done.\n\n# zfs destroy -f tank0/vol0\ncannot destroy 'tank0/vol0': dataset is busy\n\nThe only way to destroy ZVOL is temporarily block geaom_morror loading during the boot process, reboot and destroy zvols."
+}

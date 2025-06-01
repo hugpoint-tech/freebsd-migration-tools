@@ -1,0 +1,8 @@
+{
+ "id": 658434,
+ "bug_id": 166548,
+ "attachment_id": 0,
+ "creation_time": "2012-04-01T01:20:12Z",
+ "creator": "freebsd-gnats@in-addr.com",
+ "text": "While upgrading an old 7.x kern config file to 8.x I stumbled across a problem\nwhere if you leave COMPAT_43 in your config file without one of COMPAT_FREEBSD4\nthrough COMPAT_FREEBSD7 the compile breaks.  The problem comes from\n/sys/sys/ipc.h where ipc_perm_old is only defined if one of \n\n#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \\\n    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7)\n\nis true.  However in /sys/kern/sysv_shm.c the code has\n\n#if defined(__i386__) \u0026\u0026 (defined(COMPAT_FREEBSD4) || defined(COMPAT_43))\nstruct oshmid_ds {\n        struct  ipc_perm_old shm_perm;  /* operation perms */\n\n\nSo if you put COMPAT_43 in your config file and leave out one of the\nCOMPAT_FREEBSD options ipc_perm_old isn't defined.  It seems that COMPAT_43\nshould probably be added to the ifdef conditionals in /sys/sys/ipc.h\n\nFix: \n\nUntested, but I suspect modifying the code at line 72 of /sys/sys/ipc.h would fix it.  Something like:\n\n#if defined(COMPAT_FREEBSD4) || defined(COMPAT_FREEBSD5) || \\\n    defined(COMPAT_FREEBSD6) || defined(COMPAT_FREEBSD7) ||\n    defined(COMPAT_43)\nHow-To-Repeat: Remove\n\noptions         COMPAT_FREEBSD4\noptions         COMPAT_FREEBSD5\noptions         COMPAT_FREEBSD6\noptions         COMPAT_FREEBSD7\n\nfrom a kernel config file on i386 but leave \n\noptions         COMPAT_43\n\nin"
+}

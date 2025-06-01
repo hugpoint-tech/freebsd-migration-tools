@@ -1,0 +1,8 @@
+{
+ "id": 8473,
+ "bug_id": 2754,
+ "attachment_id": 0,
+ "creation_time": "1997-02-17T20:00:03Z",
+ "creator": "norm@norm2.home.cs.ubc.ca",
+ "text": "\n\tAfter mmapping an NFS mounted file and modifying it, later accesses to\n\tthe file can cause the system to hang.  Hanging symptoms include no\n\tresponse to keyboard/mouse, low-level network connectivity (ping and\n\ttcp connects) but no ability to remotely log in.\n\nFix: \n\nUnknown\nHow-To-Repeat: \n\tCompile the following program.\n\t\tcc -o mmt mmt.c\n\tCreate a small file named foo (on an NFS partition)\n\t\techo fooooo \u003e foo\n\tRun mmt.\n\t\tmmt\n\tTry to access the file to see the effect of the mmap change.\n\t\tod -c foo\n\nOther observed behaviour:\n\t2.2 BETA had the same problem.  I never tried 2.2 ALPHA.\n\tThis is not a problem on 2.1.6.\n\tWaiting several seconds after making the change through mmap before \n\taccessing the file results in correct behaviour.  Several seconds is \n\tsomething less than 15 and more than 0.\n\n------------\nmmt.c\n------------\n\n#include \u003csys/types.h\u003e\n#include \u003csys/mman.h\u003e\n#include \u003csys/file.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003csys/stat.h\u003e\n\n/*\n * Map a file into virtual memory.\n */\nvoid *\nmap_file(int fd)\n{\n  struct stat statb;\n  void *rtn;\n\n  if (fstat(fd, \u0026statb) \u003c 0) {\n    return (void *)-1;\n  }\n  rtn = mmap(NULL, statb.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,\n\t     fd, (off_t)0);\n  return rtn;\n}\n\nmain()\n{\n  int fd = open(\"foo\", O_RDWR);\n  char * p = map_file(fd);\n  *(char **)p = p;\n  close(fd);\n}"
+}

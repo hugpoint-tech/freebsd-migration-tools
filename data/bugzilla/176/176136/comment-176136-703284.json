@@ -1,0 +1,8 @@
+{
+ "id": 703284,
+ "bug_id": 176136,
+ "attachment_id": 0,
+ "creation_time": "2013-02-14T08:00:00Z",
+ "creator": "knu@FreeBSD.org",
+ "text": "Our implementation of cp(1) cannot overwrite a symlink pointing to an existing directory.\nThis is because it always calls stat(2) on a destination file path even if -R (with -P by default) is given, where lstat(2) should be used instead.\n\nDragonfly BSD, OS X and OpenBSD all share the same problem with us.\nNetBSD cp(1) has once had this problem but fixed it in 2006 (bin/cp.c rev.1.42).\nGNU cp does not have this problem.\nSolaris/OpenIndiana's cp(1) (/usr/xpg4/bin/cp) seems to have this problem.\n\nAs far as I read, SUSv4 is not very clear as to how cp(1) should do about the situation, but there should be no reason a symlink cannot be overwritten.\n\nHow-To-Repeat: % ln -s . foo\n% mkdir bar\n% ln -s .. bar/foo\n\nNow we have \u003cfoo\u003e and \u003cbar/foo\u003e.\nLet's try copying \u003cfoo\u003e to \u003cbar/foo\u003e.\n\n% cp -RP foo bar/\ncp: cannot overwrite directory bar/foo with non-directory foo\n\nIt failed!\n\n% ls -l bar\ntotal 1\nlrwxr-xr-x  1 knu  knu  2 Feb 14 16:18 foo -\u003e ..\n\nIt seems cp(1) decided not to copy the source file just because the destination symlink was resolved to a directory, but it is certainly not what you would expect."
+}

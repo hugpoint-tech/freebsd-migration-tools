@@ -1,0 +1,8 @@
+{
+ "id": 95918,
+ "bug_id": 30482,
+ "attachment_id": 0,
+ "creation_time": "2001-09-11T15:13:38Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Mon, 10 Sep 2001, Ville-Pertti Keinonen wrote:\n\n\u003e \u003eDescription:\n\u003e A machine that previously frequently reported problems with\n\u003e microuptime() going backwards in calcru started crashing after a\n\u003e recent update.\n\u003e\n\u003e I'm just guessing based on the stack trace and the panic message\n\u003e (and this is the first time I look at anything related to SMPng\n\u003e locking), but it seems that calcru calls printf which eventually\n\u003e tries to wake up another process and grab allproc_lock while\n\u003e sched_lock is held...\n\u003e\n\u003e This seems like an obvious enough bug that it should not require\n\u003e further details.\n\nThis is a bug in printf().  printf() must work when ordinary spinlocks\nlike sched_lock are held (for debugging).  Known bugs in printf():\n- the syscons console driver is not reentrant.  The corresponding\n  \"microtime() goes backwards\" printf() in mi_switch() was ifdefed out\n  a long time ago to avoid panicing for this bug.\n- the TIOCCONS ioctl causes ordinary printf()s to go to a tty (usually\n  a pty).  This can never have worked for printf()s from interrupt\n  handlers and now causes a panic instead of random misbehaviour when\n  printf() is called with a spinlock held.\n\nWorkaround: always use a serial console and don't permit it to be stolen\nby TIOCCONS.\n\nBruce"
+}

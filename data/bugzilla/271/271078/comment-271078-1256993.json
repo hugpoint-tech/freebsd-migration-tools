@@ -1,0 +1,8 @@
+{
+ "id": 1256993,
+ "bug_id": 271078,
+ "attachment_id": 0,
+ "creation_time": "2023-04-26T11:18:33Z",
+ "creator": "hondareyte.luc@laposte.net",
+ "text": "Hello\nSince ubldr support is removed for armv7, I try to build a nanbsd image using EFI. So I add the following function to add bootarm.efi on the FAT slice:\n\ncust_efi_loader() {\n        NANO_EFI_DIR=${NANO_FAT_DIR}/EFI\n        mkdir -p ${NANO_EFI_DIR}/BOOT ${NANO_EFI_DIR}/FREEBSD\n        LOADER_ENV=${NANO_EFI_DIR}/FREEBSD/loader.env\n        echo \"rootdev=disk0${NANO_SLICE_ROOT}:\" \u003e\u003e ${LOADER_ENV}\n        cp ${NANO_WORLDDIR}/boot/loader_lua.efi \\\n                       ${NANO_EFI_DIR}/BOOT/bootarm.efi\n}\ncustomize_cmd cust_efi_loader\n\nBut EFI/* subdirs are not copied on the final slice.\n\nWith this simple patch, it works.\n\n--- common.ori\t2023-04-26 13:05:49.229317000 +0200\n+++ common\t2023-04-26 13:06:01.783766000 +0200\n@@ -217,7 +217,7 @@\n \t\tif [ -d ${NANO_FAT_DIR} ]; then\n \t\t\t# Need to copy files from ${NANO_FATDIR} with mtools, or use\n \t\t\t# makefs -t msdos once that's supported\n-\t\t\tmcopy -i ${NANO_LOG}/_.${NANO_SLICE_FAT} ${NANO_FAT_DIR}/* ::\n+\t\t\tmcopy -si ${NANO_LOG}/_.${NANO_SLICE_FAT} ${NANO_FAT_DIR}/* ::\n \t\tfi\n \tfi\n \nNote that the patch in PR255639 need to be applied.\nRegards,\nLuc"
+}

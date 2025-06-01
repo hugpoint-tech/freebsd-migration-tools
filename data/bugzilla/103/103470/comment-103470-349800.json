@@ -1,0 +1,8 @@
+{
+ "id": 349800,
+ "bug_id": 103470,
+ "attachment_id": 0,
+ "creation_time": "2006-09-22T02:10:17Z",
+ "creator": "flameeyes@gentoo.org",
+ "text": "Although I know that this is totally non-priority for FreeBSD developers,\nI'd like to report that the variable __evOptMonoTime is declared\ninconsistently in lib/libc/isc from the sources of the just released\n6.2-BETA1 FreeBSD:\n\nlib/libc/isc/eventlib_p.h:283:extern int        __evOptMonoTime;\nlib/libc/isc/ev_timers.c:53:static int  __evOptMonoTime;\n\nThis leads to a failure in build with GCC 4.1, and it really makes no\nsense, so that the behaviour is really undefined even on other GCC versions.\nAs __evOptMonoTime seems to be an exported symbol to set global options,\nthe static keyword should be dropped from ev_timers.c.\n\nFix: \n\n#ifdef _LIBC\n-static int     __evOptMonoTime;\n+int    __evOptMonoTime;\n #else\n static int due_sooner(void *, void *);\n static void set_index(void *, int);--38d22l4yER4kBUVZnxD9uauvAXbu4RZlmqlyj6szqltXScu2\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: fbsd-6.2/lib/libc/isc/ev_timers.c\n===================================================================\n--- fbsd-6.2.orig/lib/libc/isc/ev_timers.c\n+++ fbsd-6.2/lib/libc/isc/ev_timers.c\n@@ -50,7 +50,7 @@ __FBSDID(\"$FreeBSD: src/lib/libc/isc/ev_\n /* Forward. */\nHow-To-Repeat: Building with GCC 4.1 will show the error:\n\nlib/libc/isc/ev_timers.c:53: error: static declaration of '__evOptMonoTime' follows non-static declaration\nlib/libc/isc/eventlib_p.h:283: error: previous declaration of '__evOptMonoTime' was here"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 807785,
+ "bug_id": 197059,
+ "attachment_id": 0,
+ "creation_time": "2015-02-01T09:55:10Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "Some notes form an e-mail from myself to Andrey about this problem:\n\nBasically, the general rule, with respect to lock order, is that the network-stack input path can call the output path (e.g., inbound TCP segment triggers an immediate send of a TCP ACK), but you can't directly call in the other direction or you would violate the lock order. In this sort of situation, the output path needs to reinject packets via the netisr, rather than directly invoking the input path. This is how we handle, for example, routing-socket packets triggered by send events -- they are enqueued to the netisr for processing asynchronously, providing a context where transmit-pathj locks can be safely acquired.\n\n(Basically, pfctlinput() is never safe to call from the transmit path.)"
+}

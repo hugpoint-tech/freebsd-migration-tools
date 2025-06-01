@@ -1,0 +1,8 @@
+{
+ "id": 21724,
+ "bug_id": 7055,
+ "attachment_id": 0,
+ "creation_time": "1998-06-24T20:20:01Z",
+ "creator": "edwin@nwm.wan.philips.com",
+ "text": "\n\tIf these messages are forwarded, the original name of\n\tthe router which has sent the syslog message is lost.\n\nFix: \n\nThe change has to be made in /usr/src/usr.sbin/syslogd/syslogd.c\n\tfunction fprintlog() switch statement F_FORW:\n\n\t    Old code line 758:\n                l = snprintf(line, sizeof line - 1, \"\u003c%d\u003e%.15s %s\",  \n                             f-\u003ef_prevpri, iov[0].iov_base, iov[4].iov_base);    \n\t    New code:\n\t\t/* check for local vs remote messages */\n\t\tif (strcmp(f-\u003ef_prevhost,LocalHostName))\n\t\t    l = snprintf(line, sizeof line - 1,\n\t\t\t    \"\u003c%d\u003e%.15s Forwarded from %s: %s\",\n\t\t\t    f-\u003ef_prevpri, iov[0].iov_base, f-\u003ef_prevhost,\n\t\t\t    iov[4].iov_base);\n\t\telse\n\t\t    l = snprintf(line, sizeof line - 1, \"\u003c%d\u003e%.15s %s\",\n\t\t\t    f-\u003ef_prevpri, iov[0].iov_base, iov[4].iov_base);\nHow-To-Repeat: \n\tWe had the syslog forwarding defined as:\n\t    router -\u003e remote-system -\u003e central-system\n\n\ton the router we have:\n\t    logging \u003cip address of remote-system\u003e\n\n\ton the remote-system we have in the syslog.conf:\n\t    local7.*\t@central-system\n\n\ton the central-system we have:\n\t    local7.*\t/var/log/nmslog\n\n\tIf the router sends a syslog-message towards the remote-system\n\tit will be like:\n\t    date/time d-nl07sc0.wan.philips.com: :SNMP-5:Link Up Trap...\n\n\tOn the central-system it will become:\n\t    date/time remote-system: :SNMP-5:Link Up Trap..."
+}

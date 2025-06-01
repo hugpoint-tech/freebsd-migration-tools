@@ -1,0 +1,8 @@
+{
+ "id": 880716,
+ "bug_id": 204273,
+ "attachment_id": 0,
+ "creation_time": "2016-05-28T13:06:25Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: andrew\nDate: Sat May 28 13:05:40 UTC 2016\nNew revision: 300902\nURL: https://svnweb.freebsd.org/changeset/base/300902\n\nLog:\n  Don't panic in hwpmc when stopping sampling.\n\n  When hwpmc stops sampling it will set the pm_state to something other\n  than PMC_STATE_RUNNING. This means the following sequence can happen:\n\n  CPU 0: Enter the interrupt handler\n  CPU 0: Set the thread TDP_CALLCHAIN pflag\n  CPU 1: Stop sampling\n  CPU 0: Call pmc_process_samples, sampling is stopped so clears ps_nsamples\n  CPU 0: Finishes interrupt processing with the TDP_CALLCHAIN flag set\n  CPU 0: Call pmc_capture_user_callchain to capture the user call chain\n  CPU 0: Find all the pmc sample are free so no call chains need to be captured\n  CPU 0: KASSERT because of this\n\n  This fixes the issue by checking if any of the samples have been stopped\n  and including this in te KASSERT.\n\n  PR:\t\t204273\n  Reviewed by:\tbz, gnn\n  Obtained from:\tABT Systems Ltd\n  Sponsored by:\tThe FreeBSD Foundation\n  Differential Revision:\thttps://reviews.freebsd.org/D6581\n\nChanges:\n  head/sys/dev/hwpmc/hwpmc_mod.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1013448,
+ "bug_id": 231797,
+ "attachment_id": 0,
+ "creation_time": "2018-09-29T07:36:14Z",
+ "creator": "dslr.rfmGJfQJmFc9Qt9a@gmail.com",
+ "text": "In https://reviews.freebsd.org/D12417, if_hn.c is changed at lines 5590 and 5886, which should allow UDPv6 packets to enter hn_set_hlen at line 780.  However, at line 813, traffic not matching TCPv6 (UDPv6) would error.  Thusly, it seems when IPv6 transmit checksum offloading is on, UDPv6 traffic is dropped in the hn driver.\n\nI first noticed this in practice with dhcp6c, where the first UDPv6 solicit would fail with the error,\n\ntransmit failed: Input/output error\n\ndue to the kernel returning EIO for the UDPv6 packet.  As expected, the output error count rises correspondingly, with no kernel output messages in the syslogs.\n\nI was able to determine that disabling TXCSUM_IPV6 via,\n\nifconfig hn0 -txcsum6\n\nStops the EIO from propogating from the driver, which led me to this area in the source."
+}

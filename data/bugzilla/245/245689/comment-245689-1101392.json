@@ -1,0 +1,8 @@
+{
+ "id": 1101392,
+ "bug_id": 245689,
+ "attachment_id": 0,
+ "creation_time": "2020-05-08T03:15:14Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "(In reply to MooseFS FreeBSD Team from comment #9)\nYou've got it backwards.  We only send FUSE_ACCESS when the file system _doesn't_ set default_permissions.  When it does, we perform all access checks in the kernel.\n\nI can certainly fix issue #1: it looks like a one-liner.\n\nBut issue #2 is much more complicated.  The root cause of the problem is simply that FreeBSD's and Linux's VFSes work differently.  FreeBSD uses VOP_ACCESS(9) copiously, delegating to file systems most aspects of authorization checking.  But Linux performs much more of that at a higher level.  The FUSE protocol was naively designed as a serialization of Linux's in-kernel file system API, and the result is several warts like this.  From the perspective of FreeBSD's FUSE driver, I can't tell which VOP_ACCESS()s are the result of access(2) and which are the result of any other operation.  So without some major hacks up-stack, there's little I can do to reduce the frequency of FUSE_ACCESS operations.  The only sure way to cut down the traffic is to mount a file system with default_permissions, or to return ENOSYS for FUSE_ACCESS."
+}

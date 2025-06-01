@@ -1,0 +1,8 @@
+{
+ "id": 642125,
+ "bug_id": 163318,
+ "attachment_id": 0,
+ "creation_time": "2012-01-15T20:10:02Z",
+ "creator": "adrian.chadd@gmail.com",
+ "text": "Hi,\n\nSo I want to establish whether the scan logic has hung, or whether the\nscan logic has completed but left the interface hung.\n\nHow's your C? Would you mind doing some quick hacking:\n\n* add a new variable in struct ath_softc, call it \"sc_in_scan\";\n* set it to 1 in ath_scan_start (don't add any locks)\n* set it to 0 in ath_scan_end (don't add any locks)\n* edit the 'txagg' sysctl code in if_ath_sysctl.c to print out the\nvalue of sc_in_scan;\n\nThen verify that it's working as advertised:\n\n* sysctl dev.ath.0.txagg=1 and check dmesg - sc_in_scan should be 0;\n* do a manual scan (ifconfig wlan0 scan) and then redo the above\nsysctl - it should be 1.\n\nThe \"normal\" scan will keep the interface in \"scan\" mode for the\nduration of all channel checks. But for bgscan, it quickly brings the\ninterface in and out of scan mode, for each channel that's being\nscanned.\n\nWhat i hope to see is:\n\n* sc_in_scan stays 0 during normal operation;\n* when your interface is hung, sc_in_scan is 1.\n\nOnce we've established that, we can continue to go digging into the scan code.\n\nThanks!\n\n\nAdrian"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 767068,
+ "bug_id": 190655,
+ "attachment_id": 0,
+ "creation_time": "2014-06-05T11:44:30Z",
+ "creator": "scdbackup@gmx.net",
+ "text": "This bug shows up when mounting a multi-session ISO 9660 medium\nwhich has its directory tree above 4 GiB. (Not possible with CD,\nbut with DVD or BD.)\n\nObtain und uncompress\n  http://scdbackup.webframe.org/large.iso.bz2\n(Caution: 4470 bytes inflate to 4+ GiB.)\n\nThen mount it\n  # mdconfig -a -t vnode -f large.iso\n  md1\n  # mount_cd9660 /dev/md1 /mnt\n  # find /mnt\n  /mnt\n  # ls -ld /mnt\n  -r-xr-xr-x  1 root  wheel  0 Jan  1  1970 /mnt\n\nThe reason is that the byte address of the ISO 9660 Directory Records\nis encoded in ino_t, which on FreeBSD is 32 bit. If a record is stored\nabove 4 GiB - 1, then rollover happens and it cannot be found.\n\nBy webinterface i believe to see it in current FreeBSD source, too.\n\nThe rollover in function isodirino():\n  http://fxr.watson.org/fxr/source/fs/cd9660/cd9660_node.c?v=FREEBSD10#L319\n\nThe reverse computation of the directory block address\n  http://fxr.watson.org/fxr/source/fs/cd9660/cd9660_vfsops.c?v=FREEBSD10#L773\n\nThe reverse computation of the byte address of the directory\nrecord of a symbolic link target\n  http://fxr.watson.org/fxr/source/fs/cd9660/cd9660_vnops.c?v=FREEBSD10#L692\n\nAnd the reason why the NetBSD remedy will not help FreeBSD\n  http://fxr.watson.org/fxr/source/sys/_types.h?v=FREEBSD10;im=3#L46\nAt least on my olde FreeBSD-8.4, sizeof(ino_t) is really 4.\n\nSee also\n  http://lists.freebsd.org/pipermail/freebsd-hackers/2014-May/045139.html\n\nFor my diagnosis and solution which cannot be ported to FreeBSD\n  http://gnats.netbsd.org/cgi-bin/query-pr-single.pl?number=48787"
+}

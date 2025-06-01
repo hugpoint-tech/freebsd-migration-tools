@@ -1,0 +1,8 @@
+{
+ "id": 1013038,
+ "bug_id": 231080,
+ "attachment_id": 0,
+ "creation_time": "2018-09-26T03:55:56Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Sean Bruno from comment #16)\nThe new kernel dump is more useful.  The callout looks like this:\n\n$2 = {\n  c_links = {\n    le = {\n      le_next = 0x11777be9162acbc1,\n      le_prev = 0xffffffff80c9a01a\n    },\n    sle = {\n      sle_next = 0x11777be9162acbc1\n    },\n    tqe = {\n      tqe_next = 0x11777be9162acbc1,\n      tqe_prev = 0xffffffff80c9a01a\n    }\n  },\n  c_time = 577765376,\n  c_precision = 0,\n  c_arg = 0x6,\n  c_func = 0x158,\n  c_lock = 0x0,\n  c_flags = 0,\n  c_iflags = 0,\n  c_cpu = 0\n}\n(kgdb) x/s 0xffffffff80c9a01a\n0xffffffff80c9a01a:     \"dr-\u003edt.di.dr_mtx\"\n\nSo the second long word is the beginning of the dr_mtx field of a\ndbuf_dirty_record_t.  (The 0x6 indicates that the lock is already destroyed.)\nIt thus looks like the structure containing the callout was freed and\nreused for a dbuf_dirty_record_t.  These records are allocated using malloc(9)\nand would come from the 512 byte zone (the mutex is at byte offset 192), so\nwe're looking for a structure between 256 and 512 bytes in size containing\na struct callout at byte offset 184, assuming that nothing called uma_reclaim() before the dbuf_dirty_record_t was allocated.  Since there's been very little page daemon activity on this system, I think that's a safe assumption for now.\n\nUsing ctfdump -t on the kernel and modules, I find two structures with these properties: struct ata_request and struct lle_entry.  The latter seems to be a more likely candidate for use-after-free."
+}

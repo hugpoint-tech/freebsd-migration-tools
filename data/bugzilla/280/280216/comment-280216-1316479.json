@@ -1,0 +1,8 @@
+{
+ "id": 1316479,
+ "bug_id": 280216,
+ "attachment_id": 0,
+ "creation_time": "2024-07-14T01:19:28Z",
+ "creator": "mckusick@FreeBSD.org",
+ "text": "(In reply to ant2 from comment #2)\nIt is simply not safe to use snapshots when running with gjournal. You should not do that as you may badly corrupt your filesystem.\n\nFiles open for writing are sync'ed to disk at most 30 seconds after the last write has been done to them. So after a crash you will lose at most things written less than 30 seconds before the crash. Applications that need a tighter bound can use fsync(2) internally or fsync(1) if they are in a shell script.\nFsync() does not return until the data has been written to disk.\n\nI recommend that you use journalled soft updates as you then no longer need to use background fsck. The fsck is run before the system starts up and takes at most a few seconds to run. If you do not want the overhead of journalling, then just use regular soft updates. You can then schedule a background fsck at night or even weekly as it is completely safe to run on a filesystem that has been using soft updates after a crash as the only issues that will happen is blocks and inodes that the filesystem thinks are in use but are actually free, So all the background fsck has to do is find them and release them back to the filesystem."
+}

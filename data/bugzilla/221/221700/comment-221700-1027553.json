@@ -1,0 +1,8 @@
+{
+ "id": 1027553,
+ "bug_id": 221700,
+ "attachment_id": 0,
+ "creation_time": "2018-12-21T16:52:42Z",
+ "creator": "cem@freebsd.org",
+ "text": "(In reply to Ed Maste from comment #10)\n@Koobs (re: twitter), why would it not be async signal safe?\n\nIn general signal safety is more about interacting with userspace memory state of ordinary non-signal contexts given arbitrary signal interruption.  I.e., classic example is stdio FILE objects, which may be locked or have corrupt, half-modified state.  closefrom(2) is just a plain system call.\n\nThe original commit, r194262, just says:\n\n\u003e Note that this implementation of closefrom(2) does not make any effort to\n\u003e resolve userland races with open(2) in other threads.  As such, it is not\n\u003e multithread safe.\n\nThat is a comment on threading, not signals.  Signaled, single-threaded programs are still single-threaded; the signal context and ordinary thread context do not run concurrently.\n\nAnd by definition, a user process cannot run code of any kind — signal-handler or ordinary — while that user process is in the kernel.  So closefrom(2) in signal handler cannot race with open(2) or other syscalls that create fds in single-threaded programs.\n\nThe scenario the comment refers to is something like this:\n\n- The program has two threads and fds 0-5 allocated.\n- Concurrently, thread A and B attempt to:\n  A: open() a new fd\n  B: closefrom(3)\n- The behavior is unpredictable and depends on which thread acquires the fdesctable lock first.\n\n[r194262]: https://svnweb.freebsd.org/base?view=revision\u0026revision=194262"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 466406,
+ "bug_id": 127917,
+ "attachment_id": 0,
+ "creation_time": "2008-10-07T13:20:02Z",
+ "creator": "pluknet@gmail.com",
+ "text": "Minidump feature allows to dump kcore even with physical memory less than\nsize of a swap device.\n\n$ sysctl debug.minidump=0\ndebug.minidump: 1 -\u003e 0\n$ /etc/rc.d/dumpon start\n/dev/ad0s1b is smaller than physical memory\n$ sysctl debug.minidump=1\ndebug.minidump: 0 -\u003e 1\n$ /etc/rc.d/dumpon start\nkernel dumps on /dev/ad0s1b\n\nAll right. But it does not always work on boot (of course,\nwith properly set debug.minidump=1 in /etc/sysctl.conf)\nand we have on boot:\n/dev/ad0s1b is smaller than physical memory.\n\nFix: That's because /etc/rc.d/dumpon starts before /etc/rc.d/sysctl.\nTo be fixed.\n-----------\n\n\nAfter fix (dmesg -a):\n---\n/dev/ad0s1d: clean, 417342 free (694 frags, 52081 blocks, 0.1% fragmentation)\nnet.inet6.ip6.auto_linklocal: \n1\n -\u003e \n0\n\nhw.syscons.bell: \n1\n -\u003e \n0\n\ndebug.minidump: \n0\n -\u003e \n1\n\nkernel dumps on /dev/ad0s1b\nEntropy harvesting:\n-----3mX90nGx6XNgTm1dEoFQdpS7CQtDpzxuSblQBcrDgYKoOODb\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- /etc/rc.d/dumpon.orig       Tue Oct  7 16:09:52 2008\n+++ /etc/rc.d/dumpon    Tue Oct  7 15:49:42 2008\n@@ -5,6 +5,7 @@\n \n # PROVIDE: dumpon\n # BEFORE: disks savecore initrandom\n+# REQUIRE: sysctl\n # KEYWORD: nojail\n \n . /etc/rc.subr\n-----------\nHow-To-Repeat: Get a lesser swap slice then phys memory size.\nSet sysctl debug.minidump=1 in /etc/sysctl.conf\nPlace dumpdev=\"/dev/ad0s1b\" (according to your setup) in /etc/rc.conf\nReboot."
+}

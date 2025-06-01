@@ -1,0 +1,8 @@
+{
+ "id": 697762,
+ "bug_id": 174933,
+ "attachment_id": 0,
+ "creation_time": "2013-01-03T11:00:00Z",
+ "creator": "info@martinlaabs.de",
+ "text": "The function call if_nameindex out of the libc failes (return NULL) if it is called out of a linux application.\nThe cause of the failure is an inappropriate call of socket likely called in the __opensock function in the libc. This can be seen out of a ktrace dump:\n\n[...]\n3319 a.out    CALL  linux_socketcall(0x1,0xffffc6d4)\n3319 a.out    RET   linux_socketcall -1 errno 97 Address family not supported by protocol family\n[...]\n\nThe cause of the wrong arguments for this socket call is not known to me up to now.\n\nFor all the test I use the f10 linux environment. Tests with different linux-base versions are pending. Maybe someone who installed them can do it. On request I can send the linux binary compiled on debian with a 2.6.18 kernel and libc-2.3.6.\n\nHow-To-Repeat: Compile the following program on FreeBSD and Linux:\nCheck the return code - maybe the program will segfault if run as linux binary.\n\n#include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003csys/ioctl.h\u003e\n#include \u003cnet/if.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n\nint main(int argc, char *argv[])\n{\n     struct if_nameindex *ifn;\n  \n  /*Can be omitted - just to test if this makes a difference since\n  the __opensock function remember the last socket options*/\n  socket(AF_INET, SOCK_DGRAM, 0);\n\n  ifn=if_nameindex();\n  if(ifn==0) \n     err(\"if_nameindex failed\\n\"); \n\n return 0;\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 628905,
+ "bug_id": 160646,
+ "attachment_id": 0,
+ "creation_time": "2011-09-11T00:50:06Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "osreldate.h depends on include/Makefile as the recipe for generating\nosreldate.h is included in include/Makefile. This makes sense if the\nblurb of text changes in the Makefile, but not if a developer makes\nanother modification to the Makefile (say, add a header). This will\nbreak make installworld if someone modifies include/Makefile after the\nfact; the freenas build, which uses nanobsd currently does this as a\nhammer solution with the src and ports patches that are in the tree as\nit uses csup for pulling sources (it could be improved, but regardless..).\n\nThe attached patch adds a script which takes care of generating the\nosreldate.h header in an atomic manner (the current include/Makefile\nsnippet could build a bad osreldate.h header file if one of the echo\ncalls fails).\n\nAn example of one of these failures can be found here:\n\n- http://lists.freebsd.org/pipermail/freebsd-questions/2007-August/154719.html\n\nFix: 1. Apply patch.\n2. Make osreldate.h:\n    - cd include; make osreldate.h\n3. Verify that the above reproduction cases no longer trigger the failure.\n\nIf you apply this patch to your sourcebase each time like the freenas\nbuild system, you will need to touch mk-osreldate.sh like so to avoid\nretriggering the problem discussed above:\n\ntouch -am -t 200001010000 include/mk-osreldate.sh\n\nThis is only temporary though, because once the change is rolled into\nFreeBSD this hack is no longer required.\n\nPatch attached with submission follows:\nHow-To-Repeat: make buildworld\ntouch -am include/Makefile\nmake installworld"
+}

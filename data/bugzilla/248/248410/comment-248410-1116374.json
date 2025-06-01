@@ -1,0 +1,8 @@
+{
+ "id": 1116374,
+ "bug_id": 248410,
+ "attachment_id": 216935,
+ "creation_time": "2020-08-01T11:39:26Z",
+ "creator": "vvd@FreeBSD.org",
+ "text": "Created attachment 216935\nfix CVE-2020-14347\n\nX.Org security advisory: July 31, 2020\n\nX Server Pixel Data Uninitialized Memory Information Disclosure \n===============================================================\n\nCVE-2020-14347\n\nAllocation for pixmap data in AllocatePixmap() does not initialize the\nmemory in xserver, it leads to leak uninitialize heap memory to\nclients. When the X server runs with elevated privileges.\n\nThis flaw can lead to ASLR bypass, which when combined with other\nflaws (known/unknown) could lead to lead to privilege elevation in the\nclient.\n\nPatch\n=====\n\nA patch for this issue has been commited to the xorg server git\nrepository.  xorg-server 1.20.9 will be released shortly and will\ninclude this patch.\n\nhttps://gitlab.freedesktop.org/xorg/xserver.git\n\ndiff --git a/dix/pixmap.c b/dix/pixmap.c\nindex 1186d7dbb..5a0146bbb 100644\n--- a/dix/pixmap.c\n+++ b/dix/pixmap.c\n@@ -116,7 +116,7 @@ AllocatePixmap(ScreenPtr pScreen, int pixDataSize)\n     if (pScreen-\u003etotalPixmapSize \u003e ((size_t) - 1) - pixDataSize)\n         return NullPixmap;\n \n-    pPixmap = malloc(pScreen-\u003etotalPixmapSize + pixDataSize);\n+    pPixmap = calloc(1, pScreen-\u003etotalPixmapSize + pixDataSize);\n     if (!pPixmap)\n         return NullPixmap;\n    \nThanks\n======\n\nThis vulnerability was discovered by Jan-Niklas Sohn working with\nTrend Micro Zero Day Initiative.\n\n\nPatch tested on 12.1 amd64: make check-plist/install.\nI didn't restart xorg-server after this upgrade."
+}

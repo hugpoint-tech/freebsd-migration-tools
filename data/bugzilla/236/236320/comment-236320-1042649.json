@@ -1,0 +1,8 @@
+{
+ "id": 1042649,
+ "bug_id": 236320,
+ "attachment_id": 0,
+ "creation_time": "2019-03-17T09:44:50Z",
+ "creator": "hrs@FreeBSD.org",
+ "text": "(In reply to mickey242 from comment #2)\n\nHaving two or more timeout handlers independently in the kernel and the dhcp6c daemon will cause a race condition.  dhcp6c cannot know that the kernel accidentally removes a prefix due to the lifetime expiry.  This can happen because counting down is not synchronized between kernel and dhcp6c.  Just setting the kernel one to infinity and managing timer expiry in dhcp6c is the design choice to avoid it.\n\nOne practical scenario where infinity causes a problem is that the prefix will never be removed if dhcp6c becomes down.  However, there still is no good reason to set in-kernel prefix lifetime exactly to the value which is obtained by DHCP when dhcp6c is actively dealing with the expirations.  Setting 2x of the lifetime would be safer, for example.\n\n\u003e Given the fact that there is already a mechanism in place to propagate this lifetime to the subprefixes assigned to the interfaces, it just doesn't seem right not to so and thereby give other components\n\nrtadvd(8) does not redistribute the in-kernel lifetime value for this reason.  Propagation of timer values does not work in general because of the synchronization problem."
+}

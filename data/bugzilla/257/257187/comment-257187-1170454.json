@@ -1,0 +1,8 @@
+{
+ "id": 1170454,
+ "bug_id": 257187,
+ "attachment_id": 0,
+ "creation_time": "2021-07-14T23:10:44Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Firstly, does that symlink cross a mountpoint?  It may be that the target exists as seen from the NFS client, but not on the server.\n\nAssuming that isn't the problem, dtrace is your friend.  Try something like this:\n\nsudo dtrace -i 'sdt:zfs::set-error /arg0 == 2/ {stack();}' -c \"readlink /foo/bar/baz\"\n\nIf the error is coming from ZFS, you should find out where.  But if it isn't coming from ZFS, then run this instead:\n\nsudo dtrace -i 'fbt:kernel::return /arg1 == 2 \u0026\u0026 pid == $target/ {trace(\".\");}' -c \"readlink /foo/bar/baz\"\n\nThat command will have plenty of false positives, so don't print the stack traces just yet.  If you spy a function that looks likely, then suitably modify your D script and prints its stack trace."
+}

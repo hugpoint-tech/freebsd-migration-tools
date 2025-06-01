@@ -1,0 +1,8 @@
+{
+ "id": 1017739,
+ "bug_id": 232555,
+ "attachment_id": 198487,
+ "creation_time": "2018-10-23T09:24:06Z",
+ "creator": "ari@stonepile.fi",
+ "text": "Created attachment 198487\nPatch for /etc/rc.d/local_unbound\n\nIt seems to be possible that local_unbound gets into state where /var/unbound/root.key exists but is empty as a result of unclean shutdown.\n\nThe command that regenerates the file is unbound-anchor, which rebuilds it if it doesn't exist or it is empty (stated in man page). However, /etc/rc.d/local_unbound doesn't invoke it if root.key exists, even as zero-length file.\n\nThis results in situation where the local_unbound service no longer starts, it is also unable to recover from such condition automatically. This leaves the machine without working DNS service:\n\nOct 23 09:08:39 local-unbound-test unbound: [947:0] notice: init module 0: validator\nOct 23 09:08:39 local-unbound-test unbound: [947:0] error: failed to read /root.key\nOct 23 09:08:39 local-unbound-test unbound: [947:0] error: error reading auto-trust-anchor-file: /var/unbound/root.key\nOct 23 09:08:39 local-unbound-test unbound: [947:0] error: validator: error in trustanchors config\nOct 23 09:08:39 local-unbound-test unbound: [947:0] error: validator: could not apply configuration settings.\nOct 23 09:08:39 local-unbound-test unbound: [947:0] error: module init for module validator failed\nOct 23 09:08:39 local-unbound-test unbound: [947:0] fatal error: failed to setup modules\n\n\nSimple fix to solution would be the change the rc.d script so that it has same logic as unbound-anchor, ie. run it if the file does not exist OR it is empty.\n\nPatch attached."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1056241,
+ "bug_id": 238458,
+ "attachment_id": 0,
+ "creation_time": "2019-07-01T00:52:27Z",
+ "creator": "adamw@FreeBSD.org",
+ "text": "(In reply to Kevin Zheng from comment #4)\nI don't set the pidfile location at all. I'm using only defaults. See below. Despite the pidfile containing the correct pid, sshguard won't find it. Try it for yourself.\n\nAgain, this is because rc.d/sshguard has:\n  procname=\"/usr/local/libexec/sshg-blocker\"\nbut the pidfile points to a process named:\n  sh /usr/local/sbin/sshguard\n\nInstead, it needs to be:\n  procname=\"/bin/sh\"\n\n\n$ grep PID_FILE /usr/local/etc/sshguard.conf\n#PID_FILE=/var/run/sshguard.pid\n\n$ grep sshguard /etc/rc.conf\nsshguard_enable=\"YES\"\nsshguard_blacklist=\"\"\n\n$ sudo service sshguard stop\nsshguard not running? (check /var/run/sshguard.pid).\n\n$ sudo service sshguard start\nStarting sshguard.\n\n$ cat /var/run/sshguard.pid\n80319\n\n$ sudo ps aux|grep 80319\nroot    80319   0.0  0.0  11592   2980  -  Ss   18:41        0:00.00 /bin/sh /usr/local/sbin/sshguard -i /var/run/sshguard.pid\n\n$ service sshguard status\nsshguard is not running."
+}

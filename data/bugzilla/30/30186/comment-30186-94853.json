@@ -1,0 +1,8 @@
+{
+ "id": 94853,
+ "bug_id": 30186,
+ "attachment_id": 0,
+ "creation_time": "2001-08-29T11:30:00Z",
+ "creator": "jmorrow@inktomi.com",
+ "text": "If I call getaddrinfo(\"127.0.0.1\", \"80\", \u0026hints, \u0026res) as a non-root\nuser and then bind using the returned socket address structure my\nprogram is bound to the wrong address and port. I would have expected\na correctly filled out socket address structure and then a EACCESS\nfrom bind(2).\n\n$ ./a.out 127.0.0.1 80 \u0026 sockstat -l4 | grep a.out\njmorrow  a.out    30004    3 tcp4   *:1045                *:*\n\n$ ./a.out 127.0.0.1 8000 \u0026 sockstat -l4 | grep a.out\njmorrow  a.out    30009    3 tcp4   127.0.0.1:8000        *:*\n\nAlso putting negative or high port numbers into this program\nnever causes getaddrinfo to return an error.\n\nHow-To-Repeat: #include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetdb.h\u003e\n\nint\nmain(int argc, char **argv)\n{\n    struct addrinfo hints, *res;\n    int error, sock;\n\n    (void)memset(\u0026hints, 0, sizeof(hints));\n    hints.ai_family = PF_UNSPEC;\n    hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;\n    hints.ai_socktype = SOCK_STREAM;\n    error = getaddrinfo(argv[1], argv[2], \u0026hints, \u0026res);\n    if ( error ) {\n        (void)printf(\"%s: %s\\n\", argv[1], gai_strerror(error));\n        return 1;\n    }\n    sock = socket(res-\u003eai_family, res-\u003eai_socktype, res-\u003eai_protocol);\n    bind(sock, res-\u003eai_addr, res-\u003eai_addrlen);\n    listen(sock, 5);\n    sleep(60);\n    freeaddrinfo(res);\n    return 0;\n}"
+}

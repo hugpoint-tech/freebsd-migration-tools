@@ -1,0 +1,8 @@
+{
+ "id": 880873,
+ "bug_id": 207598,
+ "attachment_id": 0,
+ "creation_time": "2016-05-29T08:35:39Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Max from comment #26)\nI think what we need to do is very carefully go through all the return paths in pf.\n\nThere's basically three scenarios:\n * Accept packet (modified or not)\n   =\u003e return PF_PASS *m0 is the mbuf\n * Reject the packet (i.e tell the stack it couldn't be sent)\n   =\u003e return PF_DROP\n * Drop the packet (i.e. it vanishes, do not tell the stack it couldn't be sent)\n   =\u003e return PF_PASS, *m0 is NULL.\n\nThe pf_isfull_fragment() check needs to return PF_PASS (with *m0 == NULL), because the packet was just buffered until we have the full (reassembled) packet. It's not been rejected.\n\nThe if (m == NULL) check is really required, because we do set *m0 to NULL during reassembly."
+}

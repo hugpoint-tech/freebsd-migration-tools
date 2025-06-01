@@ -1,0 +1,8 @@
+{
+ "id": 534067,
+ "bug_id": 141753,
+ "attachment_id": 0,
+ "creation_time": "2009-12-18T16:50:03Z",
+ "creator": "dan@obluda.cz",
+ "text": "\nImagine the code:\n\n -----------------\n_malloc_options = \"V\";\n...\nptr=malloc(5);\n...\nnptr=reallocf(ptr,0);\n -----------------\n\n\nNow look into libc's reallocf() implementation: \n\nvoid *\nreallocf(void *ptr, size_t size)\n{\n\tvoid *nptr;\n\n\tnptr = realloc(ptr, size);\n\tif (!nptr \u0026\u0026 ptr)\n\t\tfree(ptr);\n\treturn (nptr);\n}\n\n\n\nThe realloc() is called with non-NULL ptr. \nZero-size realloc never fail, so ptr is freed by realloc. nptr is NULL\nbecause of size=0 and option V\n\nUnfortunatelly, it mean the free(ptr) is called again\ncausing double-free of ptr.\n\nIt never fail (allocation of\n\nFix: \n\nThe free must not be called when size=0 and opt_sysv == true\nbecause the pointer is already freed.\n\nUnfortunatelly the opt_sysv variable is not avaiable here, it is\nstatic variable within malloc.c\n\nIt sounds to me that better solution is to move reallocf()\nimplementation from reallocf.c to malloc.c \n(opt_sysv is avaiable here) but there may be other solution.\nHow-To-Repeat: See code in description."
+}

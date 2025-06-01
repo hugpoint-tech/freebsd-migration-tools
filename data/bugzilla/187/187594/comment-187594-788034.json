@@ -1,0 +1,8 @@
+{
+ "id": 788034,
+ "bug_id": 187594,
+ "attachment_id": 0,
+ "creation_time": "2014-09-22T13:51:26Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "(In reply to karl from comment #143)\n\nJust an assorted list of things to consider, perhaps it will lead to some ideas to try.\n\n- were the new allocations all 64KB sized?  if not then they could not make use of zio_buf_65536 cached objects.\n\n- cached items from UMA zones are really freed only when the paging threshold is reached and the pagedaemon makes a pageout pass.\n\n- the pagedaemon first posts vm_lowmem and then calls uma_reclaim().\n- the event handlers are invoked synchronously (and directly).\n- additionally, arc_lowmem() handler will block until the arc reclaim thread makes a pass.\n\n- the above means that there is no normal paging out nor uma reclaiming until the arc reclaim thread evicts some of the cache.\n- which means that any memory that the arc reclaim thread needs while doing its job or memory that is needed by other threads (including zfs ones) digs deeper into the page reserve\n\n- zfs memory throttling may occur because of that (see arc_memory_throttle())\n\n- additionally, there is vm.lowmem_period knob. vm_lowmem and uma_reclaim() can not be called more often than that period allows\n\nPersonally, what I'd try first is make arc_lowmem() non-blocking. IMO, it should just wake up the arc reclaim thread and return."
+}

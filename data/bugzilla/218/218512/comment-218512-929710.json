@@ -1,0 +1,8 @@
+{
+ "id": 929710,
+ "bug_id": 218512,
+ "attachment_id": 0,
+ "creation_time": "2017-04-09T19:39:36Z",
+ "creator": "fhriley@gmail.com",
+ "text": "In the geli metadata, there is one field that specifies the pkcs5v2 iterations, which means it used for both keys. Because of this, the code needs to prevent the user from setting a passphrase with a given (or calculated) iterations, and then setting a second passphrase with a different iterations. If it didn't, the first passphrase would get invalidated. The existing geli code does this, but in a naive way that leads to weird failures that, logically, should not fail, and drastically reduce the usability of geli. For example, the current code prevents the following:\n\n  - Set two keys, then set a passphrase on one key\n  - Set one key, then set a second key with passphrase using -i\n  - Set one passphrase, then change the iterations\n  \nThe first and second ones are especially bad because it means you have to reissue keys if you want to set password on an existing key (FreeNAS does this).\n\nAlso, if you set two keys with passphrases, geli will forever think a passphrase is set, even if you replace those two keys without passphrases, because the current code has no way to know if a passphrase is set on a key.\n\nI am submitting a git pull request to fix all of the above."
+}

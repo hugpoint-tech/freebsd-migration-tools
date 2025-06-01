@@ -1,0 +1,8 @@
+{
+ "id": 705997,
+ "bug_id": 176740,
+ "attachment_id": 0,
+ "creation_time": "2013-03-08T01:30:00Z",
+ "creator": "john@jmarshall.id.au",
+ "text": "\nIf sshd is configured with its default setting of 'UseLogin no', it will\nread environment and path values from the user's ~/.login_conf (e.g.\nlang and charset) but not any umask value.  Instead, the umask value\nfrom /etc/login.conf is applied.\n\nSetting the server's 'UseLogin' configuration option to 'yes' hands off\nthat work to login and the user's umask value is retrieved as well, and\nis set as expected; but setting UseLogin disables X11Forwarding.\n\nI discovered that crypto/openssh/session.c is restricting the subset of\nlogin_conf settings it will read in user mode so that only environment\nand path values will be used.  Is there any reason why umask should not\nbe included?\n\nI think it is reasonable to expect that setting umask in ~/.login_conf\nmeans that that value will apply to all types of login.  The user\nlogin_conf umask setting is applied when logging in via console\n(irrespective of selected shell) and via X but not via sshd.\n\nFix: The attached patch adds umask to the list of user settings which will be\nretrieved and applied by sshd.\n\nHow-To-Repeat: \nAdd a umask setting to the me: class in ~/.login_conf.  After logging in\nat the console or via X, note that the user umask value has been\napplied.  Log in via ssh and note that the /etc/login.conf value is\napplied instead.  After ssh login, execute login(1) at the shell prompt\nand note that the user umask value is now applied."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 728802,
+ "bug_id": 181690,
+ "attachment_id": 0,
+ "creation_time": "2013-08-30T20:00:00Z",
+ "creator": "olivier@cochard.me",
+ "text": "I've got some UDP packet loss with pf configured with NAT.\n\nHere is my pf.conf:\next_if = \"igb3\"\nset skip on lo0\nset debug loud\nnat on $ext_if inet from any to any -\u003e $ext_if port 50000:50003\npass\n\n=\u003e The NAT range port is limited to 4 port for an easy reproduction of this problem.\n\nThen I generate 4 parallel UDP flow (with 4 netblast), but when I start the 3th flow I've got theses log message:\nkernel: pf: wire key attach failed on all: UDP out wire: 2.2.2.3:4123 2.2.2.2:50003 1:0, existing: UDP out wire: 2.2.2.3:4123 2.2.2.2\nkernel: :50003 stack: 2.2.2.3:4123 1.1.1.1:39749 1:0\n\nI've found this same error message regarding OpenBSD 4.6 here:\nhttp://openbsd.7691.n7.nabble.com/kernel-6300-PF-NAT-UDP-port-reuse-wire-key-attach-failed-td195274.html\n\nFrom this thread, it seems that \"pf_get_sport() was failing to notice that the ports were in-use\" and there is a proposed patch.\nI've adapted this patch to FreeBSD (9.2) and do a try: No more \"wire key attach failed\", I've got this message in place:\nAug 30 19:40:37 bsdrp2 kernel: pf: NAT proxy port allocation (50000-50003) failed\n\nRegards\n\nFix: \n\nBy applying this patch.\nHow-To-Repeat: Use the pf.conf example file given on my full description, and try to generate more than 3 or 4 UDP flows that match the NAT condition."
+}

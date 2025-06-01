@@ -1,0 +1,8 @@
+{
+ "id": 387552,
+ "bug_id": 111558,
+ "attachment_id": 0,
+ "creation_time": "2007-04-14T08:10:02Z",
+ "creator": "emz@norma.perm.ru",
+ "text": "'link1' flag doesn't work as intended when configured for gre tunnel using main system config files:\n\n- when configured via ifconfig_gre0=\"\" with all appropriate parameters the interface does appear with 'LINK1' flag, but requires an additional 'ifconfig gre link1' command for the tunnel to start working;\n\n- when configured via 'start_if.gre0' script with all additional parameters, for example\n\n===Cut===\n#!/bin/sh\n\n/sbin/ifconfig gre0 192.168.1.1 192.168.1.2 netmask 255.255.255.255 10.10.10.1 10.10.10.5 mtu 1480\n# even when sleep 10\nsleep 10\n/sbin/ifconfig gre0 link1\n===Cut==\n\nthe system still requires 'ifconfig gre0 link1' for the tunnel to start working;\n\nFix: \n\necho gre_enable=\"YES\" \u003e\u003e /etc/rc.conf\necho gre_flags=\"greX link1\" \u003e\u003e /etc/rc.conf\n\n(according to your configuration)\n\nand place the following script to /usr/local/etc/rc.d/:\n\n#!/bin/sh\n#\n\n#\n# gre startup script by drookie, 14/04/2007 12:38\n# to avoid link1 bug when it is configured in earlier scripts :/\n#\n# PROVIDE: gre\n# REQUIRE: LOGIN NETWORKING\n#\n#\n\nname=gre\ncommand=/sbin/ifconfig\ngre_enable=${gre_enable:-\"NO\"}\n\n. /etc/rc.subr\nrcvar=`set_rcvar`\nload_rc_config ${name}\n\nrun_rc_command \"$1\"\nHow-To-Repeat: Create a gre tunnel with link1 set in configuration files; in rc.conf or even in start_if.gre0.\nReboot the machine.\nTry to ping remote."
+}

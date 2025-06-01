@@ -1,0 +1,8 @@
+{
+ "id": 1128344,
+ "bug_id": 250561,
+ "attachment_id": 219054,
+ "creation_time": "2020-10-25T10:18:44Z",
+ "creator": "roy@marples.name",
+ "text": "Created attachment 219054\nRemove interface on ENXIO\n\nPretty hard for me to test this sadly.\n\nIt looks like your interface does a hardware reset and this confuses dhcpcd.\nHopefully the attached patch helps.\n\nWhen this happens, the interface is clearly not available by name because if_getmtu fails. So it won't be reported by ifconfig(8).\nThis at least will stop the constant log spam.\nHowever if dhcpcd is started for a single interface it will exit. You will need to run dhcpcd on all interfaces (ie dhcpcd_enable=YES in rc.conf rather than ifconfig_foo=DHCP).\nIf dhcpcd does not recover then it's either that the kernel does not send RTM_IFANNOUNCE messages for this which is very bad or they got lost as route(4) overflowed.\n\nI can't really help for the former, but for the latter there is a kernel patch here so that dhcpcd can spot route(4) overflows and recover: https://reviews.freebsd.org/D26652"
+}

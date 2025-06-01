@@ -1,0 +1,8 @@
+{
+ "id": 859693,
+ "bug_id": 206326,
+ "attachment_id": 0,
+ "creation_time": "2016-01-17T05:50:45Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "mandoc is crashing via an assert as of any build based on contrib/madocml/main.c -r294113. The 2nd assert below is failing:\n\nstatic void\nparse(struct curparse *curp, int fd, const char *file)\n{\n        enum mandoclevel  rctmp;\n        struct roff_man  *man;\n\n        /* Begin by parsing the file itself. */\n\n        assert(file);\n        assert(fd \u003e 0);\n. . .\n\nThis is because:\n\nint\nmain(int argc, char *argv[])\n{\n. . .\n        if (argc \u003c 1) {\n                if (use_pager)\n                        tag_files = tag_init();\n                parse(\u0026curp, STDIN_FILENO, \"\u003cstdin\u003e\");\n        }\n\nbut STDIN_FILENO is zero:\n\n# grep STDIN_FILENO /usr/include/*\n/usr/include/roken-common.h:#ifndef STDIN_FILENO\n/usr/include/roken-common.h:#define STDIN_FILENO 0\n/usr/include/unistd.h:#define\tSTDIN_FILENO\t0\t/* standard input file descriptor */\n\nIf main's parse call with STDIN_FILENO is to be valid then the assert needs to be more like:\n\n        assert(fd \u003e= 0);\n\n(or an equivalent). The prior main.c revision (-r280025) used fd \u003e= -1 for some reason. That would not fail the assertion for STDIN_FILENO but would allow -1 without failing the assertion as well. (I've no clue why -1 was allowed back then.)"
+}

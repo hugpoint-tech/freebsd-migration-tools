@@ -1,0 +1,8 @@
+{
+ "id": 1249989,
+ "bug_id": 260248,
+ "attachment_id": 0,
+ "creation_time": "2023-03-08T15:21:01Z",
+ "creator": "feld@FreeBSD.org",
+ "text": "(In reply to Antranig Vartanian from comment #3)\n\nI've tested both cases and they fail. If you run it as\n\nsh -x /etc/rc.d/jail start JAILNAME\n\nyou can see what it's doing.\n\nAt no point does it attempt to read in any other jail configurations before processing the target jail.\n\nThis is a bit of a chicken-and-egg scenario as the code handling the startup of jails is shell script which guesses where the jail configs are, and the actual processing of the jail config parameters is done by the C code. A bad hack could be implemented in /etc/rc.d/jail to actually read the contents of these files and look for a \"depend =\" or \"depend +=\", parse it, and then try to load /etc/jail.JAILNAME.conf or /etc/jail.conf.d/JAILNAME.conf so it can be merged together and the jail will be discovered. However, this opens a new can of worms as there won't be any isolation of configuration between the jails and if the configs are simply concatenated together to be presented to jail(8) you will have issues with one jail config declaring settings outside the JAILNAME { } section and leaking into the config of the jail that was appended.\n\nThe correct way to solve this would be to move more logic into jail(8) so it does all of this work for us and /etc/rc.d/jail is stripped down to simply passing start/stop/restart commands to jail(8) similar to how docker works.\n\nI will gladly contribute to a bounty to overhaul jail(8) if anyone out there is willing and capable."
+}

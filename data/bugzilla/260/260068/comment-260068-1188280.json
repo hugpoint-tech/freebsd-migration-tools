@@ -1,0 +1,8 @@
+{
+ "id": 1188280,
+ "bug_id": 260068,
+ "attachment_id": 0,
+ "creation_time": "2021-11-28T18:24:23Z",
+ "creator": "vmaffione@FreeBSD.org",
+ "text": "I think that after the latest changes, the e1000 drivers (em, lem, igb) are looking at the wrong \"capability\" bitmaps, and therefore they are basically ignoring your ifconfig commands to disable capabilities (vlanhwtag, rxcsum, ...).\nIn particular, VLAN hw stripping is always done by the device, even if you disable it.\n\nThis explains why you don't see the VLAN header when using netmap. In the non-netmap case, the stripped VLAN information gets stored in the mbuf metadata, so that the kernel is able to insert that back when passing the packet to tcpdump. In the netmap case, the stripped VLAN information is lost, because netmap has no space for that kind of metadata.\n\nThe patch I attached fixes the e1000 drivers so that device capabilities are actually used to configure the device accordingly (i.e., VLAN stripping is disabled in the hardware). The patch also does some cleanup to make the e1000 drivers more uniform w.r.t. VLAN/CSUM offload processing.\n\nCould you please test the patch for em and igb? The patch is meant for FreeBSD HEAD."
+}

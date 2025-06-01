@@ -1,0 +1,8 @@
+{
+ "id": 1254568,
+ "bug_id": 270559,
+ "attachment_id": 0,
+ "creation_time": "2023-04-10T07:24:17Z",
+ "creator": "philip@FreeBSD.org",
+ "text": "Our if_bridge(4) really only implements the learning and forwarding parts of the original 802.1D standard.  It's really only aware of VLANs because if_vlan(4) puts the relevant tags in the mbuf.  It does not try to be a complete implementation of 802.1Q-2014 (which incorporates bridging, VLANs and some other stuff).\n\nThe comment introducing the VLANTAGOF(_m) macro is a little confusing if this patch is applied as-is.  I'm also not convinced that this change is correct.  VLAN 0 is not a valid VID but it's perfectly possible for a dot1q tag with VID=0 to appear on the wire: it indicates untagged traffic with a PCP or the DEI bit set.\n\nI wonder if we should use 0xFFF rather than 0 as the magic number for untagged frames.  0xFFF is reserved in 802.1Q-2014 for implementation use.\n\nDid either of you test what happens if a packet with a dot1q header that only contains a PCP and not a VID gets forwarded?"
+}

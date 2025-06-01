@@ -1,0 +1,8 @@
+{
+ "id": 841410,
+ "bug_id": 195970,
+ "attachment_id": 0,
+ "creation_time": "2015-09-23T18:19:42Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "I have tried to refine the scenario where the problem appears, and the results are as follows.\n- I run a 3 GB VB client on an 8 GB machine\n- On this machine I start a dd with a blocksize of 128k to copy a 250G disk slice to standard output (the purpose being to make an image backup of the Windows partition).\n\nThe difference is how I start dd:\n- Just running\n    dd if=/dev/ada0s2 of=/dev/null bs=128\n  works.\n- Running\n    dd if=/dev/ada0s2 bs=128k | cat \u003e /dev/null\n  works.\n- *On another machine*, running\n    rsh -n \u003cthe machine running the VB client\u003e \"dd if=/dev/ada0s2 bs=128k\" \u003e /dev/null\n  produces \"dd: stdout: Cannot allocate memory\" quite soon (but after a non-deterministic number of blocks have been transferred).\n\nIf I do this using ssh, the behavior is slightly different but still erroneous:\n    ssh -n \u003cthe machine running the VB client\u003e \"dd if=/dev/ada0s2 bs=128k\" \u003e /dev/null\n  produces \"Connection to \u003cthe machine running the VB client\u003e closed by remote host.\" without a message from dd.\n\nI could not note any anomalies in memory usage as monitored by \"top\" and \"systat -vm 1\".\n\nIf, after the tests above, I shut down the VB client while keeping everything else the same, issuing the rsh command runs to completion correctly.\n\nNote that in that other scenario where I was using \"zfs send\", \"zfs send\" was also invoked via \"rsh -n\".\n\nSo it seems that sending data via rsh while a VB client is running leads to the problem.\n\n-- Martin"
+}

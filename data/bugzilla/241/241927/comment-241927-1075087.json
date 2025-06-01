@@ -1,0 +1,8 @@
+{
+ "id": 1075087,
+ "bug_id": 241927,
+ "attachment_id": 209111,
+ "creation_time": "2019-11-12T20:12:11Z",
+ "creator": "bgoglin@free.fr",
+ "text": "Created attachment 209111\nscreenshot of the backtrace of the crash\n\nHello\n\nWhile adding FreeBSD NUMA support in hwloc, we found a reproducible way to crash the kernel. Just call cpuset_setdomain(CPU_LEVEL_CPUSET, CPU_WHICH_PID, -1, ...).\n\nHere's the minimalistic userland program to reproduce:\n\n#include \u003csys/types.h\u003e\n#include \u003csys/sysctl.h\u003e\n#include \u003csys/param.h\u003e\n#include \u003csys/cpuset.h\u003e\n#include \u003csys/domainset.h\u003e\n\nint main()\n{\n  domainset_t mask;\n  DOMAINSET_ZERO(\u0026mask);\n  DOMAINSET_SET(0, \u0026mask);\n  cpuset_setdomain(CPU_LEVEL_CPUSET, CPU_WHICH_PID, -1, sizeof(mask),\n\u0026mask, DOMAINSET_POLICY_PREFER);\n}\n\nI don't understand what this call is supposed to do, we actually wanted to use CPU_LEVEL_WHICH instead of CPU_LEVEL_CPUSET :)\n\nWe were running this inside a KVM VM with 4 NUMA domains but the crash also occurs without multiple NUMA domains.\n\nI am attaching a screenshot of the backtrace after the crash. I don't know how to debug more.\n\nBrice"
+}

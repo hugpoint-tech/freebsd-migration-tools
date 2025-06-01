@@ -1,0 +1,8 @@
+{
+ "id": 828692,
+ "bug_id": 200818,
+ "attachment_id": 0,
+ "creation_time": "2015-06-22T09:34:43Z",
+ "creator": "mva@FreeBSD.org",
+ "text": "(In reply to FreeBSD from comment #6)\n[...]\n\u003e\n\u003e Looking over the cmake files, simd compiler flags are added if specifically\n\u003e enabled by setting USE_SIMD, while setting USE_SIMD to 0 would force disable\n\u003e all simd usage even if the compiler says simd is available.\n\u003e \n\u003e Leaving USE_SIMD empty means simd usage is based on compiler settings\n\u003e configured outside of the port file. This should allow the user to set\n\u003e CFLAGS/CXXFLAGS to enable simd features matching their cpu or to work with\n\u003e features based on compiler detected options.\n\u003e\n\u003e\n\u003e Are you sure you don't have some old testing CFLAGS/CXXFLAGS set that are\n\u003e breaking your build?\n\nYes. I think the problem relates to the following code in OpenImageIO/simd.h:\n\n#  if defined(__SSE3__) || defined(__SSSE3__)\n#    include \u003cpmmintrin.h\u003e\n#    include \u003ctmmintrin.h\u003e\n#  endif\n\ntmmintrin.h contains the relevant SSSE3 functions. If SSSE3 is not available (but SSE3 is), the compiler bails out. I'll test a small change to the header later on and also will try without CPUTYPE=nocona (but CPUTYPE=native) instead\n\n\u003e Some ports have a SIMD/SSE/SSE3 option, so another possibility is to add SSE\n\u003e SSE3 SSE4 options to allow the user to manually enable simd configuration.\n\u003e\n\u003e With this approach I would go with a simd group that the user could choose\n\u003e which simd level to use.\n\nThis is risky, if the CPU, libc, etc. do not support the instructions, since the resulting library may break."
+}

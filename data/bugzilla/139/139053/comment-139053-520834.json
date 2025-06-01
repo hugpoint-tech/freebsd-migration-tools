@@ -1,0 +1,8 @@
+{
+ "id": 520834,
+ "bug_id": 139053,
+ "attachment_id": 0,
+ "creation_time": "2009-12-17T17:46:33Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: gavin\nDate: Thu Dec 17 17:46:08 2009\nNew Revision: 200637\nURL: http://svn.freebsd.org/changeset/base/200637\n\nLog:\n  Don't panic due to unlocking an unowned mutex if we fail during attach.\n  \n  PR:\t\tkern/139053\n  Reviewed by:\tscottl\n  Approved by:\ted (mentor)\n  MFC after:\t2 weeks\n\nModified:\n  head/sys/dev/ciss/ciss.c\n\nModified: head/sys/dev/ciss/ciss.c\n==============================================================================\n--- head/sys/dev/ciss/ciss.c\tThu Dec 17 17:44:34 2009\t(r200636)\n+++ head/sys/dev/ciss/ciss.c\tThu Dec 17 17:46:08 2009\t(r200637)\n@@ -418,6 +418,7 @@ ciss_attach(device_t dev)\n \n     sc = device_get_softc(dev);\n     sc-\u003eciss_dev = dev;\n+    mtx_init(\u0026sc-\u003eciss_mtx, \"cissmtx\", NULL, MTX_DEF);\n \n     /*\n      * Do PCI-specific init.\n@@ -430,7 +431,6 @@ ciss_attach(device_t dev)\n      */\n     ciss_initq_free(sc);\n     ciss_initq_notify(sc);\n-    mtx_init(\u0026sc-\u003eciss_mtx, \"cissmtx\", NULL, MTX_DEF);\n     callout_init_mtx(\u0026sc-\u003eciss_periodic, \u0026sc-\u003eciss_mtx, 0);\n \n     /*\n@@ -496,8 +496,11 @@ ciss_attach(device_t dev)\n \n     error = 0;\n  out:\n-    if (error != 0)\n+    if (error != 0) {\n+\t/* ciss_free() expects the mutex to be held */\n+\tmtx_lock(\u0026sc-\u003eciss_mtx);\n \tciss_free(sc);\n+    }\n     return(error);\n }\n \n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

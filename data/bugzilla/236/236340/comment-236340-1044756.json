@@ -1,0 +1,8 @@
+{
+ "id": 1044756,
+ "bug_id": 236340,
+ "attachment_id": 0,
+ "creation_time": "2019-03-31T23:31:47Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Sigh, the problem is more complicated than it first sounded.  Firstly, VOP_CREATE doesn't get the open(2) flags.  So even though we can pass O_APPEND if it comes from open(..., O_RDWR | O_APPEND), we can't if it comes from open(..., O_RDWR | O_APPEND | O_CREAT).  Secondly, since we can't store a file handle in a struct file and expect it to be available when we need it (since the VOPs don't get a struct file* argument, and many operations bypass the fileops layer entirely) we must frequently guess what file handle to use.  Opening a separate file handle for O_RDWR vs O_RDWR | O_APPEND just makes the guessing process harder.\n\nFurthermore, it's kind of dumb for the FUSE protocol to support O_APPEND in FUSE_OPEN and FUSE_CREATE, even though there's no support for getting, setting, or clearing that flag with fcntl.  It's kind of a half-baked feature.\n\nThere are _some_ file systems that care about O_APPEND.  fusefs-sshfs and fusefs-ifuse for two.  But I'm wondering if it's worth doing if we can't do it right."
+}

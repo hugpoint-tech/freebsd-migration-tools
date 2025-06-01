@@ -1,0 +1,8 @@
+{
+ "id": 1017999,
+ "bug_id": 232642,
+ "attachment_id": 198583,
+ "creation_time": "2018-10-24T16:44:59Z",
+ "creator": "sergey@akhmatov.ru",
+ "text": "Created attachment 198583\nsbin/ipfw/ipfw2.c - fix ipfw show for rules with setdscp action\n\nipfw show fails to show rules with \"setdscp\" action for DSCP code values without matching well-known class name.\n\nSteps to reproduce:\n# ipfw add 1000 setdscp 10 ip from any to any\n01000 setdscp af11 ip from any to any\n# ipfw add 1001 setdscp 11 ip from any to any\nsegmentation fault\n\n# ipfw show 1000\n01000   0     0 setdscp af11 ip from any to any\n# ipfw show 1001\nsegmentation fault\n\nThe bug was introduced in r331668. 11.2-RELEASE and 12.0-BETA1 are affected.\n\nProblem code in sbin/ipfw/ipfw2.c as follows:\n---\n        case O_SETDSCP:\n                if (cmd-\u003earg1 == IP_FW_TARG) {\n                        bprintf(bp, \"setdscp tablearg\");\n                        break;\n                }\n                s = match_value(f_ipdscp, cmd-\u003earg1 \u0026 0x3F);\n                if (s != NULL)\n                        bprintf(bp, \"setdscp %s\", s);\n                else\n                        bprintf(bp, \"setdscp %s\", cmd-\u003earg1 \u0026 0x3F);\n---\ncmd-\u003earg1 is int, but is passed to \"%s\" format specifier. Changing it to \"%d\" fixes things for me."
+}

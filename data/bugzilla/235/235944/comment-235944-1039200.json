@@ -1,0 +1,8 @@
+{
+ "id": 1039200,
+ "bug_id": 235944,
+ "attachment_id": 0,
+ "creation_time": "2019-02-25T04:38:47Z",
+ "creator": "rpokala@panasas.com",
+ "text": "(In reply to Andriy Gapon from comment #10)\n\n================================================================\nRavi, are you sure that this is correct?\n\u003e                 rc = smbus_writeb(sc-\u003esmbus,\n\u003e                    (JEDEC_DTI_PAGE | JEDEC_LSA_PAGE_SET1), 0, 0);\n\nGiven smbus_writeb(bus,slave,cmd,byte).\n================================================================\n\nSadly, yes, I'm sure it's correct. SMBus only supports 8-bit command codes (which are used as EEPROM byte offsets), so page-change mechanism is required for accessing bytes [256-512]. For whatever reason, JEDEC (or the SPD EEPROM chip vendors) decided that the way to handle that is by writing to a specific SMBus address. In response, *all* devices on the bus switch to that page. As I noted in jedec_dimm.h:\n\n================================================================\n/* TSE2004av defines several Device Type Identifiers (DTIs), which are the high\n * nybble of the SMBus address. Addresses with DTIs of PROTECT (or PAGE, which\n * has the same value) are essentially \"broadcast\" addresses; all SPD devices\n * respond to them, changing their mode based on the Logical Serial Address\n * (LSA) encoded in bits [3:1]. For normal SPD access, bits [3:1] encode the\n * DIMM slot number.\n */\n================================================================\n\nThus, using \"(JEDEC_DTI_PAGE | JEDEC_LSA_PAGE_SET1)\" as the slave address is in fact correct."
+}

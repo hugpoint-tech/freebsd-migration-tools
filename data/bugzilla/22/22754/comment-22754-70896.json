@@ -1,0 +1,8 @@
+{
+ "id": 70896,
+ "bug_id": 22754,
+ "attachment_id": 0,
+ "creation_time": "2000-11-10T18:30:01Z",
+ "creator": "nick@flirble.org",
+ "text": "\nthe mmap man page states in the BUGS section:\n\n     We currently can only deal with page aligned file offsets.\n\nThis doesn't appear to be true as mmap() will map /etc/motd without error\nat offset 11. I assume that the documentation is out of date.\n\nFix: \n\nAmmend man page to remove this from the bugs. (It doesn't appear to be\njust regular files, as /dev/zero also works)\nOr if not all devices support it, state this in the BUGS section.\nHow-To-Repeat: \n#include \u003cunistd.h\u003e\n#include \u003csys/mman.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cerrno.h\u003e\n\nint main () {\n  int motd = open (\"/etc/motd\", O_RDONLY);\n  void *mapped;\n\n  if (motd \u003c 0) {\n    perror (\"Failed to open /etc/motd\");\n    return 1;\n  }\n  mapped = mmap(NULL, 1024, PROT_EXEC | PROT_READ | PROT_WRITE , MAP_PRIVATE, motd, 11);\n  printf (\"mapped = %p errno = %d\\n\", mapped, errno);\n  return 0;\n}\n\ngives\n\nmapped = 0x280f000b errno = 0\n\non FreeBSD 3.4-STABLE, 4.0-RELEASE and 4.1-STABLE, all x86 (all I have access\nto)\n\nwhich isn't what the man page says should happen."
+}

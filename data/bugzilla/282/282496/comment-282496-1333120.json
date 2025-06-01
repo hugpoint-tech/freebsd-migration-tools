@@ -1,0 +1,8 @@
+{
+ "id": 1333120,
+ "bug_id": 282496,
+ "attachment_id": 0,
+ "creation_time": "2024-11-02T16:56:01Z",
+ "creator": "mkrzewicki@gmail.com",
+ "text": "Hi,\nI have a pf firewall with some rules limiting the number of coonnections and tracking per host like this:\n\npass in quick on igb0 from \u003choly\u003e to any flags S/SA keep state (source-track rule) label \"holy\"\npass in on igb0 inet from any to ! 10.0.0.0/20 flags S/SA keep state (source-track rule, max-src-states 200, max-src-conn 400) label \"slow\" dnpipe(2, 1)\n\nnow from time to time I got complaints from users of no connectivity. I noticed that 'pfctl -sS' sometimes reports a number of connections close to int_max so I started monitoring that with a simple cron job:\n\n* * * * * pfctl -sS|awk '{print $1 \" \" $8}'|tr ',' ' '|while read addr conn; do echo $conn \u003e\u003e /root/pfconntrack/$addr; done\n\nit looks like the counter is sometimes decreased below 0 and being an unsigned int wraps around to int_max; looks like a race condition like maybe there are a few threads decreasing this counter without a check or lock(?) as the large number always follows a low number of connections and after a while it gets back up to a small integer value (close to zero) - below an example of such a sequence minute by minute for one of the hosts:\n\n10\n3\n4294967292\n4294967292\n4294967291\n4294967293\n4294967292\n4294967290\n4294967290\n1\n2\n4294967294\n2\n4\n\nof course the time when the counter is high my users complain as the rule happily stops matching for their hosts.\nI have asked about this in the forums but it seems nobody knows what to do about this there.\nSo the question is: is it a bug or am I doing something wrong and this behaviour is expected?\nthanks,"
+}

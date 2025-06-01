@@ -1,0 +1,8 @@
+{
+ "id": 345544,
+ "bug_id": 102502,
+ "attachment_id": 0,
+ "creation_time": "2006-08-25T12:10:24Z",
+ "creator": "a@olc.ru",
+ "text": "ifconfig fxp0 name lan \nifconfig lan \nlan: flags=8843\u003cUP,BROADCAST,RUNNING,SIMPLEX,MULTICAST\u003e mtu 1500\n        options=b\u003cRXCSUM,TXCSUM,VLAN_MTU\u003e\n        inet 192.168.1.1 netmask 0xffffff00 broadcast 192.168.1.255\n        ether 00:07:e9:2a:a5:a0\n        media: Ethernet autoselect (100baseTX \u003cfull-duplex\u003e)\n        status: active\n\nngctl list \n Name: fxp0             Type: ether           ID: 00000001   Num hooks: 1\n\nas we can see ifconfig does not renames netgraph node \nso if we start mpd pppoe on lan iface it wil not find any interface to work\n\nFix: \n\nin /etc/network.subr add that litle patch \n\n# ifnet_rename\n#       Rename all requested interfaces.\n#\nifnet_rename()\n{\n\n        _ifn_list=\"`ifconfig -l`\"\n        [ -z \"$_ifn_list\" ] \u0026\u0026 return 0\n        for _if in ${_ifn_list} ; do\n                eval _ifname=\\$ifconfig_${_if}_name\n                if [ ! -z \"$_ifname\" ]; then\n                        ifconfig $_if name $_ifname\n                        #olc patch \n                        /usr/sbin/ngctl name $_if: $_ifname\n                fi\n        done\n        return 0\n}\n\nin c code i not well enougth so no fix avalaible\nHow-To-Repeat: please watch higher"
+}

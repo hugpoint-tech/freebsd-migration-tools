@@ -1,0 +1,8 @@
+{
+ "id": 962959,
+ "bug_id": 224008,
+ "attachment_id": 0,
+ "creation_time": "2017-12-10T21:52:25Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: ian\nDate: Sun Dec 10 21:51:27 UTC 2017\nNew revision: 326752\nURL: https://svnweb.freebsd.org/changeset/base/326752\n\nLog:\n  Save and restore r9 register in arm ubldr.  In old gcc 4.2, r9 was a callee-\n  saved register, but in arm EABI it may be either callee-saved or dedicated\n  to some special purpose (such as a TLS pointer).  It appears clang does not\n  treat it as a callee-saved register (instead using it as another work\n  register, similar to r12).\n\n  Another important side effect of these changes is that saving an extra\n  register in the push/pop statements keeps the stack aligned to an 8-byte\n  boundary during the self_reloc() call, as it always should have been.\n\n  As stated in the PR...\n\n  Essentially the important caller-saved registers are pushed (r0, r1, r9, lr)\n  before the relocation call, and popped after.  Then r8/r9 are saved as usual\n  for the syscall trampoline, and lr is stored in r8 (now free) as a\n  callee-saved value before calling into `main`.\n\n  The call to `main` can no longer be a tail call because we must restore r9\n  especially after main returns (although since we have used r8 to hold lr we\n  must also restore this).\n\n  PR:\t\t224008\n\nChanges:\n  head/stand/arm/uboot/start.S"
+}

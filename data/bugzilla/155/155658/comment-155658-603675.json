@@ -1,0 +1,8 @@
+{
+ "id": 603675,
+ "bug_id": 155658,
+ "attachment_id": 0,
+ "creation_time": "2012-09-19T11:13:33Z",
+ "creator": "longwitz@incore.de",
+ "text": "The last update of amr.c (SVN rev 236319) needs a correction, because\nthe controller should see the length of the buffer of the userland program:\n\n@@ -919,7 +919,7 @@\n\n     /* build the command */\n     ac-\u003eac_data = dp;\n-    ac-\u003eac_length = real_length;\n+    ac-\u003eac_length = au_length;\n     ac-\u003eac_flags |= AMR_CMD_DATAIN|AMR_CMD_DATAOUT;\n\n     /* run the command */\n\nWithout this patch some busy controllers only return zeros on every\namr_ioctl.\n\nTo do what is described in the comment \"Bug-for-bug compatibility ..\"\nwe should allocate a buffer in the case of userland length 0 too:\n\n@ -859,11 +859,11 @@\n\n     /* handle inbound data buffer */\n     real_length = amr_ioctl_buffer_length(au_length);\n+    if ((dp = malloc(real_length, M_AMR, M_WAITOK|M_ZERO)) == NULL) {\n+       error = ENOMEM;\n+       goto out;\n+    }\n     if (au_length != 0 \u0026\u0026 au_cmd[0] != 0x06) {\n-      if ((dp = malloc(real_length, M_AMR, M_WAITOK|M_ZERO)) == NULL) {\n-           error = ENOMEM;\n-           goto out;\n-      }\n       if ((error = copyin(au_buffer, dp, au_length)) != 0) {\n            free(dp, M_AMR);\n            return (error);\n\n\nAndreas Longwitz"
+}

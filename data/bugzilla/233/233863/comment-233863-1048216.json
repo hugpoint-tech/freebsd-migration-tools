@@ -1,0 +1,8 @@
+{
+ "id": 1048216,
+ "bug_id": 233863,
+ "attachment_id": 0,
+ "creation_time": "2019-04-23T16:38:40Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #26)\n\nMore iMag G3 (MPC750) notes . . .\n\nIn the non-debug kernel __mtx_lock_flags was inlined\nand that code normally leads to __mtx_lock_sleep not\nbeing called in the failures.\n\nMy machine check and data store interrupt notes were not\nmeant to imply debug always gets one or that non-debug\nalways gets the other.\n\nThe following seems to have eliminated the machine check\ntype of error, turning them all into data storage interrupts\nso far:\n\nIndex: /usr/src/sys/powerpc/aim/trap_subr32.S\n===================================================================\n--- /usr/src/sys/powerpc/aim/trap_subr32.S\t(revision 345758)\n+++ /usr/src/sys/powerpc/aim/trap_subr32.S\t(working copy)\n@@ -68,7 +68,7 @@\n\tlwzu\tsr,PM_SR(pmap); \\\n\tRESTORE_SRS(pmap,sr) \\\n\t/* Restore SR 12 */ \\\n-\tlwz\tsr,12*4(pmap);\tmtsr\t12,sr\n+\tlwz\tsr,12*4(pmap);\tmtsr\t12,sr; isync\n\n/*\n * Kernel SRs are loaded directly from kernel_pmap_\n@@ -799,6 +799,7 @@\n\tmfmsr\t%r3\n\tandi.\t%r3,%r3,~PSL_EE@l\n\tmtmsr\t%r3\n+\tisync\n/* Test AST pending: */\n\tlwz\t%r5,FRAME_SRR1+8(%r1)\n\tmtcr\t%r5\n\nBut the general failures remain. The above (or something\nlike it) may be necessary but is not sufficient."
+}

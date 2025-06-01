@@ -1,0 +1,8 @@
+{
+ "id": 973698,
+ "bug_id": 225260,
+ "attachment_id": 0,
+ "creation_time": "2018-01-22T09:05:15Z",
+ "creator": "matthias.pfaller@familie-pfaller.de",
+ "text": "anote is not a user:\ngetent passwd anote; echo $?\n2\nOur nsswitch.conf:\npasswd: files cache [success=return] ldap\n\nThe following small test program (copy/pasted from https://bugzilla.redhat.com/show_bug.cgi?id=988068) shows that the error actually seems to somewhere in getpwnam_r or library routines supporting it.\n\nAccording to the documentation getpwnam_r should return 0 and set the result pointer to NULL when the user does not exist.\n\ncat \u003egetpwnamtst.c \u003c\u003cEOF\n#include \u003csys/types.h\u003e\n#include \u003cpwd.h\u003e\n#include \u003cstdio.h\u003e\n\nint main(int argc, char* argv[]) {\n  struct passwd pwd;\n  char buf[4096];\n  int err;\n  struct passwd *res;\n\n  err = getpwnam_r(argv[1], \u0026pwd, buf, 4096, \u0026res);\n\n  printf(\"\u003c%s\u003e err: \u003c%d\u003e\\n\", argv[1], err);\n  return 0;\n}\nEOF\ncc -o getpwnamtst getpwnamtst.c\ngetpwnamtst anote\n./getpwnam anote\n\u003canote\u003e err: \u003c34\u003e\nBut sometimes I get:\n./getpwnam anote\n\u003canote\u003e err: \u003c0\u003e\n\nSo getpwnam sometimes returns fail and sometimes success for the same (non existant) user?\n\nThe pr should probably get reassigned to basesystem.\n\nMatthias"
+}

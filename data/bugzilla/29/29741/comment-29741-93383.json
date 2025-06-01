@@ -1,0 +1,8 @@
+{
+ "id": 93383,
+ "bug_id": 29741,
+ "attachment_id": 0,
+ "creation_time": "2002-02-06T15:10:26Z",
+ "creator": "tim@robbins.dropbear.id.au",
+ "text": "This patch (against RELENG_4) does solve the gdb -\u003e gdb -\u003e gdb -\u003e grandparent\nproblem.\n\nI don't think the \"if (curp-\u003ep_flag \u0026 P_TRACED)\" bit is even necessary at all;\nptrace()'ing an ancestor seems like a bad idea to me, regardless of whether\nyou're being traced or not.\n\n--- sys_process.c.old\tThu Feb  7 00:05:09 2002\n+++ sys_process.c\tThu Feb  7 01:27:36 2002\n@@ -203,7 +203,7 @@\n \tstruct proc *curp;\n \tstruct ptrace_args *uap;\n {\n-\tstruct proc *p;\n+\tstruct proc *p, *pp;\n \tstruct iovec iov;\n \tstruct uio uio;\n \tint error = 0;\n@@ -240,6 +240,12 @@\n \t\t/* Already traced */\n \t\tif (p-\u003ep_flag \u0026 P_TRACED)\n \t\t\treturn EBUSY;\n+\n+\t\t/* Can't trace an ancestor if you're being traced */\n+\t\tif (curp-\u003ep_flag \u0026 P_TRACED)\n+\t\t\tfor (pp = curp-\u003ep_pptr; pp != NULL; pp = pp-\u003ep_pptr)\n+\t\t\t\tif (pp == p)\n+\t\t\t\t\treturn EINVAL;\n \n \t\t/* not owned by you, has done setuid (unless you're root) */\n \t\tif ((p-\u003ep_cred-\u003ep_ruid != curp-\u003ep_cred-\u003ep_ruid) ||\n\n\nTim"
+}

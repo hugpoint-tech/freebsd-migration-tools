@@ -1,0 +1,8 @@
+{
+ "id": 604073,
+ "bug_id": 155736,
+ "attachment_id": 0,
+ "creation_time": "2011-03-20T23:40:01Z",
+ "creator": "mwisnicki+freebsd@gmail.com",
+ "text": "I have queues like this:\n\naltq on $lan_if cbq bandwidth 100Mb queue { qLocal, qExt }\nqueue qLocal bandwidth 0b cbq(default borrow)\nqueue qExt bandwidth 10Mb cbq { qExtFast, qExtSlow }\nqueue  qExtFast priority 7 bandwidth 80% cbq(borrow)\nqueue  qExtSlow priority 1 bandwidth 20% cbq(borrow red)\n\npass on $lan_if from \u003cslow\u003e to $internet queue qExtSlow\npass on $lan_if from $internet to \u003cslow\u003e queue qExtSlow\npass on $lan_if from !\u003cslow\u003e to $internet queue qExtFast\n\nLan is 100Mbps and Wan is 10Mbps. Above rules are supposed to slow down traffic coming from internet to \u003cslow\u003e hosts.\n\nUnfortunately it seems that borrowing does not work when parent queue (qExt) does not also borrow. But it should according to man and PF FAQ.\npfctl -sq -v shows 0 packets in qExt. If I reduce eg. qExtFast to 10% it goes down as if there was no borrow.\n\nGoogling reveals many similar posts dating back to FreeBSD-6, possibly bug is there since ALTQ introduction."
+}

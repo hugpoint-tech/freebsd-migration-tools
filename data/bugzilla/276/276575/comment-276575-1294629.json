@@ -1,0 +1,8 @@
+{
+ "id": 1294629,
+ "bug_id": 276575,
+ "attachment_id": 0,
+ "creation_time": "2024-01-29T17:15:21Z",
+ "creator": "chuck@FreeBSD.org",
+ "text": "The minidump shows:\n\nnt!WheaReportFatalHwErrorDeviceDriverEx+0xf5\nstorport!StorpWheaReportError+0x9d\nstorport!StorpMarkDeviceFailed+0x358\nstorport!StorPortNotification+0x91c\nstornvme!NVMeControllerInitPart2+0x226\nstornvme!NVMeControllerReset+0x124\nstornvme!NVMeControllerAsyncResetWorker+0x3f\nstorport!StorPortWorkItemRoutine+0x46\nnt!IopProcessWorkItem+0x135\nnt!ExpWorkerThread+0x105\nnt!PspSystemThreadStartup+0x55\nnt!KiStartSystemThread+0x28\n\nI am not a Windows developer neither in real life nor on TV, but I _think_ what this shows matches your description. The StorPortWorkItemRoutine looks to be a routine \"... often used to handle I/O completions, DPC processing, and other deferred work in storage miniport drivers.\"\n\nFollowing that call are calls to perform an NVMe Controller reset + initialization. One of the error handling strategies for I/O timeouts is to reset the NVMe Controller. So, perhaps an I/O timed out and the driver is resetting the NVMe device. After the reset / initialization, it appears to be reporting an error and BSoD'ing. What I don't know is if the \"HwError\" is reporting the I/O error/timeout or if there was a fatal error during device initialization.\n\nDid bhyve emit any errors (debug=\"yes\" in the vm-bhyve conf file)? Is there anything in dmesg that sheds some light (bhyve crash, I/O errors, etc.)?"
+}

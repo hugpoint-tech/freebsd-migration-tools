@@ -1,0 +1,8 @@
+{
+ "id": 888098,
+ "bug_id": 210924,
+ "attachment_id": 0,
+ "creation_time": "2016-07-14T14:26:18Z",
+ "creator": "kp@freebsd.org",
+ "text": "It's probably a little too late to get away with changing the altq keywords. This has hit 10.3 (and soon 11.0).\n\nIt should be possible to teach pfctl that both 'set timeout interval 10' and the new interval option are valid.\n\nI'm not really good with yacc, but this seems to work, even if it looks a little ugly:\ndiff --git a/sbin/pfctl/parse.y b/sbin/pfctl/parse.y\nindex e0cfa3d..9457a5b 100644\n--- a/sbin/pfctl/parse.y\n+++ b/sbin/pfctl/parse.y\n@@ -4460,6 +4460,19 @@ timeout_spec     : STRING NUMBER\n                        }\n                        free($1);\n                }\n+               | INTERVAL NUMBER\n+               {\n+                       if (check_rulestate(PFCTL_STATE_OPTION)) {\n+                               YYERROR;\n+                       }\n+                       if ($2 \u003c 0 || $2 \u003e UINT_MAX) {\n+                               yyerror(\"only positive values permitted\");\n+                               YYERROR;\n+                       }\n+                       if (pfctl_set_timeout(pf, \"interval\", $2, 0) != 0) {\n+                               YYERROR;\n+                       }\n+               }\n                ;\n\n timeout_list   : timeout_list comma timeout_spec optnl"
+}

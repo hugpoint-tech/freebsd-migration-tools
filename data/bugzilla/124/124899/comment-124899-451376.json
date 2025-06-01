@@ -1,0 +1,8 @@
+{
+ "id": 451376,
+ "bug_id": 124899,
+ "attachment_id": 0,
+ "creation_time": "2008-06-23T07:20:01Z",
+ "creator": "m-asama@ginzado.ne.jp",
+ "text": "Reboot hangs after ZFS snapshot directory lookup.\n\nIn zfsctl_snapdir_lookup(zfs_ctldir.c) line at 681, macro ZFS_ENTER\ncalled, but ZFS_EXIT missing case exists.\n\nWhen unmounting ZFS snapshot directory, zfs_umount(zfs_vfsops.c) line\nat 737 going infinite loop, because zfsvfs_t-\u003ez_op_cnt never to zero.\n\nFix: Apply the patch.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: [root@srv2 ~]# zpool create tank da0s1d\n[root@srv2 ~]# zfs create tank/vol01\n[root@srv2 ~]# zfs snapshot tank/vol01@snap01\n[root@srv2 ~]# df\nFilesystem  1K-blocks    Used   Avail Capacity  Mounted on\n/dev/da0s1a   5077038 3983846  687030    85%    /\ndevfs               1       1       0   100%    /dev\ntank          2047872     128 2047744     0%    /tank\ntank/vol01    2047872     128 2047744     0%    /tank/vol01\n[root@srv2 ~]# ls /tank/vol01/.zfs/snapshot/snap01\n[root@srv2 ~]# df\nFilesystem        1K-blocks    Used   Avail Capacity  Mounted on\n/dev/da0s1a         5077038 3983846  687030    85%    /\ndevfs                     1       1       0   100%    /dev\ntank                2047872     128 2047744     0%    /tank\ntank/vol01          2047872     128 2047744     0%    /tank/vol01\ntank/vol01@snap01   2047872     128 2047744     0%    /tank/vol01/.zfs/snapshot/snap01\n[root@srv2 ~]# cd /\n[root@srv2 /]# shutdown -r now\nhangs..."
+}

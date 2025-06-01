@@ -1,0 +1,8 @@
+{
+ "id": 1233689,
+ "bug_id": 267476,
+ "attachment_id": 237765,
+ "creation_time": "2022-10-31T17:33:25Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 237765\ntrigger NULL dereference in kernel LibAlias's SctpAlias()\n\nIn sys/netinet/libalias/alias_sctp.c, if SctpAlias()'s call to\nsctp_PktParser() returns SN_PARSE_ERROR_CHHL, and the IP_MF bit is\nset, then SctpAlias() ignores the error. However, sctp_PktParser()\ndoesn't always set assoc in this situation, in which case SctpAlias()\npasses the NULL assoc to ProcessSctpMsg(), which tries to dereference\nit.\n\nHere's a demo, via netgraph's ng_nat:\n\n# cc ng50a.c -lnetgraph\n# ./a.out\npanic: Fatal page fault at 0xffffffc0004fbf7e: 0x00000000000018\npanic() at panic+0x2a\npage_fault_handler() at page_fault_handler+0x1d6\ndo_trap_supervisor() at do_trap_supervisor+0x74\ncpu_exception_handler_supervisor() at cpu_exception_handler_supervisor+0x70\n--- exception 13, tval = 0x18\nProcessSctpMsg() at ProcessSctpMsg+0xc\nSctpAlias() at SctpAlias+0x158\nLibAliasOutLocked() at LibAliasOutLocked+0x176\nLibAliasOut() at LibAliasOut+0x42\nng_nat_rcvdata() at ng_nat_rcvdata+0x220\nng_apply_item() at ng_apply_item+0x130\nng_snd_item() at ng_snd_item+0x1bc\nngd_send() at ngd_send+0xf8\nsosend_generic() at sosend_generic+0x384\nsosend() at sosend+0x68\nkern_sendit() at kern_sendit+0x170\nsendit() at sendit+0x9c\nsys_sendto() at sys_sendto+0x40\nsyscallenter() at syscallenter+0xec\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xf6\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72\n--- syscall (133, FreeBSD ELF64, sys_sendto)"
+}

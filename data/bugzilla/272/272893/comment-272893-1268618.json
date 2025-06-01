@@ -1,0 +1,8 @@
+{
+ "id": 1268618,
+ "bug_id": 272893,
+ "attachment_id": 243798,
+ "creation_time": "2023-08-02T13:30:27Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 243798\nUDF image with a negative bsize in its LVD, causing panic when mounted\n\nudf_mountfs() reads the block size from the UDF disk:\n\n                        udfmp-\u003ebsize = le32toh(lvd-\u003elb_size);\n\nand passes it to bread():\n\n        if ((error = RDSECTOR(devvp, sector, udfmp-\u003ebsize, \u0026bp)) != 0) {\n\nFor an mdconfig'd image, the kernel tries to manipulate the page table\nat an address partially derived from this bsize, and can panic if it's\nnegative.\n\nI've attached a demo UDF image that says bsize is -1401851883.\nThis backtrace is from CURRENT on riscv64:\n# gunzip udf4b.iso.gz\n# mdconfig udf4b.iso\n# mount_udf /dev/md0 /mnt\npanic: usermode va ffffffbfb044c000\npanic() at panic+0x26\npmap_qremove() at pmap_qremove+0x8e\nvfs_vmio_truncate() at vfs_vmio_truncate+0x52\nallocbuf() at allocbuf+0x96\ngetblkx() at getblkx+0x28c\nbreadn_flags() at breadn_flags+0x56\nudf_mountfs() at udf_mountfs+0x4b8\nudf_mount() at udf_mount+0x19c\nvfs_domount_first() at vfs_domount_first+0x1cc\nvfs_domount() at vfs_domount+0x26c\nvfs_donmount() at vfs_donmount+0x82c\nsys_nmount() at sys_nmount+0x5e\nsyscallenter() at syscallenter+0xe0\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xf2\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72\n--- syscall (378, FreeBSD ELF64, nmount)"
+}

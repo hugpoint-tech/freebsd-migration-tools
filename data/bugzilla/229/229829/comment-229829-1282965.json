@@ -1,0 +1,8 @@
+{
+ "id": 1282965,
+ "bug_id": 229829,
+ "attachment_id": 0,
+ "creation_time": "2023-11-06T20:19:52Z",
+ "creator": "fbsd@opal.com",
+ "text": "This issue appears to be happening to me on 13.2-RELEASE-p1.\n\nFor me, I do suspend/resumes regularly. Mostly with no problems, but occasionally the suspend blocks at the point where you'd expect the power off and it requires a hard power off shutdown. (Or possibly it requires you to wait for the scrub to complete - obviously not practical when you're suspending a laptop.)\n\nI am experimenting with these additions in rc.suspend and rc.resume:\n\nrc.suspend:\n# pause any zpool scrub in progress\nzpool status | while read KEY VALUE; do\n        case \"$KEY\" in\n        pool:)  POOL=$VALUE ;;\n        scan:)  case \"$VALUE\" in\n                \"scrub in progress since \"*)\n                        echo \"$POOL\" \u003e\u003e/var/db/zpool.scrub.resume\n                        zpool scrub -p $POOL\n                        ;;\n                esac\n        esac\ndone\n\nrc.resume:\n# resume any scrub that was in progress on suspend\nif [ -f /var/db/zpool.scrub.resume ]; then\n\tcat /var/db/zpool.scrub.resume | while read POOL; do\n\t\tzpool scrub $POOL\n\tdone\n\trm /var/db/zpool.scrub.resume\nfi\n\nSomething similar may also be needed in rc.shutdown with a suitable rc.d/zpool_scrub_resume script for the shutdown/reboot sequence."
+}

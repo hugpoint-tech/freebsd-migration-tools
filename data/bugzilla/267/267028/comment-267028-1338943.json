@@ -1,0 +1,8 @@
+{
+ "id": 1338943,
+ "bug_id": 267028,
+ "attachment_id": 0,
+ "creation_time": "2024-12-12T21:15:56Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to George Mitchell from comment #220)\n\n+0x274 == +628 (at 0xffffffff80bc0ab4)\n\n1488                    if (strcmp(mod-\u003ename, name) == 0 \u0026\u0026\n  0xffffffff80bc0aa8 \u003c+616\u003e:   mov    0x18(%rbx),%rdi\n  0xffffffff80bc0aac \u003c+620\u003e:   mov    %r12,%rsi\n  0xffffffff80bc0aaf \u003c+623\u003e:   call   0xffffffff80cf0100 \u003cstrcmp\u003e\n  0xffffffff80bc0ab4 \u003c+628\u003e:   test   %eax,%eax\n  0xffffffff80bc0ab6 \u003c+630\u003e:   jne    0xffffffff80bc0aa0\n\u003clinker_load_dependencies+608\u003e\n\nI expect that kgdb would expose strcmp in the backtrace, as\nit does a better job generally. (The original Fatal Trap\nnotice reported the address in strcmp as well.)\n\nThis suggests problems for the value in mp-\u003emd_cval (via modname)\nas of the strcmp call (based on where the Fatal Trap was reported\nto be at in strcmp).\n\nNote the mod-\u003ename argument to strcmp .\n\nNote that if mod-\u003e could not be dereferenced, the failure would be\nbefore strcmp was called. Thus it looks to be the -\u003ename value\nthat strcmp ends up using that lead to the failure.\n\nSame sort of thing as for comment #82 (but a separate in-line).\n\nin strcmp it showed:\n\n   0xffffffff80cf0110 \u003c+16\u003e:\tmovzbl (%rdi,%rcx,1),%eax\n\nSo if you ever get a chance to have it report the %rdi value\non an actual failure, the value may prove interesting.\n\nOf course, none of this gets far enough to suggest why the\nvalue of mod-\u003ename would be messed up."
+}

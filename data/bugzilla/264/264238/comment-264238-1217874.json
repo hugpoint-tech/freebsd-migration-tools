@@ -1,0 +1,8 @@
+{
+ "id": 1217874,
+ "bug_id": 264238,
+ "attachment_id": 235029,
+ "creation_time": "2022-07-02T05:23:07Z",
+ "creator": "cy@FreeBSD.org",
+ "text": "Created attachment 235029\nTry ext IE first\n\n(In reply to J.R. Oldroyd from comment #164)\n\nHaving had a chance to study this tonight, looks like you've found the bug. The difference between wpa_bss_get_ie() and wpa_bss_get_ie_ext() is that the latter returns and extended IE only if:\n\n                if (element-\u003eid == WLAN_EID_EXTENSION \u0026\u0026                \\\n                    element-\u003edatalen \u003e 0 \u0026\u0026                             \\\n                    element-\u003edata[0] == (extid))\n\nWLAN_EID_EXT_CAPAB can reside in its own element or within WLAN_EID_EXTENSION. The attached patch is more appropriate.\n\nLooking for WLAN_EID_EXT_CAPAB within WLAN_EID_EXT_CAPAB *only* will probably cause other bugs. We look for the extended capability in the EID extension first otherwise continue as before. Addresses the problem more elegantly.\n\nThanks for the excellent sleuthing and pointing to an elegant solution!"
+}

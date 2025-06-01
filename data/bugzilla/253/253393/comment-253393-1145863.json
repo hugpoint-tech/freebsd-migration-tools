@@ -1,0 +1,8 @@
+{
+ "id": 1145863,
+ "bug_id": 253393,
+ "attachment_id": 222314,
+ "creation_time": "2021-02-10T03:38:49Z",
+ "creator": "a.mitrohin@zs.ttk.ru",
+ "text": "Created attachment 222314\nfix incorrect length comparison\n\nAn example snmp response that cannot be decoded and is silently discarded. \n\n02:19:20.771922 IP (tos 0x0, ttl 29, id 43952, offset 0, flags [none], proto UDP (17), length 63)\n    10.22.16.2.161 \u003e 10.7.22.69.54275: [udp sum ok]  { SNMPv2c { GetResponse(16) R=1248693045  tooBig[errorIndex==0] } }\n        0x0000:  001c c05d ea0f 001d 719b c280 0800 4500\n        0x0010:  003f abb0 0000 1d11 b79a 0a16 1002 0a07\n        0x0020:  1645 00a1 d403 002b b2fe 3082 001f 0201\n        0x0030:  0104 0670 7562 6c69 63a2 8200 1002 044a\n        0x0040:  6d8b 3502 0101 0201 0030 8200 00\n\nAs a result, my program does not see the \"tooBig\" error, and does not repeat the request with a reduced \"max_repetitions\" value. \n\nUltimately, the request ends up with an SNMPERR_TIMEOUT error.\n\n\nA patch that fixes this: \n\n--- snmplib/asn1.c.orig 2020-08-15 04:41:47.000000000 +0700\n+++ snmplib/asn1.c      2021-02-10 02:51:55.625498000 +0700\n@@ -348,7 +348,7 @@\n          * long length; first byte is length of length (after masking high bit)\n          */\n         len_len = (int) ((*pkt \u0026 ~0x80) + 1);\n-        if ((int) pkt_len \u003c= len_len )\n+        if ((int) pkt_len \u003c len_len )\n             return NULL;           /* still too short for length and data */\n\n         /* now we know we have enough data to parse length */"
+}

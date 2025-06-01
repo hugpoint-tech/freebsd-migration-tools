@@ -1,0 +1,8 @@
+{
+ "id": 994141,
+ "bug_id": 228501,
+ "attachment_id": 0,
+ "creation_time": "2018-05-26T13:20:08Z",
+ "creator": "freebsd@mhka.no",
+ "text": "Update:\n\nIf I manually remove all IPv4 addresses so that only IPv6 addresses remain (or even if I remove ::1 too, but leave fe80::1%lo0 there) before stopping the jail, I get a similar kernel panic as previously (see new attachment: panic_backtrace_ipv6.txt)\n\nI managed to crash the system spectacularly by removing all IP addresses before stopping the jail:\n# jexec devsamba ifconfig lo0 inet6 ::1 -alias\n# jexec devsamba ifconfig lo0 inet6 fe80::1%lo0 -alias\n# jexec devsamba ifconfig lo0 -alias\n# service jail stop devsamba\n\nFatal trap 9: general protection fault while in kernel mode\ncpuid = 7; apic id = 07\ninstruction pointer     = 0x20:0xffffffff80ca2032\nstack pointer           = 0x0:0xfffffe0077b96770\nframe pointer           = 0x0:0xfffffe0077b96840\ncode segment            = base 0x0, limit 0xfffff, type 0x1b\n                        = DPL 0, pres 1, long 1, def32 0, gran 1\nprocessor eflags        = interrupt enabled, resume, IOPL = 0\ncurrent process         = 0 (thread taskq)\n\n## This was printed in console, but not part of dump:\n[ thread pid 0 tid 100015 ]\nStopped at rt_foreach_fib_walk_del+0x1c2: call *%eax\n\nI have the default FIB configuration (one fib, which is fib 0).\n\n=====\n\nSummary; all actions taken inside the jail, followed by stopping the jail:\n\n* Manually remove all IPv4 addresses (but leaving IPv6 addresses): panic (negative ref count)\n* Manually remove all IP addresses: panic (general protection fault)\n* Just stopping the jail: panic (negative ref count)"
+}

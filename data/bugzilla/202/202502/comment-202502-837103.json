@@ -1,0 +1,8 @@
+{
+ "id": 837103,
+ "bug_id": 202502,
+ "attachment_id": 160122,
+ "creation_time": "2015-08-19T23:38:57Z",
+ "creator": "avos@freebsd.org",
+ "text": "Created attachment 160122\nFix the issue and remove workaround from the wpi driver\n\nIn case, when interface is recreated (create -\u003e destroy -\u003e create), some values (like ic-\u003eic_curchan) are left unchanged and may be incompatible with new mode.\n\nAs an example:\n1) ifconfig wlan0 create wlandev \u003cdev\u003e wlanmode ahdemo channel \u003csome NOADHOC channel\u003e\n2) ifconfig wlan0 destroy\n3) ifconfig wlan0 create wlandev \u003cdev\u003e wlanmode ibss ssid ssid\n4) ifconfig wlan0 up\n\nmay result in incorrect ic-\u003eic_curchan value passed into driver and may lead to crash (for example, wpi firmware throws an error here).\n\nThis patch adds a check into ieee80211_start_locked() and resets ic-\u003eic_curchan to \u0026ic-\u003eic_channels[0] when the channel is incompatible with current mode."
+}

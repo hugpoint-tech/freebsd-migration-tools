@@ -1,0 +1,8 @@
+{
+ "id": 1110812,
+ "bug_id": 247617,
+ "attachment_id": 0,
+ "creation_time": "2020-06-28T14:36:46Z",
+ "creator": "markus@stoffdv.at",
+ "text": "The following error message is logged when deleting ::1/128 from lo0 without explicitly adding it to the interface:\n\n  in6_purgeaddr: err=65, destination address delete failed\n\nThis message seems to be issued at /usr/src/sys/netinet6/in6.c, line 1311 (12.1-RELEASE).\n\nIt only happens with the implicitly generated ::1/128 address on the loopback interface. If ::1/128 has been assigned explicitly (see examples below), no message is logged. The issue applies to the host system (running the 12.1-RELEASE generic kernel) as well as vnet jails. Here is how to reproduce the issue:\n\nOn the host system:\n\n  ifconfig lo0 inet6 ::1/128 delete   # after boot, error logged\n  ifconfig lo0 inet6 ::1/128\n  ifconfig lo0 inet6 ::1/128 delete   # no error logged\n\nIn a jail:\n\n  # Reproducing the error\n  jail -c -n failjail vnet persist\n  jexec failjail ifconfig lo0 up\n  jexec failjail ifconfig lo0 inet6 ::1/128 delete   # error logged\n  jail -r failjail\n\n  # Avoiding the error\n  jail -c -n okjail vnet persist\n  jexec okjail ifconfig lo0 inet6 ::1/128            # don't use 'up'\n  jexec okjail ifconfig lo0 inet6 ::1/128 delete     # no error logged\n  jail -r okjail"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1346418,
+ "bug_id": 250906,
+ "attachment_id": 0,
+ "creation_time": "2025-01-26T17:26:39Z",
+ "creator": "ml@netfence.it",
+ "text": "I think I found out what the problem is.\n\nAs I said, the process that locks is \"/usr/local/bin/tdbbackup -s .copy.tdb /var/db/samba4/private/secrets.ldb -r\".\nLooking at its main(), it uses getopt to interpret all the options; however getopt stops at \"/var/db/samba4/private/secrets.ldb\", so \"-r\" is never considered.\n\nSince \"-r\" is needed to open the databases in read-only mode, the process tries to open them read/write and locks up since they are used by the Samba processes.\n\nThe correct way to call tdbbackup would be either\n\"/usr/local/bin/tdbbackup -s .copy.tdb -r /var/db/samba4/private/secrets.ldb\"\nor\n\"/usr/local/bin/tdbbackup -r -s .copy.tdb /var/db/samba4/private/secrets.ldb\"\n\n\n\n\nSo the problem lies in /usr/local/lib/python3.11/site-packages/samba/tdb_util.py, where we find:\n    tdbbackup_cmd = [toolpath, \"-s\", \".copy.tdb\", file1]\n    if readonly:\n        tdbbackup_cmd.append(\"-r\")\n\nThis should be changed to something like:\n    if readonly:\n        tdbbackup_cmd = [toolpath, \"-r\", \"-s\", \".copy.tdb\", file1]\n    else:\n        tdbbackup_cmd = [toolpath, \"-s\", \".copy.tdb\", file1]\n\nWith this change, \"samba-tool domain backup offline\" goes on and possibly succeed.\n\n\n\nNow, before I provide a patch, I only got one doubt...\nWe don't change neither tdb_util.py, nor tdbbackup.c in our ports, so, unless our getopt works differently than Linux's, this is not a FreeBSD problem and should be reported upstream, instead."
+}

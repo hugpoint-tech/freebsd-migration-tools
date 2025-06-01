@@ -1,0 +1,8 @@
+{
+ "id": 374188,
+ "bug_id": 108607,
+ "attachment_id": 0,
+ "creation_time": "2007-02-01T04:26:37Z",
+ "creator": "tim@kientzle.com",
+ "text": "\u003e After updating all boxes to 6.2, backup scripts don't work:\n\u003e \n\u003e # tar -r -f /home/backup/pgsql.tar /home/backup/pgsql\n\u003e INTERNAL ERROR: Function 'archive_read_next_header' invoked with archive structure in state 'new', should be in state 'header/data'\n\u003e Segmentation fault: 11 (core dumped)\n\nThese error messages in libarchive are intended to point out\nbugs in programs that use libarchive.  In this case, bsdtar has\ntried to open an archive file with libarchive, which has\nfailed because the file is not a valid archive.  bsdtar is\nnot detecting this error and is making requests to libarchive\nthat are nonsensical.\n\n\u003e # touch file.tar\n\u003e # tar -r -f file.tar /COPYRIGHT\n\nI've never been entirely comfortable with this usage, because\n\"touch file.tar\" does not create a legal tar archive, so\nit doesn't really make sense to me to \"add a file to\nan archive\" when the archive is invalid.  (This is why\narchive_read_open() fails above; an empty file is not\na legal tar archive.)\n\nIn particular, bsdtar can actually append to several different\narchive formats; for -r it first tries to determine the format\nof the archive it is appending to, which always fails if the\narchive file is empty or non-existent.\n\nBut I do get a lot of complaints about this, so I put together the\nattached patch for usr.bin/tar/write.c.  This changes bsdtar's\nhandling for -r so that it will silently try -c if the\nfile is empty or non-existent.  Let me know if it works\nfor you.\n\nTim Kientzle\n"
+}

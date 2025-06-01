@@ -1,0 +1,8 @@
+{
+ "id": 79652,
+ "bug_id": 25543,
+ "attachment_id": 0,
+ "creation_time": "2001-03-05T15:05:09Z",
+ "creator": "colle@krtkg1.rug.ac.be",
+ "text": "The core dump is due to accessing uninitialized memory:\n\npkg_perform(char **pkgs)\n{\n    char **matched;\n    char *tmp;\n    int err_cnt = 0;\n    int i, errcode;\n\n    signal(SIGINT, cleanup);\n\n    /* Overriding action? */\n    if (CheckPkg) {\n        char buf[FILENAME_MAX];\n\n        snprintf(buf, FILENAME_MAX, \"%s/%s\", tmp, CheckPkg);\n        return abs(access(buf, R_OK));\n        /* Not reached */\n    }\n\n\n\n\nthe variable tmp is never initialised:\nadd the follwoing line:\n        tmp = getenv(PKG_DBDIR)?getenv(PKG_DBDIR):DEF_LOG_DIR;\n\nso the code looks like:\n\npkg_perform(char **pkgs)\n{\n    char **matched;\n    char *tmp;\n    int err_cnt = 0;\n    int i, errcode;\n\n    signal(SIGINT, cleanup);\n\n    /* Overriding action? */\n    if (CheckPkg) {\n        char buf[FILENAME_MAX];\n        tmp = getenv(PKG_DBDIR)?getenv(PKG_DBDIR):DEF_LOG_DIR;\n\n        snprintf(buf, FILENAME_MAX, \"%s/%s\", tmp, CheckPkg);\n        return abs(access(buf, R_OK));\n        /* Not reached */\n    }\n\n\n\nNow it flies again....\n\n\nChristophe Colle\n\n     | \\       =============================================================  \n     |  \\      Colle Christophe                    Phone: +32-(0)3-886.39.83\n     |   \\     mail: colle@krtkg1.rug.ac.be   http://krtkg1.rug.ac.be/~colle\n     +-----          \n     |\n ----------+   When I'm in Ghent, then I'm probably at Anouk's place..\n  \\________|   =======     Radiotherapy Department, Ghent      ============="
+}

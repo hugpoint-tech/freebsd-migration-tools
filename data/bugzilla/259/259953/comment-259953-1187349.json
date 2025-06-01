@@ -1,0 +1,8 @@
+{
+ "id": 1187349,
+ "bug_id": 259953,
+ "attachment_id": 0,
+ "creation_time": "2021-11-20T18:48:42Z",
+ "creator": "gerrit@weinberg2.de",
+ "text": "minidlna comes with a \"rescan\" command for rc.d. However, this reads\n\nrescan_cmd=\"$command -R -u $minidlna_uid -f /usr/local/etc/minidlna.conf\"\n\nThis is in line with the manpage, but obviously wrong when comparing to the commandline help (minidlnad -h):\n\n        -r forces a rescan\n        -R forces a rebuild\n\nSo \"-R\" forces a rebuild of the database while a rescan uses \"-r\". I verified that this is what is actually happening by checking the database file and the time each command takes (rescan is fast and just adds new stuff, rebuild takes much longer and also removed outdated entries). Thus I propose to change the rc.d script to contain\n\nextra_commands=\"rescan rebuild\"\nrescan_cmd=\"$command -r -u $minidlna_uid -f /usr/local/etc/minidlna.conf\"\nrebuild_cmd=\"$command -R -u $minidlna_uid -f /usr/local/etc/minidlna.conf\"\n\nFurthermore, as this is not handled via signals on the running process, it might be useful to force a stop command before doing either rescan or rebuild."
+}

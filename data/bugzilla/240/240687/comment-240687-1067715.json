@@ -1,0 +1,8 @@
+{
+ "id": 1067715,
+ "bug_id": 240687,
+ "attachment_id": 0,
+ "creation_time": "2019-09-19T14:56:08Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Suppose one creates a simple jail:\n\njail -c name=foo command=/bin/sh\n\nIt will inherit the default cpuset from the parent jail.  You can use cpuset -j to shrink this set:\n\n% cpuset -g -j 1\njail 1 mask: 0, 1, 2, 3, 4, 5, 6, 7\n\n% cpuset -g -j 1 -r\njail 1 mask: 0, 1, 2, 3, 4, 5, 6, 7\n\n% cpuset -j 1 -l 0-3\n\n% cpuset -g -j 1\njail 1 mask: 0, 1, 2, 3\n\nHowever, once you've shrunk the set, you can never expand it.  The reason is that the jail set is its own root, so the check against the 'root' mask in cpuset_modify() fails with EINVAL.  I think this is perhaps not the intended behavior.  I think that when setting the cpuset of a jail you want to apply the check against the parent jail's mask, not the jail's own mask.\n\nIn particular, this prevents using cpuset -j to dynamically manage the CPUs available to jails.  The alternative is to leave the jails unrestricted and manage the processes in the jail (or create dedicated, named cpusets for each jail and manage those) which is not as convenient for tools operating at the abstraction level of a jail.\n\nOne possibility might be to have cpuset_getroot() always skip over the passed in set to its parent at least once before checking for the ROOT flag (or fix callers to pass set-\u003ecs_parent instead of set), but I haven't looked at what other implications that might have."
+}

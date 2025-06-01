@@ -1,0 +1,8 @@
+{
+ "id": 829439,
+ "bug_id": 201183,
+ "attachment_id": 0,
+ "creation_time": "2015-06-28T23:16:47Z",
+ "creator": "sbruno@FreeBSD.org",
+ "text": "(In reply to Andrew Turner from comment #2)\nYeah, was looking at that, but need the maintainer or someone who knows this header file better than I.  A short attempt (at least a pointer to the right locations), looks something like this:\n\n--- gcconfig.h.orig     2014-06-03 06:08:02.000000000 +0000\n+++ gcconfig.h  2015-06-28 23:10:15.475514000 +0000\n@@ -97,7 +97,7 @@\n # endif\n # if defined(__aarch64__)\n #    define AARCH64\n-#    if !defined(LINUX)\n+#    if !defined(LINUX) || !defined(FREEBSD)\n #      define NOSYS\n #      define mach_type_known\n #    endif\n@@ -402,6 +402,10 @@\n #   define I386\n #   define mach_type_known\n # endif\n+# if defined(FREEBSD) \u0026\u0026 defined(__aarch64__)\n+#   define AARCH64\n+#   define mach_type_known\n+# endif\n # if defined(FREEBSD) \u0026\u0026 (defined(__amd64__) || defined(__x86_64__))\n #   define X86_64\n #   define mach_type_known\n@@ -1998,6 +2022,16 @@\n       extern char _end[];\n #     define DATAEND ((ptr_t)(\u0026_end))\n #   endif\n+#   ifdef FREEBSD\n+#     define OS_TYPE \"FREEBSD\"\n+#     define DYNAMIC_LOADING\n+#     define HEURISTIC2\n+      extern char etext[];\n+      extern int __data_start[];\n+#     define DATASTART ((ptr_t)__data_start)\n+      extern void *__stack_base__;\n+#     define STACKBOTTOM ((ptr_t)__stack_base__)\n+#   endif\n #   ifdef NOSYS\n       /* __data_start is usually defined in the target linker script.   */\n       extern int __data_start[];"
+}

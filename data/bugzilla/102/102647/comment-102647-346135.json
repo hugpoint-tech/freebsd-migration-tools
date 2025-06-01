@@ -1,0 +1,8 @@
+{
+ "id": 346135,
+ "bug_id": 102647,
+ "attachment_id": 0,
+ "creation_time": "2006-08-29T17:40:16Z",
+ "creator": "steinex@nognu.de",
+ "text": "Thanks to Max Laier for examining this, I'll just paste him:\n\nUsing pf stateful rules for inet6 fails for connections originating from\nthe firewall itself to a service running on the same box.  Culprit seems\nto be interface selection in inet6 (switching between the interface that\nhas the address configured and lo0).\n\ntcpdump on pflog0 shows that the initial SYN is coming from bge0 (See below\nfor ruleset used).  The reply then comes via lo0 and matches the state (if\nstate-policy is floating).  The third packet (again via bge0) then does no\nlonger match the state - however:\n\n17:51:17.594100 rule 3/0(match): pass in on bge0: 3000::1.54335 \u003e 3000::1.22:\nS 3551126931:3551126931(0) win 65535 \u003cmss 1440,nop,wscale 1,nop,nop,timestamp\n2188256 0,sackOK,eol\u003e\n\n17:51:17.594150 rule 3/0(match): pass out on lo0: 3000::1.22 \u003e 3000::1.54335:\nS 3700289867:3700289867(0) ack 3551126932 win 65535 \u003cmss 1440,nop,wscale\n1,nop,nop,timestamp 2188256 2188256,sackOK,eol\u003e\n\n17:51:17.594157 rule 2/0(match): block in on bge0: 3000::1.22 \u003e 3000::1.54335:\nS 3700289867:3700289867(0) ack 3551126932 win 65535 \u003cmss 1440,nop,wscale\n1,nop,nop,timestamp 2188256 2188256,sackOK,eol\u003e\n\nHow-To-Repeat: Use this ruleset:\n\npass quick on lo0 all\npass quick on bge0 inet all\nblock drop log all\npass in log-all on bge0 inet6 proto tcp from any to 3000::1 port = ssh flags S/SA keep state\n\nThen try to open an inet6-connection to a service running on the firewall\nitself from the firewall itself."
+}

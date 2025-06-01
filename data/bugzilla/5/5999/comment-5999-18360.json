@@ -1,0 +1,8 @@
+{
+ "id": 18360,
+ "bug_id": 5999,
+ "attachment_id": 0,
+ "creation_time": "1998-03-14T06:50:01Z",
+ "creator": "robert@cyrus.watson.org",
+ "text": "\nOn attempting to use kadmin, get a linking error.  Specifically, DES is not\nlinked, so crypt cannot be used by Kerberos.  This is a serious error as\nit is now not possible to create/delete/modify kerberos identities using the\nkadmin administrative tool.  This is not ideal if you want to add a user, say.\n\nFix: \n\nIn src/kerberosIV/usr.bin/kadmin/Makefile,\n\nLDADD=          -L${ROKENOBJDIR} -lroken -L${SLOBJDIR} -lsl \\\n                -L${ACLOBJDIR} -lacl -L${KADMOBJDIR} -lkadm \\\n                -L${KDBOBJDIR} -lkdb -L${KRBOBJDIR} -lkrb \\\n                -ldes -lcom_err -lreadline\n\nshould read:\n\nLDADD=          -L${ROKENOBJDIR} -lroken -L${SLOBJDIR} -lsl \\\n                -L${ACLOBJDIR} -lacl -L${KADMOBJDIR} -lkadm \\\n                -L${KDBOBJDIR} -lkdb -L${KRBOBJDIR} -lkrb \\\n                -ldes -lcrypt -lcom_err -lreadline\n\nI have compiled and tested this change on my own machines.\nI believe that -CURRENT also suffers from this problem, but have not\nverified it on a recent version of -CURRENT (only until 980107).\nHow-To-Repeat: \ncyrus:~\u003e kadmin\nWelcome to the Kerberos Administration Program, version 2\nType \"help\" if you need it.\nkadmin: get robert\n/usr/libexec/ld.so: Undefined symbol \"_crypt\" called from kadmin:/usr/lib/libkrb.so.3.0 at 0x200412f8\ncyrus:~\u003e \n\nAny command that requires authentication fails."
+}

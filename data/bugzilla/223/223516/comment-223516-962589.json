@@ -1,0 +1,8 @@
+{
+ "id": 962589,
+ "bug_id": 223516,
+ "attachment_id": 0,
+ "creation_time": "2017-12-08T09:18:34Z",
+ "creator": "wosch@FreeBSD.org",
+ "text": "I think the problem is in the function\n\nline 456:\n   456                  eval \"$cattool $manpage | $pipeline\"\n   457                  ret=$?\n\nwe are checking only the status of the last command, which is the $PAGER (e.g. less(1))\n\neval '/usr/bin/zcat /home/wosch/man/man7/salt.7.gz | tbl | groff -S -P-h -Wall -mtty-char -man  -Tascii -P-c | less'\n\nand ignore the exit status of groff (and tbl, zcat - any command in the pipeline)\n\nThe bash has an option to fail on pipe errors\n\n$ set -o pipefail\n\nunfortunately, our /bin/sh implementation does not have this feature.\n\n\nThere are workaround for shell which don’t check the pipe status, as described in\nhttps://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another\n\n(((((exec 3\u003e\u0026- 4\u003e\u0026-; someprog); echo $? \u003e\u00263) | filter \u003e\u00264) 3\u003e\u00261) | (read xs; exit $xs)) 4\u003e\u00261\n\nbut this looks bizarre and you have to do it for every command in the pipe line."
+}

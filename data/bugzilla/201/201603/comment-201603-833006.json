@@ -1,0 +1,8 @@
+{
+ "id": 833006,
+ "bug_id": 201603,
+ "attachment_id": 0,
+ "creation_time": "2015-07-21T07:02:12Z",
+ "creator": "mat@FreeBSD.org",
+ "text": "As you're asking portmgr for review (for some reason, it's not assigned to the maintainer...)\n\nYou should simplify a lot of things.\n\n+.if ${PORT_OPTIONS:MTEST}\n+USES+=\tperl5\n+.endif\n+\n\n-\u003e \n\nTEST_USES=perl5\n\n\n\n+post-build:\n+\tcd ${WRKSRC} \u0026\u0026 LD_LIBRARY_PATH=\"`pwd`/library\" programs/test/selftest\n+.if ${PORT_OPTIONS:MTEST}\n+\tcd ${WRKSRC} \u0026\u0026 ${SETENV} ${MAKE_ENV} LD_LIBRARY_PATH=\"`pwd`/library\" ${GMAKE} ${MAKE_FLAGS} ${MAKEFILE} ${_MAKE_JOBS} ${MAKE_ARGS} check\n+.endif\n\n\n-\u003e \n\nnot clear if programs/test/selftest should be only built if WITH=TEST or not, but what you wrote above translates to:\n\npost-build:\n\tcd ${WRKSRC} \u0026\u0026 LD_LIBRARY_PATH=\"`pwd`/library\" programs/test/selftest\npost-build-TEST-on:\n\tcd ${WRKSRC} \u0026\u0026 ${SETENV} ${MAKE_ENV} LD_LIBRARY_PATH=\"`pwd`/library\" ${GMAKE} ${MAKE_FLAGS} ${MAKEFILE} ${_MAKE_JOBS} ${MAKE_ARGS} check\n\n\n\npost-install:\n.if ${PORT_OPTIONS:MDOCS}\n        ${MKDIR} ${STAGEDIR}${DOCSDIR}\n.for i in ${DOCFILES}\n        ${INSTALL_DATA} ${WRKSRC}/${i} ${STAGEDIR}${DOCSDIR}\n.endfor\n.endif\n\n-\u003e \n\npost-install-DOCS-on:\n        ${MKDIR} ${STAGEDIR}${DOCSDIR}\n.for i in ${DOCFILES}\n        ${INSTALL_DATA} ${WRKSRC}/${i} ${STAGEDIR}${DOCSDIR}\n.endfor\n\n\n\n.if ${ARCH} == \"powerpc\"\nBROKEN=         Does not compile on powerpc\n.endif\n\n-\u003e\n\nBROKEN_powerpc=Does not compile on powerpc\n\nAnd there, you don't need to include bsd.port.options.mk any more."
+}

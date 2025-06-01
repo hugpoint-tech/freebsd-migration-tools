@@ -1,0 +1,8 @@
+{
+ "id": 1266838,
+ "bug_id": 272585,
+ "attachment_id": 243475,
+ "creation_time": "2023-07-19T00:40:13Z",
+ "creator": "jfc@mit.edu",
+ "text": "Created attachment 243475\nmmap-ed stack with an inaccessible gap\n\nIf I call mmap with MAP_GROWSDOWN|MAP_STACK and use mprotect to mark the 32nd page from the top inaccessible (PROT_NONE), lower addresses in the region also become inaccessible.  This is an odd thing to do, I agree, but it happened in a real program.\n\nPut another way: I call mmap with stack hints and get pages 0-255.  Before touching the memory I call mprotect(PROT_NONE) on page 224.  Now pages 1-223 are also inaccessible.\n\nThe target of mprotect has to be 32 pages down, not 31 or 33, at least with my system's configuration.  Perhaps 32 pages is the initial mapped size of a stack region and when the stack grows it clones the page attributes of the lowest address.\n\nI attached an example that crashes reading an address that should be valid.  It works on Mac OS (without the unsupported MAP_GROWSDOWN|MAP_STACK flags) and Linux.\n\n(This is simplified from a larger program that allocates a highly aligned 1 MB stack by mapping a larger region and using mprotect to install guard pages. It is not the \"right\" way to do it when MAP_ALIGNED is available.  The program was written first on Linux which doesn't have that option.)\n\nReproduced on 13.2-STABLE/amd64, 13.2-STABLE/aarch64, 14-CURRENT/amd64."
+}

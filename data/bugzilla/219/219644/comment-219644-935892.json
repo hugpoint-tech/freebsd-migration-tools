@@ -1,0 +1,8 @@
+{
+ "id": 935892,
+ "bug_id": 219644,
+ "attachment_id": 183041,
+ "creation_time": "2017-05-29T21:44:36Z",
+ "creator": "freebsd@ihead.ru",
+ "text": "Created attachment 183041\ntest file (size large than 32768 bytes)\n\nFreeBSD freebsd11.build.ihead.ru 11.0-RELEASE-p8 FreeBSD 11.0-RELEASE-p8 #0: Wed Feb 22 06:12:04 UTC 2017     root@amd64-builder.daemonology.net:/usr/obj/usr/src/sys/GENERIC  amd64\n\nProxy requests from nginx to apache.\nIf apache response more than 32768 bytes (with headers) the request longed on ~0.1 second.\n\nHow to reproduce.\n1. In httpd.conf add\nListen 127.0.0.1:80\nMaxClients 1\n\n2. Add ihead.txt in DocumentRoot (/usr/local/www/apache24/data).\nIt may be any file larger than 32768 bytes.\n\n3. In nginx.conf in server {...} add \nlocation /ihead.txt {\nproxy_pass http://127.0.0.1:80;\n}\n\n4. find nginx and apache PIDs\nps -aux | grep nginx\nps -aux | grep httpd\n\n5. run ktrace on finded PIDs \nktrace -p 42260 -t cfinpstuwy -f nginx\nktrace -p 42184 -t cfinpstuwy -f apache\n\n6. Request http://IP_nginx/ihead.txt\n\n7. Stop ktrace\nktrace -C\n\n8. Make dumps readable\nkdump -E -f nginx \u003e nginx.txt\nkdump -E -f apache \u003e apache.txt\n\n9. There is +0.1 second delay\n 42260 nginx    0.004903 CSW   stop kernel \"kqread\"\n 42260 nginx    0.110929 CSW   resume kernel \"kqread\" \n \n 42184 httpd    0.000591 CSW   stop kernel \"select\"\n 42184 httpd    0.199081 CSW   resume kernel \"select\"\n\n\nProblem not reproduced on FreeBSD 10."
+}

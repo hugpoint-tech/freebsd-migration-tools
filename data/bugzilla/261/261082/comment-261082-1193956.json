@@ -1,0 +1,8 @@
+{
+ "id": 1193956,
+ "bug_id": 261082,
+ "attachment_id": 0,
+ "creation_time": "2022-01-10T11:13:16Z",
+ "creator": "dor.bsd@xm0.uk",
+ "text": "Hi,\n\nUnfortunately this is because GitHub archives are not fit for purpose.\n\nSpecifically, the issue here is that GitHub archives are generated on the fly by `git archive` and then cached for some period of time. `git archive` does a number of things outside of just generating the archives (tar.gz), such as search and replace in files for specific format strings.\n\nIn this case, the string causing the problem is at https://github.com/containerd/containerd/blob/v1.5.4/vendor/k8s.io/client-go/pkg/version/base.go#L58.\n\nIt feels like there are GitHub backends running different versions of Git, so each of them is generating slightly different strings for that file (some generate a hash with N characters, others a hash with N-1 characters), which obviously means we get conflicting checksums on the final generated archive sometimes. See https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=258724#c2 for an example of what's being generated.\n\nFuture versions of containerd (1.6.0+) fix this by using a newer version of the client-go dependency which uses the full version of the commit hash (%H) instead of an abbreviated version (%h).\n\nFor now, it's probably best to just fix the checksum locally for your build as I'm not sure what my options for fixing this in a more permanent way are, and if I \"fix\" the port now, I'll just have \"fix\" it again when GitHub decides its time to break things once again.\n\n-David"
+}

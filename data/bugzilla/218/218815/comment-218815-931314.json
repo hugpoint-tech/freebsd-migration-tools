@@ -1,0 +1,8 @@
+{
+ "id": 931314,
+ "bug_id": 218815,
+ "attachment_id": 0,
+ "creation_time": "2017-04-22T21:05:32Z",
+ "creator": "brnrd@freebsd.org",
+ "text": "Hi Dewayne,\n\nThe issue seems to lie in reading stdin with OpenSSL.\n\nGenerate a test file\n\u003e $ dd if=/dev/zero bs=8m count=64 of=test.zero\n\u003e 536870912 bytes transferred in 0.404793 secs (1326286036 bytes/sec)\n\nUse openssl internal read/write\n\u003e $ time /usr/local/bin/openssl enc -e -aes-256-cbc -pass pass:fred -in test.zero -out /dev/null\n\u003e 1.29s user 0.17s system 99% cpu 1.457 total\n\nUse internal read and stdout\n\u003e $ time /usr/local/bin/openssl enc -e -aes-256-cbc -pass pass:fred -in test.zero \u003e /dev/null\n\u003e 1.15s user 0.20s system 99% cpu 1.353 total\n\n\nUse openssl stdin and internal write\n\u003e $ dd if=/dev/zero bs=8m count=64 | /usr/local/bin/openssl enc -e -aes-256-cbc -pass pass:fred -out /dev/null\n\u003e 33554432 bytes transferred in 24.171877 secs (1388160 bytes/sec)\n\u003e 33554432 bytes transferred in 27.045376 secs (1240672 bytes/sec)\n\nThis is probably the point where I open an upstream PR...\n\nThanks for reporting!"
+}

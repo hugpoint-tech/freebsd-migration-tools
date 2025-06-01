@@ -1,0 +1,8 @@
+{
+ "id": 522517,
+ "bug_id": 139387,
+ "attachment_id": 0,
+ "creation_time": "2009-10-07T09:30:01Z",
+ "creator": "Bredehorn@gmx.de",
+ "text": "File: netipsec/keysock.c\nFunction: key_sendup0()\n\n--------------\n\tif (promisc) {\n\t\tstruct sadb_msg *pmsg;\n\n\t\tM_PREPEND(m, sizeof(struct sadb_msg), M_DONTWAIT);\n\t\tif (m \u0026\u0026 m-\u003em_len \u003c sizeof(struct sadb_msg))\n\t\t\tm = m_pullup(m, sizeof(struct sadb_msg));\n\t\tif (!m) {\n\t\t\tpfkeystat.in_nomem++;\n\t\t\tm_freem(m);\n\t\t\treturn ENOBUFS;\n\t\t}\n--------\u003e\tm-\u003em_pkthdr.len += sizeof(*pmsg);\n\n\t\tpmsg = mtod(m, struct sadb_msg *);\n\t\tbzero(pmsg, sizeof(*pmsg));\n\t\tpmsg-\u003esadb_msg_version = PF_KEY_V2;\n\t\tpmsg-\u003esadb_msg_type = SADB_X_PROMISC;\n\t\tpmsg-\u003esadb_msg_len = PFKEY_UNIT64(m-\u003em_pkthdr.len);\n\t\t/* pid and seq? */\n\n\t\tpfkeystat.in_msgtype[pmsg-\u003esadb_msg_type]++;\n\t}\n-----------------\n\nThis \"m-\u003em_pkthdr.len += sizeof(*pmsg);\" is not necessary, so sadb_msg_len is always 16 bytes to large.\n\nM_PREPEND already adjusts the length of the mbuf to the correct size.\n\nBest regards, Rainer\n\nFix: \n\nRemove the adjustment of the m_buf length ( m-\u003em_pkthdr.len += sizeof(*pmsg); )\nHow-To-Repeat: Switch the kernel PF_KEY to promiscuous mode.\nReceive promiscuous mode messages."
+}

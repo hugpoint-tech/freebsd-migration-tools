@@ -1,0 +1,8 @@
+{
+ "id": 969993,
+ "bug_id": 224977,
+ "attachment_id": 0,
+ "creation_time": "2018-01-07T19:30:18Z",
+ "creator": "robertames@hotmail.com",
+ "text": "When shutting down ircd-hybrid, a confusing error is displayed\nstating the pid file does not exist:\n\n# /usr/local/etc/rc.d/ircd-hybrid stop\nStopping ircd_hybrid.\nWaiting for PIDS: 14504.\nrm: /var/run/ircd/ircd.pid: No such file or directory\n\nThis is because after ircd correctly cleans up it's pid file, the\nrc script tries to delete the non existing file.  In the rc script,\nstop_postcmd is not needed.  Patch:\n\n--- irc/ircd-hybrid/files/ircd-hybrid.in.orig   2017-09-28 19:21:57.000000000 -0500\n+++ irc/ircd-hybrid/files/ircd-hybrid.in        2018-01-06 09:16:04.354386000 -0600\n@@ -19,7 +19,6 @@\n command=/usr/local/bin/ircd\n \n start_precmd=pid_touch\n-stop_postcmd=pid_rm\n \n load_rc_config ${name}\n \n@@ -36,9 +35,4 @@\n     chown $ircd_hybrid_user $pidfile\n }\n \n-pid_rm ()\n-{\n-    rm $pidfile\n-}\n-\n run_rc_command \"$1\"\n\n\nIf stop_postcmd is needed for some reason I don't understand, then\nthe \"rm\" command should be \"rm -f\" so no error is displayed."
+}

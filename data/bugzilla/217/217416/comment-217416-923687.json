@@ -1,0 +1,8 @@
+{
+ "id": 923687,
+ "bug_id": 217416,
+ "attachment_id": 0,
+ "creation_time": "2017-02-28T10:35:53Z",
+ "creator": "des@FreeBSD.org",
+ "text": "This is more of a support issue than a bug, so you should have posted it on stable@freebsd.org rather than here, but I'm happy to help.\n\nTo summarize: you installed lighttpd, then waited a bit, and tried pkg update again, which failed?\n\nThe passage of time is not irrelevant—the cached copy of the repo metadata expired, so `pkg` won't do anything that involves the repo without first updating its cache.\n\nBefore you do anything else, please revert your /etc/pkg/FreeBSD.conf to the stock version and remove any custom repositories:\n\n# fetch -o /etc/pkg http://svn.freebsd.org/base/releng/11.0/etc/pkg/FreeBSD.conf\n# find /usr/local/etc/pkg/repos -type f -delete\n\nNext, try `pkg-static update -f`.  If this works, but `pkg update -f` doesn't, run `pkg-static install -fy pkg` and then try `pkg update -f` again.\n\nIf this did not fix the problem, i.e. `pkg-static` works but `pkg` doesn't, you have a library compatibility issue.  Note that by installing lighttpd, you also installed the ports version of OpenSSL (which provides RSA), so this may be related; it shouldn't make any difference since they have different shlib major numbers, but I don't want to rule anything out.  Please run `ldd /usr/local/sbin/pkg`, then `env LD_UTRACE=yes ktrace -tu pkg update -f ; kdump | grep loaded` and show me the output."
+}

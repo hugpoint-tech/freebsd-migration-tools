@@ -1,0 +1,8 @@
+{
+ "id": 60015,
+ "bug_id": 19553,
+ "attachment_id": 0,
+ "creation_time": "2000-06-29T05:27:11Z",
+ "creator": "gnb@itga.com.au",
+ "text": "Actually, thinking about it some more the whole concept of invariants in the\nzone allocator is currently busted, because it relies on the fact that memory\nreturned to zfree() will not have a certain bit pattern in the second longword.\nThere is no way to guarantee that in general.\n\nAbout all you can usefully do is mark stuff as it goes on the free list and\ncheck it as it comes off, which will find some problems with the zone internal\nfreelist mgmt, plus I guess find a fairly small proportion of use-after-zfree()\nproblems (where the subsequent use changes the second longword). But you can't\nreliably find zfree()-after-zfree() or failure-to-zfree() or zfree()-to-the-\nwrong-zone or zfree()-after-malloc() or or or or....\n\nSo perhaps we orta either ditch the invariants in vm_zone.[ch] altogether.\n\nOr change the zone implementation to use a hidden longword at the start of each\nzalloc'd chunk.  This longword would either be the next free entry (for free\nchunks) or a pointer to the owning vm_zone object (for allocated chunks).  The\ndownside here is of course size - a couple hundred K of kernel memory on my\nfairly unloaded system (I have ~30k zone chunks active according to \"sysctl\nvm.zone\").  If people think this is reasonable, I can put something together,\nbut I suspect the cost is too high.\n\nGreg."
+}

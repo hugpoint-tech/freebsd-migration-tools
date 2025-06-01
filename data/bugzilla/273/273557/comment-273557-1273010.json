@@ -1,0 +1,8 @@
+{
+ "id": 1273010,
+ "bug_id": 273557,
+ "attachment_id": 244627,
+ "creation_time": "2023-09-04T08:53:49Z",
+ "creator": "crest@rlwinm.de",
+ "text": "Created attachment 244627\nUse VMIO_SIOCSIFFLAGS instead of SIOCGIFFLAGS\n\nBhyve used to require either the sysctl net.link.tap.up_on_open=1 or an external wrapper to set the tap/vmnet interfaces link state after the device has been opened. Bjoern A. Zeeb's solution to this uses an IP socket (trying both IPv4 and IPv6). The code as shipped in FreeBSD 13.2 refuses to start bhyve if it can't create an IP socket to set the link state of the tap/vmnet interface.\n\nIt turns out there is a better way to set the link state on tap interfaces since there is an equivalent ioctl() available directly on the tap/vmnet device.\n\nThe included patch against FreeBSD 13.2 removes the unused variables (ifrq and s) replaces ioctl(s, SIOCGIFFLAGS) on the socket with ioctl(be-\u003efd, VMIO_SIOCSIFFLAGS) on the tap/vmnet device.\n\nThe patch restores the ability to run bhyve inside a jail with ip4=disable and ip6=disable. The guest running inside bhyve accesses the network through the tap device without using IP sockets inside the bhyve process. This previously supported configuration provides defense in depth against guest escapes."
+}

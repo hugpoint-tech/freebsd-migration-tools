@@ -1,0 +1,8 @@
+{
+ "id": 670627,
+ "bug_id": 169056,
+ "attachment_id": 0,
+ "creation_time": "2012-09-06T21:15:54Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: trhodes\nDate: Thu Sep  6 20:15:44 2012\nNew Revision: 240176\nURL: http://svn.freebsd.org/changeset/base/240176\n\nLog:\n  Avoid segfault if name is invalid.  Basically, only\n  check for CTL_USER if the sysctl fails with ENOENT.\n  \n  PR:\t\t169056\n  Reviewed by:\tjhb\n\nModified:\n  head/lib/libc/gen/sysctl.c\n\nModified: head/lib/libc/gen/sysctl.c\n==============================================================================\n--- head/lib/libc/gen/sysctl.c\tThu Sep  6 19:26:59 2012\t(r240175)\n+++ head/lib/libc/gen/sysctl.c\tThu Sep  6 20:15:44 2012\t(r240176)\n@@ -50,8 +50,11 @@ int\n sysctl(const int *name, u_int namelen, void *oldp, size_t *oldlenp,\n     const void *newp, size_t newlen)\n {\n-\tif (name[0] != CTL_USER)\n-\t\treturn (__sysctl(name, namelen, oldp, oldlenp, newp, newlen));\n+\tint retval;\n+\n+\tretval = __sysctl(name, namelen, oldp, oldlenp, newp, newlen);\n+\tif (retval != -1 || errno != ENOENT || name[0] != CTL_USER)\n+\t\treturn (retval);\n \n \tif (newp != NULL) {\n \t\terrno = EPERM;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

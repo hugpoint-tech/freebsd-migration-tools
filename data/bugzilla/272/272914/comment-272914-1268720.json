@@ -1,0 +1,8 @@
+{
+ "id": 1268720,
+ "bug_id": 272914,
+ "attachment_id": 0,
+ "creation_time": "2023-08-03T11:48:34Z",
+ "creator": "bruno@clisp.org",
+ "text": "ISO C 23 § 7.31.4.4.1 together with § 7.31.4.4.(1) and § 7.31.1.(6) specifies that wcscmp must compare the string elements as wchar_t values, and that all wchar_t values can legitimately occur.\n\nOn FreeBSD/x86_64, wchar_t is signed, i.e. equivalent to 'int'. In the test case below, cmp must therefore come out positive, since a[0] \u003e 0 \u003e b[0]. But wcscmp in FreeBSD compares the wchar_t values as if they were unsigned.\n\nHow to reproduce:\n================================= foo.c =============================\n#include \u003cwchar.h\u003e\nint main ()\n{\n  /* This test fails on glibc \u003c 2.15, musl libc 1.2.3, macOS 12.5,\n     FreeBSD 13.2, NetBSD 9.0, OpenBSD 7.2, Solaris 11.4.  */\n  wchar_t a[2] = { (wchar_t) 0x76547654, 0 };\n  wchar_t b[2] = { (wchar_t) 0x9abc9abc, 0 };\n  int cmp = wcscmp (a, b);\n  return (!((wchar_t)-1 \u003c 0 ? cmp \u003e 0 : cmp \u003c 0));\n}\n=====================================================================\n$ cc foo.c\n$ ./a.out\n$ echo $?\n1"
+}

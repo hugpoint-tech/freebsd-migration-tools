@@ -1,0 +1,8 @@
+{
+ "id": 412887,
+ "bug_id": 116947,
+ "attachment_id": 0,
+ "creation_time": "2007-10-05T09:30:14Z",
+ "creator": "rea-fbsd@codelabs.ru",
+ "text": "\nI have two keyboards, MS Natural Ergonomic 4000 v. 1.0 and Logitech\nUltraX Premium Keyboard, whose F-keys are not recognized since the\nukbd.c, version 1.70.  And the problem is that 1.70 dropped\ninitialization of the USB boot protocol for the USB keyboards.  I\nunderstand that it was done after NetBSD's move, but the ukbd.c\nfrom NetBSD (revision 1.75) that eliminated boot protocol setting,\nadded report descriptor parsing, so it does not care about the\nactual protocol device speaks: it just parses current report\ndescriptor.\n\nFreeBSD still uses the hardcoded boot protocol descriptor, so device\nshould be initialized to speak the boot protocol.  And, as the\nsection 7.2.6 of the HID specification (v. 1.11, 27/06/2001) says,\none should not assume that the particular report protocol will be\nused upon the device initialization and should set the desired\nprotocol explicitely.\n\nI understand that the elimination of the usbd_set_protocol() healed\nthe issue in the usb/77940, but this fix contradicts with the USB\nHID specification and NetBSD's change is not an argument here,\nbecause they extensively reworked the HID parser.\n\nFix: Essentially, the patch below just backs out the change in the 1.70,\nbut it drops the quirk examination, since the quirk was eliminated.\nIt fixes the things for both keyboards of mine and they are working\nfor about 3 months without problems.\nHow-To-Repeat: \nPlug one of the mentioned keyboards into the box with FreeBSD\n7-CURRENT that was compiled after 21 Jun 2007, boot the box and\ntry to use keys from F1 to F12.  They would not work."
+}

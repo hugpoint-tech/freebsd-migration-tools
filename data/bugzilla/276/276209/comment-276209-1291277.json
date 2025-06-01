@@ -1,0 +1,8 @@
+{
+ "id": 1291277,
+ "bug_id": 276209,
+ "attachment_id": 0,
+ "creation_time": "2024-01-08T23:01:30Z",
+ "creator": "delphij@FreeBSD.org",
+ "text": "Creating a bug so this is not forgotten.\n\nLinux kernel has a feature called \"relative atime\", which changes atime update behavior to only perform the update when:\n\n - Current atime is older than either of mtime or ctime, or\n - Current atime is older than a day.\n\nThis behavior is made default on Linux since 2.6.30.\n\nThe following needs to be done:\n\n1. Create a new mount flag, MNT_RELATIME (sys/sys/mount.h) and adjust sys/kern/vfs_mount.c so that:\n\n  - When none of [no]atime, relatime are present, MNT_RELATIME is set;\n  - Otherwise, [no]atime resets MNT_RELATIME and set MNT_NOATIME accordingly;\n  - \"norelatime\" alone means \"atime\".\n\n2. statfs(2) and mount(8) are updated to reflect MNT_RELATIME flag, add support for the new flag.\n\n3. Extend existing file systems to support this feature.  The following filesystems supports MNT_NOATIME and should be extended: ZFS, ext2fs, fuse, msdosfs, ufs.\n\n4. Linux compatibility layer: compat/linprocfs/linprocfs.c, compat/linux/linux_stats.c should be extended to support the new flag."
+}

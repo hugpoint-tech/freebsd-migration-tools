@@ -1,0 +1,8 @@
+{
+ "id": 1290,
+ "bug_id": 547,
+ "attachment_id": 0,
+ "creation_time": "1995-06-23T07:37:49Z",
+ "creator": "petri@ibr.cs.tu-bs.de",
+ "text": "\n\t/usr/src/sys/pci.c::pci_bus_config() does not initialize the\n\tparent pointers in the devconf list; there is also a comment\n\tthat this should be added. In the GENERIC kernel, this seems not\n\tto be a real problem, because the freshly malloced devconf\n\tstructure almost always is pre-set with 0 resp. NULL.\n\tHowever, if ``option DIAGNOSTIC'' is enabled, malloc() will\n\tfill all memory areas with pattern 0xdeadbeef. If lsdev(8) is\n\tinvoked on such a kernel, it will result in a panic when\n\ttrying to get the descriptions for the PCI bus via sysctl(3).\n\nFix: simply disabling DIAGNOSTIC would be the equivalent to wearing my\nJoo Janta 200 Super-Chromatic Peril Sensitive Sunglasses, so I\nsuggest the following:\nHow-To-Repeat: \n\tshort version: invoke lsdev(8) on a kernel compiled with DIAGNOSTIC,\n\ton a machine with PCI bus\n\n\tlong version: instrument lsdev and /sys/kern/kern_devconf.c with\n\tprintf()s, and then:\n\njupiter:/tmp 2 # sync;sync;sync;./lsdev+printf\nDevice     State           Description\n---------- --------------- --------------------------------------------------\ncpu0       Busy            i486 DX4\n[..]\nnpx0       Busy            Floating-point unit\n\u003e sysctl( {6, 11, 12}, 3, dc, \u0026size, 0, 0)\njupiter /kernel: make_devconf(name=chip unit=0 number=12 parent=0xdeadbeef\n                                   ^^^^                         ^^^^^^^^^^\njupiter /kernel: Fatal trap 12: page fault while in kernel mode\n[..]"
+}

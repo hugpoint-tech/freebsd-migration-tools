@@ -1,0 +1,8 @@
+{
+ "id": 733351,
+ "bug_id": 182682,
+ "attachment_id": 0,
+ "creation_time": "2013-10-05T13:20:00Z",
+ "creator": "cmt@freebsd.org",
+ "text": "\tThe chromium build picks up ar from PATH, which happens to have\n    $LOCALBASE/bin/ listed before /usr/bin/ (no surprise so far).\n    ld from clang does not like GNU ar files, so building with GCC=off\n    fails with\n: /usr/bin/ld:obj/third_party/ffmpeg/libffmpeg_yasm.a: file format not recognized; treating as linker script\n: /usr/bin/ld:obj/third_party/ffmpeg/libffmpeg_yasm.a:1: syntax error\n: clang++: error: linker command failed with exit code 1 (use -v to see invocation)\n: [1576/11978] ACTION Generating resources from app/generated_resources.grd\n: ninja: build stopped: subcommand failed.\n: *** [do-build] Error code 1\n\n    This does not happen when using gcc instead of clang.\n\nFix: when using clang as compiler (GCC=off), force the use of base ar via\n\tCONFIGURE_ENV (\"works for me\"):\n\n\n\nRegards,\nChristoph--8NEhyWjaUjrKt46nPIiFFWhRDhEbkRcVHGioVNLUWFAzbRNz\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: Makefile\n===================================================================\n--- Makefile\t(revision 329444)\n+++ Makefile\t(working copy)\n@@ -139,6 +139,7 @@\n .endif\n GYP_DEFINES+=\tclang=1\n EXTRA_PATCHES+=\t${FILESDIR}/extra-patch-clang\n+CONFIGURE_ENV+= AR=/usr/bin/ar\n .if ${OSVERSION} \u003e= 1000054\n EXTRA_PATCHES+=\t${FILESDIR}/extra-patch-libc++\n .endif\nHow-To-Repeat: \tjust type make..."
+}

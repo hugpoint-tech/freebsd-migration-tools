@@ -1,0 +1,8 @@
+{
+ "id": 101230,
+ "bug_id": 32059,
+ "attachment_id": 0,
+ "creation_time": "2001-11-17T18:37:24Z",
+ "creator": "sakichan@sakichan.org",
+ "text": "My patch was incomplete, because that lacks a lock.\nFollowing patch  will be correct.\n\n--- sys/compat/linux/linux_socket.c     26 Oct 2001 23:10:08 -0000      1.30\n+++ sys/compat/linux/linux_socket.c     17 Nov 2001 18:27:20 -0000\n@@ -416,7 +416,7 @@\n                int namelen;\n        } */ bsd_args;\n        struct socket *so;\n-       struct file *fp;\n+       unsigned int flag;\n        int error;\n \n #ifdef __alpha__\n@@ -438,17 +438,20 @@\n         * when on a non-blocking socket. Instead it returns the\n         * error getsockopt(SOL_SOCKET, SO_ERROR) would return on BSD.\n         */\n-       error = holdsock(td-\u003etd_proc-\u003ep_fd, linux_args.s, \u0026fp);\n-       if (error)\n+       mtx_lock(\u0026Giant);\n+       error = fgetsock(td, linux_args.s, \u0026so, \u0026flag);\n+       if (error) {\n+               mtx_unlock(\u0026Giant);\n                return (error);\n+       }\n        error = EISCONN;\n-       if (fp-\u003ef_flag \u0026 FNONBLOCK) {\n-               so = (struct socket *)fp-\u003ef_data;\n+       if (flag \u0026 FNONBLOCK) {\n                if (so-\u003eso_emuldata == 0)\n                        error = so-\u003eso_error;\n                so-\u003eso_emuldata = (void *)1;\n        }\n-       fdrop(fp, td);\n+       fputsock(so);\n+       mtx_unlock(\u0026Giant);\n        return (error);\n }"
+}

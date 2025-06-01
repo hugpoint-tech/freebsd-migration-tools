@@ -1,0 +1,8 @@
+{
+ "id": 82659,
+ "bug_id": 26468,
+ "attachment_id": 0,
+ "creation_time": "2001-04-09T22:30:01Z",
+ "creator": "sburke@corp.namesafe.com",
+ "text": "pkg_delete does not clear the +REQUIRED_BY entries in the deleted \npackage's dependencies until after running the post-deinstall script.\nAs a result, if the post-deinstall script attempts to delete other\npackages that are required by the package being deleted, those packages\ncannot be deleted because they appear to still be required.\n\nFix: \n\nIn /usr/src/usr.sbin/pkg_install/delete/perform.c,\nmove the loop beginning at line 258:\n\n    for (p = Plist.head; p ; p = p-\u003enext) {\n        if (p-\u003etype != PLIST_PKGDEP)\n            continue;\n        if (Verbose)\n            printf(\"Attempting to remove dependency on package `%s'\\n\", p-\u003ename);\n        if (!Fake)\n            undepend(p, pkg);\n    }\n\nTo line 225, following the call to delete_package().\n\nThis will ensure that the package dependencies are up to date\nwhen the post-deinstall script is called.\nHow-To-Repeat: Create a package Foo-1.0, with \"@pkgdep Bar-1.0\" in the pkg-plist.\nNext, in Foo's post-deinstall script, do \"pkg_delete Bar-1.0\".\nDeleting the package Foo-1.0 generates the error:\npkg_delete: package `Bar-1.0' is required by these other packages\nand may not be deinstalled \nFoo-1.0"
+}

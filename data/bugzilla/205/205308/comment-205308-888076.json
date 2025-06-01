@@ -1,0 +1,8 @@
+{
+ "id": 888076,
+ "bug_id": 205308,
+ "attachment_id": 0,
+ "creation_time": "2016-07-14T12:44:29Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "During build Servo installs a few python 2.x modules via virtualenv. Not knowing which version suffix is used by the distribution it tries to figure it out using PATH. However, the build breaks as virtualenv activation leaks system pip through PATH. This worked fine before ports r390183 and I don't think Servo logic is wrong.\n\n  # Possible names of executables, sorted from most to least specific\n  PYTHON_NAMES = [\"python-2.7\", \"python2.7\", \"python2\", \"python\"]\n  VIRTUALENV_NAMES = [\"virtualenv-2.7\", \"virtualenv2.7\", \"virtualenv2\", \"virtualenv\"]\n  PIP_NAMES = [\"pip-2.7\", \"pip2.7\", \"pip2\", \"pip\"]\n\nhttps://github.com/servo/servo/blob/master/python/mach_bootstrap.py\n\nAs pip bundled in virtualenv doesn't support pip-X.Y variant the following patch has no effect. The issue has to be fixed in devel/py-pip.\n\n  --- pip/wheel.py\t2016-01-21 23:48:28 UTC\n  +++ pip/wheel.py\n  @@ -465,6 +465,9 @@ if __name__ == '__main__':\n\n\t   spec = 'pip%s = %s' % (sys.version[:3], pip_script)\n\t   generated.extend(maker.make(spec))\n  +        # Also shadow pip-X.Y variant used by FreeBSD package\n  +        spec = 'pip-%s = %s' % (sys.version[:3], pip_script)\n  +        generated.extend(maker.make(spec))\n\t   # Delete any other versioned pip entry points\n\t   pip_ep = [k for k in console if re.match(r'pip(\\d(\\.\\d)?)?$', k)]"
+}

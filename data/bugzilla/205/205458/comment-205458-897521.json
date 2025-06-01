@@ -1,0 +1,8 @@
+{
+ "id": 897521,
+ "bug_id": 205458,
+ "attachment_id": 0,
+ "creation_time": "2016-09-12T21:01:18Z",
+ "creator": "nwhitehorn@FreeBSD.org",
+ "text": "I've finally understood why this patch does anything useful. Open Firmware runs in virtual mode on the Powermac G5. This runs inside the kernel page table, which preserves all address translations made by OF before the kernel starts; as a result, the kernel address space is a strict superset of OF's.\n\nWhere this explodes is if OF uses an unmapped SLB entry. The SLB fault handler runs in real mode and refers to the PCPU pointer in SPRG0, which blows up the kernel. Having a value of SPRG0 that works for the kernel is less fatal than preserving OF's value in this case.\n\nI believe that OF's SPRG0 is maintained only for compatibility with some G4 Apple hardware, the eMac in particular, but will check and we can move on with this. I think it should be safe to wrap this in an #ifdef __powerpc64__."
+}

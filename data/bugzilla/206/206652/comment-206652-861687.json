@@ -1,0 +1,8 @@
+{
+ "id": 861687,
+ "bug_id": 206652,
+ "attachment_id": 166156,
+ "creation_time": "2016-01-26T19:22:03Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "Created attachment 166156\nfix handling files with sparse blocks before extent's index, and implement runb in mmap\n\nIt turns out that the ei_blk on the first struct ext4_extent_index in an EXT4 file's root extent isn't 0 if the file starts with sparse blocks. This will cause ext4_ext_binsearch_index() to keep passing the \"if (lbn \u003c m-\u003eei_blk)\" test, moving r to the left, until r \u003c l, then set \"path-\u003eep_index = l - 1;\" resulting in garbage data being read from wrong disk blocks since path-\u003eep_index is pointing to before the first element of the array.\n\nI've attached a patch that keeps track of the first and last block in each extent as it descends down the extent tree, thus being able to work out that some blocks are sparse earlier, preventing the previous out of range problem. Tracking the first and last block in each extent also lets us calculate where sparse extents end better, passing larger values to read ahead in mmap.\n\nIn ext4_bmapext() I've also started supporting the runb parameter (which is apparently the number of adjacent blocks prior to the block being converted in the same way that runp is the number of blocks after), which has sped up random access to mmaped files."
+}

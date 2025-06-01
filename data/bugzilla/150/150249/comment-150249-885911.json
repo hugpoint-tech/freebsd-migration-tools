@@ -1,0 +1,8 @@
+{
+ "id": 885911,
+ "bug_id": 150249,
+ "attachment_id": 0,
+ "creation_time": "2016-07-01T06:02:02Z",
+ "creator": "borjam@sarenet.es",
+ "text": "(In reply to Eric Joyner from comment #21)\nSorry, when writing the explanation I got a bit distracted.\n\nhw-\u003ephy.type is used for dual purposes. *If the vendor bytes are not recognized*, it is set properly to DA in case byte 8 contains the right bits.\n\nBut if the vendor type is recognized, hw-\u003ephy.type gets a new value (a vendor identification) and it is not rewritten with the DA type. That's why the function ixgbe_get_supported_phy_sfp_layer_generic() is reached.\n\nThe cable sets the bits in byte 8 properly. But the function ixgbe_get_supported_phy_sfp_layer_generic() doesn't check them. It only matches 1 GbE and 10 GbE compliance bits. So, when I saw that it was the place where \"unknown media\" was detected, I checked and I saw that \"Infiniband\" was set, assuming that it was compatible with 10 GbE (which it is).\n\nBut now, forget about the Infiniband thing, please. Check the patch I've attached to this bug, it fixes the issue completely. And sorry about the confusion with hw-\u003ephy.sfp_type and hw-\u003ephy.type. I don't know what is hw-\u003ephy.sfp_type used for, but the variable in play is hw-\u003ephy.type.\n\nI am sure that my patch reflects the intended code path because the default: case (unknown vendor) does exactly that.\n\nThe media detection code would really need some polishing, as it's quite clear that it's been patched and re-patched multiple times (example: the case for FTL to make it work specifically for FTL active DA cables).\n\nPlease review the patch I posted here yesterday."
+}

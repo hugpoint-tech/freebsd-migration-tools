@@ -1,0 +1,8 @@
+{
+ "id": 584783,
+ "bug_id": 151866,
+ "attachment_id": 0,
+ "creation_time": "2010-11-01T15:10:07Z",
+ "creator": "markjdb@gmail.com",
+ "text": "This patch adds a function to libfetch which allows programs to close the cached socket that libfetch holds on to when performing a file transfer.\n\nSee http://lists.freebsd.org/pipermail/freebsd-current/2010-October/020694.html\n\nFix: My patch adds a function to libfetch which makes it possible to force close the cached connection. Included is a patch to pkg_add(1) which fixes the problem described in the email.\n\nPatch attached with submission follows:\nHow-To-Repeat: Running this test program and using sockstat demonstrates the issue.\n\n#include \u003cstdlib.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003csys/param.h\u003e\n#include \u003cfetch.h\u003e\n\n#define URL \"ftp://ftp.freebsd.org/pub/FreeBSD/releases/README.TXT\"\n\nint\nmain(int argc, char **argv)\n{\n        char c;\n        FILE *f = fetchGetURL(URL, NULL);\n        if (!f) {\n                printf(\"Error: could not open connection.\\n\");\n                return (1);\n        }\n\n        while (!feof(f)) {\n                fread(\u0026c, sizeof(char), 1, f);\n                putchar(c);\n        }\n\n        printf(\"Transfer complete.\\n\");\n        fclose(f);\n\n        if (fork())\n                //Close the cached FTP connection.\n                //fetchCloseCachedFTP();\n        else\n                for ( ;; ) ;\n\n        return (0);\n}"
+}

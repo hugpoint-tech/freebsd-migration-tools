@@ -1,0 +1,8 @@
+{
+ "id": 82236,
+ "bug_id": 26323,
+ "attachment_id": 0,
+ "creation_time": "2001-04-03T19:50:01Z",
+ "creator": "bg@sics.se",
+ "text": "\nWhen a user comes close to his block quota limit, there are often many\nzero-length files created. This can be avoided be requiring a minimum\nnumber of blocks before inode creation is allowed to prooeed.\n\nFix: \n\nEnable the following code using sysctl.\n\n--- ufs_quota.c\t2000/11/18 11:49:53\t1.1\n+++ ufs_quota.c\t2000/11/19 09:22:03\t1.2\n@@ -46,12 +46,17 @@\n #include \u003csys/proc.h\u003e\n #include \u003csys/vnode.h\u003e\n #include \u003csys/mount.h\u003e\n+#include \u003csys/sysctl.h\u003e\n+\n #include \u003cvm/vm_zone.h\u003e\n \n #include \u003cufs/ufs/quota.h\u003e\n #include \u003cufs/ufs/inode.h\u003e\n #include \u003cufs/ufs/ufsmount.h\u003e\n \n+static int quota_minblocks = 0;\n+SYSCTL_INT(_debug, OID_AUTO, quota_minblocks , CTLFLAG_RW, \u0026quota_minblocks, 0, \"\");\n+\n static MALLOC_DEFINE(M_DQUOT, \"UFS quota\", \"UFS quota entries\");\n \n /*\n@@ -275,6 +280,15 @@\n \t\t\terror = chkiqchg(ip, change, cred, i);\n \t\t\tif (error)\n \t\t\t\treturn (error);\n+\t\t\t/*\n+\t\t\t * If user has fewer than quota_minblocks\n+\t\t\t * left, disallow inode allocation.\n+\t\t\t */\n+\t\t\tif (quota_minblocks \u003e 0) {\n+\t\t\t\terror = chkdqchg(ip, quota_minblocks, cred, i);\n+\t\t\t\tif (error)\n+\t\t\t\t\treturn (error);\n+\t\t\t}\n \t\t}\n \t}\n \tfor (i = 0; i \u003c MAXQUOTAS; i++) {"
+}

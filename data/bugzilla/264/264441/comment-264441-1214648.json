@@ -1,0 +1,8 @@
+{
+ "id": 1214648,
+ "bug_id": 264441,
+ "attachment_id": 0,
+ "creation_time": "2022-06-06T17:44:28Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Thanks for the repro steps, I was able to trigger the problem locally.  It's enough to pin all of the valgrind threads to the same CPU:\n\n/tmp/valgrind # cpuset -l 1 perl tests/vg_regtest none/tests/tls\n\nReally there are two problems here.  First, it seems that one of the threads (the one switched out in ast()) is simply getting starved.  There are several other always-runnable threads in the process that have a slightly higher scheduling priority, and they end up monopolizing the CPU.  ULE has decided that the threads are \"interactive\", and in this case higher priority threads are always scheduled first.\n\nWith multiple CPUs available I suppose the problem may still exist, it just becomes harder to trigger since with more CPUs there's less chance that the starved thread will get stuck.  I'm guessing that the stuck thread is the one which is supposed to be writing to the pipe.\n\nThe second problem is a livelock in the pipe code.  It seems that pipelock()/pipeunlock() can cause reader threads to wake each other up in a loop even when there's nothing to do.  This is because the wait channel used by readers and writers to signal each other is the same as the one used to serialize I/O operations among multiple concurrent readers.  It's not too hard to write a standalone test program which triggers this, albeit unreliably.  I suspect the livelock causes the scheduler problem, since the reader threads keep yielding the CPU to sleep, and this boosts their interactivity score."
+}

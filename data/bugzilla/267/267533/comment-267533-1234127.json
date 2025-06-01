@@ -1,0 +1,8 @@
+{
+ "id": 1234127,
+ "bug_id": 267533,
+ "attachment_id": 0,
+ "creation_time": "2022-11-03T20:56:03Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Mathieu Schmitt from comment #2)\nFrom what I can see, \"MMP is disabled\" means that the MMP timeout is 0.  See the comment above the definition of ub_mmp_delay:\n\n 956         /* Maybe missing in uberblocks we read, but always written */\n 957         uint64_t        ub_mmp_magic;\n 958         /*\n 959          * If ub_mmp_delay == 0 and ub_mmp_magic is valid, MMP is off.\n 960          * Otherwise, nanosec since last MMP write.\n 961          */\n 962         uint64_t        ub_mmp_delay;\n\nWhen ub_mmp_magic is zero, i.e., we are upgrading from a version without MMP, we use a default timeout.\n\nThe \"activity check\", just reads an uberblock several times with a pause in between and verifies that the txg recorded in the uberblock does not increase.  If it increases, then something else is writing to the pool, and it must not be imported.\n\nIn your case, the txg changed, so something [else] is writing to the pool, so the check fails.  The fact that ub_mmp_magic == 0 is not relevant; the txg should not be changing.  Maybe it is indeed a kernel bug, somehow, but I believe the patch just hides it.\n\nFrom what I can see, the \"multihost\" property mainly controls whether ZFS will periodically write to the pool, to increase the chance that \"zpool import\" notices that the pool is active."
+}

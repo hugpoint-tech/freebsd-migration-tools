@@ -1,0 +1,8 @@
+{
+ "id": 1226123,
+ "bug_id": 266362,
+ "attachment_id": 0,
+ "creation_time": "2022-09-11T13:24:33Z",
+ "creator": "junchoon@dec.sakura.ne.jp",
+ "text": "ports-mgmt/portupgrade-devel (maybe ports-mgmt/portupgrade, too) hangs at \"Uninstalling the old version\" phase on base main after git bced4d8b3e99efd46b5496c83e11755b25913c90.\n\nManually reverting the commit fixed the issue.\n\nNot all ports seems to hang on upgrade, but at least graphics/libdrm, net/gupnp, graphics/vulkan-loader, graphics/sane-backends and graphics/poppler were affected.\n\n/usr/local/sbin/pkg_deinstall, installed as a part of ports-mgmt/portupgrade[-devel] and used by /usr/local/sbin/portupgrade on \"Uninstalling the old version\", hangs waiting for `IO.popen(\"/usr/bin/file -bnf-\", \"r+\") do |pipe|` to finish, maybe.\n\nAs the problematic commit seems to be cherry-picked (MFV) to fix something else, I'm not sure which should be fixed, base file or ports-mgmt/portupgrade[-devel].\n\n\nFor the record:\nOutput of `grep -n \"file \" /usr/local/sbin/pkg_deinstall` was as below.\n\n105:    opts.def_option(\"-d\", \"--rmdir\", \"Remove empty directories created by file cleanup [*]\") {\n190:    PKGTOOLS_CONF            configuration file [$PREFIX/etc/pkgtools.conf]\n341:      raise PkgDB::DBError, \"The file #{path} is not properly recorded as installed\"\n344:      raise PkgDB::DBError, \"The file #{path} is not properly recorded as installed by #{pkgname}\"\n380:    IO.popen(\"/usr/bin/file -bnf-\", \"r+\") do |pipe|\n382:    %r\"^[^@\\s]\\S*/([^/\\s]+\\.so(?:\\.\\d+)+)$\" =~ file or next"
+}

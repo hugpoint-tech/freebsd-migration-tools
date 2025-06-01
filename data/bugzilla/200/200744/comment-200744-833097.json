@@ -1,0 +1,8 @@
+{
+ "id": 833097,
+ "bug_id": 200744,
+ "attachment_id": 0,
+ "creation_time": "2015-07-21T18:12:17Z",
+ "creator": "paul@ifdnrg.com",
+ "text": "This was due to an ACPI bug in r220's\n\nMarcel Moolenaar provided me with a fix which is:\n\n -BIOS-\n\nSerial Communication \u003cOn with Console Redirection via COM2\u003e\nSerial Port Address \u003cSerial Device1=COM2,Serial Device2=COM1\u003e\nExternal Serial Connector \u003cSerial Device 1\u003e \n\n-FreeBSD-\n\nadding the following line to /boot/loader.conf:\n\thw.uart.console=\"io:0x2f8,br:57600\"\n\n\n.....\n\nFrom the looks of it, you have a BIOS bug. In particular a bug in the ACPI AML (you can dump the ACPI AML with acpidump -d). If I understand it correctly then the first 2 serial devices (UAR1 and UAR2) have the same H/W registers. What this boils down to is that the kernel only works with 1 serial port (UAR1), which ends up having the H/W configuration of the second serial port (UAR2).\n\nWith the BIOS redirecting to COM1 (which is H/W address 0x3f8) and serial device 1 assigned to COM1 *and* serial device assigned to the serial port on the chassis, the kernel had no chance to present a login prompt.\n\nI worked around the problem by reconfiguring the BIOS so that COM2 (which is H/W address 0x2f8) is assigned to serial port 1 and the BIOS redirecting to COM2. What this does is have COM2 connected to the serial port on the chassis.\n\nSo, even though I suspect that the kernel thinks it’s talking to the first serial port, it’s actually talking to the second serial port (due to the ACPI/BIOS bus)."
+}

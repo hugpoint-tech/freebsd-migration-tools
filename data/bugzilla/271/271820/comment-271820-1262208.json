@@ -1,0 +1,8 @@
+{
+ "id": 1262208,
+ "bug_id": 271820,
+ "attachment_id": 0,
+ "creation_time": "2023-06-05T15:58:44Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Also:\n\nThe subtract in libalias's ValidateUdpLength() can wrap to an unsigned\nhuge number if ip_len is less than ip_hl\u003c\u003c2. This causes the two\n\"dlen \u003c ...\" tests to be false, which causes the UDP packet to pass\nmuster even if uh_ulen is bigger than the packet size.\n\n        size_t dlen;\n        dlen = ntohs(pip-\u003eip_len) - (pip-\u003eip_hl \u003c\u003c 2);\n        if (dlen \u003c sizeof(struct udphdr))\n                return (NULL);\n        if (!MF_ISSET(pip) \u0026\u0026 dlen \u003c ntohs(ud-\u003euh_ulen))\n                return (NULL);\n\nSo an HDLC frame like this will also cause AliasHandleQuestion() to\nread off the end of the packet buffer and perhaps crash.\n\n7e 00 21 72 ff 00 00 ff ff e0 00 ff 11 00 89 39 9f 7a 3d 7f ff ff 7c\n11 72 7e\n\n(gdb) print/x *pip\n$6 = {ip_hl = 0x2, ip_v = 0x7, ip_tos = 0xff, ip_len = 0x0, ip_id = 0xffff, \n  ip_off = 0xe0, ip_ttl = 0xff, ip_p = 0x11, ip_sum = 0x8900, ip_src = {\n    s_addr = 0x3d7a9f39}, ip_dst = {s_addr = 0x7cffff7f}}\n\n(gdb) print/x *ud\n$4 = {uh_sport = 0x11ff, uh_dport = 0x8900, uh_ulen = 0x9f39, uh_sum = 0x3d7a}"
+}

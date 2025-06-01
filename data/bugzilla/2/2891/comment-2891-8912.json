@@ -1,0 +1,8 @@
+{
+ "id": 8912,
+ "bug_id": 2891,
+ "attachment_id": 0,
+ "creation_time": "1997-03-06T03:50:01Z",
+ "creator": "Tor.Egge@idt.ntnu.no",
+ "text": "\nscsi_scsi_cmd calls free_xs without first calling splbio().\nfree_xs then proceeds to call start routines as, e.g., cdstart.\n\nMany routines that call scsi_scsi_cmd do not call splbio() before calling\nscsi_scsi_cmd.\n\nBy performing the ioctl function CDIOREADTOCHEADER, the call stack at\none point is\n\n\tcdioctl\n\tscsi_ioctl\n\tcd_ioctl\n\tcd_read_toc\n\tscsi_scsi_cmd\n\tfree_xs\n\tcdstart\n\nwith a too low spl level.\n\nFix: This patch encloses the call to free_xs from scsi_scsi_cmd inside\na splbio()/splx() pair.\nHow-To-Repeat: \nPerform an ioctl function that calls scsi_scsi_cmd without first calling\nsplbio(), e.g. CDIOREADTOCHEADER."
+}

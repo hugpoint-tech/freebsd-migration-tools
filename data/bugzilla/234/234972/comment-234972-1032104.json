@@ -1,0 +1,8 @@
+{
+ "id": 1032104,
+ "bug_id": 234972,
+ "attachment_id": 0,
+ "creation_time": "2019-01-15T12:27:27Z",
+ "creator": "Bernard.Marshall@axiell.com",
+ "text": "After upgrading to 12.0 RELEASE the yppasswdd RPC no longer updates passwords successfully. When trying to update a password the following is output:\n\n$ passwd fred\nChanging NIS password for fred\nNew Password:\nRetype New Password:\npasswd: pam_chauthtok(): Error in service module\n\nA check of /var/log/messages shows one of the following errors depending on whether the -t option was set for nis_yppasswdd_flags in /etc/rc.conf:\n\nrename of / to /.hold failed\nrename of /var to /var/yp.hold failed\nrename of /var/yp to /var/yp/master.passwd.hold failed\n\nThe error is in /usr/src/usr.sbin/rpc.yppasswdd/yppasswdd_server.c where dirname() is used twice (line 609 and 832). Both lines have the code:\n\nif (pw_init(dirname(passfile), passfile)) {\n\nIt looks like the implementation of dirname in 12.0 RELEASE has changed to now apply changes to the string passed into the function. The change is to make the call thread safe according to the updated manual entry. The problem here is that the call to dirname() now truncates \"passfile\" meaning the variable no longer holds the path to the master password file, rather just the directory and hence the error.\n\nIn order to use dirname() now \"passfile\" will need to be copied before being passed into dirname()."
+}

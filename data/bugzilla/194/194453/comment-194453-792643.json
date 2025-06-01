@@ -1,0 +1,8 @@
+{
+ "id": 792643,
+ "bug_id": 194453,
+ "attachment_id": 0,
+ "creation_time": "2014-10-24T20:18:10Z",
+ "creator": "boba@boba.name",
+ "text": "(In reply to Hiren Panchasara from comment #2)\n\u003e (In reply to boba from comment #0)\n\u003e \u003e It's impossible to create \"pipe\" with bandwidth higher than 2Gbits per\n\u003e \u003e second. Possible due to \"signed\" type of variable.\n\u003e \u003e \n\u003e \u003e # ipfw pipe 1 config bw 2700mbit/s\n\u003e \u003e ipfw: bandwidth too large\n\u003e \n\u003e I think you are right that its overflowing because of \"signed\" type.\n\u003e \n\u003e A simple change like this may fix the problem:\n\u003e \n\u003e Index: dummynet.c\n\u003e ===================================================================\n\u003e --- dummynet.c  (revision 270969)\n\u003e +++ dummynet.c  (working copy)\n\u003e @@ -546,7 +546,7 @@\n\u003e                 if_name[namelen] = '\\0';\n\u003e                 *bandwidth = 0;\n\u003e         } else {        /* read bandwidth value */\n\u003e -               int bw;\n\u003e +               uint32_t bw;\n\u003e                 char *end = NULL;\n\u003e  \n\u003e                 bw = strtoul(arg, \u0026end, 0);\n\nThis patch will not work at all because of following check few lines after it:\n\n                if (bw \u003c 0)\n                        errx(EX_DATAERR, \"bandwidth too large\");"
+}

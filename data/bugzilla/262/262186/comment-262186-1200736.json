@@ -1,0 +1,8 @@
+{
+ "id": 1200736,
+ "bug_id": 262186,
+ "attachment_id": 0,
+ "creation_time": "2022-02-25T07:06:48Z",
+ "creator": "sigsys@gmail.com",
+ "text": "kern_procctl() generally checks it for commands that change something, but when it passes the command to cpu_procctl() there's no check.\n\ndiff --git a/sys/amd64/amd64/vm_machdep.c b/sys/amd64/amd64/vm_machdep.c\nindex 232e53c63952..8a336ad70fcb 100644\n--- a/sys/amd64/amd64/vm_machdep.c\n+++ b/sys/amd64/amd64/vm_machdep.c\n@@ -490,6 +490,7 @@ cpu_procctl(struct thread *td, int idtype, id_t id, int com, void *data)\n {\n \tstruct proc *p;\n \tint error, val;\n+\tbool need_candebug;\n \n \tswitch (com) {\n \tcase PROC_KPTI_CTL:\n@@ -507,10 +508,12 @@ cpu_procctl(struct thread *td, int idtype, id_t id, int com, void *data)\n \t\t\t\tbreak;\n \t\t}\n \t\tif (com == PROC_KPTI_CTL || com == PROC_LA_CTL) {\n+\t\t\tneed_candebug = true;\n \t\t\terror = copyin(data, \u0026val, sizeof(val));\n \t\t\tif (error != 0)\n \t\t\t\tbreak;\n-\t\t}\n+\t\t} else\n+\t\t\tneed_candebug = false;\n \t\tif (com == PROC_KPTI_CTL \u0026\u0026\n \t\t    val != PROC_KPTI_CTL_ENABLE_ON_EXEC \u0026\u0026\n \t\t    val != PROC_KPTI_CTL_DISABLE_ON_EXEC) {\n@@ -524,7 +527,8 @@ cpu_procctl(struct thread *td, int idtype, id_t id, int com, void *data)\n \t\t\terror = EINVAL;\n \t\t\tbreak;\n \t\t}\n-\t\terror = pget(id, PGET_CANSEE | PGET_NOTWEXIT | PGET_NOTID, \u0026p);\n+\t\terror = pget(id, (need_candebug ? PGET_CANDEBUG : PGET_CANSEE) |\n+\t\t    PGET_NOTWEXIT | PGET_NOTID, \u0026p);\n \t\tif (error != 0)\n \t\t\tbreak;\n \t\tswitch (com) {"
+}

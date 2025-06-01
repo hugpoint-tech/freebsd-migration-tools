@@ -1,0 +1,8 @@
+{
+ "id": 1181317,
+ "bug_id": 258849,
+ "attachment_id": 0,
+ "creation_time": "2021-10-07T08:41:26Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "So I don't think this is fixable in a clean manner without significant \nrefactoring in the area.\n\nI think the pragmatic thing to do here is to try to hoist the sahtree lock out of key_do_getnewspi. The problem is that there are several callers and callees to be adjusted which may end up being rather hairy.\n\nAs a cop out one can slap an additional lock around all of this, in this manner:\ndiff --git a/sys/netipsec/key.c b/sys/netipsec/key.c\nindex 72c598586d8e..f5da63d7b8f1 100644\n--- a/sys/netipsec/key.c\n+++ b/sys/netipsec/key.c\n@@ -5628,6 +5628,7 @@ key_add(struct socket *so, struct mbuf *m, const struct sadb_msghdr *mhp)\n         * secasindex.\n         * XXXAE: IPComp seems also doesn't use SPI.\n         */\n+       SPI_ALLOC_LOCK();\n        if (proto == IPPROTO_TCP) {\n                sav = key_getsav_tcpmd5(\u0026saidx, \u0026spi);\n                if (sav == NULL \u0026\u0026 spi == 0) {\n@@ -5648,6 +5649,7 @@ key_add(struct socket *so, struct mbuf *m, const struct sadb_msghdr *mhp)\n        }\n \n        sav = key_newsav(mhp, \u0026saidx, spi, \u0026error);\n+       SPI_ALLOC_UNLOCK();\n        if (sav == NULL)\n                return key_senderror(so, m, error);\n        KEYDBG(KEY_STAMP,\n\nNote this may be turn out to not be a big problem as key_newsav takes rm lock for writing which already comes with drastic overhead.\n\nAny thoughts on this, ae?"
+}

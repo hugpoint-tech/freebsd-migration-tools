@@ -1,0 +1,8 @@
+{
+ "id": 22448,
+ "bug_id": 7295,
+ "attachment_id": 0,
+ "creation_time": "1998-07-16T04:50:01Z",
+ "creator": "jayg@fgi.net",
+ "text": "\nWhen using bash as the running shell and openfiles is set to a large value\n(\u003e258?) some programs (rxvt, eterm)  fail on a select call and chew up cpu\ntime and which makes them appear to not work.  This only happens when\nstarting the program using bash (not sh or csh) and happens with both\nbash 1.x and 2.x.  The effect is listed in another pr concerning rxvt.\nI'm not sure if this is a bug in bash or if bash is tickling something else.\n\nFix: \n\nDon't use bash to start programs :-)\nHow-To-Repeat: \nlogin as a user with high openfile limits.\nCompile and run this program.\n\n---cut---\n\n#include \u003csys/types.h\u003e\n#include \u003csys/time.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n\nint main() {\n  fd_set readfds;\n  int retval;\n  int fd;\n  struct itimerval value;\n  fd=open(\"/tmp/testselect\",O_CREAT|O_RDWR, 0600);\n  if (fd\u003c0) exit(1);\n  FD_ZERO(\u0026readfds);\n  FD_SET(fd,\u0026readfds);\n  value.it_value.tv_usec=0;\n  value.it_value.tv_sec=1;\n  retval=select(getdtablesize(), \u0026readfds, NULL, NULL, \u0026value.it_value);\n  if (retval\u003c0) perror(\"select\");\n  printf(\"select returned: %i\\n\",retval);\n  close(fd);\n  unlink(\"/tmp/testselect\");\n  exit(0);\n}\n\n---cut---\n\nWhen run under sh or csh the select call succeeds.\nUnder bash it will fail with \nselect:: Bad file descriptor\nselect returned: -1\nIf you do a ulimit -n 258 - It works but with ulimit 259 it fail."
+}

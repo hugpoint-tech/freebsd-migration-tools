@@ -1,0 +1,8 @@
+{
+ "id": 943135,
+ "bug_id": 220830,
+ "attachment_id": 0,
+ "creation_time": "2017-07-19T10:12:49Z",
+ "creator": "pherman@frenchfries.net",
+ "text": "Hi,\n\nI can reproduce this.  This is a divide by zero in sys/netpfil/pf/pf.c  pf_purge_thread().  https://svnweb.freebsd.org/base/stable/11/sys/netpfil/pf/pf.c?annotate=316640#l1446   The V_pf_default_rule.timeout array hasn't been initialized yet.\n\nThis happens presumably because pf_load() is getting called before pfattach_vnet() (i.e. pf_load_vnet()).   Anyone know what determines the order, or how to enforce this type of \"dependency\"?\n\nIt smells like a race condition, which could be why not everyone can reproduce it, but on my hardware it's 100%.  I also suspect this has to do with EARLY_AP_STARTUP, because I have yet to see the same panic with EARLY_AP_STARTUP disabled.  Still testing.\n\nBTW, my kernel config is simple:\n\ninclude         GENERIC\n\ndevice         carp\ndevice         pf\n#nooptions     EARLY_AP_STARTUP"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1074084,
+ "bug_id": 241562,
+ "attachment_id": 0,
+ "creation_time": "2019-11-05T21:44:21Z",
+ "creator": "cem@freebsd.org",
+ "text": "First interesting piece: .eh_frame metadata is substantially smaller on\nthe i386 build; it only has a single FDE/CIE block:\n\n====================================================================\n# llvm-dwarfdump90 --eh-frame ./libexecinfo/backtrace_test | less\n./libexecinfo/backtrace_test:   file format ELF32-i386\n\n.debug_frame contents:\n\n\n.eh_frame contents:\n\n00000000 00000014 ffffffff CIE\n  Version:               1\n  Augmentation:          \"zR\"\n  Code alignment factor: 1\n  Data alignment factor: -4\n  Return address column: 8\n  Augmentation data:     1B\n\n  DW_CFA_def_cfa: reg4 +4\n  DW_CFA_offset: reg8 -4\n\n00000018 00000018 0000001c FDE cie=0000001c pc=00000544...0000055d\n  DW_CFA_advance_loc: 3\n  DW_CFA_def_cfa_offset: +4\n  DW_CFA_advance_loc: 2\n  DW_CFA_offset: reg5 -8\n  DW_CFA_def_cfa_register: reg5\n\n====================================================================\n\nIn contrast, there are 14 of these sections in the amd64 test.\nShockingly, we seem to have a framepointer in the generated i386 code,\nso it's *possible* that the defaults (DW_CFA_{def_cfa,offset}) are sufficient\nto unwind out of the myfunc3 frame.  In LLVM, reg4 is EBP and register 8 is\nbeyond the valid range.  In contrast, on amd64, def_cfa/offset use reg7/16,\nwhich are RSP and (?)RIP.\n\nBut that may not be the issue, given myfunc3 has a framepointer.  Another\npoint of comparison is that libexecinfo.so.1 seems to have DWARF .eh_frame\nsection on amd64, but not i386 (this one is entirely absent, rather than\nmerely short)."
+}

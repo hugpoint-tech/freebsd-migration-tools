@@ -1,0 +1,8 @@
+{
+ "id": 1223115,
+ "bug_id": 265639,
+ "attachment_id": 0,
+ "creation_time": "2022-08-16T09:35:34Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "The issue stems from VNET allocations only being aligned to 4.\n\nhow about this:\n\ndiff --git a/sys/net/vnet.c b/sys/net/vnet.c\nindex 4f242b07f169..3a0d40a31b6a 100644\n--- a/sys/net/vnet.c\n+++ b/sys/net/vnet.c\n@@ -377,7 +377,11 @@ vnet_data_alloc(int size)\n        void *s;\n \n        s = NULL;\n+#if __LP32__\n+       size = roundup2(size, 2 * sizeof(void *));\n+#else\n        size = roundup2(size, sizeof(void *));\n+#endif\n        sx_xlock(\u0026vnet_data_free_lock);\n        TAILQ_FOREACH(df, \u0026vnet_data_free_head, vnd_link) {\n                if (df-\u003evnd_len \u003c size)\n@@ -409,7 +413,11 @@ vnet_data_free(void *start_arg, int size)\n        uintptr_t start;\n        uintptr_t end;\n \n+#if __LP32__\n+       size = roundup2(size, 2 * sizeof(void *));\n+#else\n        size = roundup2(size, sizeof(void *));\n+#endif\n        start = (uintptr_t)start_arg;\n        end = start + size;\n        /*"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 931353,
+ "bug_id": 218815,
+ "attachment_id": 0,
+ "creation_time": "2017-04-23T10:07:50Z",
+ "creator": "brnrd@freebsd.org",
+ "text": "Just updated upstream issue.\n\nGuessing that the issue is reading one byte at a time.\n\n`kdump` shows repetition of\n\u003e 56198 openssl  CALL  read(0,0x801630677,0x1)\n\u003e 56198 openssl  GIO   fd 0 read 1 byte\n\u003e       \"\\0\"\n\u003e 56198 openssl  RET   read 1\n\nInspecting the trace file\n\u003e $ kdump | wc -l\n\u003e 11480965\n\u003e kdump | grep -c 'read(0,0x801630677,0x1)'\n\u003e 2848491\n\u003e $ bc -e 'scale=5; 11480965/2848491'\n\u003e 4.03054\n\n\nFirst read after a write (line 18795)\n\u003e 56198 openssl  0.106893 CALL  read(0,0x801630677,0x1)\n\nFirst write (line 51562)\n\u003e 56198 openssl  0.296872 CALL  write(0x3,0x801a46000,0x1000)\n\nThat's 0.189979 seconds for reading 8192 bytes, writing the 8k takes (0.106793 - 0.106883) 0.00009 seconds"
+}

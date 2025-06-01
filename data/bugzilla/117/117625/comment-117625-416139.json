@@ -1,0 +1,8 @@
+{
+ "id": 416139,
+ "bug_id": 117625,
+ "attachment_id": 0,
+ "creation_time": "2007-10-29T11:50:01Z",
+ "creator": "michael@gameservice.ru",
+ "text": "PostgreSQL 8.2.5 compiled from ports core dumps on FreeBSD 7\n(RELENG_7), it works without problem on FreeBSD 6-STABLE (RELENG_6).\n\nI've asked pgsql-bugs about this issue, and they answered,\nthat probably FreeBSD 7 have problems with spinlocks:\nhttp://www.nabble.com/PostgreSQL-crash-on-Freebsd-7-t4693969.html\n\nSome info:\n\n(gdb) bt\n#0  0x485dc277 in kill () from /lib/libc.so.7\n#1  0x485dc1d6 in raise () from /lib/libc.so.7\n#2  0x485dadda in abort () from /lib/libc.so.7\n#3  0x0824c075 in errfinish ()\n#4  0x0824c8b1 in elog_finish ()\n#5  0x081c9184 in s_lock ()\n#6  0x081c8d48 in LWLockAcquire ()\n#7  0x081c61ec in LockAcquire ()\n#8  0x081c4289 in LockRelationOid ()\n#9  0x080938fc in relation_open ()\n#10 0x08096d5a in index_open ()\n#11 0x08096139 in systable_beginscan ()\n#12 0x08134f10 in RelationBuildTriggers ()\n#13 0x08245d4d in RelationCacheInitializePhase2 ()\n#14 0x08256af0 in InitPostgres ()\n#15 0x081cfd13 in PostgresMain ()\n#16 0x081a90ec in ClosePostmasterPorts ()\n#17 0x081a9ea7 in PostmasterMain ()\n#18 0x0816912f in main ()\n\nExtract from dmesg:\npid 30622 (postgres), uid 70: exited on signal 6 (core dumped)\n\nExtract from postmaster log:\n2007-10-25 23:37:12 MSD (u=picred,db=picred)PANIC:  stuck spinlock (0x4880c3b0) detected at lwlock.c:379\n\nHow-To-Repeat: I can't find what triggers coredump, it happens 2-4 times per day under high load"
+}

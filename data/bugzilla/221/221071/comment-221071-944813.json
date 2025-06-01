@@ -1,0 +1,8 @@
+{
+ "id": 944813,
+ "bug_id": 221071,
+ "attachment_id": 0,
+ "creation_time": "2017-07-28T17:55:53Z",
+ "creator": "nbe@renzel.net",
+ "text": "I don't get it; for instance, CPU temperature - bank 4, register 91h reads\n36h = 54\n\nso, the logic in NetBSD code is as following:\n-----------------------------------------------------------------------\n        data = (*sc-\u003elm_readreg)(sc, sc-\u003elm_sensors[n].reg) \u003c\u003c 1;\n        data += (*sc-\u003elm_readreg)(sc, sc-\u003elm_sensors[n].reg + 1) \u003e\u003e 7;\n        if (data \u003e 0xfffffff || (data \u003e 0x0fa \u0026\u0026 data \u003c 0x1a6)) {\n                sc-\u003esensors[n].state = ENVSYS_SINVALID;\n        } else {\n                if (data \u0026 0x100)\n                        data -= 0x200;\n                sc-\u003esensors[n].state = ENVSYS_SVALID;\n                sc-\u003esensors[n].value_cur = data * 500000 + 273150000;\n        }\n-----------------------------------------------------------------------\n\n1) shift original value one left -\u003e 6Ch = 108\n2) shift value of next register seven right (0) and add that to original value -\u003e 6Ch stays\n2) bit-and that with 100h, if true then subtract 200h -\u003e it's false, so 6Ch stays\n3) multiply that with 500000 -\u003e 0337f980h = 54000000\n4) add 273150000 -\u003e 137FE9B0h = 327150000\n\nSo, I have exceeded the safe temperature of my CPU and of the solar system's sun..."
+}

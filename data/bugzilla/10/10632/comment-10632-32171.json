@@ -1,0 +1,8 @@
+{
+ "id": 32171,
+ "bug_id": 10632,
+ "attachment_id": 0,
+ "creation_time": "1999-03-17T04:30:01Z",
+ "creator": "aron@cs.rice.edu",
+ "text": "The file /sys/i386/i386/perfmon.c contains a bug that causes incorrect\noperation while using the /dev/perfmon device. The problem is that \nthe Intel Pentium Pro's performance counters are 40 bits wide. The Intel\nmanuals specifically say that reading the counters using the rdmsr\ninstruction returns a 64 bit value of which the higher 24 bits are\nundefined. The code that reads the counters should then clear the\nhigh 24 bits itself. The code in /sys/i386/i386/perfmon.c doesn't\ndo this and so the application programs using the /dev/perfmon device\ncan get incorrect values of the counters.\n\nFix: \n\nThe fix is pretty simple. There are two places in /sys/i386/i386/perfmon.c\nwhere the rdmsr instruction is used. At both these places, the high\norder 24 bits should be cleared before making any further use of the \nvalue.\nHow-To-Repeat: Here's a sample output of the program /usr/share/examples/perfmon (this particular example\nuses the Pentium Pro's performance counters to measure the floating\npoint operations per second):\n\n% perfmon -u -e -l 1 -s 1 193\n1: 89060441849857\ntotal: 89060441849857.000000\nmean: 89060441849857.000000\nclocks (at 166-MHz): 167087839\n\nNotice the large resulting values despite the fact that there were\nno floating point operations being executed on the machine."
+}

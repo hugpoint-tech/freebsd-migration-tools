@@ -1,0 +1,8 @@
+{
+ "id": 1296774,
+ "bug_id": 277038,
+ "attachment_id": 0,
+ "creation_time": "2024-02-13T20:49:57Z",
+ "creator": "mibelanger@qnx.com",
+ "text": "This problem will occur with \"devctl detach igc0\"\n\nIn iflib it is typical to call the following:\n\tIFDI_DETACH(ctx);\n\tIFDI_QUEUES_FREE(ctx);\n\nIn if_igc.c:\n - igc_if_detach calls igc_free_pci_resources.\n - igc_if_queues_free function calls igc_release_hw_control.\n\nigc_if_queues_free must not call igc_release_hw_control, as the hw resource has been free'd in the detach call.\n\nIt should be sufficient to ensure that igc_release_hw_control is called just prior to any call to igc_free_pci_resource, which appears to be the case.  The extra call to igc_release_hw_control in igc_if_queues_free is unnecessary.\n\nOne could consider moving the release_hw_control into the implementation of igc_free_pci_resources."
+}

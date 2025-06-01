@@ -1,0 +1,8 @@
+{
+ "id": 646860,
+ "bug_id": 164265,
+ "attachment_id": 0,
+ "creation_time": "2012-01-17T23:00:19Z",
+ "creator": "dchhetri@panasas.com",
+ "text": "While modifying \"bge\" driver to use software LRO API provided by tcp_lro.c.\nI saw this piece of code, \n\n\n224         /* Get the TCP checksum if we dont have it */\n225         if (!csum)\n226                 csum = tcp-\u003eth_sum;       \u003c=== this is wrong\n\nreading code further down in this same function, looks like \"csum\" is\nsupposed to contain checksum of \"TCP Header (with modified th_sum) +\nTCP Payload\", therefore \"csum = tcp-\u003eth_sum\" assignment is WRONG.\n\n\nSince tcp_lro_flush() has this logic,\n136                 lro-\u003em_head-\u003em_pkthdr.csum_flags = CSUM_IP_CHECKED |\n137                         CSUM_IP_VALID | CSUM_DATA_VALID | CSUM_PSEUDO_HDR;\n138                 lro-\u003em_head-\u003em_pkthdr.csum_data = 0xffff;\n139                 lro-\u003em_head-\u003em_pkthdr.len = lro-\u003elen;\n\ntcp_input never looks at what is is in 'th_sum' field and things work\nfine (assuming tcp_lro_rx was called ONLY for mbuf's validated/good\nchecksum). However, I don't know what else may broke due to wrong\n'th_sum' filled in by tcp_lro_flush().\n\n\nEven FreeBSD-9 has this same piece of logic.\n\nFix: refer patch file\n\nPatch attached with submission follows:\nHow-To-Repeat: Setup,\n  [client]\u003c----\u003e[FreeBSD server]\n\n\nFreeBSD server is using NIC with software LRO.\n\n\nuse netperf to send packet from client to \"freebsd server\" and if you\ncapture tcpdump on server side, you will see TCP packets with wrong\nchecksum (wrong value of 'th_sum'), even though the packets are not\ncorrupted."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1242843,
+ "bug_id": 268823,
+ "attachment_id": 0,
+ "creation_time": "2023-01-11T22:00:04Z",
+ "creator": "pen@lysator.liu.se",
+ "text": "Interesting! \n\nI recently ran into a similar bug in a Linux client (one of 10 identical clients we are using to measure NFS mount latency and general functionality tests from various places around the university) where a sec=krb5 nfsv4 mount (from a FreeBSD server) would take a long time (test testing system terminated the mount attempt after 5s) instead of the normal sub-second mounts.\n\nAnd in typical Kerberos-style not much usable error messages was logged anywhere so I ended up having to snoop network traffic and trace sys calls to find stuff out... sigh.\n\nThere the problem turned out to be an expired /tmp/krb5cc_0 ticket. On that Linux client this would normally have been managed by the \"gssproxy\" daemon which maintains and refreshes that ticket, but when diagnosing a problem I had manually done a:\n\n  kinit -k 'HOSTNAME$'\n\nto test and see if the host ticket/principal was valid (I had renamed the client).\n\nThis caused the up call from the kernel to gssproxy to take a very long time and it would finally return an invalid/expired ticket down to the kernel which caused timeouts/problems further down the chain.\n\n(The problem was solved by deleting my manually \"installed\" ticket and let gssproxy handle it :-)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 772255,
+ "bug_id": 191719,
+ "attachment_id": 0,
+ "creation_time": "2014-07-07T19:12:21Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "If I do the following case, it doesn't fail on FreeBSD like it does NetBSD:\n\n% expr -- -4611686018427387904 \\* 3\n4611686018427387904\n# python2 -c 'print -4611686018427387904 * 3'\n-13835058055282163712\n\nThis is could be fixed by adding a signage check to assert_times, like what's in assert_plus: if the signage of two numbers is not the same, i.e. one is negative, the other is positive -- then the value must be negative.\n\n395 void\n396 assert_plus(intmax_t a, intmax_t b, intmax_t r)\n397 {\n398         /*\n399          * sum of two positive numbers must be positive,\n400          * sum of two negative numbers must be negative\n401          */\n402         if ((a \u003e 0 \u0026\u0026 b \u003e 0 \u0026\u0026 r \u003c= 0) ||\n403             (a \u003c 0 \u0026\u0026 b \u003c 0 \u0026\u0026 r \u003e= 0))\n404                 errx(ERR_EXIT, \"overflow\");\n405 }\n...\n447 void\n448 assert_times(intmax_t a, intmax_t b, intmax_t r)\n449 {\n450         /*\n451          * if first operand is 0, no overflow is possible,\n452          * else result of division test must match second operand\n453          */\n454         if (a != 0 \u0026\u0026 r / a != b)\n455                 errx(ERR_EXIT, \"overflow\");\n456 }"
+}

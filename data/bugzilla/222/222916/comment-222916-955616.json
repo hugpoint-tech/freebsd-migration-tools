@@ -1,0 +1,8 @@
+{
+ "id": 955616,
+ "bug_id": 222916,
+ "attachment_id": 0,
+ "creation_time": "2017-10-14T01:33:22Z",
+ "creator": "grehan@FreeBSD.org",
+ "text": "The \"CPU stuck\" messages generally occurr when a system is oversubscribed i.e. the guest has been given more virtual resources than are physically available.\n\nIn this case, the guest has been assigned the same number of vCPUs as the host (assuming Intel-ARK is correct here: https://ark.intel.com/products/97478/Intel-Xeon-Processor-E3-1275-v6-8M-Cache-3_80-GHz) so if there is a time when both the host and guest require all CPUs, there is only 4 available to service the needs of 8 assumed available (4 host, 4 guest).\n\nIn addition, the guest has been assigned 32G of RAM, and ZFS is being used on the host. The issue there is that the default ZFS setup on FreeBSD will allow use of all RAM minus 1GB for ZFS ARC. This competes with use by bhyve (swap-backed RAM), and can result in excessive swapping by the bhyve process. This can also result in \"CPU stuck\" messages as vCPUs are halted while awaiting guest physical memory to be paged in.\n\nA recommendation would be to\n   a) restrict ZFS ARC usage to less than that required by the host and bhyve guests. In this case, perhaps 16-24G (if the mobo has 64G) ? This can be done using the vfs.zfs.arc_max parameter in /boot/loader.conf\n   b) Only use 2 vCPUs for the guest, or, enable hyperthreading."
+}

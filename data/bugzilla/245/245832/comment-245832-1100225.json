@@ -1,0 +1,8 @@
+{
+ "id": 1100225,
+ "bug_id": 245832,
+ "attachment_id": 0,
+ "creation_time": "2020-05-01T22:11:04Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I just retested null on stock HEAD and it worked for me.  I used the following setkey configurations:\n\nhost with 172.16.0.1 interface:\n\nflush;\nspdflush;\n# Host to host ESP\n# Security Associations\nadd 172.16.0.1 172.16.0.2 esp 0x10000 -E null 0xffff;\nadd 172.16.0.2 172.16.0.1 esp 0x10001 -E null 0xffff;\n# Security Policies\nspdadd 172.16.0.1 172.16.0.2 any -P out ipsec esp/tunnel/172.16.0.1-172.16.0.2/require;\nspdadd 172.16.0.2 172.16.0.1 any -P in ipsec esp/tunnel/172.16.0.2-172.16.0.1/require;\n\nHost with 172.16.0.2 interface:\n\nflush;\nspdflush;\n# Host to host ESP\n# Security Associations\nadd 172.16.0.1 172.16.0.2 esp 0x10000 -E null 0xffff;\nadd 172.16.0.2 172.16.0.1 esp 0x10001 -E null 0xffff;\n# Security Policies\nspdadd 172.16.0.1 172.16.0.2 any -P in ipsec esp/tunnel/172.16.0.1-172.16.0.2/require;\nspdadd 172.16.0.2 172.16.0.1 any -P out ipsec esp/tunnel/172.16.0.2-172.16.0.1/require;\n\nI'll look to see what kind of setkey config files the test creates, but I didn't change any of the parsing for setkey in the OCF rework changes, and I would expect setkey to report an error to stderr (which it didn't from what I can tell) if it had a parse error or got an error back when trying to setup the SA."
+}

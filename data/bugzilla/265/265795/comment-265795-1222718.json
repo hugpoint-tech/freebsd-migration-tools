@@ -1,0 +1,8 @@
+{
+ "id": 1222718,
+ "bug_id": 265795,
+ "attachment_id": 0,
+ "creation_time": "2022-08-12T19:25:44Z",
+ "creator": "jfc@mit.edu",
+ "text": "I have two kernels, one that crashes and one that does not.  The only difference is my attempt to make the message from KASSERT more informative:\n\ndiff --git a/sys/vm/vm_page.c b/sys/vm/vm_page.c\nindex 81b2f518aff..f8c8cc67bd6 100644\n--- a/sys/vm/vm_page.c\n+++ b/sys/vm/vm_page.c\n@@ -3713,8 +3713,8 @@ vm_page_dequeue_deferred(vm_page_t m)\n        do {\n                if (old.queue == PQ_NONE) {\n                        KASSERT((old.flags \u0026 PGA_QUEUE_STATE_MASK) == 0,\n-                           (\"%s: page %p has unexpected queue state\",\n-                           __func__, m));\n+                           (\"%s: page %p has unexpected queue state (bits = %08x)\",\n+                           __func__, m, old._bits));\n                        break;\n                }\n                new = old;\n\nThe kernel with the diff above works.\n\nThe only difference in the generated code for vm_page_dequeue_deferred is a small difference in register numbering to so old._bits lives in w3 where it will be passed as the fourth argument to panic.  All the instructions are the same except for register numbers and panic format string addresses.  The number of instructions in the kernel as a whole is the same."
+}

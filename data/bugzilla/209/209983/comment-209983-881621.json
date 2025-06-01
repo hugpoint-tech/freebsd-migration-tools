@@ -1,0 +1,8 @@
+{
+ "id": 881621,
+ "bug_id": 209983,
+ "attachment_id": 170961,
+ "creation_time": "2016-06-02T21:17:57Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 170961\nfix\n\nrc.d/qemu_user_static assumes powerpc and powerpc64 have the same ELF magic which is actually false, at least on 11.0-CURRENT.\n\n$ poudriere jail -cj head-powerpc64 -a powerpc.powerpc64 -m svn+https -v head\n[...]\n\n$ service qemu_user_static onestart\n\n$ chroot /poudriere/jails/head-powerpc64 /rescue/date\nchroot: /rescue/date: Exec format error\n\n$ binmiscctl list\n[...]\nname: powerpc64\ninterpreter: /usr/local/bin/qemu-ppc64-static\nflags: ENABLED USE_MASK\nmagic size: 20\nmagic offset: 0\nmagic: 0x7f 0x45 0x4c 0x46  0x01 0x02 0x01 0x00  0x00 0x00 0x00 0x00\n       0x00 0x00 0x00 0x00  0x00 0x02 0x00 0x15\nmask:  0xff 0xff 0xff 0xff  0xff 0xff 0xff 0x00  0xff 0xff 0xff 0xff\n       0xff 0xff 0xff 0xff  0xff 0xfe 0xff 0xff\n[...]\n\n$ hd -n20 /poudriere/jails/head-powerpc64/rescue/date\n00000000  7f 45 4c 46 02 02 01 09  00 00 00 00 00 00 00 00  |.ELF............|\n00000010  00 02 00 15                                       |....|\n00000014\n\n$ poudriere jail -l | fgrep powerpc64\nhead-powerpc64 11.0-CURRENT r300425 powerpc.powerpc64 svn+https 2016-05-22 18:46:03 /poudriere/jails/head-powerpc64"
+}

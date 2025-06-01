@@ -1,0 +1,8 @@
+{
+ "id": 1278627,
+ "bug_id": 274312,
+ "attachment_id": 245469,
+ "creation_time": "2023-10-06T17:58:44Z",
+ "creator": "editor@callfortesting.org",
+ "text": "Created attachment 245469\ntruss(1) output for the gpart backup/restore command\n\nHello, I see a few PRs related to gpart restore but not with this error. I have only seen mentions of the error in mailing lists.\n\nFreeBSD freebsd 15.0-CURRENT FreeBSD 15.0-CURRENT #0 main-n265728-8818f0f1124e:\nThu Oct  5 03:15:28 UTC 2023     root@releng3.nyi.freebsd.org:/usr/obj/usr/src/a\nmd64.amd64/sys/GENERIC amd64\n\nSteps:\n\nroot@freebsd:~ # sysctl kern.disks\nkern.disks: vtbd1 vtbd0\nroot@freebsd:~ # gpart show\n=\u003e       3  12649842  vtbd0  GPT  (6.0G)\n         3       346      1  freebsd-boot  (173K)\n       349     66584      2  efi  (33M)\n     66933   2097152      3  freebsd-swap  (1.0G)\n   2164085  10485760      4  freebsd-zfs  (5.0G)\n\nroot@freebsd:~ # diskinfo vtbd0\nvtbd0   512     6476721664      12649847        131072  0\nroot@freebsd:~ # diskinfo vtbd1\nvtbd1   512     6476721664      12649847        131072  0\n\nroot@freebsd:~ # man gpart | grep restore | tail -1\n           /sbin/gpart backup ada0 | /sbin/gpart restore -F ada1 ada2\n\nroot@freebsd:~ # /sbin/gpart backup vtbd0 | /sbin/gpart restore -F vtbd1\ngpart: entries '4': Invalid argument\n\nThe vtbd0 is a root-on-ZFS weekly snapshot image and the second image is created with truncate, using the size from the unmodified RE image.\n\nBacking up the partition table to a file and restoring from file produces the same error.\n\nI have attached the truss output of the command listed in the manual page."
+}

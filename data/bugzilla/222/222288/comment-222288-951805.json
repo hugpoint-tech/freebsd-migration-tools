@@ -1,0 +1,8 @@
+{
+ "id": 951805,
+ "bug_id": 222288,
+ "attachment_id": 0,
+ "creation_time": "2017-09-13T16:18:04Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "(In reply to Dan Nelson from comment #0)\nThank you very much for the report!\nAs soon as I read it I noticed that I have the same kind of issue.  I dug through the biozone to examine the leaked bio-s and they all seem to have bio_cmd = 5 and bio_flags = 8.  So, they seem to be BIO_FLUSH bio-s.  Their zio-s must have been ZIO_TYPE_IOCTL.\n\nNow, those zio-s use ZIO_IOCTL_PIPELINE and it is defined as:\n#define ZIO_IOCTL_PIPELINE                      \\\n        (ZIO_INTERLOCK_STAGES |                 \\\n        ZIO_STAGE_VDEV_IO_START |               \\\n        ZIO_STAGE_VDEV_IO_ASSESS)\n\nSo, ZIO_STAGE_VDEV_IO_START is in the pipeline, but ZIO_STAGE_VDEV_IO_DONE is not as you have correctly theorised.\nThe normal I/O pipelines always include ZIO_VDEV_IO_STAGES\n#define ZIO_VDEV_IO_STAGES                      \\\n        (ZIO_STAGE_VDEV_IO_START |              \\\n        ZIO_STAGE_VDEV_IO_DONE |                \\\n        ZIO_STAGE_VDEV_IO_ASSESS)\nso the problem does not affect them.\n\nI will double-check why the ioctl pipeline omitted ZIO_STAGE_VDEV_IO_DONE and will test adding that stage."
+}

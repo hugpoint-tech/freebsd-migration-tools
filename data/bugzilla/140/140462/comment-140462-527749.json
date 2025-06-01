@@ -1,0 +1,8 @@
+{
+ "id": 527749,
+ "bug_id": 140462,
+ "attachment_id": 0,
+ "creation_time": "2009-11-11T00:30:03Z",
+ "creator": "wblock@wonkity.com",
+ "text": "After a fresh boot or reboot of 8.0-RC2, /var/run/devd.pid is locked\npreventing devd restart:\n\n# /etc/rc.d/devd restart\nStopping devd.\nStarting devd.\ndevd: devd already running, pid: 398\n/etc/rc.d/devd: WARNING: failed to start devd\n\nThis is due to locks on /var/run/devd.pid remaining even after devd is\nkilled:\n\nlightning% lsof /var/run/devd.pid\nCOMMAND   PID  USER   FD   TYPE DEVICE SIZE/OFF  NODE NAME\ndevd      400  root    6w  VREG  0,101        3 47124 /var/run/devd.pid\ndhclient  865  root    6w  VREG  0,101        3 47124 /var/run/devd.pid\ndhclient 1024 _dhcp    6w  VREG  0,101        3 47124 /var/run/devd.pid\n\nThis is a regression from 7-STABLE, where devd.pid is only locked by \ndevd after startup.\n\nFix: \n\nWorkaround: rather than restart devd in one step, kill devd and rm\n/var/run/devd.pid.  Then start devd.\nHow-To-Repeat: Boot 8.0-RC2 with dhclient run from /etc/rc.conf.  Try to restart devd.\ndevd will be killed but not restarted because the pidfile is still\npresent because of locks.\n\nMailing list thread start:\n\nhttp://docs.freebsd.org/cgi/getmsg.cgi?fetch=862294+0+/usr/local/www/db/text/2009/freebsd-current/20091018.freebsd-current"
+}

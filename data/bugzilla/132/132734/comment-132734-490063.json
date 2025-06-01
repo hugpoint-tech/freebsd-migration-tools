@@ -1,0 +1,8 @@
+{
+ "id": 490063,
+ "bug_id": 132734,
+ "attachment_id": 0,
+ "creation_time": "2009-04-23T20:29:36Z",
+ "creator": "to.my.trociny@gmail.com",
+ "text": "SVN rev 191435 on 2009-04-23 18:23:08Z by rwatson\n\nMerge r191434 from stable/7 to releng/7.2:\n\n  In sysctl_ifdata(), query the ifnet pointer using the index only\n  once, rather than querying it, validating it, and then re-querying\n  it without validating it.  This may avoid a NULL pointer\n  dereference and resulting kernel page fault if an interface is\n  being deleted while bsnmp or other tools are querying data on the\n  interface.\n\n  The full fix, to properly refcount the interface for the duration\n  of the sysctl, is in 8.x, but is considered too high-risk for\n  7.2, so instead will appear in 7.3 (if all goes well).\n\nSo, Alexey, can you try upgrading to the latest stable/7 or releng/7.2 or\napply attached patch to see if this tweak at least eliminates the instant\npanic?\n\n--- if_mib.c\t(revision 191424)\n+++ if_mib.c\t(working copy)\n@@ -82,11 +82,9 @@\n \t\treturn EINVAL;\n\n \tif (name[0] \u003c= 0 || name[0] \u003e if_index ||\n-\t    ifnet_byindex(name[0]) == NULL)\n+\t    (ifp = ifnet_byindex(name[0])) == NULL)\n \t\treturn ENOENT;\n\n-\tifp = ifnet_byindex(name[0]);\n-\n \tswitch(name[1]) {\n \tdefault:\n \t\treturn ENOENT;"
+}

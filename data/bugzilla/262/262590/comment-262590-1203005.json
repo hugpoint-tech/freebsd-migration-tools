@@ -1,0 +1,8 @@
+{
+ "id": 1203005,
+ "bug_id": 262590,
+ "attachment_id": 0,
+ "creation_time": "2022-03-16T12:22:50Z",
+ "creator": "matteo@FreeBSD.org",
+ "text": "(This may be related to #252617)\n\nWildcards in anchor names do not seem to be correctly interpreted by pfctl.\n\nSteps to reproduce:\n\n1) Start blacklistd, even with the default /etc/blacklistd.conf\n2) Enable blacklistd in sshd_config (UseBlacklist yes), and reload sshd\n2) Add 'anchor \"blacklistd/*\" as the first rule in your pf.conf\n3) Reload the rules\n4) Fake some wrong logins on ssh (e.g., ssh notauser@yourhost), to trigger the blacklist\n\nNow, if I run \"pfctl -a blacklistd -sA\", I get \nblacklistd/22\n\nand if I run \"pfctl -a blacklistd/22 -s rules, I get:\n\nblock drop in quick proto tcp from \u003cport22\u003e to any port = ssh\n\nwhich is fine.\n\nBut if I run \"pfctl -a 'blacklistd/*' -s rules\", I get no output, which seems weird.\n\nFinally, if I run \"pfctl -a '*' -s rules\", I get:\n\nanchor \"*\" all {\npfctl: DIOCGETRULES: Invalid argument\n}\n... other rules, none of which is about the blacklistd anchors.\n\nso either I'm confused by how to see the rules for all anchors (under an anchor, possibly), or the wildcard seems to be misinterpreted. \n\nAt this point I'm not even sure that the rules are loaded correctly, because I cannot verify it with pfctl."
+}

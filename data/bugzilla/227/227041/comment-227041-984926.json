@@ -1,0 +1,8 @@
+{
+ "id": 984926,
+ "bug_id": 227041,
+ "attachment_id": 0,
+ "creation_time": "2018-03-28T23:21:08Z",
+ "creator": "cem@freebsd.org",
+ "text": "The situation described sounds like a deadlock or livelock.  If you reproduce it with an INVARIANTS+WITNESS kernel, do you get a LOR warning?  Does the pmc-crash program return/complete?\n\nBasic investigation:\n\nThe userspace libpmc functions pmc_detach/pmc_release() translate pretty directly into the (gigantic) kernel syscall pmc_syscall_handler(), PMC_OP_PMCDETACH and PMC_OP_PMCRELEASE.\n\nIf 0 is passed as pid, the current thread's pid is substituted.  pfind() acquires proc lock after pmc sx xlock.  The proc lock is dropped and then the process is detached via pmc_detach_process().\n\nAre you sure if pmc_release() is required?  It doesn't look like it does anything special with locking.  I have not investigated deeply."
+}

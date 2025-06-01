@@ -1,0 +1,8 @@
+{
+ "id": 954359,
+ "bug_id": 220779,
+ "attachment_id": 0,
+ "creation_time": "2017-10-04T20:33:16Z",
+ "creator": "paulm@tetrardus.net",
+ "text": "The effective GID is stored in cr_groups[0] in the ucred struct.\n\nkern_setgroups() writes to cr_groups[0] in the ucred struct.\n\nTherefore, the syscall setgroups(int ngroups, const gid_t *gidset) overwrites the effective GID at cr_groups[0] with the first GID in *gidset.\n\n(Because setgroups() writes to cr_groups[0], a subsequent call to setegid() will overwrite the supplementary GID at that location.  I think this is the symptom Michael Zuo is calling attention to.)      \n\nUnless I'm confused about something, the implementation of setgroups() should write the supplementary group list starting at an offset of +1 in the cr_groups array in struct ucred in order to preserve the effective GID at cr_groups[0]."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 634879,
+ "bug_id": 161854,
+ "attachment_id": 0,
+ "creation_time": "2011-10-21T05:00:19Z",
+ "creator": "hcoin@quietfountain.com",
+ "text": "Notice in\n\nhttp://svnweb.freebsd.org/base/head/kerberos5/lib/libgssapi_krb5/pname_to_uid.c?revision=181344\u0026view=markup\n\n..\nOM_uint32\n34 \t_gsskrb5_pname_to_uid(OM_uint32 *minor_status, const gss_name_t pname,\n35 \tconst gss_OID mech, uid_t *uidp)\n36 \t{\n37 \tkrb5_context context;\n38 \tkrb5_const_principal name = (krb5_const_principal) pname;\n39 \tkrb5_error_code kret;\n40 \tchar lname[MAXLOGNAME + 1], buf[128];\n41 \tstruct passwd pwd, *pw;\n\n\n52     getpwnam_r(lname, \u0026pwd, buf, sizeof(buf), \u0026pw);\n\n128 is too small.  Any non-trivial use of kerberos via nfs fails to record the correct user names.\n\nFix: \n\n-40 \tchar lname[MAXLOGNAME + 1], buf[128];\n+40 \tchar lname[MAXLOGNAME + 1], buf[1204];\nHow-To-Repeat: Put some debug writes in there, you'll notice when kerberos is being used\nno user names authenticate.  kerberos on nfs is essentially broken if the\ntotal length of the strings in the passwd structure exceed 128 bytes.\nGiven the password itself can be 128 characters, much less the gecos, dir,\nshell, etc. etc...."
+}

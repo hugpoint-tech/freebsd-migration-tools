@@ -1,0 +1,8 @@
+{
+ "id": 546392,
+ "bug_id": 144307,
+ "attachment_id": 0,
+ "creation_time": "2010-02-26T01:20:01Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "On systems where /etc/malloc.conf isn't present, some failures syscalls like read will fail incorrectly with ENOENT because the file doesn't exist, and thus output via errx will be incorrect, like shown from the following disklabel output:\n\n1+0 records in\n1+0 records out\n512 bytes transferred in 0.000054 secs (9502140 bytes/sec)\ndisklabel: /dev/md1 read: No such file or directory\n\nThis can be reproduced as follows (yes, the dd command are stat commands are wrong -- I know that...) if malloc.conf is not present:\n\ndd if=/dev/zero of=$output_file conv=sparse bs=$(stat -f '%z' \"$input_directory\") count=1\nmdconfig -a -t vnode -u ${md_num} -f \"$output_file\"\ndisklabel -rw /dev/md${md_num} auto\n\nOnce malloc.conf is present...\n\nsudo ln -s M /etc/malloc.conf\n\n# ...\n\n1+0 records in\n1+0 records out\n512 bytes transferred in 0.000054 secs (9460280 bytes/sec)\ndisklabel: /dev/md1 read: Unknown error: 0\n\nFix: 1. Set malloc.conf to a valid value as per malloc(3).\n2. Apply attached patch.\n\nPatch attached with submission follows:\nHow-To-Repeat: dd if=/dev/zero of=foo conv=sparse bs=512 count=1\nmdconfig -a -t vnode -u 1 -f foo\ndisklabel -rw /dev/md1 auto"
+}

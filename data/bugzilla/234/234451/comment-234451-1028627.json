@@ -1,0 +1,8 @@
+{
+ "id": 1028627,
+ "bug_id": 234451,
+ "attachment_id": 0,
+ "creation_time": "2018-12-28T11:47:29Z",
+ "creator": "Andrew@FreeBSD.org",
+ "text": "I've added extra debugging and found the problematic dlsym is in do_init in otp_src_21.2/erts/emulator/hipe/hipe_x86_signal.c.\n\nThis calls dlysym as follows:\n  #define NEXT_SIGACTION \"sigaction\"\n  ...\n  next_sigaction = dlsym(RTLD_NEXT, NEXT_SIGACTION);\n\nI added a printf with the dlerror string. This found the error to be:\n  \"Cannot determine caller's shared object\"\n\nThat error is from rtld when obj_from_addr returns NULL. Looking with a debugger this seems to be because the map size is 0. This is because there is only one LOAD program header and rtld sets the size on the second and later LOAD headers.\n\nI'm unsure why there is only one LOAD header as it is marked rwx. Adjusting the rtld logic fixes the build, however I'm unsure if we want to allow this from a security point of view (marking code as writeable)."
+}

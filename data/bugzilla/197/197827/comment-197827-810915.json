@@ -1,0 +1,8 @@
+{
+ "id": 810915,
+ "bug_id": 197827,
+ "attachment_id": 0,
+ "creation_time": "2015-02-19T17:50:47Z",
+ "creator": "john@jnielsen.net",
+ "text": "I'm not sure if it was an update to the port or -STABLE, but xymon-client no longer starts at boot on my system:\n\n% uname -a\nFreeBSD stealth.jnielsen.net 10.1-STABLE FreeBSD 10.1-STABLE #1 r278970M: Wed Feb 18 15:33:54 MST 2015     john@stealth.jnielsen.net:/ssdtmp/obj/usr/src/sys/STEALTH  amd64\n\nFeb 19 10:14:44 stealth kernel: Starting xymon_client.\nFeb 19 10:14:45 stealth kernel: Usage: /usr/local/www/xymon/client/runclient.sh start|stop|restart|status\n\nIt also does not handle other prefixed commands (fast, force, one, quiet), since it includes \"${1}\" unsanitized in ${command_args}. I propose the following, to allow run_rc_command to do all of its magic and still pass the correct argument to runclient.sh. The patch works for me, but I am not the most experienced rc programmer.\n\n# diff -u xymon-client.orig xymon-client\n--- xymon-client.orig\t2015-02-12 13:31:00.784342859 -0700\n+++ xymon-client\t2015-02-19 10:46:12.134221439 -0700\n@@ -16,10 +16,10 @@\n : ${xymon_client_enable:=NO}\n : ${xymon_client_user:=xymon}\n \n-command=/usr/local/www/xymon/client/runclient.sh\n-command_args=\"${xymon_client_flags} ${1}\"\n procname=/usr/local/www/xymon/client/bin/xymonlaunch\n pidfile=\"/usr/local/www/xymon/client/logs/clientlaunch.`hostname`.pid\"\n start_precmd=\"chown -R ${xymon_client_user} /usr/local/www/xymon/client/logs\"\n+start_cmd=\"/usr/local/www/xymon/client/runclient.sh ${xymon_client_flags} start\"\n+stop_cmd=\"/usr/local/www/xymon/client/runclient.sh ${xymon_client_flags} stop\"\n \n run_rc_command \"$1\""
+}

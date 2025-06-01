@@ -1,0 +1,8 @@
+{
+ "id": 373328,
+ "bug_id": 108430,
+ "attachment_id": 0,
+ "creation_time": "2007-01-27T15:10:17Z",
+ "creator": "ports@grosbein.net",
+ "text": "\tQuagga, since version 0.99.3, takes metric value from RTM_NEWADDR\n\tmessage received from routing socket and this value overrides\n        right interface metric learned by quagga at startup time.\n\tFreeBSD always returns zero value here (even if one have used\n\t'ifconfig if0 metric N' and quagga does not sanitize it.\n        Then quagga passes zero interface metric to ripd\n\tthat uses it as hop count increment value (if one does not use\n\t'offset-list in' for interface) thus breaking RIP.\n\nFix: This patch adds needed sanity check. 'If' statement added\n\tis always false for all versions of FreeBSD but may become true\n\tone day if RTM_NEWADDR would return interface metric\n\tset with ifconfig(1).\n\n\n\nEugene Grosbein--8l6dX3vWQAA4Bkb4XKHEO0Te1HQbDuBC9VWrzHM0FDKO0Bjy\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- zebra/kernel_socket.c.orig\tFri Jan 26 10:55:03 2007\n+++ zebra/kernel_socket.c\tFri Jan 26 10:55:35 2007\n@@ -585,6 +585,7 @@\n   if (ifnlen \u0026\u0026 strncmp (ifp-\u003ename, ifname, INTERFACE_NAMSIZ))\n     isalias = 1;\n   \n+  if (ifam-\u003eifam_metric)\n   ifp-\u003emetric = ifam-\u003eifam_metric;\n   \n   /* Add connected address. */\nHow-To-Repeat: \tRun quagga/ripd, make ripd obtain a route from network and\n\tsee that it does not increase its metric when advertizes the route\n\tlater. Versions 0.99.2 (and earlier) do not behave so."
+}

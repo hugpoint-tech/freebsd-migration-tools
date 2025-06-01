@@ -1,0 +1,8 @@
+{
+ "id": 345198,
+ "bug_id": 102422,
+ "attachment_id": 0,
+ "creation_time": "2006-08-24T11:09:05Z",
+ "creator": "bu7cher@yandex.ru",
+ "text": "Stephen Halpin wrote:\n \u003e The rule is accepted with icmp6types 1,2,32,33,34,...94,95,128,129.\n \u003e The problem is the data structure in\n \u003e /usr/src/sbin/ipfw/ipfw2.c:fill_icmp6types() is not properly\n \u003e initialized.\n\nYes, you are right. A data buffer is previously zeroed, but\nfill_ip6() function can modified some data while parsing ipv6\ndestination addresses. Quick fix is simple:\n\n--- ipfw2.c     23 Aug 2006 14:29:18 -0000      1.96\n+++ ipfw2.c     24 Aug 2006 09:08:06 -0000\n@@ -1206,7 +1206,7 @@\n  {\n         uint8_t type;\n\n-       cmd-\u003ed[0] = 0;\n+       bzero(cmd, sizeof(*cmd));\n         while (*av) {\n             if (*av == ',')\n                 av++;\n\n\nBut i think that here can be another similar issues.\n\n \u003e addressed with bug number 91245, which the query interface won't\n \u003e bring up for anything.  I was able to find it using the global\n \u003e Google.  I found a set of diffs at:\n\nPR 91245 was closed.\nhttp://www.freebsd.org/cgi/query-pr.cgi?pr=91245\n\n \u003e Problem 3:\n \u003e\n \u003e ipfw add allow ip6 from any to 2000::/16,2002::/16\n\nCan you try the attached patch?\n\n-- \nWBR, Andrey V. Elsukov"
+}

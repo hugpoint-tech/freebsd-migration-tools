@@ -1,0 +1,8 @@
+{
+ "id": 712021,
+ "bug_id": 178005,
+ "attachment_id": 0,
+ "creation_time": "2013-04-20T20:20:02Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "The setuid periodic script is checking the ls -l output of files and diffing it versus old data instead of just checking whether or not the mode has changed, which results in a lot of noise in the periodic emails that get sent out whenever an installworld is run. Here's the code that does this ( ls -liTd in etc/periodic/security/100.chksetuid )...\n\n46         MP=`mount -t ufs,zfs | awk '$0 !~ /no(suid|exec)/ { print $3 }'`\n47         find -sx $MP /dev/null -type f \\\n48             \\( -perm -u+x -or -perm -g+x -or -perm -o+x \\) \\\n49             \\( -perm -u+s -or -perm -g+s \\) -exec ls -liTd \\{\\} \\+ |\n50         check_diff setuid - \"${host} setuid diffs:\"\n\nWhile this might catch other issues (files being modified), it really doesn't make sense why this script should be doing this. Furthermore, changing the system locale will mess up output with -T in use because it's very locale dependent.\n\nUltimately, the only things that should really matter are:\n1. Whether or not the permissions changed.\n2. The path for the permissions (so the result can be properly correlated and diffed).\n\nFor debuggability the inode number and date should be included in the email, but not in the diff parsing. Thus, check_diff in etc/periodic/security/security.functions should be modified to only diff certain fields, potentially.\n\nHow-To-Repeat: - Run 100.chksetuid .\n- make installworld .\n- Reboot.\n- Run 100.chksetuid ."
+}

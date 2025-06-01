@@ -1,0 +1,8 @@
+{
+ "id": 1209900,
+ "bug_id": 263765,
+ "attachment_id": 0,
+ "creation_time": "2022-05-05T01:03:32Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "I see, ffs_sbput() indeed clears the flag, but nothing syncs it with updates\nto fs_fmod in ffs_alloc.c (just for example).  As result, if a block or inode\nis allocated or freed after fs_fmod is cleared but before struct fs is copied\nto the b_data of superblock in ffs_use_bwrite(), then we get fmod == 1 on disk.\n\nI am not sure, perhaps this could be considered a bug.  If we really do not\nwant to see fmod == 1 on disk, then zeroing should be moved to the\nffs_use_bwrite() function, right before recalculation of the checksum.\n\nMore important, I believe, UFS mount lock should be taken around bcopy()\nin ffs_use_bwrite(), although there is probably not too many volatile\nfields which can be corrupted, if any.\n\nI believe that zeroing in ffs_sbput() must be left for userspace consumers?"
+}

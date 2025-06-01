@@ -1,0 +1,8 @@
+{
+ "id": 925724,
+ "bug_id": 217760,
+ "attachment_id": 180780,
+ "creation_time": "2017-03-13T15:32:40Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Created attachment 180780\nproperly initialize port-\u003etransport\n\nOne of my 11.0-STABLE systems starts bsnmpd just fine but first request crashes it with sigsegv and core is generated.\n\n#0  snmpd_input (pi=0x2861ce98, tport=0x2861cc80) at /home/src/usr.sbin/bsnmpd/bsnmpd/../../../contrib/bsnmp/snmpd/main.c:1044\n1044            ret = tport-\u003etransport-\u003evtab-\u003erecv(tport, pi);\n(gdb) bt\n#0  snmpd_input (pi=0x2861ce98, tport=0x2861cc80) at /home/src/usr.sbin/bsnmpd/bsnmpd/../../../contrib/bsnmp/snmpd/main.c:1044\n#1  0x0805f36c in udp_input (fd=8, udata=0x2861cc80) at /home/src/usr.sbin/bsnmpd/bsnmpd/../../../contrib/bsnmp/snmpd/trans_udp.c:98\n#2  0x0804e116 in input (fd=8, mask=1, uap=0x28621080) at /home/src/usr.sbin/bsnmpd/bsnmpd/../../../contrib/bsnmp/snmpd/main.c:900\n#3  0x2809b9a7 in poll_dispatch (wait=1) at /home/src/contrib/libbegemot/rpoll.c:614\n#4  0x0804f9c5 in main (argc=0, argv=0xbfbfee78) at /home/src/usr.sbin/bsnmpd/bsnmpd/../../../contrib/bsnmp/snmpd/main.c:1714\nCurrent language:  auto; currently minimal\n(gdb) p tport-\u003etransport\n$1 = (struct transport *) 0x0\n\nOn line patch fixing the problem is attached. The problem manifests when bsnmpd.conf has several begemotSnmpdPortStatus.* lines for distinct IP addresses and addresses are unsorted, for example:\n\n# open standard SNMP ports\n#begemotSnmpdPortStatus.0.0.0.0.161 = 1\nbegemotSnmpdPortStatus.[192.168.1.6].161 = 1\nbegemotSnmpdPortStatus.127.0.0.1.161 = 1"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 23862,
+ "bug_id": 7786,
+ "attachment_id": 0,
+ "creation_time": "1998-08-30T19:40:01Z",
+ "creator": "schweikh@noc.dfn.de",
+ "text": "quota.h has superfluous semicolon in macro INITQFNAMES.\nThis is actually a violation of C syntax and only passes\ngcc because it is not used with the -pedantic flag.\n\nschweikh@hal9000:~/tmp 0 $ cat tst.c\nint i;;\nschweikh@hal9000:~/tmp 0 $ gcc -pedantic -c tst.c\ntst.c:1: warning: ANSI C does not allow extra `;' outside of a function\n\nI have grepped the source tree for INITQFNAMES:\n\nschweikh@hal9000:/usr/src 130 $ find . -name *.[ch] | xargs fgrep INITQFNAMES\n./libexec/rpc.rquotad/rquotad.c:        char    *qfextension[] = INITQFNAMES;\n./sbin/quotacheck/quotacheck.c:char *qfextension[] = INITQFNAMES;\n./sys/i386/boot/dosboot/quota.h:#define INITQFNAMES { \\\n./sys/ufs/ufs/quota.h:#define INITQFNAMES { \\\n./sys/ufs/ufs/ufs_quota.c:static char *quotatypes[] = INITQFNAMES;\n./usr.bin/quota/quota.c:char *qfextension[] = INITQFNAMES;\n./usr.sbin/edquota/edquota.c:char *qfextension[] = INITQFNAMES;\n./usr.sbin/quotaon/quotaon.c:char *qfextension[] = INITQFNAMES;\n./usr.sbin/repquota/repquota.c:char *qfextension[] = INITQFNAMES;\n\n\nFIX: remove the indicated semicolon in the two quota.h files,\n/usr/src/sys/i386/boot/dosboot/quota.h\n/usr/src/sys/ufs/ufs/quota.h\n\n/*\n * Definitions for the default names of the quotas files.\n */\n#define INITQFNAMES { \\\n    \"user\",     /* USRQUOTA */ \\\n    \"group\",    /* GRPQUOTA */ \\\n    \"undefined\", \\\n};   \u003c------------------------------remove this semicolon\n\n\n(Note that it is not a good idea to remove the semicolon in the *.c files\nbecause initializers should almost never be defined with a semicolon.)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1269804,
+ "bug_id": 273046,
+ "attachment_id": 0,
+ "creation_time": "2023-08-10T14:57:38Z",
+ "creator": "dfr@rabson.org",
+ "text": "On a test VM running on an XCP-NG host, I noticed that large-receive was happening on the VM's interface for traffic that was intended to be routed to a vnet-enabled jail. The resulting large coalesced packets were too large to be routed to the jail, causing retransmits and very slow performance inside the vnet jail.\n\nIn my setup which uses podman to manage setting up network bridging for the vnet jail, net.inet.ip.forwarding is set quite late and after network interfaces are configured so I tried adding net.inet.ip.forwarding=1 to sysctl.conf to see if that fixed the problem but the netfront driver was still coalescing segments on receive - this is clearly visible in packet captures as oversized packets.\n\nMy impression from reading iflib.c was that LRO should not happen if packet forwarding is enabled but netfront is missing this logic.\n\nBased on user reports, this problem may also be present in the virtio vtnet driver - one user reported slow podman network performance for a VM running on a Proxmox host."
+}

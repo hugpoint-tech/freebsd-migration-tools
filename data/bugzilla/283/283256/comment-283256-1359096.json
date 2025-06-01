@@ -1,0 +1,8 @@
+{
+ "id": 1359096,
+ "bug_id": 283256,
+ "attachment_id": 0,
+ "creation_time": "2025-04-13T02:11:10Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch main references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=43d19e6a4c42ade0f276ceca18a09e2e3829fce4\n\ncommit 43d19e6a4c42ade0f276ceca18a09e2e3829fce4\nAuthor:     Colin Percival \u003ccperciva@FreeBSD.org\u003e\nAuthorDate: 2025-04-08 22:50:01 +0000\nCommit:     Colin Percival \u003ccperciva@FreeBSD.org\u003e\nCommitDate: 2025-04-13 02:09:56 +0000\n\n    dhclient: Keep two clocks\n\n    Until July 2024, dhclient kept track of time as seconds-since-epoch as\n    a time_t.  This was a problem because (a) we wanted sub-second timeouts\n    and (b) timeouts didn't always do the right thing if the system clock\n    changed.\n\n    Switching to using CLOCK_MONOTONIC and struct timespec fixed those\n    issues but introduced a new problem: CLOCK_MONOTONIC values were being\n    intepreted as seconds-since-epoch and written to the dhclient.leases\n    file, causing confusion with DHCP leases expiring in early 1970.\n\n    Attempt to compromise between these by keeping track of both times;\n    any type within dhclient which is a time_t now refers to seconds past\n    the epoch, while any struct timespec value is a CLOCK_MONOTONIC time.\n\n    PR:     283256\n    Reviewed by:    dch\n    Fixes:  f0a38976b01e (\"dhclient: Use clock_gettime() instead of time()\")\n    Sponsored by:   Amazon\n    Differential Revision:  https://reviews.freebsd.org/D49720\n\n sbin/dhclient/dhclient.c | 50 +++++++++++++++++++++---------------------------\n sbin/dhclient/dhcpd.h    |  4 ++--\n sbin/dhclient/dispatch.c | 14 +++++++++-----\n 3 files changed, 33 insertions(+), 35 deletions(-)"
+}

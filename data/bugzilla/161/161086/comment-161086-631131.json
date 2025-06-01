@@ -1,0 +1,8 @@
+{
+ "id": 631131,
+ "bug_id": 161086,
+ "attachment_id": 0,
+ "creation_time": "2011-09-28T01:50:08Z",
+ "creator": "mckusick@mckusick.com",
+ "text": " I have taken responsibility for working on this bug report (PR kern/161016).\n \n I propose the following change to correct it:\n \n Index: sys/kern/vfs_mount.c\n ===================================================================\n --- sys/kern/vfs_mount.c\t(revision 225807)\n +++ sys/kern/vfs_mount.c\t(working copy)\n @@ -1227,18 +1227,6 @@\n  \t\tmp-\u003emnt_kern_flag |= MNTK_UNMOUNTF;\n  \terror = 0;\n  \tif (mp-\u003emnt_lockref) {\n -\t\tif ((flags \u0026 MNT_FORCE) == 0) {\n -\t\t\tmp-\u003emnt_kern_flag \u0026= ~(MNTK_UNMOUNT | MNTK_NOINSMNTQ |\n -\t\t\t    MNTK_UNMOUNTF);\n -\t\t\tif (mp-\u003emnt_kern_flag \u0026 MNTK_MWAIT) {\n -\t\t\t\tmp-\u003emnt_kern_flag \u0026= ~MNTK_MWAIT;\n -\t\t\t\twakeup(mp);\n -\t\t\t}\n -\t\t\tMNT_IUNLOCK(mp);\n -\t\t\tif (coveredvp)\n -\t\t\t\tVOP_UNLOCK(coveredvp, 0);\n -\t\t\treturn (EBUSY);\n -\t\t}\n  \t\tmp-\u003emnt_kern_flag |= MNTK_DRAINING;\n  \t\terror = msleep(\u0026mp-\u003emnt_lockref, MNT_MTX(mp), PVFS,\n  \t\t    \"mount drain\", 0);\n \n The things to check for are:\n \n 1) That it fixes the EBUSY on unmount.\n \n 2) That it does not cause unmount to hang.\n \n I would appreciate feedback as to whether this fix helps.\n \n \tKirk McKusick"
+}

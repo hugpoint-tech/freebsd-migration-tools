@@ -1,0 +1,8 @@
+{
+ "id": 970962,
+ "bug_id": 224479,
+ "attachment_id": 0,
+ "creation_time": "2018-01-11T23:46:15Z",
+ "creator": "ota@j.email.ne.jp",
+ "text": "(In reply to Conrad Meyer from comment #31)\n\nif tmpfs uses large memory so that files on tmpfs were swapped out, the 1st swapoff_all() can fail due to insufficient memory.\n\nvfs_unmountall() will unmount and release such tmpfs memory so that 2nd swapoff_all() may be able to swapoff this time; however, if swap spaces left are still NFS files or mdconfig files, we will still get panic.\n\nSo, I changed swapoff_all() to release in the reverse order swap spaces are added.  System adds swap devices at start (given the penalty of mdconfig/NFS, raw devices are best and most suitable for default entries).\n\nWhen memory and swap space go short, I add md-file or NFS files to avoid immediate issues.  So, reverse order in swap_all will take outs manually added entries first to reduce chances of panic.\n\nActually... if all file systems are already unmounted, any processes get swapped-in from swap spaces cannot do much useful anyway; indeed, we may not need 2nd(existing) swapoff_all()..."
+}

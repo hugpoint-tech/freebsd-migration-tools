@@ -1,0 +1,8 @@
+{
+ "id": 77703,
+ "bug_id": 24942,
+ "attachment_id": 0,
+ "creation_time": "2001-02-08T01:20:00Z",
+ "creator": "yxiao@cisco.com",
+ "text": "Alarm clock can only fired once. Problem: SIGALRM blocked.\n\nFix: \n\nchange timer function:\n--- tftp.c      2000/08/01 20:38:08     1.2\n+++ tftp.c      2001/02/07 16:18:03\n@@ -455,9 +455,15 @@\n timer(sig)\n        int sig;\n {\n+       sigset_t sigset;\n+        int error;\n\n+       //signal(SIGALRM, timer);\n+       error = sigemptyset(\u0026sigset);\n+        error |= sigdelset(\u0026sigset, SIGALRM);\n+        error |= sigprocmask(SIG_SETMASK, \u0026sigset, NULL);\n        timeout += rexmtval;\n-       if (timeout \u003e= maxtimeout) {\n+       if (timeout \u003e= maxtimeout || error) {\n                printf(\"Transfer timed out.\\n\");\n                global_errno = ETIMEDOUT;\n                longjmp(toplevel, -1);"
+}

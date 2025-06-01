@@ -1,0 +1,8 @@
+{
+ "id": 924999,
+ "bug_id": 217637,
+ "attachment_id": 180626,
+ "creation_time": "2017-03-08T09:44:17Z",
+ "creator": "alexandre.martins@mc2-technologies.com",
+ "text": "Created attachment 180626\ntcpdump from the client side view\n\nHello,\n\nI currently having a strange problem, my web server accept two time the SAME tcp connection.\n\nAfter digging, it's due to a TCP retransmission. There is the TCP scenario:\n\n\nClient     |     SERVER     | Comment\n\nSYN -------------\u003e\n    \u003c------------- SYN/ACK\nACK -------------\u003e             Connection accepted in the server\n\nPUSH/ACK --------\u003e             POST /someURL HTTP/1.0\\r\\nContent-length: 10\\r\\n\\r\\n\n\n    \u003c------------- PUSH/ACK    500 error\n    \u003c------------- FIN/ACK     Connection closed in the server\n\nPUSH/ACK --------\u003e             data of the post\n    \u003c------------- RST         This reset seems to be lost or filtered by some firewall \n\nPUSH/ACK --------\u003e             Re-xmit all: POST /someURL HTTP/1.0\\r\\nContent-length: 10\\r\\n\\r\\ndatadatada\n        ?????????? =======\u003e    this cause the connection to be RE-ACCEPTED by the server !?!?!\n\nACK -------------\u003e             Ack the 500 error message\nACK -------------\u003e             Ack the FIN\n    \u003c------------- ACK         This ACK seems BROKEN. The TCP sequence mismatch\n\nAnd the connection never close properly until the TCP timeout.\n\nI attach the tcpdump of this connection from the client side."
+}

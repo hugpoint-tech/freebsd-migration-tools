@@ -1,0 +1,8 @@
+{
+ "id": 771652,
+ "bug_id": 191593,
+ "attachment_id": 0,
+ "creation_time": "2014-07-04T00:50:59Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Hi!\n\nI've seen sqlite3 crap out due to \"disk IO error\". It looks like the\nF_SETFL path is returning EDEADLK when it shouldn't be - only the\n\"wait\" version of this should be.\n\nThe kernel code looks to be:\n\nlf_setlock() -\u003e lf_add_outgoing() -\u003e lf_add_edge() -\u003e graph_add_edge()\n-\u003e EDEADLK\n\n.. and lf_setlock() will return an error from lf_add_outgoing()\nwithout checking if it's (a) EDEADLK, and (b) whether we're going to\nsleep or not.\n\nSo, sqlite3 trips up on this. I'm sure other things do. What should\nthe correct thing be? It looks like EWOULDBLOCK is the correct value\nto return for F_SETFL failing, not EDEADLK.\n\nWhat do those-who-know-POSIX-standards-better-than-I think?\n\nThanks!"
+}

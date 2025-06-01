@@ -1,0 +1,8 @@
+{
+ "id": 1032411,
+ "bug_id": 235018,
+ "attachment_id": 0,
+ "creation_time": "2019-01-17T07:15:43Z",
+ "creator": "aryeh.friedman@gmail.com",
+ "text": "The first diff in files/patch-jdk-src-solaris-native-java-io-UnixFileSystem_md.c:\n\n--- jdk/src/solaris/native/java/io/UnixFileSystem_md.c.orig     2018-12-12 23:07:51.229721000 +0100\n+++ jdk/src/solaris/native/java/io/UnixFileSystem_md.c  2018-12-12 23:12:21.847169000 +0100\n@@ -208,7 +208,8 @@\n     WITH_FIELD_PLATFORM_STRING(env, file, ids.path, path) {\n         struct stat64 sb;\n         if (stat64(path, \u0026sb) == 0) {\n-            rv = 1000 * (jlong)sb.st_mtime;\n+            rv  = (jlong)sb.st_mtim.tv_sec * 1000;\n+            rv += (jlong)sb.st_mtim.tv_nsec / 1000000;\n         }\n     } END_PLATFORM_STRING(env, path);\n     return rv;\n\nBreaks many applications that depend on second vs. millisecond resolution... for example the Last-modified header in tomcat is now incorrect and in a REST-like API/DB it leads the header and actual file time not being equal when they are in fact equal without the above patch.\n\nThis fundamentally breaks Java's promise of \"Compile one, run anywhere\""
+}

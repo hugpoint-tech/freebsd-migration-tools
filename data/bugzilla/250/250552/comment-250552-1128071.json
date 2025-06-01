@@ -1,0 +1,8 @@
+{
+ "id": 1128071,
+ "bug_id": 250552,
+ "attachment_id": 0,
+ "creation_time": "2020-10-23T03:14:48Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "I'm testing FreeBSD's multiple FIBs feature. Dangling route table entry remains when deleting ip address from interface after migrating the interface's fib number. It looks weird.\n\nThis can be reproduced on FreeBSD 12.1 RELEASE-p10 and FreeBSD 12.2 RC2.\n\nSteps to repeat: \nOn a system with net.fibs=4, Run the following commands:\n\n# ifconfig tap0 create fib 1\n# ifconfig tap0 inet 192.0.2.1/24\n# netstat -rnf inet -F 1\nRouting tables (fib: 1)\n\nInternet:\nDestination        Gateway            Flags     Netif Expire\n192.0.2.0/24       link#4             U          tap0\n192.0.2.1          link#4             UHS         lo0\n\n# ifconfig tap0 fib 2\n# ifconfig tap0 inet 192.0.2.1/24 delete\n# netstat -rnf inet -F 1\nRouting tables (fib: 1)\n\nInternet:\nDestination        Gateway            Flags     Netif Expire\n192.0.2.1          link#4             UHS         lo0\n\n\n**** Notice the loopback route table entry 192.0.2.1 remains after deleting address's of tap0. ****\n\n\n# ifconfig tap0 destroy\n# netstat -rnf inet -F 1\nRouting tables (fib: 1)\n\nInternet:\nDestination        Gateway            Flags     Netif Expire\n192.0.2.1          link#4             UHS         lo0\n\n**** Notice again the loopback route table entry 192.0.2.1 remains after destroying interface tap0. ****"
+}

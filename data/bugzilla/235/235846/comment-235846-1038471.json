@@ -1,0 +1,8 @@
+{
+ "id": 1038471,
+ "bug_id": 235846,
+ "attachment_id": 0,
+ "creation_time": "2019-02-20T16:13:22Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Peter Holm from comment #4)\nI see, sorry about that.  Please try this one instead:\n\nIs the panic reproducible in general?\n\ndiff --git a/sys/amd64/amd64/pmap.c b/sys/amd64/amd64/pmap.c\nindex c45b4316622b..c6c640dc733d 100644\n--- a/sys/amd64/amd64/pmap.c\n+++ b/sys/amd64/amd64/pmap.c\n@@ -4129,10 +4129,10 @@ pmap_demote_pde_locked(pmap_t pmap, pd_entry_t *pde, vm_offset_t va,\n        if (mpte-\u003ewire_count == 1) {\n                mpte-\u003ewire_count = NPTEPG;\n                pmap_fill_ptp(firstpte, newpte);\n-       }\n-       KASSERT((*firstpte \u0026 PG_FRAME) == (newpte \u0026 PG_FRAME),\n-           (\"pmap_demote_pde: firstpte and newpte map different physical\"\n-           \" addresses\"));\n+       } else\n+               KASSERT((*firstpte \u0026 PG_FRAME) == (newpte \u0026 PG_FRAME),\n+                   (\"pmap_demote_pde: firstpte and newpte map different physical\"\n+                   \" addresses: %#lx and %#lx\", *firstpte, newpte));\n \n        /*\n         * If the mapping has changed attributes, update the page table"
+}

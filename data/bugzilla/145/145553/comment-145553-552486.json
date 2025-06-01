@@ -1,0 +1,8 @@
+{
+ "id": 552486,
+ "bug_id": 145553,
+ "attachment_id": 0,
+ "creation_time": "2010-04-12T09:22:31Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Just tested via qemu, and patch does indeed deliver as expected.\n\nVerified with the following steps:\n\n1. Booted cd image.\n2. Specified the following via loader(8):\n\nset init_path=/usr/sbin/sysinstall\nset vfs.root.mountfrom=cd9660:/dev/acd0\n\n3. Selected appropriate locale.\n4. Brought up FIXIT shell.\n5. Prepared necessary filesystems:\n\nfor i in 0:256M 1:10M 2:10M; do\n    mdconfig -a -t malloc -s ${i##*:}\n    newfs /dev/md${i##%:*}\ndone\n\nmount /dev/md0 /tmp\nmount /dev/md1 /var\nmount /dev/md2 /tmp\ncp -Rfp /etc/ /tmp\numount /tmp\nmount /dev/md2 /etc\n\n6. Stepped through procedure as usual with partitioning and labeling.\n7. Chose minimum for the distribution.\n8. Set the medium to ftp.freebsd.org\n9. Provided bogus static IP for the first try.\n10. Switched to vty3 and noted default route (was bogus route).\n11. Pressed CTRL-C after it tried to connect to said address,\nrestarted sysinstall.\n12. Repeated steps 5. - 11., but provided valid IP data to sysinstall.\nInterface came up and route changed as expected; route(8) didn't\ncomplain that the default route already existed (symptom of previous\nbehavior). vty1 also reported the route change.\n\nThanks,\n-Garrett"
+}

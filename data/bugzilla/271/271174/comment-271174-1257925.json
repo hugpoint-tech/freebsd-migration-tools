@@ -1,0 +1,8 @@
+{
+ "id": 1257925,
+ "bug_id": 271174,
+ "attachment_id": 0,
+ "creation_time": "2023-05-01T16:19:33Z",
+ "creator": "bmueller@panasas.com",
+ "text": "The return result of an NFS readdir rpc include directory entries (dirents).  According to NFSv3 RFC, the struct entry3 (which represent the dirents) contains type fileid3 for the fileid.  fileid3 is a 64 bit number.\n\nHowever, we can see that in the FreeBSD kernel NFS server, when assembling the dirent, the server only marshalls 32 bits of the d_fileno: https://github.com/freebsd/freebsd-src/blob/main/sys/fs/nfsserver/nfs_nfsdport.c#L2259.  This results in the lower 32 bits of the fileno being transmitted.\n\nThis manifests as a problem with the libc getcwd call because under some circumstances, getcwd wants to manually determine the cwd by doing a series of readdirs, comparing the inode number (fileid) from the direntries with a stat of the current directory.  Stat (NFS getattr) will return a 64 bit fileid, but the readdir will be 32 bits, so the comparison never matches and getcwd fails.\n\nThe NFS server can be fixed by doing 64 bit fileid marshalling for NFSv3/4, while leaving it as 32 bits for NFSv2 where fileid."
+}

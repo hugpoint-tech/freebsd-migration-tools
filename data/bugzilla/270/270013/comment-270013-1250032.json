@@ -1,0 +1,8 @@
+{
+ "id": 1250032,
+ "bug_id": 270013,
+ "attachment_id": 0,
+ "creation_time": "2023-03-08T21:19:10Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "The documentation is a bit weird and I am not 100% sure whether removing all of them is right, I did a bit of analysis:\n\nThose are clear:\nhash (bundled since 7.4+)\njson (bundled since 8.0+)\npcre (bundled since 7.0+)\n\nUsed readelf -s \u003cext\u003e.so to get the symbols and search for in the frontend PHP code:\ndom: not used in code\nfileinfo: not used in code\nfilter: not used in code\nldap: checked at setup time, warning issued. Properly guarded with function_exists() and @function(). I guess this should be an option? Required for LDAP binds (authentication) against the frontend.\nopenssl: checked at setup time, warning issued. PHP seems to be always compiled with OpenSSL. As far as I can see, you can list it for the sake of completeness, but it seems to useless/noop.\nsimplexml: \n======\nroot@deblndw013x3j:/usr/local/www/zabbix6\n# grep -ri simplexml .\n./include/classes/import/readers/CXmlImportReader.php:          $result = simplexml_load_string($string, null, LIBXML_IMPORT_FLAGS);\n./include/classes/api/services/CItemGeneral.php:                                        \u0026\u0026 simplexml_load_string($posts, null, LIBXML_IMPORT_FLAGS) === false) {\n======\nThis I don't understand, xml is required, but not simplexml? This deserves an JIRA issue with Zabbix\nsnmp: A lot of hits \"grep -r -E -e 'snmp[0-9]?' --include='*.php' . | grep -v /views/\", but *none* use the SNMP lib and their functions, all interaction is just with the database which contains data obtained through SNMP from the Zabbix Server port.\n\nUpshot: simplexml must be added, ldap is OPTIONal.\n\nWDYT?"
+}

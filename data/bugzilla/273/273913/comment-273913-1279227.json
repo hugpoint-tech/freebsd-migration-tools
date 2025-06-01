@@ -1,0 +1,8 @@
+{
+ "id": 1279227,
+ "bug_id": 273913,
+ "attachment_id": 0,
+ "creation_time": "2023-10-10T14:54:43Z",
+ "creator": "john@sanren.ac.za",
+ "text": "I do not think it is arm specific. I saw the same on an amd64 running 14.0BETA5 using a GENERIC kernel with INVARIANTS and WITNESS compiled in. The machine was idle when it happend, but the network is IPv6 enabled:\n\nlock order reversal:\n 1st 0xfffffe001de59a70 tcphash (tcphash, sleep mutex) @ netinet/tcp_usrreq.c:1511\n 2nd 0xffffffff81aa9bc0 in6_ifaddr_lock (in6_ifaddr_lock, rm) @ netinet6/in6_src.c:303\nlock order tcphash -\u003e in6_ifaddr_lock attempted at:\n#0 0xffffffff80bbeb7e at witness_checkorder+0xbbe\n#1 0xffffffff80b44f89 at _rm_rlock_debug+0x139\n#2 0xffffffff80d7ab2a at in6_selectsrc+0x45a\n#3 0xffffffff80d7a681 at in6_selectsrc_socket+0x41\n#4 0xffffffff80d785d7 at in6_pcbconnect+0x247\n#5 0xffffffff80d5c7d4 at tcp6_connect+0xa4\n#6 0xffffffff80d5a0eb at tcp6_usr_connect+0x2eb\n#7 0xffffffff80bfc1d3 at soconnectat+0xb3\n#8 0xffffffff80c03380 at kern_connectat+0xe0\n#9 0xffffffff80c0328b at sys_connect+0x9b\n#10 0xffffffff810492b8 at amd64_syscall+0x138\n#11 0xffffffff8101aebb at fast_syscall_common+0xf8\nKDB: enter: witness_checkorder\n[ thread pid 2856 tid 100366 ]\nStopped at      kdb_enter+0x32: movq    $0,0xe2d1d3(%rip)\n\nGENERIC kernel with the recent patch (https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=274074) to fix alignment of 32 MSI interrupts and these additions to the config:\n\noptions         DDB\noptions         GDB\noptions         BREAK_TO_DEBUGGER\noptions         INVARIANTS\noptions         INVARIANT_SUPPORT\noptions         WITNESS\noptions         WITNESS_SKIPSPIN\noptions         WITNESS_KDB"
+}

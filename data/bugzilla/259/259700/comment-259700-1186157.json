@@ -1,0 +1,8 @@
+{
+ "id": 1186157,
+ "bug_id": 259700,
+ "attachment_id": 0,
+ "creation_time": "2021-11-11T00:06:11Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "See https://bugs.chromium.org/p/chromium/issues/detail?id=715658\n\nBetter start DBus user/session bus manually after login. On Linux this usually done transparently by (e)logind. On FreeBSD you can do something like this:\n\n$ cat \u003e\u003e/etc/profile\n# WARNING: zsh doesn't read this file by default, so use /etc/zprofile instead\n# XDG_RUNTIME_DIR is preferred but usually requires pam_xdg or consolekit2 (pam_ck_connector or ck_launch_session)\nif [ -n \"$XDG_RUNTIME_DIR\" ]; then\n    if ! pgrep -qf -U ${USER:-$(id -u)} dbus.\\*--session; then\n        dbus-daemon --session --fork --address=unix:runtime=yes 2\u003e/dev/null\n\t# Only necessary for some apps that fail to find default session bus (e.g., Emacs, Chrome)\n\t# https://gitlab.freedesktop.org/dbus/dbus/-/commit/e3f117e7610b\n\texport DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus\n    fi\nelse\n    eval $(dbus-launch --sh-syntax --exit-with-session 2\u003e/dev/null)\nfi"
+}

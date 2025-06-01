@@ -1,0 +1,8 @@
+{
+ "id": 19634,
+ "bug_id": 6399,
+ "attachment_id": 0,
+ "creation_time": "1999-05-05T09:45:09Z",
+ "creator": "jkoshy@FreeBSD.org",
+ "text": "A late followup (better late than never!) with some review comments:\n\n1 :::\n\n230         if ((fs = getfsfile(mntbuf-\u003ef_mntonname)) != NULL)\n231                 mntfromname = fs-\u003efs_spec;\n232         else\n233                 mntfromname = mntbuf-\u003ef_mntfromname;\n234         options = update_options(options,fs-\u003efs_mntops,mntbuf-\u003ef_flags);\n\nWe have a null pointer deference here if `getfsfile()' on line 230 returns\nNULL.\n\n2 :::\n\n602         for ( p = expopt; (o = strsep(\u0026p, \",\")) != NULL; ) {\n603                 if ( (tmpopt = malloc( strlen(o) + 2 + 1 )) == NULL)\n604                         err(1,NULL);\n605\n606                 strcpy(tmpopt,\"no\");\n607                 strcat(tmpopt,o);\n608                 remopt(newopt,tmpopt);\n609                 free(tmpopt);\n610\n611                 if (strncmp(\"no\",o,2) == 0) remopt(newopt,o+2); \n\nLines 606--608 are redundant if the option has a 'no' prefix; e.g:-\n\"nofoo\".  In this case the `remopt()' call gets called with `nonofoo'\nand is effectively a noop.  Shouldn't we be removing option 'foo' from\nthe `newopt' list instead?\n\nThanks for (patiently) redoing the patch for -current.\n\nRegards,\nKoshy\n\u003cjkoshy@freebsd.org\u003e"
+}

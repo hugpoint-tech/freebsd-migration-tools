@@ -1,0 +1,8 @@
+{
+ "id": 657568,
+ "bug_id": 166373,
+ "attachment_id": 0,
+ "creation_time": "2012-06-01T13:55:57Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "I reconsider, ucpp is buggy compared to clang-cpp. Here is an example of\nbroken en_US.UTF-8 locale: http://ompldr.org/vZTFvaQ/xterm.png\n\n  # affects a few non-unicode locales, e.g. zh_TW.big5\n  $ printf '\\\\xaa\\\\xab' | ucpp | sed '/^#/d; /^$/d'\n  \\xaaxab\n  $ printf '\\\\xaa\\\\xab' | cpp46 | sed '/^#/d; /^$/d'\n  \\xaa\\xab\n\n  # affects locale.alias\n  $ printf \"#if 0\\nfo'o\\n#endif\\nbar\\n\" | ucpp | sed '/^#/d; /^$/d'\n  \u003cstdin\u003e: line 2: truncated token\n  \u003cstdin\u003e: line 5: unterminated #if construction (depth 1)\n  $ printf \"#if 0\\nfo'o\\n#endif\\nbar\\n\" | cpp46 | sed '/^#/d; /^$/d'\n  \u003cstdin\u003e:2:3: warning: missing terminating ' character [enabled by default]\n  bar\n\nA quick diff(1) in nls/ directory showed only whitespace difference\nbetween cpp46 and clang-cpp for me.\n\n  # autoconf assumes -traditional is only for whitespace\n  $ echo ftp://localhost | clang-cpp | sed '/^#/d; /^$/d'\n  ftp:\n  $ echo ftp://localhost | clang-cpp -traditional | sed '/^#/d; /^$/d'\n  ftp://localhost\n"
+}

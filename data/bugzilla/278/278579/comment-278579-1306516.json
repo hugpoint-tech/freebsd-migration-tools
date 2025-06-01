@@ -1,0 +1,8 @@
+{
+ "id": 1306516,
+ "bug_id": 278579,
+ "attachment_id": 0,
+ "creation_time": "2024-04-25T13:43:38Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "If LANG is set to C.UTF-8, then typing illegal UTF-8 in nvi can cause\nv_event_get() to access elements in gp-\u003ei_event[] even though\ngp-\u003ei_cnt is zero -- that is, elements that have not been properly\nset.\n\nHere's how this can happen. v_event_get() calls gp-\u003escr_event(), which\nis cl_event(). If the input is bad UTF-8, cl_event() sets evp-\u003ee_event\nto E_STRING, evp-\u003ee_len to zero, and returns zero (no error).\nv_event_get() calls v_event_append(), but since e_len is zero, nothing\nis put in gp-\u003ei_event[] and gp-\u003ei_cnt is not incremented. But the code\ngoes on to use gp-\u003ei_event[gp-\u003ei_next], even though that element\nwasn't set.\n\nAnother consequence is that v_event_get() calls QREM(1) before returning\n(line 670 of common/key.c), but since i_cnt was likely zero, QREM()'s\ndecrement may wrap i_cnt to a huge unsigned.\n\nSince i_cnt can now incorrectly be \u003e 0, v_key()'s next call to\nv_event_get() can incorrectly return whatever happened to be in\ngp-\u003ei_event[0], and if it's not valid, the abort() in v_event_err()\nmay be called.\n\nYou can see the abort() by setting LANG to C.UTF-8, running\nnvi, and typing a pair of characters with high bits set that\naren't legal utf8. On my keyboard, I can type option-u option-i,\nwhich generates 0xf5 0xe9.\n\nPerhaps this can be fixed by 1) goto retry in v_event_get() if\ngp-\u003escr_event() returns an E_STRING with e_len == 0, and 2) set\nclp-\u003eskip = 0 in cl_event() on Invalid input, to reset the UTF-8\nparsing state. But I do not understand the code well enough to be\nsure."
+}

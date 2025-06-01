@@ -1,0 +1,8 @@
+{
+ "id": 72933,
+ "bug_id": 23409,
+ "attachment_id": 0,
+ "creation_time": "2000-12-11T01:53:21Z",
+ "creator": "esoha@cisco.com",
+ "text": "The error is in sys/dev/ata/atapi-cd.c, line 122:\n\n    /* get drive capabilities, some drives needs this repeated */\n    for (count = 0 ; count \u003c 5 ; count++) {\n\tif (!(error = acd_mode_sense(cdp, ATAPI_CDROM_CAP_PAGE,\n\t\t\t\t     (caddr_t)\u0026cdp-\u003ecap, sizeof(cdp-\u003ecap))))\n\t    break;\n    }\n\nFor debugging purposes, I changed 5 to 0xffffff.\n\nWhen I have a CD installed in the drive or the CD-RW tray is open, I\nusually need only two or three retries.  When the CD-RW drive is\nclosed and there is no CD in it, I need between 6400 and 6500 retries.\nThe number of retries required fluctuates and drops significantly if I\nput a delay before the for() loop.  The drive is likely not ready by\nthe time the ATAPI_CDROM_CAP_PAGE command is being issued.\n\nWhen the bug isn't being exhibited, the error returned by\nacd_mode_sense is 0x5.  (After getting error 0x5 once or twice, the\ndrive responds properly.)\n\nWhen in the bug case (closed and empty CD-RW drive), the error\nreturned on the first call to acd_mode_sense() is 0x5.  Subsequent\ncalls all return 0x10 (between 0x400 and 0x440 times) until the final\ncall which returns 0.\n\n-- \nEyal Soha \u003cesoha@cisco.com\u003e                    Work: (408) 527-9276\nSoftware Engineer                              Page: (800) 365-4578\nCisco Systems \u003chttp://www.cisco.com\u003e   Epage: esoha@epage.cisco.com"
+}

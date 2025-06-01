@@ -1,0 +1,8 @@
+{
+ "id": 781012,
+ "bug_id": 192890,
+ "attachment_id": 146116,
+ "creation_time": "2014-08-21T15:50:55Z",
+ "creator": "luca.pizzamiglio@gmail.com",
+ "text": "Created attachment 146116\nPatch to fix the problem\n\nOn FreeBSD 9.x i386 systems, debugging applications with threads causes a crash of gdb.\n\nAnalysing the problem, I discovered a potential dangerous thread support initialization, causing the crash on this specific configuration.\nHowever it's conceptually wrong.\n\nWhen the libthr is loaded by gdb, the thread support want to add FreeBSD specific information to the current thread. Doing this, it cleans the thread list and re-add the current thread with the updated information (actually, the LWP id).\nThis operation call a free of the struct thread_info (clean/init the thread list) and a malloc of the same struct (add the current thread).\nThe problem is that a pointer to the struct thread_info is stored in another struct (about the execution context) and it's not updatable.\n\nOn FreeBSD 9.x i386 systems, the malloc return a new pointer; then the execution context contains a broken pointer.\nOn all other platform, the malloc return the same pointer and the execution context stays coherent.\n\nThis patch avoids to clean the thread list and to re-add the thread; it just update thread information of the current thread.\n\nTested on FreeBSD 9.3 on i386 and amd64 and FreeBSD 10 on i386."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 862145,
+ "bug_id": 206721,
+ "attachment_id": 0,
+ "creation_time": "2016-01-29T03:35:08Z",
+ "creator": "jlpetz@gmail.com",
+ "text": "After getting the Intel ixv driver working for AWS instances. I noticed there was some severe packet loss in iPerf tests. Looking at ifconfig I suspected there was an MTU blackhole between the virtual ethernet interface(ixv) with MTU of 1500 and the physical card MTU 9001. Confirmed by manually changing it and a few ping tests with 'Don't fragment' flags set.\n\nChanging the MTU manually corrected the packet loss. But then I was wondering why this wasn't automatically done like it is for other operating systems which I have run on AWS EC2.\n\nTurn out it looks like EC2 sends the MTU which should be configured for the interface as part of the DHCP response and FreeBSDs default client.\n1. Doesn't request the interface-mtu option(option 26). Needed for it to be in the response\n2. Even if it did request it this option and got it in the response. I don't think it would process it and configure the MTU on the NIC. Based on the source code I looked at.\n\nI was able to work around this by using the isc-dhcp43-client-4.3.3 package/port. But am logging this as a bug/feature-request as I feel this should be part of the base system. MTU blackholes are quite common when using jumbo frame(~9000 MTU) systems and this seems like a good way of avoiding them which a lot of other operating systems are doing by default.\n\nMore details about this are in the phabricator review which has my testing details(Link below). Make sure you click on the \"Show Older Changes\" to see all the text on the page below.\nhttps://reviews.freebsd.org/D4788"
+}

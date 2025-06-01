@@ -1,0 +1,8 @@
+{
+ "id": 1238397,
+ "bug_id": 268232,
+ "attachment_id": 0,
+ "creation_time": "2022-12-07T17:53:52Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "During an exp-run for llvm 15 (see bug 265425), it turned out that devel/p5-IO-Tty failed to build with clang 15:\n\n  Tty.xs:190:1: error: static declaration of 'strlcpy' follows non-static declaration\n  strlcpy(dst, src, siz)\n  ^\n  /usr/include/string.h:99:9: note: previous declaration is here\n  size_t   strlcpy(char * __restrict, const char * __restrict, size_t);\n           ^\n\nThis is because strlcpy() and various other functions are not correctly detected at configure time:\n\n  Looking for _getpty()...... not found.\n  Looking for getpt()........ not found.\n  Looking for grantpt()...... not found.\n  Looking for openpty()...... not found.\n  Looking for posix_openpt(). not found.\n  Looking for ptsname()...... not found.\n  Looking for ptsname_r().... not found.\n  Looking for sigaction().... not found.\n  Looking for strlcpy()...... not found.\n  Looking for ttyname()...... not found.\n  Looking for unlockpt()..... not found.\n  Looking for libutil.h...... FOUND.\n  Looking for pty.h.......... not found.\n  Looking for sys/pty.h...... not found.\n  Looking for sys/ptyio.h.... not found.\n  Looking for sys/stropts.h.. not found.\n  Looking for termio.h....... not found.\n  Looking for termios.h...... FOUND.\n  Looking for util.h......... not found.\n\nMakefile.PL contains a C fragment that is used for this detection, but it assigns the incorrect type to the value returned from the tested function. This leads to compilation errors, even if the tested function *is* available.\n\nFix this by using the correct type for the variable containing the return value."
+}

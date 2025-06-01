@@ -1,0 +1,8 @@
+{
+ "id": 839895,
+ "bug_id": 202531,
+ "attachment_id": 0,
+ "creation_time": "2015-09-10T17:50:35Z",
+ "creator": "bsdbug-ihj@nirn.mozmail.com",
+ "text": "I've tracked down the cause of this bug to the change in ca_root_nss package which now provides the /etc/ssl/cert.pem symlink to the Mozilla CA root-cert X.509 bundle.\n\nThe issue here is that Subversion (or the OpenSSL calls it relies on) chokes when a duplicate CA is added to the list of trusted roots. When this happens, the high-level action of \"loading\" the file specified by ssl-authority-files in the system or user-specific 'servers' file will fail.\n\nThe failure mode is identical to the case where the file doesn't actually exist, leaving the user with little clue about the root cause. At this point it's a Subversion/OpenSSL issue, not specific to FreeBSD.\n\nIf any other users run into this bug, the solution is to verify the root-CA for the server in question really is in the bundle referenced by cert.pem, then remove the configuration directive pointing to the same cert. Optionally removing the cert.pem symlink (or the port option creating it) restores the old behavior of the ca_root_nss port and the packages that will use this file by default.\n\nUnless there was more to do, I think this bug can be closed out."
+}

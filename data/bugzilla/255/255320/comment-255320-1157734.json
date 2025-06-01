@@ -1,0 +1,8 @@
+{
+ "id": 1157734,
+ "bug_id": 255320,
+ "attachment_id": 0,
+ "creation_time": "2021-04-22T08:21:17Z",
+ "creator": "pkk@spth.de",
+ "text": "I noticed some programs failing on my Raspi 4 on FreeBSD 13, and tracked the issue down to setjmp behaviour.\n\nApparently setjmp returns 0 when it should return 1.\n\nThe FreeBSD man page for setjmp / longjmp does _not_ state that setjmp should return 1 on a longjmp with argument 0. But it states that the functions are conforming to the ISO C90 standard. All C standards, including ISO C90 mandate that setjmp should return 1 on a longjmp with argument 0.\n\nI don't know if this is an issue specific to aarch64, or just some generic FreeBSD issue, as the Raspi is my only FreeBSD system.\n\nI created a small test program to reproduce the issue; it fails on the Raspi, but passes on Debian GNU/Linux on amd64:\n\nI compile using cc test.c, execute via ./a.out.\n\n#include \u003csetjmp.h\u003e\n#include \u003cassert.h\u003e\n\njmp_buf buf;\n\nvoid g(void)\n{\n\t// When called with an argument of 0, longjmp() should make setjmp() return 1 instead.\n\tlongjmp(buf, 0);\n\tg();\n}\n\nvoid f1(void)\n{\n\tstatic int i;\n\tint j;\n\ti = 0;\n\tj = setjmp(buf);\n\tassert(i == j);\n\ti++;\n\tif(!j)\n\t\tg();\n}\n\nint main(void)\n{\n\tf1();\t\n\treturn 0;\n}"
+}

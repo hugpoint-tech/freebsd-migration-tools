@@ -1,0 +1,8 @@
+{
+ "id": 5167,
+ "bug_id": 1730,
+ "attachment_id": 0,
+ "creation_time": "1996-10-06T04:20:02Z",
+ "creator": "dcs@gns.com.br",
+ "text": "\n\t\nThe drive gets recognized but wcd_describe is rarely called, and\neven when that happens you can't mount the drive.\n\nThis happens because a DELAY is missing in one loop, and ARS_BSY\nflag is being ignored in another (atapi_request_immediate and\natapi_wait_cmd functions).\n\nFix: \n\nApply this patch (unified diff):\n\n\n--- atapi.c\t1996/10/05 21:06:44\t1.1\n+++ atapi.c\t1996/10/06 02:25:16\t1.1.1.2\n@@ -585,7 +585,7 @@\n \t\tireason = inb (ata-\u003eport + AR_IREASON);\n \t\tac-\u003eresult.status = inb (ata-\u003eport + AR_STATUS);\n \t\tphase = (ireason \u0026 (ARI_CMD | ARI_IN)) |\n-\t\t\t(ac-\u003eresult.status \u0026 ARS_DRQ);\n+\t\t\t(ac-\u003eresult.status \u0026 (ARS_DRQ|ARS_BSY));\n \t\tif (phase == PHASE_CMDOUT)\n \t\t\tbreak;\n \t\tDELAY (10);\n@@ -898,8 +898,11 @@\n \t\twhile (atapi_io (ata, ac))\n \t\t\t/* Wait for DRQ deassert. */\n \t\t\tfor (cnt=2000; cnt\u003e0; --cnt)\n+\t\t\t\t{\n \t\t\t\tif (! (inb (ata-\u003eport + AR_STATUS) \u0026 ARS_DRQ))\n \t\t\t\t\tbreak;\n+\t\t\t\tDELAY(10);\n+\t\t\t\t}\n \t}\n \treturn (ac-\u003eresult);\n }\nHow-To-Repeat: \n\t\nInstall an HITACHI CDR-7730 CD-ROM drive as slave in the secondary IDE\n(well, I haven't tried other setups... :), configure ATAPI options in the\nkernel, reboot.\n\ndmesg | grep wcd0\t\t\t#Shows nothing most of the time\nmount -t cd9660 -r /dev/wcd0c /mnt\t#Won't work"
+}

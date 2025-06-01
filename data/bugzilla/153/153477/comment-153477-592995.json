@@ -1,0 +1,8 @@
+{
+ "id": 592995,
+ "bug_id": 153477,
+ "attachment_id": 0,
+ "creation_time": "2010-12-28T00:20:12Z",
+ "creator": "cperciva@FreeBSD.org",
+ "text": "\nIn the FreeBSD/i386 Xen/PV pmap.c code, the vm page queue lock is abused\nto control access to the queue of page remapping hypervisor requests.\nThis lock is asserted in _xen_queue_pt_update in i386/xen/xen_machdep.c,\nand this results in it being locked/unlocked a number of times in\ni386/xen/pmap.c.  (Judging by the i386 code, there are times when\nholding the vm page queue lock in pmap.c is appropriate; but the locking\nin pmap_pte and pmap_pte_release is not such an occasion, for example.)\n\nIn addition to being subjectively inappropriate, the current locking\ncreates a LOR between the vm page queue lock and PMAP2mutex.\n\nFix: \n\nWe should probably have a new xen_pt_update_mtx spin mutex, lock/unlock\nit in i386/xen/pmap.c around the page table update calls, and then audit\nthe vm_page_lock_queues calls to see which can be ripped out.\n\nI'll probably get around to doing this at some point (this PR is mostly\nan aide-memoire) but I'd be overjoyed if someone else wants to look at\nthis first...\nHow-To-Repeat: \nRunning 'mdconfig -l' results in a LOR warning being printed."
+}

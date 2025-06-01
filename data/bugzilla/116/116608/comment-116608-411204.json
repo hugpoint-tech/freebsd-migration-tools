@@ -1,0 +1,8 @@
+{
+ "id": 411204,
+ "bug_id": 116608,
+ "attachment_id": 0,
+ "creation_time": "2007-09-24T16:30:02Z",
+ "creator": "ports@grosbein.net",
+ "text": "\tSuppose, there is a line in /etc/fstab:\n\n/dev/md0 /mnt/tmp  msdosfs ro,noauto 0 0\n\n\tThe command 'mount /mnt/tmp' works all right.\n\n\tOne may try to use 'mount -o rw /mnt/tmp' when wishes\n\tto mount it read-write initially. It works also, but\n\tany write access to the filesystem returns 'Permission denied'\n\tfrom geom layer, so filesystem cannot be unmounted and\n\tkernel panic is imminent. The reason is that latter command\n\ttranslates to 'mount_msdosfs -o ro -o rw /mnt/tmp'\n\tand vfs_donmount() clears MNT_RDONLY flag for this mount.\n\n\tBut msdosfs code checks for \"ro\" option (and does no check for \"rw\")\n\tand passes read-only indicator to g_vfs_open().\n\nFix: One way to fix this is to rely on vfs_donmount's processing\n\tof mount options for MNT_RDONLY flag instead of using own version,\n\tbecause this gives us the behavour we expect: an option that comes\n\tfrom command line overrides one coming from fstab.\n\n\tNote that this is partial backout (very little one)\n\tof msdosfs_vfsops.c,1.134\nHow-To-Repeat: \n\tLet's make filesystem to play with (be ready for panic, though)\n\nmdconfig -a -t swap -s 1440k\nnewfs_msdosfs -f 1440 /dev/md0\nmount -o ro -o rw /dev/md0 /mnt/tmp\n\n\t(the point of no return)\n\ntouch /mnt/tmp/file\n\n\tHere you'll get EPERM for touch and errors from geom like this:\n\ng_vfs_done():md0[WRITE(offset=XXX, length=YYY)]error = 1\n\n\tWe made it dirty and won't be able to flush buffer,\n\tso there will be a panic."
+}

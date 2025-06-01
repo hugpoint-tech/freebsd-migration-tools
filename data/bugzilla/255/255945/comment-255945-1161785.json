@@ -1,0 +1,8 @@
+{
+ "id": 1161785,
+ "bug_id": 255945,
+ "attachment_id": 0,
+ "creation_time": "2021-05-17T14:54:11Z",
+ "creator": "jSML4ThWwBID69YC@protonmail.com",
+ "text": "Hello, \n\nFlock no longer works on FreeBSD 13p0 when using FuseFS. This has been tested with two different fusefs clients. \n\nTested: MooseFS 3.0.115 from the ports tree. \nTested: fusefs-sshfs-3.7.1 from packages. \n\nHere's a simple test to demonstrate the issue using sshfs. \n\n1: Install fusefs-sshfs, flock, and bash.\n\npkg install fusefs-sshfs flock bash\n\n2: Create a sshfs mount. You can do this locally by allowing root login over ssh, or any other user. I'll use root to avoid any permission type issues. \n \nservice sshd onestart\nmkdir /mnt/test\nsshfs root@127.0.0.1:/root /mnt/test\n\nThe contents of /root should now be showing at /mnt/test\n\n3: Create the test script at /mnt/test/flock-test.sh \n\n-------------------\n#!/usr/bin/env bash\n\nexec 200\u003e ./lock.file\necho \"Acquire lock\"\nflock -n 200 || exit 1\necho \"Sleep 5 secs.\"\nsleep 5\necho \"Release lock\"\nflock -u 200 || exit 2\necho \"Lock released\"\nexit\n---------------\n\n4: Make the script executable\n\nchmod u+x flock-test.sh\n\n5: Run the script twice. \n\n./flock-test.sh\n\nThere seems to be different errors depending on if the 'lock.file' previously exists. \n\nNote, the same issue happens on MooseFS, but it's more complicated to setup. Here are MooseFS setup instructions, previously written for bug #245689, https://bz-attachments.freebsd.org/attachment.cgi?id=213598\n\nThe flock-test.sh script works as expected on FreeBSD 12.2."
+}

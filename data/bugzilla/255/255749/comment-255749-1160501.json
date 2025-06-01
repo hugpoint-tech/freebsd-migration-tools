@@ -1,0 +1,8 @@
+{
+ "id": 1160501,
+ "bug_id": 255749,
+ "attachment_id": 0,
+ "creation_time": "2021-05-10T13:33:51Z",
+ "creator": "topical@gmx.net",
+ "text": "If you have an interface with jumbo frame support enabled and create a vlan, mtu is not inherited by its IPv6 vlan interface. IPv4 is unaffected.\n\nSetup: change mtu of an interface to 9k, create a vlan sub interface and (optionally) activate it:\n\n  # ifconfig vtnet0 mtu 9000\n  # ifconfig vtnet0.1000 create\n  # ifconfig vtnet0.1000 up\n\nCheck state with \"ifconfig\"\n\n  vtnet0: flags=8863\u003cUP,BROADCAST,RUNNING,SIMPLEX,MULTICAST\u003e metric 0 mtu 9000\n  ...\n  vtnet0.1000: flags=8843\u003cUP,BROADCAST,RUNNING,SIMPLEX,MULTICAST\u003e metric 0 mtu 9000\n\nCheck ipv6 mtu:\n\n  # ndp -i vtnet0.1000\n\n  linkmtu=0, maxmtu=1500, curhlim=64, basereachable=30s0ms, reachable=19s, retrans=1s0ms\n  ...\n\nYou see that \"maxmtu=1500\". So, this host never uses IPv6 with Jumbo frames on this vlan.\n\nTo make things worse: Mellanox cards don't like that scenario and have massive packet loss (but this is another story).\n\nTo fix it, you need to temporarily change mtu of vlan interface\n\n  # ifconfig vtnet0.1000 mtu 8000\n  # ifconfig vtnet0.1000 mtu 9000\n  # ndp -i vtnet0.1000\n\n  linkmtu=0, maxmtu=9000, curhlim=64, basereachable=30s0ms, reachable=19s, retrans=1s0ms"
+}

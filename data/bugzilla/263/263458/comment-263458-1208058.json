@@ -1,0 +1,8 @@
+{
+ "id": 1208058,
+ "bug_id": 263458,
+ "attachment_id": 233383,
+ "creation_time": "2022-04-21T22:11:56Z",
+ "creator": "cgull@glup.org",
+ "text": "Created attachment 233383\nsuggested change to eliminate a sleep(1)\n\nWe recently discovered a bug in our `bsdinstall` package-install script; `pkg query` wasn't being executed with a chroot into the target.  This caused `/usr/sbin/pkg` to be invoked, it of course tries to bootstrap.  On our install-CD boot, network has been configured but DNS is broken, so an error is returned quickly by the resolver.  In this situation `/usr/sbin/pkg` sleeps 1 second before retries, and it retries 4 times.  This multiplied to a 5+ minute delay in install that went unnoticed for years-- our fault, of course.\n\nThis is not an earth-shattering bug and it no longer affects us, but if anyone else thinks it should be fixed, I've attached a suggested patch that removes the sleep.  Network error/retry handling is always debatable of course, but it seems reasonable to take that sleep out.  This program is not that likely to be misused in ways that hammer servers.  Suggested patch attached, also available at `https://github.com/cgull/freebsd-src`, branch `pkg-delay`.\n\nThis sleep is in code that was copied from `pkg` itself, and `libpkg/fetch_libfetch.c` contains a corresponding `sleep(1)` also.  But the code in `pkg` has grown more complex and it seems the path to this particular case is narrower, I wasn't able to reproduce this in `pkg`."
+}

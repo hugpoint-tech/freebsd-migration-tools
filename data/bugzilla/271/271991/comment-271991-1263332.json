@@ -1,0 +1,8 @@
+{
+ "id": 1263332,
+ "bug_id": 271991,
+ "attachment_id": 0,
+ "creation_time": "2023-06-16T18:59:29Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Ivan Rozhuk from comment #3)\nI don't think m_pullup() is the right layer to handle unmapped mbufs.  It gets called very frequently, and mb_unmapped_to_ext() is expensive even when it does nothing, since it has to visit each mbuf in the chain.\n\n(In reply to Ivan Rozhuk from comment #4)\nThe patch to m_pullup() assumes that \"m\" is mapped, which might not be the case.\n\nHmm, virtio-net does not set IFCAP_MEXTPG, so the protocol layer will map mbufs.  This is actually rather suboptimal, and the virtio driver should learn to handle unmapped mbufs.  e1000 should handle unmapped mbufs though.  Do you see \"NOMAP\" in the interface flags as reported by ifconfig?\n\n(In reply to Ivan Rozhuk from comment #0)\nIt would be useful to see output from 'p/x *n' in frame 9.\n\nI think it wouldn't be too difficult to make bpf_filter() work with unmapped mbufs.  m_xword() and m_xhalf() would need a bit of special logic.  And I think ng_bpf() doesn't need to do this pullup at all unless BPF JIT is enabled, and that's not even compiled into GENERIC."
+}

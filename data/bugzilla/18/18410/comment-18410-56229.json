@@ -1,0 +1,8 @@
+{
+ "id": 56229,
+ "bug_id": 18410,
+ "attachment_id": 0,
+ "creation_time": "2000-05-07T09:10:14Z",
+ "creator": "alexk@east.ru",
+ "text": " \n Virtual hosts support in ftpd is broken.\n ftpd.c, version 1.62, use strtok() multiple times on single line\n trying to build list of aliases for each virtual host described\n in /etc/ftphosts. Under some circumstances this leads to wrong\n actions (like chroot) effectively breaking ftp access.\n\nFix: \n\nThe really quick and dirty patch is below:\n \n --- /usr/src/libexec/ftpd/ftpd.c\tThu Feb 10 22:51:30 2000\n +++ ftpd.c\tSat May  6 19:10:19 2000\n @@ -370,7 +370,6 @@\n  \t\t\tbreak;\n  \t\t}\n  \t}\n -\n  #ifdef VIRTUAL_HOSTING\n  \tinithosts();\n  #endif\n @@ -617,7 +616,7 @@\n  \tFILE *fp;\n  \tchar *cp;\n  \tstruct ftphost *hrp, *lhrp;\n -\tchar line[1024];\n +\tchar line[1024], l1[1024];\n  \tstruct addrinfo hints, *res, *ai;\n  \n  \t/*\n @@ -658,7 +657,8 @@\n  \t\t\t\tcontinue;\n  \t\t\t}\n  \t\t\t*cp = '\\0';\n -\t\t\tcp = strtok(line, \" \\t\");\n +\t\t\tstrncpy(l1, line, sizeof(line)-1); l1[sizeof(l1)-1]='\\0';\n +\t\t\tcp = strtok(l1, \" \\t\");\n  \t\t\t/* skip comments and empty lines */\n  \t\t\tif (cp == NULL || line[0] == '#')\n  \t\t\t\tcontinue;\n @@ -761,7 +761,8 @@\n  \t\t\t\t++i;\n  \t\t\t}\n  \t\t\t/* XXX: re-initialization for getaddrinfo() loop */\n -\t\t\tcp = strtok(line, \" \\t\");\n +\t\t\tstrncpy(l1, line, sizeof(line)-1); l1[sizeof(l1)-1]='\\0';\n +\t\t\tcp = strtok(l1, \" \\t\");\n  \t\t      }\n  \t\t}\n  \t\t(void) fclose(fp);\nHow-To-Repeat:  \n We have ftpd made without INET6 option and also kernel without INET6\n support. getaddrinfo() in this environment returns two elements for\n each address."
+}

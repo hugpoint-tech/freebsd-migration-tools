@@ -1,0 +1,8 @@
+{
+ "id": 27884,
+ "bug_id": 9173,
+ "attachment_id": 0,
+ "creation_time": "1998-12-22T17:30:01Z",
+ "creator": "cracauer@cons.org",
+ "text": "\nwhile : ; do\n\tsleep 2\ndone\n\nSuppose the child (sleep) is killed by a signal (i.e. SIGINT,\nSIGQUIT).\n\nIn a script (a non-interactivr shell) the shell executing the script\nexits itself with signal status if a child returns with\nWIFSIGNALED(status). \n\nIn an interactive shell, you can't exit. But - and that is what\nFreeBSD's sh does not - it should break the loop.\n\nFix: \n\nIf sh is running interactivly, it should remember the entry to a\nloop. Only the outermost loop entry must be recognized, since you want\nto break the outermost.\n\nIf a child dies with WIFSIGNALED(status), it should immedeatly break\nall loops it is in.\n\nYou can't do this with setjmp/longjmp, since you want variable values\nthat were changed in the loop to persist.\n\nThe right approch is probably to change all calls to\n  someloop() {\n\tstatus = waitforjob(jp);\n\tblabla();\n  }\n\nto\n  someloop() {\n\tstatus = waitforjob(jp);\n\tif (is_interactive \u0026\u0026 WIFSIGNALED(status))\n\t\tbreak;\n\tblabla();\n  }\n\nThe tricky part is to do this only for those places that actually are\nparts of shell loops, otherwise you can easily shoot the user's login\nshell :-] And don't forget to cleanup after yourself.\n\nI'll give it a shot over holidyes, this PR is to document the\nproblem. \n\nMartin\nHow-To-Repeat: \nIn an interactive sh, type the following lines and try to break it by\nsome signal (SIGINT, SIGQUIT, whatever). The child (sleep) will\nexit, but the loop will not end and hence a new sleep is spawned.\n\nwhile : ; do\n\tsleep 2\ndone"
+}

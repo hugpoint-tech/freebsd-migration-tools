@@ -1,0 +1,8 @@
+{
+ "id": 549976,
+ "bug_id": 144987,
+ "attachment_id": 0,
+ "creation_time": "2010-12-22T08:58:34Z",
+ "creator": "bschmidt@FreeBSD.org",
+ "text": "On Monday 20 December 2010 15:10:02 Bernhard Schmidt wrote:\n\u003e Hi,\n\u003e \n\u003e The issue here is that you've tried to use wlaninject with a VAP in sta\n\u003e mode. As soon as wlaninject tries to set up the interface, net80211 will\n\u003e start to do a scan which means constant channel switches until it finds\n\u003e something to associate. wlaninject itself is not aware of that and happily\n\u003e injects frames no matter what the current channel state is, as the above\n\u003e trace shows, you hit a point where no channel is set between 2 scan\n\u003e interations.\n\u003e \n\u003e wlaninject is supposed to be used with VAPs in ahdemo mode and wpi(4) does\n\u003e not support that mode. Therefore I tend to close this PR.\n\nLooking closer I might have been a bit wrong. There are several issue here.. \nOne being that ni_chan is used in the TX path which should and can actually be \nreplaced by ic_curchan. This will fix the panic reported above, though, this \ndoes no longer obscure other issues. For examples, we are allowed to pass in \nframes of arbitrary length, extremely short frames will be discarded early due \nto an overflow checking the length (the message to long error). But, if the \nlength is just long enough to reach the driver it might still be shorter then \nthe header for a 802.11 frame. This will result in another panic() in \nm_copydata() as we try to copy over the header to firmware..\n\nI'll try to find a useful solution for that.\n\n-- \nBernhard"
+}

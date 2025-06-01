@@ -1,0 +1,8 @@
+{
+ "id": 841769,
+ "bug_id": 203327,
+ "attachment_id": 0,
+ "creation_time": "2015-09-25T21:04:31Z",
+ "creator": "dennis.noordsij@helsinki.fi",
+ "text": "Using git bisect the problem was introduced in:\n\n  commit 3ed5858902055d3500a6ab183f1395686921d026\n  Date:   Sun Jan 25 16:59:39 2015 +0000  \n\n  [trunk] use hidden visibility for static library (fixes issue 354)\n\n\nwhich references the following issue:\n  https://github.com/uclouvain/openjpeg/issues/354\n\n\nmupdf defines OPJ_STATIC, compiles static libraries libmupdf.a which contain openjp2, etc, and then links these into binaries (mutool, etc).\n\nThe same problem happens on a Linux distribution with the gcc toolchain.\n\nI don't know what the correct place is to fix this.\n\nWorkarounds:\n - remove the visibility (\"hidden\") in include/openjp2/openjpeg.h  (basically partially undo the above commit)\n - (untested) do not define OPJ_STATIC in mupdf (but according to comments in load-jpx.c this breaks windows compilation)\n - do not remove the thirdparty/ folder in the mupdf sources and let it statically link against those instead of the system libraries (mupdf already needs a patch to be able to use the system openjpeg)\n - ifdef hacks\n\n\nThe easiest workaround for others who run into this:\n\n--- usr/ports/graphics/mupdf/Makefile.old 2015-09-25 22:58:18.963166563 +0200\n+++ usr/ports/graphics/mupdf/Makefile     2015-09-25 22:58:25.875451670 +0200\n@@ -51,7 +51,6 @@\n                ${WRKSRC}/Makerules\n        @${REINPLACE_CMD} '/^CFLAGS/s|$$| -I${LOCALBASE}/include|' \\\n                ${WRKSRC}/Makefile\n-       @${RM} -r ${WRKSRC}/thirdparty/*\n \n post-build:\n        (cd ${WRKSRC} \u0026\u0026 ${SETENV} ${MAKE_ENV} ${MAKE_CMD} ${MAKE_FLAGS} \\"
+}

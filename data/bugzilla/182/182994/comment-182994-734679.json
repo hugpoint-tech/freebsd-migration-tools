@@ -1,0 +1,8 @@
+{
+ "id": 734679,
+ "bug_id": 182994,
+ "attachment_id": 0,
+ "creation_time": "2013-10-21T08:58:49Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: delphij\nDate: Mon Oct 21 07:58:37 2013\nNew Revision: 256833\nURL: http://svnweb.freebsd.org/changeset/base/256833\n\nLog:\n  Drop cm_lock before calling mapper_close, which in turn could call\n  _citrus_mapper_close again and result in a deadlock otherwise.\n  \n  This is similar to NetBSD PR/24023 (fixed in their r1.5 of this file).\n  \n  PR:\t\tbin/182994\n  Submitted by:\tFabian Keil \u003cfk fabiankeil de\u003e\n  MFC after:\t3 days\n\nModified:\n  head/lib/libc/iconv/citrus_mapper.c\n\nModified: head/lib/libc/iconv/citrus_mapper.c\n==============================================================================\n--- head/lib/libc/iconv/citrus_mapper.c\tMon Oct 21 07:49:36 2013\t(r256832)\n+++ head/lib/libc/iconv/citrus_mapper.c\tMon Oct 21 07:58:37 2013\t(r256833)\n@@ -381,7 +381,9 @@ _citrus_mapper_close(struct _citrus_mapp\n \t\t\t_CITRUS_HASH_REMOVE(cm, cm_entry);\n \t\t\tfree(cm-\u003ecm_key);\n \t\t}\n+\t\tUNLOCK(\u0026cm_lock);\n \t\tmapper_close(cm);\n+\t\treturn;\n quit:\n \t\tUNLOCK(\u0026cm_lock);\n \t}\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 56035,
+ "bug_id": 18354,
+ "attachment_id": 0,
+ "creation_time": "2000-05-02T23:30:01Z",
+ "creator": "goran.lowkrantz@infologigruppen.se",
+ "text": "After upgrade from 3.4-STABLE to 4.0-STABLE, a firewall with attached DMZ started to act funny. All incomming data addressed to the DMZ was sent to the local firewall host.\n\nConfiguration\n\n Internet\n    |\n    |xl0 - 212.214.163.69/26\n+---+---+xl1   +-----+\n|  FW1  +------+ DMZ | - 212.214.162.32/28\n+---+---+      +-----+\n    |xl2 - 192.168.99.1/30\n    |\n    |de2 - 192.168.99.2/30\n+---+---+\n|  FW2  |\n+---+---+\n    |\n    |\nInternal\nRFC 1918 net\n\nAfter testing I found that this behavior was coupled with starting of natd. As long as the divert rule was missing in the ipfw ruleset the data flowed to the DMZ as expected. But as soon as the divert rule was enabled, no more data to the DMZ, all sent to FW host.\nNatd was started as \nnatd -f /etc/natd.conf -a 212.214.163.69\n\nContent fo natd.conf:\nlog yes\nlog_denied yes\nuse_sockets yes\nsame_ports yes\nunregistered_only yes\n\nFix: \n\nAdd a skip rule to the ipfw ruleset that jumps the divert rule for data to the DMZ network.\n\n00098 skipto 100 ip from any to 212.214.162.32/28\n00099 divert 8668 ip from any to any via 212.214.163.69\n00100 allow ip from any to any via lo0\n00200 deny ip from any to 127.0.0.0/8\nHow-To-Repeat: Three NIC setup for DMZ, basic natd setup and start with any firewall type, have tested with open and had same problem."
+}

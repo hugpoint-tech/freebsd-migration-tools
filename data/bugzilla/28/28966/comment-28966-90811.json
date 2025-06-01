@@ -1,0 +1,8 @@
+{
+ "id": 90811,
+ "bug_id": 28966,
+ "attachment_id": 0,
+ "creation_time": "2001-07-19T09:51:11Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Tue, 17 Jul 2001, Jim Pirzyk wrote:\n\n\u003e  Not sure if this patch is technically correct in that it does not\n\u003e  save off the existing value of cw, but just sets to to the\n\u003e  default.\n\n\u003e  *** ./sys/i386/linux/linux_sysvec.c.orig\tSat Jul 14 22:32:48 2001\n\u003e  --- ./sys/i386/linux/linux_sysvec.c\tTue Jul 17 13:30:59 2001\n\u003e  ***************\n\u003e  *** 429,434 ****\n\u003e  --- 429,441 ----\n\u003e    \n\u003e    \tbzero(\u0026frame.sf_fpstate, sizeof(struct linux_fpstate));\n\u003e    \n\u003e  + \t/* \n\u003e  + \t * Need to set the NXP Code Word to match what linux uses.  This used\n\u003e  + \t * to be in each linux binary, but more receintly, it was moved to\n\u003e  + \t * the kernel and so we need to emulate that here.\n\u003e  + \t */\n\u003e  + \tframe.sf_fpstate.cw = __INITAL_LINUX_NPXCW__;\n\u003e  + \n\u003e    \tfor (i = 0; i \u003c (LINUX_NSIG_WORDS-1); i++)\n\u003e    \t\tframe.sf_extramask[i] = lmask.__bits[i+1];\n\u003e    \t\n\nEr, this only sets it (strictly: schedules setting of it) in linux_sendsig().\nI think it only works if the application catches a signal and returns fairly\nnormally form the signal handler.  Then sigreturn() sets it.\n\nYou need to set it setregs() in an emulator-specific way.  NetBSD sets it in\nsysent-specific setregs() named sv_setregs.\n\nBruce"
+}

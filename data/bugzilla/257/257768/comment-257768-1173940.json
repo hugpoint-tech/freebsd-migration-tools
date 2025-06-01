@@ -1,0 +1,8 @@
+{
+ "id": 1173940,
+ "bug_id": 257768,
+ "attachment_id": 0,
+ "creation_time": "2021-08-11T13:19:25Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "If a corrupt (or malicious) UDF disk contains root_icb.len -2032,\nudf_mountfs() ends up passing a size of zero to breadn_flags(),\nwhich causes it to return a bp with an unmapped b_data, which causes\nudf_mountfs()/udf_checktag() to pagefault. You can see this with the\nattached UDF image, using\n\n  mdconfig -f bad-udf.iso\n  mount_udf /dev/md0 /mnt\n\nwhich yields (on my amd64 13.0-RELEASE-p3 machine):\n\npanic: vm_fault_lookup: fault on nofault entry, addr: 0xfffffe0009cd8000\ncpuid = 0\ntime = 1628673343\nKDB: stack backtrace:\n#0 0xffffffff80c57515 at kdb_backtrace+0x65\n#1 0xffffffff80c09ef1 at vpanic+0x181\n#2 0xffffffff80c09d63 at panic+0x43\n#3 0xffffffff80f289db at vm_fault+0x144b\n#4 0xffffffff80f274b1 at vm_fault_trap+0xb1\n#5 0xffffffff8108b3b8 at trap_pfault+0x1f8\n#6 0xffffffff8108a86d at trap+0x27d\n#7 0xffffffff810619a8 at calltrap+0x8\n#8 0xffffffff80cdaa09 at vfs_domount+0x5e9\n#9 0xffffffff80cd9c27 at vfs_donmount+0x8e7\n#10 0xffffffff80cd9309 at sys_nmount+0x69\n#11 0xffffffff8108babc at amd64_syscall+0x10c\n#12 0xffffffff810622ce at fast_syscall_common+0xf8"
+}

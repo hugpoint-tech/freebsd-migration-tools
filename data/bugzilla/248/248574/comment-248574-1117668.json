@@ -1,0 +1,8 @@
+{
+ "id": 1117668,
+ "bug_id": 248574,
+ "attachment_id": 0,
+ "creation_time": "2020-08-11T19:16:19Z",
+ "creator": "cem@freebsd.org",
+ "text": "This indicates that the failing part of rmuser.sh is in rm_user():\n\n182         ! verbose \u0026\u0026 echo -n \" passwd\"\n183         verbose \u0026\u0026 echo -n \" from the system:\"\n184         ${PWCMD} userdel -n $login $pw_rswitch\n\nAnd the output of 'pw userdel -n vmail' (with or without additional -r) is:\n\npw: entry inconsistent\npw: pw_copy(): Invalid argument\n\nBoth the warning and EINVAL come from libutil's pw_copy(), while the err() termination comes via the pw_update() in pw(8).  The warning is produced if pw_equal() fails between the old_pw supplied to pw_copy() and the record of the same name parsed by pw_scan() out of /etc/master.passwd.  pw_equal looks at pw_name, pw_uid, pw_gid, pw_class, pw_change, pw_expire, pw_gecos, pw_dir, and pw_shell.\n\npw(8)'s old_pw comes from GETPWNAM(), which ... is PWF._getpwnam... which is just getpwnam(3) for non-relocated pw(8).  getpwnam(3) goes through nsdispatch and looks at /etc/pwd.db (or /etc/spwd.db) directly.\n\nSo it seems like your /etc/master.passwd is out of sync with your /etc/pwd.db."
+}

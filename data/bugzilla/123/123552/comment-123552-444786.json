@@ -1,0 +1,8 @@
+{
+ "id": 444786,
+ "bug_id": 123552,
+ "attachment_id": 0,
+ "creation_time": "2008-11-20T21:51:37Z",
+ "creator": "gtc@mm.st",
+ "text": "I've found that partially reverting revs 1.181.2.2 and 1.181.2.4 of \nsys/net/bpf.c stops the panic from happening. I have no idea why.\n\n--- bpf.c.bak\t2008-11-09 19:46:55.000000000 +0000\n+++ bpf.c\t2008-11-16 22:37:10.000000000 +0000\n@@ -85,6 +85,8 @@\n\n  #define PRINET  26\t\t\t/* interruptible */\n\n+#define\tM_SKIP_BPF\tM_SKIP_FIREWALL\n+\n  /*\n   * bpf_iflist is a list of BPF interface structures, each \ncorresponding to a\n   * specific DLT.  The same network interface might have several BPF \ninterface\n@@ -653,7 +655,7 @@\n  \t\t\tmc-\u003em_pkthdr.rcvif = ifp;\n  \t\t/* Set M_PROMISC for outgoing packets to be discarded. */\n  \t\tif (d-\u003ebd_direction == BPF_D_INOUT)\n-\t\t\tm-\u003em_flags |= M_PROMISC;\n+\t\t\tm-\u003em_flags |= M_SKIP_BPF;\n  \t} else\n  \t\tmc = NULL;\n\n@@ -1358,9 +1360,8 @@\n  \tint gottime;\n  \tstruct timeval tv;\n\n-\t/* Skip outgoing duplicate packets. */\n-\tif ((m-\u003em_flags \u0026 M_PROMISC) != 0 \u0026\u0026 m-\u003em_pkthdr.rcvif == NULL) {\n-\t\tm-\u003em_flags \u0026= ~M_PROMISC;\n+\tif (m-\u003em_flags \u0026 M_SKIP_BPF) {\n+\t\tm-\u003em_flags \u0026= ~M_SKIP_BPF;\n  \t\treturn;\n  \t}\n\n@@ -1413,9 +1414,8 @@\n  \tint gottime;\n  \tstruct timeval tv;\n\n-\t/* Skip outgoing duplicate packets. */\n-\tif ((m-\u003em_flags \u0026 M_PROMISC) != 0 \u0026\u0026 m-\u003em_pkthdr.rcvif == NULL) {\n-\t\tm-\u003em_flags \u0026= ~M_PROMISC;\n+\tif (m-\u003em_flags \u0026 M_SKIP_BPF) {\n+\t\tm-\u003em_flags \u0026= ~M_SKIP_BPF;\n  \t\treturn;\n  \t}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 427710,
+ "bug_id": 120055,
+ "attachment_id": 0,
+ "creation_time": "2008-01-27T18:50:00Z",
+ "creator": "patpr@davenulle.org",
+ "text": "kdump crashs with a segfault when dumping the content of the syscall\nfreebsd6_mmap :\n\n$ kdump\n 69472 bash     CALL freebsd6_mmap(0x3,0xbfbfdeb8,\u003cinvalid\u003e672202704,MAP_SHARED|[CUT],0,0,...\n\u003cSEGFAULT\u003e\n\nI've inserted some printf() in /usr/src/usr.bin/kdump/kdump.c and the\nproblem is that ktr-\u003enarg is equal to 3 when ktrsyscall() is called for\nthis syscall.\n\nLine 305,/usr/src/usr.bin/kdump/kdump.c\nvoid\nktrsyscall(struct ktr_syscall *ktr)\n{\n   int narg = ktr-\u003ektr_narg;\n   register_t *ip;\n[CUT]\n#ifdef SYS_freebsd6_mmap\n   } else if (ktr-\u003ektr_code == SYS_freebsd6_mmap) {\n             print_number(ip,narg,c);\n             print_number(ip,narg,c);\n             (void)putchar(',');\n             mmapprotname ((int)*ip);\n             (void)putchar(',');\n             ip++;\n             narg--;\n             mmapflagsname ((int)*ip);\n             ip++;\n             narg--;\n\nHere narg = -1 because the macro print_number() decrements narg.\nSo a after, it loops until it segfaults:\n[CUT]\n  while (narg) {\n                 print_number(ip,narg,c);\n               }\n (void)putchar(')');\n\nFor a fix, a \"while (narg\u003e0)\" will be safer but i don't know if this is\na bug on the call, a bug on ktrace or only a bug in kdump.\n\nRegards.\n\nHow-To-Repeat: The krace.out (gziped) can be found here :\n\nhttp://user.lamaiziere.net/patrick/ktrace.out.gz"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1168063,
+ "bug_id": 256868,
+ "attachment_id": 0,
+ "creation_time": "2021-06-28T09:44:24Z",
+ "creator": "pr@aoek.com",
+ "text": "Hi,\nI can reproduce under aarch64 a bug that possibly has been around for quite some time and reported as amd64: please check #142878 #128633 or #210906 among (possibly) others.\n\nlock order reversal:\n 1st 0xffffa00035320af0 zfs (zfs, lockmgr) @ /usr/src/sys/kern/vfs_mount.c:1108\n 2nd 0xffffa0201564ecb0 devfs (devfs, lockmgr) @ /usr/src/sys/kern/vfs_mount.c:1120\nlock order devfs -\u003e zfs established at:\n#0 0xffff0000004dd774 at witness_checkorder+0x438\n#1 0xffff000000441b4c at lockmgr_xlock+0x50\n#2 0xffff00000056a9d4 at _vn_lock+0x54\n#3 0xffff00000054b440 at vfs_domount+0xd74\n#4 0xffff000000549480 at vfs_donmount+0x2b8\n#5 0xffff00000054def8 at kernel_mount+0x4c\n#6 0xffff000000550610 at parse_mount+0x49c\n#7 0xffff00000054eea8 at vfs_mountroot+0x6d4\n#8 0xffff0000003fd668 at start_init+0x24\n#9 0xffff00000042a344 at fork_exit+0x74\n#10 0xffff00000076f7bc at fork_trampoline+0x14\nlock order zfs -\u003e devfs attempted at:\n#0 0xffff0000004ddf48 at witness_checkorder+0xc0c\n#1 0xffff000000441b4c at lockmgr_xlock+0x50\n#2 0xffff00000056a9d4 at _vn_lock+0x54\n#3 0xffff00000054b440 at vfs_domount+0xd74\n#4 0xffff000000549480 at vfs_donmount+0x2b8\n#5 0xffff000000549188 at sys_nmount+0x60\n#6 0xffff000000770094 at do_el0_sync+0x4a0\n#7 0xffff00000074fa1c at handle_el0_sync+0x90\n\nThis is running\n# uname -a\nFreeBSD asn 14.0-CURRENT FreeBSD 14.0-CURRENT #0 main-n247543-33e1287b6a54: Mon Jun 28 10:31:58 CEST 2021     root@asn:/usr/obj/usr/src/arm64.aarch64/sys/GENERIC  arm64"
+}

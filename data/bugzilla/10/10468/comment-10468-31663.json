@@ -1,0 +1,8 @@
+{
+ "id": 31663,
+ "bug_id": 10468,
+ "attachment_id": 0,
+ "creation_time": "1999-05-11T13:43:28Z",
+ "creator": "des@flood.ping.uio.no",
+ "text": "chris@shenton.org writes:\n\u003e When using tftpd, the first connection will succeed, but then tftpd becomes  a\n\u003e zombie and won't accept/process subsequent get/puts. Killing and restarting\n\u003e inetd fixes this and will allow tcpd to work again, for one use.\n\nPlease try the attached patch.\n\nDES\n-- \nDag-Erling Smorgrav - des@flood.ping.uio.no\n\nIndex: inetd.c\n===================================================================\nRCS file: /home/ncvs/src/usr.sbin/inetd/inetd.c,v\nretrieving revision 1.48\ndiff -u -r1.48 inetd.c\n--- inetd.c\t1999/04/11 09:22:17\t1.48\n+++ inetd.c\t1999/05/11 12:33:29\n@@ -465,17 +465,17 @@\n \t\texit(EX_OSERR);\n \t}\n \tFD_SET(signalpipe[0], \u0026allsock);\n-\tif (signalpipe[0]\u003emaxsock) maxsock = signalpipe[0];\n+\tnsock++;\n+\tif (signalpipe[0] \u003e maxsock)\n+\t    maxsock = signalpipe[0];\n \n \tfor (;;) {\n \t    int n, ctrl;\n \t    fd_set readable;\n \n \t    if (nsock == 0) {\n-\t\t(void) sigblock(SIGBLOCK);\n-\t\twhile (nsock == 0)\n-\t\t    sigpause(0L);\n-\t\t(void) sigsetmask(0L);\n+\t\tsyslog(LOG_ERR, \"%s: nsock=0\", __FUNCTION__);\n+\t\texit(EX_SOFTWARE);\n \t    }\n \t    readable = allsock;\n \t    if ((n = select(maxsock + 1, \u0026readable, (fd_set *)0,"
+}

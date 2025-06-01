@@ -1,0 +1,8 @@
+{
+ "id": 38839,
+ "bug_id": 12800,
+ "attachment_id": 0,
+ "creation_time": "1999-08-30T20:00:22Z",
+ "creator": "Tor.Egge@fast.no",
+ "text": "On FreeBSD it is legal to mmap() regions beyond end of the backing file.\nThe supplied test program tried to access pages after the end of the \nbacking file.  That was a bug in the test program, and SIGBUS is the\nnormal expected behavior on FreeBSD when accessing those pages.\n\nMatt Dillon has suggested the following patch which is better than\nthe one previously suggested by me.\n\nIndex: vfs_cluster.c\n===================================================================\nRCS file: /home/ncvs/src/sys/kern/vfs_cluster.c,v\nretrieving revision 1.88\ndiff -u -r1.88 vfs_cluster.c\n--- vfs_cluster.c\t1999/08/28 00:46:23\t1.88\n+++ vfs_cluster.c\t1999/08/30 03:49:02\n@@ -797,8 +797,10 @@\n \t\t\t\tif (i != 0) { /* if not first buffer */\n \t\t\t\t\tfor (j = 0; j \u003c tbp-\u003eb_npages; j += 1) {\n \t\t\t\t\t\tm = tbp-\u003eb_pages[j];\n-\t\t\t\t\t\tif (m-\u003eflags \u0026 PG_BUSY)\n+\t\t\t\t\t\tif (m-\u003eflags \u0026 PG_BUSY) {\n+\t\t\t\t\t\t\tbqrelse(tbp);\n \t\t\t\t\t\t\tgoto finishcluster;\n+\t\t\t\t\t\t}\n \t\t\t\t\t}\n \t\t\t\t}\n \t\t\t\t\t\n\n\nThe problem with corrupt coredumps still remains.\n\n- Tor Egge"
+}

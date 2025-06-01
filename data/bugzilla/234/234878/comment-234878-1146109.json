@@ -1,0 +1,8 @@
+{
+ "id": 1146109,
+ "bug_id": 234878,
+ "attachment_id": 0,
+ "creation_time": "2021-02-11T11:24:37Z",
+ "creator": "lobo@bsd.com.br",
+ "text": "\nSystem: FreeBSD 13.0-ALPHA2 #0 stable/13-035f4ea71: Fri Jan 22\n\nTried freebsd-ports-kde/tree/virtualbox-6/emulators/virtualbox6-ose.\n\nvirtualbox6-ose compiled without errors, BUT virtualbox6-ose-kmod presented several problems during compilation:\n\n1) src/VBox/HostDrivers/Support/freebsd/SUPDrv-freebsd.c\n\n   Had add #include \u003csys/mutex.h\u003e to it, or in mtx_lock/unlock(\u0026Giant), compile\n   would stop with \"Giant: undefined identifier\".\n\n2) src/VBox/Runtime/r0drv/freebsd/memobj-r0drv-freebsd.c\n\n   switch:\n   int krc = vm_map_protect(pVmMap, AddrStart, AddrEnd, ProtectionFlags, FALSE);\n   To:\n   int krc = vm_map_protect(pVmMap, AddrStart, AddrEnd, ProtectionFlags, 0, \n                            VM_MAP_PROTECT_SET_PROT);\n\n   or compilation stops with \"vm_map_protect: too few parameters\"\n\n3) On both files above, commented IPRT_FREEBSD_SAVE_EFL_AC() and \n   IPRT_FREEBSD_RESTORE_EFL_AC() \n   \n   They didn't error the compilation but issued \"unidentified symbol\" for both \n   during loading of the modules, BUT commenting them caused a kernel panic when \n   loading the modules.\n\n4) Issuing make patch on virtualbox6-ose-kmod IS NOT applying the patches to the \n   above files.\n\n\nWith no modules, I could not test further."
+}

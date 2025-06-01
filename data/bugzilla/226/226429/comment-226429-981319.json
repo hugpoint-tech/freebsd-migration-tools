@@ -1,0 +1,8 @@
+{
+ "id": 981319,
+ "bug_id": 226429,
+ "attachment_id": 0,
+ "creation_time": "2018-03-08T04:27:01Z",
+ "creator": "cem@freebsd.org",
+ "text": "I suggest this untested patch to correct the issue (and a similar issue with legacy table values):\n\n--- sbin/ipfw/tables.c    (revision 330627)\n+++ sbin/ipfw/tables.c    (working copy)\n@@ -1471,6 +1471,7 @@\n        uint32_t i;\n        int dval;\n        char *comma, *e, *etype, *n, *p;\n+       struct in_addr ipaddr;\n\n        v = \u0026tent-\u003ev.value;\n\n@@ -1487,8 +1488,8 @@\n                        return;\n                }\n                /* Try hostname */\n-               if (lookup_host(arg, (struct in_addr *)\u0026val) == 0) {\n-                       set_legacy_value(val, v);\n+               if (lookup_host(arg, \u0026ipaddr) == 0) {\n+                       set_legacy_value(ntohl(ipaddr.s_addr), v);\n                        return;\n                }\n                errx(EX_OSERR, \"Unable to parse value %s\", arg);\n@@ -1557,8 +1558,10 @@\n                                v-\u003enh4 = ntohl(a4);\n                                break;\n                        }\n-                       if (lookup_host(n, (struct in_addr *)\u0026v-\u003enh4) == 0)\n+                       if (lookup_host(n, \u0026ipaddr) == 0) {\n+                               v-\u003enh4 = ntohl(ipaddr.s_addr);\n                                break;\n+                       }\n                        etype = \"ipv4\";\n                        break;\n                case IPFW_VTYPE_DSCP:\n\nMaybe you can try it out?"
+}

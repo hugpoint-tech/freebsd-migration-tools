@@ -1,0 +1,8 @@
+{
+ "id": 1343783,
+ "bug_id": 284057,
+ "attachment_id": 0,
+ "creation_time": "2025-01-14T08:13:18Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "From the data in comment #2 it appears that the faulting access to address 0xfffffe0212a00008\ncould have been an access to txcd = 0xfffffe02129f8000 just beyond the end of the array.\nGiven that vxcr_ndesc = 2048 and that the size of a descriptor (vmxnet3_txcompdesc) is 16 that produces 32K bytes or 0x8000.  Additional 8 bytes is an offset gen and type bit-fields in the descriptor.\n\nSo, it appears that vxcr_next coudl have been equal to vxcr_ndesc \"for a moment\".\nIn the crash dump it's zero, but the only explanation for 0xfffffe0212a00008 access is that ti could have overflown.\n\nI suspect that the overflow could have resulted from a concurrent (or, perhaps, recursive) execution of vmxnet3_isc_txd_credits_update.\n\nLooking at thread 100073, I can see that it is possible for an RX thread to end up in TXQ related routines.\nIt seems that there is an execution path to vmxnet3_isc_txd_credits_update: ifmp_ring_enqueue -\u003e ifmp_ring_check_drainage -\u003e r-\u003ecan_drain() == iflib_txq_can_drain -\u003e isc_txd_credits_update.\nAs far as I can see, that execution path does not take any locks.\n\nAlthough thread 100073 (if_io_tqg_7) is for a different set of queues, it's possible that if_io_tqg_1 could have made the same calls \"a bit earlier\".\n\nIf such concurrent execution is indeed possible then one thread could mess up vxcr_next for the other thread."
+}

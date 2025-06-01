@@ -1,0 +1,8 @@
+{
+ "id": 954431,
+ "bug_id": 222792,
+ "attachment_id": 186920,
+ "creation_time": "2017-10-05T12:42:07Z",
+ "creator": "tobik@freebsd.org",
+ "text": "Created attachment 186920\npijul.diff\n\nCurrently Pijul doesn't build in Poudriere at all since it fetches\ndependencies during the build (see the error message below).  This is\nexactly the sort of thing the cargo macro is supposed to prevent.\n\nCARGO_CONFIGURE=no should only be set if the port has all crate\ndependencies in the tarball already or has no dependencies at all.\nThis is clearly not the case here.\n\nINSTALL_TARGET is not used by cargo.mk.\n\nUse CARGO_CRATES to list all dependent crates.  `make cargo-crates`\nwill conveniently generate this list for you from\n${WRKSRC}/Cargo.lock.\n\nBuilding the backtrace-sys crate requires USES=gmake.\n\nNote that we have to set DISTFILES=${DISTNAME}${EXTRACT_SUFX}\nexplicitly for now because of a bug in cargo.mk.  It currently\nignores/overrides the default DISTFILES when CARGO_CRATES is set which\nmeans pijule-0.8.0.tar.gz is not being fetched/extracted properly without\nit.\n\n===\u003e  Building for pijul-0.8.0                                                                                        \n    Updating registry `https://github.com/rust-lang/crates.io-index`                                                  \nwarning: spurious network error (2 tries remaining): [12/-1] curl error: Could not resolve host: github.com           \n\nwarning: spurious network error (1 tries remaining): [12/-1] curl error: Could not resolve host: github.com\n\nerror: failed to fetch `https://github.com/rust-lang/crates.io-index`\n\nCaused by:\n  [12/-1] curl error: Could not resolve host: github.com\n\n*** Error code 101"
+}

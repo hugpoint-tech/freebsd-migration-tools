@@ -1,0 +1,8 @@
+{
+ "id": 1130922,
+ "bug_id": 250954,
+ "attachment_id": 0,
+ "creation_time": "2020-11-09T12:29:37Z",
+ "creator": "mgorny@gentoo.org",
+ "text": "Hmm, I should have mentioned that this affect LLDB right now.\n\nThe scenario where this happens is this:\n\n1. Create breakpoint immediately after pthread_create().\n\n2. When LLDB hits the breakpoint, create a watchpoint.\n\n3. Resume.\n\nThe problem is that the new thread is already created at 2. but LLDB does not know about it, so the watchpoint is created only on thread 1.\n\nWe can solve this on LLDB end in either of two ways:\n\na. Relist all threads (via PT_GETLWPLIST) on every stop.  In this case, LLDB at point 2. would have the correct thread list even though the event is not yet delivered.\n\nb. Copy dbregs to new threads in LLDB when they are reported.  In this case, the watchpoints are correctly propagated to new threads when LLDB becomes aware of these threads.\n\n\nRegardless of this, it would be nice if kernel had predictable behavior here, i.e. reported the new thread before pthread_create() returned."
+}

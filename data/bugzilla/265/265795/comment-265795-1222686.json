@@ -1,0 +1,8 @@
+{
+ "id": 1222686,
+ "bug_id": 265795,
+ "attachment_id": 0,
+ "creation_time": "2022-08-12T14:57:04Z",
+ "creator": "jfc@mit.edu",
+ "text": "While poudriere is cleaning up my server crashes with\n\nvm_page_dequeue_deferred: page 0xffffa09ec0609d40 has unexpected queue state\n\nStack trace retyped from the console:\n\nvm_page_dequeue_deferred\nvm_page_free_prep\nvm_page_free_toq\nvm_object_page_remove\nbufobj_invalbuf\nvgonel\nvrecycle\nzfs_freebsd_inactive\nvinactivef\nvput_final\nkern_funlinkat\n\nI reproduced this and I have two crash dumps but kgdb hits an internal\nassertion trying to debug them.\n\nMy guess is this is distantly related to bug 261538 in that the\ncombination of zfs deduplication and cloning creates unusual state in\nthe kernel.\n\nSome notes:\n\n1. ARM server (Ampere eMAG) running 13.1-STABLE up through eb2a9b78586.\n\n2. Kernel is built with INVARIANTS (this is a KASSERT in vm_page.c).\n\n3. I have a patch to ZFS to disable another assertion to fix bug 261538.\n\n4. All of poudriere's temporary filesystems have been destroyed by the\ntime of the crash."
+}

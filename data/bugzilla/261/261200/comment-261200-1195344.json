@@ -1,0 +1,8 @@
+{
+ "id": 1195344,
+ "bug_id": 261200,
+ "attachment_id": 0,
+ "creation_time": "2022-01-18T18:15:15Z",
+ "creator": "ron@digitalcombine.ca",
+ "text": "While tracing a simple script like:\n\nsleep 1000\u0026\njobs\njobs | cat\n\nI find that the first execution of jobs is executed by the shell process itself and the second piped jobs is forked then executed in a child process. In both cases the jobtab, found in jobs.c, has four entries in it but in the child process all the jobs are marked unused.\n\nIn the function forkshell(), found in jobs.c, there's a section of code for the new child process that clears the jobtab.\n\nfor (i = njobs, p = jobtab ; -- i \u003e= 0 ; p++)\n    if (p-\u003eused)\n        freejob(p);\n\nAnd this is the reason why jobs shows no entries when piped.\n\nI'm not sure why this is done. I'm assuming this is possibly to prevent the child process from doing some kind of job clean up later... I'll keep digging into this as time permits ;)"
+}

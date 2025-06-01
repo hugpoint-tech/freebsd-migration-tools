@@ -1,0 +1,8 @@
+{
+ "id": 773633,
+ "bug_id": 165471,
+ "attachment_id": 0,
+ "creation_time": "2014-07-17T11:48:28Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "bsdgrep --mmap does not handle files without newlines at the end properly\n\nissue can be reproduced with:\n$ echo -n foo \u003e file\n$ bsdgrep --mmap meh file\n\nI don't know this code and I'm not interested in changing it, but the following hack fixes:\ndiff --git a/usr.bin/grep/file.c b/usr.bin/grep/file.c\nindex 6bcaa52..f056697 100644\n--- a/usr.bin/grep/file.c\n+++ b/usr.bin/grep/file.c\n@@ -83,12 +83,12 @@ grep_refill(struct file *f)\n {\n        ssize_t nr;\n \n-       if (filebehave == FILE_MMAP)\n-               return (0);\n-\n        bufpos = buffer;\n        bufrem = 0;\n \n+       if (filebehave == FILE_MMAP)\n+               return (0);\n+\n        if (filebehave == FILE_GZIP) {\n                nr = gzread(gzbufdesc, b"
+}

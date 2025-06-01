@@ -1,0 +1,8 @@
+{
+ "id": 699567,
+ "bug_id": 175323,
+ "attachment_id": 0,
+ "creation_time": "2013-01-21T11:47:32Z",
+ "creator": "Alexei.Volkov@softlynx.ru",
+ "text": "Andriy, many thanks for the suggestion. I am trying to rebuild and test\nthe kernel with the following patch:\n\n--- sys/geom/mirror/g_mirror.c    (revision 245741)\n+++ sys/geom/mirror/g_mirror.c    (working copy)\n@@ -456,7 +456,7 @@\n     disk-\u003ed_flags = md-\u003emd_dflags;\n     error = g_getattr(\"GEOM::candelete\", disk-\u003ed_consumer, \u0026i);\n     if (error != 0)\n-        goto fail;\n+        i=0;\n     if (i)\n         disk-\u003ed_flags |= G_MIRROR_DISK_FLAG_CANDELETE;\n     if (md-\u003emd_provider[0] != '\\0')\n\n\nIt seems to correct if assume G_MIRROR_DISK_FLAG_CANDELETE is always off\nunless successfully reported by GEOM::candelete attribute.\n\n-- \nBest regards\n\n\n21.01.2013 13:47, Andriy Gapon Ð¿Ð¸ÑÐµÑ:\n\u003e This\n\u003e\u003e GEOM_MIRROR: Cannot add disk zvol/tank0/vol0 to mirror0 (error=45).\n\u003e seems to be triggered by the following code in sys/geom/mirror/g_mirror.c:\n\u003e\n\u003e error = g_getattr(\"GEOM::candelete\", disk-\u003ed_consumer, \u0026i);\n\u003e if (error != 0)\n\u003e         goto fail;\n\u003e\n\u003e plus the fact that ZFS zvol does the following:\n\u003e case BIO_GETATTR:\n\u003e case BIO_DELETE:\n\u003e default:\n\u003e         g_io_deliver(bp, EOPNOTSUPP);\n\u003e         break;\n\u003e\n\u003e Perhaps, the gmirror code should be more flexible with respect to EOPNOTSUPP\n\u003e from g_getattr?\n\u003e"
+}

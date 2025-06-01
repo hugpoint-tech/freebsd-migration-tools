@@ -1,0 +1,8 @@
+{
+ "id": 1186252,
+ "bug_id": 259380,
+ "attachment_id": 0,
+ "creation_time": "2021-11-12T00:46:33Z",
+ "creator": "jasonmader@gmail.com",
+ "text": "(In reply to Jason Mader from comment #10)\nWhen linux_recvfrom() calls kern_recvit() the value of msg.msg_namelen is 28, and after the call it is 0.\n\nkern_recvit() source didn't change, but bsd_to_linux_sockaddr() did. Prior to FreeBSD 12.2, bsd_to_linux_sockaddr() didn't check the value of msg.msg_namelen (as len). Now it does,\n\n\tif (len \u003c 2 || len \u003e UCHAR_MAX)\n\t\treturn (EINVAL);\n\nI am currently working around this with,\n\n--- linux_socket.c\n+++ linux_socket.c\n@@ -926,10 +926,10 @@\n \t\tgoto out;\n\n \tif (PTRIN(args-\u003efrom) != NULL) {\n-\t\terror = bsd_to_linux_sockaddr(sa, \u0026lsa, msg.msg_namelen);\n+\t\terror = bsd_to_linux_sockaddr(sa, \u0026lsa, fromlen);\n \t\tif (error == 0)\n \t\t\terror = copyout(lsa, PTRIN(args-\u003efrom),\n-\t\t\t    msg.msg_namelen);\n+\t\t\t    fromlen);\n \t\tfree(lsa, M_SONAME);\n \t}"
+}

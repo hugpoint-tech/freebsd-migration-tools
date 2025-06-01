@@ -1,0 +1,8 @@
+{
+ "id": 652614,
+ "bug_id": 165392,
+ "attachment_id": 0,
+ "creation_time": "2013-05-29T17:53:11Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "On 2013-05-27, Jilles Tjoelker wrote:\n\u003e \u003e However, VOP_FSYNC(9) with the MNT_WAIT flag seems not to update the\n\u003e \u003e i_nlink count for a reason unknown to me. I can verify that also by\n\u003e \u003e taking your reproduction recipe above and adding \"fsync .\" between\n\u003e \u003e \"rmdir 1\" and \"mkdir a\".\n\u003e \n\u003e fsync certainly helps but not as effectively as you'd want. Some\n\u003e combination of sleeps, fsyncs and mkdir attempts appears to be needed.\n\nI have revised the patch and the following version _appears_ to work.\n\n\thttp://people.freebsd.org/~jh/patches/ufs-check_linkcnt.2.diff\n\nIt's still experimental and doesn't handle link(2) or rename(2) at all.\n\nIn my testing debug.softdep.linkcnt_retries is increased by one with\nyour original reproduction recipe.\n\n\u003e I'm also interested in whether it is safe to call VOP_FSYNC at that\n\u003e point, especially in the case of a rename where a lock on the source\n\u003e directory vnode may be held at the same time.\n\nI think your concern is valid because softdep_fsync() needs to lock\nparent directories. Possibly you can work around the problem by\nunlocking the vnodes, doing fsync and then restarting rename.\nUnfortunately this makes rename even more complex.\n\n-- \nJaakko"
+}

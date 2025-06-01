@@ -1,0 +1,8 @@
+{
+ "id": 1298983,
+ "bug_id": 276002,
+ "attachment_id": 0,
+ "creation_time": "2024-02-28T05:43:58Z",
+ "creator": "pho@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #76)\nI ran tests with these combined changes:\n\n--- a/sys/fs/nfsclient/nfs_clbio.c\n+++ b/sys/fs/nfsclient/nfs_clbio.c\n@@ -330,8 +330,9 @@ ncl_putpages(struct vop_putpages_args *ap)\n \tuio.uio_rw = UIO_WRITE;\n \tuio.uio_td = td;\n \n-\terror = VOP_WRITE(vp, \u0026uio, vnode_pager_putpages_ioflags(ap-\u003ea_sync),\n+\terror = VOP_WRITE(vp, \u0026uio, vnode_pager_putpages_ioflags(ap-\u003ea_sync | VM_PAGER_PUT_SYNC),\n \t    cred);\n+if (error != 0) printf(\"aft putpages=%d\\n\", error);\n \tcrfree(cred);\n \n \tif (error == 0 || !nfs_keep_dirty_on_error) {\n@@ -1310,6 +1311,8 @@ ncl_write(struct vop_write_args *ap)\n \t\t\tvfs_bio_set_valid(bp, on, n);\n \t\t}\n \n+               vfs_bio_set_flags(bp, ioflag);\n+\n \t\t/*\n \t\t * If IO_SYNC do bwrite().\n \t\t *\n\nbut the outcome was the same: Instant fsx failure and mmap44.sh failed after 1h 40m"
+}

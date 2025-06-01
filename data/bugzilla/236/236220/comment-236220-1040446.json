@@ -1,0 +1,8 @@
+{
+ "id": 1040446,
+ "bug_id": 236220,
+ "attachment_id": 0,
+ "creation_time": "2019-03-04T15:18:35Z",
+ "creator": "ncrogers@gmail.com",
+ "text": "avg@freebsd.org pointed out in the freebsd-stable list that one thread is stuck on zfs_znode_alloc, and that is likely the root of the problem. Indeed all the systems I've witnessed this happen to have had one thread stuck on vn_lock -\u003e zfs_znode_alloc. It often seems to be a different application, so I'm still not sure what particular workload is causing this.\n\nFor example, the below lines from procstat -kka are from three different systems stuck in a hung / zfs deadlock state.\n\n2329 100515 sh                  -                   mi_switch+0xe1 sleepq_wait+0x2c sleeplk+0x1c5 lockmgr_xlock_hard+0x19c VOP_LOCK1_APV+0x7e _vn_lock+0x40 zfs_znode_alloc+0x434 zfs_mknode+0xa9d zfs_freebsd_create+0x512 VOP_CREATE_APV+0x78 vn_open_cred+0x2c9 kern_openat+0x20c amd64_syscall+0x369 fast_syscall_common+0x101 \n\n36704 101146 perl                -                   mi_switch+0xe1 sleepq_wait+0x2c sleeplk+0x1c5 lockmgr_xlock_hard+0x19c VOP_LOCK1_APV+0x7e _vn_lock+0x40 zfs_znode_alloc+0x434 zfs_mknode+0xa9d zfs_freebsd_create+0x512 VOP_CREATE_APV+0x78 vn_open_cred+0x2c9 kern_openat+0x20c amd64_syscall+0x369 fast_syscall_common+0x101 \n\n1663 100503 postgres            -                   mi_switch+0xe1 sleepq_wait+0x2c sleeplk+0x1c5 lockmgr_xlock_hard+0x19c VOP_LOCK1_APV+0x7e _vn_lock+0x40 zfs_znode_alloc+0x434 zfs_mknode+0xa9d zfs_freebsd_create+0x512 VOP_CREATE_APV+0x78 vn_open_cred+0x2c9 kern_openat+0x20c amd64_syscall+0x369 fast_syscall_common+0x101"
+}

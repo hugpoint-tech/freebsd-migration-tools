@@ -1,0 +1,8 @@
+{
+ "id": 21667,
+ "bug_id": 7039,
+ "attachment_id": 0,
+ "creation_time": "1998-06-24T08:10:01Z",
+ "creator": "cts@internetcds.com",
+ "text": "As you can see from the source code below the uthread_sigwait function\nnever assigns a value to 'ret'.\n\n\n\nint\nsigwait(const sigset_t * set, int *sig)\n{\n        int ret;\n        int status;\n        sigset_t oset;\n\n        /* Block signals: */\n        _thread_kern_sig_block(\u0026status);\n\n        /* Save the current sigmal mask: */\n        oset = _thread_run-\u003esigmask;\n\n        /* Combine the caller's mask with the current one: */\n        _thread_run-\u003esigmask |= *set;\n\n        /* Wait for a signal: */\n        _thread_kern_sched_state(PS_SIGWAIT, __FILE__, __LINE__);\n\n        /* Block signals again: */\n        _thread_kern_sig_block(NULL);\n\n        /* Return the signal number to the caller: */\n        *sig = _thread_run-\u003esigno;\n\n        /* Restore the signal mask: */\n        _thread_run-\u003esigmask = oset;\n\n        /* Unblock signals: */\n        _thread_kern_sig_unblock(status);\n\n        /* Return the completion status: */\n        return (ret);\n}\n\nFix: \n\nI don't have a copy of the posix standard\nso I don't know what the proper return value\nshould be.\n\nSorry."
+}

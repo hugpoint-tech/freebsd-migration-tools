@@ -1,0 +1,8 @@
+{
+ "id": 885858,
+ "bug_id": 210726,
+ "attachment_id": 0,
+ "creation_time": "2016-06-30T19:12:01Z",
+ "creator": "aler@playground.ru",
+ "text": "Port autoselection on connect() without bind() (or with bind() with zero\nsin_port) sometimes works wronly and gives already busy local port\nnumber that will lead to EADDRINUSE on connection attempt. This all\nhappens when jails used.\n\nHow to fix:\n\nsrc/sys/netinet/in_pcb.c, in_pcb_lport() function\n\ncalls to in_pcblookup_local() should have last argument NULL, not cred\n\nthat's because here we are not about getting some access but about\navoiding port number conflicts, so all inpcb's should be taken in account\n\n\nThis all applies to FreeBSD 9.x, 10.x and HEAD (possibly older versions too).\n\nPatch:\n\ndiff -ur src-svn/10.2/sys/netinet/in_pcb.c src/sys/netinet/in_pcb.c\n--- src-svn/10.2/sys/netinet/in_pcb.c   2016-03-15 22:58:38.088511000 +0300\n+++ src/sys/netinet/in_pcb.c    2016-05-20 14:51:43.340568000 +0300\n@@ -452,7 +452,7 @@\n #endif\n #ifdef INET\n                        tmpinp = in_pcblookup_local(pcbinfo, laddr,\n-                           lport, lookupflags, cred);\n+                           lport, lookupflags, NULL /*cred*/);\n #endif\n        } while (tmpinp != NULL);"
+}

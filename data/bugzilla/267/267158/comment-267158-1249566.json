@@ -1,0 +1,8 @@
+{
+ "id": 1249566,
+ "bug_id": 267158,
+ "attachment_id": 0,
+ "creation_time": "2023-03-05T14:36:54Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "Thank you for the update.\n\nWhat about the examples?  (see comment #5)\n\nIs there a reason why they are only built on amd64?  The usual convention is to have an option EXAMPLES conditionally on which examples are built.  I'm not asking you to change this, just to explain your choice so I can understand the port better.\n\nI've also noticed that you have removed the ONLY_FOR_ARCHS bit.  If you do so, please adapt the SCONS_ARGS bit with suitable default values for other architectures.  E.g. you could do\n\nSCONS_ARGS_amd64=\tneon=0 opencl=1 examples=1 arch=x86_64\nSCONS_ARGS_aarch64=\tneon=1 opencl=0 examples=0 arch=arm64-v8a\nSCONS_ARGS_armv7=\tneon=1 opencl=0 examples=0 arch=armv7a\nSCONS_ARGS_generic=     ...\nSCONS_ARGS+= \t\tos=freebsd Werror=0 embed_kernels=0 build=native ${SCONS_ARGS_${ARCH}:U${SCONS_ARGS_generic}}\n\nI assume the bit about using the right CC and CXX is taken care of by USES=scons?\n\nLastly, something that slipped by last time I reviewed your port: INSTALL_LIB is for installing shared libraries only.  Use INSTALL_DATA for static libraries (cf. § 5.17.1 Porter's Handbook).  This is because INSTALL_LIB possibly strips the library, which is fatal for static libraries.\n\nAnd instead of ${CP} -R, consider using COPYTREE_SHARE for installing the include files.\n\nI'll do a test run once my ports builder is free (currently processing some other patches)."
+}

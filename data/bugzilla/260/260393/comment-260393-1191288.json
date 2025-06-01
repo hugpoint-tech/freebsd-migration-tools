@@ -1,0 +1,8 @@
+{
+ "id": 1191288,
+ "bug_id": 260393,
+ "attachment_id": 0,
+ "creation_time": "2021-12-21T23:40:26Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "Hi,\n\nI wonder if we need to subtract 1 from tp-\u003esnd_max, when TF_SENTFIN is set?\n\nt_state = 8 \n\n#define TCPS_LAST_ACK           8       /* had fin and close; await FIN ACK */\n\nt_flags = 554697333 = 0x21100275\n\n#define  TF_SENTFIN      0x00000010      /* have sent FIN */\n\nI remember we did a similar fix some while back for SACK:\n\n                /*\n                 * Exclude FIN sequence space in\n                 * the hole for the rescue retransmission,\n                 * and also don't create a hole, if only\n                 * the ACK for a FIN is outstanding.\n                 */\n                tcp_seq highdata = tp-\u003esnd_max;\n                if (tp-\u003et_flags \u0026 TF_SENTFIN)\n                        highdata--;\n\n\nNow in this piece of code leading up do the sbdrop() of 1 byte:\n\n                if (tlen == 0) {\n                        if (SEQ_GT(th-\u003eth_ack, tp-\u003esnd_una) \u0026\u0026\n                            SEQ_LEQ(th-\u003eth_ack, tp-\u003esnd_max) \u0026\u0026\n                            !IN_RECOVERY(tp-\u003et_flags) \u0026\u0026\n                            (to.to_flags \u0026 TOF_SACK) == 0 \u0026\u0026\n                            TAILQ_EMPTY(\u0026tp-\u003esnd_holes)) {\n\nThe SEQ_LEQ is compared against the wrong snd_max ?\n\n       SEQ_LEQ(th-\u003eth_ack, tp-\u003esnd_max)\n\n--HPS"
+}

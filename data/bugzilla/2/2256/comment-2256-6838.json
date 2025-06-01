@@ -1,0 +1,8 @@
+{
+ "id": 6838,
+ "bug_id": 2256,
+ "attachment_id": 0,
+ "creation_time": "1997-02-11T03:50:57Z",
+ "creator": "mdurkin@tsoft.net",
+ "text": "I've seen the same problem, and modems are definately configured correctly.\nI'm not sure if the bug is in mgetty or the Cyclades driver (I haven't checked\nto see if it exists with sio as well).\n\nMy setup: P120, FreeBSD 2.1.6R, Cyclades Ye16 multiport card, mgetty-1.1.0\n\nThe root of the problem is thus:\n\nWhile waiting for a call, mgetty has 'clocal' on the port.\nAfter the call answers, and Carrier Detect is high, mgetty switches the\n   port to '-clocal'.\nWhen the caller disconnects, pppd does not receive a SIGHUP (so it seems),\n   and keeps the port tied up.\n\nIt seems that the Cyclades driver won't generate a SIGHUP on an on-to-off\nCD transition if clocal was toggled off while CD was already on/high.\n\nIf mgetty is modified to set -clocal while waiting for the call, it works\nfine, but I am only using it for dialin so I don't know if that breaks\nmgetty's fax functions, etc.  A workaroung in mgetty is to change\nthe TRUE flag to FALSE in the call to tio_mode_sane() in\nmg_init_device() in mg_m_init.c.  Setting -clocal on the lock-state device\nin /etc/rc.serial would probably also work instead.  Note I believe the\nbug is actually in the Cyclades driver assuming the above behavior wrt\nlack of SIGHUP under the conditions given isn't kosher.\n\nthanks, Mike"
+}

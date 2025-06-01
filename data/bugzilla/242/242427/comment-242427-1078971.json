@@ -1,0 +1,8 @@
+{
+ "id": 1078971,
+ "bug_id": 242427,
+ "attachment_id": 0,
+ "creation_time": "2019-12-10T18:32:14Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Peter Eriksson from comment #9)\n\u003e I only print the time for calls to pmap_remove() if there has been atleast one - so apparently for ZFS caches for sizes at 4096 and less pmap_remove() never gets called. I haven't analyzed that code.\n\nRight, if the size is \u003c= PAGE_SIZE, the slab is permanently mapped into the direct map.  I believe ABD is the default for ZFS in 12 and later, in which case the ARC uses 4KB buffers in most cases.\n\npmap_remove() cannot easily be optimized: as part of its operation it must interrupt all other CPUs to cause them to invalidate some per-CPU caches, and wait for the invalidation to complete on all CPUs.  There are schemes where this operation can be performed lazily, but this requires some mechanism to defer reuse of the to-be-freed pages.\n\nI wrote a patch that introduces a \"shutdown\" state in UMA, entered when the first shutdown_post_sync handler is called.  In this state uma_zdestroy() is a no-op."
+}

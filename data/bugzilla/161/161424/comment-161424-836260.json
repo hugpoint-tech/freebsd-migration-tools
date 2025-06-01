@@ -1,0 +1,8 @@
+{
+ "id": 836260,
+ "bug_id": 161424,
+ "attachment_id": 0,
+ "creation_time": "2015-08-14T13:01:16Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to fullermd from comment #9)\nWhat you described is the expected behaviour, it is just a situation that it always happens for nullfs, but only sporadically for other filesystems.\n\nMore precisely, nullfs does not use namecache for good reasons (we cannot provide cache consistency between nullfs entries and lower filesystems without some drastic measures).  If a filesystem uses namecache, then getcwd call first tries to resolve the path using namecache, and only when the cache failed to provide an entry, it falls down to read the \"..\" directory and searching the child entry name by inode number.  So typically for fs like ufs or zfs, the reading of \"..\" does not happen.\n\nOn the other hand, since nullfs does not use namecache, \"..\" is always scanned and there the directory permissions starts to play.\n\nSo the fix, if we ever would change the observed behaviour, is to make getcwd to honor the directory permissions even when the request is satisfied by the namecache, making failure deterministic."
+}

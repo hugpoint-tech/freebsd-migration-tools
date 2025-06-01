@@ -1,0 +1,8 @@
+{
+ "id": 1276983,
+ "bug_id": 274088,
+ "attachment_id": 0,
+ "creation_time": "2023-09-25T19:04:05Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "When building libva with lld \u003e= 17, an error similar to the following is emitted when linking libva.so:\n\n  ld: error: va/libva.so.2.2000.0.p/va_compat.c.o: symbol\n  vaCreateSurfaces@VA_API_0.32.0 has undefined version VA_API_0.32.0\n\nThe root cause is that lld 17 checks linker version scripts more strictly by default, and emits an error when undefined symbols or undefined versions are referenced.\n\nEarlier in the build, it turns out that due to these lld errors, va's meson.build fails to detect --version-script support:\n\n  Checking if \"-Wl,--version-script\" : links: NO\n\nThis is because the small test program used by meson to check whether a shared library can be linked with the libva.syms version script is completely empty, and therefore the two symbols in the version script, vaCreateSurfaces_0_32_0 and vaCreateSurfaces, are undefined.\n\nFix the problem by providing placeholder definitions for these symbols in the code argument to meson's cc.links() function. This ensures that meson correctly detects --version-script support with lld version 17 or later, and makes it possible to link the libva shared library.\n\nNOTE: also submitted upstream as https://github.com/intel/libva/pull/758"
+}

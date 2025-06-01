@@ -1,0 +1,8 @@
+{
+ "id": 1203710,
+ "bug_id": 262587,
+ "attachment_id": 0,
+ "creation_time": "2022-03-21T19:08:34Z",
+ "creator": "mav@FreeBSD.org",
+ "text": "OK.  I still don't understand how can it be safe to change the lock when there seems to be a window between umtxq_getchain() and mtx_lock() inside the umtxq_lock(), but what would you say about this patch:\n\n--- a/sys/kern/kern_umtx.c\n+++ b/sys/kern/kern_umtx.c\n@@ -808,8 +808,10 @@ umtxq_sleep(struct umtx_q *uq, const char *wmesg,\n                        if (error != 0)\n                                break;\n                }\n-               error = msleep_sbt(uq, \u0026uc-\u003euc_lock, PCATCH, wmesg,\n+               error = msleep_sbt(uq, \u0026uc-\u003euc_lock, PCATCH | PDROP, wmesg,\n                    sbt, 0, flags);\n+               uc = umtxq_getchain(\u0026uq-\u003euq_key);\n+               mtx_lock(\u0026uc-\u003euc_lock);\n                if (error == EINTR || error == ERESTART)\n                        break;\n                if (error == EWOULDBLOCK \u0026\u0026 (flags \u0026 C_ABSOLUTE) != 0) {\n\nIt seems even before my change code could try on the old lock due to uc never being updated, so I did it this way instead of using umtxq_lock()."
+}

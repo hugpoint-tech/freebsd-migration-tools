@@ -1,0 +1,8 @@
+{
+ "id": 1246382,
+ "bug_id": 269133,
+ "attachment_id": 0,
+ "creation_time": "2023-02-10T14:45:36Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Santiago Martinez from comment #4)\nI think the problem is this: when a new vlan tag is registered, bnxt_vlan_register() adds a new tag structure to the vlan_tags list.\n\nAfter adding a vlan tag, iflib will reinitialize the interface, see iflib_vlan_register()-\u003eiflib_init_locked()-\u003eIFDI_INIT.\n\nThen bnxt_init() will call bnxt_hwrm_set_filter(), which initializes all the tags on the list.\n\nSuppose all of this happens twice.  bnxt_hwrm_set_filter() will encounter an already-initialized tag and trigger the EDOOFUS error.\n\nI suspect that bnxt_init() should unregister all of its filters during reinitialization.  That is, bnxt_init() should call bnxt_hwrm_free_filter() before calling bnxt_clear_ids().\n\n(I'm not very familiar with this driver though, so this might not work.)"
+}

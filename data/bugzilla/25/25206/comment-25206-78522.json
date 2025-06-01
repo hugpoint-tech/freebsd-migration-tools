@@ -1,0 +1,8 @@
+{
+ "id": 78522,
+ "bug_id": 25206,
+ "attachment_id": 0,
+ "creation_time": "2001-02-20T14:03:29Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "On Mon, Feb 19, 2001 at 11:34:40AM -0800, mm@omnix.net wrote:\n\n\u003e luser@PAF$ tail -f /dev/ttyp1\n\u003e \n\u003e now ruser is going to connect to my box:\n\u003e ruser@NOWHERE$ telnet PAF\n\u003e Connection closed by foreign host.\n\nThis seems to be caused by kqueue trying to work on a revoked file\ndiscriptor. I think this bug is inaccessable in more recent versions\nof -stable after Peter's commit to vfs_vnops.c on 2001/02/09. The\noffending code looks like:\n\nstatic int\nfilt_vnread(struct knote *kn, long hint)\n{\n        struct vnode *vp = (struct vnode *)kn-\u003ekn_fp-\u003ef_data;\n        struct inode *ip = VTOI(vp);\n\n        kn-\u003ekn_data = ip-\u003ei_size - kn-\u003ekn_fp-\u003ef_offset;\n        return (kn-\u003ekn_data != 0);\n}\n\nThere is now a check to make sure that the file is in a UFS filesystem\nat the time the filter is attached. However, if the file is revoked\nit could change type, so checking something like:\n\n\tif (vp-\u003ev_tag != VT_UFS)\n\t\treturn 1;\n\nmight be a good idea. (Currently only device files can be revoked,\nbut that's only 'cos it was disabeled on other file types 'cos it\ndidn't work on fifos).\n\n\tDavid."
+}

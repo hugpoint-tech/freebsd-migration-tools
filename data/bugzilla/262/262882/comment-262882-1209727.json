@@ -1,0 +1,8 @@
+{
+ "id": 1209727,
+ "bug_id": 262882,
+ "attachment_id": 0,
+ "creation_time": "2022-05-03T19:56:14Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #86)\n\nThe messages that I've reported getting for\nUSB 3.1 ports when the NVMe SSD USB3 devices\nare plugged in:\n\nuhub_reattach_port: port 2 U1 timeout failed, error=USB_ERR_IOERROR\nuhub_reattach_port: port 2 U2 timeout failed, error=USB_ERR_IOERROR\n\nseem to be tied to code that looks like (U1 case shown):\n\n        case C(UR_SET_FEATURE, UT_WRITE_CLASS_OTHER):\n\n                i = index \u003e\u003e 8;\n                index \u0026= 0x00FF;\n\n                if ((index \u003c 1) ||\n                    (index \u003e sc-\u003esc_noport)) {\n                        err = USB_ERR_IOERROR;\n                        goto done;\n                }\n\n                port = XHCI_PORTSC(index);\n                v = XREAD4(sc, oper, port) \u0026 ~XHCI_PS_CLEAR;\n\n                switch (value) {\n                case UHF_PORT_U1_TIMEOUT:\n                        if (XHCI_PS_SPEED_GET(v) != 4) {\n                                err = USB_ERR_IOERROR;\n                                goto done;\n                        }\n\nSo it seems to be not getting the speed-mode it expects and\nit treats that as an error status. I've no clue if the\nspeed-mode should be guaranteed as the code suggests at the\npoint of plugging an NMVe SSD into a USB 3.1 port or not.\n\nBut it sure looks like a distinct issue from the original\nbuzilla submittal."
+}

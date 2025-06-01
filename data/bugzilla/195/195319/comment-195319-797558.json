@@ -1,0 +1,8 @@
+{
+ "id": 797558,
+ "bug_id": 195319,
+ "attachment_id": 0,
+ "creation_time": "2014-11-24T00:08:53Z",
+ "creator": "freebsd@phil.spodhuis.org",
+ "text": "Commit 7ffdbf37 in freebsd-ports was \"Move headers and libraries into PREFIX/{include,lib}/heimdal\".\n\nThe commit neglected to update \"libdata/pkgconfig/heimdal-gssapi.pc\", thus programs built using pkg-config can not pick up the new library location, and end up building against system libraries.  In addition, because the new location is not in the system library path, and nothing in the \".pc\" file says to update the RPATH, programs will successfully build and link, but the run-time linker will fail to resolve the heimdal libraries.\n\nI am one of the Exim maintainers, I use heimdal-gssapi in building Exim locally (not an option exposed by the mail/exim port, and I'm building from source as an upstream maintainer anyway).  This change meant that a \"pkg upgrade\" broke my running MTA because the upgrade did not leave the old libraries in the compat/ area, so non-Ports programs suddenly break.\n\nSo, minimally, there needs to be an UPDATING notice of this breaking change, but ideally there would also be a migration compatibility aid to not just nuke libraries from appearing anywhere in the system runtime library path.\n\nTo be able to use the new locations, I modified `heimdal-gssapi.pc` to state:\n\n    libdir=${exec_prefix}/lib/heimdal\n    includedir=${prefix}/include/heimdal\n\nand on the `Libs:` line, after the `-L${libdir}` I added: `-Wl,-rpath=${libdir}`\n\nWith those three changes to the pkg-config spec for heimdal-gssapi, Exim once more builds and links and the resulting binary can be successfully loaded by the runtime linker."
+}

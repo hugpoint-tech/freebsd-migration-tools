@@ -1,0 +1,8 @@
+{
+ "id": 999467,
+ "bug_id": 225816,
+ "attachment_id": 0,
+ "creation_time": "2018-06-27T09:58:05Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Brian Scott from comment #14)\n\u003e #10 ck_pr_md_load_ptr (target=0xffff000054dc25e8) at\n\u003e /usr/src/sys/contrib/ck/include/gcc/aarch64/ck_pr.h:114\n\u003e #11 dyn_free_states (chain=\u003coptimized out\u003e) at\n\u003e /usr/src/sys/netpfil/ipfw/ip_fw_dynamic.c:2037\n\u003e #12 dyn_tick (vnetx=0x0) at /usr/src/sys/netpfil/ipfw/ip_fw_dynamic.c:2631\n\u003e (kgdb) x 0xffff000054dc25e8\n\u003e 0xffff000054dc25e8:\tCannot access memory at address 0xffff000054dc25e8\n\u003e (kgdb)\n\u003e \n\u003e Without knowing any aarch64 assembler, it looks like\n\u003e #10 ck_pr_md_load_ptr (target=0xffff000054dc25e8)\n\u003e is called with an invalid pointer and thats where things blow up. The\n\u003e address doesn't look unreasonable in structure so could just be an out of\n\u003e bounds thing. This is loading up the per CPU state in dyn_free_states in the\n\u003e DYNSTATE_GET macro:\n\u003e \n\u003e CPU_FOREACH(i) {\n\u003e        dyn_hp_cache[cached_count] = DYNSTATE_GET(i);\n\u003e        if (dyn_hp_cache[cached_count] != NULL)\n\u003e            cached_count++;\n\u003e }\n\u003e \n\u003e My debugging skills are stopped by the optimised out values all over the\n\u003e place, so any guidance would be appreciated.\n\nYes, from previous traces I suspected the problem is in this line, but I don't know why DPCPU_ID_PTR() produces wrong pointer. It looks like CPU_FOREACH() has protection and can not return bad CPU id, but can you try to run the following commands in kgdb:\n(kgdb) f 11\n(kgdb) i lo\n(kgdb) p mp_maxid\n(kgdb) p all_cpus"
+}

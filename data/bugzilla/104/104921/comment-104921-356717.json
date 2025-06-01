@@ -1,0 +1,8 @@
+{
+ "id": 356717,
+ "bug_id": 104921,
+ "attachment_id": 0,
+ "creation_time": "2006-10-30T07:10:19Z",
+ "creator": "seh-10lzx4@mail.quadrizen.com",
+ "text": "Some IPv6 address specifiers are still incorrectly interpreted as IPv4 addresses.  In this particular variation, if a list of addresses starting with an IPv6 host address and followed by either an IPv6 host or network address.  Both source and destination address parsing exhibit this problem.\n\nFix: The original proposed fix for 91245 would have caught this, but that fix was changed to use a strrchr to find the last '/' in the address list before passing it to inet_pton(AF_INET6,... to see if it is an IPv6 address.  I'm guessing someone was using the n.n.n.n:m.m.m.m format for multiple IPv4 addresses and they were incorrectly being identified by the original proposed fix as an IPv6 address.  As to why strrchr (reverse search) was used instead of strchr isn't obvious, and if there was a reason, it should be used to evaluate the effectiveness of what I'm proposing.\n\nIt's my understanding by looking at this that we want to scan up to the first ',' or the first '/' to find the first IPv6 address without any mask information and pass that to inet_pton(AF_INET6,... to see if it really is an IPv6 address.  To that end, I propose the following:\nHow-To-Repeat: ipfw add allow udp from any to 2000::1,2002::/16\n\nIt will result in the error:\n\nipfw: bad netmask ``:1,2002::/16''\n\nSimilarly:\n\nipfw add allow udp from 2000::1,2002::1 to any\n\nresults in the error:\n\nipfw: bad netmask ``:1,2002::1''"
+}

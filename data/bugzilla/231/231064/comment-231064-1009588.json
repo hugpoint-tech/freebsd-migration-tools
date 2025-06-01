@@ -1,0 +1,8 @@
+{
+ "id": 1009588,
+ "bug_id": 231064,
+ "attachment_id": 0,
+ "creation_time": "2018-09-01T22:14:08Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "It looks like the lbgroup hash table is getting corrupted; many of the list heads are equal to 0xffffff00ffffff or 0xffffff.  Nothing on the system actually uses SO_REUSEPORT_LB, so we shouldn't be inserting any hash table entries.  I tried making the hash-table read-only using pmap_protect(), but that doesn't seem to catch the problem - the system still panics the same way.  This plus the fact that the bug is apparently sensitive to memory layout (goes away when compiling with GENERIC or when increasing KSTACK_PAGES) makes it seem like this isn't a generic kernel bug.\n\nThat said, there are some bugs in the SO_REUSEPORT_LB implementation:\n- Lookups are protected with epoch, but the hash table doesn't use CK_ lists and we don't defer frees of the hash table entries.\n- in_pcblbgroup_free() uses the wrong malloc type.\n- Lots of style bugs."
+}

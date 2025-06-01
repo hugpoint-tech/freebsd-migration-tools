@@ -1,0 +1,8 @@
+{
+ "id": 1207467,
+ "bug_id": 263358,
+ "attachment_id": 0,
+ "creation_time": "2022-04-18T06:45:19Z",
+ "creator": "freebsd@kumba.dev",
+ "text": "(In reply to Andriy Gapon from comment #1)\n\nPrior to this //recent// change, I did not have to specify an interface to the rc script.  'service hostapd restart' worked as expected, as it has been for the past two years, because the interface was specified in hostapd's config file.  The interface being required in this instance is so it can be passed to ifconfig, NOT to hostapd.  This isn't a usage error, this is an improper overloading of the rc script's functionality, if anything.\n\nAs far as bourne shell functions go, unless a variable is explicitly passed to it, it will pull it from global scope.  But because the function is defined before $ifn, it gets a blank value.  This means when substitution occurs, you get \"ifconfig  down\" followed by \"ifconfig  up\" (note the two spaces).\n\nThe commit that added this change references a similar commit to wpa_supplicant, 5fcdc19a8111, and if you look at that rc script, the equivalent poststart function is defined AFTER $ifn is defined, so it will pickup an interface passed to the rc script.  wpa_supplicant's rc script also includes an explicit check for $ifn being defined, and if not, returns 1 for an error.  The hostapd rc script does not have such a check, thus it is logical to assume that the interface argument is optional, NOT required.  If this assumption is wrong, then that is itself a second bug, because the author of the change forgot to enforce the passing of an interface in a similar manner to what wpa_supplicant's rc script is doing.\n\nThis is a bug :)"
+}

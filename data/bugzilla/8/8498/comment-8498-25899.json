@@ -1,0 +1,8 @@
+{
+ "id": 25899,
+ "bug_id": 8498,
+ "attachment_id": 0,
+ "creation_time": "2002-01-19T23:17:46Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "Adding to the audit trail:\n\nIn message \u003cPine.GSO.4.21.0201191801310.5397-100000@weyl.math.psu.edu\u003e, Alexand\ner Viro writes:\n\u003e\n\u003e\n\u003eOn Sat, 19 Jan 2002 iedowse@FreeBSD.org wrote:\n\u003e\n\u003e\u003e Synopsis: Race condition between unp_gc() and accept().\n\u003e\u003e \n\u003e\u003e State-Changed-From-To: open-\u003efeedback\n\u003e\u003e State-Changed-By: iedowse\n\u003e\u003e State-Changed-When: Sat Jan 19 14:47:11 PST 2002\n\u003e\u003e State-Changed-Why: \n\u003e\u003e \n\u003e\u003e Does this problem still exist?\n\u003e\n\u003eAs far as I can see it's still there in HEAD - analysis from the original\n\u003ebug report still applies.\n\u003e\n\u003eBTW, there is another problem: uipc_userreq.c:1378 has\n\u003e        extra_ref = malloc(nfiles * sizeof(struct file *), M_FILE, M_WAITOK);\n\u003ewhich can block.  During that time we might get new files opened and sent\n\u003ein SCM_RIGHTS cookies.  Notice that\n\u003e\ta) we will have them _not_ marked, so the code after that will try\n\u003eto kill them.\n\u003e\tb) nfiles might have grown!\n\u003e\n\u003eThe former means that legitimate stuff gets killed.  The latter is a buffer\n\u003eoverrun in kernel space waiting to happen.\n\u003e\n\u003eFix: invert the logics with \"marked\".  I.e. start with marking everything,\n\u003ethen unmark those you want to stay around.  Then by the end of the first\n\u003ephase you have marked exactly the stuff that needs to die.  New struct\n\u003efile won't be marked, so the loop populating extra_ref will skip it...\n\u003e"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1168698,
+ "bug_id": 256936,
+ "attachment_id": 0,
+ "creation_time": "2021-07-02T11:55:27Z",
+ "creator": "chogata@moosefs.com",
+ "text": "Since FreeBSD 12.2(? or 12.1?) and still on FreeBSD 13.0 machines running MooseFS occasionally show a message:\n\n\"fuse_internal_do_getattr: cache incoherent on [PATH]! Buggy FUSE server detected\"\n\nI tried to narrow down the issue. This script:\n\n**************\n#! /usr/bin/env bash\nset -e\n\nwhile true\ndo\n\tsize=$(((2097152 + $RANDOM) % 1024))\n\tdd if=/dev/urandom of=somefile bs=1k count=$size\ndone\n**************\n\nran on 2 different mount points of the same MooseFS directory (so 2 processes in 2 different mount points modify the same file) triggers it constantly.\n\nYou can get the same result if you mount 2 instances of SSHfs and run this script on both.\n\nI suspect this has to do with file length changing during the write operation. I don't know what SSHfs does, but MooseFS sends invalidate messages every time an open file's length changes. I checked the operation log and they are sent almost constantly along the write operations when the above scripts are run on 2 mount points. However invalidates are not obligatory and even when sent, a race between invalidate and getattr can still occur. And this is not filesystem's fault. Kernel should trust the information it gets from getattr, especially on a network filesystem. This is not \"buggy\" behaviour :)"
+}

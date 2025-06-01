@@ -1,0 +1,8 @@
+{
+ "id": 1007807,
+ "bug_id": 230752,
+ "attachment_id": 0,
+ "creation_time": "2018-08-22T12:20:20Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: rmacklem\nDate: Wed Aug 22 12:20:10 UTC 2018\nNew revision: 338192\nURL: https://svnweb.freebsd.org/changeset/base/338192\n\nLog:\n  Revert r320757 since it can cause \"excl-\u003eshared\" panics.\n\n  PR#230752 shows a panic where an nfsd thread tries to do soconnect() on\n  the AF_LOCAL socket used by the nfsuserd while already holding an\n  exclusive lock on it. I am not 100% sure how this happens, but since an\n  AF_LOCAL socket is in the file system namespace it is conceivable that it\n  could lock it and then attempt an upcall to the nfsuserd.\n  However, reverting r320757 stops the nfsuserd from using an AF_LOCAL\n  socket, so it should avoid any such panic().\n  r320757 did fix a problem with running the nfsuserd when jails were\n  enabled, but that can be dealt with less elegantly by allowing the\n  use of an alternate address instead of 127.0.0.1.\n  The gssd daemon also uses an AF_LOCAL socket, but it will do upcalls\n  before the nfsd thread processes the RPC, so I think it should not\n  be suseptible to this problem.\n\n  PR:\t\t230752\n\nChanges:\n  head/usr.sbin/nfsuserd/nfsuserd.c"
+}

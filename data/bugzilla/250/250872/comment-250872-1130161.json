@@ -1,0 +1,8 @@
+{
+ "id": 1130161,
+ "bug_id": 250872,
+ "attachment_id": 0,
+ "creation_time": "2020-11-05T02:04:53Z",
+ "creator": "cem@freebsd.org",
+ "text": "objcopy can fail with 'write failed: No space left on device' when working on a file in a filesystem with tons of free space.  (I.e., no explicit destination file, dst == src.)\n\nThis is because create_tempfile() is completely ignorant of any destination goal and writes everything to /tmp.  Then, for files outside of /tmp, copy_from_tempfile() cannot rely on rename(2) putting the output in place of the input file and has to instead do a full read-copy-write from /tmp.\n\nFor \"temporary\" files which are really the work-in-progress output file, they should be emitted to the destination directory and renamed over the top of the destination file.  I'd suggest:\n\n1. Add an optional destination path parameter to create_tempfile.  create_file() passes src in 'dst == NULL' case near top of function, and possibly for other consumers in the same file if they are potentially the final output file.\n\n2. create_tempfile constructs a path adjacent to 'src' (that doesn't exist already) and opens it, if src is provided.  Otherwise, it uses its existing logic to construct a temporary file in /tmp.\n\n3. The rest of the logic in create_file / copy_from_tempfile should handle this correctly already."
+}

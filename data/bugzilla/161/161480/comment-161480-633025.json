@@ -1,0 +1,8 @@
+{
+ "id": 633025,
+ "bug_id": 161480,
+ "attachment_id": 0,
+ "creation_time": "2011-10-11T13:32:37Z",
+ "creator": "ed@80386.nl",
+ "text": "Hi,\n\nI'd rather see something like the attached patch get committed upstream.\nThere's nothing wrong with using grantpt(), it's just the lack of a call\nto posix_openpt(2).\n\ndiff --git a/configure.ac b/configure.ac\nindex c3cd947..e9a5984 100644\n--- a/configure.ac\n+++ b/configure.ac\n@@ -38,7 +38,7 @@ AC_CANONICAL_HOST\n \n \n AC_CHECK_HEADERS([pty.h stropts.h sys/param.h sys/select.h])\n-AC_CHECK_FUNCS([select grantpt])\n+AC_CHECK_FUNCS([select grantpt posix_openpt])\n \n AC_ARG_WITH(localealiasfile,\n         AS_HELP_STRING([--with-localealiasfile=\u003cpath\u003e],\ndiff --git a/sys.c b/sys.c\nindex 804bdbb..8463b05 100644\n--- a/sys.c\n+++ b/sys.c\n@@ -335,7 +335,11 @@ allocatePty(int *pty_return, char **line_return)\n #if defined(HAVE_GRANTPT)\n     int rc;\n \n+#ifdef HAVE_POSIX_OPENPT\n+    pty = posix_openpt(O_RDWR);\n+#else\n     pty = open(\"/dev/ptmx\", O_RDWR);\n+#endif\n     if (pty \u003c 0)\n \tgoto bsd;\n \n\nGreetings,\n-- \n Ed Schouten \u003ced@80386.nl\u003e\n WWW: http://80386.nl/"
+}

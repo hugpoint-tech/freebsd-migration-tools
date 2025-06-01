@@ -1,0 +1,8 @@
+{
+ "id": 25802,
+ "bug_id": 8469,
+ "attachment_id": 0,
+ "creation_time": "1998-10-27T23:20:00Z",
+ "creator": "edavis@hooked.net",
+ "text": "fchdir() is broken for apps linked against libc_r\n\nFix: Apply the following patch to the libc_r source directory:\n\nHow-To-Repeat: One way:\n  Try compiling an application that contains a call to fchdir() using\n  the '-pthread' argument to force the use of libc_r:\n\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\nvoid main()\n{\n    int fd;\n    fd = open(\"/etc\", 0, 0);\n    fchdir(fd);\n}\n\ncore [133] [~] cc -pthread main.c\n/var/tmp/ccB105761.o: Undefined symbol `_fchdir' referenced from text segment\n/usr/lib/libc_r.so.3.0: Undefined symbol `_fchdir' referenced\n\n\nSecond way:\n  Call the realpath() library function which in turn calls fchdir().\n  This application will compile cleanly and cause a run time error:\n\n#include \u003csys/param.h\u003e\n#include \u003cstdlib.h\u003e\nvoid main()\n{\n    char path[MAXPATHLEN];\n    realpath(\"/etc\", path);\n}\n\ncore [142] [~] cc -pthread main.c\ncore [143] [~] ./a.out\n/usr/libexec/ld.so: Undefined symbol \"_fchdir\" called from a.out:/usr/lib/libc_r.so.3.0 at 0x200886a8"
+}

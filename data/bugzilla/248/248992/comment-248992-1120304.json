@@ -1,0 +1,8 @@
+{
+ "id": 1120304,
+ "bug_id": 248992,
+ "attachment_id": 0,
+ "creation_time": "2020-08-31T18:52:42Z",
+ "creator": "decke@FreeBSD.org",
+ "text": "Sorry but this patch won't work. ${name}_flags is an well known variable used by rc.subr \n\n#       rc_flags        Flags to start the default command with.\n#                       Defaults to ${name}_flags, unless overridden\n#                       by $flags from the environment.\n#                       This variable may be changed by the precmd method.\n\nSee:  https://svnweb.freebsd.org/base/head/libexec/rc/rc.subr?revision=354129\u0026view=markup#l885\n\nand it is used to build the command that is run at line 1123:\n\n$command $rc_flags $command_args\n\nso we will end up with:\n\n/usr/sbin/daemon ${radicale_flags} -P ${pidfile} /usr/local/bin/radicale -C ${radicale_config} ${radicale_flags}\n\nwhich is nonsense.\n\nA simple test to verify with radicale_flags=\"--debug\" set:\n\nroot@radicale:~ # /usr/local/etc/rc.d/radicale restart\nradicale not running? (check /var/run/radicale/radicale.pid).\nStarting radicale.\ndaemon: illegal option -- -\nusage: daemon [-cfrS] [-p child_pidfile] [-P supervisor_pidfile]\n              [-u user] [-o output_file] [-t title]\n              [-l syslog_facility] [-s syslog_priority]\n              [-T syslog_tag] [-m output_mask] [-R restart_delay_secs]\ncommand arguments ...\n/usr/local/etc/rc.d/radicale: WARNING: failed to start radicale"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 784934,
+ "bug_id": 193400,
+ "attachment_id": 0,
+ "creation_time": "2014-09-06T22:20:12Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Ok, here's what fixed it (ignore the error checks):\n\nadrian@adrian-hackbox:~/work/freebsd/embedded/head/src/sys % svn diff kern\nIndex: kern/subr_sfbuf.c\n===================================================================\n--- kern/subr_sfbuf.c   (revision 271210)\n+++ kern/subr_sfbuf.c   (working copy)\n@@ -77,6 +77,14 @@\n  */\n static struct mtx sf_buf_lock;\n \n+#ifndef SFBUF\n+#error wtf?\n+#endif\n+\n+#ifdef SFBUF_OPTIONAL_DIRECT_MAP\n+#error wtf?\n+#endif\n+\n /*\n  * Allocate a pool of sf_bufs (sendfile(2) or \"super-fast\" if you prefer. :-))\n  */\n@@ -127,6 +135,7 @@\n            (\"sf_buf_alloc(SFB_CPUPRIVATE): curthread not pinned\"));\n        hash_list = \u0026sf_buf_active[SF_BUF_HASH(m)];\n        mtx_lock(\u0026sf_buf_lock);\n+#if 0\n        LIST_FOREACH(sf, hash_list, list_entry) {\n                if (sf-\u003em == m) {\n                        sf-\u003eref_count++;\n@@ -141,6 +150,7 @@\n                        goto done;\n                }\n        }\n+#endif\n        while ((sf = TAILQ_FIRST(\u0026sf_buf_freelist)) == NULL) {\n                if (flags \u0026 SFB_NOWAIT)\n                        goto done;\n\n.. the original MIPS sfbuf code didn't do the refcount stuff; it just allocated a new page for each sfbuf requested. I don't know how correct that was, but it worked.\n\nSo maybe you've exposed a bug in the MIPS pmap code?\n\n\n-a"
+}

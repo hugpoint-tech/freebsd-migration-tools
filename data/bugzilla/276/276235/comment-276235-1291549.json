@@ -1,0 +1,8 @@
+{
+ "id": 1291549,
+ "bug_id": 276235,
+ "attachment_id": 0,
+ "creation_time": "2024-01-10T08:10:18Z",
+ "creator": "wosch@FreeBSD.org",
+ "text": "In 14.0-RELEASE and the branch releng/14.0 we have the problem that some of the locale symlinks are wrong. See Bug 260841\n\nI think we can detect this kind of stale symlinks during `make installworld’ and bail out:\n\nAs an example:\n\n(set -o pipefail; sudo find /bin /boot /etc /lib /libexec /sbin /usr/bin /usr/include /usr/lib /usr/lib32 /usr/libdata/ /usr/libexec/ /usr/sbin /usr/share/ -type l -print0 | perl -0e 'while(\u003c\u003e) { if (! -e $_) { print; $exit=1}}; exit $exit' | xargs -0 ls -ld); echo $?\n\nlrwxr-xr-x  1 root wheel 31 Nov 10 07:59 /usr/share/locale/nn_NO.ISO8859-1/LC_MESSAGES -\u003e ../nn_NO.ISO8859-15/LC_MESSAGES\nlrwxr-xr-x  1 root wheel 31 Nov 10 07:59 /usr/share/locale/nn_NO.ISO8859-15/LC_MESSAGES -\u003e ../nn_NO.ISO8859-15/LC_MESSAGES\nlrwxr-xr-x  1 root wheel 30 Nov 10 07:59 /usr/share/locale/sl_SI.ISO8859-2/LC_MESSAGES -\u003e ../sr_RS.ISO8859-2/LC_MESSAGES\n1\n\n\nMaybe we should write a shell script and put it in src/tools/stale-symlinks.sh and call it from `make installworld’ as the last step."
+}

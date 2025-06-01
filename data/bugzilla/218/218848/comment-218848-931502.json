@@ -1,0 +1,8 @@
+{
+ "id": 931502,
+ "bug_id": 218848,
+ "attachment_id": 0,
+ "creation_time": "2017-04-24T14:47:41Z",
+ "creator": "sg-ball@laposte.net",
+ "text": "I've installed owncloud 9.1.4 on FreeBSD 10.3-RELEASE-p18. I could manage to have everything functional but user external authentication through SMB. Even after declaring a Windows server, the browser still display *Incorrect password* and the log contains a line saying\n\n{\"reqId\":\"be9VGQ1TXdvdH7063lbq\",\"remoteAddr\":\"****\",\"app\":\"user_external\",\"message\":\"ERROR: smbclient executable missing\",\"level\":3,\"time\":\"...\",\"method\":\"POST\",\"url\":\"\\/owncloud\\/index.php\\/login?user=***\",\"user\":\"--\"}\n\nAfter some research, I found that the culprit was /apps/user_external/lib/smb.php . It declares the call to smbclient as \"smbclient -L\" and hopes that the php module will find it in the path. Unfortunately in a vanilla FreeBSD installation, smbclient lies under /usr/local/bin and is not found by the PHP exec function.\n\nWorkaround: it is enough to give the full path of smbclient in smb.php:\n\noriginal line:\n\n        const SMBCLIENT = 'smbclient -L';\n\nmodified line:\n\n        const SMBCLIENT = '/usr/local/bin/smbclient -L';\n\nAfter this minimal patch (line 21), all goes fine and I can successfully use SMB external user authentication."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1313781,
+ "bug_id": 279653,
+ "attachment_id": 0,
+ "creation_time": "2024-06-20T03:07:26Z",
+ "creator": "takahiro.kurosawa@gmail.com",
+ "text": "I have not reproduced the crash but I guess the following patch for\nif_detach_internal() would fix the problem:\n\n----\n--- a/sys/net/if.c\n+++ b/sys/net/if.c\n@@ -1235,6 +1235,8 @@ if_detach_internal(struct ifnet *ifp, bool vmove)\n #ifdef VIMAGE\n finish_vnet_shutdown:\n #endif\n+       epoch_wait_preempt(net_epoch_preempt);\n+       NET_EPOCH_DRAIN_CALLBACKS();\n        /*\n         * We cannot hold the lock over dom_ifdetach calls as they might\n         * sleep, for example trying to drain a callout, thus open up the\n----\n\nThe routing entries that are related with the detaching ifnet are removed\nin if_purgeaddrs() and rt_flushifroutes().  It seems that the transport\nlayer protects itself from freeing objects with NET_EPOCH_ENTER/EXIT.\nSo there should be no threads that still reference nhop_objects\nrelated to the ifnet after rt_flushifroutes() + epoch_wait_preempt().\nI am not sure that NET_EPOCH_DRAIN_CALLBACKS() is required but it is\nprobably harmless."
+}

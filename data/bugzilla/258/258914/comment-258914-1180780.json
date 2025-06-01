@@ -1,0 +1,8 @@
+{
+ "id": 1180780,
+ "bug_id": 258914,
+ "attachment_id": 228428,
+ "creation_time": "2021-10-04T09:58:41Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 228428\nDisk or USB memory stick image that causes an infinite loop in the kernel.\n\ng_label_ntfs_taste() in sys/geom/label/g_label_ntfs.c reads\nfrom newly inserted disks (e.g. USB memory sticks that may\nbe corrupt or malicious) and uses the data without validation\nto form pointers, which it dereferences.\n\n    filerecp = g_read_data(cp, voloff, recsize, NULL);\n    fr = (struct ntfs_filerec *)filerecp;\n    for (ap = filerecp + fr-\u003efr_attroff;\n        atr = (struct ntfs_attr *)ap, atr-\u003ea_type != -1;\n        ap += atr-\u003ereclen) {\n\nWhoever created the disk image controls atr-\u003ereclen, and\nthus can control the value of pointer atr. I've attached a\ndisk image whose atr-\u003ereclen is zero, and which will generate\nan infinite loop in the kernel. Other values of atr-\u003ereclen\ncause kernel page faults."
+}

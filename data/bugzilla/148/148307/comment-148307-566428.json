@@ -1,0 +1,8 @@
+{
+ "id": 566428,
+ "bug_id": 148307,
+ "attachment_id": 0,
+ "creation_time": "2010-07-02T07:50:01Z",
+ "creator": "adrian@freebsd.org",
+ "text": "\n2 bytes would appear in between the ethernet header and the\nethernet payload in some circumstances. In this particular\ncircumstance, it's when bridging over GRE tunnels. Traffic\nfrom an ethernet connected host worked, but traffic from\na wireless connected host didn't.\n\nThe if_arge() TX code would check the first fragment to see\nwhether it's aligned and if not, a call to m_defrag() would\nalign and pack the fragments.\n\nThe hardware requires all fragments to be 4 bytes aligned -\nand that all fragments save the last be a size that's\na multiple of 4 bytes.\n\nIn the case I was seeing, an encapsulated packet would be\nan mbuf chain consisting of two parts. The first mbuf would\nhave a 14 byte ethernet header (6 byte src, 6 byte dst, 2 byte\nethertype) and then the original payload in the second mbuf.\nThis didn't trigger the call to m_defrag() and thus the\npacket was passed along, untouched.\n\n\"Normal\" traffic almost exclusively was misaligned and called\nm_defrag().\n\nFix: \n\nThe fix would be to check each mbuf in the TX chain for size\nand alignment then call m_defrag() if the constraints are\nmissed.\n\nMy local fix was just to always call m_defrag() for now.\nIt is inefficient but it resolves the issue.\nHow-To-Repeat: \nImplement a pair of units which are bridging over GRE/IP:\n\n* create bridge0\n* create gre0, mtu 1500, setup IPs as needed\n* throw arge1, wlan0, etc into bridge0\n* throw gre0 into bridge0\n* send traffic from wlan0 to a host on the other side of the\n  bridge - this fails"
+}

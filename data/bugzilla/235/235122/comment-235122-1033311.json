@@ -1,0 +1,8 @@
+{
+ "id": 1033311,
+ "bug_id": 235122,
+ "attachment_id": 0,
+ "creation_time": "2019-01-22T09:46:10Z",
+ "creator": "freebsd-bugs@virtualtec.ch",
+ "text": "We sometimes want customers to be able to restart services (like ldap) \nrunning on non-standard and non-privileged ports. With the new unconditional \ncall to \"limits\" in the rc.subr start function, this fails:\n\n$ sh /usr/local/etc/rc.d/slapd start\nStarting slapd.\nlimits: setrlimit datasize: Operation not permitted\n\nI suggest a change like the following:\n\n--- /etc/rc.subr.orig   2019-01-22 10:40:13.973245000 +0100\n+++ /etc/rc.subr        2019-01-22 09:51:18.058288000 +0100\n@@ -1073,7 +1073,9 @@\n                        fi\n \n                                        # Prepend default limits\n-                       _doit=\"$_cd limits -C $_login_class $_doit\"\n+                       if [ `/usr/bin/id -u` -eq 0 ]; then\n+                               _doit=\"$_cd limits -C $_login_class $_doit\"\n+                       fi\n \n                                        # run the full command\n                                        #\n\nand the same service can now be maintained by a non privileged user:\n\n$ sh /usr/local/etc/rc.d/slapd start\nStarting slapd.\n\nKind regards,\nMarkus"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 459990,
+ "bug_id": 126650,
+ "attachment_id": 0,
+ "creation_time": "2008-08-19T05:30:02Z",
+ "creator": "aaronsca@gmail.com",
+ "text": "In trying to get /usr/ports/net/tac_plus4 to use PAM, it would silently fail authenticating against the pam_unix.so module.  The root cause was that tac_plus was not running as root, and the getpwnam() function called by the pam_unix.so module would return a struct without a password to compare and always fail (i.e. PAM_AUTH_ERR). This made it always appear as though an incorrect password was entered, even though there was no way to verify whether it was or not.\n\nFix: Applying the attached patch to /usr/src/lib/libpam/modules/pam_unix/pam_unix.c should explicitly call out when a service is using the pam_unix.so module incorrectly (e.g. as a non-root user). It only reports the more descriptive error message if the password is NULL and the effective user id is not root.\n\nPatch attached with submission follows:\nHow-To-Repeat: Install /usr/ports/net/tac_plus4 without OPIE or SKEY.\nConfigure /etc/pam.d/tac_plus to use pam_unix.so auth.\nConfigure /usr/local/etc/tac_plus.conf to use PAM login.\nConfigure /etc/rc.conf to allow tac_plus service.\nStart tac_plus service via /usr/local/etc/rc.d/tac_plus\nConfigure NAS to use shiny new tac_plus service.\nAttempt authentication on NAS.\nCurse.\nLather, rinse, repeat."
+}

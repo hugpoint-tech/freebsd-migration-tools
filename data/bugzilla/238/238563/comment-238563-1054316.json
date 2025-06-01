@@ -1,0 +1,8 @@
+{
+ "id": 1054316,
+ "bug_id": 238563,
+ "attachment_id": 0,
+ "creation_time": "2019-06-14T19:09:07Z",
+ "creator": "cpm@freebsd.org",
+ "text": "(In reply to Konstantin Belousov from comment #3)\n\npthread_get_name_np is supported on 11.2-STABLE.\n\nIt's added in base/sampling_heap_profiler/sampling_heap_profiler.cc\n\n--- base/sampling_heap_profiler/sampling_heap_profiler.cc.orig\t2019-06-04 18:55:15 UTC\n+++ base/sampling_heap_profiler/sampling_heap_profiler.cc\n@@ -30,6 +30,10 @@\n #include \u003csys/prctl.h\u003e\n #endif\n \n+#if defined(OS_BSD)\n+#include \u003cpthread_np.h\u003e\n+#endif\n+\n #if defined(OS_ANDROID) \u0026\u0026 BUILDFLAG(CAN_UNWIND_WITH_CFI_TABLE) \u0026\u0026 \\\n     defined(OFFICIAL_BUILD)\n #include \"base/trace_event/cfi_backtrace_android.h\"\n@@ -65,6 +69,10 @@ const char* GetAndLeakThreadName() {\n #elif defined(OS_MACOSX)\n   int err = pthread_getname_np(pthread_self(), name, kBufferLen);\n   if (err == 0 \u0026\u0026 *name != '\\0')\n+    return strdup(name);\n+#elif defined(OS_BSD)\n+  pthread_get_name_np(pthread_self(), name, kBufferLen);\n+  if (*name != '\\0')\n     return strdup(name);\n #endif  // defined(OS_LINUX) || defined(OS_ANDROID)\n \nWe're working to unbreak chromium on 11.2-RELEASE."
+}

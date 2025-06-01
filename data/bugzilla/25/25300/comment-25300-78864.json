@@ -1,0 +1,8 @@
+{
+ "id": 78864,
+ "bug_id": 25300,
+ "attachment_id": 0,
+ "creation_time": "2001-02-23T09:20:01Z",
+ "creator": "pavel@alum.mit.edu",
+ "text": "Due to some specialized kernel driver requirements, we are running \nwith very high values of HZ (10000 or 30000).  This works OK for us\nin the kernel, but causes problem with threaded applications linked \nagainst libc_r.  The problem comes from the garbage collector thread, \nwhich runs at whatever rate sysctl(kern.clockrate) reports.  In our \ncase, with the very high HZ, this means libc_r tries to schedule an \nitimer with a 30 us period.  As a result, 50% or more of the available \nuser CPU is consumed by the gc thread, and any threaded program runs \nsome x2 slower.\n\nAs far as I can tell, there is no need for the gc thread to run so \nfrequently.  The TIMESLICE_USEC constant indicates that 10-20 ms is \nthe most resolution required in the libc_r threading kernel.  My \nproposed fix is to cap off _clock_res_usec at a max of CLOCK_RES_USEC.\nThis change seems to work fine for us, with mysqld for example.\n\nHow-To-Repeat: Set HZ to 10000 in the kernel, and compare run times for any program\nor benchmark that is linked against libc_r (and uses threads)."
+}

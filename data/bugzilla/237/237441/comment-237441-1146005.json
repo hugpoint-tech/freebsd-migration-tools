@@ -1,0 +1,8 @@
+{
+ "id": 1146005,
+ "bug_id": 237441,
+ "attachment_id": 0,
+ "creation_time": "2021-02-10T18:08:57Z",
+ "creator": "adam.chappell@gmail.com",
+ "text": "Would be intrigued to understand what the FreeBSD fix was here. Doesn't seem to be in release notes. I believe this issue is not an issue with the FreeBSD guest but more likely an issue with the MacOS/Darwin poll() returning POLLPRI events to Qemu's userland TCP stack, Slirp. When Slirp sees POLLPRI on a TCP stream it assumes (not unreasonably) that the incoming data has some urgent data in it. It makes some effort to craft a TCP segment \nfor the guest with URG flag and pointer set to a best guess.\n\nUnfortunately the guest VM's read() won't return urgent/OOB data in normal operation. As a result, data is omitted.\n\nFrom my tests it seems very prevalent that MacOS poll() returns POLLPRI on the last segment (perhaps it's signalling POLLPRI to tell the reader that the stream has finished?), which does explain why we lose the last byte or so.\n\nLopping out the (revents \u0026 SLIRP_POLL_PRI)\nclause in slirp.c:slirp_pollfds_poll() in favour of the subsequent else-if makes things work, at the cost of NOPing out Slirp's likely hapless attempts to do URG reconstruction.\n\nRFC6093 seems to push us away from ever using TCP urgent in new apps, so maybe that's not as bad as it seems."
+}

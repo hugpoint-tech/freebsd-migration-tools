@@ -1,0 +1,8 @@
+{
+ "id": 779358,
+ "bug_id": 183390,
+ "attachment_id": 0,
+ "creation_time": "2014-08-14T22:06:40Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Hi,\n\nThis should've been fixed in -HEAD, -10 and -9 for at least the ixgbe NICs.\n\nLog:\n  MFC: r264630\n  For NFS mounts using rsize,wsize=65536 over TSO enabled\n  network interfaces limited to 32 transmit segments, there\n  are two known issues.\n  The more serious one is that for an I/O of slightly less than 64K,\n  the net device driver prepends an ethernet header, resulting in a\n  TSO segment slightly larger than 64K. Since m_defrag() copies this\n  into 33 mbuf clusters, the transmit fails with EFBIG.\n  A tester indicated observing a similar failure using iSCSI.\n\n  The second less critical problem is that the network\n  device driver must copy the mbuf chain via m_defrag()\n  (m_collapse() is not sufficient), resulting in measurable overhead.\n\n  This patch reduces the default size of if_hw_tsomax\n  slightly, so that the first issue is avoided.\n  Fixing the second issue will require a way for the\n  network device driver to inform tcp_output() that it\n  is limited to 32 transmit segments.\n\nHEAD: 264630\n-10: r265414\n-9: r265292\n\nadditionally there were some issues with the way mbufs were repacked, resulting in EFBIG being returned. I'm not sure where/when that was fixed - search for 'NFS client READ performance on -current' on the freebsd-net mailing list."
+}

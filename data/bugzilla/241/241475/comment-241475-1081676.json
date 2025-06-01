@@ -1,0 +1,8 @@
+{
+ "id": 1081676,
+ "bug_id": 241475,
+ "attachment_id": 0,
+ "creation_time": "2020-01-02T01:15:43Z",
+ "creator": "jwb@freebsd.org",
+ "text": "Regarding the locale issue, it occurred to me that maybe mount_msdosfs should use LANG/LC_* from the env as a default.\n\nIt may already be doing so.  Looking at /usr/src/sbin/mount_msdosfs/mount_msdosfs.c, the -L flag merely calls setlocale():\n\n                case 'L': {\n                        const char *quirk = NULL;\n                        if (setlocale(LC_CTYPE, optarg) == NULL)\n                                err(EX_CONFIG, \"%s\", optarg);\n\nVictor: Have you tried setting LANG or LC_CTYPE globally, so it's set for the automountd process and inherited by mount_*?\n\nI'm not entirely sure that it's safe to set a non-default LANG for all root processes, but I'd like to know if setting it for automountd solves this issue.  Maybe as a quick test you could manually start the daemon with\n\nservice automountd stop\nenv LANG=ru_RU.UTF-8 automountd [flags]\n\nAs for the permissions issues, perhaps the mount directory should default to the ownership of /dev/console, which is set to the user currently running a session.  I think this would be more useful than root:wheel.\n\nThis still leaves some issues for multiuser installations, but I think allowing the local sysadmin to control mount options would take care of most of them."
+}

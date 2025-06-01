@@ -1,0 +1,8 @@
+{
+ "id": 1274513,
+ "bug_id": 268909,
+ "attachment_id": 0,
+ "creation_time": "2023-09-13T12:43:16Z",
+ "creator": "jfc@mit.edu",
+ "text": "This happened again running 13.2-STABLE at 79ce96abd6c5.  It probably happened a couple other times since my original submission when the system was unable to save or analyze a crash.\n\nThe AVL tree is corrupt and avl_walk crashes following a bad pointer.\n\nThe initial node is\n\n(kgdb) p/x *(avl_node_t *)0xfffff801476764a0\n$20 = {avl_child = {0x0, 0xfffff80200004d20}, avl_pcb = 0xfffff801f1c461fa}\n\nFollowing the avl_child[1] leads to\n\n(kgdb) p/x *(avl_node_t *)0xfffff80200004d20\n$21 = {avl_child = {0x395753c375b177a6, 0xfa91e69b009252c}, avl_pcb = 0xfffff801476764a6}\n\nFollowing avl_child[0] leads to a GPF using 0x395753c375b177a6 as a base address.\n\n#7  avl_walk (tree=tree@entry=0xfffff80009178260, \n    oldnode=oldnode@entry=0xfffff80147676440, left=left@entry=1)\n    at /usr/src/sys/contrib/openzfs/module/avl/avl.c:147\n#8  0xffffffff81c1bea5 in scan_io_queue_gather (queue=0xfffff80009178200, \n    list=0xfffffe010f60eda8, rs=\u003coptimized out\u003e)\n    at /usr/src/sys/contrib/openzfs/module/zfs/dsl_scan.c:2942\n#9  scan_io_queues_run_one (arg=0xfffff80009178200)\n    at /usr/src/sys/contrib/openzfs/module/zfs/dsl_scan.c:3093\n#10 0xffffffff81b41bbf in taskq_run (arg=0xfffff80041735d80, \n    pending=\u003coptimized out\u003e)\n    at /usr/src/sys/contrib/openzfs/module/os/freebsd/spl/spl_taskq.c:315"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 28110,
+ "bug_id": 9247,
+ "attachment_id": 0,
+ "creation_time": "1998-12-30T18:30:01Z",
+ "creator": "jbackus@plex.nl",
+ "text": "\n\tpw deadlocks because it doesn't close the open fd it is holding to\n\t/etc/master.passwd before forking/exec'ing ``pwd_mkdb -C''. pwd_mkdb\n\tsubsequently tries to flock /etc/master.passwd exclusively, resulting in\n\tdeadlock.\n\nFix: \n\nThis fix makes things work but is of course unacceptable in this form. The\n\tproblem seems to be that endpwent() doesn't actually close fd 4.\n\n\t pwupd.c.orig\tWed Dec 30 18:00:19 1998\n\t pwupd.c\tWed Dec 30 18:00:00 1998\n\t -109,6 +109,7 @@\n \tint             rc = 0;\n \n \tendpwent();\n+\tclose(4);\n \n \t/*\n \t * First, let's check the see if the database is alright\nHow-To-Repeat: \n\t# pw useradd -g nofiles -n alias -d /var/qmail/alias -s /bin/false\n\n\tBingo. You now have to ``killall -9 pwd_mkdb''.\n\n\tkdump output:\n\n\t1476 pw       CALL  open(0x804f52c,0x20,0)\n\t1476 pw       NAMI  \"/etc/master.passwd\"\n\t1476 pw       RET   open 4\n\n\tNote: no intervening close(4).\n\n\t1476 pw       CALL  fork\n\t1476 pw       RET   fork 1477/0x5c5\n\t1476 pw       CALL  wait4(0x5c5,0xefbfc8f0,0,0)\n\t1477 pw       RET   fork 0\n\t1477 pw       CALL  execve(0x80513a7,0xefbfc8f4,0xefbfdb5c)\n\t1477 pw       NAMI  \"/usr/sbin/pwd_mkdb\"\n\t1477 pw       NAMI  \"/usr/libexec/ld-elf.so.1\"\n\t1477 pwd_mkdb RET   execve 0\n\n\tNote: no intervening close(4).\n\n\t1477 pwd_mkdb CALL  open(0xefbfdc6e,0,0x1b6)\n\t1477 pwd_mkdb NAMI  \"/etc/master.passwd\"\n\t1477 pwd_mkdb RET   open 5\n\t1477 pwd_mkdb CALL  flock(0x5,0x2)\n\t1476 pw       PSIG  SIGINT SIG_DFL\n\t1477 pwd_mkdb PSIG  SIGKILL SIG_DFL"
+}

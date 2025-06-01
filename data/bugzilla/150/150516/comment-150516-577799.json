@@ -1,0 +1,8 @@
+{
+ "id": 577799,
+ "bug_id": 150516,
+ "attachment_id": 0,
+ "creation_time": "2010-09-13T07:50:01Z",
+ "creator": "beezarliu@yahoo.com.cn",
+ "text": "I found em's receiving queue handling will have the following problems if system mbuf is used up.\n1. NIC will hang because receive ring's tail pointer will not be updated (in em_rxeof).\n2. \"ifconfig up/down\" may cause system panic because em_setup_receive_ring will free already-freed mbufs.\n \nSo I made some changes:\n1. NIC's recieve ring's head/tail pointer is updated according to rxr's next_to_check/next_to_refresh.\n    So, on the position of next_to_refresh, no need to fill free mbuf because datasheet says\n        \"When the head pointer(s) is equal to the tail pointer(s), the queue(s) is empty.\n         Hardware stops storing packets in system memory until software advances the tail\n         pointer(s), making more receive buffers available.\" \n    And (next_to_refresh + 1) % num_rx_desc == next_to_check means ring queue is full.\n2. no need to reallocate the mbufs on receive queue when em re-initialize.\n3. The mbufs on the queue are also freed according to these two indexs.\n4. If ring queue is empty, em_refresh_mbufs is also called even if it doesn't handle any packet\n\nFix: Patch attached with submission follows:"
+}

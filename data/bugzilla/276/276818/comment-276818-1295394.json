@@ -1,0 +1,8 @@
+{
+ "id": 1295394,
+ "bug_id": 276818,
+ "attachment_id": 0,
+ "creation_time": "2024-02-04T11:11:59Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "I propose the following modification, which avoids writing the call to\npthread_mutexattr_destroy() twice.  Are you fine with it?\n\ndiff --git a/lib/libstdthreads/mtx.c b/lib/libstdthreads/mtx.c\nindex 719ba6486e41..3027a4e48c8d 100644\n--- a/lib/libstdthreads/mtx.c\n+++ b/lib/libstdthreads/mtx.c\n@@ -43,7 +43,7 @@ int\n mtx_init(mtx_t *mtx, int type)\n {\n \tpthread_mutexattr_t attr;\n-\tint mt;\n+\tint mt, res;\n \n \tswitch (type) {\n \tcase mtx_plain:\n@@ -60,11 +60,12 @@ mtx_init(mtx_t *mtx, int type)\n \n \tif (pthread_mutexattr_init(\u0026attr) != 0)\n \t\treturn (thrd_error);\n-\tif (pthread_mutexattr_settype(\u0026attr, mt) != 0)\n-\t\treturn (thrd_error);\n-\tif (pthread_mutex_init(mtx, \u0026attr) != 0)\n-\t\treturn (thrd_error);\n-\treturn (thrd_success);\n+\tres = thrd_success;\n+\tif (pthread_mutexattr_settype(\u0026attr, mt) != 0 ||\n+\t    pthread_mutex_init(mtx, \u0026attr) != 0)\n+\t\tres = thrd_error;\n+\tpthread_mutexattr_destroy(\u0026attr);\n+\treturn (res);\n }\n \n int"
+}

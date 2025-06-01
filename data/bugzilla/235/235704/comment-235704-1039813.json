@@ -1,0 +1,8 @@
+{
+ "id": 1039813,
+ "bug_id": 235704,
+ "attachment_id": 0,
+ "creation_time": "2019-02-28T15:27:49Z",
+ "creator": "genneko217@gmail.com",
+ "text": "Sorry to bother you again and again, but let me ask one more thing.\n\nBecause some interface types (tap, vxlan etc.) still don't have\nvirtualized cloners, I think similar problems could occur to them.\n(I know this is truly a corner case, though.) \n\nif_clone_destroy() in sys/net/if_clone.c has the following code to\nfind the cloner for an interface to destroy.\n\nWhat I was wondering is why the line 263-267 (the first loop) and\nthe line 271-278 (the second loop) use different code.\nCan't they be the same?\n(My original patch came from this question.)\n\n   261\t\t/* Find the cloner for this interface */\n   262\t\tIF_CLONERS_LOCK();\n   263\t\tLIST_FOREACH(ifc, \u0026V_if_cloners, ifc_list) {\n-\u003e 264\t\t\tif (strcmp(ifc-\u003eifc_name, ifp-\u003eif_dname) == 0) {\n   265\t\t\t\tbreak;\n   266\t\t\t}\n   267\t\t}\n   268\t#ifdef VIMAGE\n   269\t\tif (ifc == NULL \u0026\u0026 !IS_DEFAULT_VNET(curvnet)) {\n   270\t\t\tCURVNET_SET_QUIET(vnet0);\n   271\t\t\tLIST_FOREACH(ifc, \u0026V_if_cloners, ifc_list)\n   272\t\t\t\tif (ifc-\u003eifc_type == SIMPLE) {\n-\u003e 273\t\t\t\t\tif (ifc_simple_match(ifc, name))\n   274\t\t\t\t\t\tbreak;\n   275\t\t\t\t} else {\n-\u003e 276\t\t\t\t\tif (ifc-\u003eifc_match(ifc, name))\n   277\t\t\t\t\t\tbreak;\n   278\t\t\t\t}\n   279\t\t\tCURVNET_RESTORE();\n   280\t\t}\n   281\t#endif"
+}

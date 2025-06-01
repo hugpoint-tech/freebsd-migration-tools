@@ -1,0 +1,8 @@
+{
+ "id": 1055908,
+ "bug_id": 235559,
+ "attachment_id": 0,
+ "creation_time": "2019-06-29T04:29:29Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "when this problem happens, what's the latency on the drives looking like? You could set the default timeout from 30s to something stupidly large (like 120s) and see if the timeout problems go away. Alternatively, would it be possible to compile in the IOSCHED so we can get latency histograms to see if we're running up against insane latency at high load or some other sets of issues. IOSCHED has the added advantage that you can configure it on a per-drive basis to rate limit IOPS or bandwidth to see if there's some threshold that triggers this behavior or not. I tend to agree it does seem like some kind of missed message scenario, but want to preclude it. gstat with a very fast polling might catch this as well if you can capture a trace through the event.\n\nThe reason I'm asking is that the number of read recovery attempts has increased. Sometimes these can starve I/O behind the I/O that's being recovered when the data is bad enough to need to take the 'slow path' in the drives. The counter isn't nuanced enough for me to know if the bump in the counter indicates some super-long recovery, or if it is of the more average, mundane kind that happens from time to time, but doesn't spike the latency.\n\nJust something to eliminate as a possibility before we get too far off into the weeds. If it is excessive drive latency, then we need to make the recovery path more robust. If we're missing interrupts / messages that we need to figure that out. If it's something else, that needs to be diagnosed."
+}

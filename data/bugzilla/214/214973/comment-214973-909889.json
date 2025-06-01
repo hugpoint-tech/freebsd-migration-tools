@@ -1,0 +1,8 @@
+{
+ "id": 909889,
+ "bug_id": 214973,
+ "attachment_id": 177565,
+ "creation_time": "2016-12-01T04:27:40Z",
+ "creator": "ori@eigenstate.org",
+ "text": "Created attachment 177565\nFixes segfault in bmake. Possibly sketchy.\n\nTurns out that I can trivially segfault make with this input:\n\n\t(FOO)=val\n\nThis happens because in /usr/src/contrib/bmake/parse.c:1862 or\nso, we start off with:\n\n\tfor (depth = 0, cp = line + 1; depth \u003e 0 || *cp != '='; cp++) {\n\nwhich skips over the opening '(', meaning that when we see the closing ')',\nthe depth becomes negative, and we never break out of the loop, eventually\nreading outside of mapped memory.\n\nStarting off with 'cp = line', as in the attached patch, seems to work,\nalthough I'm a bit suspicious about it breaking some subtle case when\nparsing variables.\n\nStill, I tested by:\n\n\tcd /usr/src/usr.bin/bmake; make; make install\n\tcd /usr/src/lib/libc; make clean; make\n\t\nSeems to work. 'make world' is running now."
+}

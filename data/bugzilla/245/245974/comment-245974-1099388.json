@@ -1,0 +1,8 @@
+{
+ "id": 1099388,
+ "bug_id": 245974,
+ "attachment_id": 0,
+ "creation_time": "2020-04-27T15:19:41Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "The fileargs service maintains a cache of open fds, presumably so that fileargs_open() does not have to make multiple round-trips if the sandboxed program opens the same file multiple times.  However, when opening a file for the first time, cap_fileargs will attempt to open the file twice: once in order to respond to the open request, and a second time when adding the file to a \"cache\" nvlist.  If we are opening a fifo for reading this can cause the service to unexpectedly block twice:\n\nreader: opens fifo and blocks\nwriter: opens fifo, writes some data, closes the fifo\nreader: opens the fifo a second time, blocks again\n\nI suspect we should just avoid reopening the file, though I don't quite understand the whole caching mechanism yet.\n\nThis can be demonstrated using tail -f:\n\n$ mkfifo /tmp/test.fifo\n$ tail -f /tmp/test.fifo\n\nfrom another shell\n\n$ echo a \u003e /tmp/test.fifo"
+}

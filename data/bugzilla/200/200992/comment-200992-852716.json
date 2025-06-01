@@ -1,0 +1,8 @@
+{
+ "id": 852716,
+ "bug_id": 200992,
+ "attachment_id": 0,
+ "creation_time": "2015-12-08T09:46:22Z",
+ "creator": "johan@300.nl",
+ "text": "I'm suspecting that the patch (patch 1) attached here doesn't fully fix the problem, but only greatly reduces when it happens. I've encountered two issues since yesterday on different machines:\n\n(1) This one is pretty straightforward related: I've had one puppet process get stuck in STOP state, unfortunately my colleague didn't to a procstat to see the exact trace but rather rebooted the machine.\n\n(2) This one I'm unsure: I'm now debugging a hang in unmount which traces to a wait in zfs: dp-\u003edp_spaceavail_cv\n\nRunning dtrace on txg group syncing shows that there is no dirty data left, or at least that it's below the max.\n2015 Dec  8 10:39:21 :    0KB of    8MB used\n2015 Dec  8 10:39:26 :    0KB of    8MB used\n2015 Dec  8 10:39:31 :    0KB of    8MB used\n\n\nWake-up should be done by 'dsl_pool_dirty_delta':\n\n    if (dp-\u003edp_dirty_total \u003c= zfs_dirty_data_max)\n        cv_signal(\u0026dp-\u003edp_spaceavail_cv);    \n\nThis condition has been clearly met. Having this bug in the back of my head it seemed this might be related."
+}

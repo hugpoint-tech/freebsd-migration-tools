@@ -1,0 +1,8 @@
+{
+ "id": 48764,
+ "bug_id": 16013,
+ "attachment_id": 0,
+ "creation_time": "2000-01-09T20:10:02Z",
+ "creator": "sra@hactrn.net",
+ "text": "FreeBSD receives a (clearly broken) IP unicast packet encapsulated in an ethernet broadcast frame.\nUnicast packet is addressed to another machine on the local net (other machine happens to be down).\nFreeBSD attempts to forward the IP packet: ARPs for destination address,\nand issues an ICMP redirect.\n\nArguably the packet should just be dropped silently, but in any case FreeBSD should not\nbe sending an ICMP error message in response to a broadcast packet.\n\nFix: \n\nRFC-1122 section 2.4 mandates the existance of a flag indicating link-layer\nbroadcast in a received packet.  I don't know the BSD stack well enough to know\nwhether that flag exists, but if it does, checking it before sending ICMP\nerror messages or forwarding the packet should do the trick.  (Sorry, I know\nIP stacks pretty well, but mostly deeply embedded devices, not BSD kernel.)\nHow-To-Repeat: Generate a unicast IP packet with IP destination address of an unused address on the local net.\nSend this encapsulated in an ethernet broadcast frame (use BPF, or find a Windows machine that's\nbroken in the same strange way as the one that caused me to notice this).\nRun tcpdump to watch the traffic pattern."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 844651,
+ "bug_id": 203864,
+ "attachment_id": 0,
+ "creation_time": "2015-10-19T07:12:59Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "I tried to abort a zfs send:\n\n07:06:26   2.28G   zroot/j/jails/admin-svn@daily.31\n07:06:27   2.29G   zroot/j/jails/admin-svn@daily.31\n^C\nload: 1.27  cmd: zfs 72318 [tx-\u003etx_sync_done_cv] 101.46r 0.00u 1.89s 0% 4212k\nload: 0.84  cmd: zfs 72318 [tx-\u003etx_sync_done_cv] 127.51r 0.00u 1.89s 0% 4212k\nload: 0.84  cmd: zfs 72318 [tx-\u003etx_sync_done_cv] 127.98r 0.00u 1.89s 0% 4212k\n\nIt turns out the freebsd-snapshot cron was running at that very instant and it lead to a deadlock:\n\n# ps -axl | grep tx\n  0 74866 72290   0  20  0  40336   3528 tx-\u003etx_s D     -     0:00.00 zfs rename zroot/j/jails/monitor@hourly.15 zroot/j/jails/monitor@hourly.16\n  0 72318 69290   0  20  0  42520   4228 tx-\u003etx_s DE+   0     0:01.89 zfs send -Rv zroot/j/jails/admin-svn@sync.00\n\nI've seen this before but never quite at such a bad time.  Neither can be kill -9'ed."
+}

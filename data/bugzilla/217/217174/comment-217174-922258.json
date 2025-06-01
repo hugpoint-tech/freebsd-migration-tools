@@ -1,0 +1,8 @@
+{
+ "id": 922258,
+ "bug_id": 217174,
+ "attachment_id": 180077,
+ "creation_time": "2017-02-17T14:14:31Z",
+ "creator": "daniel.genis@gmx.de",
+ "text": "Created attachment 180077\nDTrace script causing problem\n\nRunning and stopping a DTrace script, may leave a \"ftcleanup\" process behind in \"DL\" state, ps afux output:\n\nroot     820   0.0  0.0      0    16  -  DL    1:43PM  0:00.01 [ftcleanup]\n\nPerl scripts (for some reason) notice this and show the following warning afterwards:\n\nWARNING: number of probes fixed does not match the number of defined probes (16 != 18, respectively)\nWARNING: some probes might not fire or your program might crash\n\n\nThis is reproducible on 10.3-STABLE and 10.3-RELEASE, and may take two or three attempts if it doesn't occur on the first attempt.\n\n\nHow to reproduce:\n\n1. Execute attached dtracte script.\n2. Stop executed dtrace script.\n3. Check ps afux for kernel ftcleanup process\n4. Repeat above until bug is triggered (2-3 times total should be enough)\n\n\nAny perl script subsequently will print the following warning on stderr, like this script for example:\n\n```\n#!/usr/local/bin/perl\nprint \"Test\";\n```\n\nWARNING: number of probes fixed does not match the number of defined probes (16 != 18, respectively)\nWARNING: some probes might not fire or your program might crash\n\n\nI can also reproduce this with other dtrace scripts, like this one:\nhttps://gist.github.com/genisd/72db1d98b64d9d7127570fff7d4b89f6\n\n\nI don't know how big the implications are. One of our automation scripts dies due to the stderr output (it checks on that)."
+}

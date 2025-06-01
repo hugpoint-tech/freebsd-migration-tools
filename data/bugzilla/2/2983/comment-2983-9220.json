@@ -1,0 +1,8 @@
+{
+ "id": 9220,
+ "bug_id": 2983,
+ "attachment_id": 0,
+ "creation_time": "1997-03-17T02:00:33Z",
+ "creator": "jc@irbs.com",
+ "text": "Index: tgoto.c\n===================================================================\nRCS file: /usr/cvs/src/lib/libtermcap/tgoto.c,v\nretrieving revision 1.2.4.1\ndiff -u -r1.2.4.1 tgoto.c\n--- tgoto.c\t1995/09/02 17:42:15\t1.2.4.1\n+++ tgoto.c\t1997/03/17 01:58:47\n@@ -40,6 +40,7 @@\n #define\tCTRL(c)\t((c) \u0026 037)\n \n #define MAXRETURNSIZE 64\n+#define MAXRESULTSIZE (MAXRETURNSIZE - sizeof (added) - 4)\n \n char\t*UP;\n char\t*BC;\n@@ -87,7 +88,7 @@\n \t\treturn (\"OOPS\");\n \t}\n \tadded[0] = 0;\n-\twhile (c = *cp++) {\n+\twhile ((c = *cp++) \u0026\u0026 dp - result \u003c MAXRESULTSIZE) {\n \t\tif (c != '%') {\n \t\t\t*dp++ = c;\n \t\t\tcontinue;\n@@ -159,15 +160,21 @@\n \t\t\t * like nondestructive space.\n \t\t\t */\n \t\t\tif (which == 0 || which == CTRL('d') || /* which == '\\t' || */ which == '\\n') {\n-\t\t\t\tif (oncol || UP) /* Assumption: backspace works */\n+\t\t\t\tif (oncol || UP) { /* Assumption: backspace works */\n+\t\t\t\t\tint length;\n+\n+\t\t\t\t\tlength = sizeof (added) - 1;\n+\t\t\t\t\tadded[length] = '\\0';\n \t\t\t\t\t/*\n \t\t\t\t\t * Loop needed because newline happens\n \t\t\t\t\t * to be the successor of tab.\n \t\t\t\t\t */\n \t\t\t\t\tdo {\n-\t\t\t\t\t\tstrcat(added, oncol ? (BC ? BC : \"\\b\") : UP);\n+\t\t\t\t\t\tstrncat(added, oncol ? (BC ? BC : \"\\b\") : UP, length);\n \t\t\t\t\t\twhich++;\n-\t\t\t\t\t} while (which == '\\n');\n+\t\t\t\t\t\tlength -= strlen(added);\n+\t\t\t\t\t} while (which == '\\n' \u0026\u0026 length \u003e 1);\n+\t\t\t\t}\n \t\t\t}\n \t\t\t*dp++ = which;\n \t\t\tgoto swap;"
+}

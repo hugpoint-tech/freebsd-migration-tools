@@ -1,0 +1,8 @@
+{
+ "id": 45644,
+ "bug_id": 14997,
+ "attachment_id": 0,
+ "creation_time": "1999-11-19T18:40:00Z",
+ "creator": "wolf@oleane.net",
+ "text": "NFS server = Netapp hardware. We do create a file over NFS using\nfollowing : open(\"toto\", O_WRONLY|O_CREAT|O_EXCL, 0644) and then\nclose the file. We after that switch to a Sun Solaris client which\nwill fail to \"stat\" the file. Using \"snoop\" it happens that the \"getattr\"\nreturns an atime value which looks like uninitialized memory :\n\nNFS:    Last access time      = -1021768688.-1679294464\nNFS:    Modification time     = 19-Nov-99 17:51:27.960000000 GMT\nNFS:    Attribute change time = 19-Nov-99 17:51:27.960000000 GMT\n\nThe FreeBSD client does not grok probably because it does less checks\non the atime. A tcpdump on the FreeBSD side for the same stat call\ngives :\n19:27:33.564961 192.168.1.201.2049 \u003e 192.168.1.1.2051613514: reply ok 120\n \naccess attr: REG 644 ids 0/0 sz 5 nlink 1 rdev 0/0 fsid 0 nodeid 0\na/m/ctime 3273198608.1407713280 943035960.650001000 943035960.650001000\n c 002d (ttl 64, id 45316)\n\nThat clearly shows that the atime value is somewhat strange. When not\nusing O_EXCL the problem is not there.\n\nFix: \n\nPainful workaround : we do a \"utime\" on the file after the successful\nfile creation and before our Sun client uses it.\nHow-To-Repeat: open O_EXCL the file, close it, stat it. We have not tested with a\ndifferent NFSserver, so that can either be a FreeBSD or a Netapp issue."
+}

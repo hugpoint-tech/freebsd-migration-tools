@@ -1,0 +1,8 @@
+{
+ "id": 1071026,
+ "bug_id": 241048,
+ "attachment_id": 0,
+ "creation_time": "2019-10-13T16:10:48Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to rkoberman from comment #21)\nThat's fine, thanks.\n\nSomething doesn't add up.  In my patch we have:\n\nif (vmd_page_count / 600 \u003c 2 * 256 * mp_ncpus * VM_NFREEPOOL)\n    continue;\n\nFrom your sysctls I get 2001978, you have mp_ncpus == 4, and VM_NFREEPOOL == 2 on amd64.  2001978 / 600 == 3336 and 2 * 256 * 4 * 2 == 4096, so we should not be creating the cache zones on your system, but the dtrace output shows that we did.\n\nI tried booting a bhyve VM with 8GB of RAM and 4 CPUs, and I have:\n\n# sysctl vm.stats.vm.v_page_count\nvm.stats.vm.v_page_count: 2031299\n# sysctl hw.ncpu\nhw.ncpu: 4\n\nand\n\n# dtrace -n 'BEGIN{print(`vm_dom[0].vmd_pgcache[0]);}'\ndtrace: description 'BEGIN' matched 1 probe\nCPU     ID                    FUNCTION:NAME\n  3      1                           :BEGIN struct vm_pgcache {\n    int domain = 0\n    int pool = 0\n    uma_zone_t zone = 0\n}\n\nAre you certain you tested the correct patch and kernel?"
+}

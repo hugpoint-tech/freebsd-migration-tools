@@ -1,0 +1,8 @@
+{
+ "id": 14695,
+ "bug_id": 4782,
+ "attachment_id": 0,
+ "creation_time": "1997-10-16T19:40:00Z",
+ "creator": "dillon@best.net",
+ "text": "\n\tWhen krsh'ing between two FreeBSD boxes, it is possible to get\n\tthe destination in a TIME_WAIT state which causes the next krsh\n\tfrom the source machine to get a connection refused (an RST).\n\tThe problem only seems to occur when the previous connection\n\thas been established for longer then TCPTV_MSL and the destination\n\tgoes into TIME_WAIT on termination of the previous connection.\n\n\tThe new connection attempts to use the same port pair.\n\nFix: I believe the ordering of the TCPS_TIME_WAIT state code in\n\ttcp_input.c is incorrect.  If I patch it as below, the problem\n\tgoes away.  However, I DO NOT KNOW if I am breaking something else\n\tby reordering this code.  My understanding is that the condition can\n\tonly occur if the same port pair is reused (which rcmd and krcmd\n\twill do) and that THIS can only occur if the source machine's tcb\n\thas already been completely closed, in which case it is safe to\n\tclose the destination machine's tcb.\n\n\t\t\t\t\t\t-Matt\nHow-To-Repeat: \n\tMake a krsh from host1 to host2 and run a command which takes\n\tlonger then TCPTV_MSL to execute.  Then try doing another random\n\tkrsh right after the first one finishes.\n\n\t\t(assuming 10BaseT, this takes around 65 seconds)\n\thost1\u003e krsh host2 \"dd if=/dev/zero bs=64k count=138\" || dd of=/dev/null\n\thost1\u003e krsh host2 -n \"echo hello world\""
+}

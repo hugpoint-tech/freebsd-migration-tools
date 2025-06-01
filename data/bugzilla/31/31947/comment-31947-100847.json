@@ -1,0 +1,8 @@
+{
+ "id": 100847,
+ "bug_id": 31947,
+ "attachment_id": 0,
+ "creation_time": "2001-11-13T04:00:00Z",
+ "creator": "edwin@mavetju.org",
+ "text": "The behaviour of syslogd when specifieng 0.0.0.0/0 is incorrect.\n\nFix: thanks to Aaron Scarisbrick for his 4.2 fix.\n\n\nFor in the 4.4 release:\nFor -current:\n\n\nPlease note that the version -current isn't tested by me.--kyTYGpHrhztTTvhWHQ4B5EdnuGgAgorP1be4m9TWh0YtrWUN\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- ../syslogd-4.4/syslogd.c    Tue Nov 13 14:27:50 2001\n+++ syslogd.c   Tue Nov 13 14:30:31 2001\n@@ -1884,7 +1884,10 @@\n                                        maskp-\u003es_addr = htonl(IN_CLASSC_NET);\n                        } else if (masklen \u003c= 32) {\n                                /* convert masklen to netmask */\n-                               maskp-\u003es_addr = htonl(~((1 \u003c\u003c (32 - masklen)) - 1));\n+                               if (masklen == 0)\n+                                       maskp-\u003es_addr = 0;\n+                               else\n+                                       maskp-\u003es_addr = htonl(~((1 \u003c\u003c (32 - masklen)) - 1));\n                        } else {\n                                freeaddrinfo(res);\n                                return -1;\nHow-To-Repeat: [/usr/src/usr.sbin/syslogd] edwin@k7\u003e./syslogd -d -a 0.0.0.0/0 gives:\nallowaddr: rule 0: numeric, addr = 0.0.0.0, mask = 255.255.255.255; port = 514\n\nthis should be:\n[/usr/src/usr.sbin/syslogd] edwin@k7\u003e./syslogd -d -a 0.0.0.0/0\nallowaddr: rule 0: numeric, addr = 0.0.0.0, mask = 0.0.0.0; port = 514"
+}

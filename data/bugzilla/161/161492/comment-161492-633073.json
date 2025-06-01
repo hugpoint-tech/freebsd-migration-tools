@@ -1,0 +1,8 @@
+{
+ "id": 633073,
+ "bug_id": 161492,
+ "attachment_id": 0,
+ "creation_time": "2011-10-11T16:00:16Z",
+ "creator": "freebsd@damnhippie.dyndns.org",
+ "text": "The global page that holds ARM_TP_ADDRESS and the RAS start/end addresses is\nallocated using the VM_ALLOC_ZERO flag, but that flag only indicates a \npreference for a pre-zeroed page if one is available, it doesn't guarantee\nthe returned page has been zeroed.\n\nIt appears that often (perhaps always?) there are no pre-zeroed pages \navailable early in startup, and the page will contain random values.  Some\ncombinations of these random values may be misinterpreted by the RAS code\nin PUSHFRAMEINSVC, causing it to use the garbage value from RAS_START when\nreturning from the first trap/interrupt, typically causing a panic due to\nsupervisor-mode access fault.\n\nFix: This patch zeroes the page if necessary after allocating it, and also\ninitializes ARM_RAS_END to 0xffffffff, since that's one of the preconditions\nof the RAS scheme when no atomic sequence is running.\nHow-To-Repeat: Naturally a failure scenario based on inopportune values of random data is \npretty rare and hard to repeat."
+}

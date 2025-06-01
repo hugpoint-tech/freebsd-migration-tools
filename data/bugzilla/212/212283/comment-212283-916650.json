@@ -1,0 +1,8 @@
+{
+ "id": 916650,
+ "bug_id": 212283,
+ "attachment_id": 0,
+ "creation_time": "2017-01-15T04:30:17Z",
+ "creator": "yongari@FreeBSD.org",
+ "text": "(In reply to Michael Tuexen from comment #46)\nI'm not sure I fully understand this PR and analysis of NIC test\nresults(it's too long).  Generally, drivers blindly trust mbuf\nchains(virtual addresses and lengths) passed from upper stack and\nset up DMA descriptors after converting virtual addresses to\nphysical addresses.  DMA engine of NIC do TX work based on DMA\ndescriptors and generate an TX completion interrupt after\ntransmission.  Some firmware of NIC also parse IP/TCP/UDP headers\nto compute checksum, TSO/UFO and etc.  If some fields of protocol\nheader or mbuf chain addresses/lengths are not consistent with\ntotal length of packet, DMA engine/NIC firmware will access invalid\nphysical addresses.  If NIC firmware parser detects some \ninconsistency in protocol header before doing actual DMA work it\nshall abort TX operation such that it leads to watchdog timeouts.\nIf DMA engine accesses invalid physical addresses it will \ncompletely lockup NIC or crash the system.  I think the various NIC\ntests were done with broken mbuf chains so it's expected result.\n\nMichael's test program should work on all network drivers since\nit's the same type of operation as NFS over UDP.  re(4)/ale(4) was\nextensively tested with NFS over UDP in the past.  em(4) was also\ntested with NFS over UDP when I was em(4) maintainer.  I don't have\nhandy CURRENT box to test re(4) at this moment but I can do re(4)\ntest again if you really need it. It may take several weeks though."
+}

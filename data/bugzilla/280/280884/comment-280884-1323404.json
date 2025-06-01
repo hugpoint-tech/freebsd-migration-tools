@@ -1,0 +1,8 @@
+{
+ "id": 1323404,
+ "bug_id": 280884,
+ "attachment_id": 0,
+ "creation_time": "2024-09-01T22:01:06Z",
+ "creator": "freebsd@nerdbynature.de",
+ "text": "Thanks, that looks even better, and gpart and zpool operations now seem to work every time, not just sometimes:\n\n=====================\n# dmesg | grep xbd2\nxbd2: 6144MB \u003cVirtual Block Device\u003e at device/vbd/51744 on xenbusb_front0\nxbd2: features: flush, write_barrier\nxbd2: synchronize cache commands enabled.\n\n# gpart create -s gpt xbd2\nxbd2 created\n\n# gpart add -t freebsd-zfs xbd2\nxbd2p1 added\n\n# zpool create foobar /dev/xbd2p1\n# zfs list\nNAME          USED  AVAIL  REFER  MOUNTPOINT\nfoobar        516K  5.33G    96K  /foobar\n\n# pv -Ss 512m /dev/random | tee /foobar/test | md5\n1ce0e20d7e47832875d8490b7d7f7675\n\n# zfs unmount foobar \n# zpool export foobar \n# sync\n# zpool import foobar\n# zfs list\nNAME         USED  AVAIL  REFER  MOUNTPOINT\nfoobar       513M  4.83G   512M  /foobar\n\n\n# md5 /foobar/test | grep 1ce0e20d7e47832875d8490b7d7f7675\nMD5 (/foobar/test) = 1ce0e20d7e47832875d8490b7d7f7675\n# zpool scrub foobar\n...\n\n# zpool status foobar | grep scrub\n  scan: scrub repaired 0B in 00:00:01 with 0 errors on Sun Sep  1 23:57:22 2024\n=====================\n\nWith that it looks like this report can be closed then? Does FreeBSD have a filesystem testsuite, something like xfstests for Linux maybe?\n\nThanks for your quick help here, this is really awesome!"
+}

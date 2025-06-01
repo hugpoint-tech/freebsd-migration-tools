@@ -1,0 +1,8 @@
+{
+ "id": 1272699,
+ "bug_id": 273506,
+ "attachment_id": 0,
+ "creation_time": "2023-09-02T02:23:37Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #1)\n\nLooks like the code in question is:\n\n    @classmethod\n    def _ensure_ffi_initialized(cls) -\u003e None:\n        with cls._init_lock:\n            if not cls._lib_loaded:\n                cls.lib = build_conditional_library(\n                    _openssl.lib, CONDITIONAL_NAMES\n                )\n                cls._lib_loaded = True\n                # As of OpenSSL 3.0.0 we must register a legacy cipher provider\n                # to get RC2 (needed for junk asymmetric private key\n                # serialization), RC4, Blowfish, IDEA, SEED, etc. These things\n                # are ugly legacy, but we aren't going to get rid of them\n                # any time soon.\n                if cls.lib.CRYPTOGRAPHY_OPENSSL_300_OR_GREATER:\n                    if not os.environ.get(\"CRYPTOGRAPHY_OPENSSL_NO_LEGACY\"):\n                        cls._legacy_provider = cls.lib.OSSL_PROVIDER_load(\n                            cls.ffi.NULL, b\"legacy\"\n                        )\n                        cls._legacy_provider_loaded = (\n                            cls._legacy_provider != cls.ffi.NULL\n                        )\n                        _legacy_provider_error(cls._legacy_provider_loaded)\n\nSo cls.lib.OSSL_PROVIDER_load(cls.ffi.NULL, b\"legacy\") is what did\nnot work overall.\n\n(I'm no phython or python library expert.)"
+}

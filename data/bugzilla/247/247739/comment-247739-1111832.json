@@ -1,0 +1,8 @@
+{
+ "id": 1111832,
+ "bug_id": 247739,
+ "attachment_id": 0,
+ "creation_time": "2020-07-04T01:16:46Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "(In reply to Leo Vandewoestijne from comment #10)\n\nOK, so there's a whole bunch of nasty issues here, some of them involving luajit.\n\nknot-resolver is not using stock Lua but rather the Openresty fork of LuaJIT, which is not supported by the Lua ports framework at this time (I did look into adding it when I did the flavors work, but there are too many luajit forks in play right now, all of which conflict).\n\nI _think_ we can get away with it in this case; cqueues built for Lua 5.1 should run on LuaJIT, even with the limitation to 47-bit lightuserdata values.\n\nI've confirmed that this port as it stands is not functional as a lua module: doing require 'cqueues' fails because of the missing _cqueues.so.\n\nThe question is: if this port were fixed to simply install cqueues correctly (without trying to mess with the library name or location), then would it suffice for knot-resolver to simply add\n\nlua51-cqueues\u003e=2020xxxx:devel/lua-cqueues@lua51\n\nto both BUILD_DEPENDS and RUN_DEPENDS ? This should work as long as knot-resolver isn't trying to link directly to the .so (which it should not be doing). Hardcoding lua51 here is correct rather than using LUA_FLAVOR because luajit-openresty only supports the 5.1 language and ABI.\n\n(For knot-resolver itself, you should be extremely wary of both having a dependency on luajit (any version) and also having USES = lua allowing any version other than exactly 5.1, for the reasons just given.)"
+}

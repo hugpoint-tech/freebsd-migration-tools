@@ -1,0 +1,8 @@
+{
+ "id": 862813,
+ "bug_id": 206810,
+ "attachment_id": 0,
+ "creation_time": "2016-02-02T09:29:32Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "I tried the following change on/for the powerpc (32-bit) PowerMac that I use\n\nIndex: /usr/src/sys/powerpc/powerpc/sigcode32.S\n===================================================================\n--- /usr/src/sys/powerpc/powerpc/sigcode32.S\t(revision 294962)\n+++ /usr/src/sys/powerpc/powerpc/sigcode32.S\t(working copy)\n@@ -45,9 +45,9 @@\n  */\n \t.globl\tCNAME(sigcode32),CNAME(szsigcode32)\n CNAME(sigcode32):\n-\taddi\t1,1,-20\t\t\t/* reserved space for callee */\n+\taddi\t1,1,-32\t\t\t/* reserved space for callee */\n \tblrl\n-\taddi\t3,1,20+SF_UC\t\t/* restore sp, and get \u0026frame-\u003esf_uc */\n+\taddi\t3,1,32+SF_UC\t\t/* restore sp, and get \u0026frame-\u003esf_uc */\n \tli\t0,SYS_sigreturn\n \tsc\t\t\t\t/* sigreturn(scp) */\n \tli\t0,SYS_exit\n\n\nand the results were:\n\nA) \"info frame\" in gdb shows signal handlers are now started with 16-byte aligned stack frames.\n\nand\n\nB) The clang 3.8.0 compiled __vfprintf segmentation faults in libc/stdio library code during signal handlers no longer happen because the alignment matches the code requirements.\n\n(Before 2014 it was -16 and 16 instead of -20 and 20, but 16 was too small of a space. The change to -20 and 20 fixed that but no longer produced aligned stack frames: It should have gone from -16 and 16 to -32 and 32 to maintain 16 byte stack alignment while allocating more space.)"
+}

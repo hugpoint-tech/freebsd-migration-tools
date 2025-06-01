@@ -1,0 +1,8 @@
+{
+ "id": 1294755,
+ "bug_id": 272755,
+ "attachment_id": 0,
+ "creation_time": "2024-01-30T10:38:13Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "(In reply to Hiroo Ono from comment #4)\n\u003e main-powerpc64: building for: FreeBSD main-powerpc64-default-job-10\n\u003e 14.0-CURRENT FreeBSD 14.0-CURRENT 1400078 powerpc\nThat 1400078 is the jail version, the host one is still 1400073.  Remember, this is the kernel bug we're dealing with. :-)\n\nLet's review the history.  The bug had been introduced in base 65572cade35 on Feb 14 2022.  One regression, for send(2), was quickly fixed in base d2b3a0ed31e three days later, on Feb 17 2022.  The second one, for write(2), took longer to discover (see bug #265087, filed on 2022-07-08) and fix, which finally happened in base 7a2c93b86ef on Dec 14 2022.  This all (bug and two fixes) happened on main and were never merged to stable/13 or previous branches (stable/14 was created only on 2023-07-13).\n\nSo how come `net/dante' had been failing on cluster across all FreeBSD releases, even 12.3, between February and April 2023, per those build logs, until the test disablement was merged to Q2 in May?  Apparently, the answer is in these two lines which are common for broken build logs:\n\n    Host OSVERSION: 1400073\n    Jail OSVERSION: 1203000 (for 12.3)\n\n__FreeBSD_version had been bumped to 1400073 in base 9c950139051, that's Oct 17 2022 (the bug is still there); next bump was with base e28932c643e on Dec 8 2022 (the bug is still there).  So the cluster was running buggy kernel at the time of those early 2023 builds.\n\nUnless someone finds a flaw in this analysis, I'm going to remove the bogus patch (which should not have been committed in the first place) and restore the test."
+}

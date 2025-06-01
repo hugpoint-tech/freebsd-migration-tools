@@ -1,0 +1,8 @@
+{
+ "id": 1185778,
+ "bug_id": 259458,
+ "attachment_id": 0,
+ "creation_time": "2021-11-08T09:14:46Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "I think that comment #13 could be on spot.\nAfter applying the following patch the problem hasn't been seen for several days (whereas previously it happened at least once per day on one of test machines).\n\n@@ -2572,7 +2572,8 @@\n                        bzero((void *)di-\u003eidi_vaddr, di-\u003eidi_size);\n        }\n        for (i = 0; i \u003c scctx-\u003eisc_nrxqsets; i++, rxq++) {\n-               /* make sure all transmitters have completed before proceeding XXX */\n+               gtaskqueue_drain(rxq-\u003eifr_task.gt_taskqueue,\n+                   \u0026rxq-\u003eifr_task.gt_task);\n \n                rxq-\u003eifr_cq_cidx = 0;\n                for (j = 0, di = rxq-\u003eifr_ifdi; j \u003c sctx-\u003eisc_nrxqs; j++, di++)\n\nI cannot come up with an exact interaction between threads that could lead to the symptoms, but there certainly was a data race.\nI used anonymous dtrace to capture initial network configuration and I saw some interleaving between _task_fn_rx and iflib_if_ioctl -\u003e iflib_stop / iflib_init_locked. One specific ioctl that I saw was SIOCSIFCAP."
+}

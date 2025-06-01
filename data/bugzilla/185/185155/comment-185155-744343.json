@@ -1,0 +1,8 @@
+{
+ "id": 744343,
+ "bug_id": 185155,
+ "attachment_id": 0,
+ "creation_time": "2013-12-24T13:30:01Z",
+ "creator": "se@FreeBSD.org",
+ "text": "The kqueue support that was added to minidlna uses one file descriptor per\nwatched directory, starting with low file descriptor IDs. On a system with\nmany media directories (those taking most profit from the kqueue patch),\nthis leads to a program crash, when the file descriptors used for the actual\ndata transfer have numbers higher than FD_SETSIZE (1024 unless changed).\nThe diagnostig written to the log file does not explain the reason for the\ncrash and does not provide any guidance to resolve the problem.\n\nFix: As a work-round, FD_SETSIZE may be defined to a larger value before the\n#include of sys/types.h (and any otherheader that implicitly loads this file).\n\nFor a real fix, select() should be replaced by poll(). With large numbers of\nfile descriptors, select is inefficient, anyway. Since the FD_*() macros and\nthe select() system call are used in only a few places, the change is not too\nintrusive.\n\nAs a work-around the following two patches rise the limit of file-descriptors\nsupported by select() (and thus the number of directories) to a much higher\nvalue and provide a better error message, if the number of file descriptors\nsupported is still too low.\nHow-To-Repeat: Start minidlna on a media collection consisting of more than 1024 directories\nand with \"inotify=yes\" (the default) in minidlna.conf. The program will crash\nwhen the first actual data transfer is attempted."
+}

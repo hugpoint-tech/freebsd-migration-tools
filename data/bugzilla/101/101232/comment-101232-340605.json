@@ -1,0 +1,8 @@
+{
+ "id": 340605,
+ "bug_id": 101232,
+ "attachment_id": 0,
+ "creation_time": "2006-08-02T01:10:13Z",
+ "creator": "nge@cs.hmc.edu",
+ "text": "\nIf you run make(1) with -j NN and reading the makefile from standard\ninput, it hangs.\n\nFix: There is a typo in job.c.  Here is a patch, explanation follows.\n\n\n\nThe bug is obvious; this section is supposed to run when the fifo\ncould not be opened.  But 0 is a valid file descriptor, so fifoFd == 0\ndoes not indicate error.  When -f - is used, make(1) reads its\nMakefile from standard input (file descriptor 0) and then closes it.\nSo now fd 0 is available for reuse.  It winds up getting assigned to\nfifoFd.  Now the preceding code clobbers the value of maxproc in the\ncase that opening the fd succeeded (which is perhaps bad style), so if\nthis code runs as well, maxJobs gets set to a bogus value (-1) and\nthings go haywire.--Z3H0pbHdWhYvCD78V9C15YNrP96oSCGJ2tNZ3txJMu0IU27B\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- /usr/src/usr.bin/make/job.c\tWed Jul 20 12:05:23 2005\n+++ job.c\tTue Aug  1 16:22:42 2006\n@@ -2338,7 +2338,7 @@\n \t\t\tjobFull = FALSE;\n \t\t}\n \t}\n-\tif (fifoFd \u003c= 0) {\n+\tif (fifoFd \u003c 0) {\n \t\tmaxJobs = maxproc;\n \t\tjobFull = FALSE;\n \t} else {\nHow-To-Repeat: \n\n$ cat \u003emf\nall :\n\ttrue\n^D\n$ make -j 6 -f - \u003cmf\n(hangs indefinitely)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 953557,
+ "bug_id": 222639,
+ "attachment_id": 0,
+ "creation_time": "2017-09-27T10:07:12Z",
+ "creator": "freebsd@mhka.no",
+ "text": "The current implementation of random PID generation is a bit opportunistic.\nIt currently generates a random value which is lastpid + (random_number capped to a max value of kern.randompid), but always at least 1 more than lastpid.\nIt then checks if this PID is available, and if not, tries again.\n\nTherefore, as number of processes approach PID_MAX (i.e. number of available PIDs approach 0), the time to allocate a randomly generated PID approaches infinity.\n\nProposed solution:\n\nPrequisite: Change how PIDs are tracked and allocated. Implement a bitmap of PIDs (I'm currently working on this) which is updated whenever anything in the PID namespace changes (a new PID/session ID/etc is created, or a PID/session ID/etc is considered available again). \nThe bitmap should be an array of 4096 uint32_t where each bit represents a PID. A set (on) bit indicates an available PID.\n\nNew random PID generation algorithm:\nCreate an index of the bitmap consisting of 128 uint32_t. Each bit represents a single uint32_t in the bitmap, declaring whether it has any available PIDs.\nWhen creating a random PID:\n- Iterate the index and find all uint32_t which have at least one bit set.\n- Select one of thee aforementioned at random.\n- Select a random set bit from the selected, to decide which uint32_t in the bitmap to use for further selection.\n- Select a random bit in the aforementioned to determine which PID to allocate.\n\nRestrict allocation to lastpid \u003c newpid \u003c PID_MAX\n\nI'm working on this, but describing it here so it's not lost. For feedback or just in case the \"Bus Test\" actually happens. ;)"
+}

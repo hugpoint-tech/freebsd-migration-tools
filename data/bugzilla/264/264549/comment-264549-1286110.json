@@ -1,0 +1,8 @@
+{
+ "id": 1286110,
+ "bug_id": 264549,
+ "attachment_id": 0,
+ "creation_time": "2023-11-28T10:33:57Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to mfbott from comment #0)\n\u003e I've solved this issue by replacing \"pause\" with \"DELAY\" inside the e1000 driver\n\u003e (see attachment).\n\u003e This certainly works for me, but could point to a deeper problem within anything\n\u003e bridge-related. (I couldn't reproduce this panic outside a bridge.)\n\nIIUC this is an issue that combines use _sleep() with epoch_enter_preempt().\n\nbridge_linkstate() will enter net epoch and then calls bstp_linkstate() and eventually e1000_write_phy_reg_mdic() / pause() / _sleep().\n\nAs per EPOCH(9),\n        EPOCH_PREEMPT\n\t\t     The  epoch\t will  allow preemption\tduring sections.  Only\n\t\t     non-sleepable locks may be\tacquired during\ta  preemptible\n\t\t     epoch.\t  The\t  functions\tepoch_enter_preempt(),\n\t\t     epoch_exit_preempt(), and\tepoch_wait_preempt()  must  be\n\t\t     used   in\t place\tof  epoch_enter(),  epoch_exit(),  and\n\t\t     epoch_wait(), respectively.\n\nit is wrong to sleep within net epoch (allow preemption).\n\n\n\u003e There's possibly a better solution in which we allow \"pause\" under some\n\u003e circumstances (unlike my blanket replacement), but I haven't found one.\n\nThere's also problem report by Jean-Sébastien in https://reviews.freebsd.org/D14984 which has the same cause.\n\nCC the author @Matt Macy"
+}

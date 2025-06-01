@@ -1,0 +1,8 @@
+{
+ "id": 925309,
+ "bug_id": 217613,
+ "attachment_id": 0,
+ "creation_time": "2017-03-10T06:46:59Z",
+ "creator": "sjg@FreeBSD.org",
+ "text": "Sorry I should have been more explicit, I was refering to the dependency.\nIf we tweak that makefile so it is consumable by both bmake and gmake\n\n% cat tmf\n\n.SUFFIXES: .ext .c\n\nVPATH = /tmp\n\n/tmp/target.ext: target.c\n        @echo '@=$@ *=$* \u003e=$\u003e ^=$^'\n\nall: target.ext\n%\n\nwe cannot have $*.c as source - gmake doesn't like it,\nbmake behaves as documented:\n\n% bmake -r   -f tmf\n@=/tmp/target.ext *=target \u003e=/tmp/target.c ^=\n\ngmake just trims suffix:\n\n% make -r -f tmf \n@=/tmp/target.ext *=/tmp/target \u003e= ^=target.c\n\nwhich I think is expected, we can better see what bmake is doing if we put the $*.c back as a dependency, but qualify it.\neg.\n\ncat tmf\n\n.SUFFIXES: .ext .c\n\nVPATH = /tmp\n\n/tmp/target.ext: ${.CURDIR}/$*.c\n        @echo '@=$@ *=$* \u003e=$\u003e ^=$^'\n\nall: target.ext\n%\n% bmake -r   -f tmf \nbmake: don't know how to make /tmp//tmp/target.c. Stop\n\nbut if we lose the ${.CURDIR}/ qualification it works:\n\n% bmake -r   -f tmf \n@=/tmp/target.ext *=target \u003e=/tmp/target.c ^=\n%\n\non the rhs of the dependency only the suffix is trimed, once we are into the target context the directory is also.\n\nBug? hard to say, it has behaved this way for 20+ years"
+}

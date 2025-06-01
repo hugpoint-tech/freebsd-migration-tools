@@ -1,0 +1,8 @@
+{
+ "id": 653755,
+ "bug_id": 165630,
+ "attachment_id": 0,
+ "creation_time": "2012-03-04T17:09:26Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: brucec\nDate: Sun Mar  4 17:08:43 2012\nNew Revision: 232509\nURL: http://svn.freebsd.org/changeset/base/232509\n\nLog:\n  Fix race condition in KfRaiseIrql().\n  \n  After getting the current irql, if the kthread gets preempted and\n  subsequently runs on a different CPU, the saved irql could be wrong.\n  \n  Also, correct the panic string.\n  \n  PR:\t\tkern/165630\n  Submitted by:\tVladislav Movchan \u003cvladislav.movchan at gmail.com\u003e\n\nModified:\n  head/sys/compat/ndis/subr_hal.c\n\nModified: head/sys/compat/ndis/subr_hal.c\n==============================================================================\n--- head/sys/compat/ndis/subr_hal.c\tSun Mar  4 17:00:46 2012\t(r232508)\n+++ head/sys/compat/ndis/subr_hal.c\tSun Mar  4 17:08:43 2012\t(r232509)\n@@ -392,16 +392,18 @@ KfRaiseIrql(uint8_t irql)\n {\n \tuint8_t\t\t\toldirql;\n \n+\tsched_pin();\n \toldirql = KeGetCurrentIrql();\n \n \t/* I am so going to hell for this. */\n \tif (oldirql \u003e irql)\n-\t\tpanic(\"IRQL_NOT_LESS_THAN\");\n+\t\tpanic(\"IRQL_NOT_LESS_THAN_OR_EQUAL\");\n \n-\tif (oldirql != DISPATCH_LEVEL) {\n-\t\tsched_pin();\n+\tif (oldirql != DISPATCH_LEVEL) \n \t\tmtx_lock(\u0026disp_lock[curthread-\u003etd_oncpu]);\n-\t}\n+\telse\n+\t\tsched_unpin();\t\n+\n /*printf(\"RAISE IRQL: %d %d\\n\", irql, oldirql);*/\n \n \treturn (oldirql);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

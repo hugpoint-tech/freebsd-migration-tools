@@ -1,0 +1,8 @@
+{
+ "id": 823757,
+ "bug_id": 200169,
+ "attachment_id": 0,
+ "creation_time": "2015-05-13T16:03:37Z",
+ "creator": "zuborg@gmail.com",
+ "text": "The problem is in IN6_IS_ADDR_V4COMPAT macro:\nipfw2.c:\n\nstatic void\ntable_list(uint16_t num, int need_header)\n...\n                        if (IN6_IS_ADDR_V4COMPAT(addr6)) {\n                                /* IPv4 address */\n                                inet_ntop(AF_INET, \u0026addr6-\u003es6_addr32[3], tbuf, sizeof(tbuf));\n                        } else {\n                                /* IPv6 address */\n                                inet_ntop(AF_INET6, addr6, tbuf, sizeof(tbuf));\n                        }\n...\n\nnetinet6/in6.h:\n\n/*\n * IPv4 compatible\n */\n#define IN6_IS_ADDR_V4COMPAT(a)         \\\n        ((a)-\u003e__u6_addr.__u6_addr32[0] == 0 \u0026\u0026  \\\n         (a)-\u003e__u6_addr.__u6_addr32[1] == 0 \u0026\u0026  \\\n         (a)-\u003e__u6_addr.__u6_addr32[2] == 0 \u0026\u0026  \\\n         (a)-\u003e__u6_addr.__u6_addr32[3] != 0 \u0026\u0026  \\\n         (a)-\u003e__u6_addr.__u6_addr32[3] != ntohl(1))\n\nthis macro consider values 0.0.0.0 and 0.0.0.1 as non IPv4 compatible.\n\n# ipfw table 1 flush\n# ipfw table 1 add 0.0.0.0/32\n# ipfw table 1 add 0.0.0.1/32\n# ipfw table 1 add 0.0.0.2/32\n# ipfw table 1 add 0.0.0.128/32\n# ipfw table 1 list\n::/32 0\n::1/32 0\n0.0.0.2/32 0\n0.0.0.128/32 0\n#"
+}

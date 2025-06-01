@@ -1,0 +1,8 @@
+{
+ "id": 1115,
+ "bug_id": 473,
+ "attachment_id": 0,
+ "creation_time": "1995-06-01T19:10:05Z",
+ "creator": "wpaul@ctr.columbia.edu",
+ "text": "\n\n\tThe +@netgroup/-@netgroup NIS password overrides can fail in\n\tsome cases due to a subtle bug. Specifically, if you override\n\tan NIS user's shell, /usr/bin/login and /usr/bin/su (and probably\n\tother commands) can end up with bogus data for the pw_shell\n\tmember of the passwd structure *if* the do an endpwent(),\n\tthereby preventing logins.\n\n\tThis happpens because the text fields in the passwd structure\n\t(pw_name, pw_passwd, pw_gecos, pw_class, pw_dir and pw_shell)\n\tare returned to the calling program as pointers to dycamically\n\tallocated buffers, rather than pointers to static buffers as\n\tthey should be. Once endpwent() is called, the dynamic buffers\n\tare free()ed, which invalidates the data returned by the\n\tlibrary functions.\n\nFix: This is a context diff for /usr/src/lib/libc/gen/getpwent.c\n\tthat fixes the problem. A more elegant solution would be\n\tpreferable, and I intend implement one for 2.1 just as soon\n\tas the code lockout for 2.0.5 is lifted.\n\nHow-To-Repeat: \n\t1) enable NIS\n\t2) put an entry in the master.passwd file that overrides\n\t   the shell field for a user in the NIS database, like this:\n\t   +testuser:::::::::/bin/csh\n\t3) attempt to login as user 'testuser'. The result will be\n\t   that /usr/bin/login will end up with some random value\n\t   for pw_shell and the login will fail."
+}

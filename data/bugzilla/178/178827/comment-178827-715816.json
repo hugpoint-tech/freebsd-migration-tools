@@ -1,0 +1,8 @@
+{
+ "id": 715816,
+ "bug_id": 178827,
+ "attachment_id": 0,
+ "creation_time": "2013-05-22T12:37:58Z",
+ "creator": "freebsd@grem.de",
+ "text": "Please find attached an altered version of the patch. This has nothing\nto do with the original problem (the patch above addresses this just\nfine), but instead it fixes one of the most obnoxious warnings of the\nmany cryptopp causes while building, e.g. clang emits the following\n(gcc warns about it as well, but in a different way).\n\n/usr/local/include/cryptopp/misc.h:414:8: warning: comparison of\nunsigned /  expression \u003c 0 is\n      always false [-Wtautological-compare]\n        if (a \u003c 0)\n            ~ ^ ~\n/usr/local/include/cryptopp/simple.h:42:113: note: in instantiation of\nfunction template\n      specialization 'CryptoPP::IntToString\u003cunsigned int\u003e' requested\nhere ...rounds) : InvalidArgument(algorithm + \": \" +\nIntToString(rounds) + \" is not a valid...\n                                                  ^\n2 warnings generated.\n\nThis is caused by the template function IntToString checking for a \u003c 0\neven if the template parameter is an unsigned type. There are literally\ndozens of these warnings. The patch fixes this in an easy to audit way\n- instead of modifying the code to use \"abs\" or change the semantics in\nany way it creates two template functions depending on if the template\nparameter is unsigned or not (thanks to Roland Bock for the patch).\n\nIt would be cool if you could get that in while updating the port,\nsince these warnings are all over the place not only while\nbuilding the port itself, but also when using the library in your own\ncode.\n\nCheers,\nMichael\n\n-- \nMichael Gmelin"
+}

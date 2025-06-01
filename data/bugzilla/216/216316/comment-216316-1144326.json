@@ -1,0 +1,8 @@
+{
+ "id": 1144326,
+ "bug_id": 216316,
+ "attachment_id": 0,
+ "creation_time": "2021-01-31T14:54:11Z",
+ "creator": "mcb30@ipxe.org",
+ "text": "(In reply to Ed Maste from comment #8)\n\nFrom looking at elfcopy/binary.c and its create_binary() function: it appears that elfcopy will use sh_offset to calculate the position within the final binary file (rather than the LMA or even the VMA).  Since sh_offset is meaningless once the ELF headers have been stripped away, this behaviour is provably incorrect for anything other than extracting a single section via \"-j \u003csection\u003e\".\n\nBuilding elfcopy from source confirms this behaviour from the current code.\n\n\nSo, we have three possible behaviours:\n\n1. binutils objcopy\n\nUses the section LMA to determine the offset within the output file.  As above, I would say that this behaviour is correct.\n\n2. FreeBSD objcopy as present in binary distributions\n\nUses the section VMA to determine the offset within the output file.  As above, I would say that this behaviour is wrong.\n\n3. FreeBSD objcopy as built from source\n\nUses the section sh_offset to determine the offset within the output file.  This behaviour is very definitely wrong.\n\n\nI am puzzled why I get different behaviour from the FreeBSD binary and source distributions, particularly since the use of sh_offset appears to have been present since 2010.\n\nMichael"
+}

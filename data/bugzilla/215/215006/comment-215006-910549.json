@@ -1,0 +1,8 @@
+{
+ "id": 910549,
+ "bug_id": 215006,
+ "attachment_id": 0,
+ "creation_time": "2016-12-05T18:32:05Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to Jérôme-Charles LALLEMAND from comment #5)\n\u003e I've run some other tests, using a default gateway toward lo0 and route-to\n\u003e rules to force ipsec to apply on lo0 with the correct src/dst.\n\u003e \n\u003e I don't understand where exactly the SPD apply :\n\u003e \n\u003e I've tested à setup with 2 SPD rules f \n\u003e 0.0.0.0/0 0.0.0.0/0 any -P in ipsec esp/transport//require;\n\u003e 0.0.0.0/0 0.0.0.0/0 any -P out ipsec esp/transport//require;\n\u003e \n\u003e And still, some packets are leaving m'y box unencrypted, despite the require\n\u003e flag\n\nThis how PF works. For some type of actions (route-to, nat, probably some others) it takes mbuf from the FreeBSD's network stack and then don't return it back. It does direct if_output() into network interface.\n\nSPD applied in the ip_output().\n\nip_output()\n  ip_ipsec_output()\n    IPsec processing begins:\n       call to if_enc()\n          PF handles packet and does direct if_output\n    IPsec thinks that packet was dropped by PF and didn't finish its work\n----------\n\nYou may try to use ipfw(4), it reuses ip_output() for NAT'ed and forwarded packets. For ipfw this will work like:\nip_output()\n  ip_ipsec_output()\n    IPsec processing begins:\n       call to if_enc()\n          ipfw handles packet, do NAT then return to IPSec\n    IPsec do encryption\n    IPsec call ip_output() with encrypted packet\n      ip_ipsec_output() decides that no IPsec required\n      ipfw checks ESP packet\n      if_output() using interface determined by route lookup"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 697489,
+ "bug_id": 174868,
+ "attachment_id": 0,
+ "creation_time": "2012-12-31T20:10:00Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Several errors aren't properly documented when calling vfs_domount. In particular\nthese sections of code aren't documented properly:\n\n1075                 if (fsflags \u0026 MNT_ROOTFS)\n1076                         vfsp = vfs_byname(fstype);\n1077                 else\n1078                         vfsp = vfs_byname_kld(fstype, td, \u0026error);\n1079                 if (vfsp == NULL)\n1080                         return (ENODEV);\n1081                 if (jailed(td-\u003etd_ucred) \u0026\u0026 !(vfsp-\u003evfc_flags \u0026 VFCF_JAIL))\n1082                         return (EPERM);\n\n- Line 975 seems like it should be ENOENT (according to kldload(2)), but that might cause confusion to any callers of mount(2).\n- Line 976 is completely undocumented (if you don't have permissions to mount in a jail, fail with EPERM).\n\nI'm also not entirely sure why this check exists in addition to the check on 1081 because it seems like unnecessary duplication, but I'd need to check priv_check a bit more to determine whether or not that's a disjoint set of requirements:\n\n1045         if (jailed(td-\u003etd_ucred) || usermount == 0) {\n1046                 if ((error = priv_check(td, PRIV_VFS_MOUNT)) != 0)\n1047                         return (error);\n1048         }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 566485,
+ "bug_id": 148317,
+ "attachment_id": 0,
+ "creation_time": "2010-07-02T14:10:05Z",
+ "creator": "spawk@acm.poly.edu",
+ "text": "When using an Atheros 5212 PCI controller as a busy 7.x access point, a memory leak occurs frequently and eventually leads to a panic. The problem has been observed on multiple machines. Relevant \"vmstat -m\" output when the leak is observed:\n\n80211node 12677 101401K       -   120901  16,512\n\nRunning \"ifconfig ath0 down\" (ath0 being the controller in hostap mode) frees the memory. The problem occurs with all three rate-control algorithms. I have eliminated some possible allocations that might cause the leak and have narrowed it down to two:\n\nLine 595 of /usr/src/sys/net80211/ieee80211_node.c:\n\n       MALLOC(ni, struct ieee80211_node *, sizeof(struct ieee80211_node),\n               M_80211_NODE, M_NOWAIT | M_ZERO);\n\nLine 3164 of /usr/src/sys/dev/ath/if_ath.c:\n\n       an = malloc(space, M_80211_NODE, M_NOWAIT|M_ZERO);\n\nIt looks like both are supposed to be freed by node_free() in /usr/src/sys/net80211/ieee80211_node.c, but there is some code path where that doesn't happen, and should."
+}

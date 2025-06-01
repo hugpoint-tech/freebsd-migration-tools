@@ -1,0 +1,8 @@
+{
+ "id": 1298084,
+ "bug_id": 277169,
+ "attachment_id": 0,
+ "creation_time": "2024-02-21T20:19:39Z",
+ "creator": "emaste@freebsd.org",
+ "text": "(In reply to vini.ipsmaker from comment #4)\nBoth dlopen and fdlopen call into load_object, and both paths do indeed compare device and inode:\n\n    if (fstat(fd, \u0026sb) == -1) {\n        _rtld_error(\"Cannot fstat \\\"%s\\\"\", printable_path(path));\n        close(fd);\n        free(path);\n        return (NULL);\n    }\n    TAILQ_FOREACH(obj, \u0026obj_list, next) {\n        if (obj-\u003emarker || obj-\u003edoomed)\n            continue;\n        if (obj-\u003eino == sb.st_ino \u0026\u0026 obj-\u003edev == sb.st_dev)\n            break;\n    }\n\nhowever it looks like the dedup indeed requires the name:\n\n    if (obj != NULL \u0026\u0026 name != NULL) {\n        object_add_name(obj, name);\n        free(path);\n        close(fd);\n        return (obj);\n    }\n\nso it indeed seems like there's some more investigation needed here still.\n\nI don't object to having a new env var akin to LD_LIBRARY_PATH_FDS and it is likely an easier/faster way to address existing software. fdlopen (perhaps with a dedup change in FreeBSD?) may be a conceptually cleaner path for new software or where platform-specific support is reasonable."
+}

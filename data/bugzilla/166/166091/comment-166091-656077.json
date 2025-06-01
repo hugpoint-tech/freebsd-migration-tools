@@ -1,0 +1,8 @@
+{
+ "id": 656077,
+ "bug_id": 166091,
+ "attachment_id": 0,
+ "creation_time": "2012-03-14T15:20:01Z",
+ "creator": "matthewstory@gmail.com",
+ "text": "fts(3) sets the FTS_NOCHDIR flag in 2 cases aside from when it is explicitly provided to fts_open(3)\n\n1. FTS_LOGICAL flag is provided to fts_open(3)\n\n 145     /* Logical walks turn on NOCHDIR; symbolic links are too hard. */\n 146     if (ISSET(FTS_LOGICAL))\n 147         SET(FTS_NOCHDIR);\n\n2. fts_open(3) cannot open(2) `.'\n\n 209     /*\n 210      * If using chdir(2), grab a file descriptor pointing to dot to ensure\n 211      * that we can get back here; this could be avoided for some paths,\n 212      * but almost certainly not worth the effort.  Slashes, symbolic links,\n 213      * and \"..\" are all fairly nasty problems.  Note, if we can't get the\n 214      * descriptor we run anyway, just more slowly.\n 215      */\n 216     if (!ISSET(FTS_NOCHDIR) \u0026\u0026 (sp-\u003efts_rfd = _open(\".\", O_RDONLY, 0)) \u003c 0)\n 217         SET(FTS_NOCHDIR);\n\nA misunderstanding of the former case caused find(1) to not traverse directories properly for -execdir when the -L option was specified (see bin/166056)\n\nFix: apply patch (patch is against head), patch is available via http here:\n\nhttp://axe0.blackskyresearch.net/patches/matt/fts.3.add_FTS_NOCHDIR_side_effect_cases.patch.txt\n\nPatch attached with submission follows:\nHow-To-Repeat: man 3 fts"
+}

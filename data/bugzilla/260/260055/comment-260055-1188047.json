@@ -1,0 +1,8 @@
+{
+ "id": 1188047,
+ "bug_id": 260055,
+ "attachment_id": 0,
+ "creation_time": "2021-11-26T07:58:52Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "The backtrace you reported is suspicious, pthread_suspend_all_np()\ncannot appear in the stack between _recvmg() and recvmsg(), most\nlikely it is __thr_recvmsg() which was mis-identified due to missed\ndebug symbols in libthr.  Compile both libc and libthr with debug\ninfo.\n\nAfter that, first catch the kernel-side backtrace for the thread\nhung in recvmsg().  Next, show userspace backtraces from _all_\nthreads in the process.\n\nThat said, GetSockDstAddress() is strange.  From its name, it seems\nthat the purpose of the function is to obtain the destination address,\nas the control message. But it also tries to read some data from the\nsocket, and the data is discarded.\n\nIf the socket is blocking, and there is no data, then it is expected\nfor recvmsg(2) to block.  Do you know what protocol type this socket\nis? [But this should be visible from the kernel stack].  Do you know\nif this socket is blocking? Also, why is it safe to discard the data?"
+}

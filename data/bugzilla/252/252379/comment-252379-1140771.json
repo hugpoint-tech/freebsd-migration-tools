@@ -1,0 +1,8 @@
+{
+ "id": 1140771,
+ "bug_id": 252379,
+ "attachment_id": 0,
+ "creation_time": "2021-01-09T14:38:51Z",
+ "creator": "jwb@freebsd.org",
+ "text": "(In reply to Antoine Brodin from comment #16)\n\nThat strategy falls short on our goal to stop using gcc where it isn't really needed.  We'd be using gcc on amd64 because gcc 4.2 doesn't provide c++-14 on powerpc, for example.\n\nThe patch below adds a default value for CHOSEN_COMPILER_TYPE based on the architecture, which can be overridden by compiler.mk.\n\nIndex: /usr/ports/Mk/bsd.port.mk\n===================================================================\n--- /usr/ports/Mk/bsd.port.mk\t(revision 560811)\n+++ /usr/ports/Mk/bsd.port.mk\t(working copy)\n@@ -1141,6 +1141,15 @@\n _EXPORTED_VARS+=\tPPC_ABI\n .endif\n \n+.if !defined(CHOSEN_COMPILER_TYPE)\n+# FIXME: Are there other archs that use gcc in base?\n+.if ${ARCH} == powerpc64 || ${ARCH} == powerpc\n+CHOSEN_COMPILER_TYPE=gcc\n+.else\n+CHOSEN_COMPILER_TYPE=clang\n+.endif\n+.endif\n+\n # Get operating system versions for a cross build\n .if defined(CROSS_SYSROOT)\n .if !exists(${CROSS_SYSROOT}/usr/include/sys/param.h)\n\nI think this is a good starting point, but there may be a better place to set this or other issues to resolve.\n\nSo far biology/clang and biology/gcta both fail to build with clang.\n\nI'll try to correct these issues and temporarily set USE_GCC unconditionally as a stop-gap if I can't resolve them quickly."
+}

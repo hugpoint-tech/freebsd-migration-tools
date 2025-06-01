@@ -1,0 +1,8 @@
+{
+ "id": 770526,
+ "bug_id": 191361,
+ "attachment_id": 144115,
+ "creation_time": "2014-06-25T10:26:36Z",
+ "creator": "timp87@gmail.com",
+ "text": "Created attachment 144115\nwrong, don't use it\n\nHi! Exiting smsd rc.d script doesn't work properly because it has mitakes.\nNow it looks such:\n.....\n. /etc/rc.subr\n\nname=\"smsd\"\nrcvar=smsd_enable\n\nload_rc_config ${name}\n: ${smsd_enable=\"NO\"}\n: ${smsd_pidfile=\"/var/run/smsd/smsd.pid\"}\n: ${smsd_infofile=\"/var/run/smsd/smsd.working\"}\n: ${smsd_logfile=\"/var/log/smsd/smsd.log\"}\n: ${smsd_config=\"/usr/local/etc/smsd.conf\"}\n: ${smsd_user=\"uucp\"}\n: ${smsd_group=\"dialer\"}\n\npidfile=${smsd_pidfile}\ncommand=\"/usr/local/bin/smsd\"\ncommand_args=\"-c${smsd_config} -p${smsd_pidfile} -i${smsd_infofile} -l${smsd_logfile} -u${smsd_user} -g${smsd_group}\"\n\nrun_rc_command \"$1\"\n\n\nIt's definetely wrong to use here ${name}_user and ${name}_group to pass it to smsd as arguments.\nSee /etc/rc.subr, ${name}_user and ${name}_group variables lead to call su to change user.\nBut smsd has to change user itself using its arguments.\n\nI attached a little bit reworked rc.d script where I deleted smsd_user and smsd_group vars, I deleted smsd_logfile because it's stupid and it may (and has to) be set in config file. Also I added smsd_flags.\nIt's a root of problem from another PR (https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=164197)."
+}

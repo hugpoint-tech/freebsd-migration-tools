@@ -1,0 +1,8 @@
+{
+ "id": 1128691,
+ "bug_id": 250664,
+ "attachment_id": 0,
+ "creation_time": "2020-10-27T05:14:56Z",
+ "creator": "freebsd@darkain.com",
+ "text": "The Galera26 port for compiling on ARM64/Aarch64 is only missing a single function call to make it work.\n\nI pulled this out of sys/x86/include/endian.h\n\n\n#define\t__bswap64_gen(x)\t\t\\\n\t(((__uint64_t)__bswap32((x) \u0026 0xffffffff) \u003c\u003c 32) | __bswap32((x) \u003e\u003e 32))\n\nstatic __inline __uint64_t __bswap64_var(__uint64_t _x)\n{\n\treturn (__bswap64_gen(_x));\n}\n\n\nAfter this, Galera26 compiles just fine on ARM.\n\nNext up, the MariaDB ports need a small fix as well. They're missing the wasrep_ shell scripts due to the following in databases/mariadb10x-sever/Makefile\n\n.if ${ARCH} != amd64\nPLIST_SUB+= WSREP=\"@comment \"\n.endif\n\n\nWith this, I now have a Galera cluster up and running across 3 ARM VMs."
+}

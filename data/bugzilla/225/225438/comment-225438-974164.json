@@ -1,0 +1,8 @@
+{
+ "id": 974164,
+ "bug_id": 225438,
+ "attachment_id": 0,
+ "creation_time": "2018-01-24T23:21:38Z",
+ "creator": "daveb@spectralogic.com",
+ "text": "Patching in6_unlink_ifa() with something like below only pushes the the crash to\na double free in in6_leavegroup():\n\n#11 0xffffffff804bf103 in panic (fmt=\u003cvalue optimized out\u003e) \n#12 0xffffffff8073765e in uma_dbg_free (zone=0xfffff81b7ffce000, ...)\n#13 0xffffffff807370d4 in uma_zfree_arg (zone=0xfffff81b7ffce000, ...)\n#14 0xffffffff8049a91b in free (addr=0xfffff801eb278c20, mtp=0xffffffff80b5a980)\n#15 0xffffffff80684b6f in in6_leavegroup (imm=0xfffff801eb278c20) \n#16 0xffffffff8067e83b in in6_purgeaddr (ifa=0xfffff8015b270600) \n#17 0xffffffff8067c355 in in6_control ()\n\n\n% diff -du in6.c.orig  in6.c\n--- in6.c.orig  2018-01-24 16:15:52.742977158 -0700\n+++ in6.c       2018-01-24 16:17:29.140814668 -0700\n@@ -1288,8 +1288,16 @@\n        int remove_lle;\n \n        IF_ADDR_WLOCK(ifp);\n-       TAILQ_REMOVE(\u0026ifp-\u003eif_addrhead, \u0026ia-\u003eia_ifa, ifa_link);\n+       TAILQ_FOREACH(ifa, \u0026ifp-\u003eif_addrhead, ifa_link) {\n+               if (ifa-\u003eifa_addr-\u003esa_family == AF_INET6 \u0026\u0026\n+                   (struct in6_ifaddr *)ifa == ia) {\n+                       TAILQ_REMOVE(\u0026ifp-\u003eif_addrhead, \u0026ia-\u003eia_ifa, ifa_link);\n+                       break;\n+               }\n+       }\n        IF_ADDR_WUNLOCK(ifp);\n+       if (ifa == NULL)\n+               return;\n        ifa_free(\u0026ia-\u003eia_ifa);                  /* if_addrhead */"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1082625,
+ "bug_id": 243164,
+ "attachment_id": 0,
+ "creation_time": "2020-01-08T01:56:06Z",
+ "creator": "cem@freebsd.org",
+ "text": "Ah.  I wonder if this is it?\n\n   459 #define MASK(m)  ((uint32_t)~((1 \u003c\u003c (32 - (m))) - 1))\n   460\n   461 static int\n   462 conf_amask_eq(const void *v1, const void *v2, size_t len, int mask)\n   463 {\n   464         const uint32_t *a1 = v1;\n   465         const uint32_t *a2 = v2;\n   466         uint32_t m;\n   467         int omask = mask;\n   468\n   469         len \u003e\u003e= 2;\n   470         switch (mask) {\n   471         case FSTAR:\n   472                 if (memcmp(v1, v2, len) == 0)\n   473                         return 1;\n   474                 goto out;\n\n// Above is definitely wrong, only compares the first 1/4 of the address\n// bytes.  Maybe that's what we're seeing?\n\n...\n   484         for (size_t i = 0; i \u003c len; i++) {\n   485                 if (mask \u003e 32) {\n   486                         m = htonl((uint32_t)~0);\n   487                         mask -= 32;\n   488                 } else if (mask) {\n   489                         m = htonl(MASK(mask));\n   490                         mask = 0;\n   493                 if ((a1[i] \u0026 m) != (a2[i] \u0026 m))\n   494                         goto out;\n\n// This part seems fine for v4, but I'm not sure if it's correct for v6.\n\n   495         }\n   496         return 1;\n   497 out:\n...\n   506         return 0;"
+}

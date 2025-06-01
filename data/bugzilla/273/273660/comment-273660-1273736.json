@@ -1,0 +1,8 @@
+{
+ "id": 1273736,
+ "bug_id": 273660,
+ "attachment_id": 0,
+ "creation_time": "2023-09-09T15:34:11Z",
+ "creator": "dvoich@aim.com",
+ "text": "When using the -P or --package option to portmaster, portmaster stops after the installation of each port. Entering a CR makes it continue.\n\nThis happens because $DI_FILES is the empty string at this point so \"head\" expects input from stdin.\n\nI made the following change locally which fixed the issue to my satisfaction.\n\ndiff -u /usr/local/sbin/portmaster pmaster/portmaster\n--- /usr/local/sbin/portmaster\t2023-05-31 15:30:07.762985000 -0400\n+++ pmaster/portmaster\t2023-09-09 11:14:36.062073000 -0400\n@@ -1223,7 +1223,7 @@\n \n di_file_complete=\n pm_wait_di_file_complete () {\n-\tif [ -z \"$di_file_complete\" ] \u0026\u0026 [ `head -1 $DI_FILES` = '############' ]; then\n+\tif [ -z \"$di_file_complete\" ] \u0026\u0026 [ -n \"$DI_FILES\" ] \u0026\u0026 [ `head -1 $DI_FILES` = '############' ]; then\n \t\techo \"===\u003e\u003e\u003e Waiting for background read of distinfo files to finish\"\n \t\twhile [ `head -1 $DI_FILES` = '############' ]; do\n \t\t\tsleep 1\n\nuname -a\nFreeBSD happy 13.2-RELEASE-p3 FreeBSD 13.2-RELEASE-p3 GENERIC amd64\n\npkg info portmaster\nportmaster-3.26"
+}

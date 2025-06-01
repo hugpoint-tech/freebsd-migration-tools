@@ -1,0 +1,8 @@
+{
+ "id": 618807,
+ "bug_id": 158635,
+ "attachment_id": 0,
+ "creation_time": "2011-07-04T14:20:08Z",
+ "creator": "cjk32@cam.ac.uk",
+ "text": "When using the em driver, any packets sent that use TCP segmentation\noffload (TSO) and that are captured through the Berkeley Packet Filter\n(BPF) will have a packet length of zero.  This affects many applications,\ne.g. iftop shows zero upload bandwidth, tcpdump reports \"IP bad-len 0\".\nThe same problem may affect network drivers other than em, but this has\nnot been tested.\n\nFix: \n\nA trivial workaround is,\nifconfig emX -tso\nbut this clearly removes the benefits provided by TSO.\n\nThere seems to be many possible solutions:\n\n1) em should massage the data supplied to bpf to pretend one large\n   packet was sent\n2) em should massage the data supplied to bpf to supply data as it is\n   assumed the hardware will segment it\n3) BPF should detect TSO packets, and massage the data to supply a\n   valid length\n4) BPF clients should detect TSO packets and behave accordingly\n5) BPF and TSO are mutually incompatible, and BPF should disable/\n   re-enable TSO when starting/stopping a capture\n6) BPF and TSO are mutually incompatible, and BPF clients should emit\n   a warning where appropriate\n7) BPS and TSO are mutually incompatible, users should know this, and\n   nothing need be done\n\nWhich of these is most appropriate seems to depend on where BPF sits,\nconceptually, within the stack: whether it's supposed to report what\nthe upper layers supply to the interface driver, what actually comes\nout of the physical interface, or something in between; and how much\neffort it appropriate to make to supply the 'correct' data for this\nlocation to BPF clients."
+}

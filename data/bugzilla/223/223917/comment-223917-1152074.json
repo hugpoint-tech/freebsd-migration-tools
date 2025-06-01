@@ -1,0 +1,8 @@
+{
+ "id": 1152074,
+ "bug_id": 223917,
+ "attachment_id": 0,
+ "creation_time": "2021-03-16T17:56:58Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/12 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=a54c346ff3e80ff8f2f3d0ec56b5374a7dc34429\n\ncommit a54c346ff3e80ff8f2f3d0ec56b5374a7dc34429\nAuthor:     Mitchell Horne \u003cmhorne@FreeBSD.org\u003e\nAuthorDate: 2021-03-10 14:57:12 +0000\nCommit:     Mitchell Horne \u003cmhorne@FreeBSD.org\u003e\nCommitDate: 2021-03-16 17:56:03 +0000\n\n    ns8250: don't drop IER_TXRDY on bus_grab/ungrab\n\n    It has been observed that some systems are often unable to resume from\n    ddb after entering with debug.kdb.enter=1. Checking the status further\n    shows the terminal is blocked waiting in tty_drain(), but it never makes\n    progress in clearing the output queue, because sc-\u003esc_txbusy is high.\n\n    I noticed that when entering polling mode for the debugger, IER_TXRDY is\n    set in the failure case. Since this bit is never tracked by the softc,\n    it will not be restored by ns8250_bus_ungrab(). This creates a race in\n    which a TX interrupt can be lost, creating the hang described above.\n    Ensuring that this bit is restored is enough to prevent this, and resume\n    from ddb as expected.\n\n    The solution is to track this bit in the sc-\u003eier field, for the same\n    lifetime that TX interrupts are enabled.\n\n    PR:             223917, 240122\n    Sponsored by:   The FreeBSD Foundation\n\n    (cherry picked from commit 7e7f7beee732810d3afcc83828341ac3e139b5bd)\n\n sys/dev/uart/uart_dev_ns8250.c | 5 ++++-\n 1 file changed, 4 insertions(+), 1 deletion(-)"
+}

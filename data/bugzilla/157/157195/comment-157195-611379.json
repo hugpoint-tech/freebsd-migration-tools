@@ -1,0 +1,8 @@
+{
+ "id": 611379,
+ "bug_id": 157195,
+ "attachment_id": 0,
+ "creation_time": "2011-05-20T01:10:09Z",
+ "creator": "freebsd@chillt.de",
+ "text": "The sysutils/htop port reads /compat/linux/proc/meminfo to calculate the amount of memory used.\n\nThe code that generates this file resides in sys/compat/linprocfs/linprocfs.c. Here, the amount of available memory is intentionally misreported:\n\n/*\n * The correct thing here would be:\n *\nmemfree = cnt.v_free_count * PAGE_SIZE;\nmemused = memtotal - memfree;\n *\n * but it might mislead linux binaries into thinking there\n * is very little memory left, so we cheat and tell them that\n * all memory that isn't wired down is free.\n */\nmemused = cnt.v_wire_count * PAGE_SIZE;\nmemfree = memtotal - memused;\n\nFix: The attached patch uses sysctl to read the actual amount of available memory, just as top does.\n\nPatch attached with submission follows:\nHow-To-Repeat: Run top and htop simultaneously. Notice that htop reports very low memory usage while top reports the correct value."
+}

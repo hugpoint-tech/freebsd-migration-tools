@@ -1,0 +1,8 @@
+{
+ "id": 1038018,
+ "bug_id": 235640,
+ "attachment_id": 0,
+ "creation_time": "2019-02-16T23:20:57Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "This is caused by a race between one end of a pipe being closed and the registration of an EVFILT_WRITE knote for the other end of the pipe.  Suppose f_attach (pipe_kqfilter()) succeeds, but before kn_list_lock() is called, the other end of the pipe is closed.  pipeclose() removes the EVFILT_WRITE knote from that end's knlist, so kn_list_lock() returns NULL, and we call filt_pipewrite() without the pipe's mutex held.\n\nI think this simply means that the assertion in filt_pipewrite() is wrong.  We can only assert that the pipe lock is held if wpipe-\u003epipe_present == PIPE_ACTIVE."
+}

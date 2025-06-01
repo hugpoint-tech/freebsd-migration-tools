@@ -1,0 +1,8 @@
+{
+ "id": 1038378,
+ "bug_id": 235846,
+ "attachment_id": 0,
+ "creation_time": "2019-02-19T21:12:58Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Could you please try to reproduce the panic with the assertion below?  We don't dump page table pages in minidumps, which makes this one a little harder to track down.\n\ndiff --git a/sys/amd64/amd64/pmap.c b/sys/amd64/amd64/pmap.c\nindex 94ad7d1d856a..261500adac65 100644\n--- a/sys/amd64/amd64/pmap.c\n+++ b/sys/amd64/amd64/pmap.c\n@@ -4103,6 +4103,8 @@ pmap_demote_pde_locked(pmap_t pmap, pd_entry_t *pde, vm_offset_t va,\n                KASSERT((oldpde \u0026 PG_W) == 0,\n                    (\"pmap_demote_pde: page table page for a wired mapping\"\n                    \" is missing\"));\n+               KASSERT(mpte != NULL || pmap != kernel_pmap,\n+                   (\"pmap_demote_pde: missing PT page for va %#lx\", va));\n \n                /*\n                 * Invalidate the 2MB page mapping and return \"failure\" if the"
+}

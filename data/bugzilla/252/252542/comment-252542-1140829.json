@@ -1,0 +1,8 @@
+{
+ "id": 1140829,
+ "bug_id": 252542,
+ "attachment_id": 0,
+ "creation_time": "2021-01-09T21:48:34Z",
+ "creator": "emaste@freebsd.org",
+ "text": "In the man page,\n     -z      For regular files compare file sizes first, and fail the\n             comparison if they are not equal.\nso I think this is expected behaviour with -z; do you agree?\n\nFor -s this is certainly a bug; I'm considering this as a fix:\n\n\ndiff --git a/usr.bin/cmp/cmp.c b/usr.bin/cmp/cmp.c\nindex c762f1346abf..47f9b671985c 100644\n--- a/usr.bin/cmp/cmp.c\n+++ b/usr.bin/cmp/cmp.c\n@@ -92,7 +92,6 @@ main(int argc, char *argv[])\n                        break;\n                case 's':               /* silent run */\n                        sflag = true;\n-                       zflag = true;\n                        break;\n                case 'x':               /* hex output */\n                        lflag = true;\n@@ -149,6 +148,9 @@ main(int argc, char *argv[])\n        skip1 = argc \u003e 2 ? strtol(argv[2], NULL, 0) : 0;\n        skip2 = argc == 4 ? strtol(argv[3], NULL, 0) : 0;\n \n+       if (sflag \u0026\u0026 skip1 == 0 \u0026\u0026 skip2 == 0)\n+               zflag = true;\n+\n        if (fd1 == -1) {\n                if (fd2 == -1) {\n                        c_link(file1, skip1, file2, skip2);"
+}

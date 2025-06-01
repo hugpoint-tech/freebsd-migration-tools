@@ -1,0 +1,8 @@
+{
+ "id": 647560,
+ "bug_id": 164402,
+ "attachment_id": 0,
+ "creation_time": "2012-04-15T12:07:56Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "  Hi,\n\n  I have a vague suspicion on what is happening. Your description of\nthe problem looks like if a packet processing in the kernel has entered\nan endless loop.\n\n  Looking at pf_route() I see such possibility. From OpenBSD we have\nthis protection against endless looping:\n\n        if ((*m)-\u003em_pkthdr.pf.routed++ \u003e 3) {\n                m0 = *m;\n                *m = NULL;\n                goto bad;\n        }\n\nIn our code this transforms to:\n\n        if (pd-\u003epf_mtag-\u003erouted++ \u003e 3) {\n                m0 = *m;\n                *m = NULL;\n                goto bad;\n        }\n\nThe root difference between storing the tag on mbuf and on pfdesc\nis that we lose pfdesc, and thus the tag, when we enter pf_test()\nrecursively. And pf_route() does this recursion:\n\n        if (oifp != ifp) {\n                if (pf_test(PF_OUT, ifp, \u0026m0, NULL) != PF_PASS) {\n                        goto bad;\n\t....\n\n-- \nTotus tuus, Glebius."
+}

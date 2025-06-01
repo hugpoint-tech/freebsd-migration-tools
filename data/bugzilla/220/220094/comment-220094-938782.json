@@ -1,0 +1,8 @@
+{
+ "id": 938782,
+ "bug_id": 220094,
+ "attachment_id": 0,
+ "creation_time": "2017-06-19T20:49:00Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: ken\nDate: Mon Jun 19 20:48:01 UTC 2017\nNew revision: 320123\nURL: https://svnweb.freebsd.org/changeset/base/320123\n\nLog:\n  Fix a potential sleep while holding a mutex in the sa(4) driver.\n\n  If the user issues a MTIOCEXTGET ioctl, and the tape drive in question has\n  a serial number that is longer than 80 characters, we malloc a buffer in\n  saextget() to hold the output of cam_strvis().\n\n  Since a mutex is held in that codepath, doing a M_WAITOK malloc could lead\n  to sleeping while holding a mutex.  Change it to a M_NOWAIT malloc and bail\n  out if we fail to allocate the memory.  Devices with serial numbers longer\n  than 80 bytes are very rare (I don't recall seeing one), so this\n  should be a very unusual case to hit.  But it is a bug that should be fixed.\n\n  sys/cam/scsi/scsi_sa.c:\n  \tIn saextget(), if we need to malloc a buffer to hold the output of\n  \tcam_strvis(), don't wait for the memory.  Fail and return an error\n  \tif we can't allocate the memory immediately.\n\n  PR:\t\tkern/220094\n  Submitted by:\tJia-Ju Bai \u003cbaijiaju1990@163.com\u003e\n  MFC after:\t3 days\n  Sponsored by:\tSpectra Logic\n\nChanges:\n  head/sys/cam/scsi/scsi_sa.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 484352,
+ "bug_id": 131573,
+ "attachment_id": 0,
+ "creation_time": "2009-02-10T22:10:02Z",
+ "creator": "huntting@glarp.com",
+ "text": "In /sys/kern/subr_lock.c, the function lock_init() starts out with:\n\n        /* Check for double-init and zero object. */\n        KASSERT(!lock_initalized(lock), (\"lock \\\"%s\\\" %p already initialized\",\n            name, lock));\n\nThis is fine for locks allocated with MALLOC(...,M_ZERO), but locks allocated on the stack (of some kernel thread) are garbage filled which triggers a panic here (assuming you have options INVARIANTS).\n\nThe solutions is to either:  (a) document that lock struct's must be zero filled prior to calling {mtx,rw,sx}_init().  Or (b), remove the KASSERT().\n\nNormally, (b) would be the obvious choice, since adding a bzero() before every call to {mtx,rw,sx}_init() defeats the check anyway.  But in most cases, locks are allocated in softc's which are zero filled so there is no need to bzero().  However, even in this case, the check is of questionable value since locks are normally initialized in an attach() function and destroyed in a detach() function.  If you're attach() method is being called twice you have bigger problems that a reinitialized a lock.\n\n\nbrad"
+}

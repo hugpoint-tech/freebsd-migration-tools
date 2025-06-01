@@ -1,0 +1,8 @@
+{
+ "id": 969023,
+ "bug_id": 224813,
+ "attachment_id": 0,
+ "creation_time": "2018-01-01T09:10:51Z",
+ "creator": "guru@unixarea.de",
+ "text": "I've got an older Acer C720 with r314251, which was not booted for some time,\nand now panics on boot, also in single user mode, saying:\n\n...\nDec 30 19:54:26 c720-r314251 kernel: ada0: Command Queueing enabled\nDec 30 19:54:26 c720-r314251 kernel: ada0: 244198MB (500118192 512 byte sectors)\nDec 30 19:54:26 c720-r314251 kernel: WARNING: WITNESS option enabled, expect reduced performance.\nDec 30 19:54:26 c720-r314251 kernel: Trying to mount root from ufs:/dev/ada0p2 [rw,noatime]...\npanic: invalid bcd 194\n...\n\nThe message comes from \n\n$ find * -type f -exec fgrep \"invalid bcd\" {} /dev/null \\;\nsys/sys/libkern.h:\t    (\"invalid bcd %d\", bcd));\n\n$ vim sys/sys/libkern.h\n...\n#define LIBKERN_LEN_BCD2BIN     154\n#define LIBKERN_LEN_BIN2BCD     100\n#define LIBKERN_LEN_HEX2ASCII   36\n\nstatic inline u_char\nbcd2bin(int bcd)\n{\n\n        KASSERT(bcd \u003e= 0 \u0026\u0026 bcd \u003c LIBKERN_LEN_BCD2BIN,\n            (\"invalid bcd %d\", bcd));\n        return (bcd2bin_data[bcd]);\n}\n\nAdditional information are here in these mail threads:\n\nhttp://freebsd.1045724.x6.nabble.com/panic-invalid-bcd-xxx-td6170480.html\nhttp://freebsd.1045724.x6.nabble.com/panic-invalid-bcd-194-td6228981.html"
+}

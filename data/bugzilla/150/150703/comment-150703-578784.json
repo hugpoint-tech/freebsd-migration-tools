@@ -1,0 +1,8 @@
+{
+ "id": 578784,
+ "bug_id": 150703,
+ "attachment_id": 0,
+ "creation_time": "2010-09-19T09:51:43Z",
+ "creator": "Udo.Schweigert@siemens.com",
+ "text": "On Sat, Sep 18, 2010 at 19:00:11 +0000, Eygene Ryabinkin wrote:\n\u003e The following reply was made to PR ports/150703; it has been noted by GNATS.\n\u003e \n\u003e From: Eygene Ryabinkin \u003crea-fbsd@codelabs.ru\u003e\n\u003e To: bug-followup@freebsd.org\n\u003e Cc:  \n\u003e Subject: ports/150703: maintainer-update of mail/mutt-devel\n\u003e Date: Sat, 18 Sep 2010 22:55:36 +0400\n\u003e \n\u003e  Udo, your mktemp patch is slightly incorrect: since _mutt_mktemp now has\n\u003e  'slen' argument, you should use it instead of _POSIX_PATH_MAX and check\n\u003e  for slen \u003e 6 to avoid signed underflow in snprintf().\n\nEygene,\n\nyou're of course right, the simple copy of the old code was not a good idea.\nAttached is a new patch for the whole port upgrade.\nThe _mutt_mktemp now looks like this:\n\nvoid _mutt_mktemp (char *s, size_t slen, const char *src, int line)\n{\n  size_t n = snprintf (s, slen, \"%s/mutt-%s-XXXXXXXX\", NONULL (Tempdir), NONULL (Hostname));\n  if (n \u003e= slen)\n    dprint (1, (debugfile, \"%s:%d: ERROR: insufficient buffer space to hold temporary filename! slen=%zu but need %zu\\n\",\n            src, line, slen, n));\n  if (mktemp (s)) {\n    dprint (3, (debugfile, \"%s:%d: mutt_mktemp returns \\\"%s\\\".\\n\", src, line, s));\n  } else {\n    dprint (1, (debugfile, \"%s:%d: ERROR: mktemp(\\\"%s\\\"): %s (errno %d)\\n\", src, line, s, strerror (errno), errno));\n  }\n}\n\n\nThanks for having looked at this.\n\n\nRegards,\n\nUdo"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1245654,
+ "bug_id": 269341,
+ "attachment_id": 0,
+ "creation_time": "2023-02-05T16:17:54Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I can reliably reproduce a deadlock on msdosfs in sendfile(2).  I can't reproduce it on tmpfs, nfs, ZFS, UFS, or bfffs (a fusefs file system).  However, another user reported a similar hang in a different fuse file system (PR #246886).\n\nStack trace of the hung process:\ngetblkx+0x67\nbreadn_flags+0x44\nvfs_bio_getpages+0x354\nmsdosfs_getpages+0x3b\nvop_stdgetpages_async+0x49\nvnode_pager_getpages_async+0x43\nsendfile_swapin+0x570\nvn_sendfile+0x9ba\nsendfile+0x117\namd64_syscall+0x12e\nfast_syscall_common+0xf8 \n\nSteps to Reproduce:\n1) git clone git@github.com:asomers/fsx-rs.git\n2) cd fsx-rs\n3) git checkout 6882003d89fefb1f815c57c2f027f8ddefe83b58\n4) truncate -s 1g /tmp/msdosfs.img\n5) newfs_msdos /tmp/msdosfs.img\n6) sudo mdconfig -a -t vnode -f /tmp/msdosfs.img\n7) mkdir /tmp/msdos\n8) sudo mount -t msdos /dev/md0 /tmp/msdos\n9) env RUST_LOG=debug cargo run -- -f fsx.toml -N 1000 -P /tmp -S 6953641379939875300 /tmp/msdos/fsx.bin"
+}

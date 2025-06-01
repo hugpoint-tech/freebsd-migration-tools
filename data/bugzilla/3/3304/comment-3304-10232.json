@@ -1,0 +1,8 @@
+{
+ "id": 10232,
+ "bug_id": 3304,
+ "attachment_id": 0,
+ "creation_time": "1997-04-18T16:49:35Z",
+ "creator": "ponds!rivers@dg-rtp.dg.com",
+ "text": "More information...\n\n\nHere's the scenario I've now determined (via more printf()s in the\nkernel):\n\n   1) nfs_request() is called from readdirrpc().\n\n   2) nfs_request malloc's a nfsreq block, which is used\n      by rcvlock()... the lock is granted; we go down to\n      soreceive() and wind up tsleeping in sbwait().\n\n   3) At this point, a vnode lookup() operation is called.\n      The lookup() isn't satisfied from the cache; so \n      we call nfs_request() to get the information.\n\n   4) This nfs_request() malloc's a different nfsreq block.\n      The \"lock\" is granted since rcvlock() works on addresses\n      from the nfsreq block; these are different addresses, the\n      lock is granted.  We wind down to soreceive()\n      again.\n\n   5) udp_intr() is called because a UDP packet arrived...\n      this is, presumably, the packet we're expecting from 2).\n      *however* the last request we received was from 4).\n      That is the nfsreq this packet winds up being associated\n      with; but - it is totally wrong.  \n\n So; we're left with the lookup() failing with a ENONENT (#2),\nand the nfs_request from #2 hanging; never being woken up.\n\n  I think that pretty well describes my findings.\n\n  Perhaps the rcvlock() needs to change to lock on something other\nthan the nfsreq block... does anyone have any suggestions?\n\n  \t- Dave Rivers -"
+}

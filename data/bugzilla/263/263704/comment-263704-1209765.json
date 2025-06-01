@@ -1,0 +1,8 @@
+{
+ "id": 1209765,
+ "bug_id": 263704,
+ "attachment_id": 0,
+ "creation_time": "2022-05-04T03:23:44Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "On further examination, it appears to be a bug in the dynamic I/O\nscheduler. We can call xpt_schedule(CAM_PRI_NORMAL) during recovery\nwhich causes all existing periphs that use it to schedule their recovery\noperation a second time, but at a bad priority. It has nothing to do\nwith dropping references to the device, but rather causing extra\nI/O to be scheduled that can persist after the periph is invalidated\n(because the periph driver knows nothing of the extra CCBs) leading\nto accessing the path after it's been freed which leads to a number of\ndifferent pathologies depending on where in the CCB lifecycle we wakeup. It\nonly affects the dynamic scheduler (all the time, but that points out another\nbug, the timeout ticker shouldn't run all the time if there's nothing to\nbe controlled like bandwidth or iops)."
+}

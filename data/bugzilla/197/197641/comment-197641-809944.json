@@ -1,0 +1,8 @@
+{
+ "id": 809944,
+ "bug_id": 197641,
+ "attachment_id": 152971,
+ "creation_time": "2015-02-14T15:20:38Z",
+ "creator": "cmruffin@gmail.com",
+ "text": "Created attachment 152971\noriginal device path\n\nThe UEFI loader on the 10.1 release install disk (disc1) modifies an\nexisting EFI_DEVICE_PATH_PROTOCOL instance in an apparent attempt to\ntruncate the device path.  In doing so it creates an invalid device\npath.\n\nThe original UEFI device path is represented textually as follows:\nPciRoot(0x0)/Pci(0x18,0x0)/Sata(0x0,0x0,0x0)/CDROM(0x0,0x14,0x4)\n\nThe last node in the path has a length of 0x18.\n\nThe loader (for unknown reasons) truncates the device path to:\nPciRoot(0x0)/Pci(0x18,0x0)/Sata(0x0,0x0,0x0)\n\nIt seems to attempt to transform the last node to an END_DEVICE_PATH\nnode by overwriting the last node of the device path to have a\nEFI_DEVICE_PATH_PROTOCOL-\u003eType and SubType as follows:\n\n#define END_DEVICE_PATH_TYPE                 0x7f\n#define END_ENTIRE_DEVICE_PATH_SUBTYPE       0xFF\n\nHowever, it leaves the length of the node unmodified, so that it does\nnot have a length of 4 as required for an END_DEVICE_PATH structure,\nper UEFI 2.4.0 $9.3.1, Table 40 \"Device Path End Structure\" \n\nA later call to the boot service LocateDevicePath() sees this device\npath as invalid device path and throws an assert.\n\nIt ins't clear the purpose behind truncating the device path.  In\ngeneral I would not recommend modifying data structures allocated by\nthe firmware.  But, it isn't clear what the intent of the code is.\n\nAt a minimum the loader should not be creating the invalid device path.\n\nThe loader is loaded into memory at 75349000, and the device path\nmodification happens at address 7536bf59."
+}

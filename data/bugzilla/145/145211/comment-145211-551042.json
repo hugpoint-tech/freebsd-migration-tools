@@ -1,0 +1,8 @@
+{
+ "id": 551042,
+ "bug_id": 145211,
+ "attachment_id": 0,
+ "creation_time": "2010-04-01T12:23:59Z",
+ "creator": "marius@alchemy.franken.de",
+ "text": "\u003e  \n\u003e Memory modified after free 0xfffff80005675000(2048) val=dead0003 @ 0xfffff80005675000\n\u003e Memory modified after free 0xfffff8000564c800(2048) val=dead0003 @ 0xfffff8000564c800\n\u003e panic: pcib: PCI bus B error AFAR 0 AFSR 0 PCI CSR 0x10730b2aff IOMMU 0x3060003 STATUS 0x2a0\n\nThis is the IOMMU reporting an error as STX_PCI_CTRL_MMU_ERR is set in\nthe PCI CSR and TOM_PCI_IOMMU_ERR is set in the IOMMO CSR. Moreover the\nTOM_PCI_IOMMU_INVALID_ERR set in the latter suggests that a DMA buffer\nwas used after it had been unloaded (and thus the TTE invalidated). So\nit's quite likely that both the UMA and the IOMMU complaints are caused\nby the same problem. Unfortunately, neither allows to identify the\nculprit. If you could move the traffic in question from bge2 to bge1\nand either use r206020 or the following patch that should allow to\nidentify at least the driver involved, i.e. ata(4) or bge(4), by\nadditionally indicating whether pcib0 or pcib3 triggered the panic.\nhttp://people.freebsd.org/~marius/psycho_schizo_device_get_nameunit.diff\n\nWhich version of if_bge.c were you running when the panic occurred?\n\nMarius"
+}

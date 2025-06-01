@@ -1,0 +1,8 @@
+{
+ "id": 701529,
+ "bug_id": 175757,
+ "attachment_id": 0,
+ "creation_time": "2013-02-01T10:40:00Z",
+ "creator": "roger.pau@citrix.com",
+ "text": "I've tried a FreeBSD guest using the XENHVM kernel (release \n9.1), and I've found that when using the XENHVM kernel the keyboard \ninput form the vnc client stops working (output to the vnc seems to be \nok thought), so I have to set up a serial port before switching to \nXENHVM or there's no way to interact with the guest (apart from \nssh of course).\n\nHEAD also seems to be experiencing the same issue. Is this \nexpected/know? I'm using Xen unstable and the device model is  \nQemu-upstream.\n\nFix: The problem is that we set all devices in xenstore that we don't know how to handle to state '6' (closed), which is not right. We should not mess with the state of devices that we cannot handle. The following patch fixes the problem by probing the devices first, and only try to attach the ones that we can handle.\n\n---\nFrom: Roger Pau Monne \u003croger.pau@citrix.com\u003e\nDate: Thu, 31 Jan 2013 17:24:48 +0000\nSubject: [PATCH] xenbus: fix device detection\n\nDevices that cannot be handled should not be closed, instead leave\nthem as is. This prevents closing the vkbd device, which has the\neffect of making Qemu stop sending keys to the guest.\n\nTested with qemu-xen-traditional, qemu-xen and qemu stubdomains, all\nworking as expected.\n---\n sys/xen/xenbus/xenbusb.c |   19 ++++++++++++++++++-\n 1 files changed, 18 insertions(+), 1 deletions(-)\nHow-To-Repeat: Install a FeeeBSD guest in Xen and switch to the XENHVM kernel, the keyboard on the VNC stops sending keys to the guest."
+}

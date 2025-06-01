@@ -1,0 +1,8 @@
+{
+ "id": 603666,
+ "bug_id": 155658,
+ "attachment_id": 0,
+ "creation_time": "2012-04-18T09:37:27Z",
+ "creator": "scottl@samsco.org",
+ "text": "Did a bit of history review.  When an ioctl goes through the linux =\ndriver, it goes through a pool allocator to get a scratch buffer for the =\ncommand.  The pool sizes are PAGE_SIZE (4K) and power-of-2 multiples =\nabove that, up to 64k.  So when an application requests a buffer size of =\n0-4k, a 4k buffer gets sent to the card.  A ~25k buffer request actually =\ngets 32k sent to the card.  The firmware seems to exploit this and =\nbasically ignores the specified length, happily filling the provided =\nbuffer with whatever power-of-2 data count it feels like.  According to =\nan old conversation with Dell and LSI, the LSI engineers consider this =\nto be a necessary feature, not a bug.\n\nAs I mentioned previously, I fixed this as a special case of len=3D=3D0 =\nin the linux ioctl emulation path.  Based on the bug report here, the =\nfix needs to be expanded to rounding up to power-of-2 sizes in both the =\nnative and emulated paths.\n\nAnyone who wants to tackle this is welcome to do so.  The existing hack =\nalso suffers from bug in the form of it copying the 4k buffer back to =\nuser land, even though userland specified a length of 0.  This is =\nprobably a bad thing, and it's something that linux appears to handle =\ncorrectly.="
+}

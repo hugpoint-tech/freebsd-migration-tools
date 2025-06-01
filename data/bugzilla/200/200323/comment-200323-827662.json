@@ -1,0 +1,8 @@
+{
+ "id": 827662,
+ "bug_id": 200323,
+ "attachment_id": 0,
+ "creation_time": "2015-06-13T19:39:59Z",
+ "creator": "eri@pfsense.org",
+ "text": "This patch fixes the issue and the issue seems to a locked LLE which does not allow BPF to sleep when it needs to.\n\n+diff --git a/sys/netinet/if_ether.c b/sys/netinet/if_ether.c\n+index baa9c26..f31576d 100644\n+--- a/sys/netinet/if_ether.c\n++++ b/sys/netinet/if_ether.c\n+@@ -353,6 +353,10 @@ retry:\n+ \tif ((la-\u003ela_flags \u0026 LLE_VALID) \u0026\u0026\n+ \t    ((la-\u003ela_flags \u0026 LLE_STATIC) || la-\u003ela_expire \u003e time_uptime)) {\n+ \t\tbcopy(\u0026la-\u003ell_addr, desten, ifp-\u003eif_addrlen);\n++\t\tif (flags \u0026 LLE_EXCLUSIVE)\n++\t\t\tLLE_WUNLOCK(la);\n++\t\telse\n++\t\t\tLLE_RUNLOCK(la);\n+ \t\t/*\n+ \t\t * If entry has an expiry time and it is approaching,\n+ \t\t * see if we need to send an ARP request within this\n+@@ -365,8 +369,7 @@ retry:\n+ \t\t}\n+ \n+ \t\t*lle = la;\n+-\t\terror = 0;\n+-\t\tgoto done;\n++\t\treturn (0);\n+ \t}\n+ \n+ \tif (la-\u003ela_flags \u0026 LLE_STATIC) {   /* should not happen! */"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1215360,
+ "bug_id": 264598,
+ "attachment_id": 0,
+ "creation_time": "2022-06-10T16:00:49Z",
+ "creator": "hwlin1414@cs.nctu.edu.tw",
+ "text": "When libradius retransmit packets, the insert_message_authenticator function is called and calculated again with old Message-Authenticator checksum. It cause the Message-Authenticator set to the wrong checksum in retransmit packet.\n\nAccording to RFC-2869 https://datatracker.ietf.org/doc/html/rfc2869#section-5.14\n\u003e When the checksum is calculated the signature string should be\n\u003e considered to be sixteen octets of zero.\n\nA possible fix maybe:\n--- a/radlib.c\n+++ b/radlib.c\n@@ -160,6 +160,8 @@ insert_message_authenticator(struct rad_handle *h, int resp)\n        srvp = \u0026h-\u003eservers[h-\u003esrv];\n\n        if (h-\u003eauthentic_pos != 0) {\n+               memset(\u0026h-\u003eout[h-\u003eauthentic_pos + 2], 0, MD5_DIGEST_LENGTH);\n+\n                ctx = HMAC_CTX_new();\n                HMAC_Init_ex(ctx, srvp-\u003esecret, strlen(srvp-\u003esecret), EVP_md5(), NULL);\n                HMAC_Update(ctx, \u0026h-\u003eout[POS_CODE], POS_AUTH - POS_CODE);"
+}

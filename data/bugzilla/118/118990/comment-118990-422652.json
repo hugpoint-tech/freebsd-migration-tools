@@ -1,0 +1,8 @@
+{
+ "id": 422652,
+ "bug_id": 118990,
+ "attachment_id": 0,
+ "creation_time": "2007-12-24T13:00:01Z",
+ "creator": "igor@hybrid-lab.co.uk",
+ "text": "=== FreeBSD-RELENG_6/src/sys/i386/include/_bus.h defines bus_addr_t as:\n\nl38:\n/*\n * Bus address and size types\n */\n#ifdef PAE\ntypedef uint64_t bus_addr_t;\n#else\ntypedef uint32_t bus_addr_t;\n#endif\n\nwhich is clearly 64 bits when PAE is enabled, this causes compile\nproblems with nve device driver when it copies stuff around:\n\n=== FreeBSD-RELENG_6/src/sys/dev/nve/if_nve.c:\n\nl1450:\nnve_osallocrxbuf(PNV_VOID ctx, PMEMORY_BLOCK mem, PNV_VOID *id)\n\nl1453:\nstruct nve_rx_desc *desc;\n\nl1494: (this is the one that makes the compiler bail out)\nmem-\u003epPhysical = (void *)desc-\u003epaddr;\n\n=== FreeBSD-RELENG_6/src/sys/contrib/dev/nve/basetype.h\nl91:\n#define NV_VOID                 void\ntypedef NV_VOID                 *PNV_VOID;\n\n=== FreeBSD-RELENG_6/src/sys/contrib/dev/nve/os.h\nl45:\nPNV_VOID   pPhysical;\n\nFix: \n\nDon't enable PAE\nHow-To-Repeat: Enable both PAE and nve in the kernel"
+}

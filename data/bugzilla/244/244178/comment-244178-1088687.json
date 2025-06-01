@@ -1,0 +1,8 @@
+{
+ "id": 1088687,
+ "bug_id": 244178,
+ "attachment_id": 0,
+ "creation_time": "2020-02-18T04:05:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "So there are two things going on here:\n\n1) When fusefs discovers that a file's cached size is invalid, it's supposed to fix the size and discard any invalid cached buffers.  It looks like we're doing that correctly for truncations and for large extensions (I'm still trying to figure out how large \"large\" is), but as you found not for small extensions.\n\n2) The test simulates a buggy fuse server.  If it's ever possible for the file system's data to change behind the kernel's back, then it the server MUST use direct_io.  The kernel is using a heuristic to detect this behind-the-back behavior, but what if the data changes yet the file's length stays the same?  The heuristic can't catch that.  The situation is somewhat better with newer FUSE protocol versions that have an asynchronous cache invalidation mechanism, but even then it's racy.  This is probably why nobody has reported the bug yet; well-behaved fuse servers don't trigger it."
+}

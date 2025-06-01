@@ -1,0 +1,8 @@
+{
+ "id": 72200,
+ "bug_id": 23173,
+ "attachment_id": 0,
+ "creation_time": "2000-11-29T11:00:01Z",
+ "creator": "bbl@dk.damgaard.com",
+ "text": "\nThe following testprogram wil demonstrate an error in linux compatibility\nbetween linux and freebsd, both on intelplatform.\nThe program is compiled on an intel linux Slackware 7.0 with gcc 2.95.2 and\nthe binary is then copied to FreeBSD 4.2-stable.\nThe problem is seen both on 4.1 and 4.2\n\nThe correct behaviour on linux, is to read a charcter on stdin, provided\nthere is one, othervise return 0.\n\nOn FreeBSD, the read will just hang until a key is pressed. \nAfter a key is pressed, the character is returned after aprox. 20 seconds.\n\n\nIf \n   st_tbuf.c_cc[VTIME] = 0;  \n\nis changed to \n   st_tbuf.c_cc[VTIME] = 100; \n\nthe read is supposed to wait max. 10 seconds, whereafter 0 is returned.\n\nOn FreeBSD, read will hang indefinitely, until a key is pressed. \nAfter a key is pressed, read will return after aprox. 20 seconds.\n\nHow-To-Repeat: \n#include \u003cstdio.h\u003e\n#include \u003ctermios.h\u003e\n#include \u003cunistd.h\u003e\n\n\nstruct termios st_tbuf, old_st;\n\nmain () {\n   char buf [256];\n   int  ret;\n\n\n  ret = tcgetattr(0, \u0026old_st);\n\n  st_tbuf.c_lflag \u0026= ~(ICANON | ECHO);\n  st_tbuf.c_cc[VMIN]  = 0;\n  st_tbuf.c_cc[VTIME] = 0;\n  ret = tcsetattr(0, TCSANOW, \u0026st_tbuf);\n\n  ret = read (0, (char *)buf, 1);\n\n  tcsetattr(0, TCSANOW, \u0026old_st);\n\n  if (ret \u003e 0)   printf (\"inp = %c\\n\", buf[0]);\n  else           printf (\"Zip\\n\");\n}"
+}

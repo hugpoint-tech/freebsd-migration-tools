@@ -1,0 +1,8 @@
+{
+ "id": 1156964,
+ "bug_id": 255009,
+ "attachment_id": 0,
+ "creation_time": "2021-04-18T15:23:42Z",
+ "creator": "adamw@FreeBSD.org",
+ "text": "There's no clear rule on what to do there, so there's no wrong way to do it.\n\nI addressed this idea in a different way www/caddy in the rc(8) script:\n\n  caddy_precmd()\n  {\n          # Create required directories and set permissions\n          /usr/bin/install -d -m 755 -o \"${caddy_user}\" -g \"${caddy_group}\" ${caddy_directory}\n          /usr/bin/install -d -m 700 -o \"${caddy_user}\" -g \"${caddy_group}\" ${caddy_directory}/config\n          /usr/bin/install -d -m 700 -o \"${caddy_user}\" -g \"${caddy_group}\" ${caddy_directory}/data\n          /usr/bin/install -d -m 755 -o \"${caddy_user}\" -g \"${caddy_group}\" ${caddy_logdir}\n          /usr/bin/install -d -m 700 -o \"${caddy_user}\" -g \"${caddy_group}\" /var/run/caddy\n  }\n\nThe benefit there is that changes in the rc.conf are reflected the next time it spins up. The drawback there is that it only changes the permissions on the directory itself; if you change from root:wheel (the default) to www:www, for example, the existing files can't be modified.\n\nAnother approach could be to simply check whether those dirs are owned by gitea_user in the rc(8) script and spit out an error message with instructions for what to chown -R.\n\nAnother option is to just do nothing, and there is plenty of precedent for that. It's my least favorite option, but my guess is that the majority of ports don't bother with it.\n\nStefan, it's your show. Do you have a feel for what approach you'd like to take?"
+}

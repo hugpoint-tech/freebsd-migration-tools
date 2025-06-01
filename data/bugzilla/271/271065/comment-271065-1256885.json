@@ -1,0 +1,8 @@
+{
+ "id": 1256885,
+ "bug_id": 271065,
+ "attachment_id": 0,
+ "creation_time": "2023-04-25T15:27:37Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "If your userland program opens the file with O_DIRECT and tries to do large reads, what size of read does the server see?  That should bypass the cache.  I'm not saying that it's a permanent solution, but it might be a good experiment.\n\nThe clustering and readahead code happens above the file system, up in the VFS.  It enters fuse in fuse_vnop_strategy.  I'm a little rusty in that area, but I think that you'll want to tweak settings so as to maximize the value of bp-\u003eb_bcount that the VFS sends in VOP_STRATEGY, rather than try to increase the size that we read from within there.\n\nYou could try setting F_READAHEAD with fcntl, though I think it will still be limited by maxphys.  By doing that, I'm able to get sizes of 1 MB in VOP_STRATEGY.\n\nAnd you should certainly be setting -o async_read in the sshfs process.\n\nIf you're planning to change the clustering code itself, you should definitely talk to mckusick."
+}

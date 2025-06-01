@@ -1,0 +1,8 @@
+{
+ "id": 981232,
+ "bug_id": 226421,
+ "attachment_id": 191279,
+ "creation_time": "2018-03-07T15:10:39Z",
+ "creator": "dan.mcgregor@usask.ca",
+ "text": "Created attachment 191279\nProposed patch to correct IPv6 vs IPv4 check in receive path\n\nSince bug 221385's been closed, with net.inet6.ip6.v6only=0, a socket listening on an IPv6 address accepts a connection from another IPv6 host, the accepted socket shows type \"tcp46\" and has its address truncated to the lower 32 bits:\n\nUSER     COMMAND    PID   FD PROTO  LOCAL ADDRESS         FOREIGN ADDRESS\ndan      sshd       711   3  tcp46  254.11.122.185:22     0.0.0.2:47615\nroot     sshd       708   3  tcp46  254.11.122.185:22     0.0.0.2:47615\n\nThe addresses are the lower 32 bits of the IPv6 addresses in question, 2001:470:1f17:273:2a0:98ff:fe0b:7ab9 and 2001:470:1c:4df::2.\n\nThe expected result would be:\n\nUSER     COMMAND    PID   FD PROTO  LOCAL ADDRESS         FOREIGN ADDRESS\ndan      sshd       40475 3  tcp6   2001:470:30f3:1:ca60:ff:fe5f:c1f3:22 2001:470:30f3:1:922b:34ff:fe5d:d4b3:33558\nroot     sshd       35424 3  tcp6   2001:470:30f3:1:ca60:ff:fe5f:c1f3:22 2001:470:30f3:1:922b:34ff:fe5d:d4b3:33558\n\nThis appears to be due to the kernel assuming any socket whose inp_vflag includes IPv4 is an IPv4 socket. The accepted socket inherits that value from the parent socket. It should only have tcp46 for listening sockets, and in accept check that only INP_IPV4 is set."
+}

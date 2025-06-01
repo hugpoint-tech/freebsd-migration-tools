@@ -1,0 +1,8 @@
+{
+ "id": 393670,
+ "bug_id": 112882,
+ "attachment_id": 0,
+ "creation_time": "2007-05-23T04:20:01Z",
+ "creator": "pr@isprime.com",
+ "text": "FreeBSD's \"systat\" tool has a mode to display statistics for all tcp\nsessions on the system. This mode is called by running \"systat -tcp\".\n\nWhen a packet is retransmitted due to duplicate ack packets, or a timeout\nwaiting for an ack, tcps_sndrexmitpack is incremented.\n\nWhen a packet is retransmitted due to a selective acknowledgement (sack),\ntcps_sack_rexmits is incremented instead.\n\nsystat -tcp only shows tcps_sndrexmitpack, and given that most clients today\nsupport sack, the user is falsely informed that there is a much lower amount\nof packet loss/retransmits.\n\nAdditionally, the 9 digit values are easily overflowed on a server serving\nhundreds of megabits of traffic which is becoming more commonplace given\nthe performance and wide availability of gig-e chipsets.\n\nThe patch referenced below fixes both of these issues.\n\nFix: \n\ncd /usr/src/usr.bin/systat\nfetch http://bmw2.isprime.com/systat-sack-rexmit.diff\npatch \u003c systat-sack-rexmit.diff\nmake\nmake install\n\nThis patch is built against FreeBSD 6.2-STABLE.  Earlier builds will fail with\nthis patch.\nHow-To-Repeat: 1)      Enable sack on both a client and a server, and set up a tcp socket.\n2)      Cause packet loss (you can use dummynet for this)\n3)      Watch systat -tcp"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 337825,
+ "bug_id": 100519,
+ "attachment_id": 0,
+ "creation_time": "2006-07-19T09:00:34Z",
+ "creator": "arthur.hartwig@nokia.com",
+ "text": "Network polling has unnecessary calls to the scheduler. These require\nacquiring the sched lock which imposes a variable delay depending on\ncontention for this lock.\n\nin netisr_pollmore() in kern/kern_poll.c there are two calls to\nschednetisrbits().  schednetisrbits is defined in net/netisr.h to set\nsome bits in netisr and call legacy_setsoftnet(). legacy_setsoftnet() in\nnet/netisr.c calls swi_sched(). swi_sched() in kern/kern_intr.c which\ncalls ithread_schedule() in the same file. ithread_schedule() acquires\nand releases the sched_lock.\n\nFix: \n\nSince the netisr is running when netisr_pollmore() is executing and\nswi_net() the main netisr despatcher loops until netisr is zero, it is\nsufficient in netisr_pollmore() to just set the bits in netisr and not\nalso call legacy_setsoftnet():\n\nreplace the two instances of:\n    schednetisrbits(1 \u003c\u003c NETISR_POLL | 1 \u003c\u003c NETISR_POLLMORE);\n\nin netisr_pollmore() by:\n    atomic_set_rel_int(\u0026netisr, (1 \u003c\u003c NETISR_POLL | 1 \u003c\u003c NETISR_POLLMORE));"
+}

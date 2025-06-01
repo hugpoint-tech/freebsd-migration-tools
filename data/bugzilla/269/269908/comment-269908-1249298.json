@@ -1,0 +1,8 @@
+{
+ "id": 1249298,
+ "bug_id": 269908,
+ "attachment_id": 0,
+ "creation_time": "2023-03-03T04:12:31Z",
+ "creator": "franklin.suvi@gmail.com",
+ "text": "Details:\nMachine 1: \n    Physical MAC: 00:50:56:a7:0f:7f\n    IP Address:   10.10.4.17\nMachine 2: \n    Physical MAC: 00:50:56:a7:e3:41\n    IP Address:   10.10.4.18\nCARP: \n    Virtual MAC: 00:00:5e:00:01:01\n    Virtual IP: 10.10.4.19\n\nSteps followed:\n1.  Configure CARP on Machine 1. \n    ifconfig nic0 vhid 1 pass testing alias 10.10.4.19/28 advskew 10\n    This box becomes the MASTER\n2.  Configure CARP on Machine 2. \n    ifconfig nic0 vhid 1 pass testing alias 10.10.4.19/28 advskew 20\n    This box becomes the BACKUP\n3.  Re-configure CARP on Machine 1, to trigger a failover.\n    ifconfig nic0 vhid 1 pass testing alias 10.10.4.19/28 advskew 30\n    Since now the advskew value of Machine 1 is higher than the Machine 2's value,   Machine 1 will become the BACKUP and Machine 2 will become the MASTER. \n\nObservation / Failure. \nAt step 3, the moment Machine 2 becomes the MASTER, it makes the ARP announcement.\nTo this announcement when the Machine 1, who is in BACKUP state, which is supposed to be quiet, responds with \"Duplicate use of \u003cip\u003e detected\" GARP message. Interestingly at this point, the Source MAC address is the physical MAC address and the Source IP address is the Virtual IP address. Please find the attached tcpdump files captured from both the machines. \n\nDue to this error, the CISCO ACI endpoint table messed up and is routing traffic  to the wrong device."
+}

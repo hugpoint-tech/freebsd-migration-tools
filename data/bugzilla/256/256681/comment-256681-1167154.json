@@ -1,0 +1,8 @@
+{
+ "id": 1167154,
+ "bug_id": 256681,
+ "attachment_id": 0,
+ "creation_time": "2021-06-21T08:36:50Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "\u003e So in some cases, if the loopback route is disabled and the hardware/logical interface can not forward those packets destined for local, 'No route to host' should be generated.\n\nSince release/8.1, a new feature 'IFCAP_LINKSTATE' was introduced, see [5] and [6]. If an interface have 'IFCAP_LINKSTATE' capability, then the \"link\" state should be checked before passing those packets to it.\n\nI verified this feature on stable/12 and stable/13. The steps:\n1. ifconfig vxlan0 create vxlanid 100 vxlanlocal 10.x.x.x vxlanremote 10.y.y.y\n2. ifconfig vxlan0 inet 192.0.2.1/24\n3. ifconfig vxlan0 inet 192.0.2.2/32 alias\n4. netstat -rnWf inet | grep 192.0.2\n5. ping -c4 192.0.2.1\n6. ping -c4 192.0.2.2\n7. route delete 192.0.2.1\n8. route delete 192.0.2.2\n9. repeat step 4\n10. ifconfig vxlan0 down \u0026\u0026 \n\nIf create vxlan0 without vxlanid vxlanlocal and vxlanremote, then the link state is not ready. If we delete the loopback route to 192.0.2.1 and 192.0.2.2, ping will response with 'No route to host'.\n\n\n[5]: https://cgit.freebsd.org/src/commit/sys/netinet/ip_output.c?h=stable/8\u0026id=c951da56b4f19a637c7fdf734fc500560a9555de\n[6]: https://cgit.freebsd.org/src/commit/sys?h=stable/8\u0026id=94190b3925795b145fbd1fbc39df0841ef52f5d5"
+}

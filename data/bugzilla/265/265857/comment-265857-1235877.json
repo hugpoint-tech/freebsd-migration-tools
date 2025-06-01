@@ -1,0 +1,8 @@
+{
+ "id": 1235877,
+ "bug_id": 265857,
+ "attachment_id": 0,
+ "creation_time": "2022-11-17T03:08:37Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to benoitc from comment #26)\n\n\u003e I suspect some multicast packets are discarded.\nFrom the pcap you provided, my previous guess is right.\n\nWhile ping6 A(\u003cPREFIX\u003e::11) -\u003e B (\u003cPREFIX\u003e::12), the initial neighbor solicitation is sent to multicast address ff02::1:ff00:12, the corresponding layer 2 address is 33:33:ff:00:00:12 .\nFor some reason (the qlnx might be not configured correctly) B dropped the NS packet and then A continuously send NS packets.\n\nFor destination link-local addresses fe80::b67a:f1ff:fe7a:9952, the corresponding layer 2 address is 33:33:ff:7a:99:52 , and B is willing to accept the NS packet (with multicast dest 33:33:ff:7a:99:52).\n\nWhen the interface is put into promiscuous mode, all multicast addresses are accepted.\n\n\nTo workaround it, you either\n\n1) Put the interface ql0 into promiscuous mode by `ifconfig ql0 promisc`\n\n2) Config the public IPv6 address to include last three octets of the ether address. \u003cPREFIX\u003e::7a:9c10 for A, \u003cPREFIX\u003e::7a:9952 for B, e.g.\n\n3) Manually register NDP entries for all nodes. `ndp -s \u003cPREFIX\u003e::12 b4:7a:f1:7a:99:52` on A, e.g.\n\nFor 1) although it looks overhead to put interface into promiscuous mode, but switches are smart and will filter out unwanted packets. And you can still employ `ipv6_privacy` simultaneously.\n\nFor 2) you can give it a try if you do not need `ipv6_privacy` and those public IPv6 addresses can fulfill.\n\nFor 3) if 2) can not fulfill. You may want some automation tools (Puppet for example) to free up your hands."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 37427,
+ "bug_id": 12375,
+ "attachment_id": 0,
+ "creation_time": "1999-06-24T07:00:00Z",
+ "creator": "shirai@nintendo.co.jp",
+ "text": "mv(1) man page says the following:\n\u003e      As the rename(2) call does not work across file systems, mv uses cp(1)\n\u003e      and rm(1) to accomplish the move.  The effect is equivalent to:\n\u003e \n\u003e            rm -f destination_path \u0026\u0026 \\\n\u003e            cp -pRP source_file destination \u0026\u0026 \\\n\u003e            rm -rf source_file\n\nBut, cp(1) is actually used only if source_file is not the regular file.\nThen, mv(1) of the regular file cannot inherit its file flags.\n\nFix: The following is a bug fix patch for FreeBSD-current.\n\n\ntval[0].tv_sec = sbp-\u003est_atime;\n        tval[1].tv_sec = sbp-\u003est_mtime;\n\n(Sorry for transformed TAB.)--mAw3J0xZ58jt1BXcpQU3HJbKu67nDx0Erptmccqa4ASWMlbn\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- mv.c.org    Tue Oct 13 14:52:31 1998\n+++ mv.c        Thu Jun 24 22:49:36 1999\n@@ -283,6 +283,8 @@\n        }\n        if (fchmod(to_fd, sbp-\u003est_mode))\n                warn(\"%s: set mode (was: 0%03o)\", to, oldmode);\n+       if (fchflags(to_fd, sbp-\u003est_flags))\n+               warn(\"%s: set flags (was: 0%07o)\", to, sbp-\u003est_flags);\nHow-To-Repeat: $ \u003e /foo\n$ chflags nodump /foo\n$ ls -lo /foo\n-rw-r--r--  1 shirai  user  nodump 0 Jun 24 14:06 /foo\n$ mv /foo /var/tmp\n$ ls -lo /var/tmp/foo\n-rw-r--r--  1 shirai  user  - 0 Jun 24 14:07 /var/tmp/foo"
+}

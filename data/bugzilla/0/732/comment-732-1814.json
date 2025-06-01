@@ -1,0 +1,8 @@
+{
+ "id": 1814,
+ "bug_id": 732,
+ "attachment_id": 0,
+ "creation_time": "1995-09-22T21:30:01Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "\n\t\n\"finger\" dumps core after enabling NIS passwords with +:::::::::\nin /etc/master.passwd\n\nIt turns out that there is an entry in our NIS map with a 13-character\nusername, which overflows a static buffer.  It also turns out that\nthis static buffer is one character too small anyway, as 8-character\nusernames can overflow it with the trailing NUL.  (but probably won't\ncause a core dump...)\n\nFix: I rewrote the code to not require the static buffer, and instead to\nuse the malloc()'d buffer that yp_first(), yp_next(), or yp_match()\nallocated for us.\n\nI was sure that I sent these diffs in previously, but I can't find the\nemail message so I am sending them as a PR now that gnats is fixed.\n\nI should note that it seems like a real shame to have two functions\nwhose bodies are so similar, but I wasn't prepared to address the\nhigher level problem, I just wanted it to stop dumping core.\nHow-To-Repeat: \n\t\nCreate an entry with a 13-character username, and then try \"finger \u003csomeuser\u003e\".\nfinger will core dump because of a buffer overrun in _getyppass()"
+}

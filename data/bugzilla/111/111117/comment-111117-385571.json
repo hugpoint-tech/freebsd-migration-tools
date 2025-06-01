@@ -1,0 +1,8 @@
+{
+ "id": 385571,
+ "bug_id": 111117,
+ "attachment_id": 0,
+ "creation_time": "2007-04-02T01:30:04Z",
+ "creator": "faber@lunabase.org",
+ "text": "\tclock_ct_to_ts() in sys/kern/subr_clock.c leaves the stuct\n\ttimespec it's initializing unchanged if the day of the week\n\tpassed in is inconsistent with the other values.  The dow is not\n\tused in the initialization of the struct.  The routine does\n\tproperly set an error code (EINVAL) to let the caller know that\n\tthe struct is uninitialized, and there is a \"don't care\" value\n\t(-1) for day of the week that overrides the check.  However,\n\tsys/i386/isa/clock.c does not check the error code, so i386\n\tsystems that have a wrongly set or calculated day of the week in\n\ttheir RTC have their time silently set to a random value.\n\n\tOf course this happened to me.\n\n\tThe patch changed sys/i386/isa/clock.c to check the error code\n\tand retry the call to clock_ct_to_ts() with the day of the week\n\tset to -1 if the call failed and the day of the week was not -1.\n\tI put a couple diagnostics in so the admin is aware that\n\tsomething's fishy, even if the second call succeeds.\n\n\tThe patch is relative to /usr/src against a recent CURRENT.\n\nFix: Patch attached.\n\nHow-To-Repeat: \tGet a buggy RTC on an i386.  Alternatively, if your BIOS allows\n\tsetting the day of the week independently, you could do that.\n\tMy buggy BIOS is on an EPIA ME6000 board."
+}

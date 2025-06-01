@@ -1,0 +1,8 @@
+{
+ "id": 573689,
+ "bug_id": 149762,
+ "attachment_id": 0,
+ "creation_time": "2010-08-18T12:00:54Z",
+ "creator": "walter@pelissero.de",
+ "text": "The patch submitted just before contained a bug.  Please disregard and\nconsider the following instead:\n\n*** g_label.c\t22 Jun 2010 08:17:20 -0000\t1.24.2.4\n--- g_label.c\t18 Aug 2010 10:56:09 -0000\n***************\n*** 136,141 ****\n--- 136,161 ----\n  \treturn (1);\n  }\n  \n+ static int sanitation_level = 1;\n+ SYSCTL_INT(_kern_geom_label, OID_AUTO, sanitation, CTLFLAG_RW,\n+ \t   \u0026sanitation_level, 0,\n+ \t   \"Correction applied to labels: 0 = replace '/'s only, 1 = '/' + whitespace and ctrls, 2 = '/' + anything but ASCII printables\");\n+ \n+ static void\n+ sanitise_name (char *name)\n+ {\n+ \tchar *p;\n+ \n+ \tfor (p = name; *p; ++p) {\n+ \t\tif (*p == '/')\n+ \t\t\t*p = '#';\n+ \t\telse if (sanitation_level \u003e 0 \u0026\u0026 *p \u003c= ' ')\n+ \t\t\t*p = '_';\n+ \t\telse if (sanitation_level \u003e 1 \u0026\u0026 *p \u003e '~')\n+ \t\t\t*p = '#';\n+ \t}\n+ }\n+ \n  static struct g_geom *\n  g_label_create(struct gctl_req *req, struct g_class *mp, struct g_provider *pp,\n      const char *label, const char *dir, off_t mediasize)\n***************\n*** 156,161 ****\n--- 176,182 ----\n  \tgp = NULL;\n  \tcp = NULL;\n  \tsnprintf(name, sizeof(name), \"%s/%s\", dir, label);\n+ \tsanitise_name(name + strlen(dir) + 1);\n  \tLIST_FOREACH(gp, \u0026mp-\u003egeom, geom) {\n  \t\tpp2 = LIST_FIRST(\u0026gp-\u003eprovider);\n  \t\tif (pp2 == NULL)\n\n\n-- \nwalter pelissero\nhttp://www.pelissero.de"
+}

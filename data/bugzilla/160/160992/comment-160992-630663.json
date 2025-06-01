@@ -1,0 +1,8 @@
+{
+ "id": 630663,
+ "bug_id": 160992,
+ "attachment_id": 0,
+ "creation_time": "2011-09-24T21:20:10Z",
+ "creator": "lacombar@gmail.com",
+ "text": "The following block of code, in `sys/sys/buf_ring.h':\n\n\n       /*\n        * If there are other enqueues in progress\n        * that preceeded us, we need to wait for them\n        * to complete\n        */\n       while (br-\u003ebr_prod_tail != prod_head)\n               cpu_spinwait();\n       br-\u003ebr_prod_bufs++;\n       br-\u003ebr_prod_bytes += nbytes;\n       br-\u003ebr_prod_tail = prod_next;\n       critical_exit();\n\n\ncan be seen at runtime, memory-wise as:\n\n      while (br-\u003ebr_prod_tail != prod_head)\n              cpu_spinwait();\n      br-\u003ebr_prod_tail = prod_next;\n      br-\u003ebr_prod_bufs++;\n      br-\u003ebr_prod_bytes += nbytes;\n      critical_exit();\n\n\nThat is, there is no memory barrier to enforce completion of the\nload/increment/store/load/load/addition/store operations before\nupdating what other thread spin on. \n\nEven if `br_prod_tail' is marked `volatile', there is no guarantee that\nit will not be re-ordered wrt. non-volatile write (to `br_prod_bufs' and\n`br_prod_bytes').\n\n\nConfirmed by Kip Macy (kmacy@) in\nhttp://lists.freebsd.org/pipermail/freebsd-hackers/2011-September/036454.html.\n\nHow-To-Repeat: code review."
+}

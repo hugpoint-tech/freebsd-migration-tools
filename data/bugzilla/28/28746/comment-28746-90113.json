@@ -1,0 +1,8 @@
+{
+ "id": 90113,
+ "bug_id": 28746,
+ "attachment_id": 0,
+ "creation_time": "2001-07-06T01:00:03Z",
+ "creator": "nmower@verio.net",
+ "text": "There seems to be a race condition in the run-time linker (ELF).  As\nnear as I can tell, the situation is this: _rtld_bind calls\nrlock_acquire(), but before it gets to rlock_release(), a signal is\ncaught.  The signal handler calls exit(), so the __atexit list is\ntraversed, calling rtld_exit(), which calls wlock_acquire().  This\nspins on the lock, which it never gets.  The process is hung.\n\nFix: \n\nKnown work-around: run Apache with LD_BIND_NOW turned on.  I dunno --\nmight have to block signals between rlock_acquire() and rlock_release()\nin _rtld_bind().\nHow-To-Repeat: Heavy traffic on Apache web server (I use torture.pl).  Frequently send\nSIGUSR1 to child Apache processes.  This is a very intermittent bug,\nas you can well imagine."
+}

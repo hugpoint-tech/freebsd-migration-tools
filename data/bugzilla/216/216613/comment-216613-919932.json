@@ -1,0 +1,8 @@
+{
+ "id": 919932,
+ "bug_id": 216613,
+ "attachment_id": 0,
+ "creation_time": "2017-02-03T02:06:43Z",
+ "creator": "pkelsey@freebsd.org",
+ "text": "I was able to reproduce this on a test VM.  The problem is not that the rm_lock's internal mutex was owned by another thread, but that it was not initialized.  It was not initialized because tcp_fastopen_init() is being called too late in tcp_init().  The bottom half of tcp_init() only executes in the default VNET in order to initialize global TCP resources, so the call to tcp_fastopen_init() there was only working for the default VNET and not for any other.\n\nAlex,\n\nCan you try this following patch on your system?  This resolves it on my test VM.\n\nIndex: sys/netinet/tcp_subr.c\n===================================================================\n--- sys/netinet/tcp_subr.c      (revision 313068)\n+++ sys/netinet/tcp_subr.c      (working copy)\n@@ -679,6 +679,10 @@ tcp_init(void)\n        V_sack_hole_zone = uma_zcreate(\"sackhole\", sizeof(struct sackhole),\n            NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);\n\n+#ifdef TCP_RFC7413\n+       tcp_fastopen_init();\n+#endif\n+\n        /* Skip initialization of globals for non-default instances. */\n        if (!IS_DEFAULT_VNET(curvnet))\n                return;\n@@ -732,10 +736,6 @@ tcp_init(void)\n #ifdef TCPPCAP\n        tcp_pcap_init();\n #endif\n-\n-#ifdef TCP_RFC7413\n-       tcp_fastopen_init();\n-#endif\n }\n\n #ifdef VIMAGE"
+}

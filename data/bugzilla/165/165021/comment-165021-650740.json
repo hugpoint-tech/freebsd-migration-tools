@@ -1,0 +1,8 @@
+{
+ "id": 650740,
+ "bug_id": 165021,
+ "attachment_id": 0,
+ "creation_time": "2012-02-12T03:00:25Z",
+ "creator": "adrian@freebsd.org",
+ "text": "If wlan_tkip/wlan_ccmp aren't loaded but are required by the hostap, the station mode code will:\n\n* attempt to associate\n* succeed\n* mark wlanX as UP\n* note that the required encryption type is not active\n* mark wlanX as DOWN\n\n. then 5 seconds later, \"ath0: device timeout\" shows up.\n\nFix: \n\nAfter enabling debugging, I discovered this sequence of events:\n\n* a frame was being queued to the hardware - in this instance, a DISCONNECT frame;\n* the state would then transition to DOWN;\n* the IER was disabled - ie, HAL_INT_GLOBAL was cleared and something called ath_hal_intrset(); so the interrupt wouldn't occur;\n* the watchdog timer would kick in and call ath_reset();\n* there'd be at least one completed frame in the TX queue, status OK - so it did go out.\n\nThe actual cause seems to be that the state transition is going from RUN -\u003e INIT, and this is causing interrupts to be disabled.\n\nath_newstate() is causing a state transition to INIT, which disables interrupts and blocks the ath taskqueue. Trouble is, this doesn't stop/flush any of the currently pending hardware TX and this is what's eventually causing the watchdog timeout - although the hardware has completed the TX, the driver has disabled all methods of actually being notified about it.\nHow-To-Repeat: * compile ath/net80211 as modules\n* load wlan and ath/ath_pci - but don't load wlan_wep/wlan_tkip/wlan_ccmp\n* attempt to associate to a network which requires encryption"
+}

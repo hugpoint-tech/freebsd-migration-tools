@@ -1,0 +1,8 @@
+{
+ "id": 1009830,
+ "bug_id": 230950,
+ "attachment_id": 0,
+ "creation_time": "2018-09-03T16:44:46Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "In case any of you has a core file from a previous panic, could you please go and see if the so_pcb from the so passed to udp6_output() looks valid, and especially if you could tell me the %#x of inp_flags2 that would be appreciated.\n\n\nAlso if you want to test this one, I'd be curious if it holds up.\n\nIn an isolated lab setup, I have so far not been able to reproduce the race/panic myself.\n\ndiff --git a/sys/netinet/in_pcb.c b/sys/netinet/in_pcb.c\nindex 98838fa041a..f24ad42f9f4 100644\n--- a/sys/netinet/in_pcb.c\n+++ b/sys/netinet/in_pcb.c\n@@ -1596,6 +1596,7 @@ in_pcbfree_deferred(epoch_context_t ctx)\n #endif\n        if (inp-\u003einp_options)\n                (void)m_free(inp-\u003einp_options);\n+       RO_INVALIDATE_CACHE(\u0026inp-\u003einp_route);\n        inp-\u003einp_vflag = 0;\n        crfree(inp-\u003einp_cred);\n #ifdef MAC\n@@ -1644,7 +1645,6 @@ in_pcbfree(struct inpcb *inp)\n        INP_LIST_WLOCK(pcbinfo);\n        in_pcbremlists(inp);\n        INP_LIST_WUNLOCK(pcbinfo);\n-       RO_INVALIDATE_CACHE(\u0026inp-\u003einp_route);\n        /* mark as destruction in progress */\n        inp-\u003einp_flags2 |= INP_FREED;\n        INP_WUNLOCK(inp);"
+}

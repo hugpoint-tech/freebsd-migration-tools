@@ -1,0 +1,8 @@
+{
+ "id": 1316378,
+ "bug_id": 280257,
+ "attachment_id": 0,
+ "creation_time": "2024-07-13T10:51:55Z",
+ "creator": "bmeyer@mesoft.com.au",
+ "text": "Problem: The rhtvision library when compiled with x11 support fails to compile (i.e. OPTIONS_FILE_SET+=X11)\n\nCause:\n\nThe problem is in the file:\n\ntvision/classes/x11/x11src.cc\n\nLines # 2542, 2543:\n    int dif1=abs(8*16-target);\n    int dif2=abs(10*20-target);\n \nThese lines cause gcc (13) to fail with the error of:\n\n../classes/x11/x11src.cc:2542:17: error: call of overloaded 'abs(unsigned int)' is ambiguous\n 2542 |     int dif1=abs(8*16-target);\n      |              ~~~^~~~~~~~~~~~~\n\n\n../classes/x11/x11src.cc:2543:17: error: call of overloaded 'abs(unsigned int)' is ambiguous\n 2543 |     int dif2=abs(10*20-target);\n      |              ~~~^~~~~~~~~~~~~~\n\nThe problem here is that as 'target' is defined on the previous line (#2541) as:\n\tunsigned target=fW*fH;\n\nThis means that GCC will then recast the expression to that of an \"unsigned int\", and this is a problem as the abs function does not have an overload definition for that type (unsigned int).  \n\nWhat you have to do alter that line to that of either a 'int' or 'long int':\n\tint target=fW*fH;\n\nThis then allows GCC to recast the data type to a type that the abs function *DOES* have an overload definition for (there are overload definitions for both 'int' and a 'long int').  \n\nEnd result, code compiles and appears to work just fine."
+}

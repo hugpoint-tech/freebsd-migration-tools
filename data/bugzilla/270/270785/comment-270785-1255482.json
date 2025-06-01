@@ -1,0 +1,8 @@
+{
+ "id": 1255482,
+ "bug_id": 270785,
+ "attachment_id": 0,
+ "creation_time": "2023-04-16T08:50:51Z",
+ "creator": "bllcha013@myuct.ac.za",
+ "text": "Thank you, I applied the diff on a clean git clone on releng/13.2 and tested, but unfortunately it doesn't appear to have any effect. The sysctl is visible as kern.ipc.umtx_min_timeout. I set it to 10ms (10000000ns) by issuing \"sysctl kern.ipc.umtx_min_timeout=10000000\" but unfortunately there doesn't seem to be any effect. CPU usage stays the same. Here's the truss and dtrace output:\n\nsyscall                     seconds   calls  errors\n__sysctlbyname          0.000986089       6       0\ngetrusage               0.008186177     106       0\nsched_yield             1.172105081   28475       0\n_umtx_op               30.594233465   28659   28654\n                      ------------- ------- -------\n                       31.775510812   57246   28654\n\ndtrace: description 'fbt::do_wait:entry ' matched 1 probe\nCPU     ID                    FUNCTION:NAME\n  5  18113                    do_wait:entry struct _umtx_time {\n    struct timespec _timeout = {\n        time_t tv_sec = 0x16a\n        long tv_nsec = 0x279c2e2a\n    }\n    __uint32_t _flags = 0x1\n    __uint32_t _clockid = 0x4\n}\n  6  18113                    do_wait:entry struct _umtx_time {\n    struct timespec _timeout = {\n        time_t tv_sec = 0x16a\n        long tv_nsec = 0x279dd9fd\n    }\n    __uint32_t _flags = 0x1\n    __uint32_t _clockid = 0x4\n}\n\nIt seems the high volume of syscalls stayed the same, with the same short 0.1ms delay.\n\nAssuming this can be made to work though, this tunable would be really greatly appreciated."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 394165,
+ "bug_id": 112997,
+ "attachment_id": 0,
+ "creation_time": "2010-05-03T12:18:33Z",
+ "creator": "swell.k@gmail.com",
+ "text": "I disagree, native and ${YOUR_CPU} aren't equivalent. Here is what I get\non gcc45 + core2@amd64 system:\n\n  $ cc -E -v -march=core2 - \u003c/dev/null |\u0026 fgrep cc1\n  .../cc1 -E -quiet -v - -march=core2\n\n  $ cc -E -v -mtune=core2 - \u003c/dev/null |\u0026 fgrep cc1\n  .../cc1 -E -quiet -v - -mtune=core2 -march=x86-64\n\n  $ cc -E -v -march=native - \u003c/dev/null |\u0026 fgrep cc1\n  .../cc1 -E -quiet -v - -march=core2 -mcx16 -msahf -msse4.1 --param l1-cache-size=32 --param l1-cache-line-size=64 --param l2-cache-size=6144 -mtune=core2\n\n  $ cc -E -v -mtune=native - \u003c/dev/null |\u0026 fgrep cc1\n  .../cc1 -E -quiet -v - --param l1-cache-size=32 --param l1-cache-line-size=64 --param l2-cache-size=6144 -mtune=core2 -march=x86-64\n\nAnd bsd.cpu.mk is oblivious about gcc43+. It will degrade native to\nnocona even though core2 is supported. Good example that overriding\nCPUTYPE is bad idea.\n\nBetter leave CPUTYPE as is and populate MACHINE_CPU directly, smth like\n\n  $ cat a.mk\n  CPUTYPE = ${MACHINE_ARCH}\n  MACHINE_CPU != echo ${MACHINE_ARCH}; ${CC} -E -dM -v -march=${CPUTYPE:S/amd64/x86-64/:S/i386/i486/} - \u003c/dev/null 2\u003e\u00261 \\\n          | awk '/SSE|MMX/ \u0026\u0026 !/MATH/ { FS=\"__\"; gsub(\"_\",\".\",$$2); print tolower($$2) }'\n\n  $ make -f a.mk -V MACHINE_CPU\n  amd64 mmx sse2 sse\n  $ make -f a.mk -V MACHINE_CPU CPUTYPE=native\n  amd64 sse4.1 mmx sse2 ssse3 sse sse3\n  $ make -f a.mk -V MACHINE_CPU CPUTYPE=native CC=/usr/bin/cc\n  amd64 mmx sse sse2 sse3"
+}

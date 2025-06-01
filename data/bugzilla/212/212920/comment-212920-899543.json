@@ -1,0 +1,8 @@
+{
+ "id": 899543,
+ "bug_id": 212920,
+ "attachment_id": 0,
+ "creation_time": "2016-09-28T09:02:29Z",
+ "creator": "jcharbon@verisign.com",
+ "text": "Thanks for reporting this issue, this is quite interesting.\n\n#1. Could you revert r302995 and check that everything is fine without it?  It will increase a bit the contention on accept() but at 2000 req/sec it is fine, it starts to matter around 30k accept/sec.\n\n#2. Then could you try this change with r302995 in place:\n\ndiff --git a/sys/netinet/tcp_syncache.c b/sys/netinet/tcp_syncache.c\nindex f71d028..6d7ab69 100644\n--- a/sys/netinet/tcp_syncache.c\n+++ b/sys/netinet/tcp_syncache.c\n@@ -922,7 +922,9 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct mbuf *m)\n \n        INP_WUNLOCK(inp);\n \n-       soisconnected(so);\n+       if ((so-\u003eso_options \u0026 SO_ACCEPTFILTER) == 0) {\n+               soisconnected(so);\n+       }\n \n        TCPSTAT_INC(tcps_accepts);\n        return (so);\n\n\nI just smoke tested it but not validated it, I am currently setting up nginx and accept_filter to reproduce your issue.\n\nThe rational is that r302995 and using accept_filter=httpready are quite symmetric but in r302995+accept_filter=httpready soisconnected() case soisconnected() is called sooner than later, and in a different locking context."
+}

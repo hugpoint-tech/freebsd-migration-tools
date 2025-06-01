@@ -1,0 +1,8 @@
+{
+ "id": 25664,
+ "bug_id": 8416,
+ "attachment_id": 0,
+ "creation_time": "1998-10-28T15:33:00Z",
+ "creator": "luoqi@watermarkgroup.com",
+ "text": "I have seen the same problem once. It's a deadlock caused by vm_fault()\ntrying to lock vm map and vnode in the wrong order. For detail, you may\nlook up my original message in -current archive searching for \"deadlock\".\nThere's fix in that message, which I will reproduce here too. Tor, would\nyou review it for me?\n\n-lq\n\nIndex: vm_fault.c\n===================================================================\nRCS file: /home/ncvs/src/sys/vm/vm_fault.c,v\nretrieving revision 1.88\ndiff -u -r1.88 vm_fault.c\n--- vm_fault.c\t1998/09/04 08:06:57\t1.88\n+++ vm_fault.c\t1998/09/23 21:54:14\n@@ -656,6 +656,14 @@\n \t\t */\n \n \t\t/*\n+\t\t * Unlock vnode before the lookup to avoid deadlock\n+\t\t */\n+\t\tif (fs.vp != NULL) {\n+\t\t\tvput(fs.vp);\n+\t\t\tfs.vp = NULL;\n+\t\t}\n+\n+\t\t/*\n \t\t * To avoid trying to write_lock the map while another process\n \t\t * has it read_locked (in vm_map_pageable), we do not try for\n \t\t * write permission.  If the page is still writable, we will"
+}

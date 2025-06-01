@@ -1,0 +1,8 @@
+{
+ "id": 1180800,
+ "bug_id": 258917,
+ "attachment_id": 0,
+ "creation_time": "2021-10-04T11:34:07Z",
+ "creator": "martin@lispworks.com",
+ "text": "Since version 2.4.59, I'm seeing many of these warnings in /var/log/messages.  I'm now running openldap24-server-2.4.59_5 from FreeBSD 11.4 pkgs and rc.conf contains:\n\nslapd_enable=\"YES\"\nslapd_flags='-l DAEMON -h \"ldapi://%2fvar%2frun%2fopenldap%2fldapi/ ldap://0.0.0.0/\"'\nslapd_sockets=\"/var/run/openldap/ldapi\"\n\nThe backtrace is\n\n#0  syslog (pri=35, fmt=0x80122bd99 \"%s\")\n    at /usr/src/lib/libc/gen/syslog.c:127\n#1  0x000000080121f5f7 in sasl_errdetail () from /usr/local/lib/libsasl2.so.3\n#2  0x000000080121febc in _sasl_log () from /usr/local/lib/libsasl2.so.3\n#3  0x0000000803831eee in otp_client_plug_init ()\n   from /usr/local/lib/sasl2/libotp.so.3\n#4  0x000000080122629c in sasl_server_start ()\n   from /usr/local/lib/libsasl2.so.3\n#5  0x0000000801226b3f in _sasl_server_listmech ()\n   from /usr/local/lib/libsasl2.so.3\n#6  0x00000008012202bb in sasl_listmech () from /usr/local/lib/libsasl2.so.3\n#7  0x000000000048012b in slap_sasl_mechs ()\n#8  0x000000000047e963 in root_dse_info ()\n#9  0x0000000000432760 in fe_op_search ()\n#10 0x0000000000432533 in do_search ()\n#11 0x0000000000430f83 in connection_assign_nextid ()\n#12 0x0000000800946f7b in ldap_pvt_thread_pool_submit ()\n   from /usr/local/lib/libldap_r-2.4.so.2\n#13 0x0000000801e7e08c in thread_start (curthread=0x84520f000)\n    at /usr/src/lib/libthr/thread/thr_create.c:290\n#14 0x0000000000000000 in ?? ()\n\nThe problem is that the pkg runs slapd as user ldap by default but the file is only accessible by root so it can't work:\n\n-rw-------  1 root  wheel  0 Oct 13  2020 /etc/opiekeys"
+}

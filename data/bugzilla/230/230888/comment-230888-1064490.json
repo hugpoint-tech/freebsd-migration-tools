@@ -1,0 +1,8 @@
+{
+ "id": 1064490,
+ "bug_id": 230888,
+ "attachment_id": 0,
+ "creation_time": "2019-08-30T20:48:22Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "This issue has now come up again with the import of llvm 9.0.0 (which is ongoing).  Upstream has committed the following change, https://reviews.llvm.org/rL356631 (\"[X86] Add CMPXCHG8B feature flag. Set it for all CPUs except i386/i486 including 'generic'. Disable use of CMPXCHG8B when this flag isn't set\")\n\nBefore that change, clang actually had a bug, in the sense that it *did* sometimes generate cmpxchg8b instructions on i486, which is still our default target CPU.  This saved us from most cases where otherwise __atomic_xxx function calls would be inserted.  However, now this bug has been fixed, so it will always use function calls for atomic 64 bit operations.\n\nUpstream, I have had to report that it cannot even do the unit tests for compiler-rt 9.0.0 anymore, since that already runs into link errors about __atomic_xxx functions: https://bugs.llvm.org/show_bug.cgi?id=42892\n\nRealistically, the best way forward in the short term is to raise the default target CPU for FreeBSD to i586 or even i686, so cmpxchg8b is supported.  Specifically, because I do not think it is very realistic to run modern FreeBSD on real i486-class hardware.  Not to mention that that is basically museum class hardware now. :-)"
+}

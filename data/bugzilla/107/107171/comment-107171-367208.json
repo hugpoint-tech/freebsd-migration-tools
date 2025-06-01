@@ -1,0 +1,8 @@
+{
+ "id": 367208,
+ "bug_id": 107171,
+ "attachment_id": 0,
+ "creation_time": "2007-03-09T03:09:22Z",
+ "creator": "nge@cs.hmc.edu",
+ "text": "Bruce Evans wrote:\n\n\u003e However, EINTR is probably irrelevant for the current bug. systat\n\u003e doesn't catch SIGHUP in order to clean up up unsafely like it does\n\u003e for SIGINT, so any SIGHUP that gives EOF on the terminal would either:\n\u003e - kill the process uncleanly, or\n\u003e - not be delivered to the process because it is masked (no EINTR since\n\u003e it is not caught), or\n\u003e - not be delivered to the process because of job control stuff.\n\nI included the EINTR handling because systat does use SIGALRM.  In fact it \nactually does all the display updating inside the SIGALRM handler (nice \nhuh?).  If we are sure that restarting syscalls are in effect (systat does \nnot explicitly select this behavior), then I agree that systat can die on \nEINTR like any other error.  But if not then EINTR could legitimately \nappear every time the alarm rings, and the correct behavior is to retry.\n\n\u003e So systat just needs a simple check for EOF from getch() and the\n\u003e remainly problem is that getch(), like getc(), unimproves on read()\n\u003e by not having any way to distinguish the non-error of EOF from errors.\n\nNote getch() returns ERR, not EOF.  (In the current implementation they \nare both equal to -1.)\n\ngetc() is actually okay; when getc() returns EOF you can use ferror(f) and \nfeof(f) to decide if it was an error or end-of-file.  But yes, with \ngetch() you're stuck.  I guess because it's normally used on a terminal \ndevice in raw mode, where you wouldn't normally receive an end-of-file \n(since ^D wouldn't work).\n\n-- \nNate Eldredge\nnge@cs.hmc.edu"
+}

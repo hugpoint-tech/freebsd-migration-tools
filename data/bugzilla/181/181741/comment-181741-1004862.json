@@ -1,0 +1,8 @@
+{
+ "id": 1004862,
+ "bug_id": 181741,
+ "attachment_id": 0,
+ "creation_time": "2018-08-04T20:27:18Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: markj\nDate: Sat Aug  4 20:26:55 UTC 2018\nNew revision: 337328\nURL: https://svnweb.freebsd.org/changeset/base/337328\n\nLog:\n  Don't check rcv sockbuf limits when sending on a unix stream socket.\n\n  sosend_generic() performs an initial comparison of the amount of data\n  (including control messages) to be transmitted with the send buffer\n  size. When transmitting on a unix socket, we then compare the amount\n  of data being sent with the amount of space in the receive buffer size;\n  if insufficient space is available, sbappendcontrol() returns an error\n  and the data is lost.  This is easily triggered by sending control\n  messages together with an amount of data roughly equal to the send\n  buffer size, since the control message size may change in uipc_send()\n  as file descriptors are internalized.\n\n  Fix the problem by removing the space check in sbappendcontrol(),\n  whose only consumer is the unix sockets code.  The stream sockets code\n  uses the SB_STOP mechanism to ensure that senders will block if the\n  receive buffer fills up.\n\n  PR:\t\t181741\n  MFC after:\t1 month\n  Sponsored by:\tThe FreeBSD Foundation\n  Differential Revision:\thttps://reviews.freebsd.org/D16515\n\nChanges:\n  head/sys/kern/uipc_sockbuf.c\n  head/sys/kern/uipc_usrreq.c\n  head/sys/sys/sockbuf.h"
+}

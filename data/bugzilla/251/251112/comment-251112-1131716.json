@@ -1,0 +1,8 @@
+{
+ "id": 1131716,
+ "bug_id": 251112,
+ "attachment_id": 0,
+ "creation_time": "2020-11-13T20:33:19Z",
+ "creator": "astitcher@apache.org",
+ "text": "Compiler error:\n...\n/usr/bin/c++ -g -fno-omit-frame-pointer -shared-libasan -fsanitize=address,undefined -fsanitize-recover=vptr -O2 -g -DNDEBUG -flto=thin c/tests/CMakeFiles/test_main.dir/test_main.cpp.o c/tests/CMakeFiles/c-proactor-test.dir/pn_test.cpp.o c/tests/CMakeFiles/c-proactor-test.dir/pn_test_proactor.cpp.o c/tests/CMakeFiles/c-proactor-test.dir/proactor_test.cpp.o -o c/tests/c-proactor-test  -Wl,-rpath,/home/vagrant/qpid-proton/BLD/c  c/libqpid-proton-proactor.so.1.7.1  c/libqpid-proton-core.so.10.11.0 \u0026\u0026 :\nld: error: /usr/lib/clang/10.0.1/lib/freebsd/libclang_rt.asan-x86_64.so: undefined reference to pthread_attr_get_np\n\nAnd indeed the library only links in portable pthreads via libc:\n$ ldd /usr/lib/clang/10.0.1/lib/freebsd/libclang_rt.asan-x86_64.so\n/usr/lib/clang/10.0.1/lib/freebsd/libclang_rt.asan-x86_64.so:\n\tlibc++.so.1 =\u003e /usr/lib/libc++.so.1 (0x800675000)\n\tlibcxxrt.so.1 =\u003e /lib/libcxxrt.so.1 (0x800742000)\n\tlibm.so.5 =\u003e /lib/libm.so.5 (0x800764000)\n\tlibgcc_s.so.1 =\u003e /lib/libgcc_s.so.1 (0x800796000)\n\tlibc.so.7 =\u003e /lib/libc.so.7 (0x80024e000)\n\nWhereas the needed symbol is in libpthreads:\n$ objdump -T /usr/lib/libpthread.so | grep pthread_attr_get_np\n000000000001b960  w   DF .text\t0000000000000264  FBSD_1.0    pthread_attr_get_np\n000000000001b960  w   DF .text\t0000000000000264  FBSDprivate_1.0 _pthread_attr_get_np\n\nYou can work around this by manually linking -lpthreads, but our build files which work elsewhere don't do this as it's not necessary elsewhere."
+}

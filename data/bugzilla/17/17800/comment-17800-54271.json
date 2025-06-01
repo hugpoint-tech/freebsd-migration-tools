@@ -1,0 +1,8 @@
+{
+ "id": 54271,
+ "bug_id": 17800,
+ "attachment_id": 0,
+ "creation_time": "2000-04-04T23:40:01Z",
+ "creator": "jose@we.lc.ehu.es",
+ "text": "I found that the RTC does not generate statclock interrupts on a\nDell Inspiron 3700 laptop under some circumstances (after rebooting while\nconnected to AC power).  Probably the BIOS fiddles the MC146818A in\nsuch a way that an interrupt is pending when the kernel initializes\nthe system clocks.  The routine cpu_initclocks() should ensure that\nthere are no RTC interrupts pending before enabling IRQ8 in the ICU.\nThis can be easily accomplished simply reading the RTC_INTR register.\nI tested this solution on my I3.7k laptop, and now the statclock always\nworks.  Maybe other laptops are affected by the same problem.\n\nFix: The following patch (against 4.0-RELEASE's clock.c, but I think it is\napplicable to -CURRENT) does the trick:\n\n--------------------------- CUT HERE --------------------------\nHow-To-Repeat: Install FreeBSD 3.x, 4.0-STABLE or 5.0-CURRENT on a Dell Inspiron 3700 :-)\nBe sure that apm(4)'s 0x20 flag is _not_ set.\nReboot with shutdown -r (warm boot).\nType \"vmstat -i\" or \"systat -vmstat\"."
+}

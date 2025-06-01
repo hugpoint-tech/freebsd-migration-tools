@@ -1,0 +1,8 @@
+{
+ "id": 836398,
+ "bug_id": 193745,
+ "attachment_id": 0,
+ "creation_time": "2015-08-15T05:56:20Z",
+ "creator": "marcel@FreeBSD.org",
+ "text": "The problem is this:\n\nPrecondition:\nCertain Macs have a frame buffer of a particular resolution with a stride that is larger than the horizontal resolution.\n\nMine is:\ndimensions   1280 x 1024\nstride       2048\n\nDave's GOP info is:\ndimensions   2560 x 1440\nstride       4096\n\nThe bug:\nThe EFI frame buffer driver determines the number of bits per pixel as stride * bytes-per-pixel / width * 8 (where width is the horizontal resolution). On my Mac this results in (2048 * 4) / 1280 * 8 = 6 * 8 = 48. That is 6 bytes per pixel. Bogus.\n\nThe kernel doesn't know what to do with 6 bytes per pixel. It doesn't determine the color map and it doesn't even write anything to the frame buffer. Only 1-4 bytes pixel is supported.\n\nThe computation of BPP is simply wrong. It's the same as the depth that we get from the loader, which gets it from UEFI. The depth is 32 or 4 bytes per pixel."
+}

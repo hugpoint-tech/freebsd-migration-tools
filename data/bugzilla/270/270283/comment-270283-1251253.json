@@ -1,0 +1,8 @@
+{
+ "id": 1251253,
+ "bug_id": 270283,
+ "attachment_id": 0,
+ "creation_time": "2023-03-17T10:23:57Z",
+ "creator": "levon@movementarian.org",
+ "text": "We hit the following situation:\n\n - we have a component with a list of callbacks.\n - those callbacks are themselves allowed to call back in and remove entries from the list\n - LIST_FOREACH_SAFE() is used to safely protect against removal of the current item\n - however, a callback is also legitimately allowed to remove any other item on the list\n\nThis falls down when a callback removes the *next* item on the list - the macro has already saved this in \"tvar\", so it will then try to use freed memory on the next iteration.\n\nWe have fixed this with LIST_FOREACH_SAFER() / LIST_REMOVE_SAFER() variants:\n\n#define\tLIST_FOREACH_SAFER(var, head, field, tvarp)\t\\\t\n\tfor ((var) = LIST_FIRST((head));\t\t\t\t        \\\n\t    (var) \u0026\u0026 ((*tvarp) = LIST_NEXT((var), field), 1);\t\t\\\n\t    (var) = (*tvarp))\n\n#define\tLIST_REMOVE_SAFER(elm, field, elmp) do {\t\t\\\n\tif (elmp == elm) {\t\t\t\t\t\t                \\\n\t\telmp = LIST_NEXT(elm, field);\t\t\t\t\\\n\t};\t\t\t\t\t\t\t\t                        \\\n\tLIST_REMOVE(elm, field);\t\t\t\t\t        \\\n} while (0)\n\n\nWould like thoughts on whether this would be something more widely useful before I prepare a PR and so on, thanks."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1262713,
+ "bug_id": 271925,
+ "attachment_id": 242705,
+ "creation_time": "2023-06-09T21:48:43Z",
+ "creator": "jamie@catflap.org",
+ "text": "Created attachment 242705\nterminal output demonstrating the problem\n\nUsing chflags to remove \"uarch\" on more than one file at a time\n(but when that file count is an even number) when the files are\nhardlinked (have the same inode) and on ZFS doesn't work.\n\nThis becomes more problematic when using \"find... -exec chflags nouarch {} +\"\nor \"chmod -R\".\n\nThe problrem occurs because if chflags(2) resets uarch on a file\nwhich doesn't already have uarch set, then the very update causes\nuarch to be set.\n\nTo mitigate that, chflags(1) does a stat of the file, and will only\nattempt to remove the flag if it actually exists.\n\nThe problem here is that the stat operation is done on all files\nbefore the chflag(2) operation is then applied to all files.\n\nApart from the fact this introduces generally a race condition,\nit means in this specific case that the flag is removed, and then\nadded again. (A sort of race against itself that it always loses!)\n\nThe stat(2) and chflags(2) should be as close together as possible,\nto keep the operation as atomic as possible.\n\nIf that is unacceptable due to inefficiencies, chflags(1) should\nat least ignore files that it stats which have the same inode as\nanother file previously stat(2)'ed\n\nA demonstration, along with a ktrace of the offending part of the\ncode is attached.\n\nCheers, Jamie"
+}

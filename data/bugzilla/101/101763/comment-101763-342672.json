@@ -1,0 +1,8 @@
+{
+ "id": 342672,
+ "bug_id": 101763,
+ "attachment_id": 0,
+ "creation_time": "2006-08-11T22:05:28Z",
+ "creator": "gkozyrev@ukr.net",
+ "text": "Robert Watson wrote to \"Gleb Kozyrev\" \u003cgkozyrev@gmail.com\u003e on Fri, 11 Aug 2006 10:29:01 +0100 (BST):\n\n\u003e GK\u003e\u003e Here you are: kern/101763\n\u003e\u003e \n\u003e\u003e I'm sorry for misleading you.\n\u003e\u003e You see, for some reasons I forgot that there's a little jail on\n\u003e\u003e that machine. ;)\n\u003e\u003e It is ipfw in jail that triggers the panic invoked from\n\u003e\u003e /etc/periodic/security/500.ipfwdenied\n\nRW\u003e Try this minor tweak:\n\nRW\u003e Index: uipc_socket.c\nRW\u003e ===================================================================\nRW\u003e RCS file: /data/fbsd-cvs/ncvs/src/sys/kern/uipc_socket.c,v\nRW\u003e retrieving revision 1.277\nRW\u003e diff -u -r1.277 uipc_socket.c\nRW\u003e --- uipc_socket.c 2 Aug 2006 00:45:27 -0000 1.277\nRW\u003e +++ uipc_socket.c 11 Aug 2006 09:27:52 -0000\nRW\u003e @@ -367,6 +367,9 @@\nRW\u003e    so-\u003eso_count = 1;\nRW\u003e    error = (*prp-\u003epr_usrreqs-\u003epru_attach)(so, proto, td);\nRW\u003e    if (error) {\nRW\u003e +  KASSERT(so-\u003eso_count == 1, (\"socreate: so_count %d\",\nRW\u003e +      so-\u003eso_count));\nRW\u003e +  so-\u003eso_count = 0;\nRW\u003e     sodealloc(so);\nRW\u003e     return (error);\nRW\u003e    }\n\nRW\u003e Looks like I made a logic error in my change to move to sodealloc() here:\nRW\u003e the refcount is never reduced back from when it is initially set to 1,\nRW\u003e and sodealloc() has a \"no references\" assertion (possibly that I added).\n\nIt works fine now, thank you.\n\n-- \nWith best regards, Gleb Kozyrev."
+}

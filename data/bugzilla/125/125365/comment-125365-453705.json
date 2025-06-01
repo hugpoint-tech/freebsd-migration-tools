@@ -1,0 +1,8 @@
+{
+ "id": 453705,
+ "bug_id": 125365,
+ "attachment_id": 0,
+ "creation_time": "2010-01-18T14:07:55Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: jh\nDate: Mon Jan 18 14:07:41 2010\nNew Revision: 202573\nURL: http://svn.freebsd.org/changeset/base/202573\n\nLog:\n  Print sizes up to INT64_MAX in md_prthumanval().\n  \n  PR:\t\tbin/125365\n  Approved by:\ttrasz (mentor)\n  MFC after:\t2 weeks\n\nModified:\n  head/sbin/mdconfig/mdconfig.c\n\nModified: head/sbin/mdconfig/mdconfig.c\n==============================================================================\n--- head/sbin/mdconfig/mdconfig.c\tMon Jan 18 13:44:44 2010\t(r202572)\n+++ head/sbin/mdconfig/mdconfig.c\tMon Jan 18 14:07:41 2010\t(r202573)\n@@ -454,14 +454,15 @@ static void\n md_prthumanval(char *length)\n {\n \tchar buf[6];\n-\tuint64_t bytes;\n+\tuintmax_t bytes;\n \tchar *endptr;\n \n-\tbytes = strtoul(length, \u0026endptr, 10);\n-\tif (bytes == (unsigned)ULONG_MAX || *endptr != '\\0')\n+\terrno = 0;\n+\tbytes = strtoumax(length, \u0026endptr, 10);\n+\tif (errno != 0 || *endptr != '\\0' || bytes \u003e INT64_MAX)\n \t\treturn;\n-\thumanize_number(buf, sizeof(buf) - (bytes \u003c 0 ? 0 : 1),\n-\t    bytes, \"\", HN_AUTOSCALE, HN_B | HN_NOSPACE | HN_DECIMAL);\n+\thumanize_number(buf, sizeof(buf), (int64_t)bytes, \"\",\n+\t    HN_AUTOSCALE, HN_B | HN_NOSPACE | HN_DECIMAL);\n \t(void)printf(\"%6s\", buf);\n }\n \n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

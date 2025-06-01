@@ -1,0 +1,8 @@
+{
+ "id": 1212662,
+ "bug_id": 264162,
+ "attachment_id": 234127,
+ "creation_time": "2022-05-24T07:55:40Z",
+ "creator": "se@FreeBSD.org",
+ "text": "Comment on attachment 234127\nAllow passing optional units (seconds, minutes, hours, days) to /bin/sleep\n\nThank you for the contribution!\n\nThe patch looks mostly OK. I would have used a variable to catch the number of patterns parsed by sscanf() instead of duplicating that call, but this is a technical detail.\n\nThere is one issue, though:\n\nif (sscanf(argv[1], \"%lf%c%1s\", \u0026d, \u0026unit, buf) != 1)\n\nshould be:\n\nif (sscanf(argv[1], \"%lf%c%1s\", \u0026d, \u0026unit, buf) == 2)\n\nThe != 1 test detects the presence of an extra argument following the number, but does not reject the case of more than 1 character following.\n\nTesting for 2 patterns matching makes sure that there was just a floating point number followed by a single character. This catches the case of e.g. \"1sx\" being passed as the argument, since the extra \"s\" would be parsed as a 3rd match.\n\nI'll commit the patch with the test of the first sscanf() changed to \"== 2\".\n\nAnd I'm considering to add a loop to add up multiple delay values being passed as is done by the coreutils version of sleep, for full functional compatibility with that version, in a follow-up commit."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 41541,
+ "bug_id": 13644,
+ "attachment_id": 0,
+ "creation_time": "1999-12-28T01:38:58Z",
+ "creator": "mi@kot.ne.mediaone.net",
+ "text": "jasone@FreeBSD.ORG once stated:\n\n=Synopsis: select(2) timer inaccurate, especially with -pthread\n=\n=State-Changed-From-To: open-\u003eclosed\n=State-Changed-By: jasone\n=State-Changed-When: Mon Dec 27 12:39:03 PST 1999\n=State-Changed-Why: \n=The kernel  implementation of  sleep() uses  tvtohz() to  calculate the\n=number of ticks  that tsleep() should sleep. tvtohz() adds  one tick to\n=allow  for the  possibility that  the current  tick is  almost expired.\n\n=select() guarantees that it will sleep  at least as long as the timeout\n=before returning an empty result (0).\n\nThis is NOT what the man page states:\n\n\tIf timeout is a non-nil  pointer, it specifies a maximum\n\tinterval to wait for the selection to complete.\n\n=If the  number of ticks  passed to tsleep()  were reduced by  one, this\n=guarantee would no longer be possible.\n=\n=This is not a bug; it is  an artifact of correct implementation. If you\n=need higher resolution, use nanosleep().\n\nIn  particular, TCL's  after(n)  implementation relies  on this  fact...\nPeople responsible for  the TCL port may need to  take a note... Because\nin TCL 8.x's  unix/tclUnixEvent.c there is a  function Tcl_Sleep(ms) and\nthe comments in it say:\n\n    /*\n     * The only trick here is that select appears to return early\n     * under some conditions, so we have to check to make sure that\n     * the right amount of time really has elapsed.  If it's too\n     * early, go back to sleep again.\n     */\n\n\nPlease, consider reviewing this again without the implementation details\nobstructing the view. :-)\n\n\t-mi"
+}

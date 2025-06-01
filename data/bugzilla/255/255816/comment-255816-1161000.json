@@ -1,0 +1,8 @@
+{
+ "id": 1161000,
+ "bug_id": 255816,
+ "attachment_id": 0,
+ "creation_time": "2021-05-12T15:38:23Z",
+ "creator": "j.piecuch96@gmail.com",
+ "text": "write() calls on a tty without the IO_NDELAY flag are serialized inside ttydev_write(). Therefore, a thread writing to a tty without IO_NDELAY has exclusive access to that tty with respect to other writers not using IO_NDELAY.\n\nLet's assume a thread is writing to a tty without IO_NDELAY. It acquires exclusive access and calls ttydisc_write(). In ttydisc_write() it may sleep (interruptibly) on the \u0026tp-\u003et_outwait condition variable. It does _not_ relinquish its exclusive access before sleeping. If it receives a stop signal while it is sleeping it will additionally become suspended (see sig_suspend_threads()), so signaling the cv won't make it runnable anymore. The suspended thread still has exclusive access to the tty, preventing other threads from writing to it.\n\nThere is a mechanism to defer handling of stop signals using sigdeferstop(), but I don't see it being used anywhere related to tty writes. Perhaps the call to ttydisc_write() could be put between sigdeferstop(SIGDEFERSTOP_ERESTART) and sigallowstop()?"
+}

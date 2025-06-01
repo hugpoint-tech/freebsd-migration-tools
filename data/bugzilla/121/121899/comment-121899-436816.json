@@ -1,0 +1,8 @@
+{
+ "id": 436816,
+ "bug_id": 121899,
+ "attachment_id": 0,
+ "creation_time": "2008-03-20T06:30:01Z",
+ "creator": "stef@memberwebs.com",
+ "text": "Note: This pertains to ataraid RAID devices using the Intel MatrixRAID\nhardware.\n\nA drive that was once part of an ataraid device, when added back to the\nmachine that it was on, shows up as a new ataraid device. This new ataraid\ndevice tries to use all the drives that were originally in the RAID.\nResults can range from a confusion to a real mess.\n\nFix: Don't rewrite the config_id of the RAID every time something changes.\nThat's what the generation is for. The config_id should remain the same\nfor the lifetime of the RAID. We need to be diligent about incrementing\nthe generation whenever the RAID status changes, including on boot in\ncase of a DEGRADED array.\n\nThis fix causes the ad6 (in the example above) to be recognized correctly\nas an out of date member of an already present RAID.\n\n\n\nPatch attached with submission follows:\nHow-To-Repeat:  1. Build a RAID1 device with two drives on Intel MatrixRAID hardware.\n    This creates 'ar0'\n\n    # atacontrol create RAID1 ad4 ad6\n    ad0 created\n\n 2. Shutdown the machine, and remove ad6. Or if you really want to\n    simulate a failure, jerk it from its socket :)\n\n 3. When the machine restarts (it'll panic unless you apply patch on\n    pr/102211) you'll see the RAID is degraded:\n\n    # atacontrol status ar0\n    ar0: ATA RAID1 status: DEGRADED\n      subdisks:\n        0 ad4   DOWN\n        1 ----- MISSING\n\n  4. Reattach the new drive and a new raid 'ar1' will appear with ad6.\n     It tries to use ad4 as well, but its already in use by 'ar0'."
+}

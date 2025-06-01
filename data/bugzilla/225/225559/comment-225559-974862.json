@@ -1,0 +1,8 @@
+{
+ "id": 974862,
+ "bug_id": 225559,
+ "attachment_id": 0,
+ "creation_time": "2018-01-30T12:12:23Z",
+ "creator": "nbe@renzel.net",
+ "text": "After upgrading all packages, it seems that \"krdc\" is no longer able to spawn RDP sessions. Activating all debug flags using \"kdebugdialog\" reveals that \"krdc\" executes \"xfreerdp\" with following options:\n-------------------------------------------------------------------------------\n-decorations /w:1255 /h:879 /kbd:0x00000407 /u:SECRETUSER /parent-window:4194338 /bpp:16 /audio-mode:2 /drive:media,/media /network:lan /cert-ignore +clipboard /port:3389 /v:SECRETSERVER\n-------------------------------------------------------------------------------\n\n\nExecuting \"xfreerdp\" manually with above mentioned options line does not spawn a RDP session as well and show \"xfreerdp\" usage output instead. Removing an option one by one reveals that \"xfreerdp\" does not like the \"/network\" parameter anymore - at least with that options combination.\n\nPatching \"krdc\" to exclude that:\n-------------------------------------------------------------------------------\n--- rdpview.cpp.bak     2018-01-30 13:08:36.375470000 +0100\n+++ rdpview.cpp 2018-01-30 12:53:57.551629000 +0100\n@@ -310,7 +310,7 @@\n             break;\n         }\n \n-        arguments \u003c\u003c \"/network:\" + performance;\n+        // arguments \u003c\u003c \"/network:\" + performance; // nbe: broken in FreeRDP 2.0.0r1\n \n         if (m_hostPreferences-\u003econsole()) {\n             arguments \u003c\u003c \"/admin\";\n-------------------------------------------------------------------------------\n\n\nmakes it working again..."
+}

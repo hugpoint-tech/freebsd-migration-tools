@@ -1,0 +1,8 @@
+{
+ "id": 920027,
+ "bug_id": 215974,
+ "attachment_id": 0,
+ "creation_time": "2017-02-03T15:06:01Z",
+ "creator": "mmel@FreeBSD.org",
+ "text": "Yes, it's still needed.\nBy ARM EABI, shared library must be compiled with -fPIC.\n(In short, standard ARM object file may contain relocations which cannot be resolved by runtime linker, like R_ARM_MOVW_*, R_ARM_MOVT_*.)\n\nThe port build fails if you have specified any 'higher' CPU type. \nWith -mcpu=cortex-a15, the build fails with:\n(and I'm sorry, I did not realize that -mcpu is necessary for the exhibition of this problem) \n\n/bin/sh ../libtool --mode=link cc  -pipe  -munaligned-access -mcpu=cortex-a15\n  -fno-builtin-sin -fno-builtin-cos  -fno-strict-aliasing -O -pipe -O2\n  -munaligned-access  -fomit-frame-pointer  -prefer-non-pic  -o liba52.la\n  -rpath /usr/local/lib -no-undefined bitstream.lo imdct.lo bit_allocate.lo\n   parse.lo downmix.lo -lm\n\nrm -fr .libs/liba52.la .libs/liba52.* .libs/liba52.*\n\ncc -shared  bitstream.lo imdct.lo bit_allocate.lo parse.lo downmix.lo \n  -lm  -Wl,-soname -Wl,liba52.so.0 -o .libs/liba52.so.0.0.0\n\n/usr/bin/ld: imdct.lo(.text+0x90c): \n  unresolvable R_ARM_MOVW_ABS_NC relocation against symbol `__stderrp@@FBSD_1.0'\n\n/usr/bin/ld: final link failed: Nonrepresentable section on output"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 959522,
+ "bug_id": 223208,
+ "attachment_id": 0,
+ "creation_time": "2017-11-14T08:36:55Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Kristof Provost from comment #10)\nCan you try this one instead?\n\ndiff --git a/sbin/pfctl/parse.y b/sbin/pfctl/parse.y\nindex 5652845d419..64015c7894b 100644\n--- a/sbin/pfctl/parse.y\n+++ b/sbin/pfctl/parse.y\n@@ -4390,8 +4390,11 @@ route_host       : STRING                        {\n                        $$-\u003etail = $$;\n                }\n                | '(' STRING host ')'           {\n+                       struct node_host *n;\n+\n                        $$ = $3;\n-                       $$-\u003eifname = $2;\n+                       for (n = $3; n != NULL; n = n-\u003enext)\n+                               n-\u003eifname = strdup($2);\n                }\n                ;\n\n\nThe route_host parsing code set the interface name, but only for the first node_host in the list. If that one happened to be the inet6 address (given an inet rule) it'd get removed by remove_invalid_hosts() later on, and we'd have no interface name."
+}

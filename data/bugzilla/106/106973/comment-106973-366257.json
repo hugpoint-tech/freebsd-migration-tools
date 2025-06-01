@@ -1,0 +1,8 @@
+{
+ "id": 366257,
+ "bug_id": 106973,
+ "attachment_id": 0,
+ "creation_time": "2007-07-11T09:36:49Z",
+ "creator": "bdluevel@heitec.net",
+ "text": "This issue came up in the freebsd-stable mailing list. Tim Kientzle\nwrote in \u003c46679117.5060909@freebsd.org\u003e that the SCSI tape driver in 6.2\nclaims to be able to do lseek() while in fact it cannot. tar believes it\nand issues lseek() commands, whereupon things go bad. (Apparently, pax\nsimply doesn't use lseek() commands, hence has no problems.)\n\nIn \u003c4675CD95.9040004@freebsd.org\u003e, he published a patch that prevents\ntar from using lseek() commands. With this patch, tar works just fine\nfor me again. However, IMHO this is only a workaround; really, the tape\ndriver should not be lying about its capabilities.\n\nHere is the patch:\n\n--- archive_read_open_filename.c        (revision 124)\n+++ archive_read_open_filename.c        (working copy)\n@@ -165,6 +165,15 @@\n        struct read_file_data *mine = (struct read_file_data\n*)client_data;\n        off_t old_offset, new_offset;\n \n+       /*\n+        * Workaround for broken tape interfaces that don't support\n+        * seek(), but return success if you ask them to seek().  This\n+        * also, of course, slows down archive scanning significantly\n+        * on devices that can seek.  Yuck.\n+        */\n+       if (S_ISCHR(mine-\u003est_mode) || S_ISBLK(mine-\u003est_mode))\n+               return (0);\n+\n        /* Reduce request to the next smallest multiple of block_size */\n        request = (request / mine-\u003eblock_size) * mine-\u003eblock_size;\n        /*\n\nI request that the PR's class be changed to kernel (since the error is\nin a driver)."
+}

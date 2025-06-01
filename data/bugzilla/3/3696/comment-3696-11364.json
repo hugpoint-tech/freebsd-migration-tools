@@ -1,0 +1,8 @@
+{
+ "id": 11364,
+ "bug_id": 3696,
+ "attachment_id": 0,
+ "creation_time": "1997-05-27T13:05:46Z",
+ "creator": "se@FreeBSD.org",
+ "text": "On May 27, Joel.Faedi@esial.u-nancy.fr wrote:\n\u003e \u003eDescription:\n\u003e kernel panics while testing wd hard drive if \"options CMD640\" is activated and if you don't have wd1 connected (even if the controleris a CMD640 or not).\n\u003e \u003eHow-To-Repeat:\n\u003e compile a kernel with \"options CMD640\", put a single hard disk onyour first IDE controler, system panic while testing hard disks.\n\n\u003e \u003eFix:\n\u003e in file /usr/src/sys/i386/isa/wd.c, in function \"wdattach\", change the lines:-------------------------------------------------\n\u003e #ifdef CMD640\n\u003e      wdtab[du-\u003edk_ctrlr_cmd640].b_active = 2;\n\u003e #else\n\u003e       wdtab[dvp-\u003eid_unit].b_active = 2;\n\u003e #endif-------------------------------------------------\n\n\u003e by the lines:-------------------------------------------------\n\u003e #ifdef CMD640\n\u003e       if (eide_quirks \u0026 Q_CMD640B) {\n\u003e         wdtab[PRIMARY].b_active = 2;\n\u003e       } else {\n\u003e         wdtab[dvp-\u003eid_unit].b_active = 2;\n\u003e       }\n\u003e #else\n\u003e       wdtab[dvp-\u003eid_unit].b_active = 2;\n\u003e #endif\n\nSorry, but I don't see what this patch changes.\n\ndu-\u003edk_ctrlr_cmd640 is set to either PRIMARY or du-\u003edk_ctrlr\n(which is identical to dvp-\u003eid_unit) early in wdattach, and\nthe value choosen is made dependent on the same condition as\nyou suggest above.\n\nAre you sure the patch makes a difference ?\nI can't see how it could ...\n\nRegards, STefan"
+}

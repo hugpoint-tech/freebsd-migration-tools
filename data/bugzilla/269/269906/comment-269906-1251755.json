@@ -1,0 +1,8 @@
+{
+ "id": 1251755,
+ "bug_id": 269906,
+ "attachment_id": 0,
+ "creation_time": "2023-03-20T19:14:25Z",
+ "creator": "christos@freebsd.org",
+ "text": "Apparently, this patch doesn't really work and, in fact, allowing a predicate\nwith no acts is probably impossible in D without introducing a significant\namount of complexity. awk can do that just fine because awk's predicates cannot\ncontain unescaped \"/\", since it searches for regexes. D on the other hand\nallows normal computation inside the predicate, meaning one can do division\ninside it:\n\nkinst::vm_fault: /(cpu / 2) == 1/\n\n\nThis is a problem because the D lexer considers \"/\" to be a division token (and\nnot a start/end of predicate token) when the next non-whitespace character\ncoming after it is anything other than EOF, 0, ;, { and }, so if we try and\nrun:\n\nkinst::vm_fault: /cpu == 1/ fbt::malloc:entry\n\nThe lexer will think the end of predicate is actually a division token because\nthe succeeding non-whitespace character \"f\" doesn't match the character set\nthat indicate the end of predicate."
+}

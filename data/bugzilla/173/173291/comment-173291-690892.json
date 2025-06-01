@@ -1,0 +1,8 @@
+{
+ "id": 690892,
+ "bug_id": 173291,
+ "attachment_id": 0,
+ "creation_time": "2012-11-02T10:10:00Z",
+ "creator": "steven.hartland@multiplay.co.uk",
+ "text": "The current code in mfi for SYSPD aka JBOD disks corrupts data due to an LBA overflow.\n\nThis is caused because for the syspd case mfi always uses READ 10 / WRITE 10 requests for accessing the device, so a write over 2^32 wraps and starts writing at the beginning of the disk.\n\nFix: Apply the attached patch\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. zero out block 1 on the disk\ndd if=/dev/zero bs=512 count=1 of=/dev/mfisyspd0\n1+0 records in\n1+0 records out\n512 bytes transferred in 0.000728 secs (703171 bytes/sec)\n\n2. confirm the first block is zeros\ndd if=/dev/mfisyspd0 bs=512 count=1 | hexdump -C\n1+0 records in\n1+0 records out\n512 bytes transferred in 0.000250 secs (2047172 bytes/sec)\n00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|\n*\n00000200\n\n3. write 1 block random after the 2TB boundary\ndd if=/dev/random bs=512 count=1 of=/dev/mfisyspd0 oseek=4294967296\n1+0 records in\n1+0 records out\n512 bytes transferred in 0.000717 secs (714162 bytes/sec)\n\n4. first block of the disk now contains random data\ndd if=/dev/mfisyspd0 bs=512 count=8 | hexdump -C\n00000000  9c d1 d2 1d 9f 2c fc 30  ab 09 7a f7 64 16 2a 58  |.....,.0..z.d.*X|\n00000010  18 27 9d 1f ae 4d 27 53  1a 50 e7 c1 b1 3a 9b e4  |.'...M'S.P...:..|\n00000020  c3 7c d0 25 83 e2 bd 85  33 f2 33 8e 71 55 70 7c  |.|.%....3.3.qUp||\n00000030"
+}

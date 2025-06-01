@@ -1,0 +1,8 @@
+{
+ "id": 767452,
+ "bug_id": 190725,
+ "attachment_id": 0,
+ "creation_time": "2014-06-06T19:09:30Z",
+ "creator": "clutton@zoho.com",
+ "text": "The nature of but is a build system:\n\nIt includes common.mak from every single Makefile. So, from src/Makefile it would be included twice, and you'll see everything doubled:\n\ncc -O2 -pipe -march=native  -fno-strict-aliasing -D_FILE_OFFSET_BITS=64 -D_REVISION=0  -I/usr/local/include -DHAVE_SQLITE -D_FILE_OFFSET_BITS=64 -D_REVISION=0  -I/usr/local/include -DHAVE_SQLITE -Iinclude  -Wl,-rpath,/usr/lib:/usr/local/lib tkiptun-ng.o common.o crypto.o osdep/radiotap/radiotap.o -o tkiptun-ng -Losdep -losdep  -lssl -lcrypto  -Wl,-rpath,/usr/lib:/usr/local/lib\n\nFrom src/osdep it'll be three times... But that is not the reason.\n\nsrc/osdep/file.c has #include \"pcap.h\" directive. And since pcap.h is in the src directory and not in the src/osdep directory, local include shouldn't work. But clang «manages» somehow to use local includes \"\", like it was a system include \u003c\u003e. Then those -I comes, first wins. In this case /usr/local/include/pcap.h would be first.\n\nIt'll be better to make it more clear though. But it'll require a lot of fixes in the build system."
+}

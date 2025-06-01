@@ -1,0 +1,8 @@
+{
+ "id": 37033,
+ "bug_id": 12251,
+ "attachment_id": 0,
+ "creation_time": "1999-06-17T01:40:00Z",
+ "creator": "rivers@dignus.com",
+ "text": "\n\tIf you do an slattach followed by an ifconfig - the ifconfig\n\twill report  \n\t  ifconfig: ioctl(SIOCAIFADDR): File exists\n\tbecause it attempts to add the same route to the routing\n\ttable twice.\n\n\tThe reason for this is that in_ifinit() (in /sys/netinet/in.c)\n\tcalls the interface-specific ioctl routine to give it a \"chance\"\n\tto do things.   In the SL/IP case, if the slip unit sc_ttyp\n\tfield is set (which it will be because slattach has associated\n\tthe tty) - then if_up() will be called, which eventually adds\n\tthe route to the route table.\n\n\tLater in in_ifinit(), rtinit() gets called again to add the\n\texact same route.  The second call to rtinit() results in\n\tan EEXISTS return code because the route is already there.\n\nFix: \n\nDon't do slattach first - if the device isn't opened, this\n\tproblem doesn't exist.\n\n\t[Unfortunately, sysintall does do the slattach first, which\n\tmeans SL/IP installs no longer work.]\nHow-To-Repeat: \n\tslattach -c -s 9600 /dev/cuaa0\n\tifconfig sl0 n.n.n.n m.m.m.m"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 936967,
+ "bug_id": 219703,
+ "attachment_id": 0,
+ "creation_time": "2017-06-06T20:45:42Z",
+ "creator": "olivier@freebsd.org",
+ "text": "I didn't have a 11.0-RELEASE, but I didn't reach to reproduce this problem on 10.3-RELEASE neither on a 11-stable (r319622).\n\nI've got the same chipset:\n\n[root@R1]~# pciconf -lv ix0\nix0@pci0:21:0:0:        class=0x020000 card=0x00038086 chip=0x10fb8086 rev=0x01 hdr=0x00\n    vendor     = 'Intel Corporation'\n    device     = '82599ES 10-Gigabit SFI/SFP+ Network Connection'\n    class      = network\n    subclass   = ethernet\n[root@R1]~# pciconf -lv ix1\nix1@pci0:21:0:1:        class=0x020000 card=0x00038086 chip=0x10fb8086 rev=0x01 hdr=0x00\n    vendor     = 'Intel Corporation'\n    device     = '82599ES 10-Gigabit SFI/SFP+ Network Connection'\n    class      = network\n    subclass   = ethernet\n\nThen I've tried to reproduce your script:\n\n#!/bin/sh\nset -eu\niter=0\nwhile true; do\n  lagg_if=$(ifconfig lagg create)\n  ifconfig $lagg_if laggproto lacp laggport ix0 laggport ix1 10.0.10.17/24\n  bridge_if=$(ifconfig bridge create)\n  ifconfig $lagg_if description something up\n  vlan_if=$(ifconfig vlan create)\n  ifconfig $vlan_if vlandev $lagg_if vlan 4 description something up\n  ifconfig $bridge_if addm $vlan_if up\n  iter=$((iter + 1))\n  echo \"iteration $iter, and still online\"\n  ifconfig $bridge_if destroy\n  ifconfig $vlan_if destroy\n  ifconfig $lagg_if destroy\ndone\n\nBut it works:\n\n[root@R1]~# sh /tmp/crash.sh\n(...)\niteration 785, and still online\niteration 786, and still online\niteration 787, and still online\niteration 788, and still online\niteration 789, and still online\niteration 790, and still online\n^C"
+}

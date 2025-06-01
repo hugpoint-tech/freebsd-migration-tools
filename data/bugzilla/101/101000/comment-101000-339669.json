@@ -1,0 +1,8 @@
+{
+ "id": 339669,
+ "bug_id": 101000,
+ "attachment_id": 0,
+ "creation_time": "2006-07-28T21:30:25Z",
+ "creator": "rally@nbs-inc.com",
+ "text": "In the file dev/em/if_em_hw.h, which is part of the Intel 825xx ethernet driver, the defines for DUPLEX are as follows:\n#define HALF_DUPLEX 1\n#define FULL_DUPLEX 2\n\nIn the file dev/em/if_em.c the message printed at the end of the em_attach()\ncall is:\n\nprintf(\"em%d:  Speed:%d Mbps  Duplex:%s\\n\", adapter-\u003eunit, adapter-\u003elink_speed,\n              adapter-\u003elink_duplex == FULL_DUPLEX ? \"Full\" : \"Half\");\n\nGiven that the code reads right, and nobody has complained about the\nmessage being wrong, one might assume the definitions for FULL and HALF\nduplex are correct.  BUT THEN,\n\nIn the file dev/em/if_em.c, function em_initialize_transmit_unit(struct adapter * adapter),\nline 2396-2400:\nif (adapter-\u003elink_duplex == 1) {\n    reg_tctl |= E1000_FDX_COLLISION_DISTANCE \u003c\u003c E1000_COLD_SHIFT;\n} else {\n    reg_tctl |= E1000_HDX_COLLISION_DISTANCE \u003c\u003c E1000_COLD_SHIFT;\n}\n\nCorrect me if I'm wrong, but what that really says is if link_duplex ==\nHALF_DUPLEX then set the collision distance to the full duplex setting.\nAt least one of the two usages are incorrect.\n\nI figured I'd point it out just in case it actually has a meaningful impact.\nCould it possibly explain some of the half duplex workaround stuff in here?\nOne can only hope....\n\nFix: \n\n1) Use the define for FULL_DUPLEX or HALF_DUPLEX instead of \"1\"\n2) Make sure the effects of the if/else match whichever duplex definition\n   you choose\n3) Spend copious free time seeing if it has any effect on performance or\n   reliability :-)\n\nBest regards,\n-Doug\nHow-To-Repeat: Lookie at the source code."
+}

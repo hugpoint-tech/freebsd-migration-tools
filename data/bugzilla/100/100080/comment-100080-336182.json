@@ -1,0 +1,8 @@
+{
+ "id": 336182,
+ "bug_id": 100080,
+ "attachment_id": 0,
+ "creation_time": "2006-07-11T12:10:14Z",
+ "creator": "rdenis@simphalempin.com",
+ "text": "The userland layer-3 tunnel character device tun(4) \"/dev/tun\" should remove all addresses and routes through an allocated network interface whenever the file descriptor is closed (src/sys/net/if_tun.c:tunclose).\n\nHowever, it currently seems to only remove IPv4 (AF_INET) addresses and routes, leaving dangling routes in the network stack when IPv6 is used.\n\nFix: \n\nSupposedly yemove the AF_INET check in tunclose() from src/sys/net/if_tun.c or add a check for all supported addresses family, including but maybe not limited to AF_INET6.\nHow-To-Repeat: This problem is known to trigger when running Miredo 0.8.5 in Teredo relay mode. At first run, the program works fine, but if it is stopped/killed or crashes, we get a dangling route on the leftover tunnel device; restarting the program will then fail with EEXIST as it tries to add the same route to a new tunnel interface. Sample configuration (/usr/local/etc/miredo.conf) would be the following one-liner:\n\nRelayType cone\n\nUnfortunately, setting this up in non-trivial since said software is not in the ports tree. Sources are there: http://www.remlab.net/files/miredo/v0.8/\n\nOther tunnel software using tun + IPv6 might also be affected."
+}

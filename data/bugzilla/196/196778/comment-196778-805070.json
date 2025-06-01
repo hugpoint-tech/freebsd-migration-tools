@@ -1,0 +1,8 @@
+{
+ "id": 805070,
+ "bug_id": 196778,
+ "attachment_id": 0,
+ "creation_time": "2015-01-15T18:49:46Z",
+ "creator": "wojtek@puchar.net",
+ "text": "few updates to this great works.\n\nto run FULL FreeBSD with only kernel in builtin flash things below are useful:\n\n0) add options NBUF=100 or so to kernel config, default buffer allocation scheme are excessive.\n\n1) changes to hints for geom_map:\n\nhint.map.0.at=\"flash/spi0\"\nhint.map.0.start=0x00000000\nhint.map.0.end=0x000020000\nhint.map.0.name=\"uboot\"\nhint.map.0.readonly=1\n\nhint.map.1.at=\"flash/spi0\"\nhint.map.1.start=0x00020000\nhint.map.1.end=0x0007F0000\nhint.map.1.name=\"kernel\"\nhint.map.1.readonly=0\n\nhint.map.2.at=\"flash/spi0\"\nhint.map.2.start=0x007f0000\nhint.map.2.end=0x00800000\nhint.map.2.name=\"art\"\nhint.map.2.readonly=1\n\nnow kernel can be loaded and updated to flash from within system, while overwriting uboot and radio calibration data is forbidden.\n\n2) simple script to convert kernel to uboot image without any rootfs (based on Adrian Chadd toolset for building images for many routers):\n\n\n#!/bin/sh\nstrip -o /tmp/kernel /boot/kernel/kernel\ngzip /tmp/kernel\necho -n ' ' \u003e/tmp/rootfs\nmktplinkfw -B TL-WR1043NDv1 -L 0x80050000 -E 0x80050100 -R 0x007EFFFF \\\n-k /tmp/kernel.gz -N FreeBSD -V FreeBSD-10 -r /tmp/rootfs -o /tmp/kernel.flash\nrm /tmp/rootfs /tmp/kernel.gz\necho /tmp/kernel.flash now is ready to be written to /dev/map/kernel\n\nthis script can be used both from inside router or when crossbuilding kernel.\n\n3) to write it to flash first time to router use information as on Adrian Chadd webpages.\n\nto update kernel  from within TPLINK do\n\ndd if=/tmp/kernel.flash of=/dev/map/kernel bs=64k\n\nand reboot"
+}

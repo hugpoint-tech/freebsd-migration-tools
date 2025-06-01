@@ -1,0 +1,8 @@
+{
+ "id": 1140566,
+ "bug_id": 252504,
+ "attachment_id": 0,
+ "creation_time": "2021-01-08T08:30:10Z",
+ "creator": "panagiotis.tsolakos@gmail.com",
+ "text": "In igmp.c, in function igmp_input(), the correctness of the incoming igmp packet is checked. If the packet is discarded because of wrong number of sources the mbuf is not freed.\n\n/*\n * Validate length based on source count.\n */\nnsrc = ntohs(igmpv3-\u003eigmp_numsrc);\nif (nsrc * sizeof(in_addr_t) \u003e\n    UINT16_MAX - iphlen - IGMP_V3_QUERY_MINLEN) {\n\tIGMPSTAT_INC(igps_rcv_tooshort);\n\treturn (IPPROTO_DONE);\n}\n\n\nThe mbuf should be freed before the function returns:\n\n/*\n * Validate length based on source count.\n */\nnsrc = ntohs(igmpv3-\u003eigmp_numsrc);\nif (nsrc * sizeof(in_addr_t) \u003e\n    UINT16_MAX - iphlen - IGMP_V3_QUERY_MINLEN) {\n\tIGMPSTAT_INC(igps_rcv_tooshort);\n+       m_freem(m);\n\treturn (IPPROTO_DONE);\n}"
+}

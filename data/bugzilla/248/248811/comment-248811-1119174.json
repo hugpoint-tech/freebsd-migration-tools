@@ -1,0 +1,8 @@
+{
+ "id": 1119174,
+ "bug_id": 248811,
+ "attachment_id": 0,
+ "creation_time": "2020-08-21T17:23:11Z",
+ "creator": "cem@freebsd.org",
+ "text": "Looking at core.txt.8:\n\nThese prints are not the problem, but it would be nice to fix the drm driver not to do lock asserts during panic:\n\nWARNING !drm_modeset_is_locked(\u0026plane-\u003emutex) failed at /usr/local/sys/modules/drm-current-kmod/drivers/gpu/drm/drm_atomic_helper.c:821\n#0 0xffffffff82ebb673 at linux_dump_stack+0x23\n\nIt's a shame deadlkres doesn't do something like print_lockchain().  That'd help diagnose these things.\n\nps shows the only find process is blocked on nfs:\n\n    0 61433 61429 0  52  0   18540   5752 nfs      D     -      0:13.33 [find]\n\nThere are several nfscl threads sleeping on nfscl, which indicates renewthread, i.e., probably we're waiting on a server that went away.  I'd guess that's what find is also waiting on."
+}

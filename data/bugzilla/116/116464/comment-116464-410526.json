@@ -1,0 +1,8 @@
+{
+ "id": 410526,
+ "bug_id": 116464,
+ "attachment_id": 0,
+ "creation_time": "2007-09-19T14:10:00Z",
+ "creator": "olli@secnetix.de",
+ "text": "\n   The command \"/etc/rc.d/named restart\" sometimes fails to\n   start named after it has been stopped.  Most of the time\n   it works fine, but in rare cases it fails.  It just\n   happened to me a few minutes ago:\n\n   # /etc/rc.d/named restart\n   Stopping named.\n   named already running? (pid=27758).\n   # \n   # /etc/rc.d/named restart\n   Stopping named: rndc failed, trying killall: No matching processes belonging to you were found\n   Starting named.\n   # \n\n   I tagged this PR \"serious\", because the problem can cause\n   machines to run without named when the restart fails,\n   especially when the restart is initiated unattended from\n   cron jobs.\n\n   Upon inspection of the script, it seems that \"rndc stop\"\n   does not terminate the process right away, but it needs\n   a short time for termination.  However, the rc.d restart\n   function does not wait for it to be terminated and tries\n   to start it immediately, which sometimes fails if the\n   daemon is still running.\n\n   The patch below lets the rc.d stop function wait for the\n   process to terminate.  I haven't been able to reproduce\n   the problem with this patch.\n\nHow-To-Repeat: \n   See above."
+}

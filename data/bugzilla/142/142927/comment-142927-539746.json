@@ -1,0 +1,8 @@
+{
+ "id": 539746,
+ "bug_id": 142927,
+ "attachment_id": 0,
+ "creation_time": "2010-01-18T06:00:16Z",
+ "creator": "ndenev@gmail.com",
+ "text": "When if_vlan(4) interfaces are being configured on another network interface the parent's MAC address is being setup as the if_vlan(4)'s interface link layer address.\nThe problem is that if the parent interface link layer address is changed later, the if_vlan(4)'s link layer address remains the same and it stops functioning.\n\nFix: * Declare a new EVENTHANDLER called \"iflladdr_event\" similar to the \"ifaddr_event\" in sys/net/if_var.h\n* Teach sys/net/if.c:ifhwioctl() to invoke the new handler on SIOCSIFLLADDR commands.\n* Teach if_bridge(4) to invoke the handler when it's MAC address is changed due to adding or removing interfaces. (not all adds/removes, only those that change if_bridge's lladdr)\n* Teach if_lagg(4) to invoke the handler in its lagg_lladdr() function.\n* Teach if_vlan(4) to register/deregister the handler on module load/unload and add vlan_iflladdr() function to change the llladdrs on the attached vlans of the parent interface that fired the event.\n\n\n\nPatch attached with submission follows:\nHow-To-Repeat: This can happen if one for example uses if_vlan(4) on top of if_lagg(4) and configures them in rc.conf using the ${interface}.${vlan} method.\nThe rc scipts create the \"empty\" if_lagg(4) interface with MAC of 00:00:00:00:00:00 then attach the vlans on it copying the same all zeroes MAC address, and then it adds the physical interfaces to the if_lagg(4) interface giving it's MAC address, but this leaves the vlans with all zeroes MACs and not working."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1133811,
+ "bug_id": 251433,
+ "attachment_id": 0,
+ "creation_time": "2020-11-28T16:42:50Z",
+ "creator": "cem@freebsd.org",
+ "text": "First, it's important to determine what syscalls the shell is issuing.  In sh(1), 'echo \"hello\" \u003e foobar.dat' does this:\n\nopenat(AT_FDCWD,\"foobar.dat\",O_WRONLY|O_CREAT|O_TRUNC,0666) = 5 (0x5)\ndup2(5,1)\t\t\t                                 = 1 (0x1)\nclose(5)\t\t\t                                 = 0 (0x0)\nwrite(1,\"hello\\n\",6)\t\t                         = 6 (0x6)\n\nI suspect the rest of the observed behavior shakes out of O_CREAT, although I'm not sure of the exact mechanism.  In vn_open, if namei() did not locate a vnode, we call VOP_CREATE which in unionfs_create invokes VOP_CREATE on the upper; this would explain the observed owner.  However, I'm not sure if that code path is actually hit; intuitively, I'd guess that namei() on the unionfs mount might locate the existing file in the lower."
+}

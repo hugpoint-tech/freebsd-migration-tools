@@ -1,0 +1,8 @@
+{
+ "id": 1036798,
+ "bug_id": 235582,
+ "attachment_id": 0,
+ "creation_time": "2019-02-09T10:44:08Z",
+ "creator": "peter.x.eriksson@liu.se",
+ "text": "I'll try out the proposed fixes. Sound like it could be the culprit. A pity I haven't really found a way to force the issue yet (or even pinpointed which of the 100-200 clients caused it). But perhaps it's just a random thing caused by network retransmissions and load balancing over multiple LACP trunks...\n\n\nA question - I enabled a lot of debugging output in order to try to see what's happening and I noticed one strange thing in the \"dmesg\" output:\n\n\u003e rpcsec_gss: accepted context for \\^D\\^A (41 bytes) with \u003cmech { 1 2 840 113554 1 2 2 }, qop 0, svc 1\u003e\n\n(I had modified the rpc_gss_log_debug() call to also print the length of the client_principal member)\n\nIe, this call around line 1100 or so:\n\n                      rpc_gss_log_debug(\"accepted context for %s (%d bytes) with \"\n                            \"\u003cmech %.*s, qop %d, svc %d\u003e\",\n                            client-\u003ecl_rawcred.client_principal-\u003ename,\n                            client-\u003ecl_rawcred.client_principal-\u003elen,\n                            mechname.length, (char *)mechname.value,\n                            client-\u003ecl_qop, client-\u003ecl_rawcred.service);\n\nThe \"client_principal-\u003ename\" output looks garbled.. (In /var/log/messages those characters get's filtered out so you won't find it there). Perhaps cl_rawcred.client_principal isn't supposed to be printable at all."
+}

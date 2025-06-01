@@ -1,0 +1,8 @@
+{
+ "id": 727652,
+ "bug_id": 181435,
+ "attachment_id": 0,
+ "creation_time": "2013-08-21T23:16:01Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/181435, you wrote:\n\u003e sh(1) wait(1) builtin fails after bg job was\n\u003e SIG(STOP|TSTP|CONT) controlled\n\nThere is definitely a bug here because the wait builtin may delete a\nstopped job named on the command line, as if it were done.\n\nAdditionally, handling of stopped jobs in general is not as prescribed\nby POSIX, and the handling prescribed by POSIX may be undesirable as\nwell.\n\nIt looks like POSIX allows 'wait' only on jobs whose \"process IDs are\nknown in the shell environment\", in other words (for jobs that have not\nbeen waited for yet) when the job was started as an asynchronous list\nand was not used with 'fg', or the job was used with 'bg' and the last\nuse with 'bg' was after the last use (if any) with 'fg'. Therefore, kill\n-STOP or -CONT do not affect this. If an explicit job is given and it is\nnot \"known\", it shall be as if it exited with status 127; there shall be\nno error message. This is certainly not nice.\n\nThe POSIX behaviour for operandless wait seems less strange. However, it\nis still harder to understand than sh's current behaviour of waiting for\nall jobs that are not stopped (it is the same if you do not use kill to\nstop or continue processes). Note that sh only uses WUNTRACED |\nWCONTINUED if interactive (and job control is compiled in).\n\nA further related change is r238865 which makes 10-current sh use\nWCONTINUED. This is not in older branches.\n\n-- \nJilles Tjoelker"
+}

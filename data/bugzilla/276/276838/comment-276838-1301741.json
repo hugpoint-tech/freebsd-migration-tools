@@ -1,0 +1,8 @@
+{
+ "id": 1301741,
+ "bug_id": 276838,
+ "attachment_id": 0,
+ "creation_time": "2024-03-21T07:28:36Z",
+ "creator": "kp@freebsd.org",
+ "text": "I am unable to reproduce any such issue testing locally. Over an IPv6 tunnel I manage to transmit arbitrary sized ping requests, and I also see no issues transmitting a large (1MB) file.\n\nPatch for reference:\n\ndiff --git a/tests/sys/net/if_ovpn/if_ovpn.sh b/tests/sys/net/if_ovpn/if_ovpn.sh\nindex bbaffa0bce73..0ec2563cf355 100644\n--- a/tests/sys/net/if_ovpn/if_ovpn.sh\n+++ b/tests/sys/net/if_ovpn/if_ovpn.sh\n@@ -308,10 +308,28 @@ atf_test_case \"4in6\" \"cleanup\"\n                keepalive 100 600\n        \"\n\n+       dd if=/dev/random of=test.img bs=1024 count=1024\n+       cat test.img | jexec a nc -N -l 1234 \u0026\n+\n        # Give the tunnel time to come up\n        sleep 10\n\n        atf_check -s exit:0 -o ignore jexec b ping -c 3 198.51.100.1\n+\n+       # MTU sweep\n+       for i in `seq 1000 1500`\n+       do\n+               atf_check -s exit:0 -o ignore jexec b \\\n+                   ping -c 1 -s $i 198.51.100.1\n+       done\n+\n+       rcvmd5=$(jexec b nc -N -w 3 198.51.100.1 1234 | md5)\n+       md5=$(md5 test.img)\n+\n+       if [ $md5  != $rcvmd5 ];\n+       then\n+               atf_fail \"Transmit corruption!\"\n+       fi\n }\n\n 4in6_cleanup()"
+}

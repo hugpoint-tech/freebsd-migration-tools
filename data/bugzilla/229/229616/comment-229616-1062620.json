@@ -1,0 +1,8 @@
+{
+ "id": 1062620,
+ "bug_id": 229616,
+ "attachment_id": 0,
+ "creation_time": "2019-08-18T16:24:49Z",
+ "creator": "tom@hur.st",
+ "text": "So, did a bit of research to see what everyone else is doing.\n\nNetBSD:\n\n * Checks close() on output\n * fsync() on output if it's stdout (where close() may simply decrement a refcount)\n\nOpenBSD:\n\n * Does not close() at all\n * Supports conv=fsync\n\nIllumos:\n\n * Checks close() on output, and also fclose(stdout)\n * Supports conv=fsync and fdatasync\n * Supports oflag=sync and dsync for synchronous writes\n\nCoreutils:\n\n * Checks close() on both input and output\n * Checks ferror()/fclose() on stdout if arg parsing fails\n * Supports conv=fsync and fdatasync\n * Supports oflag=sync, dsync, and direct\n * EINTR-checking loops for close() and f*sync()\n\nSo FreeBSD's bit of an outlier, being the only dd without any fsync support at all, and calling close() explicitly but not checking it succeeds.\n\nI'm thinking we could do a hybrid of NetBSD and OpenBSD's approaches:\n\n1. Check close()\n2. Also check fsync() if output is stdout\n3. Add conv=fsync support\n\nOther options might be nice to have, but aren't needed to ensure data is on stable storage after dd is finished, which is the most important point."
+}

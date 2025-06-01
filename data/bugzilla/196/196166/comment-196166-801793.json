@@ -1,0 +1,8 @@
+{
+ "id": 801793,
+ "bug_id": 196166,
+ "attachment_id": 150819,
+ "creation_time": "2014-12-20T19:37:30Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 150819\nFix net/mrouted build with clang 3.5.0\n\nThe net/mrouted port fails to compile with clang 3.5.0, due to the following -Werror warning:\n\nmtrace.c:923:12: error: taking the absolute value of unsigned type 'unsigned int' has no effect [-Werror,-Wabsolute-value]\n        if (*s || abs(ntohl(n-\u003etr_vifout) - ntohl(p-\u003etr_vifout)) \u003e 100000) {\n                  ^\nmtrace.c:923:12: note: remove the call to 'abs' since unsigned values cannot be negative\n        if (*s || abs(ntohl(n-\u003etr_vifout) - ntohl(p-\u003etr_vifout)) \u003e 100000) {\n                  ^~~\n1 error generated.\n\nThis is a bug in the code, because the return value of ntohl() is unsigned, and the difference of two unsigned quantities is still unsigned.  However, the intent of the expression is to look at the absolute difference between the two quantities.\n\nTherefore, similar to head r274898 [1] for rtadvd, introduce a small static function that clarifies the intent, and call it instead.\n\n[1] https://svnweb.freebsd.org/base?view=revision\u0026revision=274898"
+}

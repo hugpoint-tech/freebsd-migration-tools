@@ -1,0 +1,8 @@
+{
+ "id": 1307384,
+ "bug_id": 278722,
+ "attachment_id": 250356,
+ "creation_time": "2024-05-03T17:38:31Z",
+ "creator": "vvd@FreeBSD.org",
+ "text": "Created attachment 250356\nFix build error on i386 with CPUTYPE=nehalem and newer\n\nTested on 13.2 i386 with CPUTYPE=nehalem and newer:\n\n/wrkdirs/usr/ports/graphics/bgfx/work/bgfx.cmake-1.127.8725-465/bimg/3rdparty/astc-encoder/source/astcenc_vecmathlib_sse_4.h:1313:26: error: use of undeclared identifier '_mm_popcnt_u64'; did you mean '_mm_popcnt_u32'?\n        return static_cast\u003cint\u003e(_mm_popcnt_u64(v));\n                                ^~~~~~~~~~~~~~\n                                _mm_popcnt_u32\n/usr/lib/clang/14.0.5/include/popcntintrin.h:33:1: note: '_mm_popcnt_u32' declared here\n_mm_popcnt_u32(unsigned int __A)\n^\n1 error generated.\n===============================\nThis patch work for me:\n\n--- bimg/3rdparty/astc-encoder/source/astcenc_vecmathlib_sse_4.h.orig\n+++ bimg/3rdparty/astc-encoder/source/astcenc_vecmathlib_sse_4.h\n@@ -1309,5 +1309,7 @@ ASTCENC_SIMD_INLINE int popcount(uint64_t v)\n {\n #if defined(__MINGW32__)\n        return static_cast\u003cint\u003e(__builtin_popcountll(v));\n+#elif defined(__FreeBSD__) \u0026\u0026 !defined(__x86_64__)\n+       return static_cast\u003cint\u003e(_mm_popcnt_u32(static_cast\u003cuint32_t\u003e(v)));\n #else\n        return static_cast\u003cint\u003e(_mm_popcnt_u64(v));\n #endif // defined(__MINGW32__)\n===============================\nReported upstream: https://github.com/bkaradzic/bgfx/pull/2929#issuecomment-2093377116"
+}

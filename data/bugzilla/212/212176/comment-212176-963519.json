@@ -1,0 +1,8 @@
+{
+ "id": 963519,
+ "bug_id": 212176,
+ "attachment_id": 0,
+ "creation_time": "2017-12-14T09:04:26Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "(In reply to Ivan from comment #6)\n\u003e Created attachment 174716 [details]\n\u003e patch\n\u003e \n\u003e Problem is here\n\u003e g_strlcpy (text, p, g_utf8_strlen (text, -1));\n\u003e \n\u003e To utf-8 unaware function number of chars are passed instead of bytes, so\n\u003e it's possible for 2 bytes chars it will split in half leading to incorrect\n\u003e unicode sequence.\n\u003e \n\u003e Attached patch resolves the issue, however crash still can occur if p \u003e=\n\u003e text, however as p is substring of text, the situation is expected to never\n\u003e happen in normal conditions.\n\u003e \n\u003e I found no safe analog in gtk functions for strlcpy, only strncpy which is\n\u003e not considered safe. The alternative is switch to icu, however this is\n\u003e another story.\n\nHi,\n\nThe fix looks simple enough, but I'm not sure that using non utf aware functions is better that using g_utf8_strncpy(), which would warrant utf8 conforming results.\n\nalso, looking at the g_utf8_strncpy() sources here:\n\nhttps://github.com/GNOME/glib/blob/9c8c6094fdb3b7bff35c0f36a68e1da3fd2e8ff7/glib/gutf8.c#L413\n\nit would be quite easy to cook up a g_utf8_strlcpy() (or any other name) using the safer system provided strlcpy() call.\n\nI'd like your opinion before proceeding though.\n\nAny patch we prepare should be created accounting for upstreaming it if possible."
+}

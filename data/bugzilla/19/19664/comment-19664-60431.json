@@ -1,0 +1,8 @@
+{
+ "id": 60431,
+ "bug_id": 19664,
+ "attachment_id": 0,
+ "creation_time": "2000-07-11T14:23:24Z",
+ "creator": "davidn@austel.net",
+ "text": "Andre Albsmeier wrote:\n\u003e \u003e +             p = buf + strcspn(buf, \" \\t\\n\");\n\u003e \u003e +             if (*p == '\\0' || *p == '#') {\n\u003e \u003e +                     (void)fprintf(to, \"%s\", buf);\n\u003e \u003e +                     if (ferror(to))\n\u003e \u003e +                             goto err;\n\u003e \u003e +                     continue;\n\u003e \u003e +             }\n\u003e \u003e               if (!(p = strchr(buf, ':'))) {\n\u003e \u003e                       yp_error(\"%s: corrupted entry\", passfile);\n\u003e \u003e                       pw_error(NULL, 0, 1);\n\u003e \n\u003e Adding the '#' char to \" \\t\\n\" made it work. So the line reads\n\u003e \n\u003e         p = buf + strcspn(buf, \"# \\t\\n\");\n\nHmm. But this would mean\n\n    # blah this is supposed to be a comment\n\nhave variable 'p' pointing at 'b' on the first 'if' statement above.\nIt would not be detected as a comment and it would get junked by\nthe next 'if'.\n\nACK! I see the bug. Change strcspn() to strspn() in my original\npatch and try it again. Sorry about that - I've *always* confused\nthose two. :-) That statement is intended to skip leading whitespace\nand test the next char for end of string (empty line) or the start\nof a comment. If either, copy and continue, otherwise fall through\nto the sanity check that caused the hiccup before.\n\n\nDavid"
+}

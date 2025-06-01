@@ -1,0 +1,8 @@
+{
+ "id": 530984,
+ "bug_id": 141150,
+ "attachment_id": 0,
+ "creation_time": "2009-12-03T22:50:01Z",
+ "creator": "jh@sandstorm.net",
+ "text": "our ancient 'gksu' port is broken-- it hangs after running the su/sudo command, and so output from the command never appears and gksu never exits.\n\nthe problem is twofold-- a bug in libgksu, which calls tcdrain() on the master side of a pty; and a bug in kernel, which hangs rather than returning an error on the tty ioctl.\n\nsee ports/141149 for a report + patch on libgksu.\n\nI observe this on both 7.1 and 8.0.\n\n8.0 kernel sleeps on ttyout when this happens.\n\nIn 8.0, ptsdev_ioctl() already seems to have some code to handle just this case, but it's only applied to the TIOCSETA[FW] ioctls used by tcsetattr().  So maybe it just needs to do this for TIOCFLUSH/TIOCDRAIN too.\n\nIn 7.1, something different happens, of course-- it looks like all these cases go through to the slave pty, and just TIOCSETA[FW] get a flush beforehand.\n\nHow-To-Repeat: sudo pkg_add -r gksu\ngdb gksu id\n^C"
+}

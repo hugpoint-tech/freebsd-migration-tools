@@ -1,0 +1,8 @@
+{
+ "id": 32757,
+ "bug_id": 10821,
+ "attachment_id": 0,
+ "creation_time": "1999-03-27T19:20:01Z",
+ "creator": "des@flood.ping.uio.no",
+ "text": "\nThe first time it runs, the NIS code in src/lib/libc/gen/getpwent.c\nattempts to determine whether or not it has access to master.passwd.\nThe result of this test is saved in the global variable _gotmaster. If\nthe NIS server is a FreeBSD machine, it will only grant access to\nthose maps if the request originates from a privileged port. Thus the\ntest will only succeed if the process has an effective UID of 0 the\nfirst time the NIS code runs.\n\nThe catch is that the NIS lookup code in src/lib/libc/yp/yplib.c\ncloses the NIS socket and reconnects if it detects a fork. It does\nthis by storing the pid when connecting, and checking that it is still\nthe same before every lookup. If the calling process drops privileges\nand forks, getpwent.c will try to access master.passwd, but yplib.c\nwill not be able to connect from a privileged port. The NIS lookup\nwill fail.\n\nFix: \n\nsrc/lib/libc/gen/getpwent.c should retry lookups in the regular maps\nif lookups in the restricted maps fail.\nHow-To-Repeat: \nOne piece of software which very clearly exhibits this problem is the\nApache HTTP daemon. Attempts to request any user's home page will fail\nif the daemon runs on a NIS client and the requested user is listed in\nthe NIS password maps but not in the local password database."
+}

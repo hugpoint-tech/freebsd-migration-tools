@@ -1,0 +1,8 @@
+{
+ "id": 1098586,
+ "bug_id": 245765,
+ "attachment_id": 0,
+ "creation_time": "2020-04-22T20:45:59Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "It's not just inetd that exhibits this behavior, you'll see the same thing for example with ntpd.\n\nHowever, I don't think this is necessarily a functional issue. inetd/ntpd will not fail to restart if a prior pidfile is still present, they will simply update the pidfile to reflect the new process.  Furthermore, stopping these services will not kill an innocent process: rc.subr(8) will not terminate the process if ps(1) indicates the PID from the pidfile does not correspond to the expected executable.\n\nThe general philosophy seems to be that rc.subr will make use of a pidfile if one is present, but the creation and management of that pidfile is left up to the individual daemon.  For example, daemons that use pidfile(3) generally seem to remove the pidfile on termination, because pidfile_open() automatically locks the pidfile which makes this safe to do.   On the other hand, daemons that don't remove the pidfile also will not fail if the file is already present.  As such, it also isn't appropriate for rc.subr to automatically remove the pidfile on service termination, as that could break pidfile locks or interfere with concurrent startup of a new instance of the service."
+}

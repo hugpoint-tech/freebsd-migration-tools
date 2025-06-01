@@ -1,0 +1,8 @@
+{
+ "id": 1141746,
+ "bug_id": 252700,
+ "attachment_id": 0,
+ "creation_time": "2021-01-15T07:48:24Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "The crash is because sfs does not implement VOP_CLOSE.\n\n#16 0x0000000000000000 in ?? ()\n#17 0xffffffff81109215 in VOP_CLOSE_APV (\n    vop=0xffffffff826f0a90 \u003czfsctl_ops_snapshot\u003e, \n    a=a@entry=0xfffffe0084f88370) at vnode_if.c:498\n#18 0xffffffff80cd9839 in VOP_CLOSE (vp=0xfffff801d8df91e8, fflag=4, \n    cred=0x0, td=0xfffffe0085416e00) at ./vnode_if.h:249\n#19 vgonel (vp=vp@entry=0xfffff801d8df91e8)\n    at /usr/home/somers/src/freebsd.org/src/sys/kern/vfs_subr.c:3913\n#20 0xffffffff80cda05f in vgone (vp=vp@entry=0xfffff801d8df91e8)\n    at /usr/home/somers/src/freebsd.org/src/sys/kern/vfs_subr.c:3788\n#21 0xffffffff80cc8104 in vfs_hash_insert (vp=0xfffff801d8df91e8, \n    hash=hash@entry=138, flags=flags@entry=2097152, td=\u003coptimized out\u003e, \n    td@entry=0xfffffe0085416e00, vpp=vpp@entry=0xfffffe0084f889f8, \n    fn=0xffffffff82438590 \u003csfs_compare_ids\u003e, arg=0xfffff80136d08a80)\n    at /usr/home/somers/src/freebsd.org/src/sys/kern/vfs_hash.c:175\n\nIt's interesting that vfs_hash_insert wants to vgone that vnode -- so it must doomed already, but apparently vgonel does not see it as doomed?\n\nMy instincts suggest that this could be either some very rare / exotic situation or a result of a recent breakage (or, at least, an incompatible change) in VFS."
+}

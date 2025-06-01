@@ -1,0 +1,8 @@
+{
+ "id": 717818,
+ "bug_id": 179269,
+ "attachment_id": 0,
+ "creation_time": "2013-06-03T20:10:00Z",
+ "creator": "adrian@freebsd.org",
+ "text": "This is applicable to -9 and -8 as well.\n\nThe AR9285 is a 1x1 design with a twist on \"classic\" style antenna diversity. The MAC can choose:\n\n* RX on antenna 1 or 2;\n* RX on both, by using a \"mixer configuration\" to mix the signals from both antennas a specific way;\n* RX on both, by selecting either antenna 1 or 2 (ie, classic diversity) based on signal level;\n* RX on both, by using the above mixer configuration (well two - main and alternate) and selecting one based on signal level\n\nNow, by default, we're only doing RX on a single antenna. The AR_DEF_ANTENNA register controls the static antenna selection if fast diversity isn't enabled.\n\nHowever! The AR5416 HAL does this:\n\n        /*\n         * Preserve the antenna on a channel change\n         */\n        saveDefAntenna = OS_REG_READ(ah, AR_DEF_ANTENNA);\n        if (saveDefAntenna == 0)                /* XXX magic constants */\n                saveDefAntenna = 1;\n\n. which means RX will only occur on antenna #2 if antenna diversity is disabled.\n\nSo in one antenna solutions (antenna #1 / Main is connected) the unit will TX through the antenna, but RX through the unconnected port.\n\nFix: \n\nThis workaround (for the AR5416, I guess) needs to be made conditional.\n\nFast and slow antenna diversity should be enabled as well. I'll go through the code and figure out why that isn't enabled.\nHow-To-Repeat: \n* AR9285\n* Connect an antenna to antenna #1\n* do NOT connect an antenna to antenna #2\n* Try being a station for a while"
+}

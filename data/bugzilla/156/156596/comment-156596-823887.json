@@ -1,0 +1,8 @@
+{
+ "id": 823887,
+ "bug_id": 156596,
+ "attachment_id": 0,
+ "creation_time": "2015-05-14T16:35:11Z",
+ "creator": "sos@DeepCore.dk",
+ "text": "Hi All\n\nJust stumbled over this one, and the quick solution is to just ignore the interrupt from the (emulated) VGA device, it has nothing todo with USB :)\n\nThe real problem is that our VGA driver has no idea how to handle the interrupts from the intel built in video HW, so when you yank the VGA cable the chip wants to signal that event so the system can DTRT(tm). In our case there is no ack on that interrupt =\u003e instant interrupt storm.\n\nMy hack just disables the VGA interrupt completely, that might be a bad idea if you have anything using it :) However it lets me use my servers with a KVM without problems.\n\nIndex: vga_pci.c\n===================================================================\n--- vga_pci.c\n+++ vga_pci.c\n@@ -125,6 +125,9 @@\n \tif ((config \u0026 (PCIM_CMD_PORTEN | PCIM_CMD_MEMEN)) == 0)\n \t\treturn (0);\n \n+\t/* Disable interrupts */\n+\tpci_write_config(dev, PCIR_COMMAND, config | (1\u003c\u003c10), 2);\n+\n \t/* This video card is the boot display: record its unit number. */\n \tvga_pci_default_unit = unit;\n \tdevice_set_flags(dev, 1);\n\n--\nSøren Schmidt\nsos@deepcore.dk / sos@freebsd.org\n\"So much code to hack, so little time\""
+}

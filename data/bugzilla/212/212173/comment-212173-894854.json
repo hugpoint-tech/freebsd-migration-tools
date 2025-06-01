@@ -1,0 +1,8 @@
+{
+ "id": 894854,
+ "bug_id": 212173,
+ "attachment_id": 0,
+ "creation_time": "2016-08-26T08:47:06Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "I've seen this issue while validating new tests on ^/projects/netbsd-tests-update-12 -- in particular sigqueue_rt expects all 7 signals to be delivered in sequence, but for whatever reason, SIGINT is delivered once instead of twice. I added in another SIGINT for good measure, as well as SIGHUP to see if it was a fluke, and I confirmed that it only delivers SIGINT once in both cases.\n\n$ sudo kyua debug -k /usr/tests/lib/libc/sys/Kyuafile sigqueue_test:sigqueue_rt\nSignal #1: signo: 67\nSignal #2: signo: 66\nSignal #3: signo: 66\nSignal #4: signo: 65\nSignal #5: signo: 3\nSignal #6: signo: 2\nSignal #7: signo: 2\n*** Check failed: /usr/src/contrib/netbsd-tests/lib/libc/sys/t_sigqueue.c:214: count 7 != ndelivered 6\nUndelivered signal #6: 2\nsigqueue_test:sigqueue_rt  -\u003e  failed: 1 checks failed; see output for more details\n\n== Repro steps ==\n\nRun the following commands as root:\n\nsvn cat http://svn.freebsd.org/base/projects/netbsd-tests-update-12/contrib/netbsd-tests/lib/libc/sys/t_sigqueue.c@304831 \u003e /path/to/src/contrib/netbsd-tests/lib/libc/sys/t_sigqueue.c\n(cd lib/libnetbsd; make obj; make depend; make all)\n(cd lib/libc/tests/sys/; make obj; make depend; make all; make install)\nkyua debug -k /usr/tests/lib/libc/sys/Kyuafile sigqueue_test:sigqueue_rt"
+}

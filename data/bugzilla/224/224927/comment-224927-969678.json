@@ -1,0 +1,8 @@
+{
+ "id": 969678,
+ "bug_id": 224927,
+ "attachment_id": 189436,
+ "creation_time": "2018-01-05T09:30:58Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 189436\nFix build with clang 6.0.0 for lang/gcc{48,49,5}\n\nWhile testing the new clang600-import branch (see bug 224669), I noticed that lang/gcc48, lang/gcc49 and lang/gcc5 fail to compile, due clang++ 6.0.0 now defaulting to -std=gnu++14.  There are lots of errors similar to:\n\n/wrkdirs/share/dim/ports/lang/gcc5/work/gcc-5.5.0/gcc/wide-int-print.cc:130:27: error: invalid suffix on literal; C++11 requires a space between literal and identifier [-Wreserved-user-defined-literal]\n        buf += sprintf (buf, \"0x\"HOST_WIDE_INT_PRINT_HEX_PURE, wi.elt (--i));\n                                 ^\n\nUpstream fixed this for gcc 6 and later by adding a space between the double quote and the macro names.\n\nI tried getting the first stage compiled with -std=gnu++98 by setting USE_CXXSTD=gnu++98, but that lead to lots of compilation errors while building libstdc++, which apparently needs C++11 or higher to compile.\n\nSo I have added a post-patch section to the three Makefiles, which searches out all source files using double quotes followed directly by a few specific macro names, and adds a space, e.g.:\n\npost-patch:\n        @${FIND} ${WRKSRC} -type f \\( -name '*.[ch]' -o -name '*.cc' \\) | \\\n            ${XARGS} ${EGREP} -l '\"(HOST_WIDE|PLUGIN_COND|PRId64)' | \\\n            ${XARGS} ${REINPLACE_CMD} -E -e 's/\"(HOST_WIDE|PLUGIN_COND|PRId64)/\" \\1/g'\n\nFurthermore, lang/gcc5 also needs a separate patch to fix an incorrect call to error(), which should have been error_at().  That was a mismerge by upstream, but reporting it there is probably futile now."
+}

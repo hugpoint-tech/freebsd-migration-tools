@@ -1,0 +1,8 @@
+{
+ "id": 875130,
+ "bug_id": 208860,
+ "attachment_id": 0,
+ "creation_time": "2016-04-17T16:52:29Z",
+ "creator": "avos@freebsd.org",
+ "text": "Manual tracing (wlan0 and wlan2 are monitor mode vaps on wpi0):\n\nwlan0:\nwlan0: ieee80211_ioctl: before ieee80211_start_locked()\nwlan0: start running, 0 vaps running\nwlan0: ieee80211_start_locked: up parent wpi0\nwlan0: ieee80211_ioctl: before ieee80211_waitfor_parent(), wait=1\nwlan0: ieee80211_waitfor_parent: before taskqueue_block()\nwlan0: ieee80211_waitfor_parent: ieee80211_draintask(ic, \u0026ic-\u003eic_parent_task);\n\u003c\u003c\u003c hangs here\n\nwlan2:\nwlan2: ieee80211_ioctl: before ieee80211_start_locked()\nwlan2: start running, 1 vaps running\nwlan2: ieee80211_new_state_locked: INIT -\u003e RUN (nrunning 0 nscanning 0)\nwlan2: ieee80211_ioctl: before ieee80211_waitfor_parent(), wait=0\n\u003c\u003c\u003c no progress too\n\nSince the manpage for taskqueue(9) states\n\n\u003e The taskqueue_block() function blocks the taskqueue.  It prevents any\n\u003e enqueued but  not running tasks from being executed.\n\nand\n\n\u003e Note that if taskqueue_drain() is called on a task that is enqueued on a\n\u003e taskqueue that is blocked by taskqueue_block(), then taskqueue_drain()\n\u003e can not return until the taskqueue is unblocked.\n\nthis function will never work as expected (probably, it should set a flag for ieee80211_runtask() + call taskqueue_drain_all() instead)."
+}

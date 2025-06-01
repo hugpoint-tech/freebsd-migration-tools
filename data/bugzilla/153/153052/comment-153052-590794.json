@@ -1,0 +1,8 @@
+{
+ "id": 590794,
+ "bug_id": 153052,
+ "attachment_id": 0,
+ "creation_time": "2013-09-01T16:56:56Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/153052, you wrote:\n\u003e When you run watch and snp module is not loaded (or probably any other\n\u003e error) watch breaks the terminal\n\n\u003e I have removed unset_tty() and seems to work in my case, but I can't\n\u003e test for the others fatal() calls.\n\nYour patch prevents restoring the terminal state if watch(8) is exited\nusing Ctrl+G while watching.\n\nI think it is better to record the initial state earlier, so it is\nalways safe to restore it, like this:\n\nIndex: usr.sbin/watch/watch.c\n===================================================================\n--- usr.sbin/watch/watch.c\t(revision 255093)\n+++ usr.sbin/watch/watch.c\t(working copy)\n@@ -110,7 +110,6 @@ set_tty(void)\n {\n \tstruct termios\tntty;\n \n-\ttcgetattr(std_in, \u0026otty);\n \tntty = otty;\n \tntty.c_lflag \u0026= ~ICANON;\t/* disable canonical operation */\n \tntty.c_lflag \u0026= ~ECHO;\n@@ -324,6 +323,8 @@ main(int ac, char *av[])\n \t\t\tusage();\n \t\t}\n \n+\ttcgetattr(std_in, \u0026otty);\n+\n \tif (modfind(\"snp\") == -1)\n \t\tif (kldload(\"snp\") == -1 || modfind(\"snp\") == -1)\n \t\t\twarn(\"snp module not available\");"
+}

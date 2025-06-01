@@ -1,0 +1,8 @@
+{
+ "id": 1081314,
+ "bug_id": 242961,
+ "attachment_id": 0,
+ "creation_time": "2019-12-29T18:57:57Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I found a bug by causing some of my desktop applications to dump core.  I suspect this is what you are hitting.  TTM uses the plinks.q fields for its own purpose, but we were inadvertently putting TTM-managed pages on the global page queues.\n\ndiff --git a/sys/vm/vm_page.c b/sys/vm/vm_page.c\nindex e99732028af5..971d8a0ed236 100644\n--- a/sys/vm/vm_page.c\n+++ b/sys/vm/vm_page.c\n@@ -4013,7 +4013,7 @@ vm_page_mvqueue(vm_page_t m, const uint8_t nqueue, const uint16_t nflag)\n        KASSERT(nflag == PGA_REQUEUE || nflag == PGA_REQUEUE_HEAD,\n            (\"%s: invalid flags %x\", __func__, nflag));\n \n-       if ((m-\u003eoflags \u0026 VPO_UNMANAGED) != 0)\n+       if ((m-\u003eoflags \u0026 VPO_UNMANAGED) != 0 || (m-\u003eflags \u0026 PG_FICTITIOUS) != 0)\n                return;\n \n        old = vm_page_astate_load(m);"
+}

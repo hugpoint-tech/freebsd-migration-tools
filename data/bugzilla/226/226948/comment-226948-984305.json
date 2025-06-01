@@ -1,0 +1,8 @@
+{
+ "id": 984305,
+ "bug_id": 226948,
+ "attachment_id": 191838,
+ "creation_time": "2018-03-26T13:30:12Z",
+ "creator": "tobias@stoeckmann.org",
+ "text": "Created attachment 191838\nPatch to fix the issue\n\nI have encountered and fixed an issue when the magic character ' ' is used.\n\napply(1) checks for magic numbers to substitue. These magic numbers are used for argument substitution. You could write a command like\n\n$ apply '2to3 %1 %2' test1.py test2.py\n\nWhich would run \"2to3 test1.py test2.py\". The magic character '%' can be replaced with the option -a. In my case, I replace it with ' '.\n\nThe issue is that check for magic numbers and actual replacement happen in two different parts of the code. Between them, the command is prepended with \"exec \", which is used for the shell invocation later on.\n\nThe bug is triggered with an invocation like this:\n\n$ apply -a ' ' 2to3 test.py\nSegmentation fault (core dumped)\n$ _\n\nThe check for magic numbers is negative, because \"2to3\" has no magic number.\nBut right after the check, it's extended to \"exec 2to3\". As I changed the magic character from '%' to ' ', suddenly it DOES contain a magic number.\n\nThe code does not properly verify afterwards if enough arguments have been supplied and tries to access argv[2], which is NULL. The command crashes.\n\nThis patch is based on my merge attempt of a previous FreeBSD bug into OpenBSD. You can see the discussion and OpenBSD's version of the patch here:\n\nhttps://marc.info/?l=openbsd-tech\u0026m=152180028615405\u0026w=2"
+}

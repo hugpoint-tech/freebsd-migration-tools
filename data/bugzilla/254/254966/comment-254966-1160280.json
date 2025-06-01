@@ -1,0 +1,8 @@
+{
+ "id": 1160280,
+ "bug_id": 254966,
+ "attachment_id": 0,
+ "creation_time": "2021-05-08T20:49:15Z",
+ "creator": "freebsd@michael-bueker.de",
+ "text": "I can confirm this bug. It exists in 12.2-RELEASE-p6 and 13.0-RELEASE, but _not_ in 11.4-RELEASE-p9.\n\nSteps to reproduce:\n\n# mdconfig -a -t malloc -s 10M -u md10\n# echo aaa | geli init -J - md10\n# echo aaa | geli attach -j - md10\n# geli status md10.eli\n# geli detach md10\n\nAt this point, md10 is a geli volume with passphrase \"aaa\". Now, observe the failure of geli setkey:\n\n# geli setkey -n0 md10\n\nThis command asks for the existing passphrase and then does nothing. It _should_ ask for the new passphrase (and correctly does so on 11.4-RELEASE).\n\nThe same happens when using passfiles:\n\n# echo aaa \u003e oldkey\n# echo bbb \u003e newkey\n# geli setkey -n0 -j oldkey -J newkey md10\n\nAt this point, \"aaa\" is still the passphrase in slot 1 of md10.eli, even though it should be \"bbb\". Confirm this by:\n\n# geli attach -j newkey md10\n\n... which fails, and:\n\n# geli attach -j oldkey md10\n\n... which succeeds (but shouldn't).\n\nNote that all is well when using geli setkey on md10.eli when it is attached. This bug only affect unattached volumes."
+}

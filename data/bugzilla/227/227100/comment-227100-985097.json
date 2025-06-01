@@ -1,0 +1,8 @@
+{
+ "id": 985097,
+ "bug_id": 227100,
+ "attachment_id": 191964,
+ "creation_time": "2018-03-30T04:21:56Z",
+ "creator": "reshadpatuck1@gmail.com",
+ "text": "Created attachment 191964\nthe output of netstat and dtrace\n\nWhen the epair interface reaches the hardware queue limit, epairs stop transferring data.\n\nThis bug refers to this mailing list conversation https://lists.freebsd.org/pipermail/freebsd-net/2018-March/050077.html\n\nSo far using the patch/if_epair source file attached to this bug we can tell that the error occurs in this block of code\n\n```\n\tif ((epair_dpcpu-\u003eepair_drv_flags \u0026 IFF_DRV_OACTIVE) != 0) {\n\t\t/*\n\t\t * Our hardware queue is full, try to fall back\n\t\t * queuing to the ifq but do not call ifp-\u003eif_start.\n\t\t * Either we are lucky or the packet is gone.\n\t\t */\n\t\tIFQ_ENQUEUE(\u0026ifp-\u003eif_snd, m, error);\n\t\tif (!error)\n\t\t\t(void)epair_add_ifp_for_draining(ifp);\n\t\t\n\t\tSDT_PROBE3(if_epair, transmit, epair_transmit_locked, enqueued,\n\t\t\t\tifp, m, error);\n\t\treturn (error);\n\t}\n```\n\nWhere the value of the 'error' is 55.\n\nSetting 'net.link.epair.netisr_maxqlen' to a very small value makes this occur faster.\n\nThis issue seems to be happening in the wild only on one of my servers.\nOther servers under more load in different environments do not seem to exhibit this behaviour.\n\n@Kristof please chime in if I have missed something out.\n\nAttached:\n- commands.txt\n- epair-sdt-diff.patch \n- epair_transmit_locked:enqueued-error-code.d\n- if_epair.c"
+}

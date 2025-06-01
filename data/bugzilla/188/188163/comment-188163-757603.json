@@ -1,0 +1,8 @@
+{
+ "id": 757603,
+ "bug_id": 188163,
+ "attachment_id": 0,
+ "creation_time": "2014-04-22T13:49:49Z",
+ "creator": "chewi@aura-online.co.uk",
+ "text": "Apologies for sounding a little irate here but I have explained the\nproblem to Rodrigo twice, without going into excessive detail so as not\nto insult his intelligence, but he is just not reading what I am\nwriting.\n\nYes, libedit compiles. So what? I hope that FreeBSD doesn't have a Q/A\npolicy of \"if it compiles, ship it\". The problem is that it is not\nlinking to one of the libraries that define tgetent and friends, thus\nyou end up with a libedit that has unresolved symbols.\n\nThis forces other users of the library (like FreeSWITCH) to explicitly\nlink against one of these libraries when it would otherwise not be\nnecessary to do so.\n\nI was curious to see how the FreeBSD dependencies of libedit deal with\nthis so I had a look at lang/onyx. It applies this ugly workaround.\n\nAC_CHECK_LIB([termcap], [tgetent], [MODPROMPT_LDFLAGS=\"-ltermcap\"],\n  [AC_CHECK_LIB([tinfo], [tgetent], [MODPROMPT_LDFLAGS=\"-ltinfo\"],\n    [AC_CHECK_LIB([curses], [tgetent], [MODPROMPT_LDFLAGS=\"-lcurses\"],\n      [AC_CHECK_LIB([ncurses], [tgetent],\n                    [MODPROMPT_LDFLAGS=\"-lncurses\"])])])],\n  [enable_modprompt=\"0\"])\nLIBS=\"$LIBS $MODPROMPT_LDFLAGS\"\n\nThis mess could be removed if you apply my tiny patch to libedit. The\nversion of libedit found in the FreeBSD base system already links\ncorrectly against libncurses so this package should certainly follow\nsuit. I don't even know why this package exists given that the base\nsystem version appears to be newer.\n\nRegards,\nJames"
+}

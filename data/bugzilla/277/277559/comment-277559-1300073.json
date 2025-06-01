@@ -1,0 +1,8 @@
+{
+ "id": 1300073,
+ "bug_id": 277559,
+ "attachment_id": 0,
+ "creation_time": "2024-03-07T20:44:57Z",
+ "creator": "jfc@mit.edu",
+ "text": "On my RockPro64 \"kldload vmm\" sometimes hangs the system so hard I can't even enter DDB with a break on the serial console.  The smp_rendezvous call in vmops_modinit appears to be the culprit according to some debugging printfs I added.\n\n  printf(\"vmmops_modinit rendezvous %p {%lx, %lx}\\n\", \u0026el2_regs,\n         el2_regs.tcr_el2, el2_regs.vtcr_el2);\n  pause(\"vmmon\", 20); // let console output queue drain\n  \tsmp_rendezvous(NULL, arm_setup_vectors, NULL, \u0026el2_regs);\n  printf(\"vmmops_modinit rendezvous returned\\n\");\n  pause(\"vmmon\", 20); // let console output queue drain\n\nThe last line on the console when it hangs is\n\n  vmmops_modinit rendezvous 0xffff0000a5b9d380 {80823510, 80023559}\n\nThe RockPro64 has 4 Cortex-A53 and 2 Cortex A-72 processors, same clock speed but different performance.\n\nAccording to other printfs I added to vmmops_modinit,\n\n  ID_AA64MMFR0_EL1 = 1122\n  vmm_virt_bits = 39\n\nMost of the time the vmm module loads.  About 10% of the time it hangs."
+}

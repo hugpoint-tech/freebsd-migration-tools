@@ -1,0 +1,8 @@
+{
+ "id": 847455,
+ "bug_id": 204298,
+ "attachment_id": 0,
+ "creation_time": "2015-11-05T19:19:54Z",
+ "creator": "smferris@gmail.com",
+ "text": "(In reply to Alexander Motin from comment #3)\n\nYes, for the patch to work we have to use the lock ordering:\n  devq-\u003esend_mtx before bus-\u003eeb_mtx\n  device-\u003edevice_mtx before bus-\u003eeb_mtx\n\nIt's a counter-intuitive ordering but seems to work given how eb_mtx is used today. Where would we violate that ordering?  I don't see anyplace acquiring another lock while holding bus-\u003eeb_mtx.\n\nNo, wait, I missed xpt_alloc_device() wanting the send_mtx in order to cam_devq_resize().  Can we solve that by moving the cam_devq_resize() from xpt_alloc_device() up into xpt_compile_path()?  That appears to be the only caller of xport-\u003ealloc_device() and only the transports call xpt_alloc_device().  I'll see if I can make that work."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 62799,
+ "bug_id": 20363,
+ "attachment_id": 0,
+ "creation_time": "2000-08-02T20:00:01Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "\nLeaving the ethernet card in the slot, suspend, then wake up the notebook.\nif_detach() will free th struct ifnet, and BPF will return an appropriate\nerror to dhclient (I believe, haven't tracked it down quite), but dhclient\napparently doesn't know how to deal with that.\n\nAug  1 12:53:35 numocking dhclient: receive_packet failed on wi0: Device not con\nfigured\nAug  1 12:53:58 numocking last message repeated 167598 times\n\nFix: \n\nerrno checking in the receive packet event loop probably needs to check\nfor ENXIO, which indicates that the device is no longer valid.  Not\nsure what it should do next -- probably exit.\nHow-To-Repeat: \nsuspend notebook, wake it up, watch syslog"
+}

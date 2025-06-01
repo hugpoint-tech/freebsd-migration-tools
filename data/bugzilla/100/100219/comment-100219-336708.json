@@ -1,0 +1,8 @@
+{
+ "id": 336708,
+ "bug_id": 100219,
+ "attachment_id": 0,
+ "creation_time": "2006-07-13T18:40:15Z",
+ "creator": "clemun@gmail.com",
+ "text": "When we call setsockopt() with IPV6_PKTOPTIONS and a huge optlen value,\nkernel will call soopt_getm(). This function will allocate plenty of mbuf\n(MGET), will hit the mbuf limit and will wait (M_TRYWAIT) until futher mbuf\nis available. At this point practically all mbuf are in use and networking\napplications may fail.\n\nA similar issue has been described by James Juran (kern/98858). However the\nproposed patch fixes the integer overflow (which can be more dangerous than\na simple dos) and does not prevent users to use a huge int value in the 5th\nargument of setsockopt() to cause the same behavior described by James (with\noptlen = -1).\n\nFix: \n\nSince the RFC3542 has removed IPV6_PKTOPTIONS, userland applications must\nnot use this option anymore. I have not found IPv6 networking applications\n(i.e. ping6, rtadvd) that continue to use IPV6_PKTOPTIONS. So I think we\ncan remove this option.\n\nIf not, we must put some limits on the sopt_valsize before calling soopt_getm().\nHow-To-Repeat: #include \u003csys/types.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003cnetinet/in.h\u003e\n\nint main(int ac, char **av)\n{\n    int s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);\n    setsockopt(s, IPPROTO_IPV6, 25, 0xdeadbeef, 0x7fffffff);\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 851894,
+ "bug_id": 189219,
+ "attachment_id": 0,
+ "creation_time": "2015-12-03T01:00:21Z",
+ "creator": "marius@FreeBSD.org",
+ "text": "(In reply to Michael Moll from comment #2)\n\nThat patch is overly complicated for solving the unaligned access triggered by config_link(); it's way simpler to just fix do_config() to properly align dn_link before passing it on in the first place. Moreover, the latter also is the actual culprit here as do_config() casts a random chunk of memory to a struct dn_link pointer. Note, though, that the config_link() triggered unaligned access is only one instance of dummynet(4) misaligning dn_link. The following is a complete fix in that regard:\nhttp://people.freebsd.org/~marius/dummynet_unfuck_dn_link.diff\n\nHowever, the same incorrect patterns are used for virtually all of dn_\u003cfoo\u003e and additionally in some other stuff like flow ID related functions. So someone still needs to sit down and go through the entirety of ip_dummynet.c, fixing all other unaligned accesses."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 849424,
+ "bug_id": 204340,
+ "attachment_id": 163217,
+ "creation_time": "2015-11-17T01:29:31Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 163217\nPatch to fix sg_threadcount++ so the mutex is held when done\n\nI took a closer look at svc.c and the only way that the race\nI think might have happened can occur is if svc_run() doesn't\nwait for all threads to terminate. I also can now see that the\nfirst patch wouldn't have fixed anything, so I'm not surprised\nit didn't work.\n\nThe only thing I can see that is broken in the code and might\nallow svc_run() to return before all threads have terminated is:\n- The thread count sg_threadcount is incremented when the sg_lock\n  mutex isn't held.\n  --\u003e This could conceivably result in a corrupted sg_threadcount,\n      which would allow svc_run() to return before all threads have\n      terminated.\n\nThis second patch fixes the code so that sg_threadcount++ is always\ndone when the sg_lock mutex is held.\n\nIf you can test this one instead of the last one, that would be\nappreciated. I do know this patch fixes the above problem, but I\ndon't know if this is the cause of your crashes.\n\nAlso, this bug seems to have existed in the code forever and all\nthat r267228 did was switch from not holding the pool mutex to\nnot holding the group mutex. So Alexander, you are off the hook,\nI think.;-) I've left you on the cc, since you probably know this\ncode better than anyone else and might have some insight w.r.t. this crash."
+}

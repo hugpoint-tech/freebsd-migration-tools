@@ -1,0 +1,8 @@
+{
+ "id": 561398,
+ "bug_id": 147345,
+ "attachment_id": 0,
+ "creation_time": "2010-06-03T00:10:07Z",
+ "creator": "rbyrnes@gmail.com",
+ "text": "sysutils/munin-node appears to pull in all files in /usr/local/etc/munin/ directory\n\nThis causes a problem for some plugins.  In the case of postfix_mailstats (included in the default port), the env.logfile variable ends up as /var/log//var/log/maillog and the plugin no longer functions.\n\nThis can be verified by running:\n\nmunin-run --debug postfix_mailstats autoconf\n# Processing plugin configuration from\n/usr/local/etc/munin/plugin-conf.d/plugins.conf\n# Processing plugin configuration from\n/usr/local/etc/munin/plugin-conf.d/plugins.conf.sample\n                              ^^^^^^^^^^^ \u003c-- The cause\n\n# Warning: Root privileges are required to change user/group.  The\nplugin may not behave as expected.\n# Setting up environment\n# Environment logfile = /var/log/maillog\n# About to run '/usr/local/etc/munin/plugins/postfix_mailstats autoconf'\nno (logfile '/var/log//var/log/maillog' not found)\n              ^^^^^^^^^^ \u003c-- The result\n\nFix: \n\nSince the port already changes the default munin-node.conf, the line:\n\nignore_file \\.sample$ \n\nneeds to be added to files/patch-munin-node.conf.in\nHow-To-Repeat: \n*Install munin-node\n*Copy /usr/local/etc/munin/plugin-conf.d/plugins.conf.sample to /usr/local/etc/munin/plugin-conf.d/plugins.conf\n*Enable the postfix_mailstats plugin and configure thus:\n\n[postfix*]\nuser root\nenv.logfile maillog"
+}

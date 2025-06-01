@@ -1,0 +1,8 @@
+{
+ "id": 747671,
+ "bug_id": 185909,
+ "attachment_id": 0,
+ "creation_time": "2014-01-20T13:40:00Z",
+ "creator": "beorn@binaries.fr",
+ "text": "I am trying to build a kernel and its klm with ALTQ support.\n\nI did build an amd64 kernel with the good options (cf how to repeat the problem for the exact configuration). The kernel is booting up but pfctl -f /etc/pf.conf reports : \n\n  # pfctl -f /etc/pf.conf\n  pfctl: igb0: driver does not support altq\n\n\nI dug a bit in the driver code and found this written in the /usr/src/sys/modules/igb/Makefile :\n\n  # IGB_LEGACY_TX will override the stack if_transmit path and\n  # instead use the older if_start non-multiqueue capable interface.\n  # This might be desireable for testing, or to enable the use of\n  # ALTQ. \n  #CFLAGS  += -DIGB_LEGACY_TX\n\nI Did try to build the kernel with this CFLAG (at the make.conf level, then modifiying the Makefile just in case).\n\nThe build failed with this :\n\nFix: \n\nN/A\nHow-To-Repeat: Create a kernelconfig like this :\n\n  include GENERIC\n  ident COLORZ\n  \n  options         ALTQ\n  options         ALTQ_CBQ        # Class Based Queuing (CBQ)\n  options         ALTQ_RED        # Random Early Detection (RED)\n  options         ALTQ_RIO        # RED In/Out\n  options         ALTQ_HFSC       # Hierarchical Packet Scheduler (HFSC)\n  options         ALTQ_PRIQ       # Priority Queuing (PRIQ)\n  options         ALTQ_NOPCC      # Required for SMP build\n\nand buildkernel gives :\n\n  # make -s -j5 buildkernel\n\n  [...]\n  /usr/src/sys/modules/igb/../../dev/e1000/if_igb.c:2383:19: error: unused variable 'txr' [-Werror,-Wunused-variable]\n          struct tx_ring          *txr = adapter-\u003etx_rings;\n                                 ^\n  1 error generated."
+}

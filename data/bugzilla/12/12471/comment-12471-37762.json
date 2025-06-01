@@ -1,0 +1,8 @@
+{
+ "id": 37762,
+ "bug_id": 12471,
+ "attachment_id": 0,
+ "creation_time": "1999-07-01T06:50:01Z",
+ "creator": "fjoe@iclub.nsu.ru",
+ "text": "\n\tdlopen returns \"valid\" dlh when trying to open faulty\n\tobject second time.\n\nFix: This is a patch for libexec/rtld-elf/rtld.c (-stable).\nHow-To-Repeat: \nin the following code `dlopen' returns NULL\non the first iteration (because g() is not defined) -- it's ok\nbut on the second iteration `dlopen' returns \"valid\" dlh\n\n--- cut here (Makefile) ---\nCFLAGS = -g\n\nall: dl.so main4 \n\ndl.so: dl.c\n\tgcc -o dl.so $(CFLAGS) -shared -fpic -fPIC dl.c\n\nmain4: main4.o\n\tgcc -o main4 -export-dynamic main4.o\n\nclean:\n\trm -f dl.so main4.o\n--- cut here ---\n\n--- cut here (dl.c) ---\n#include \u003cstdio.h\u003e\n\nvoid f()\n{\n\tprintf(\"Hello, world!\\n\");\n\tg();\n}\n--- cut here ---\n\n--- cut here (main4.c) ---\n#include \u003cdlfcn.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstdio.h\u003e\n\nmain()\n{\n\tvoid *dlh = NULL;\n\tvoid (*f)(void);\n\n\tfor (;;) {\n\t\tgetchar();\n\n\t\tif (dlh != NULL) {\n\t\t\tdlclose(dlh);\n\t\t\tdlh = NULL;\n\t\t}\n\n\t\tdlh = dlopen(\"./dl.so\", RTLD_NOW);\n\t\tif (dlh == NULL) {\n\t\t\tfprintf(stderr, \"dlopen: %s\\n\", dlerror());\n\t\t\tcontinue;\n\t\t}\n\n\t\tf = dlsym(dlh, \"f\");\n\t\tif (f == NULL) {\n\t\t\tfprintf(stderr, \"dlsym: %s\\n\", dlerror());\n\t\t\tdlh = NULL;\n\t\t\tcontinue;\n\t\t}\n\n\t\tf();\n\t}\n\n\tdlclose(dlh);\n\treturn 0;\n}\n--- cut here ---"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1075103,
+ "bug_id": 235607,
+ "attachment_id": 0,
+ "creation_time": "2019-11-12T21:32:19Z",
+ "creator": "vmaffione@FreeBSD.org",
+ "text": "Not 100% sure, but I think you are hitting the same problem as me.\nIf I am not mistaken, you can reproduce a similar problem with a simpler (test) configuration in your fbsd_guest_fw: no layer 3 processing, but just a bridge0 to bridge vtnet0 and vtnet1 together, e.g.:\n\n   # ifconfig bridge0 create addm vtnet0 addm vtnet1\n\nIn this scenario (with csum enabled) packets coming from vtnet0 with \"incorrect checksum\" will exit vtnet1 with incorrect checksum, and will be discarded at the next hop.\nThe root of the problem is that vtnet cannot really implement a csum offload (since there is no hw that does that), but it rather delays the TCP checksum computation hoping that someone will do that later (if necessary). Unfortunately, the FreeBSD mbuf does not have enough metadata to store and forward the metadata contained in the per-packet virtio-net header (as defined in the VirtIO standard). This information is already lost when the packet arrives on vtnet1 on transmission, so that vtnet1 is not asked to do the offloads (CSUM_TCP is not set), and therefore the packet does not survive the next hop.\n\nSee also here:\nhttps://reviews.freebsd.org/D21315\n\nAbout your setup: I see that you have offloads support on vtnet0 and vtnet1 (e.g. TXCSUM, RXCSUM, etc.) --\u003e I guess you are not using bhyve as an hypervisor, because it does not support offloads in 12.0? I guess you are using Linux QEMU/KVM with TAP interfaces backing the vtnet* devices?"
+}

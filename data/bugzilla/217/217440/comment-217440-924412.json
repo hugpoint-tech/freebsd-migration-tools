@@ -1,0 +1,8 @@
+{
+ "id": 924412,
+ "bug_id": 217440,
+ "attachment_id": 0,
+ "creation_time": "2017-03-04T20:08:50Z",
+ "creator": "cem@freebsd.org",
+ "text": "I think I see why ls(1)/fts(3) shows \"Invalid\".  The directory entries are readable:\n\n$ echo ./testdir/*\n./testdir/123t�st ./testdir/abc?\n$ echo $?\n0\n\nHowever, that '?' is an actual question mark symbol, because ™ can not be represented in iso-8859-1, only win-1252 and unicode.  So you cannot access that file by its directory entry:\n\n$ ls ./testdir/abc?\nls: ./testdir/abc?: Invalid argument\n$ truss stat ./testdir/abc?\n...\nlstat(\"./testdir/abc?\",0x7fffffffe298)           ERR#22 'Invalid argument'\n\nI think that EINVAL return is bogus.  lstat() misses should return ENOENT.  But that doesn't help you very much.\n\nMaybe VOP_READDIR should prefer 8.3 names if LFN names do not convert into cs_local.  Although, lookup of 8.3 names doesn't work.  So maybe not.\n\nIt seems cs_local should default to UTF-8 or user's locale, not ISO-8859-1.  Or if it must be a 8-bit character set, Win-1252 may be a better choice."
+}

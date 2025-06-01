@@ -1,0 +1,8 @@
+{
+ "id": 446064,
+ "bug_id": 123807,
+ "attachment_id": 0,
+ "creation_time": "2008-05-26T10:09:25Z",
+ "creator": "keramida@FreeBSD.org",
+ "text": "On Mon, 19 May 2008 19:26:18 +1200, Matthew Luckie \u003cmjl@luckie.org.nz\u003e wrote:\n\u003e getopt returns an integer, -1 when there is no further options to\n\u003e parse.  char on arm is an unsigned byte value, so it cannot hold -1.\n\u003e therefore the getopt hack to hold the return value in a char and loop\n\u003e on that will fail and leave the application in an infinite loop\n\n\u003e --- patch-timed.c begins here ---\n\u003e --- usr.sbin/timed/timed/timed.c.orig\t2003-07-06 22:37:00.000000000 +1200\n\u003e +++ usr.sbin/timed/timed/timed.c\t2008-05-19 19:14:26.000000000 +1200\n\u003e @@ -134,7 +134,7 @@ main(argc, argv)\n\u003e  \tstruct nets *nt;\n\u003e  \tstruct sockaddr_in server;\n\u003e  \tu_short port;\n\u003e -\tchar c;\n\u003e +\tint c;\n\u003e\n\u003e  #ifdef lint\n\u003e  \tntip = NULL;\n\u003e @@ -147,7 +147,7 @@ main(argc, argv)\n\u003e\n\u003e  \topterr = 0;\n\u003e  \twhile ((c = getopt(argc, argv, \"Mtdn:i:F:G:P:\")) != -1) {\n\u003e -\t\tswitch (c) {\n\u003e +\t\tswitch ((char)c) {\n\u003e  \t\tcase 'M':\n\u003e  \t\t\tMflag = 1;\n\u003e  \t\t\tbreak;\n\u003e --- patch-timed.c ends here ---\n\nThe first hunk of the patch looks ok, but do we really need the second\none too?  There are far too many places where an `int' return from\ngetopt() is compared with '?'-style characters in switch(), so if we\ndon't need it let's not add a cast."
+}

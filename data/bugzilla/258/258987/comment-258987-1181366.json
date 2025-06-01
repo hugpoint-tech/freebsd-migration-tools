@@ -1,0 +1,8 @@
+{
+ "id": 1181366,
+ "bug_id": 258987,
+ "attachment_id": 0,
+ "creation_time": "2021-10-07T16:42:32Z",
+ "creator": "freebsdbugzilla@agneau.org",
+ "text": "When installing FreeBSD 13.0-RELEASE with UEFI and multi-disk (mirror or raidz) ZFS , the expected redundancy is broken twice.\n\n1/\nAn EFI partition is created on all disks of the pool BUT only the EFI partition of the first disk of the pool is formated and setup, the EFI partition of the other disks are not formated (and of course not setup).\nAs a result, if the first disk of the pool fails, the server will not be able to reboot because of missing content of the EFI partition on the remaining disks.\n\n2/\nThe installer add an entry in the fstab to mount permanently the efi partition of the first disk to /boot/efi .\nIf that physical disk fails, you have one mounted filesystem from a failed disk. This may jeopardize the stability of the system. One should never mount permanently a filesystem from a non-raid device on a server build for redundancy.\n\nAll of this is new to 13.0-RELEASE and seems added by the following commit \n\nhttps://cgit.freebsd.org/src/commit/?id=0b7472b3d8d2f1e90fade5236b44fd98d8e396c2\n\nPrevious releases (12.1, 12.2) setup correctly the EFI partition of ALL disks and don't add /boot/efi  to any physical disk in the fstab.\n\nI understand, the new (13.0) method for populating the EFI partition require it to be mounted at install time.\nThe installer should loop thru each EFI partition to format it , mount it temporary, set it up, and unmount it.\n\nThis could also be done by freebsd-update when needed.\n\nBy doing this, we could get EFI/zfs installation redundancy reliable again."
+}

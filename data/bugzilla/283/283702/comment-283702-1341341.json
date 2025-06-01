@@ -1,0 +1,8 @@
+{
+ "id": 1341341,
+ "bug_id": 283702,
+ "attachment_id": 256238,
+ "creation_time": "2024-12-28T22:11:32Z",
+ "creator": "zyj20@cl.cam.ac.uk",
+ "text": "Created attachment 256238\nrepro.c\n\n- Overview:\nIn ng_unparse_composite, a carefully crafted Netgraph generic message can cause OOB read of several bytes depending on the declared Netgraph composite type. This is not critical because, as far as I know, only privileged users can send Netgraph generic messages.\n\n- Root cause:\nIn ng_unparse_composite, the offset off can be incremented to overflow the allocated length of the provided data buffer. When processing the NGM_BINARY2ASCII control message, the netgraph message is verified to be valid. However, if the indicated Netgraph composite type is of greater size than the provided data buffer, ng_unparse_composite will unparse out-of-bounds data in https://github.com/freebsd/freebsd-src/blob/225c5e535b36ab506f25761fabc7dbe466609541/sys/netgraph/ng_parse.c#L1414 . \nThis crash was found when working with a CheriBSD purecap kernel, where out-of-bounds read causes a kernel panic.\n\n- Steps to reproduce:\nPlease see attached source code for proof of concept.\n$ cc -o ng_parse_poc repro.c -lnetgraph -lpthread\n\n- Kernel commit and config:\nThis is reproducible as of the latest commit on 27th December 2024 in a GENERIC kernel, with enabled Netgraph.\n\n- Credits:\nYichen Chai \u003cyichen.chai@gmail.com\u003e\nZhuo Ying Jiang Li \u003czyj20@cl.cam.ac.uk\u003e"
+}

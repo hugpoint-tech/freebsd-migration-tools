@@ -1,0 +1,8 @@
+{
+ "id": 26893,
+ "bug_id": 8834,
+ "attachment_id": 0,
+ "creation_time": "1998-11-24T10:10:01Z",
+ "creator": "toasty@dragondata.com",
+ "text": "\n\nHeavy NFS activity on the client can corrupt local files in use\n\nHow-To-Repeat: \ndd if=/mnt/nfsserver/verylargefile of=/tmp/somefile bs=32k \u0026\n\nThen, I started doing a kernel config, then compile.\n\nvers.c started getting bits and pieces of 'verylargefile' mixed in with it.\nUntil I rebooted, every time vers.c was recreated by config, it had the same\ngarbage in it.\n\n\nAs a test, I tried copying the corrupted vers.c back to the nfs server.\n\n\n/kernel: short receive (0/4) from nfs server home.internal:/home\n/kernel: nfs server home.internal:/home: not responding\nlast message repeated 61 times\n/kernel: short receive (0/4) from nfs server home.internal:/home\n/kernel: nfs server home.internal:/home: not responding\nlast message repeated 25 times\n/kernel: /kernel: vm_fault: pager input (probably hardware) error, PID 15822 failure\nlast message repeated 33297 times\nlast message repeated 128988 times\nlast message repeated 632240 times\nlast message repeated 639222 times\n/kernel: pid 1328 (inetd), uid 0, was killed: exceeded maximum CPU limit\n/kernel: pid 15822 (cp), uid 0: exited on signal 11 (core dumped)\n\n\nAt this point, the system locked up... ddb showed it in nfs_bwrite, or some\nfunction under it, apparently stuck in a loop. It wouldn't do a core dump.\n\nAlso, if this helps... it seems somewhat related.... If an executable is ran\nfrom an nfs mount, and gets killed for exceeding it's CPU limit, it'll start\ndoing the never-ending vm_fault: pager input (probably hardware) error over\nand over again, too.\n\nWhy inetd died there makes no since, it has no cpu limit."
+}

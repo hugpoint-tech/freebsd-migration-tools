@@ -1,0 +1,8 @@
+{
+ "id": 1156201,
+ "bug_id": 255054,
+ "attachment_id": 0,
+ "creation_time": "2021-04-14T14:56:36Z",
+ "creator": "timf@puroto.org",
+ "text": "Having recently upgraded to 13.0-STABLE, I found that none of my jng-enabled jails were coming up after boot.\n\nroot@puroto:/ # service jail start pupuru\nStarting jails: cannot start jail  \"pupuru\":\nngctl: send msg: Operation not supported\njail: pupuru: jng bridge pupuru vtnet0: failed\n.\nroot@puroto:/ #\n\nIn this case the jails.conf entry was:\n\npupuru {\n  exec.prestart += \"jng bridge pupuru vtnet0\";\n  exec.poststop += \"jng shutdown pupuru\";\n}\n\nDigging into what jng was doing, we were trying to switch the parent interface to promiscuous mode, failing, and then bailing out:\n\n# ngctl msg vtnet0: setpromisc 1\nngctl: send msg: Operation not supported\n\nJust commenting out that line in jng seemed to be sufficient, though I don't know\nwhat side effects that might have. My jails all came up ok after that, and were\nat least able to send/recv traffic, ping the jail host, etc.\n\n    306                 # Set promiscuous mode and don't overwrite src addr\n    307                 # ngctl msg $iface: setpromisc 1 || return\n    308                 ngctl msg $iface: setautosrc 0 || return\n\nI checked that my copy of /usr/sbin/jng wasn't significantly different to the one being shipped in /usr/share/examles/jails."
+}

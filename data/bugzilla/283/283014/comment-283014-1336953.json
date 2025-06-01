@@ -1,0 +1,8 @@
+{
+ "id": 1336953,
+ "bug_id": 283014,
+ "attachment_id": 0,
+ "creation_time": "2024-11-27T21:11:50Z",
+ "creator": "gperciva@tarsnap.com",
+ "text": "Nitpicky issue.  Currently, FreeBSD's fileno() does not set errno.\n\nPOSIX issue 6 added an optional EBADF errno, so no problem there.\n\nIssue 7 added a mandatory EBADF:\n\u003e RETURN VALUE\n\u003e \n\u003e ... Otherwise, the value -1 shall be returned and errno set to indicate the error.\n\u003e \n\u003e ERRORS\n\u003e\n\u003e The fileno() function shall fail if:\n\u003e\n\u003e [EBADF]\n\u003e The stream is not associated with a file.\n\nhttps://pubs.opengroup.org/onlinepubs/9799919799/functions/fileno.html\n\n(Issue 8 did not alter fileno.)\n\n\nCode example, in case it's helpful:\n```\n$ cat bad-fileno.c \n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n\nint\nmain(void) {\n\tFILE * s;\n\tint rc;\n\n\t/* Get an invalid stream. */\n\ts = fopen(\"/dev/null\", \"r\");\n\tfclose(s);\n\n\t/* Set errno to an arbitrary value. */\n\terrno = 123;\n\tprintf(\"errno: %i\\n\", errno);\n\n\t/* errno is still that arbitrary value; rc is correct. */\n\trc = fileno(s);\n\tprintf(\"rc %i, errno: %i\\n\", rc, errno);\n}\n$ clang -Weverything bad-fileno.c \u0026\u0026 ./a.out \nerrno: 123\nrc -1, errno: 123\n$\n```"
+}

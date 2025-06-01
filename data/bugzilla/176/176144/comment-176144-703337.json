@@ -1,0 +1,8 @@
+{
+ "id": 703337,
+ "bug_id": 176144,
+ "attachment_id": 0,
+ "creation_time": "2013-03-29T14:10:49Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: glebius\nDate: Fri Mar 29 14:10:40 2013\nNew Revision: 248887\nURL: http://svnweb.freebsd.org/changeset/base/248887\n\nLog:\n  Fix bug in m_split() in a case when split len matches len of the\n  first mbuf, and the first mbuf is M_PKTHDR.\n  \n  PR:\t\tkern/176144\n  Submitted by:\tJacques Fourie \u003cjacques.fourie gmail.com\u003e\n\nModified:\n  head/sys/kern/uipc_mbuf.c\n\nModified: head/sys/kern/uipc_mbuf.c\n==============================================================================\n--- head/sys/kern/uipc_mbuf.c\tFri Mar 29 14:06:04 2013\t(r248886)\n+++ head/sys/kern/uipc_mbuf.c\tFri Mar 29 14:10:40 2013\t(r248887)\n@@ -1197,7 +1197,16 @@ m_split(struct mbuf *m0, int len0, int w\n \tif (m == NULL)\n \t\treturn (NULL);\n \tremain = m-\u003em_len - len;\n-\tif (m0-\u003em_flags \u0026 M_PKTHDR) {\n+\tif (m0-\u003em_flags \u0026 M_PKTHDR \u0026\u0026 remain == 0) {\n+\t\tn = m_gethdr(wait, m0-\u003em_type);\n+\t\t\treturn (NULL);\n+\t\tn-\u003em_next = m-\u003em_next;\n+\t\tm-\u003em_next = NULL;\n+\t\tn-\u003em_pkthdr.rcvif = m0-\u003em_pkthdr.rcvif;\n+\t\tn-\u003em_pkthdr.len = m0-\u003em_pkthdr.len - len0;\n+\t\tm0-\u003em_pkthdr.len = len0;\n+\t\treturn (n);\n+\t} else if (m0-\u003em_flags \u0026 M_PKTHDR) {\n \t\tn = m_gethdr(wait, m0-\u003em_type);\n \t\tif (n == NULL)\n \t\t\treturn (NULL);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

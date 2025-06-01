@@ -1,0 +1,8 @@
+{
+ "id": 957406,
+ "bug_id": 223287,
+ "attachment_id": 0,
+ "creation_time": "2017-10-28T06:17:24Z",
+ "creator": "glenn.weinberg@intel.com",
+ "text": "ZFS allows posix_fallocate(2) to attempt to reserve any amount of space, even if the request is larger than the entire capacity of the pool. While it may be true that in theory pools are \"infinitely\" expandable in ZFS, this behavior is not in the spirit of posix_fallocate(2), which is supposed to \"guarantee\" that subsequent writes to the allocated area in the file will not fail due to lack of space. (There has been previous discussion of the validity of posix_fallocate(2) on COW file systems such as ZFS, but that is not the issue here.)\n\nFurthermore, posix_fallocate(2) operates by repeatedly writing to the file. The ZFS behavior of writing forever might be tolerable, albeit not ideal, if the posix_fallocate(2) call were interruptible, but the entire sequence of writes is performed under a lock, so once the unsupportably large request has commenced, there is no way to stop it short of a hard reboot.\n\nReturning ENOSPC if the requested allocation is larger than the current pool size (or file system size for UFS) seems like a relatively simple check to make, and a reasonable compromise between the spirit of posix_fallocate(2) and the theoretical expandability of ZFS."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 992280,
+ "bug_id": 210316,
+ "attachment_id": 0,
+ "creation_time": "2018-05-17T06:00:30Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #9)\n\nThis proposal looks like something that can help with the problem at hand in a generic way.\nI see that at present g_vfs_close() does not even check the return code of bufobj_invalbuf().  That looks dangerous?  But not sure if the code can do better.  E.g., if looping on an error would be okay.\n\nThen, there remains a question of when to use the proposed g_vfs_close(NOSAVE).\nThere are obvious cases like a failed mount.\nAnd that's what we want to address now, so that's good.\n\nBut there can be a more complex situation.\nFor example, we can mount a filesystem r/w and do some writes to it.\nBut then the hardware suddenly decides to go to read-only mode (e.g., because some internal counter crosses its threshold).\nSo, we will get some failed writes and some dirty buffers that cannot possibly be made clean by writing out.\nDo we need to somehow handle them?\nAnd then we decide to unmount the filesystem.\nHow do we handle those buffers?\nHow do we know if we should call g_vfs_close(SAVE) or g_vfs_close(NOSAVE) ?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1325118,
+ "bug_id": 281477,
+ "attachment_id": 0,
+ "creation_time": "2024-09-13T09:11:22Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Clang 19 has become more strict about initialization with undefined\nbehavior, resulting in errors similar to:\n\n  ./SimpleModule.h:126:40: error: in-class initializer for static data member is not a constant expression\n    126 |         static const int kMinSignedValue = -1 \u003c\u003c kScaleBits;\n        |                                            ~~~^~~~~~~~~~~~~\n  ./SimpleModule.h:176:22: note: in instantiation of template class 'signConverter\u003ckInt8\u003e' requested here\n    176 |                 transform\u003ctypename signConverter\u003cFormat\u003e::signedToUnsigned\u003e(src, dst, count);\n        |                                    ^\n  ./SimpleModule.h:183:5: note: in instantiation of function template specialization 'ConvertSign::convertSignedToUnsigned\u003ckInt8\u003e' requested here\n    183 |                                 convertSignedToUnsigned\u003ckInt8\u003e(src, dst, count);\n        |                                 ^\n\nThis is because left-shifting negative values is undefined. Replace -1\nwith ~0u which results in the expected value.\n\nWhile here, add a few other patches to remove warnings about undefined\nleft-shifts, and add support for the \"make test\" target."
+}

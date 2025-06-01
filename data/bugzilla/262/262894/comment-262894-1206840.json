@@ -1,0 +1,8 @@
+{
+ "id": 1206840,
+ "bug_id": 262894,
+ "attachment_id": 0,
+ "creation_time": "2022-04-12T22:57:43Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Krautmaster from comment #20)\nDid this most recent crash happen with the patch from comment 5 applied?\n\n(In reply to Krautmaster from comment #19)\nYou could simply run \"dumpon /dev/\u003cdump device name\u003e\" to configure it once.  Use \"dumpon -l\" to verify that it reports the right device.  Also you shouldn't configure a pool on the disk, just pass the raw disk device to dumpon.  If you're willing to give me remote access, please mail me.\n\nFinally, I think your kernel does not have debugging assertions enabled.  If it is possible to get a stock kernel build with \"options INVARIANTS\" enabled, please try testing it.\n\nThe fault address should correspond to the buffer returned by aesni_cipher_alloc().  I'd guess that it's returned by crypto_contiguous_subsegment() and there's some kind of overflow condition occurring with the page array offset or length, but I can't see where.  There is some fishy code, e.g., in g_disk_advance():\n\n\t\tbp-\u003ebio_ma_offset += off;\n\t\tbp-\u003ebio_ma_offset %= PAGE_SIZE;\n\nbut this is only a problem for large (\u003e 2GB) offsets, which shouldn't happen..."
+}

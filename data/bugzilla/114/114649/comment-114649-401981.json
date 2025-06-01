@@ -1,0 +1,8 @@
+{
+ "id": 401981,
+ "bug_id": 114649,
+ "attachment_id": 0,
+ "creation_time": "2007-07-17T02:40:03Z",
+ "creator": "cristi@net.utcluj.ro",
+ "text": "When resuming (from S3) an IBM Thinkpad R51 laptop, KDB is entered with the following panic string (written by hand):\n\npanic: _mtx_lock_sleep: recursed on non-recursive mutex acpi subsystem GPE lock\n@ ......./OsdSynch.c:377\n\nFix: It seems to me that ACPI vendor code was not designed to use non-recursive mutexes. For example:\n\n* AcpiEvGpeDetect() calls AcpiOsAcquireLock(AcpiGbl_GpeLock) in contrib/dev/acpica/evgpe.c:511, then calls AcpiEvGpeDispatch()\n* AcpiEvGpeDispatch() calls AcpiHwDisableAllGpes() in evgpe.c:762\n* AcpiHwDisableAllGpes() calls AcpiEvWalkGpeList in hwgpe.c:487\n* AcpiEvWalkGpeList() calls AcpiOsAcquireLock(AcpiGbl_GpeLock) *again* in evgpeblk.c:237\n\nRather that correcting contributed code (in who knows how many places) and then have problems in the future (when the ACPI vendor code is upgraded), I suggest making the ACPI GPE lock recursable. The patch below does this.\n\nAfter applying this patch, I've been able to suspend / resume 20+ times.\n\nPatch attached with submission follows:\nHow-To-Repeat: Suspend (S3) / resume a laptop. Panic will always occur after the first resume."
+}

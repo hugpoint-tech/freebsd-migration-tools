@@ -1,0 +1,8 @@
+{
+ "id": 698491,
+ "bug_id": 175086,
+ "attachment_id": 0,
+ "creation_time": "2013-01-07T07:00:00Z",
+ "creator": "Andre.Albsmeier@siemens.com",
+ "text": "\nBooting from a GPT partitioned disk that can have more\nthan 128 parition entries (e.g. 248 in this case)\nfails under 9.1 but worked under 7.4.\n\nThis is due to a test that was introduced in sys/boot/common/gpt.c:\n\n...\n#define MAXTBLENTS      128\n...\n        if (bcmp(hdr-\u003ehdr_sig, GPT_HDR_SIG, sizeof(hdr-\u003ehdr_sig)) != 0 ||\n            hdr-\u003ehdr_lba_self != hdrlba || hdr-\u003ehdr_revision \u003c 0x00010000 ||\n            hdr-\u003ehdr_entsz \u003c sizeof(struct gpt_ent) ||\n            hdr-\u003ehdr_entries \u003e MAXTBLENTS || DEV_BSIZE % hdr-\u003ehdr_entsz != 0) {\n                printf(\"%s: invalid %s GPT header\\n\", BOOTPROG, which);\n                return (-1);\n        }\n\nFix: \n\nThe check should be removed since a GPT header with more than\n128 possible parition entries is not invalid and can legally\nbe created with gpart.\nHow-To-Repeat: \nCreate a disk using\n\ngpart create -s gpt -n 248 $disk\n\nand add bootcode and system to it. Add some delay into gptinit()\nof sys/boot/i386/gptboot/gptboot.c so you can read the error\nmessages before reset occurs:\n\ninvalid primary GPT header\ninvalid backup GPT header\nunable to load GPT"
+}

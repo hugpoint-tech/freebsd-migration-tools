@@ -1,0 +1,8 @@
+{
+ "id": 919526,
+ "bug_id": 216673,
+ "attachment_id": 179475,
+ "creation_time": "2017-01-31T12:05:45Z",
+ "creator": "tdb@FreeBSD.org",
+ "text": "Created attachment 179475\nPossible fix.\n\nThis port has the following settings for rcorder:\n\n# PROVIDE: dhcp6c\n# REQUIRE: DAEMON\n# BEFORE: NETWORKING\n# KEYWORD: shutdown\n\n# PROVIDE: dhcp6s\n# REQUIRE: DAEMON\n# BEFORE: NETWORKING\n# KEYWORD: shutdown\n\nThis tells rcorder to put dhcp6{c,s} after DAEMON and before NETWORKING. So, eg:\n\nDAEMON\ndhcp6c\ndhcp6s\nNETWORKING\n\nUnfortunately, this conflicts with DAEMON:\n\n# PROVIDE: DAEMON\n# REQUIRE: NETWORKING SERVERS\n\nWhich requires that NETWORKING come before DAEMON. The following error is produced by rcorder:\n\nrcorder: Circular dependency on provision `DAEMON' in file `/usr/local/etc/rc.d/dhcp6c'.\nrcorder: Circular dependency on provision `DAEMON' in file `/usr/local/etc/rc.d/dhcp6s'.\n\nAs a fix I'd suggest just removing the requirement on DAEMON, since running before NETWORKING seems more important.\n\nThis was introduced in bug #169138, so has been this way for nearly 4 years!"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 7357,
+ "bug_id": 2415,
+ "attachment_id": 0,
+ "creation_time": "1997-01-08T05:40:00Z",
+ "creator": "seki@sysrap.cs.fujitsu.co.jp",
+ "text": "When debugging PAO portion of my if_fe driver, I found the driver\nreceive packets stored in malformed mbuf to send out.  That is,\nm_pkthdr.len in the first mbuf was 14 bytes larger than the sum\nof m_len values in the chain.\n\nThe fe driver relies on m_pkthdr.len, and, if such packets come\nwhen the transmission packet queue is long, (e.g., heavy network\nload,) the driver will crush.\n\nAfter analyzing the case, I found the malformed packets came\nfrom dhcpc daemon of WIDE dhcp package through bpfilter\ndevice.  all packets from dhcpc seemed to have 14 bytes larger\nvalue stored in m_pkthdr.len.\n\nI'm not completely sure yet, but I guess it is a bug in bpf.c\n\nFix: I suggest the following patch to sys/net/bpf.c:\nHow-To-Repeat: Run dhcpc in WIDE dhcp (which is available as a part of 2.2 packages) with any Ethernet driver.\n\nWith ddb (or any other kernel debugger), catch an mbuf from\ndhcpc at the entry to the Ethernet driver (DEVICE_start routine.)\n\nDump the mbuf."
+}

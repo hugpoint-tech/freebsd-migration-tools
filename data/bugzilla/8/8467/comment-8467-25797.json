@@ -1,0 +1,8 @@
+{
+ "id": 25797,
+ "bug_id": 8467,
+ "attachment_id": 0,
+ "creation_time": "1998-10-27T21:20:00Z",
+ "creator": "rich@math.missouri.edu",
+ "text": "grscan() in /usr/src/lib/libc/gen/getgrent.c has no special\nhandling for comment lines, so, for instance, the line:\n#       $Id: group,v 1.13.2.4 1998/09/13 23:10:08 brian Exp $\nis treated as an entry for group with gid=10, \ngname=\"#       $Id: group,v 1.13.2.4 1998/09/13 23\" .\nAlthough there's nothing in the group(5) man page about comments,\nsuch handling would be in keeping with the passwd(5) convention\nas well as most every other unix config file.\n\nFix: \n\nIn /usr/src/lib/libc/gen/getgrent.c, around line 231:\n\n                /* skip lines that are too big */\n                if (!index(line, '\\n')) {\n                        int ch; \n                                        \n                        while ((ch = getc(_gr_fp)) != '\\n' \u0026\u0026 ch != EOF)\n                                ;\n                        continue;               \n                }\n+               if (*bp=='#') continue; /* skip comment lines */\n                if ((_gr_group.gr_name = strsep(\u0026bp, \":\\n\")) == NULL) {\nHow-To-Repeat: With above comment line in /etc/group:\ntouch /tmp/whatever\nchown root.10 /tmp/whatever\nls -l /tmp/whatever\n-rw-r--r--  1 root  #          0 Oct 27 14:50 whatever"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 887534,
+ "bug_id": 211003,
+ "attachment_id": 0,
+ "creation_time": "2016-07-11T12:37:21Z",
+ "creator": "moko@moko.ru",
+ "text": "We have many FreeBSD installations and some of them historically have the following settings in /etc/sysctl.conf:\n\nnet.inet.tcp.delayed_ack=0\nnet.inet.tcp.recvspace=8192\nnet.inet.tcp.sendspace=150000\n\nAfter upgrading to 10.2 we've run into an issue - local http requests were delaying after every 8kb of data for 5 seconds.\n\nlynx --mime_header \"http://\u003cserver ip\u003e/any file around 200kb\"\nfirst we get 4Kb (incuding headers)\n5 seconds delay (exact value, not an approximate)\nnext 8Kb\n5 seconds delay\nnext 8Kb\n... and so on.\n\nEverything is fine if the file is requested remotely, only local requests have such delays. Nginx or apache - both have the delays. We also where able to reproduce the delays in virtualized environment. There are no issues with this sysctl settings in FreeBSD 8.X and FreeBSD 9.X.\n\nSetting net.inet.tcp.sendspace=4096 \"hides\" the issue. Increasing net.inet.tcp.recvspace to more then 32664 also \"hides\" the issue. Restoring net.inet.tcp.delayed_ack to default 1 also \"hides\" the issue but there are still some performance issues if net.inet.tcp.recvspace is low:\n\n\u003esysctl net.inet.tcp.recvspace=8192\n\u003etime lynx --mime_header \"local file around 200 kb\" \u003e /dev/null\n0.009u 0.000s 0:01.41 0.0%\t0+0k 0+0io 0pf+0w\n\n\u003esysctl net.inet.tcp.recvspace=32768\n\u003etime lynx --mime_header \"local file around 200 kb\" \u003e /dev/null\n0.009u 0.000s 0:00.01 0.0%\t0+0k 0+0io 0pf+0w"
+}

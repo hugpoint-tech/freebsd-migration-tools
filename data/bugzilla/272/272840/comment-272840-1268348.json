@@ -1,0 +1,8 @@
+{
+ "id": 1268348,
+ "bug_id": 272840,
+ "attachment_id": 0,
+ "creation_time": "2023-07-31T11:13:13Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "The attached corrupt UDF image claims a root directory file entry\nlength of root_icb.len=64650 (one might expect 2048). During mount,\nudf_readdevblks() rounds this up to 65536, and this line in getblkx()\nincreases it to 67584:\n\n                        maxsize = size + (offset \u0026 PAGE_MASK);\n\ngetnewbuf_kva() further increases the size to 81920.\n\nOn an INVARIANTS kernel, this KASSERT fails in bufkva_alloc():\n\n        KASSERT(maxsize \u003c= maxbcachebuf,\n            (\"bufkva_alloc kva too large %d %u\", maxsize, maxbcachebuf));\n\n        panic: bufkva_alloc kva too large 81920 65536\n\nOn a non-INVARIANTS CURRENT kernel, this leads to a kernel page fault\nduring unmount. On a stock 13.1 kernel, nothing bad happens right away\nbut eventually file system problems arise.\n\nHere's the back-trace on an INVARIANTS kernel:\n\n# mdconfig -f udf4a.iso\n# mount_udf /dev/md0 /mnt\npanic: bufkva_alloc kva too large 81920 65536\npanic() at panic+0x26\nbufkva_alloc() at bufkva_alloc+0x104\ngetnewbuf_kva() at getnewbuf_kva+0x2a\ngetnewbuf() at getnewbuf+0xec\ngetblkx() at getblkx+0x188\nbreadn_flags() at breadn_flags+0x56\nudf_readdevblks() at udf_readdevblks+0x52\nudf_mountfs() at udf_mountfs+0x574\nudf_mount() at udf_mount+0x19c\nvfs_domount_first() at vfs_domount_first+0x1cc\nvfs_domount() at vfs_domount+0x26c\nvfs_donmount() at vfs_donmount+0x82c\nsys_nmount() at sys_nmount+0x5e\nsyscallenter() at syscallenter+0xe0\necall_handler() at ecall_handler+0x18\ndo_trap_user() at do_trap_user+0xf2\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72\n--- syscall (378, FreeBSD ELF64, nmount)"
+}

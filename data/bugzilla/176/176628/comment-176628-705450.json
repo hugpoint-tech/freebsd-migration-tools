@@ -1,0 +1,8 @@
+{
+ "id": 705450,
+ "bug_id": 176628,
+ "attachment_id": 0,
+ "creation_time": "2013-03-04T01:50:00Z",
+ "creator": "amdmi3@FreeBSD.org",
+ "text": "r228529 introduced __WORDSIZE macro:\n\n--- sys/sys/stdint.h\n+#if defined(UINTPTR_MAX) \u0026\u0026 defined(UINT64_MAX) \u0026\u0026 (UINTPTR_MAX == UINT64_MAX)\n+#define\t__WORDSIZE\t\t64\n+#else\n+#define\t__WORDSIZE\t\t32\n+#endif\n---\n\nHowever the way it's defined is utterly unsafe: when UINTPTR_MAX or UINT64_MAX are not defined (which is the case for C++, as their definitions in e.g. x86/_stint.h are wrapped in\n\n#if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)\n\n__WORDSIZE is always defined as 32, which is wrong on 64bit systems.\n\nI have two solutions for the problem.\nFirst one uses the same way of testing for 64bit pointers, but doesn't define __WORDSIZE if it can't be detected reliably.\nSecond one uses different way of testing for 64bit pointers with checking for __LP64__.\n\nThe second one looks much more useful, but I'm not sure if __LP64__ has the right semantics and will work in all platforms.\n\nAlso, can't it just be unconditionally defined to (sizeof(int*)*8)?"
+}

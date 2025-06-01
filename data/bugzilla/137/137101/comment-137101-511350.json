@@ -1,0 +1,8 @@
+{
+ "id": 511350,
+ "bug_id": 137101,
+ "attachment_id": 0,
+ "creation_time": "2009-07-24T21:10:06Z",
+ "creator": "olgeni@FreeBSD.org",
+ "text": "The -p option in mount(8) enables fstab_style, which is supposed\nto print mount information in fstab(5) format.\n\nIf a mounted file system does not have any options specified\n(MNT_NOEXEC, MNT_NOSUID) then the default \"rw\" option is printed.\n\nHowever, if any of the MNT_* flags is present (MNT_RDONLY aside)\nthe \"rw\" option is skipped. If the output is used in an actual fstab\nfile, output similar to the following will occur during mounts, and\nthe corresponding mounts would fail:\n\nfstab: /etc/fstab:6: Inappropriate file type or format\nfstab: /etc/fstab:6: Inappropriate file type or format\nmount: /storage: unknown special file or file system\n\nFix: The following patch to src/sbin/mount/mount.c 1.96.2.3 (RELENG_7)\nchanges flags2opts to consider \"rw\" the opposite of \"ro\", even if\nother options are defined.\n\nThe original check for NULL options is removed, since flags2opts\nnow always adds at least \"rw\" or \"ro\" to the option string.\nHow-To-Repeat: # mount -p\n/dev/ad0s1a\t\t/\t\t\tufs\tnoatime\t\t1 1\n/dev/ad0s1d\t\t/var\t\t\tufs\tnoatime\t\t2 2\n/dev/ad0s1e\t\t/usr\t\t\tufs\tnoatime\t\t2 2\n/dev/ad2s1f\t\t/storage\t\tufs\tnoatime\t\t2 2\n\nThe problem may be repeated by temporarily removing \"rw\" from any\nnon essential filesystem and trying to umount/mount it."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 337245,
+ "bug_id": 100365,
+ "attachment_id": 0,
+ "creation_time": "2006-08-21T13:57:32Z",
+ "creator": "Tor.Egge@cvsup.no.freebsd.org",
+ "text": "It looks like snapshots don't work well on amd64.  Making a snapshot\nwhile 'make world' is running in the background and mounting it multiple\ntimes shows that it isn't stable:\n\n\n# rm -f /usr/.snap/snapshot\n# mksnap_ffs /usr /usr/.snap/snapshot\n# mdconfig -a -t vnode -f /usr/.snap/snapshot -u 0 -o readonly\n# mount -r /dev/md0 /mnt\n# ls -lisdtT /mnt/src/make.world\n1860701 11792 -rw-r--r--  1 root  bin  12050746 Aug 19 23:21:33 2006 /mnt/src/make.world\n# umount /mnt\n# mount -r /dev/md0 /mnt\n# ls -lisdtT /mnt/src/make.world \n1860701 12528 -rw-r--r--  1 root  bin  12801326 Aug 19 23:23:03 2006 /mnt/src/make.world\n\nThe check at the start of ffs_copyonwrite() for whether the write is to a\nsnapshot file or not is faulty when the write is a metadata update.  In that\ncase, the vnode associated with the buffer doesn't have an inode, but instead a\ndevfs_dirent structure.\n\nMemory beyond the end of the related devfs_dirent structure is incorrectly\ninterpreted as ufs inode flags for those metadata updates.\n\nOn RELENG_6/amd64, what is interpreted as i_flags is really the start of the\ndevice name in the dirent structure following the devfs_dirent structure,\ncontent typically 0x73306164 (da0s), triggering the failure.\n\nOn HEAD/i386, what is interpreted as i_flags is beyond the end of both the\ndevfs_dirent structure and the following dirent structure, content typically\nzero, not triggering the failure.\n\n- Tor Egge"
+}

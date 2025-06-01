@@ -1,0 +1,8 @@
+{
+ "id": 1212600,
+ "bug_id": 264191,
+ "attachment_id": 0,
+ "creation_time": "2022-05-23T20:40:01Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "1. debugnet_mbuf_reinit() is racy.\n\nWith netdump we would only populate the mbuf cache when a device was *configured*. Now we populate the cache when the device comes up and if it *supports* debugnet. Thus if we have a driver with multiple devices then each device coming up will cause debugnet_mbuf_reinit() to race between multiple threads while touching the mbufqs. This is easily fixed but leaves more issues.\n\nDoing this during driver link up makes sense because we may not configure the device until after panic in ddb with .netdump. \n\n2. dn_buf_import() may overflow an mbuf from the queue with trash_init() on \u003cwithout INVARIANTS\u003e.\n\nIf 1 device has jumbo frames, MTU 9000, and the other normal MTU of 1500, the hwm/dn_clsize can become MJUM9BYTES (9216).\n\n[This next part may only be a problem for something like mlx4 which has some cached mbufs of its own. This can be seen in mlx4_en_alloc_buf() where it appears to always keep 1 extra mbuf around for each ring. It appears it may use that mbuf at panic time if mlx4_en_alloc_mbuf() fails. The issue I ran into downstream was a very different allocation scenario but the FreeBSD version appears to have a similar issue.]\n\nIf the device that is used at dump time has an MTU of 1500 it is possible for the device to return a smaller mbuf to the dn_clustq than expected for that zone (vs the high water mark of 9216). When it is removed in dn_buf_import() it has trash_init(9216) ran over it rather than the expected MCLBYTES size."
+}

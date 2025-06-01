@@ -1,0 +1,8 @@
+{
+ "id": 487379,
+ "bug_id": 132179,
+ "attachment_id": 0,
+ "creation_time": "2009-02-27T20:50:01Z",
+ "creator": "dhorn2000@gmail.com",
+ "text": "in /etc/network.subr, in function network6_interface_setup:\n\nThe incorrect wlan network interfaces will be eligible for rtsol.\n\nIf rtsol is called for a wireless hardware interface rather than the wlanX interface, it will fail to send a router solicitation, and will give spurious errors like:\n\nget_llflag() failed, anyway I'll try\nsendmsg on iwn0: Can't assign requested address\nsendmsg on iwn0: Can't assign requested address\nsendmsg on iwn0: Can't assign requested address\n\nThis is not just innocuous, as the way that rtsol is called, only the first interface is actually eligible, so wlan0 will never be initialized by rtsol, This may not be easily noticeable depending on ipv6 router advertisement timing.\n\nMy patch dynamically determines if an interface is 802.11, and NOT named wlanX to remove eligibility.\n\nFix: unified diff attached.\n\nPatch attached with submission follows:\nHow-To-Repeat: Setup a machine with a wireless interface and ipv6 enabled and setup in rc.conf\n\ne.g.\nipv6_enabled=\"YES\"\nwlans_iwn0=wlan0\nifconfig_wlan0=\"WPA DHCP\"\n\nwith appropriate wpa_supplicant.conf configured\n\nWatch for get_llflag() failed errors on boot"
+}

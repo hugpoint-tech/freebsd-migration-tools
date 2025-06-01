@@ -1,0 +1,8 @@
+{
+ "id": 1336238,
+ "bug_id": 282927,
+ "attachment_id": 0,
+ "creation_time": "2024-11-23T05:21:36Z",
+ "creator": "2khramtsov@gmail.com",
+ "text": "Host: Zen 3 (AMD Ryzen 5600G), base e8263ace39c8\n\nVarious parts of guest boot process, as well as starting python3.12 from prompt, all commonly fail with this in Guest Linux dmesg:\n\n[   22.516086] Code: 8b f0 ff 48 89 da 4c 89 f3 4c 8b b5 68 ef ff ff e9 cf 8a f0 ff 66 0f 1f 44 00 00 f3 0f 1e fa 55 48 89 e5 41 54 53 4c 8b 67 10 \u003c48\u003e 8b 5e 10 0f b6 46 20 49 39 dc 48 89 da 49 0f 4e d4 a8 20 0f 84\n\n\"f3 0f 1e fa\" is ENDBR64 (IBT).\n\nCET is on in host CPUID, off in guest CPUID. IBT isn't supported by CPU and is off everywhere, though ENDBR64 should be handled similar to a NOP.\n\nGCC 8 seems to generate endbrXX by default (see https://stackoverflow.com/a/69226244), so I have no idea if this is ENDBR64 related or not. ENDBR64 handling as a reason is only my uneducated guess.\n\nI start my VM with:\n\n#!/bin/sh\n\nUEFI=/usr/local/share/uefi-firmware/BHYVE_UEFI.fd\nMEM=2G\nVM=\"repro\"\nIF=\"$(ifconfig tap create up)\"\nDPY=\"w=1920,h=1080\"\n\nifconfig bridge0 addm $IF up\n\nwhile true ; do\n        bhyve \\\n                -S -H \\\n                -s 0,amd_hostbridge \\\n                -s 2,ahci-cd,/tmp/archlinux-2024.11.01-x86_64.iso \\\n                -s 10,virtio-net,$IF \\\n                -s 29,fbuf,tcp=[::1]:5900,$DPY \\\n                -s 31,lpc \\\n                -l bootrom,$UEFI \\\n                -m $MEM \\\n                $VM\n        RES=$?\n        bhyvectl --destroy --vm=$VM\n        if [ $RES -eq 1 ] ; then\n                ifconfig $IF destroy\n                exit 1\n        fi\n        sleep 1\ndone"
+}

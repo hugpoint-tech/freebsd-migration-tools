@@ -1,0 +1,8 @@
+{
+ "id": 1141076,
+ "bug_id": 252582,
+ "attachment_id": 221464,
+ "creation_time": "2021-01-11T16:11:03Z",
+ "creator": "ankohuu@outlook.com",
+ "text": "Created attachment 221464\npatch for epoll create\n\nIn function epoll_create_common calls epoll_fd_install when kern_kqueue success,\nI guess this is to initialize the proc emuldata space.\nBut when epoll has allocated a descriptor equal to EPOLL_DEF_SZ, the above action will clear the user data of fd EPOLL_DEF_SZ.This should be an error.\n\nstatic int\nepoll_create_common(struct thread *td, int flags)\n{\n        int error;\n \n        error = kern_kqueue(td, flags, NULL);\n        if (error != 0)\n                return (error);\n \n        epoll_fd_install(td, EPOLL_DEF_SZ, 0);\n \n        return (0);\n}\n\nIn my scenario, the function epoll_fd_install will cause the electron gpu thread consumes a lot of cpu resources because the returned fd cannot be processed correctly.\nMy patch is in the attachment."
+}

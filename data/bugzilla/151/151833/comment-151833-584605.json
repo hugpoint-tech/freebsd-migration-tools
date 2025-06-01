@@ -1,0 +1,8 @@
+{
+ "id": 584605,
+ "bug_id": 151833,
+ "attachment_id": 0,
+ "creation_time": "2010-10-30T17:00:26Z",
+ "creator": "glimp@live.com",
+ "text": "As a standard user I could not succesfully execute \n\n'mount_msdosfs -L en_US.UTF-8 /dev/da0s1 local/mnt'\n\nI installed kiconvtool and added the following lines to /etc/rc.conf \n\nkiconv_preload=\"YES\"\nkiconv_local_charsets=\"UTF-8\"\nkiconv_foreign_charsets=\"UTF-16BE UTF-8\"\n\nEven with this I could not execute the preceding command as a standard user.\n\nTaking a look at the code I discovered that \"mount_msdosfs -L en_US.UTF-8 /dev/da0s1 local/mnt\" when starts up sets its locale to en_US.UTF-8 [1]. And this leads to loading also the pair (UTF-8,_wctype) [2]. So, apparently, if that pair is not loaded, standard users can not execute the preceding command.\n\nAt this point the problem that arises is that at command line I do not know how to specify the charset _wctype (unless this is not possible) and feed kiconvtool. \n\nTo solve the problem, I then modified kiconvtool (explained below) so that the pair (UTF-8, _wctype) is loaded automatically.\n\nd\n\n[1] /usr/src/sbin/mount_msdosfs/mount_msdosfs.c    - Line 114\n[2] /usr/src/lib/libkiconv/xlat16_iconv.c          - Line 123\n\nFix: The workaround to solve this __specific__ problem was to apply the following patch and rebuild kiconvtool. \nPlease *note* that this patch is not intended for general usage but just to give an idea of a base to further improve the port in case it is not possible to specify _wctype at command line (or to remove the requirement)."
+}

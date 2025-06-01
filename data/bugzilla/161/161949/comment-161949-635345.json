@@ -1,0 +1,8 @@
+{
+ "id": 635345,
+ "bug_id": 161949,
+ "attachment_id": 0,
+ "creation_time": "2011-10-24T02:00:02Z",
+ "creator": "cdavis@mymail.mines.edu",
+ "text": "When a process transfers data to or from the kernel, and those data are\norganized into structures whose size depends on whether or not the size\nof a pointer is 4 or 8 bytes, an LP64 kernel always uses 64-bit structures,\neven with 32-bit processes. I know this is true of structures returned from\nsysctl(3), but I also think it is true of structures used with ioctl(2)\nand fcntl(2). Because 32-bit processes expect 32-bit structures, attempts\nto use the 64-bit structures fail at best and cause massive data corruption\nat worst.\n\nThis is already affecting real-world code. A patch of mine that was\nrecently committed to Wine (http://www.winehq.org) exposed this issue\nwith the xtcpcb and xinpcb structs returned by the sysctl(3)s\n\"net.inet.tcp.pcblist\" and \"net.inet.udp.pcblist\" (cf. Wine bug 28857:\nhttp://bugs.winehq.org/show_bug.cgi?id=28857).\n\nFix: \n\nFreeBSD should detect if a process is a 32-bit one, and if so, it should\nuse 32-bit structures instead of 64-bit ones. I don't know how the former\ncan be done; a cursory look through the \u003csys/proc.h\u003e header reveals\nnothing. The latter is easy, but tedious: definitions for the 32-bit\nstructs must be added to the kernel headers.\n\nAnother way to solve this problem (at the cost of binary compatibility\nfor 32-bit programs) is to simply make the 32-bit and 64-bit structures\nthe same.\nHow-To-Repeat: Run any 32-bit program under a 64-bit kernel that calls sysctl(3),\nioctl(2), or fcntl(2) and uses a data structure with those calls whose\nsize depends on the pointer size."
+}

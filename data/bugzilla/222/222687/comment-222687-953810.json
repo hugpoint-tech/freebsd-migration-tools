@@ -1,0 +1,8 @@
+{
+ "id": 953810,
+ "bug_id": 222687,
+ "attachment_id": 0,
+ "creation_time": "2017-09-29T14:17:19Z",
+ "creator": "meng.xu@gatech.edu",
+ "text": "In function smb_strdupin(), it first guesses the length of the input string\n(by incrementally read and testing for the NULL terminator) and then copyin\nthe whole string from userspace. However, given that another user thread can\n\"scramble\" the userspace buffer while smb_strdupin() is in execution,\nit might result in a case where the string after second copyin is not \nNULL terminated.\n\nThis itself is not yet a very serious issue. However, it does become a bug\nlater. smb_strdupin() is invoked in smb_usr_t2request() by\nt2p-\u003et_name = smb_strdupin(dp-\u003eioc_name, 128);\nAnd later in downstream functions \nsmb_t2_request(t2p) --\u003e smb_t2_request_int(t2p)\nthere is a call to t2p-\u003et_name: nmlen = t2p-\u003et_name ? strlen(t2p-\u003et_name) : 0\n\nNow if t2p-\u003et_name is not NULL terminated, calling strlen(t2p-\u003et_name)\nwill cause wield behaviors, such as invalid memory accesses."
+}

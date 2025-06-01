@@ -1,0 +1,8 @@
+{
+ "id": 595364,
+ "bug_id": 153952,
+ "attachment_id": 0,
+ "creation_time": "2011-01-14T11:18:06Z",
+ "creator": "cowbert@gmail.com",
+ "text": "Scratch my previous followup...\n\nI've managed to narrow down the two separate issues that are causing\nthis issue between devel/gobject-introspection and lang/python26+pth.\n\nHere is one approach:\nPatch python26-config to emit -I${LOCALBASE}/include/pth as an extra\ninclude header by patching the python-config.in, see here:\nhttp://cesium.hyperfine.info/~cowbert/ports/lang/python26/patch-Makefile\n\nThe second approach is to patch the distutils/sysconfig.py, so that\n${LOCALBASE}/include/pth is emitted by sysconfig as part of\nget_python_inc() but I don't think that's necessarily a good idea to\ninterfere with the upstream too much, and really, C code building\nagainst python should be using the python-config script to determine\nthe include, ldflag, and cflags anyway...\n\nNow, the next issue is: because somehow, gobject-introspection's\nconfigure script doesn't use sysconfig to build the python's include\npath, they are building the PYTHON_INCLUDES path manually, so I patch\nit with http://cesium.hyperfine.info/~cowbert/ports/devel/gobject-introspection/files/patch-configure\n\nAnd finally post-patch the configure to expand %%LOCALBASE%%, so that\nconfigure can find ${LOCALBASE}/bin/python${PYTHON_VERSION}-config\nhttp://cesium.hyperfine.info/~cowbert/ports/devel/gobject-introspection/patch-Makefile\n\ngobject-introspection now makes properly against python+pth with the\nabove patches"
+}

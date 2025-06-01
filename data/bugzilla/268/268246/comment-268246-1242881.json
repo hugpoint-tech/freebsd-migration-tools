@@ -1,0 +1,8 @@
+{
+ "id": 1242881,
+ "bug_id": 268246,
+ "attachment_id": 0,
+ "creation_time": "2023-01-12T09:06:56Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to jjasen from comment #21)\nOkay, so I think I see what's going on here.\n\nEssentially what's happening here is that we need to know what vnet we're in because we're in a callout and those don't belong to specific vnets. We got from that the mbuf's received interface, but that's not set for locally originated traffic, so we panic dereferencing a NULL pointer.\n\nHappily we also have a pointer to the pfsync interface, and we can just get the vnet pointer from there.\n\nI've not been able to meaningfully test this myself, because today there are not a lot of internets around where I'm staying.\n\nThis patch is against main, but should just apply on stable/13 as well.\n\ndiff --git a/sys/netpfil/pf/if_pfsync.c b/sys/netpfil/pf/if_pfsync.c\nindex a2baf477873e..05c80ae725ea 100644\n--- a/sys/netpfil/pf/if_pfsync.c\n+++ b/sys/netpfil/pf/if_pfsync.c\n@@ -1819,8 +1819,11 @@ pfsync_defer_tmo(void *arg)\n\n        PFSYNC_BUCKET_LOCK_ASSERT(b);\n\n+    if (sc-\u003esc_sync_if == NULL)\n+        return;\n+\n        NET_EPOCH_ENTER(et);\n-       CURVNET_SET(m-\u003em_pkthdr.rcvif-\u003eif_vnet);\n+       CURVNET_SET(sc-\u003esc_sync_if-\u003eif_vnet);\n\n        TAILQ_REMOVE(\u0026b-\u003eb_deferrals, pd, pd_entry);\n        b-\u003eb_deferred--;\n\nThe other issue I still don't understand, but once you've tested the above patch it'd also be useful to test pfsync without defer mode. I wonder if the problem is related to that."
+}

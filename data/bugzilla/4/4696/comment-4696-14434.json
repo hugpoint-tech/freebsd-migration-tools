@@ -1,0 +1,8 @@
+{
+ "id": 14434,
+ "bug_id": 4696,
+ "attachment_id": 0,
+ "creation_time": "1997-10-05T19:30:00Z",
+ "creator": "marcs@znep.com",
+ "text": "\n$ ping cban\nPING cban.cban.com (204.209.160.1): 56 data bytes\n^C^C^C^C^C^C^C\n[... and it doesn't exit...]\n\nThe namesever for the above host is not reachable right now, so\ntrying to do the reverse lookup hangs for a long period of\ntime.  The problem is that ^C won't exit.  This is because \nthe SIGINT signal handler just sets a flag telling ping to \nexit.  That doesn't do anything because ping in a select() in \nres_send which is retried if it gets an EINTR.\n\n0x80873b1 in select ()\n(gdb) up\n#1  0x806b5a0 in res_send ()\n(gdb) up\n#2  0x8067eaa in res_query ()\n(gdb) up\n#3  0x8063786 in _gethostbydnsaddr ()\n(gdb) up\n#4  0x8062156 in gethostbyaddr ()\n(gdb) up\n#5  0x361e in pr_addr (ina={s_addr = 1772147148}) at ping.c:1168\n1168            if ((options \u0026 F_NUMERIC) ||\n(gdb)\n\n\nThis problem was introduced in revision 1.22 of ping.c.\n\nFix: \n\nPerhaps do a setjmp somewhere then have the signal handler do a \nlongjmp out and have it check the flag then.\n\nLowering the _res timeouts for the resolver would help a little,\nbut isn't really a good solution because it would still hang for\na bit and because it would result in false negatives for reverses\nfor a small number of hosts.\nHow-To-Repeat: \nFind a host where all the nameservers are unreachable for the reverse\nlookup.  ping it."
+}

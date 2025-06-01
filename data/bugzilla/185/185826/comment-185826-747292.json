@@ -1,0 +1,8 @@
+{
+ "id": 747292,
+ "bug_id": 185826,
+ "attachment_id": 0,
+ "creation_time": "2014-01-16T18:40:00Z",
+ "creator": "ftigeot@wolfpond.org",
+ "text": "While investigating net-p2p/amule crashes, I found out the security/cryptopp package tried to use illegal instructions.\n\nThis occurs in the CryptoPP::RandomNumberGenerator::GenerateWord32(unsigned int, unsigned int) method.\n\nAnd is caused by the use of the shrx x86 instruction:\n\n(gdb output)\nProgram received signal SIGILL, Illegal instruction.\n0x0000000000626b88 in CryptoPP::RandomNumberGenerator::GenerateWord32(unsigned int, unsigned int) ()\n=\u003e 0x0000000000626b88 \u003c_ZN8CryptoPP21RandomNumberGenerator14GenerateWord32Ejj+40\u003e: c4 e2 73 f7 c3 shrx %ecx,%ebx,%eax\n\nshrx is a new Haswell instruction, which means programs using the cryptopp library will crash on all machines not using this latest Intel processor generation.\n\nFix: The root of the issue comes from the CXXFLAGS line in GNUmakefile.\nChanging it to stop generating instructions for a particular CPU model (removing \"-native\") will fix packages once and for all. \n\nThe attached patch fixes the issue for me.\n\nPatch attached with submission follows:\nHow-To-Repeat: Build a cryptopp package on a Haswell CPU and try to use it on a machine with a previous generation CPU."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 82229,
+ "bug_id": 26320,
+ "attachment_id": 0,
+ "creation_time": "2001-04-03T17:40:00Z",
+ "creator": "bg@sics.se",
+ "text": "\nThis problem really stems from a poorly designed mount protocol. When\nusing ONC/RPC over UDP, RPC requests and responses are limited to\n8kbytes of data. If a RPC response can not fit into that limited space\nthe RPC will fail. The mountd protocol has a procedure\nMOUNTPROC_EXPORT that returns a list of all exported file systems and\nwhich machines are allowed to import it. If a server has many clients\nand exports many file systems this RPC reply will no longer fit into\n8kbytes!\n\nFortunately, only the list of exported file systems is relevant to\nprograms such as the automounter. It is thus possible to return an\nabbreviated reply that uses a placeholder for the hosts lists.\n\nFix: The fix below first try to send a regular RPC reply, only when this\nfails, an abbreviated reply is sent. The fix has been verified on 3.5\nand 4.2 hosts.\nHow-To-Repeat: \nSet up a FreeBSD NFS file server and export many file systems to many\nhosts. Verify that the output from showmount -e your.nfs.server is\nreally long (longer than 8k).\n\nFrom a IRIX host, try ls /hosts/your.file.server/. The ls will\neventually fail. On the file server you will find a syslog entry\n\"can't send reply\"."
+}

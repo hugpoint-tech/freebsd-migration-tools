@@ -1,0 +1,8 @@
+{
+ "id": 1132926,
+ "bug_id": 240687,
+ "attachment_id": 219867,
+ "creation_time": "2020-11-21T21:20:13Z",
+ "creator": "kevans@freebsd.org",
+ "text": "Created attachment 219867\ngit(1) diff against base\n\nI think the attached is a recommendation that I'm happy with; you can't globally let cpuset_getbase() find the root's root, but you can fix the restrictions in cpuset_modify(). With this:\n\n(viper = host, boo = jail, boo.foo = jail nested inside boo)\n```\nboo# cpuset -gi\npid -1 cpuset id: 4\nboo# cpuset -g\npid -1 mask: 0, 1, 2, 3\npid -1 domain policy: first-touch mask: 0\nboo# cpuset -l 0,1,2 -s 4\ncpuset: setaffinity: Operation not permitted\n\nroot@viper:/usr/home/kevans# cpuset -l 0,1,2 -s 4\n\nboo# cpuset -g\npid -1 mask: 0, 1, 2\npid -1 domain policy: first-touch mask: 0\n\nroot@viper:/usr/home/kevans# jail -c name=boo.foo path=/ command=/bin/sh\n\nboo.foo# cpuset -g\npid -1 mask: 0, 1, 2\npid -1 domain policy: first-touch mask: 0\nboo.foo# cpuset -c\nboo.foo# cpuset -gi\npid -1 cpuset id: 5\n\nboo# cpuset -l 0,1 -s 5\n\nboo.foo# cpuset -g\npid -1 mask: 0, 1\npid -1 domain policy: first-touch mask: 0\n```\n\nSo every jail can modify a subordinate jail's root, but not its own root, all the way up to prison0 root. root can restrict a jail to 1,2 or widen it back to 1,2,3 and that jail can delegate a subset of those to child jails."
+}

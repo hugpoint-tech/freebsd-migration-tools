@@ -1,0 +1,8 @@
+{
+ "id": 935125,
+ "bug_id": 219494,
+ "attachment_id": 182851,
+ "creation_time": "2017-05-24T06:52:40Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "Created attachment 182851\npatch to fix local mail delivery problem in cyrus-imapd24-2.4.19\n\nWhen attempting local mail delivery, lmptd in cyrus-imapd24-2.4.19 logs this error to /var/log/messages:\n  lmtpunix[23085]: getaddrinfo(\u003cbinary garbage\u003e) failed: servname not supported for ai_socktype\nand returns this error to the MTA over the lmtp socket:\n  451 4.4.3 Remote server unavailable\n\nThe problem is that when doing delivery to a local mailbox, mlookup() does not\nset *server to NULL, which causes deliver() to think it is doing a proxy delivery and attempt to use the uninitialized server pointer as the server name.\n\nThe attached patch restores a line of code deleted from mlookup() between 2.4.18 and 2.4.19 that sets *server to NULL at the top of the function.\n\nA fix for this problem is being discussed upstream, but the user who first reported this bug had success with this patch.\n\u003chttp://asg.andrew.cmu.edu/archive/message.php?mailbox=archive.info-cyrus\u0026msg=57376\u003e"
+}

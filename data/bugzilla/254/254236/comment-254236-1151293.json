@@ -1,0 +1,8 @@
+{
+ "id": 1151293,
+ "bug_id": 254236,
+ "attachment_id": 223204,
+ "creation_time": "2021-03-12T10:34:05Z",
+ "creator": "topical@gmx.net",
+ "text": "Created attachment 223204\nEnforce sending of bucket containing \"bulk update\" request\n\nOn startup, pfsync initiates a \"bulk update\" to fetch all states from sync peer:\n\nkernel: pfsync: requesting bulk update\n\nOne systems with many cores, this step fails in most cases:\n\nkernel: pfsync: failed to receive bulk update\n\nThis is because the \"bulk update\" is not sent to the sync peer. Internally, all pfsync requests (like \"bulk update\") are put into \"buckets\". The content of a bucket is usually sent when the bucket is sufficiently filled (i.e. the generated IP packet just fits into the MTU).\n\nThe number of buckets is twice the number of CPU cores by default to reduce lock contention, but you can change this at boot time with \"net.pfsync.pfsync_buckets\".\n\nIf you have many cores and little traffic on the host, buckets won't be filled fast enough and the bucket with the \"bulk update\" request will not be sent within timeout. If it sent later on, the host is not in bulk update mode anymore and will discard the bulk update response.\n\nI identified the following solutions/workarounds:\n\n1. Enforce sending buckets after generating bulk update request by patching if_pfsync.c\n2. Reduce number of buckets (very unreliably and even \"4\" may be too high if your host is in standby mode and thus receives very little traffic)\n3. Force sending of all buckets by temporarily reducing MTU of pfsync interface"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 871471,
+ "bug_id": 208251,
+ "attachment_id": 0,
+ "creation_time": "2016-03-23T19:05:05Z",
+ "creator": "fk@fabiankeil.de",
+ "text": "After r296963 (tested with a system based on r297146),\nI get additional, but bogus password prompts while booting\nfrom a disk with the following layout:\n\nfk@r500 ~ $gpart show\n=\u003e       63  488397105  ada0  MBR  (233G)\n         63  488397105     1  freebsd  [active]  (233G)\n\n=\u003e        0  488397105  ada0s1  BSD  (233G)\n          0         16          - free -  (8.0K)\n         16    2097152       1  !0  (1.0G)\n    2097168    4194304       2  freebsd-swap  (2.0G)\n    6291472  482105633       4  !0  (230G)\n\nada0s1d is geli-encrypted and contains the system's ZFS pool.\n\nada0s1a is the unencrypted boot partition (UFS) which also\nholds a geli keyfile for ada0s1d.\n\nInstead of asking for the passphrase for ada0s1d, the new\npassphrase prompt asks for a passphrase for disk0p1,\npresumably because the geli metadata on ada0s1d is\nmisinterpreted as metadata for ada0s1.\n\nEntering the correct passphrase results in the message\n\"Bad GELI key: -1\" and the prompt is repeated.\n\nAfter three failed attempts I get the passphrase prompt\nfrom the loader (due to geom_eli_passphrase_prompt=\"YES\")\nand the system boots fine.\n\nMy other systems use a GPT layout and continue to work\nas expected."
+}

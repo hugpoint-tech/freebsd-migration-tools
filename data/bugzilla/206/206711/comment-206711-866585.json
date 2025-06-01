@@ -1,0 +1,8 @@
+{
+ "id": 866585,
+ "bug_id": 206711,
+ "attachment_id": 0,
+ "creation_time": "2016-02-23T14:28:11Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Dmitry Chagin from comment #2)\nThe patch here is the result of failed attempt to register 64bit |struct linux_ioctl_handler| from within nvidia-driver. All in-tree kernel modules register only 32bit ioctls, the rest is done by linux64 (drm2, v4l2, console, etc). How do you expect ports drivers to support linux64 without examples?\n\n  $ nm -A /boot/kernel/*.ko | fgrep ioctl_register_handler\n  /boot/kernel/amr_linux.ko:                  U linux_ioctl_register_handler\n  /boot/kernel/ipmi_linux.ko:                 U linux_ioctl_register_handler\n  /boot/kernel/linux.ko:     0000000000009480 t linux_ioctl_register_handler\n  /boot/kernel/linux64.ko:   00000000000093e0 t linux_ioctl_register_handler\n  /boot/kernel/mfi_linux.ko:                  U linux_ioctl_register_handler\n  /boot/kernel/mrsas_linux.ko:                U linux_ioctl_register_handler\n\nnvidia_linux.c doesn't have much MD code but the following has no effect even on the hashsum of its object file.\n\n  --- src/nvidia/nvidia_linux.c~\n  +++ src/nvidia/nvidia_linux.c\n  @@ -18,13 +18,8 @@\n   #define LINUX_IOCTL_NVIDIA_MIN 0x4600\n   #define LINUX_IOCTL_NVIDIA_MAX 0x46ff\n\n  -#if defined(NVCPU_X86)\n   #include \"machine/../linux/linux.h\"\n   #include \"machine/../linux/linux_proto.h\"\n  -#elif defined(NVCPU_X86_64)\n  -#include \"machine/../linux32/linux.h\"\n  -#include \"machine/../linux32/linux32_proto.h\"\n  -#endif\n\n   #include \u003ccompat/linux/linux_ioctl.h\u003e"
+}

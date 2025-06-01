@@ -1,0 +1,8 @@
+{
+ "id": 1341891,
+ "bug_id": 283795,
+ "attachment_id": 0,
+ "creation_time": "2025-01-02T12:00:30Z",
+ "creator": "lbm@lbm.dk",
+ "text": "When multiple Windows hosts ping the same external host, being NAT'ed through pf, ICMP echo requests from all other than the first Windows host to initiate the pinging are dropped.\nWindows seems to set ICMP identifier based on uptime or alike, typically 0, where others typically use the PID. This is not reproducible in FreeBSD 14.1.\n\nReproducible with three FreeBSD hosts using nping:\n\nConfiguration:\n\n- router\n \n/etc/rc.conf:\nifconfig_em0=\"DHCP\"\nifconfig_em1=\"inet 10.10.10.1/24\"\npf_enable=\"YES\"\ngateway_enable=\"YES\"\n \n/etc/pf.conf:\nnat on em0 from em1:network to any -\u003e em0\n \n- client1\n \n/etc/rc.conf:\nifconfig_em0=\"inet 10.10.10.2/24\"\ndefaultrouter=\"10.10.10.1\"\n \n- client2\n \n/etc/rc.conf:\nifconfig_em0=\"inet 10.10.10.3/24\"\ndefaultrouter=\"10.10.10.1\"\n \nTest:\n \n- On both clients: pkg install nmap\n- client1: nping --icmp --icmp-type 8 --icmp-id 0 -c 0 8.8.8.8\n- ICMP echo replies are received, keep nping running on client1\n- client2: nping --icmp --icmp-type 8 --icmp-id 0 -c 0 8.8.8.8\n- ICMP echo replies are NOT received on client2, echo requests dropped by router"
+}

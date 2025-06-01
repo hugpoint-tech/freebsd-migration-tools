@@ -1,0 +1,8 @@
+{
+ "id": 1108278,
+ "bug_id": 244296,
+ "attachment_id": 0,
+ "creation_time": "2020-06-14T17:44:02Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "(In reply to Koichiro Iwao from comment #4)\nSo that looks like portmaster output.  Somehow the options for one of your dependent ports or py-numpy itself is configure such that both openblas and cblas are needed.\n\nIn the default case for py-numpy (tested by a 'poudriere testport' run for math/py-numpy), openblas is used, but cblas is not.  So something in your settings and/or installed ports is pulling in cblas while the py-numpy port depends on openblas by default.\n\n'make -C /usr/ports/math/py-numpy showconfig' will show the options configured for py-numpy (look to see which *blas option is configured).  But even if your py-numpy installation specifies OPENBLAS, say, other dependent ports may have NETLIB=on (the NETLIB option for py-numpy currently pulls in cblas).\n\n'grep -r NETLIB /var/db/ports' will search the options for the ports you have built yourself.\n\nThis will show NETLIB \u0026 OPENBLAS settings for all installed packages:\n\npkg query -a '%n %Ok=%Ov' | egrep 'NETLIB|OPENBLAS'\n\n'pkg info -dr cblas' will show the dependencies and requirements for cblas on your system.\n\nUntil someone makes changes such that math/cblas and math/openblas and math/lapacke can co-exist (maybe separating headers to a separate port, for instance), one can pick and use just one.  If that's not possible (some features of more than one of the conflicting ports are needed), then someone will need to find a way for them to co-exist.\n\nIf you don't know that you need more than one of the conflicting ports, try just using one, if possible."
+}

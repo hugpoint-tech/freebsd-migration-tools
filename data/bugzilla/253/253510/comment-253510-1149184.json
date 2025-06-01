@@ -1,0 +1,8 @@
+{
+ "id": 1149184,
+ "bug_id": 253510,
+ "attachment_id": 0,
+ "creation_time": "2021-02-28T11:22:56Z",
+ "creator": "k@vodka.home.kg",
+ "text": "Unfortunately it does not change anything.\nI'll explain what I am doing.\n\nI run a divert socket listener on port 989. Its DPI circumvention software. It receives outgoing web requests and sends fake packets with forged IP/TCP headers using raw (ipv4) and divert (ipv6) sockets. Those packets are diverted again and loop happens. I mark fake packets with SOCKARG. And it works for ipv4 and doesn't work for ipv6.\nI cant use raw sockets for ipv6 because they do not allow forging IPv6 header. That's why generated fake packets are diverted and sockarg for ipv6 and not diverted and sockarg for ipv4. ipfw cant filter by sockarg in the ipv6 case.\n\nThis filter works well (em0 is WAN interface)\n\nipfw add 100 divert 989 tcp from any to any 80,443 out not diverted not sockarg xmit em0\n\nBut If I change it to \n\nipfw add 100 divert 989 tcp from any to any 80,443 out not sockarg xmit em0\n\nand curl something ipv6 loop happens . It means your patch is not working\n\nFor reference : my software is here https://github.com/bol-van/zapret\nTo reproduce\nmake -C nfq\nadd ipfw rule\nnfq/dvtws --port=989 --debug --dpi-desync=fake --dpi-desync-ttl=1\ncurl ipv6.google.com"
+}

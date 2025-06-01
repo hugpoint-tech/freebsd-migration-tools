@@ -1,0 +1,8 @@
+{
+ "id": 918107,
+ "bug_id": 216391,
+ "attachment_id": 0,
+ "creation_time": "2017-01-23T03:13:43Z",
+ "creator": "hiyorin@gmail.com",
+ "text": "## Environment\n# uname -a\nFreeBSD bsd_test 11.0-RELEASE-p1 FreeBSD 11.0-RELEASE-p1 #0 r306420: Thu Sep 29 01:43:23 UTC 2016 root@releng2.nyi.freebsd.org:/usr/obj/usr/src/sys/GENERIC amd64\n\nTested on both real hardware and a VirtualBox VM. The VM is a fresh install of default FreeBSD 11.\n\n## Description\nAccording to manual of mount.fuse, mounted filesystem with option \"default_permission\" should let the OS to do file permission checking using the file mode and \"allow_other\" should allow access of mounted data by other user.\n\nHowever it seems the permission check is not working as expected on FreeBSD. I have tried to reproduce it on CentOS7 and it works as expected. \n\nNote: unionfs is used in How-To-Repeat section as an example only. I also tried encfs and it has the same problem too. Since both of unionfs and encfs seems not implemented any of permission check by itself. I believe it is the problem in the fuse implementation of FreeBSD.\n\n\n## How-To-Repeat\n=\u003e as root user\n# cd /_test\n# mkdir a\n# mkdir b\n# echo \"1\" \u003e a/1\n# echo \"2\" \u003e a/2\n# chmod 600 a/1\n# mkdir u\n# unionfs -o default_permissions,allow_other a=RW:b=RO u\n# ll u\ntotal 8\n-rw-------  1 root  wheel  2 Jan 18 21:23 1\n-rw-r--r--  1 root  wheel  2 Jan 18 21:23 2\n# cat a/1\n1\n\n# Problem\n=\u003e as normal user\n% cd /_test\n% cat a/1\ncat: a/1: Permission denied\n% cat u/1\n1\n\n# Expected\n=\u003e as normal user\n% cd /_test\n% cat a/1\ncat: a/1: Permission denied\n% cat u/1\ncat: u/1: Permission denied"
+}

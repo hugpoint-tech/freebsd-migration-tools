@@ -1,0 +1,8 @@
+{
+ "id": 6850,
+ "bug_id": 2258,
+ "attachment_id": 0,
+ "creation_time": "2000-01-25T14:56:21Z",
+ "creator": "ru@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eclosed\n\nThe third argument of the route(8) (in the \"old form\") is treated \nas a netmask value, so the following command \n\n# route add 198.207.143.0 127.0.0.1 1 \n\nis, in fact, only a short equivalent of the \n\n# route add -net 198.207.143.0 -netmask 1 127.0.0.1 \n\nYou can see this with the following (non-destructive) command: \n\n# route -vnt add -net 198.207.143.0 -netmask 1 127.0.0.1 \n[...] \nsockaddrs: \u003cDST,GATEWAY,NETMASK\u003e \n198.207.143.0 127.0.0.1 0.0.0.1 \nadd net 198.207.143.0: gateway 127.0.0.1 \n\nApplying mask of 0.0.0.1 to 198.207.143.0 gives 0.0.0.0/0.0.0.1. \nThat is what is actually stored in the kernel routing table. \n\nTo delete this entry, simply execute: \n# route delete 0 -netmask 1 \n\nTo dump the entire routing table (note the magic -d option), run: \n# route -vnd flush \n\nActually, the only problem is the way netstat(1) reports \"default\" \nroute for (in fact) non-default routes, but this has already been \nfixed in 4.0-CURRENT (see src/sbin/route/route.c,v 1.41). \n\nI will be MFC'ing this into -STABLE right now.\n"
+}

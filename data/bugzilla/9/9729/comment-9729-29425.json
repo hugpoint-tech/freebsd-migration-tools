@@ -1,0 +1,8 @@
+{
+ "id": 29425,
+ "bug_id": 9729,
+ "attachment_id": 0,
+ "creation_time": "1999-01-27T18:50:01Z",
+ "creator": "jose@we.lc.ehu.es",
+ "text": "A serious bug was introduced in lpr.c version 1.22, which prevents\nlpr from removing files (when called as \"lpr -r\") when they are\nunder a \"sticky\" directory (such as /tmp). This is serious because\nsome packages (such as Samba) spool the print jobs under such\ndirectories (/var/spool/samba, for example). Since files are not\nremoved after they are queued, the directory contents grows, and\ngrows... until /var is full.\n\nFix: \n\nYes, it is known. (All references are to lpr.c version 1.27.)\n\nStarting at line 653, the checkwriteperm() function checks that\nthe owner UID of the file matchs the variable \"userid\", which should\nstore the real UID of the lpr process. However, the \"userid\" variable\nhas never been initialized (its contents is 0 since it is static).\n\nThe problem resides in main(), lines 269-276. The \"userid\" variable is\nmodified only here. But this only happens if getlogin() returns NULL.\n\nSimply, the sentence \"userid = getuid()\" should be moved just before\nthat \"if\" structure. I did not write a patch because I think that there\nare more problems in those lines of code. For example, the \"person\"\nvariable is always modified, so it renders the lpr's \"-U\" option\nuseless. And, inside that \"if\", another expression compares \"person\"\nwith 0; this is not needed because \"person\" must be NULL there.\nHow-To-Repeat: As an unprivileged user, create a non empty file in a sticky\ndirectory (such as /tmp). Then, do a \"lpr -r \u003cfile\u003e\"."
+}

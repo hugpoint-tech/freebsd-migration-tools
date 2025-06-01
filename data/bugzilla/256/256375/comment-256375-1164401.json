@@ -1,0 +1,8 @@
+{
+ "id": 1164401,
+ "bug_id": 256375,
+ "attachment_id": 225494,
+ "creation_time": "2021-06-02T11:57:27Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "Created attachment 225494\nprocstat -kk output\n\nI'm experiencing strange and very prominent performance loss with KTorrent when unplugging Ethernet cable from em0, that is, switch to WiFi: it now takes several tens seconds for it to update the window contents, react to mouse clicks, and transfer speeds drop down to single bytes per second.  At this time, the ktorrent process, as displayed by top(1), is in \"iflib\" state which occasionally briefly changes to \"e1000_\".\n\nBut once I plug the network cable back, everything goes back to normal, and the process returns to \"select\" state like it should.  This happens on Lenovo L470 laptop with the following NIC:\n\nem0@pci0:0:31:6:        class=0x020000 rev=0x21 hdr=0x00 vendor=0x8086 device=0x15d8 subvendor=0x17aa subdevice=0x505f\n    vendor     = 'Intel Corporation'\n    device     = 'Ethernet Connection (4) I219-V'\n    class      = network\n    subclass   = ethernet\n\nBoth today's kernel and my normal Jan/Feb'ish kernel behave identically.  The driver from `net/intel-em-kmod' port does not exhibit this problem.  I'm attaching procstat -kk $ktorrent_pid output, in case it could be useful.  This line looks suspicious as if something is holding the lock:\n\nmi_switch+0xc1 _sx_xlock_hard+0x3d1 iflib_media_status+0xf2 ifmedia_ioctl+0x16a ifhwioctl+0x2bd ifioctl+0x48d kern_ioctl+0x23b sys_ioctl+0xf6 amd64_syscall+0x100 fast_syscall_common+0xf8\n\nPlease advise on any other debug information I could provide which may help to track the bug down and fix it."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 750083,
+ "bug_id": 186449,
+ "attachment_id": 0,
+ "creation_time": "2014-02-04T12:10:00Z",
+ "creator": "sp@m.davydov.spb.su",
+ "text": "ifconfig(8) utility has an ability to automatically load necessary kernel\nmodule when creating first instance of a new (say, dynamic) interface.\nSometimes it works (e.g. ifconfig crate tap0) and sometimes doesn't\n(ifconfig create vmnet0).\n\nFix: \n\nThis problem is most probably caused by the ifmaybeload() function. It\nimplicitly derives kernel module name from the interface name by removing\nnumerical suffix and prepending \"if_\" prefix. Whereas both tap and vmnet\ninterfaces share the same if_tap.ko kernel module, and there is no separate\nif_vmnet.ko one.\n\nPossible workaround (successfully tested): during installkernel make a\ncopy (or hardlink) of if_tap.ko under the name if_vmnet.ko, that works\nfine. By the way, it makes sense to hardlink tap(4) and vmnet(4) manual\npages too.\n\nComment: I woudn't dare recommend suggested workaround as an ultimate\nsolution because of possible unforeseen pitfalls (such as filesystems\nincapable of hardlinks etc.).\nHow-To-Repeat: Boot with a clean GENERIC kernel. Become root. Say \"ifconfig vmnet0 create\".\nYou should get \"ifconfig: SIOCIFCREATE2: Invalid argument\" diagnostics.\nAt the same time \"ifconfig tap0 create\" works as expected (as well as\n\"ifconfig vmnetN create\" afterwards, when if_tap.ko is already loaded)."
+}

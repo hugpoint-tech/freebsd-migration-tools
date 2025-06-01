@@ -1,0 +1,8 @@
+{
+ "id": 1148232,
+ "bug_id": 253785,
+ "attachment_id": 0,
+ "creation_time": "2021-02-23T06:50:00Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "Unfortuantely, \"swapinfo\" after the process-kill does not report\nthe swap usage from just before the process-kill.\n\nThe message with \"was killed: out of swap space\" is commonly a\nmisnomer: other things can cause the kills but the same message\nis output for such. If you had actually run out of swap space\nthere should be one or more messages that would have text\nsomething like:\n\nswap_pager_getswapspace(??): failed\n\nThe 4 causes of kills that I know of are:\n\nSustained low free RAM (via stays-runnable processes).\nA sufficiently delayed pageout.\nThe swap blk uma zone was exhausted.\nThe swap pctrie uma zone was exhausted.\n\nYour \"indefinite wait buffer\" messages suggest the 2nd\nmay be involved in addition to the 1st of those 4.\n\nThere are tunables for those 2 that make them not\ntrip as soon for the 1st or ever for the 2nd\n( /etc/sys.conf content or sysctl assignments ):\n\n#\n# Delay when persistent low free RAM leads to\n# Out Of Memory killing of processes. The\n# delay is a count of kernel-attempts to gain\n# free RAM (so not time units).\nvm.pageout_oom_seq=120\n\n(The default is 12 as far as I know.)\n\n#\n# For plunty of swap/paging space (will not\n# run out), avoid pageout delays leading to\n# Out Of Memory killing of processes:\nvm.pfault_oom_attempts=-1\n\nI expect that 12.2-RELEASE has both of those\navailable but I've not been using 12.x ."
+}

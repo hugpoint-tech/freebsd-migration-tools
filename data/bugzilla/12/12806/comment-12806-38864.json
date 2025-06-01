@@ -1,0 +1,8 @@
+{
+ "id": 38864,
+ "bug_id": 12806,
+ "attachment_id": 0,
+ "creation_time": "1999-08-06T04:20:12Z",
+ "creator": "dzerkel@columbus.rr.com",
+ "text": "I confirmed that ksh works as expected and the sh on Solaris works as\nexpected,\nso I poked around and I have included a patch below.  What it looks like\nis that\nfor a semicolon node, evaltree() calls evaltree() for both sides of the\nnode and\nthen retests the eflag, even though it has already been tested on each\nside of\nthe node.  There is no reason, that I can see, for the semicolon node to\ncheck\nthe eflag, so I just made it do the other tests and return.\n\n--- /usr/src/bin/sh/eval.c.orig Thu Aug  5 23:08:44 1999\n+++ /usr/src/bin/sh/eval.c      Thu Aug  5 23:13:31 1999\n@@ -200,10 +200,14 @@\n        switch (n-\u003etype) {\n        case NSEMI:\n                evaltree(n-\u003enbinary.ch1, 0);\n-               if (evalskip)\n-                       goto out;\n-               evaltree(n-\u003enbinary.ch2, flags);\n-               break;\n+               if (!evalskip) {\n+                       evaltree(n-\u003enbinary.ch2, flags);\n+               }\n+               if (pendingsigs)\n+                       dotrap();\n+               if (flags \u0026 EV_EXIT)\n+                       exitshell(exitstatus);\n+               return;\n        case NAND:\n                evaltree(n-\u003enbinary.ch1, EV_TESTED);\n                if (evalskip || exitstatus != 0) {\n\n-- Danny J. Zerkel\ndzerkel@columbus.rr.com"
+}

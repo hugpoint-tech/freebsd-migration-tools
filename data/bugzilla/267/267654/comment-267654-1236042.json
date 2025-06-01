@@ -1,0 +1,8 @@
+{
+ "id": 1236042,
+ "bug_id": 267654,
+ "attachment_id": 0,
+ "creation_time": "2022-11-18T05:58:51Z",
+ "creator": "mckusick@FreeBSD.org",
+ "text": "Newfs is generating the check hashes using the libufs cgwrite(3) routine. The cgwrite(3) routine calls calculate_crc32c() which comes from sys/libkern/gsb_crc32.c. The kernel check also uses calculate_crc32c() from sys/libkern/gsb_crc32.c so they should be getting the same answer. If the structures were somehow laid out differently that might explain it, but then a lot of other things would also break. I also note that the same calculate_crc32c() function is used for the superblock checksum and the inode checksum which are both working fine which makes it even more of a mystery why the cylinder group checksums are broken.\n\nAnother option is to disable cylinder group checksums in newfs(8) using something like this patch:\n\ndiff --git a/sbin/newfs/mkfs.c b/sbin/newfs/mkfs.c\nindex 48091d7882d0..5000adff138f 100644\n--- a/sbin/newfs/mkfs.c\n+++ b/sbin/newfs/mkfs.c\n@@ -499,8 +499,10 @@ mkfs(struct partition *pp, char *fsys)\n         */\n        if (Oflag \u003e 1) {\n                sblock.fs_flags |= FS_METACKHASH;\n+#ifndef AZURE\n                if (getosreldate() \u003e= P_OSREL_CK_CYLGRP)\n                        sblock.fs_metackhash |= CK_CYLGRP;\n+#endif\n                if (getosreldate() \u003e= P_OSREL_CK_SUPERBLOCK)\n                        sblock.fs_metackhash |= CK_SUPERBLOCK;\n                if (getosreldate() \u003e= P_OSREL_CK_INODE)"
+}

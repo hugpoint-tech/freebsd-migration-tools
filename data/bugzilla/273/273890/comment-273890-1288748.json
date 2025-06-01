@@ -1,0 +1,8 @@
+{
+ "id": 1288748,
+ "bug_id": 273890,
+ "attachment_id": 0,
+ "creation_time": "2023-12-19T17:00:36Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "Weldon gave me access to the core. Writing up summary for Mark and other interested parties. The panic happens at in6_pcb.c:257:\n\n(t-\u003einp_socket-\u003eso_options \u0026 SO_REUSEPORT) ||\n\nThe temporary inpcb t has NULL inp_socket. It also has INP_FREED flag set. The inpcb had been found with in6_pcblookup_local() which doesn't do INP_FREED check, neither acquires the inpcb lock. It relies on the hash lock, that we hold. And the freed inpcb has INP_INHASHLIST flag set, which is definitely a problem. These two flags should be a xor.\n\nUnless me or Mark quickly find a problem in the code with our eyes, we would need somebody, e.g. Weldon Godfrey or Dmitry Petrov to run a kernel compiled with INVARIANTS option and probably with additional patch that would catch creation of invalid inpcb. Please let me know if you can assist with this."
+}

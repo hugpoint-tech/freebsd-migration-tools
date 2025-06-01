@@ -1,0 +1,8 @@
+{
+ "id": 551456,
+ "bug_id": 145301,
+ "attachment_id": 0,
+ "creation_time": "2010-04-02T19:00:17Z",
+ "creator": "Martin.Birgmeier@aon.at",
+ "text": "FreeBSD's startup command for hald, /usr/local/etc/rc.d/hald, uses a custom start_cmd which waits up to 60 seconds for getty to start.\n\nThis has a bad interaction when the X server is not started from getty, but using a (custom) startup script. In this case, the X server starts *before* getty, but the hald waits until *after* getty has started. This means that the X server does not see the devices offered by hald.\n\nBefore I finally tracked down the cause, I had the following in my X startup script in order to ensure that hald was running before the X server started:\n\ni=0\nwhile [ $i -lt 120 ] \u0026\u0026 ! /usr/local/bin/lshal \u003e /dev/null 2\u003e\u00261\ndo\n    if [ $i -eq 0 ]\n    then\n        echo -n ' (please wait)'\n    else\n        echo -n .\n    fi\n    sleep 3\n    : $(( i = i + 3 ))\ndone\n\nThis of course only worked because it waited *longer* than the maximum delay in /etc/local/etc/rc.d/hald (fortunately, the latter *did* include such a maximum (at 60 seconds), otherwise the script above would have timed out (after 120 seconds)).\n\nThe fix is simple: simply get rid of the custom startup command in /usr/local/etc/rc.d/hald.\n\nFix: The bandaid patch is attached. Of course, the whole body of the start_cmd can also be deleted, but this should be checked by whoever wrote this in the first place - I do not know for what reason the wait for getty was introduced originally.\n\nPatch attached with submission follows:\nHow-To-Repeat: Try to run the X server before getty starts (using a script in /usr/local/etc/rc.d, usually)."
+}

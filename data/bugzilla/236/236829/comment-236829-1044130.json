@@ -1,0 +1,8 @@
+{
+ "id": 1044130,
+ "bug_id": 236829,
+ "attachment_id": 203189,
+ "creation_time": "2019-03-27T12:30:33Z",
+ "creator": "rs@bytecamp.net",
+ "text": "Created attachment 203189\nsimple pf.conf\n\nTimeout values (global and per rule) are not recognised. This issue is present since at least 10.3, I'm now reporting since I have a test case on a machine with a recent version of FreeBSD (11.2-RELEASE-p8).\n\nSteps to reproduce:\n\n* load attached simple pf.conf\n* start local nc in listening mode on port 12345\n* telnet inbound (from another machine) to port 12345\n* disconnect telnet\n* see wrong timeouts in state list\n\nThe global timeout for finwait/closing are set to 20/25, the per rule timeouts are set to 15/10.\n\nThe timeouts applied can be check with the command:\n# pfctl -vvvss | grep -B2 'rule 2'\n\n1) after establishing client connection:\n\nall tcp x.x.x.x:12345 \u003c- y.y.y.y:53187       ESTABLISHED:ESTABLISHED\n   [3217899334 + 29312] wscale 6  [1370442108 + 65537] wscale 7\n   age 00:00:02, expires in 23:59:58, 2:1 pkts, 112:60 bytes, rule 2\n\n2) after closing client connection:\n\nall tcp x.x.x.x:12345 \u003c- y.y.y.y:53187       FIN_WAIT_2:FIN_WAIT_2\n   [3217899335 + 29312] wscale 6  [1370442110 + 65664] wscale 7\n   age 00:00:04, expires in 00:01:29, 4:3 pkts, 216:164 bytes, rule 2\n\nSo clear to see: neither global timeout nor per rule timeout are applied here. Instead, the defaults are used (90s for closing)."
+}

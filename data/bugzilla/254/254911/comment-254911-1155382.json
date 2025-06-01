@@ -1,0 +1,8 @@
+{
+ "id": 1155382,
+ "bug_id": 254911,
+ "attachment_id": 0,
+ "creation_time": "2021-04-09T21:34:31Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "OK, for some reason the divide operation in the imaginary part in line 77 gives rise to FE_INVALID (0x1), but *only* if more advanced CPU instructions are used:\n\n    41  float complex\n    42  ctanhf(float complex z)\n    43  {\n...\n    72          t = tanf(y);\n    73          beta = 1.0 + t * t;\n    74          s = sinhf(x);\n    75          rho = sqrtf(1 + s * s);\n    76          denom = 1 + beta * s * s;\n    77          return (CMPLXF((beta * rho * s) / denom, t / denom));\n\nFor example, one of the test cases has both x and y at zero, and this results in the values:\n\nt=0, beta=1, s=0, rho=1, denom=1\n\nThe real part of the return statement calculates (beta * rho * s) / denom = (1 * 1 * 0) / 1 = 0, but this does *not* change the FP exception flags.\n\nThe imaginary part calculates t / denom = 0 / 1, and for some reason this sets FE_INVALID!\n\nIt's tricky to debug this using printfs though, since this also causes FE_INEXACT, due to some floating point logic in the guts of printf.\n\nNow, as to why compiling for bog-standard x86_64, which *does* use SSE and SSE2, does not raise FE_INVALID, I'm not sure yet."
+}

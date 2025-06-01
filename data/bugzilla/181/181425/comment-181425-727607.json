@@ -1,0 +1,8 @@
+{
+ "id": 727607,
+ "bug_id": 181425,
+ "attachment_id": 0,
+ "creation_time": "2013-08-20T12:56:13Z",
+ "creator": "hps@bitfrost.no",
+ "text": "Hi,\n\nHave you looked into the USB HID specification from USB.org regarding \nthis? I think USB keyboard stuff is explicitly defined. You are right \nthat we don't support more than a few simultaneously pressed keys, and \nthat would reguire a bit more changes in ukbd driver.\n\nInstead of applying a quirk, maybe ukbd.c could switch to boot-proto \nautomatically when HIO_VARIABLE is set? It is simply a so-called USB \ncontrol request.\n\nI'm not sure if it is better to use uhidd or ukbd for the purpose you \nwant to use the keyboard.\n\nThank you for your investigation!\n\n--HPS\n\n\u003e\n\u003e Ideally I would like to get this keyboard to work in normal protocol\n\u003e with full rollover for perfectionist reasons, but I guess that would\n\u003e require too many changes to ukbd.c and introduce overhead for the\n\u003e majority of keyboards.\n\u003e\n\u003e\n\u003e \u003e\n\u003e --- sys/dev/usb/input/ukbd.c\t(revision 254515)\n\u003e +++ sys/dev/usb/input/ukbd.c\t(working copy)\n\u003e @@ -1130,8 +1130,12 @@\n\u003e   \t    HID_USAGE2(HUP_KEYBOARD, 0x00),\n\u003e   \t    hid_input, 0, \u0026sc-\u003esc_loc_events, \u0026flags,\n\u003e   \t    \u0026sc-\u003esc_id_events)) {\n\u003e -\t\tsc-\u003esc_flags |= UKBD_FLAG_EVENTS;\n\u003e -\t\tDPRINTFN(1, \"Found keyboard events\\n\");\n\u003e +\t\tif (flags \u0026 HIO_VARIABLE)\n\u003e +\t\t\tDPRINTFN(1, \"Ignoring key bitmap\\n\");\n\u003e +\t\telse {\n\u003e +\t\t\tsc-\u003esc_flags |= UKBD_FLAG_EVENTS;\n\u003e +\t\t\tDPRINTFN(1, \"Found keyboard events\\n\");\n\u003e +\t\t}\n\u003e   \t}\n\u003e\n\u003e   \t/* figure out leds on keyboard */\n\u003e"
+}

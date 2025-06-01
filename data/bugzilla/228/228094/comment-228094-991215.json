@@ -1,0 +1,8 @@
+{
+ "id": 991215,
+ "bug_id": 228094,
+ "attachment_id": 0,
+ "creation_time": "2018-05-11T07:42:59Z",
+ "creator": "emeric.poupon@stormshield.eu",
+ "text": "Hello,\n\nI am using strongSwan to set up ESP SAs in tunnel mode.\nIf you are new to IPSec, it may be easier to setup ESP SAs in transport mode using PSK authentication.\nThere are a lot of examples on the strongSwan website to set up a tunnel.\nHave a look at:\n- https://www.strongswan.org/testing/testresults/ikev2/alg-aes-gcm to get an example of a gcm setup.\n- https://www.strongswan.org/testing/testresults/ikev2/host2host-transport/index.html to get an example of a transport setup.\n- https://www.strongswan.org/testing/testresults/ikev2/net2net-psk/index.html to get an example of PSK authentication.\n\nMake sure you set esp=aes256gcm16-modp4096-noesn! in your ipsec.conf file.\n\nHere is my configuration:\n\n---- 192.168.100.100 LAN | FreeBSD host | WAN 192.168.56.100 ---- 192.168.56.160 WAN [ Debian/Linux host | LAN 192.168.160.160 ----\n\nOn the FreeBSD host:\n\nipsec.conf:\nconn \"DEBIAN\"\n        type=tunnel\n        auto=route\n        mobike=no\n        keyexchange=ikev2\n        leftsubnet=192.168.100.0/24\n        rightsubnet=192.168.160.0/24\n        left=192.168.56.100\n        right=192.168.56.160\n        leftauth=psk\n        rightauth=psk\n        esp=aes256gcm16-modp4096-noesn!\n        ike=aes256-sha256-modp4096!\n        dpdaction=hold\n        dpddelay=0\n\nipsec.secrets:\n192.168.56.160 : PSK 0x5a5a5a5a\n\nThe configuration on the debian host is the same (just invert 100 and 160)\nOn the Freebsd host I am triggering the tunnel with a ping:\nping -S 192.168.100.100 192.168.160.160"
+}

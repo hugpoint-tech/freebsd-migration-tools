@@ -1,0 +1,8 @@
+{
+ "id": 62691,
+ "bug_id": 20333,
+ "attachment_id": 0,
+ "creation_time": "2000-08-01T14:53:21Z",
+ "creator": "sheldonh@uunet.co.za",
+ "text": "On Tue, 01 Aug 2000 15:21:51 +0200, Sheldon Hearn wrote:\n\n\u003e The following patch to ftpd.c fixes this for the NOPAM case, but there's\n\u003e still breakage in the libpam skey module.\n\nPlease use the following patch instead.\n\nCiao,\nSheldon.\n\nIndex: ftpd.c\n===================================================================\nRCS file: /home/ncvs/src/libexec/ftpd/ftpd.c,v\nretrieving revision 1.64\ndiff -u -d -r1.64 ftpd.c\n--- ftpd.c\t2000/06/26 05:36:09\t1.64\n+++ ftpd.c\t2000/08/01 13:49:08\n@@ -1188,9 +1210,12 @@\n \t\t\tgoto skip;\n #endif\n #ifdef SKEY\n-\t\trval = strcmp(skey_crypt(passwd, pw-\u003epw_passwd, pw, pwok),\n-\t\t\t      pw-\u003epw_passwd);\n-\t\tpwok = 0;\n+\t\tif (pwok)\n+\t\t\trval = strcmp(pw-\u003epw_passwd,\n+\t\t\t    crypt(passwd, pw-\u003epw_passwd));\n+\t\tif (rval)\n+\t\t\trval = strcmp(pw-\u003epw_passwd,\n+\t\t\t    skey_crypt(passwd, pw-\u003epw_passwd, pw, pwok));\n #else\n \t\trval = strcmp(crypt(passwd, pw-\u003epw_passwd), pw-\u003epw_passwd);\n #endif\n@@ -1220,6 +1245,9 @@\n \t\t\treturn;\n \t\t}\n \t}\n+#ifdef SKEY\n+\tpwok = 0;\n+#endif\n \tlogin_attempts = 0;\t\t/* this time successful */\n \tif (setegid((gid_t)pw-\u003epw_gid) \u003c 0) {\n \t\treply(550, \"Can't set gid.\");"
+}

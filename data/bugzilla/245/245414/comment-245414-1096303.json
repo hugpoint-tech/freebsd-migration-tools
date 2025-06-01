@@ -1,0 +1,8 @@
+{
+ "id": 1096303,
+ "bug_id": 245414,
+ "attachment_id": 0,
+ "creation_time": "2020-04-09T20:32:06Z",
+ "creator": "sigsys@gmail.com",
+ "text": "This does seem to have been caused by r359612.  It apparently fixed a bug in sys/ufs/ffs/ffs_inode.c (the MNT_SUJ flag being ignored), but it must also have exposed other bugs.\n\nBy forcing the old behavior, there are no more panics during my tests.  There's still something wrong going on there but way too complicated for me to figure out.\n\nIndex: sys/ufs/ffs/ffs_inode.c\n===================================================================\n--- sys/ufs/ffs/ffs_inode.c\t(revision 359751)\n+++ sys/ufs/ffs/ffs_inode.c\t(working copy)\n@@ -243,7 +243,11 @@\n \tallerror = 0;\n \tneedextclean = 0;\n \tsoftdeptrunc = 0;\n+#if 0\n \tjournaltrunc = DOINGSUJ(vp);\n+#else\n+\tjournaltrunc = 0;\n+#endif\n \tif (journaltrunc == 0 \u0026\u0026 DOINGSOFTDEP(vp) \u0026\u0026 length == 0)\n \t\tsoftdeptrunc = !softdep_slowdown(vp);\n \textblocks = 0;"
+}

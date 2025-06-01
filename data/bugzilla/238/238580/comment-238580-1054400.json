@@ -1,0 +1,8 @@
+{
+ "id": 1054400,
+ "bug_id": 238580,
+ "attachment_id": 205076,
+ "creation_time": "2019-06-15T14:55:10Z",
+ "creator": "egypcio@FreeBSD.org",
+ "text": "Created attachment 205076\nD20638.diff\n\nbased on information from man pages like carp(4) and ifconfig(8), some inconstant values popped out while I troubleshooted a HA setup using CARP.\n\n  - advskew was able to be changed to values higher than CARP_MAXSKEW;\n  - CARP advertisements collected via tcpdump were still using (respecting) its limit;\n\nchanging values on net.inet.carp.demotion does not increase advskew above the limit (expected, I think).\n\nroot@fw1-lab:~ # uname -UKvm\nFreeBSD 13.0-CURRENT r348978 GENERIC  amd64 1300031 1300031\n\nroot@fw1-lab:~ # ifconfig vlan3131 vhid 10 advskew 254\n\nroot@fw1-lab:~ # echo $?\n0\n\nroot@fw1-lab:~ # ifconfig vlan3131 | grep carp\n        carp: MASTER vhid 10 advbase 1 advskew 254\n\nroot@fw1-lab:~ # tcpdump -c 1 -n -v -i vlan3131 carp -T carp\ntcpdump: listening on vlan3131, link-type EN10MB (Ethernet), capture size 262144 bytes\n15:56:59.299379 IP (tos 0xe0, ttl 255, id 0, offset 0, flags [DF], proto VRRP (112), length 56)\n    172.31.31.1 \u003e 224.0.0.18: carp 172.31.31.1 \u003e 224.0.0.18: CARPv2-advertise 36: vhid=10 advbase=1 advskew=240 authlen=7 counter=8688083474654986394\n1 packet captured\n1 packet received by filter\n0 packets dropped by kernel"
+}

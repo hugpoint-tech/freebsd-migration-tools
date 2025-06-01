@@ -1,0 +1,8 @@
+{
+ "id": 1164665,
+ "bug_id": 256221,
+ "attachment_id": 0,
+ "creation_time": "2021-06-03T17:57:26Z",
+ "creator": "portmaster@bsdforge.com",
+ "text": "(In reply to Vladimír Čunát from comment #9)\n\u003e -HUP isn't supported, -TERM is the way (for both kresd and kres-cache-gc).\n-HUP *does* remove kresd from the process list. So\nI think we can safely assume it gets killed. BUT I\ncompletely agree that -TERM is the correct answer here.\ndaemon(8) appears to me to be unnecessary overhead,\nand just muddies the water. eg;\n# ps waux | grep kres\nroot       26098   0.0  0.0    11004    2024  -  Is   13:30        0:00.00 daemon: /usr/local/sbin/kresd[26553] (daemon)\nroot       26553   0.0  0.1   140312   40388  -  S    13:30        0:46.35 /usr/local/sbin/kresd -c /usr/local/etc/knot-resolver/kr\n\nNOTE above that process 26553 is the daemon(8) initiation\nprocess. Whereas 26098 is the kresd(8) process itself. So in\nusing daemon(8), we end up with 2 procs/pids. Whereas simply\nstarting kresd(8) alone as a daemon reduces that to the\nkresd(8) proc/pid (kresd.pid).\n\nI'm cobbling up a new rc.d/kresd init script now that currently\nprovides START \u0026\u0026 STOP. But want to add RESTART to it as well.\nI'd have already posted it here. But I'm juggling this along side\n$WORK and all my testing is on a production server that actually\ndepends on kresd already. So testing is a little strained.\nI should be able to provide something here for further examination\nwithin a couple hours.\n\n--Chris"
+}

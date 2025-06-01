@@ -1,0 +1,8 @@
+{
+ "id": 3189,
+ "bug_id": 1152,
+ "attachment_id": 0,
+ "creation_time": "1996-04-21T23:10:01Z",
+ "creator": "torstenb@ramsey.tlk.com",
+ "text": "\nThe system panics after closing an bpf device:\npanic: unwire: page not in pmap\nsyncing disk...\n(and then it locks up)\n\nThis only happens\n- if the bpf buffer is \u003e16384 bytes\n- an interface has been attached\n\nFix: \n\nUnfortunately I don't have time to fix that bug ;(\nHow-To-Repeat: \nopen an bpf device, set buffersize to 16385 bytes, attach an interface\n(lo0 or ed0 for example) and close() the device.\n\n\n#include \u003csys/types.h\u003e\n#include \u003csys/ioctl.h\u003e\n#include \u003csys/time.h\u003e\n#include \u003cnet/bpf.h\u003e\n#include \u003cnet/if.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n\nvoid main(void)\n{\n\tstruct\tifreq\tiface;\n\tu_int\tl=16385;\n\tint\tfd;\n\tif ((fd = open(\"/dev/bpf0\", O_RDONLY, 0)) \u003c 0) {\n\t\tperror(\"open\");\n\t\texit(1);\n\t}\n\tif (ioctl(fd,BIOCSBLEN,\u0026l) \u003c 0) {\n\t\tperror(\"ioctl\");\n\t\texit(1);\n\t}\n\n\tbzero(\u0026iface,sizeof(iface));\n\tstrcpy(iface.ifr_name,\"lo0\");\n\tif (ioctl(fd,BIOCSETIF,\u0026iface) \u003c 0) {\n\t\tperror(\"ioctl\");\n\t\texit(1);\n\t}\n\tclose(fd);\n}"
+}

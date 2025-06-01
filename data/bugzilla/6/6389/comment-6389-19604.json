@@ -1,0 +1,8 @@
+{
+ "id": 19604,
+ "bug_id": 6389,
+ "attachment_id": 0,
+ "creation_time": "1998-04-25T16:36:01Z",
+ "creator": "gilham@csl.sri.com",
+ "text": "David Greenman wrote:\n\n\u003e   I haven't been following this thread, but the kernel branch is only for\n\u003etraps that occur within the kernel. You would not want any translation to\n\u003eoccur there.\n\n\nIf this is the case, then the lines\n\n        if(*p-\u003ep_sysent-\u003esv_trantrap != 0)\n          i = (*p-\u003ep_sysent-\u003esv_trantrap)(i, type);\n\nin trap.c should be moved up before the\n\n        } else {\n#ifdef VM86\nkernel_trap:\n#endif\n                /* kernel trap */\n\n\n\nE.g. apply this patch:\n\n*** trap.c.old  Sat Apr 25 08:32:46 1998\n--- trap.c      Sat Apr 25 08:33:41 1998\n***************\n*** 385,390 ****\n--- 385,394 ----\n                        i = SIGILL;\n                        break;\n                }\n+ \n+               if(*p-\u003ep_sysent-\u003esv_trantrap != 0)\n+                 i = (*p-\u003ep_sysent-\u003esv_trantrap)(i, type);\n+ \n        } else {\n  #ifdef VM86\n  kernel_trap:\n***************\n*** 544,552 ****\n                trap_fatal(\u0026frame);\n                return;\n        }\n- \n-         if(*p-\u003ep_sysent-\u003esv_trantrap != 0)\n-           i = (*p-\u003ep_sysent-\u003esv_trantrap)(i, type);\n  \n        trapsignal(p, i, ucode);\n  \n--- 548,553 ----\n\n\nThis will avoid any strange problems with translating kernel traps by\naccident.\n\n-Fred Gilham    gilham@csl.sri.com"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 812275,
+ "bug_id": 197989,
+ "attachment_id": 0,
+ "creation_time": "2015-02-25T23:31:23Z",
+ "creator": "ae@FreeBSD.org",
+ "text": "(In reply to timp87 from comment #3)\n\u003e The first partition has been added from 792 and it is a bit strange. Why not\n\u003e earlier? from 40 for example.\n\nThis is because your disk has logical block size equal to 1Mbyte and its first sector placed with 643072 bytes offset from the beginning of the hardware disk.\n\nSo, gpart(8) decided to properly align your first partition to start from the start of logical block.\n\n[          PHYSICAL DISK           ]\n----\u003e[       da0                   ]\n     ^ = 643072 bytes\n[=======][=======][=======][=======] \u003c- logical blocks\n---------^ = 1048576 bytes\n\nNow, when you created da0p1 partitions, it starts from the 792 sector:\n643072 + 792*512 = 1048576 bytes.\n\nCan you try this patch?\n\nIndex: sbin/geom/class/part/geom_part.c\n===================================================================\n--- sbin/geom/class/part/geom_part.c\t(revision 279233)\n+++ sbin/geom/class/part/geom_part.c\t(working copy)\n@@ -561,7 +561,7 @@ gpart_autofill(struct gctl_req *req)\n \n \t\ts = find_provcfg(pp, \"end\");\n \t\tfirst = (off_t)strtoimax(s, NULL, 0) + 1;\n-\t\tif (first \u003e a_first)\n+\t\tif (first + offset \u003e a_first)\n \t\t\ta_first = ALIGNUP(first + offset, alignment);\n \t}\n \tif (a_first \u003c= last) {"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 659222,
+ "bug_id": 166706,
+ "attachment_id": 0,
+ "creation_time": "2012-04-09T00:49:37Z",
+ "creator": "listlog2011@gmail.com",
+ "text": "On 2012/4/9 1:26, Jilles Tjoelker wrote:\n\u003e\u003e [sem_new.c may return success with O_CREAT|O_EXCL if the semaphore\n\u003e\u003e already exists]\n\u003e The code in sem_new.c will happily add another reference to an already\n\u003e open semaphore, even if O_CREAT|O_EXCL were specified.\n\u003e\n\u003e The below patch fixes this by adding an extra check. It makes the\n\u003e submitter's test program pass again on head.\n\u003e\n\u003e What do you think?\n\u003e\n\u003e Index: lib/libc/gen/sem_new.c\n\u003e ===================================================================\n\u003e --- lib/libc/gen/sem_new.c\t(revision 233702)\n\u003e +++ lib/libc/gen/sem_new.c\t(working copy)\n\u003e @@ -162,10 +162,16 @@\n\u003e   \t_pthread_mutex_lock(\u0026sem_llock);\n\u003e   \tLIST_FOREACH(ni,\u0026sem_list, next) {\n\u003e   \t\tif (strcmp(name, ni-\u003ename) == 0) {\n\u003e -\t\t\tni-\u003eopen_count++;\n\u003e -\t\t\tsem = ni-\u003esem;\n\u003e -\t\t\t_pthread_mutex_unlock(\u0026sem_llock);\n\u003e -\t\t\treturn (sem);\n\u003e +\t\t\tif ((flags\u0026  (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL)) {\n\u003e +\t\t\t\t_pthread_mutex_unlock(\u0026sem_llock);\n\u003e +\t\t\t\terrno = EEXIST;\n\u003e +\t\t\t\treturn (SEM_FAILED);\n\u003e +\t\t\t} else {\n\u003e +\t\t\t\tni-\u003eopen_count++;\n\u003e +\t\t\t\tsem = ni-\u003esem;\n\u003e +\t\t\t\t_pthread_mutex_unlock(\u0026sem_llock);\n\u003e +\t\t\t\treturn (sem);\n\u003e +\t\t\t}\n\u003e   \t\t}\n\u003e   \t}\n\u003e\nThe patch looks fine to me."
+}

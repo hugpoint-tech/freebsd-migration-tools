@@ -1,0 +1,8 @@
+{
+ "id": 1037800,
+ "bug_id": 228898,
+ "attachment_id": 0,
+ "creation_time": "2019-02-15T14:30:48Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "(In reply to Mike Andrews from comment #27)\nYes it was an impediment to me (11.2Stable, using security/openssl111), and I'm sure many others.  I've spent 4+ hours on this, lots of different issues, but this patch is correct (its after 1am so I wont try to attribute, but thank-you)\n/usr/ports/net-mgmt/net-snmp/files/extra-patch-openssl11\nhowever the configure strip tests for SSL_library_init and fails. There's the clue, so I made these changes to the net-snmp/Makefile, via svnlite diff: \n\n-BROKEN_SSL=    openssl111\n+#BROKEN_SSL=   openssl111\n\n-.if ${OSVERSION} \u003e= 1200085\n+#.if ${OSVERSION} \u003e= 1200085  # perhap \u003e1100000 ?\n EXTRA_PATCHES= ${PATCHDIR}/extra-patch-openssl11\n-.endif\n+#.endif\n\n-CONFIGURE_ARGS+=--with-openssl=\"/usr\"\n+CONFIGURE_ARGS+=--with-openssl=\"/usr/local\"\n\n@@ -251,6 +252,7 @@\n        @${REINPLACE_CMD} -e 's!utmp_p-\u003eut_name!utmp_p-\u003eut_user!' \\\n            ${WRKSRC}/agent/mibgroup/host/hr_system.c\n        @${REINPLACE_CMD} -E -e 's|return pci_lookup_name|disabled broken|g' \\\n+               -e 's|SSL_library_init|OPENSSL_init_ssl|g' \\\n                ${WRKSRC}/configure\n        @${CP} ${WRKSRC}/include/net-snmp/system/freebsd12.h \\\n                ${WRKSRC}/include/net-snmp/system/freebsd13.h\n\nCompiles cleanly on i386 and amd64."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 29265,
+ "bug_id": 9669,
+ "attachment_id": 0,
+ "creation_time": "1999-01-25T01:20:03Z",
+ "creator": "dan@obluda.cz",
+ "text": "\n\tIf \"set [proc]title ...\" command used inside \"default\" section of\nconfiguration file then destroy argv[1] item - it has been set to NULL.\nLater in processing, it (destroyed) argument is used as section name. It\ncaused SYGSEGV abend at line 311/systems.c (function ReadSystem). \n\n\tIndependent problem - the SetProcTitle function in command.c \n- should be or shouldn't be rewritten using ``setproctitle(3)'' function ... ?\n\nFix: \n\nsig_signal(SIGUSR2, BringDownServer);\n\n+/* In case the `set title ...'' used in default section, so argv[1] is destroyed now */\n+  if ( label == 1 \u0026\u0026 argc \u003e 1 ) {\n+    /* In case we use LABEL or `set enddisc label'' */\n+    bundle_SetLabel(bundle, argc == 2 ? bundle-\u003eargv1 : argv[argc - 1]);\n+    system_Select(bundle, bundle-\u003eargv1, CONFFILE, prompt, NULL);\n+    label++;\n+  }\n+\n   for (arg = label; arg \u003c argc; arg++) {\n     /* In case we use LABEL or `set enddisc label'' */\n     bundle_SetLabel(bundle, argv[argc - 1]);--uFYX94iqM1hFYL2ODhdDES6fp1qlT7tT8H8W1aT6b9B2jCId\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- main.c.ORIG Thu Nov 26 08:14:43 1998\n+++ main.c      Mon Jan 25 00:34:07 1999\n@@ -349,6 +349,14 @@\nHow-To-Repeat: \n\tPut \"set title \u003cany text\u003e\" command into section default of ppp.conf.\n\tRun ppp with no \"option\" arguments but one or more \"section name\"\narguments."
+}

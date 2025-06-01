@@ -1,0 +1,8 @@
+{
+ "id": 507158,
+ "bug_id": 136251,
+ "attachment_id": 0,
+ "creation_time": "2009-07-02T17:40:04Z",
+ "creator": "tdb@FreeBSD.org",
+ "text": "When using the amd64 XENHVM kernel (which has the xenpci\ndevice) the machine has a network device called xn0:\n\nxenpci0: \u003cXen Platform Device\u003e port 0xc000-0xc0ff mem 0xf2000000-0xf2ffffff irq 30 at device 3.0 on pci0\nxenbus0: \u003cXen Devices\u003e on xenpci0\nxn0: \u003cVirtual Network Interface\u003e at device/vif/0 on xenbus0\nxn0: Ethernet address: 36:ab:02:63:a3:ff\n\nHowever, this device doesn't behave like a normal network\ndevice, so adding the following to rc.conf doesn't do DHCP:\n\nifconfig_xn0=\"DHCP\"\n\nAfter some poking around I realised dhclient was launched\nby devd. However, the xn0 device has properties which don't\nmatch the existing rules:\n\nsetting system=IFNET\nsetting subsystem=xn0\nsetting type=ATTACH\n\nFix: \n\nI've worked around this problem by adding the following\nentry to /etc/devd.conf at line 77 (after the IFNET/LINK_UP/802.11\nsection):\n        \nnotify 0 {\n        match \"system\"          \"IFNET\";\n        match \"subsystem\"       \"xn[0-9]+\";\n        match \"type\"            \"ATTACH\";\n        action \"/etc/rc.d/dhclient quietstart $subsystem\";\n};\n        \nThis is my first look at devd, so apologies if this fix\nisn't appropriate.\n\nIt'd be great if this fix could make it in to 8.0.\nHow-To-Repeat: See above: 8.0-CURRENT, amd64 XENHVM kernel, Citrix XenServer."
+}

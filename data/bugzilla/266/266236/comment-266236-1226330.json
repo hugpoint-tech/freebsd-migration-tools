@@ -1,0 +1,8 @@
+{
+ "id": 1226330,
+ "bug_id": 266236,
+ "attachment_id": 0,
+ "creation_time": "2022-09-13T02:30:41Z",
+ "creator": "eborisch+FreeBSD@gmail.com",
+ "text": "Some extra info:\n\nSteps I took to reproduce:\n\n1) Mount NFS-exported zfs filesystem on client.\n2) Try to enter a snapshot (.zfs/snapshot/foo) directory on client -\u003e Stale file handle error.\n3) Unmount on client; stop nfsd on server\n4) mount -v on server shows the requested snapshot as mounted\n5) Try explicit unmount of the snapshot path -\u003e umount hangs (but the snapshot path no longer shows up in mount -v)\n6) Try deleting snapshot -\u003e zfs hangs\n\nprocstat -k $hung_unmount_pid: \n\n  PID    TID COMM                TDNAME              KSTACK                       \n 5260 101043 umount              -                   mi_switch _sleep rms_wlock zfsvfs_teardown zfs_umount dounmount kern_unmount amd64_syscall fast_syscall_common \n\n\nprocstat -k $hung_zfs_destroy:\n\n  PID    TID COMM                TDNAME              KSTACK                       \n 5826 101058 zfs                 -                   mi_switch _sleep vfs_busy zfs_vfs_ref getzfsvfs_impl getzfsvfs zfsctl_snapshot_unmount zfs_ioc_destroy_snaps zfsdev_ioctl_common zfsdev_ioctl devfs_ioctl vn_ioctl devfs_ioctl_f kern_ioctl sys_ioctl amd64_syscall fast_syscall_common\n\nAt this point no _zfs_ or _zpool_ commands succeed. (Or at least, none that I tried; all hang.)\n\nRestart required to unwedge."
+}

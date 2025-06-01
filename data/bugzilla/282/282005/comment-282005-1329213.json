@@ -1,0 +1,8 @@
+{
+ "id": 1329213,
+ "bug_id": 282005,
+ "attachment_id": 0,
+ "creation_time": "2024-10-11T06:53:57Z",
+ "creator": "zarychtam@plan-b.pwste.edu.pl",
+ "text": "After introducing pam_xdg.so some things got broken, it's for example, pam_gnome_keyring, more breakages could be spotted*. After investigating the logs, it became obvious that some kind of race between pam_xdg and pam_gnome_keyring occurs on login:\n\nOct 11 08:38:45 fomalhaut gnome-keyring-daemon[4974]: couldn't access control socket: /var/run/user/1001/keyring/control: No such file or directory\n\nOn this machine x11/slim is used as the login manager. The configuration of pam(3) is provided below.\n\n# cat /usr/local/etc/pam.d/slim\nauth\t\tinclude\t\tsystem\nauth\t\toptional\t/usr/local/lib/pam_gnome_keyring.so\naccount\t\tinclude\t\tsystem\nsession\t\tinclude\t\tsystem\nsession\t\toptional\t/usr/local/lib/pam_gnome_keyring.so auto_start\npassword\tinclude\t\tsystem\n# cat /etc/pam.d/system \n#\n#\n# System-wide defaults\n#\n\n# auth\n#auth\t\tsufficient\tpam_krb5.so\t\tno_warn try_first_pass\n#auth\t\tsufficient\tpam_ssh.so\t\tno_warn try_first_pass\nauth\t\trequired\tpam_unix.so\t\tno_warn try_first_pass nullok\n\n# account\n#account\trequired\tpam_krb5.so\naccount\t\trequired\tpam_login_access.so\naccount\t\trequired\tpam_unix.so\n\n# session\n#session\toptional\tpam_ssh.so\t\twant_agent\nsession\t\trequired\tpam_lastlog.so\t\tno_fail\nsession         required        pam_xdg.so\n\n# password\n#password\tsufficient\tpam_krb5.so\t\tno_warn try_first_pass\npassword\trequired\tpam_unix.so\t\tno_warn try_first_pass\n\n\n* - at a glance another victim is PulseAudio:\npulseaudio[4747]: [] core-util.c: Failed to create secure directory (/var/run/user/1001/pulse): No such file or directory"
+}

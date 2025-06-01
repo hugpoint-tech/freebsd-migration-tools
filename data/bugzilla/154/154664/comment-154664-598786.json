@@ -1,0 +1,8 @@
+{
+ "id": 598786,
+ "bug_id": 154664,
+ "attachment_id": 0,
+ "creation_time": "2011-02-10T23:40:09Z",
+ "creator": "justinbb@gmail.com",
+ "text": "hexdump (od) does not report correctly the length of a long run of identical characters at the end of a file. Instead, the final byte count reported is that of the last full block (of 16 characters with the default options).\n\n(This situation occurs rarely with Unix text files, since they almost always end with a single newline.)\n\nFix: \n\nFile head/usr.bin/hexdump/display.c, function get(), near line 271 (as of r216370)\n\nin the if-clause that begins\n\nif (vflag != ALL \u0026\u0026 \n\t\t\t    valid_save \u0026\u0026 \n\t\t\t    bcmp(curp, savp, nread) == 0)\n\nthe variable \"eaddress\" should be set before returning. The same line that occurs just past the end of the if seems to work correctly here as well:\n\n\t\t\t    eaddress = address + nread;\nHow-To-Repeat: Create a file containing the letter 'a' 17 times, with no final newline. Run hexdump with no options.\n\n% echo -n 'aaaaaaaaaaaaaaaaa' \u003e test\n% wc test\n       0       1      17 test\n% hexdump test\n0000000 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61 61\n*\n0000010\n\nThe final byte count 0x10 should be 0x11 (cf. output from wc, which indicates length 17)."
+}

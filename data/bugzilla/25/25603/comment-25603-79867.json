@@ -1,0 +1,8 @@
+{
+ "id": 79867,
+ "bug_id": 25603,
+ "attachment_id": 0,
+ "creation_time": "2001-03-08T15:54:13Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "In message \u003c200103080633.f286XnB02074@pc3.geta.hatoyama.hitachi.co.jp\u003e, Shingo \nNishioka writes:\n\u003e\n\u003e\tThe code blow causes a \"panic: vm_object_deallocate: object deallocated\n\u003e too may times: 0\"\n\nThe following patch seems to solve this problem, though I have\nno idea whether or not it is correct, and I've only done minimal\ntesting. It seems that when a shadow object is created in\nvmspace_fork(), only one of the two object references gets\ntransferred to the shadow object. Matt? Anyone?\n\nIan\n\nIndex: vm_map.c\n===================================================================\nRCS file: /dump/FreeBSD-CVS/src/sys/vm/vm_map.c,v\nretrieving revision 1.194\ndiff -u -r1.194 vm_map.c\n--- vm_map.c\t2001/02/04 06:19:28\t1.194\n+++ vm_map.c\t2001/03/08 15:47:42\n@@ -2155,6 +2155,10 @@\n \t\t\t\t\t\u0026old_entry-\u003eoffset,\n \t\t\t\t\tatop(old_entry-\u003eend - old_entry-\u003estart));\n \t\t\t\told_entry-\u003eeflags \u0026= ~MAP_ENTRY_NEEDS_COPY;\n+\t\t\t\t/* Transfer the original reference too. */\n+\t\t\t\tvm_object_reference(\n+\t\t\t\t    old_entry-\u003eobject.vm_object);\n+\t\t\t\tvm_object_deallocate(object);\n \t\t\t\tobject = old_entry-\u003eobject.vm_object;\n \t\t\t}\n \t\t\tvm_object_clear_flag(object, OBJ_ONEMAPPING);"
+}

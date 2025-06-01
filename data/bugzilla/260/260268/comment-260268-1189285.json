@@ -1,0 +1,8 @@
+{
+ "id": 1189285,
+ "bug_id": 260268,
+ "attachment_id": 0,
+ "creation_time": "2021-12-07T20:29:59Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "If you have 'textproc/xmlto' installed, 'make -C audio/alsa-utils build' fails:\n\n.\n.\nman alsactl_init.xml\nNo manual entry for alsactl_init.xml\ngmake[4]: *** [Makefile:1113: alsactl_init.7] Error 1\n\nWhen the MANPAGES option was added (May 2021 with update to 1.2.2), the attempt to use xmlto was flawed a few ways:\n\n - configure does not heed ac_cv_prog_xmlto at all, so the attempt to force the build to use minixmlto does nothing.\n\n - the configure process never sets 'xmlto', so the patch to use $(xmlto) results in an empty expansion and the 'No manual entry' failure, but only if xmlto is detected - i.e., only if textproc/xmlto is installed.  This is not installed in a poudriere environment, so xmlto support is disabled during 'make configure' (thus hiding the bug, but also causing one of the man pages to not be generated).\n\n - if the MANPAGES option is off, man pages are still installed.\n\n - if rst2man is installed (py-docutils), a couple other man pages are generated which break 'make check-plist'.  If rst2man is not installed, that is detected and two man pages are not generated.\n\n\nThe attached patch uses BINARY_ALIAS to use minixmlto instead of the incorrect Makefile.am (or Makefile.in) patch attempt.  It also adds the missed dependency on rst2man.\n\nIt also shuffles some lines to make portclippy / portlint happy.\n\nQA using attached patch:\n - poudriere testport (ok WITH=MANPAGES and WITHOUT=MANPAGES)\n - portclippy (ok)\n - portlint (ok)"
+}

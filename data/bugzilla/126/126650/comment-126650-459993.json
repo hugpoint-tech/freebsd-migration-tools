@@ -1,0 +1,8 @@
+{
+ "id": 459993,
+ "bug_id": 126650,
+ "attachment_id": 0,
+ "creation_time": "2008-08-20T11:25:44Z",
+ "creator": "des@des.no",
+ "text": "Aaron Scarisbrick \u003caaronsca@gmail.com\u003e writes:\n\u003e Applying the attached patch to\n\u003e /usr/src/lib/libpam/modules/pam_unix/pam_unix.c should explicitly call\n\u003e out when a service is using the pam_unix.so module incorrectly (e.g.\n\u003e as a non-root user).  It only reports the more descriptive error\n\u003e message if the password is NULL and the effective user id is not root.\n\nThere are a lot of assumptions here regarding the nature and semantics\nof the underlying password database (which is not necessarily spwd.db,\nsince getpwnam() hooks into nsswitch).  Most of them are invalid.\n\n1) you do not necessarily have to be root to get a complete passwd\n   record; it depends on the underlying nss module and other factors.\n2) conversely, even root may be unable to get a complete passwd record.\n3) an incomplete passwd record does not necessarily have the password\n   set to \"*\".\n4) conversely, a passwd record with the password set to \"*\" is not\n   necessary incomplete.\n\nWhat it boils down to is that there is no reliable way to differentiate\nthe two cases (incorrect password vs. incomplete data).  The admin must\nmake an educated guess and modify his configuration accordingly - either\navoid using pam_unix in circumstances in which it won't work, or change\nthe circumstances so that it will.\n\nDES\n--=20\nDag-Erling Sm=C3=B8rgrav - des@des.no"
+}

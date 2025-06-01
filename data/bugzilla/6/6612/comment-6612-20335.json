@@ -1,0 +1,8 @@
+{
+ "id": 20335,
+ "bug_id": 6612,
+ "attachment_id": 0,
+ "creation_time": "1999-08-03T04:12:04Z",
+ "creator": "hoek@FreeBSD.org",
+ "text": "\u003e\n\u003e        bsd.man.mk can't handle man pages with \":\"s, since it uses\n\u003e        the \":T:S\" constructs to extract elements.\n\nNo, that's not actually the reason.\n\nThe reason is because of loops such as this,\n\n.for x in ${page}\n$x: dependsonwhatever\n\tcreate the $x file\n.endfor\n\nmake(1) gets confused because ${page} is something like \"a::b\" and thinks\nthat \"a\" is the target with sources \"b\" and \"dependsonwhatever\".\n\nNote that bsd.man.mk will work for the specific case where NOMANCOMPRESS\nis defined, MANBUILDCAT is not defined, and MANFILTER is not defined.\n\nIt is broken for all other permutations of those settings.\n\nThe bsd.man.mk is an example of evolutionary design by committee.  Fixing\nit requires some rewriting...\n\nAlternatively, make(1) itself could be modified to allow escape\ncharacters in target specifications.  I would not be opposed to this\ntype of modification to make(1) and it would be very trivial (see the\nfunction src/usr.bin/make/parse.c::ParseDoDependency()."
+}

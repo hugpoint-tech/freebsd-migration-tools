@@ -1,0 +1,8 @@
+{
+ "id": 888716,
+ "bug_id": 211141,
+ "attachment_id": 0,
+ "creation_time": "2016-07-18T15:32:38Z",
+ "creator": "matthew@FreeBSD.org",
+ "text": "I can't reproduce this on 11.0-STABLE, admittedly with a different package\n(trousers-0.3.13) that creates a new userid\n\nCould you try checking the debug output? eg. by running:\n\n   pkg -d -d -d -d install sane-backend\n\nThat should pretty much trace every step pkg does, including the call to pw(8).\nTowards the end you should see something like this (different user and group\nobviously):\n\n{{{\nDBG(3)[21154]\u003e Scripts: executing\n--- BEGIN ---\nset -- trousers-0.3.13\nif [ -n \"${PKG_ROOTDIR}\" ] \u0026\u0026 [ \"${PKG_ROOTDIR}\" != \"/\" ]; then\n  PW=\"/usr/sbin/pw -R ${PKG_ROOTDIR}\"\nelse\n  PW=/usr/sbin/pw\nfi\necho \"===\u003e Creating groups.\"\nif ! ${PW} groupshow _tss \u003e/dev/null 2\u003e\u00261; then\n  echo \"Creating group '_tss' with gid '601'.\"\n  ${PW} groupadd _tss -g 601\nelse\n  echo \"Using existing group '_tss'.\"\nfi\necho \"===\u003e Creating users\"\nif ! ${PW} usershow _tss \u003e/dev/null 2\u003e\u00261; then\n  echo \"Creating user '_tss' with uid '601'.\"\n  ${PW} useradd _tss -u 601 -g 601 -L daemon -c \"TrouSerS user\" -d /var/empty -s /usr/sbin/nologin\nelse\n  echo \"Using existing user '_tss'.\"\nfi\nScripts: --- END ---\n}}}"
+}

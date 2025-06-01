@@ -1,0 +1,8 @@
+{
+ "id": 960705,
+ "bug_id": 223846,
+ "attachment_id": 0,
+ "creation_time": "2017-11-24T16:38:57Z",
+ "creator": "karl@denninger.net",
+ "text": "As documented on freebsd-fs in response to a query I posted after observing the above behavior msdosfs does not reflect the READONLY attribute on files in an msdosfs-mounted filesystem back to userspace.\n\nThis means that while you can set the READONLY attribute on a file with chmod a subsequent \"stat\" of that file (from a program), or a display with \"ls\" will not reflect it in the file mode returned.\n\nConrad Meyer posted a short code snippet that would fix this; credit to him of course on the identification but IMHO this should be changed globally and MFC'd as appropriate.\n\n\n--- a/sys/fs/msdosfs/msdosfs_vnops.c\n+++ b/sys/fs/msdosfs/msdosfs_vnops.c\n@@ -287,6 +287,8 @@ msdosfs_getattr(struct vop_getattr_args *ap)\n        vap-\u003eva_fileid = fileid;\n\n        mode = S_IRWXU|S_IRWXG|S_IRWXO;\n+       if ((dep-\u003ede_Attributes \u0026 ATTR_READONLY) != 0)\n+               mode \u0026= ~(S_IWUSR|S_IWGRP|S_IWOTH);\n        vap-\u003eva_mode = mode \u0026\n            (ap-\u003ea_vp-\u003ev_type == VDIR ? pmp-\u003epm_dirmask : pmp-\u003epm_mask);\n        vap-\u003eva_uid = pmp-\u003epm_uid;"
+}

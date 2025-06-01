@@ -1,0 +1,8 @@
+{
+ "id": 796753,
+ "bug_id": 195191,
+ "attachment_id": 149611,
+ "creation_time": "2014-11-19T23:35:29Z",
+ "creator": "guyyur@gmail.com",
+ "text": "Created attachment 149611\nRetry NET_RT_IFLIST sysctl.\n\nrtadvd exits after printing the message:\nrtadvd[41840]: \u003cupdate_ifinfo\u003e sysctl: NET_RT_IFLIST get failed\n\nThe NET_RT_IFLIST sysctl required buffer size can change between the request for the size and the request for the data.\ngetifaddrs handles this by retrying the sysctl several times.\n\nI copied the comment and looping from lib/libc/net/getifaddrs.c to have rtadvd behave like getifaddrs.\n\nrtadvd should probably also be changed to not need to call the sysctl for every message if the required info can be obtained by other means.\n\n\nIssue replicated in an environment with dhcpcd for DHCPv6-PD giving an address to a lan interface and a tun interface.\nRestarting dhcpcd can sometimes trigger the problem.\n\ndhcpcd adds a global ipv6 addresses and routes to the interfaces triggering RTM_NEWADDR and RTM_ADD.\nrtadvd calls update_ifinfo on RTM_NEWADDR and RTM_ADD.\n\nThe likely scenario is:\ndhcpcd adds an address for the lan interface.\nrtadvd receives RTM_NEWADDR for the lan interface.\nrtadvd calls the sysctl to get the required size.\ndhcpcd adds an address for the tun interface.\nsize changed.\nrtadvd calls the sysctl to get the data size with small buffer."
+}

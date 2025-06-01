@@ -1,0 +1,8 @@
+{
+ "id": 53076,
+ "bug_id": 17433,
+ "attachment_id": 0,
+ "creation_time": "2000-03-17T13:20:00Z",
+ "creator": "mirko.viviani@rccr.cremona.it",
+ "text": "\nIn the 4.0-RELEASE (and lower) libobjc there is a but in the posix thread\nimplementation. It locks the mutex before deallocating it.\n\nAnyway in 4.0 is libobjc compiled with thr-posix.c ? I haven't tested 4.0 yet,\nbut I hope yes.\n\nFix: \n\nsrc/contrib/gcc/objc/thr.c - objc_mutex_deallocate() should be changed to:\n\nint\nobjc_mutex_deallocate(objc_mutex_t mutex)\n{\n  int depth;\n\n  /* Valid mutex? */\n  if (!mutex)\n    return -1;\n\n#if 0\n  /* Acquire lock on mutex */\n  depth = objc_mutex_lock(mutex);\n#endif\n  depth = 1;\n\n  /* Call backend to destroy mutex */\n  if (__objc_mutex_deallocate(mutex))\n    return -1;\n\n  /* Free the mutex structure */\n  objc_free(mutex);\n\n  /* Return last depth */\n  return depth;\n}\nHow-To-Repeat: \nRun any of the GNUstep application that uses threads linked with libobjc\ncompiled with thr-posix support."
+}

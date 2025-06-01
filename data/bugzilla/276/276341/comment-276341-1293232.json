@@ -1,0 +1,8 @@
+{
+ "id": 1293232,
+ "bug_id": 276341,
+ "attachment_id": 0,
+ "creation_time": "2024-01-20T19:17:18Z",
+ "creator": "jfc@mit.edu",
+ "text": "Here is the object being destroyed on my system:\n\n(kgdb) p ARC_anon.arcs_size[0]\n$3 = {rc_count = 262144, rc_mtx = {lock_object = {lo_name = 0xffff000000c8d8f6 \"rc-\u003erc_mtx\", \n      lo_flags = 577830912, lo_data = 0, lo_witness = 0x0}, sx_lock = 1}, rc_tree = {avl_root = 0x0, \n    avl_compar = 0xffff0000001630f0 \u003czfs_refcount_compare\u003e, avl_offset = 0, avl_numnodes = 0}, \n  rc_removed = {list_size = 48, list_offset = 0, list_head = {\n      list_next = 0xffff0000010e6ad8 \u003cARC_anon+216\u003e, list_prev = 0xffff0000010e6ad8 \u003cARC_anon+216\u003e}}, \n  rc_removed_count = 0, rc_tracked = 0}\n\nThe sx_lock field is the correct value for a mutex to be passed to sx_destroy.\n\nThe avl tree is supposed to be empty because rc_tracked=0.\nThe value comes from the global variable reference_tracking_enable.\nSetting that to 1 at compile time might shed some light on the problem.\n\nARC_anon+216 is the address of rc_removed.list_head.\n\nlo_flags = 577830912 = 0x22710000 = class 0x22, LO_INITIALIZED|LO_WITNESS|LO_QUIET.\n\nSo there's nothing obviously wrong here except the accumulated\ncount added to and subtracted from the counter is not zero.\n\nThis is an ARC counter.  I do not expect scrubbing to have any effect.\nI ran zpool scrub and it found no errors."
+}

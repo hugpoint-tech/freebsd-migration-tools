@@ -1,0 +1,8 @@
+{
+ "id": 14440,
+ "bug_id": 4696,
+ "attachment_id": 0,
+ "creation_time": "2000-09-05T15:09:49Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Mon, 4 Sep 2000 kris@FreeBSD.ORG wrote:\n\n\u003e Synopsis: ping hangs on certain unresolvable hosts\n\u003e \n\u003e State-Changed-From-To: open-\u003eclosed\n\u003e State-Changed-By: kris\n\u003e State-Changed-When: Mon Sep 4 15:21:48 PDT 2000\n\u003e State-Changed-Why: \n\u003e Fixed by sef in r1.24 of ping.c on 1997/07/13\n\nNo, this was only fixed for some values of \"certain\", and not the ones\ndescribed in the PR.\n\nRev.1.24 of ping.c mainly makes all syscalls return EINTR when they are\ninterrupted by a SIGINT or SIGALRM.  This fixes hangs in sendto() and/or\nrecvmsg(), but has no effect on the hangs described in the PR since\nthose involve select() and select() always returns EINTR when it is\ninterrupted.  As described in the PR, res_send() retries almost endlessly\nafter select() returns EINTR.\n\nI think this is a bug in res_send().  It can't be aborted by non-broken\nsignal handlers except by ones that do little more than call _exit(2).\nping used to have broken signal handlers that did lots of unsafe cleanups\nbefore exiting unsafely by calling exit(3).\n\nPR 20613 is about essentially the same bug for \"fetch -T n\".  The timeout\ndoesn't work when the SIGALRM occurs in res_send(), since res_send() just\nretries after select() returns EINTR.\n\nBruce"
+}

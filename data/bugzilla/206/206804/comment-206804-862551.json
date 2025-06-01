@@ -1,0 +1,8 @@
+{
+ "id": 862551,
+ "bug_id": 206804,
+ "attachment_id": 0,
+ "creation_time": "2016-01-31T18:20:50Z",
+ "creator": "ecturt@gmail.com",
+ "text": "Definition of `struct sbuf` in `/sys/sys/sbuf.h`:\n\nstruct sbuf {\n\tchar\t\t*s_buf;\t\t/* storage buffer */\n\tsbuf_drain_func\t*s_drain_func;\t/* drain function */\n\tvoid\t\t*s_drain_arg;\t/* user-supplied drain argument */\n\tint\t\t s_error;\t/* current error code */\n\tssize_t\t\t s_size;\t/* size of storage buffer */\n\tssize_t\t\t s_len;\t\t/* current length of string */\n#define\tSBUF_FIXEDLEN\t0x00000000\t/* fixed length buffer (default) */\n#define\tSBUF_AUTOEXTEND\t0x00000001\t/* automatically extend buffer */\n#define\tSBUF_INCLUDENUL\t0x00000002\t/* nulterm byte is counted in len */\n#define\tSBUF_USRFLAGMSK\t0x0000ffff\t/* mask of flags the user may specify */\n#define\tSBUF_DYNAMIC\t0x00010000\t/* s_buf must be freed */\n#define\tSBUF_FINISHED\t0x00020000\t/* set by sbuf_finish() */\n#define\tSBUF_DYNSTRUCT\t0x00080000\t/* sbuf must be freed */\n#define\tSBUF_INSECTION\t0x00100000\t/* set by sbuf_start_section() */\n\tint\t\t s_flags;\t/* flags */\n\tssize_t\t\t s_sect_len;\t/* current length of section */\n};\n\nAll sizes and lengths, such as `s_size`, are of type `ssize_t`.\n\nHowever some functions in `sys/kern/subr_sbuf.c` incorrectly treat these sizes as `int` which could lead to unexpected truncation on platforms where `sizeof(int)` !== `sizeof(ssize_t)`:\n\nstruct sbuf *\nsbuf_new(struct sbuf *s, char *buf, int length, int flags)\n{\n    ...\n    sbuf_newbuf(s, buf, length, flags);\n    ...\n}\n\nstatic struct sbuf *\nsbuf_newbuf(struct sbuf *s, char *buf, int length, int flags)\n{\n    ...\n    s-\u003es_size = length;\n    ...\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 491644,
+ "bug_id": 133078,
+ "attachment_id": 0,
+ "creation_time": "2009-03-26T00:20:01Z",
+ "creator": "am@raisa.eu.org",
+ "text": "1. Kmix from the kdemultimedia-4.2.1_1 port treats /dev/mixer as /dev/mixer0. In FreeBSD /dev/mixer is a link to one of the \"real\" /dev/mixer* devices. When /dev/mixer points to /dev/mixer1, there are in fact two mixer1 devices in kmix.\n\n2. All mixer devices have the same name (meaningless \"OSS Audio Mixer\") in kmix. It prevents setting master channel correctly in kmix.\n\nFix: The attached patch (place it in multimedia/kdemultimedia4/files/) fixes two things:\n\n1. causes kmix to bind to /dev/mixer0 instead of /dev/mixer. Lsof output looks better:\nCOMMAND   PID  USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nkmix    95964 ameel   10u  VCHR   0,33      0t0   33 /dev/mixer0\nkmix    95964 ameel   12u  VCHR   0,35      0t0   35 /dev/mixer1\nkmix    95964 ameel   13u  VCHR   0,36      0t0   36 /dev/mixer2\n\n2. sets better names for mixer devices (takes names from HAL or simply enumerates them).\n\nAfter applying the patch kmix looses its settings (but not volume settings of course). That is normal.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: 1. Have at least two soundcards.\n2. # sysctl hw.snd.default_unit=1\n3. Run DBUS, HAL etc.\n4. Run KDE 4 and kmix.\n5. Try to change volume of the first (mixer0) soundcard using kmix. It will not be possible.\n6. Check # lsof -c kmix -a /dev/mixer /dev/mixer*\nCOMMAND   PID  USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nkmix    86651 ameel   10u  VCHR   0,35      0t0   35 /dev/mixer1\nkmix    86651 ameel   12u  VCHR   0,35      0t0   35 /dev/mixer1\nkmix    86651 ameel   13u  VCHR   0,36      0t0   36 /dev/mixer2"
+}

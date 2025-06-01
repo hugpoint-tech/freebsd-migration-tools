@@ -1,0 +1,8 @@
+{
+ "id": 897377,
+ "bug_id": 212595,
+ "attachment_id": 0,
+ "creation_time": "2016-09-12T05:01:38Z",
+ "creator": "avernar@gmail.com",
+ "text": "Using ipfw you can't enable or disable sets if any set 5 or higher are specified:\n\n  # ipfw set disable 1\n  # ipfw set disable 2\n  # ipfw set disable 3\n  # ipfw set disable 4\n  # ipfw set disable 5\n  ipfw: set enable/disable: setsockopt(IP_FW_SET_ENABLE): Invalid argument\n  # ipfw set disable 1 2 3\n  # ipfw set disable 1 2 4\n  # ipfw set disable 1 2 5\n  ipfw: set enable/disable: setsockopt(IP_FW_SET_ENABLE): Invalid argument\n\nThe problem is in ip_fw_sockopt.c in the manage_sets function.  For IP_FW_SET_ENABLE the rh-\u003erange.set and rh-\u003erange.new_set variables are bitmasks and not a single set number.  This is because multiple sets can be disabled and enabled with a single call.\n\nThe new check against IPFS_MAX_SETS in that function is triggered since if set 5 or higher is specified the value of those variables is 32 or higher.\n\nFor the IP_FW_SET_SWAP and IP_FW_SET_MOVE those two variables are indeed set numbers so the check is valid.  The check should be moved inside the switch just for those two cases."
+}

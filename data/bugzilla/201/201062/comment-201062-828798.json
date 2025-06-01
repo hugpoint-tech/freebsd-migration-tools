@@ -1,0 +1,8 @@
+{
+ "id": 828798,
+ "bug_id": 201062,
+ "attachment_id": 158000,
+ "creation_time": "2015-06-22T23:58:48Z",
+ "creator": "comet.berkeley@gmail.com",
+ "text": "Created attachment 158000\nCalendar Father's Day patch\n\nThe calendar.usholiday file contains 42 lines of which 2 are relevant to June 21, 2015:\n06/SunThird     Father's Day (3rd Sunday of June)\n06/21*  Summer Solstice\n\nMy .calendar/calendar file includes this one line:\n#include \u003ccalendar.usholiday\u003e\n\nAnd when calendar runs it should show two lines out, one for Father's Day and one for the Solstice:\n\n$calendar -t21.6.2015\nJun 21* Summer Solstice\n\nI patched the code (calendar.c and parsedata.c) and the problem seems to be fixed.\n\n$calendar -t21.6.2015\nJun 21* Summer Solstice\nJun 21* Father's Day (3rd Sunday of June)\n\nTo debug this it was helpful to set the debug_remember flag in\nthe dates.c code.  This flag is a global integer and can be set from calendar.c when the -d option (debug) is set.\n\nIn parsedata.c, the calculation of the first day of the recurring weekdays is wrong as it is trying to calculate a day of the month but will always return an integer in the range 0-6.  0 is always wrong...\n\nIt was:\n    d = (idayofweek - dow + 8) % 7;\n\nBut should be:\n    d = (idayofweek - dow + 7) % 7 + 1;  \n\nAdditionally the variable dow can be -1 and when it is the code should probably stop (continue) so a better patch is this:\n\n    if (dow \u003c 0)\n        continue;\n    d = (idayofweek - dow + 7) % 7 + 1;"
+}

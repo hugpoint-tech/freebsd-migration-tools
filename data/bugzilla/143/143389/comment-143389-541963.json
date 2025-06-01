@@ -1,0 +1,8 @@
+{
+ "id": 541963,
+ "bug_id": 143389,
+ "attachment_id": 0,
+ "creation_time": "2010-10-26T19:43:42Z",
+ "creator": "mjohnston@sandvine.com",
+ "text": "I was about to submit a PR about this before I found this one.\n\nThe problem is that fdisk is using a signed integer to store slice\nsizes, so attempts to create a slice of size \u003e1TB will result in\nfdisk using LONG_MAX as the slice size...which ends up corresponding\nto 1TB on platforms where sizeof(long) =3D=3D 4.\n\nThe solution is to use an unsigned long instead.\n\nWe have a patch in our tree for it.\n\nThanks,\n-Mark\n\ndiff --git a/sbin/fdisk/fdisk.c b/sbin/fdisk/fdisk.c\nindex 0b2ce7d..89b35f9 100644\n--- a/sbin/fdisk/fdisk.c\n+++ b/sbin/fdisk/fdisk.c\n@@ -105,9 +105,9 @@ typedef struct cmd {\n     char               cmd;\n     int                        n_args;\n     struct arg {\n-       char    argtype;\n-       int     arg_val;\n-       char    *arg_str;\n+       char            argtype;\n+       unsigned long   arg_val;\n+       char            *arg_str;\n     }                  args[MAX_ARGS];\n } CMD;\n=20\n@@ -979,7 +979,7 @@ parse_config_line(char *line, CMD *command)\n            if (isalpha(*cp))\n                command-\u003eargs[command-\u003en_args].argtype =3D *cp++;\n            end =3D NULL;\n-           command-\u003eargs[command-\u003en_args].arg_val =3D strtol(cp, \u0026end, 0);\n+           command-\u003eargs[command-\u003en_args].arg_val =3D strtoul(cp, \u0026end, 0)=\n;\n            if (cp =3D=3D end || (!isspace(*end) \u0026\u0026 *end !=3D '\\0')) {\n                char ch;\n                end =3D cp;"
+}

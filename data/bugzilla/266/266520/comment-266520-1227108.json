@@ -1,0 +1,8 @@
+{
+ "id": 1227108,
+ "bug_id": 266520,
+ "attachment_id": 0,
+ "creation_time": "2022-09-20T15:11:00Z",
+ "creator": "gadavis@ucsd.edu",
+ "text": "This appears to be a regression from a change mentioned offhand in bug #264564.\n\nRedirection of stdout and stderr fails, so there's spurious output, which is breaking Puppet management of the service.\n\nExpected:\n\n    # vmware_guestd\n    #\n    vmware_guestd_enable=\"YES\"\n    #   (default: \"\")\n\nActual:\n\n    VMware software version 6 (good)\n    # vmware_guestd\n    #\n    vmware_guestd_enable=\"YES\"\n    #   (default: \"\")\n\nReplacing line 21 of /usr/local/etc/rc.d/vmware-guestd with the following fixes the issue:\n\n    --- /usr/local/etc/rc.d/vmware-guestd\t2022-09-19 08:19:45.000000000 -0700\n    +++ ./vmware-guestd\t2022-09-20 08:06:56.469558000 -0700\n    @@ -18,7 +18,7 @@\n     load_rc_config $name\n    \n     checkvm_cmd=\"/usr/local/bin/vmware-checkvm \u003e /dev/null 2\u003e\u00261\"\n    -if ${checkvm_cmd}; then\n    +if eval \"${checkvm_cmd}\"; then\n     \t: ${vmware_guestd_enable:=\"YES\"}\n     else\n     \t: ${vmware_guestd_enable:=\"NO\"}\n\n\nOther info:\n\n    $ pkg info open-vm-tools | grep Version\n    Version        : 12.1.0,2\n    $ uname -r\n    13.1-RELEASE-p2"
+}

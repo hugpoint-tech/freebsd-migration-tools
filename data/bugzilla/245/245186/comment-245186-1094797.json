@@ -1,0 +1,8 @@
+{
+ "id": 1094797,
+ "bug_id": 245186,
+ "attachment_id": 0,
+ "creation_time": "2020-03-31T21:16:34Z",
+ "creator": "jfc@mit.edu",
+ "text": "I understand it's a different path internally, but I asked for disk errors not to crash the system and that's what I expect to happen.\n\nThe code in spa_misc.c appears to allow 1,000 seconds.  I've seen sync take a significant fraction of that time with working disks.  I/O on a failing disk can be orders of magnitude slower than usual.  It might take seems like forever to work through the queue, but the driver is continuing to process I/O requests.\n\nUnfortunately based on comments the deadman timer is based on the oldest pending I/O.  If the kernel used a per-disk timer that counted time with a non-empty queue and no requests completing it would be able to distinguish a very slow disk from a hung driver.  Or it could maintain some counter of failed I/O and mark the disk dead when the rate got too high.\n\nI think the drive should be kicked out of the pool and its I/O queue flushed in this situation.  When my drive first started failing that's what happened.  I'd run zpool status and find one of the drives removed.  I could run geli attach and a zpool command to bring it back in until the next time it got kicked out.  More recently the system started crashing instead."
+}

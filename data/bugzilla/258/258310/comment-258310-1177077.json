@@ -1,0 +1,8 @@
+{
+ "id": 1177077,
+ "bug_id": 258310,
+ "attachment_id": 0,
+ "creation_time": "2021-09-06T11:20:31Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "So the problem is actually not that kevent does not get signal notification.  It\nis that kqueue attached to kqueue with the signal event suddenly reports no\nevents when you specify zero timeout, i.e. non-blocking peek.  Am I right?\n\nThis is because kqueue subsystem has to fight with the recursion and deadlock.\nIf kqueue has another kqueue attached to it, then notification of the attached\nkqueue is delegated to a task.  See knote_enqueue()-\u003ekqueue_wakeup()-\u003e\nkqueue_schedtask().  Until task run, kq-\u003ekq_count == 0 and this together\nwith timespec being 0 (AKA unset) causes kqueue_scan() to immediately return 0.\n\nI am not sure if this is worth complications to make the wakeup synchronous."
+}

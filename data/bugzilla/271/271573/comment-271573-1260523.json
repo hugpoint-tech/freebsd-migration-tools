@@ -1,0 +1,8 @@
+{
+ "id": 1260523,
+ "bug_id": 271573,
+ "attachment_id": 0,
+ "creation_time": "2023-05-22T21:30:08Z",
+ "creator": "vangyzen@FreeBSD.org",
+ "text": "FreeBSD 12.4-STABLE #3 stable/12-n236157-886d82afb03\n\nWith a busy TCP flow using a non-RTF_HOST route on an IFF_BROADCAST interface, a \"route change\" operation on that route that changes the interface address can leave \"ia\" NULL, triggering a NULL pointer dereference.\n\n#6  0xffffffff811020df in trap_pfault (frame=0xfffffe002c1e8420, \n    usermode=\u003coptimized out\u003e, signo=\u003coptimized out\u003e, ucode=\u003coptimized out\u003e)\n    at /usr/src/sys/amd64/amd64/trap.c:739\n#7  \u003csignal handler called\u003e\n#8  0xffffffff80d63c64 in in_ifaddr_broadcast (in=..., ia=0x0)\n    at /usr/src/sys/netinet/in.c:1003\n#9  0xffffffff80d75ee6 in ip_output (m=\u003coptimized out\u003e, opt=\u003coptimized out\u003e, \n    ro=\u003coptimized out\u003e, flags=\u003coptimized out\u003e, imo=0x0, inp=\u003coptimized out\u003e)\n    at /usr/src/sys/netinet/ip_output.c:404\n#10 0xffffffff80e03787 in tcp_output (tp=0xfffff8000c922000)\n    at /usr/src/sys/netinet/tcp_output.c:1444\n\nThere may be multiple changes that contribute to this, but one in particular is commit 1ebec5faf41f, which creates a window in rtrequest1_fib_change() when rt-\u003ert_ifa is NULL.  In my opinion, the right fix would close that window.  This might use the wrong interface address, but it won't panic.  It also won't use freed memory because that's prevented by the net_epoch.\n\nThis probably does not affect 13.x or later, which use nexthop."
+}

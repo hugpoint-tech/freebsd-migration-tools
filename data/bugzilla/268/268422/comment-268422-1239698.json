@@ -1,0 +1,8 @@
+{
+ "id": 1239698,
+ "bug_id": 268422,
+ "attachment_id": 238852,
+ "creation_time": "2022-12-17T01:54:23Z",
+ "creator": "alt2600@icloud.com",
+ "text": "Created attachment 238852\ngit-Makefile_full_lapack.diff\n\nSo ran into some issues after Atlas update with some errors indicating missing symbols notably from py-numpy when configuring opencv, or py-netCDF4\n\nImportError: /usr/local/lib/python3.9/site-packages/numpy/linalg/_umath_linalg.cpython-39.so: Undefined symbol \"sgesdd_\"\n\nso after poking around the backup package of Atlas and the current ones I confirmed the old one did provide that symbol, and I recall that becoming default a while ago to build full lapack. \n\nSo I starting digging and saw what upstream did with eliminating specifying just the static library reference to use. I basically manually did in the do-build section things that configure would have done if if had built its own lapack.a and set it up to use it. This included passing some options to xconfig, stripping some objects from our reference lapack and copying it into ${opt}/lib where the build expects it. it appears passing flapack to xconfig doesn't really do anything, all the business setting things up now seems to be in configure, but can be worked around.\n\nI confirmed this now provides the library, opencv doesn't fail to import the symbol loading numpy, all the things that use atlas build. I even re-built py-scipy with atlas using this: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=257400 and the scikit packages I have that use it.\n\nI've attached my patch"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1134484,
+ "bug_id": 251540,
+ "attachment_id": 0,
+ "creation_time": "2020-12-02T18:27:34Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "Scenario:\n- FreeBSD 13.0-CURRENT #0 r367245M: Sun Nov  1 15:44:09 CET 2020\n- running in bhyve or natively on armv6 (RPI-B+)\n- TCP connections are open, for example an xload to a remote display, or an iSCSI connection to a remote iSCSI target\n\nResult:\n- The \"xload\" on the remote display remains frozen until its TCP connection times out.\n- The iSCSI server logs \"WARNING: 192.168.1.195 (iqn.1995-06.xyzzy.v903:iscsid): no ping reply (NOP-Out) after 30 seconds; dropping connection\".\n- Similar behavior exists for other active TCP connections.\n- The likely cause is that When shutting down the system, no FIN is sent on active TCP connections; they seem to just get torn down immediately.\n\nExpected result:\n- Until some time before r367245, TCP connections were torn down correctly when the kernel shut down.\n- A FIN should be sent on each TCP connection before the kernel finally shuts down.\n- The \"xload\" window would be removed from the display immediately when the kernel shuts down.\n- The iSCSI server would not complain about a NOP-Out.\n\nNote:\n- Linux seems to implement the behavior noted in \"result\" for a long time, but not FreeBSD. Until recently, FreeBSD head did send FINs on TCP connections when the system goes down. Even if it cannot be guaranteed that the FIN is actually received, at least a one-time effort should be made.\n\n-- Martin"
+}

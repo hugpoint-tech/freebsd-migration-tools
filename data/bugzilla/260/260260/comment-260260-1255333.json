@@ -1,0 +1,8 @@
+{
+ "id": 1255333,
+ "bug_id": 260260,
+ "attachment_id": 0,
+ "creation_time": "2023-04-15T12:39:44Z",
+ "creator": "zarychtam@plan-b.pwste.edu.pl",
+ "text": "The bug seems to be not related to lagg(4). Moreover, I found out that it can be also worked around by only temporarily oversizing MTU by one byte. \n\nSo to reproduce the problem issue this sequence of commands:\n\nifconfig igb3 mtu 9000\nifconfig vlan1500 create vlandev igb3 vlan 1500\nifconfig vlan1500 192.168.40.5/24\n\nNow MTU for both igb3 and vlan1500 is set to 9000 but vlan1500 can only send large TCP segments. Receiving is broken.\n\nBut the real mystery is that after the sequence: \n\nifconfig igb3 mtu 9001\nifconfig igb3 mtu 9000\nifconfig vlan1500 create vlandev igb3 vlan 1500\nifconfig vlan1500 192.168.40.5/24\n\nReceiving large TCP segments for vlan1500 is working fine (MTU for both igb3 and vlan1500 is still set to the same value of 9000). \n\n\nI tried to investigate how can it be possible that when sibling setups are compared one of them is able to work without oversizing MTU of the parent but another one does not. Neither TSO nor LRO seems to be involved.\n\nHere's how the segment looks at receiving side after applying a temporary MTU oversizing fix from the above:\n\n 14:27:36.269125 ac:1f:6b:02:aa:bb \u003e ac:1f:6b:02:aa:cc, ethertype IPv4 (0x0800), length 9014: (tos 0x2,ECT(0), ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 9000)\n    192.168.40.3.25218 \u003e 192.168.40.5.5201: Flags [.], cksum 0x1a28 (correct), seq 835179525:835188473, ack 1, win 70, options [nop,nop,TS val 2309578650 ecr 1068877401], length 8948"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1295960,
+ "bug_id": 272507,
+ "attachment_id": 0,
+ "creation_time": "2024-02-09T01:42:28Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Hmm, I think this device is the root cause of the conflict:\n\n\nhandle=\\_SB_.PCI0.GPP7.UP00.DP40.UP00.DP68.SPTO\n        I/O memory addresses:\n            0xfbf00000-0xfbf00fff\n\n\nIn particular, the ACPI bus driver is reserving that range on behalf of that device which falls in the range of pcib2's initial windows.  However, this device is logically behind the PCI-PCI bridge, but we aren't recognizing it as such.\n\nThis actually corresponds to a device behind this bridge:\n\n                        pcib18 pnpinfo vendor=0x1022 device=0x43f5 subvendor=0x1b21 subdevice=0x3328 class=0x060400 at slot=13 function=0 dbsf=pci0:10:13:0 handle=\\_SB_.PCI0.GPP7.UP00.DP40.UP00.DP68\n                            pcib10 bus numbers:\n                                18\n                          pci18\n                              pcib18 bus numbers:\n                                  18\n                            unknown pnpinfo vendor=0x1022 device=0x43f6 subvendor=0x1b21 subdevice=0x1062 class=0x010601 at slot=0 function=0 dbsf=pci0:18:0:0 handle=\\_SB_.PCI0.GPP7.UP00.DP40.UP00.DP68.SA00\n\nNote that DP68 is pcib18.  I've no idea what the SPTO device is supposed to be under that bridge.  But this does give me a bit of a clue for how to think about handling this.  At some point it might be interesting to see the ACPI source from acpidump -d to see what it think the SPTO device is (e.g. if it has an _ADR method that indicates a PCI slot/function).\n\nI'll need to think a bit about how to properly ignore this device without breaking other devices we need to reserve resources for."
+}

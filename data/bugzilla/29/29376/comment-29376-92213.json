@@ -1,0 +1,8 @@
+{
+ "id": 92213,
+ "bug_id": 29376,
+ "attachment_id": 0,
+ "creation_time": "2001-08-02T01:20:19Z",
+ "creator": "fmela0@sm.socccd.cc.ca.us",
+ "text": "The ANSI C standard requires that realloc(ptr, 0) behave the same as free(ptr). This behaviour is available on FreeBSD only if the malloc_options includes 'V' (sysv-style). Secondly, if both 'V' and 'X' are in malloc_options, specifying SysV-style and abort-on-out-of-memory behaviour, then realloc(ptr, 0) will result in realloc free'ing the pointer, and then thinking it is out of memory and abort()ing.\n\nFix: \n\nChange line 1132 of /usr/src/lib/libc/stdlib/malloc.c:\n\n-\tif (malloc_xmalloc \u0026\u0026 !r)\n+\tif (malloc_xmalloc \u0026\u0026 !r \u0026\u0026 size)\n\nChange line 1121:\n\n-\tif (malloc_sysv \u0026\u0026 !size)\n+\tif (ptr \u0026\u0026 !size)\n\nThis will cause the implementation to conform with ANSI as well as fix the problem where it thinks it is out of memory when it is really just freeing the pointer.\nHow-To-Repeat: #inlude \u003cstdlib.h\u003e\n\nint\nmain(void)\n{\n\textern char *malloc_options;\n\tvoid *p=NULL;\n\n\tmalloc_options=\"VX\";\t/* set malloc flags */\n\tp=realloc(p, 50); /* allocate 50 bytes */\n\tp=realloc(p, 0);  /* this will cause realloc to abort() */\n\texit(0);\n}"
+}

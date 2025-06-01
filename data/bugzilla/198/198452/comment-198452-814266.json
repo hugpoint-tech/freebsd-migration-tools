@@ -1,0 +1,8 @@
+{
+ "id": 814266,
+ "bug_id": 198452,
+ "attachment_id": 0,
+ "creation_time": "2015-03-09T19:00:25Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to dpejesh from comment #2)\nTechnically, what happens is that dl_iterate_phdr() locks the rtld_bind_lock, and dlopen() needs the same lock.  This is reasonable, since the lock protects the structures which are used by iterator and modified by dlopen(), just for example, the list of the loaded objects.\n\nGenerally, we cannot upgrade read-lock to write, since there may be other read lock owners.  We cannot drop read lock, to wait for write, since this invalidates previous iterations.\n\nI said that your reference to the commits is strange, because this is definitely not the commits you point out that introduces the behavior.  It is there from the moment when locks were added to dl_iterate_phdr().  You are tripping on the stated revisions since that revs force to use real locking when libthr.so is loaded into the process.  The single-threaded processes use some sort of fake locking in rtld.\n\nI.e. the 'bug' is there for long time.\n\nWRT Linux, their dl_iterate_phdr() is much less safe, so to say, then ours.  For instance, their dl_iterate_phdr() should not be used from the signal handler context, which causes trouble for libunwind, and is one of the reasons why I do not want to change the code to e.g. dropping lock during the calls to callback and using sentinel to remember the position to iterate."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 809786,
+ "bug_id": 197592,
+ "attachment_id": 0,
+ "creation_time": "2015-02-13T10:41:06Z",
+ "creator": "aigars@ugunssiena.lv",
+ "text": "BIOCSETBUFMODE ioctl call on bpf with BPF_BUFMODE_ZBUF argument always returns EBUSY.\nReason: \nbpfopen() in sys/net/bpf.c calls bpf_buffer_ioctl_sblen() on every opened bpf device. \nbpf_buffer_ioctl_sblen() initializes bd_fbuf and bd_sbuf to freshly allocated memory buffers. \nTherefore later in BIOCSETBUFMODE ioctl the following condition is always true:\n                if (d-\u003ebd_sbuf != NULL || d-\u003ebd_hbuf != NULL ||\n                    d-\u003ebd_fbuf != NULL || d-\u003ebd_bif != NULL) {\n                        BPFD_UNLOCK(d);\n                        CURVNET_RESTORE();\n                        return (EBUSY);\n                }\n\nSolution: \nInsert this code in BIOCSETBUFMODE ioctl:\n                if(*(u_int *)addr == BPF_BUFMODE_ZBUF \u0026\u0026 d-\u003ebd_bufmode == BPF_BUFMODE_BUFFER) {\n                         bpf_buffer_free(d);\n                        d-\u003ebd_sbuf = 0;\n                        d-\u003ebd_fbuf = 0;\n                        d-\u003ebd_hbuf = 0;\n                }\n\nThis works for switching to zerocopy mode. Probably some checking and action is needed if someone tries to switch back to BPF_BUFMODE_BUFFER mode after zerocopy mode.\n\n10.1-RELEASE has the same problem."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1183378,
+ "bug_id": 259071,
+ "attachment_id": 0,
+ "creation_time": "2021-10-21T21:24:07Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Well, I think I've figured out what the breakage is for the\nNFS client. I'll leave it to asomers@ to decide if fuse\nsuffers from the same problem.\n\nTo be honest, I think this bug has existed in the BSD NFS\nclient *forever* (as in, since I first wrote NFS client code\nfor 4.3BSD in 1986, believe it or not;-).\n\nHere's what seems to happen:\nChild                                 Parent\n- does stat()\n  - does VOP_LOOKUP(), which\n    does the Lookup RPC with\n    the directory vnode locked        - does ftruncate(), acquiring\n  --\u003e acquires file handle and          exclusive vnode lock on file vnode\n    attributes, including Size,\n    valid at this point in time\n  - blocks waiting for locked file\n    vnode                             - does VOP_SETATTR() of Size, changing\n                                        the file's size\n                                      - releases the file vnode\n  - acquires file vnode and fills\n    in now stale attributes including\n    the old wrong Size\n                                      - does a read() which returns wrong\n                                        data size\n\nI am working on a patch, which I plan to discuss with asomers@ off list.\nI will put a patch here as an attachment if/when I have one."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 868750,
+ "bug_id": 207786,
+ "attachment_id": 167825,
+ "creation_time": "2016-03-08T02:35:43Z",
+ "creator": "chadf@triularity.org",
+ "text": "Created attachment 167825\nPatch file for sys/dev/gpio/gpioiic.c\n\nInstead of casting the \"data\" parameter to an int pointer and dereferencing, it dereferences the caddr_t (a char *) and then casts that value to an int. Currently, on little-endian systems it happens to work as expected, but is broken for other hardware.\n\ngpioiic_callback(device_t dev, int index, caddr_t data)\n{\n        struct gpioiic_softc    *sc = device_get_softc(dev);\n        int error, how;\n\n        how = GPIOBUS_DONTWAIT;\n        if (data != NULL \u0026\u0026 (int)*data == IIC_WAIT)\n                how = GPIOBUS_WAIT;\n        error = 0;\n        switch (index) {\n        case IIC_REQUEST_BUS:\n                error = GPIOBUS_ACQUIRE_BUS(sc-\u003esc_busdev, sc-\u003esc_dev, how);\n                break;\n\nPatch file included.\n\nSide note: To increase efficiency, it could be changed to an if/else setting of \"how\" and moved into the IIC_REQUEST_BUS switch entry, as only that code uses it."
+}

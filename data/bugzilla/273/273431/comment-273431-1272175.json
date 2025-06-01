@@ -1,0 +1,8 @@
+{
+ "id": 1272175,
+ "bug_id": 273431,
+ "attachment_id": 0,
+ "creation_time": "2023-08-30T02:07:16Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "This is a crafted bug from WIP fix https://reviews.freebsd.org/D39536.\n\nA setup:\n\nem0 \u003c---\u003e igc0\n\nSteps to repeat:\n\nCapture on igc0\n```\n# ifconfig igc0 up\n# tcpdump -nevi igc0\n```\n\nDisable PCP and hardware VLAN tag insertion, then send packets with priority\n```\n# ifconfig em0 -vlanhwtag -pcp\n# ifconfig em0 inet 192.0.2.1/24\n# arp -s 192.0.2.2 0:1:2:3:4:5\n# ping -c1 -C3 192.0.2.2\n```\n\nPackets captured on igc0:\n```\n09:53:57.397415 00:0c:29:73:4f:98 \u003e 00:01:02:03:04:05, ethertype IPv4 (0x0800), length 98: (tos 0x0, ttl 64, id 19249, offset 0, flags [none], proto ICMP (1), length 84)\n    192.0.2.1 \u003e 192.0.2.2: ICMP echo request, id 5382, seq 0, length 64\n```\n\nWhen either hardware VLAN tag insertion is enabled, or enable default PCP on interface\n```\n# ifconfig em0 vlanhwtag\n### or\n# ifconfig em0 pcp 0\n```\n\nthen the outbound packets looks good:\n```\n10:00:03.189436 00:0c:29:73:4f:98 \u003e 00:01:02:03:04:05, ethertype 802.1Q (0x8100), length 102: vlan 0, p 3, ethertype IPv4, (tos 0x0, ttl 64, id 33532, offset 0, flags [none], proto ICMP (1), length 84)\n    192.0.2.1 \u003e 192.0.2.2: ICMP echo request, id 6662, seq 0, length 64\n\n10:02:17.070757 00:0c:29:73:4f:98 \u003e 00:01:02:03:04:05, ethertype 802.1Q (0x8100), length 102: vlan 0, p 3, ethertype IPv4, (tos 0x0, ttl 64, id 19250, offset 0, flags [none], proto ICMP (1), length 84)\n    192.0.2.1 \u003e 192.0.2.2: ICMP echo request, id 8198, seq 0, length 64\n```\n\n\nExpected behavior: outbound traffic should always have priority when application requires."
+}

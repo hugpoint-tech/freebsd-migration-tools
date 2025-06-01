@@ -1,0 +1,8 @@
+{
+ "id": 1224290,
+ "bug_id": 265974,
+ "attachment_id": 0,
+ "creation_time": "2022-08-26T16:35:09Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I certainly agree with the comment about smr_enter().  On at least arm64, atomic_add_acq_int()'s acquire semantics apply only to the load; subsequent loads can be reordered with the store.  I believe this is true with LSE atomics as well as the original LL/SC atomics.  I also agree that the code is fine on Intel since atomic instructions prevent store-load reordering.\n\nOur atomic(9) documentation doesn't really call out this subtlety.  We might have similar bugs elsewhere.\n\nI need to think about smr_poll() a bit more.\n\n\u003e Moreover, smr_poll() absolutely needs a full memory barrier on entry, the `atomic_load_acq_int` performed by `smr_poll` aren't sufficient.\n\nThe suggested patch adds two barriers to smr_poll_scan() and none to smr_poll(), is that intentional?"
+}

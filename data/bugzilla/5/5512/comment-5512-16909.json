@@ -1,0 +1,8 @@
+{
+ "id": 16909,
+ "bug_id": 5512,
+ "attachment_id": 0,
+ "creation_time": "1998-01-16T22:10:01Z",
+ "creator": "tate@spa.is.uec.ac.jp",
+ "text": "\n  I386 netboot can not receive standard BOOTP message from BOOTP server.\n  This is tested on nb8390.com, however the problem is not depend on\n  hardware.\n\nFix: In function await_reply() on /usr/src/sys/i386/boot/netboot/main.c,\n  BOOTP reply message length is checked as:\n   (packetlen \u003e= (ETHER_HDR_LEN + sizeof(struct bootp_t))\n  According to RFC1048, BOOTP reply message is:\n    Ethernet header ... 14 byte\n    IP header ... 20 byte\n    UDP header ... 8 byte\n    BOOTP message ... 300 byte\n     =\u003e total = 342 byte.\n  However, sizeof(struct bootp_t) is 520 in released code.\n  This is came from BOOTP_VENDOR_LEN is defined 256 instead of 64.\n  This value is limited to 64 byte in BOOTP message.\n\n  Then, BOOTP reply message (342 byte) is dropped as short message and\n  client never receive any reply.\n\n  Following is patch for:\n  /usr/src/sys/i386/boot/netboot/netboot.h\nHow-To-Repeat: \n  Configure BOOTP server (WIDE dhcp-1.3beta on BSD/OS 2.1) as:\nmulch:  :ipad=192.168.0.4:clid=\"1:0x00605204a360\":\\\n\t:albp=true:siad=192.168.0.1:\n\n  This configuration serve to BOOTP client, which has ethernet address\n  \"00:60:52:04:a3:60\", client IP addrss (192.168.0.4) and server IP\n  address (192.168.0.1).\n\n  Compile nb8390.com and run it under DOS on FreeBSD box with NE2000.\n  This box can't receive any BOOTP reply message even when BOOTP server\n  is sending valid reply."
+}

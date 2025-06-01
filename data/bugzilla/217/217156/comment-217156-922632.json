@@ -1,0 +1,8 @@
+{
+ "id": 922632,
+ "bug_id": 217156,
+ "attachment_id": 0,
+ "creation_time": "2017-02-20T12:08:50Z",
+ "creator": "milosz.kaniewski@gmail.com",
+ "text": "I read a little bit of code and found out what may be the source of the problem:\n1. When we initialize netmap device (using NIOCREGIF ioctl) a pair of RX/TX krings is created for each queue. If I declare to use only one queue then only one pair of krings get nr_pending_mode set to NKR_NETMAP_ON. In all other krings nr_pending_mode is set to NKR_NETMAP_OFF. \n2. Next cxgbe_netmap_on() function is called. Inside this function there are two loops (for_each_nm_{rt}xq) that iterate through every tx and rx queue (also through queues that I decided not to use).\n3. On every iteration there is netmap_reset() function called and there is an assertion that it never returns NULL. However if there are some krings with nr_pending_mode set to NKR_NETMAP_OFF then netmap_reset() returns NULL. We have such krings so panic occurs.\n\nI were able to resolve this problem by modifying for_each_nm_{rt}xq loop that it would iterate only through queues that have nr_pending_mode set to NKR_NETMAP_ON. But I am not really sure if this is a proper way to resolve this problem (for example it doesn't let me to do proper resources releasing in cxgbe_netmap_off()). Moreover after my modifications t4_config_rss_range() started to fail randomly (with EINVAL) and I have no idea why it is happening."
+}

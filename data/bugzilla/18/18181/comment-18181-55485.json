@@ -1,0 +1,8 @@
+{
+ "id": 55485,
+ "bug_id": 18181,
+ "attachment_id": 0,
+ "creation_time": "2000-04-23T22:50:01Z",
+ "creator": "cr@jcmax.com",
+ "text": "\nGetty does not process the :de: delay unless it is present in the default\nterminal class.  This is somewhat annoying, since a 15 second delay can be\nmost useful with a modem, but is generally unappreciated on the console.\n\nHere's what happens:\n\nAs getty enters its main loop, it encounters the following code:\n\n\t\t/*\n\t\t * if a delay was specified then sleep for that \n\t\t * number of seconds before writing the initial prompt\n\t\t */\n\t\tif (first_sleep \u0026\u0026 DE) {\n\t\t    sleep(DE);\n\t\t    /* remove any noise */\n\t\t    (void)tcflush(STDIN_FILENO, TCIOFLUSH);\n\t\t}\n\t\tfirst_sleep = 0;\n\n\t\tsetttymode(tname, 0);\n\nUntil the setttymode(), only the default gettytab terminal class has been loaded.\nSetttymode() contains the following code:\n\n\tgettable(tname, tabent);\n\tif (OPset || EPset || APset)\n\t\tAPset++, OPset++, EPset++;\n\tsetdefaults();\n\nAfter which the correct terminal class is loaded.\n\nFix: \n\nInitializing the global class values from within setttymode() is not very pretty,\nbut was put there to move the tty-mode specific processing of the APset and other\nflags there.\n\nGettable() should be moved to the top of the main loop, followed by a setdefaults().\nHow-To-Repeat: \nSet up hylafax to run a getty(8) upon detection of a data call, invoking getty\nvia \"dly.152000 -\", where the dly.152000 class has a non-null de field value.\nWatch the connection process and observe that getty did not wait as required.\nNotice that for once this bug isn't in hylafax."
+}

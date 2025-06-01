@@ -1,0 +1,8 @@
+{
+ "id": 883274,
+ "bug_id": 210258,
+ "attachment_id": 0,
+ "creation_time": "2016-06-13T17:37:15Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "When compiling (on 11.x in case it matters):\n\niperf_api.c:2600:67: warning: implicit declaration of function 'TAILQ_END' is invalid in C99 [-Wimplicit-function-declaration]\n    for (irp = TAILQ_FIRST(\u0026sp-\u003eresult-\u003einterval_results); irp != TAILQ_END(sp-\u003eresult-\u003einterval_results); irp = nirp) {\n                                                                  ^\n\nAnd later:\nlibtool: link: cc -g -O2 -pipe -fstack-protector -fno-strict-aliasing -Wall -g -fstack-protector -o .libs/iperf3 iperf3-main.o  ./.libs/libiperf.so -Wl,-rpath -Wl,/usr/local/lib\n./.libs/libiperf.so: undefined reference to `TAILQ_END'\ncc: error: linker command failed with exit code 1 (use -v to see invocation)\n\nThis is strange code. TAILQ_END() doesn't normally exist - it looks like it is meant to be TAILQ_LAST()\n\nUsage examples:\n/sys/kern/uipc_mqueue.c:\t\tif (msg-\u003emsg_prio \u003c= TAILQ_LAST(\u0026mq-\u003emq_msgq, msgq)-\u003emsg_prio) {\n/sys/kern/vfs_subr.c:\t    bp-\u003eb_lblkno \u003e TAILQ_LAST(\u0026bv-\u003ebv_hd, buflists)-\u003eb_lblkno)\n/sys/kern/vfs_subr.c:\tbp = TAILQ_LAST(\u0026bv-\u003ebv_hd, buflists);\n\nNote that there's a type field in the macro, so presumably there is more to it than a simple typo."
+}

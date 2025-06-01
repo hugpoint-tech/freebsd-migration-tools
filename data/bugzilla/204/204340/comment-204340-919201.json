@@ -1,0 +1,8 @@
+{
+ "id": 919201,
+ "bug_id": 204340,
+ "attachment_id": 0,
+ "creation_time": "2017-01-30T03:04:24Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Andriy Gapon, did your crash occur when the machine was being shut down\n(or the nfsd threads were being killed off)?\n\nIf not, it is not caused by what these patches were intended for.\n(They are in 10.3.)\n\nYour crash basically indicates that either:\n1 - The sg_group was free'd when a socket upcall was still in progress.\n    Since the sg_group structures aren't free'd until the nfsd threads\n    are killed (shutdown or ??), I don't think this can happen during\n    normal operation.\nOR\n2 - The xprt structure that referenced the sg_group was free'd prematurely\n    and the sg pointer was bogus.\n\nIf it was #2, I think I can come up with a simple patch to avoid this.\n(Basically acquire a reference count on the xprt structure during the\n socket upcall.)\n\nrick"
+}

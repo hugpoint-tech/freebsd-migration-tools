@@ -1,0 +1,8 @@
+{
+ "id": 828585,
+ "bug_id": 200992,
+ "attachment_id": 0,
+ "creation_time": "2015-06-21T14:59:23Z",
+ "creator": "allanjude@FreeBSD.org",
+ "text": "I think I made have a similar issue (not in a jail):\n# uname -a\nFreeBSD Nexus.HML3.ScaleEngine.net 11.0-CURRENT FreeBSD 11.0-CURRENT #0 r283896: Mon Jun  1 22:08:43 UTC 2015     root@Nexus.HML3.ScaleEngine.net:/usr/obj/usr/src/sys/GENERIC-NODEBUG  amd64\n\n\n  PID USERNAME    THR PRI NICE   SIZE    RES STATE   C   TIME    WCPU COMMAND\n92435 root          2  40   20  1792M  1600M STOP    0 172.2H  96.56% VBoxHeadl\n\n# procstat -k 92435\n  PID    TID COMM             TDNAME           KSTACK\n92435 100784 VBoxHeadless     -                mi_switch thread_suspend_switch thread_single exit1 sigexit postsig ast doreti_ast\n92435 100841 VBoxHeadless     -                \u003crunning\u003e\n\n\n# ps axHS -o pid,lwp,paddr,tdaddr 92435\n  PID    LWP            PADDR           TDADDR\n92435 100784 fffff800dab5ea70 fffff801f75194b0\n92435 100841 fffff800dab5ea70 fffff8016bad3960\n\n\nas soon as I started kgdb, it spat out:\n#0  sched_switch (td=0xfffff8000b87b4b0, newtd=\u003cvalue optimized out\u003e,\n    flags=\u003cvalue optimized out\u003e) at /usr/src/sys/kern/sched_ule.c:1956\n1956                    cpuid = PCPU_GET(cpuid);\n\n\n(kgdb) set print pretty on\n(kgdb) p *(struct proc*)0xfffff800dab5ea70\nhttp://slexy.org/view/s20fuKiBZz\n\n(kgdb) p *(struct thread *)0xfffff801f75194b0\nhttp://slexy.org/view/s21oIiroY8\n\n(kgdb) p *(struct thread *)0xfffff8016bad3960\nhttp://slexy.org/view/s20GWaINNw"
+}

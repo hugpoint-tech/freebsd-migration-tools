@@ -1,0 +1,8 @@
+{
+ "id": 65423,
+ "bug_id": 21073,
+ "attachment_id": 0,
+ "creation_time": "2000-09-06T08:20:00Z",
+ "creator": "Andre.Albsmeier@mchp.siemens.de",
+ "text": "\nWhen setting a sound format with SNDCTL_DSP_SETFMT, the system call does not\ntell us if an improper format was set.\n\nHow-To-Repeat: \nThe following program demonstrates the error:\n\n#include \u003cstdio.h\u003e   \n#include \u003cctype.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cmachine/soundcard.h\u003e\n#include \u003csys/time.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n\nint main( ) {\n\n  int bits;\n  int fd;\n\n  if( (fd = open(\"/dev/dsp\", O_RDONLY)) \u003c 0 ) {\n    fprintf( stderr, \"Can't open /dev/dsp for read\\n\" );\n    exit( 1 );\n  }\n\n  if( ioctl(fd, SNDCTL_DSP_GETFMTS, \u0026bits) \u003c 0 ) {\n    fprintf( stderr, \"SNDCTL_DSP_GETFMTS error\\n\" );\n    exit( 1 );\n  }\n  \n  printf( \"GETFMTS: 0x%X\\n\", bits );\n    \n  bits = 0x10;\n  if( ioctl(fd, SNDCTL_DSP_SETFMT, \u0026bits) \u003c 0 ) {\n    fprintf( stderr, \"SNDCTL_DSP_SETFMT error\\n\" );\n    exit( 1 );\n  }\n\n  printf( \"After setting 0x10 with SETFMT: 0x%X\\n\", bits );\n\n  return( 0 );\n}\n\n\nandre@bali:~\u003e./sndcheck \nGETFMTS: 0x10000008\nAfter setting 0x10 with SETFMT: 0x10\n\nSo the AWE64 only supports AFMT_U8 in STEREO. Now we set AFMT_S16_LE\nbut there is no error returned neither was the bits variable modified\nas it was the case in voxware."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 727712,
+ "bug_id": 181445,
+ "attachment_id": 0,
+ "creation_time": "2013-08-21T06:30:00Z",
+ "creator": "kimor79@yahoo.com",
+ "text": "Some proxy servers, i.e., apache, enforce the Host header requirement on HTTP/1.1 requests even when the CONNECT method is given. The resulting response is \"400 bad request\". This patch adds the Host header immediately after the CONNECT method. However, even with the patch, the request will fail later on with SSL errors but that would be a different PR.\n\nFix: Index: lib/libfetch/http.c\n===================================================================\n--- lib/libfetch/http.c\t(revision 254593)\n+++ lib/libfetch/http.c\t(working copy)\n@@ -1400,6 +1400,8 @@\n \tif (strcasecmp(URL-\u003escheme, SCHEME_HTTPS) == 0 \u0026\u0026 purl) {\n \t\thttp_cmd(conn, \"CONNECT %s:%d HTTP/1.1\",\n \t\t    URL-\u003ehost, URL-\u003eport);\n+\t\thttp_cmd(conn, \"Host: %s:%d\",\n+\t\t    URL-\u003ehost, URL-\u003eport);\n \t\thttp_cmd(conn, \"\");\n \t\tif (http_get_reply(conn) != HTTP_OK) {\n \t\t\tfetch_close(conn);\n\nPatch attached with submission follows:\nHow-To-Repeat: I don't have a public apache-based proxy server to use but an apache configuration containing the following:\n\nProxyRequests On\nSSLProxyEngine On\nAllowCONNECT 80 443\n\nAnd then\n\nexport HTTP_PROXY=http://theproxyserver:80/\nfetch https://www.yahoo.com/"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 66273,
+ "bug_id": 21315,
+ "attachment_id": 0,
+ "creation_time": "2000-09-16T20:00:01Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "\nShells appear to behave oddly when executing shell scripts in a number of\nsituations.\n\n(1) When the kernel discovers that the interpreter used is another\n    interpreter, it generally returns ``Exec format error'' (ENOEXEC).\n    However, when csh and sh find themselves in the same situation, they\n    don't return that error, they execute the script using their own\n    interpreter.\n\n(2) When in single-user mode, the sh shell appears to assume that any\n    script it runs should be executed using its own interpreter, not\n    the interpreter at the top of the file.  In multi-user mode, this\n    appears to work fine.\n\nFix: \n\nNot attached.\nHow-To-Repeat: \n(1)\n\n    $ cat /tmp/test1\n    #!/tmp/test2\n    echo This is test1, meant to execute using test2\n    $ cat /tmp/test2\n    #!/tmp/test1\n    echo This is test2, meant to execute with test1\n    $ /tmp/test1\n    This is test1, meant to execute using test2\n    $ /tmp/test2\n    This is test2, meant to execute with test1\n    $\n\nI.e., executing test1 resulted in sh executing it, instead of ENOEXEC.\nSimilarly with test2.  Neither resulted in a recursive call, which is\ngood.  This seems like a poor failure-mode -- it's inconsistent with\nthe kernel execve() implementation's failure mode, and it runs things\nwhen you would hope that it wouldn't (always bad).\n\n(2)\n\nBoot to single user mode, select /bin/sh as the shell, and attempt to\nexecute a shell script relying on csh features."
+}

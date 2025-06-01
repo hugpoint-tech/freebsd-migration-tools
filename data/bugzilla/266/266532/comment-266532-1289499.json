@@ -1,0 +1,8 @@
+{
+ "id": 1289499,
+ "bug_id": 266532,
+ "attachment_id": 0,
+ "creation_time": "2023-12-27T08:30:42Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "(In reply to Ivan Rozhuk from comment #31)\n\n1 - the call before the fork is done with the \"LOGIN_SETGROUP\" argument and the comment on it clearly states the reason.\nHere we are calling it once with \"LOGIN_SETALL\", which includes that too, in one go. Not sure why this is being done in two steps in su and login.\n\n2 - I confirm Daniel analysis, you can see at [1] that setusercontext will grab the correct login class by itself.\n\n3 - The first call to setusercontext is performed with the LOGIN_SETGROUP argument, which causes it to only configure groups membership for the user, I don't think that makes any difference in relation to env variables. The comment there makes it clear this is simply done because PAM could add group memberships to the user.\n\nin general:\n\nThe patch logic is anyway an improvement on what lightdm was doing (that is a simple setuid/setgid). We are keeping the same basic semantics though. Looks like login.c is building the environment one piece at the time, but replicating that logic looks unnecessarily complicated based on the information we have.\n\nThis code can be improved in the future if issues arise.\n\n\nBTW I noticed now I made an indent mistake in the patch I need to fix.\n\n\n[1] https://cgit.freebsd.org/src/tree/lib/libutil/login_class.c#n437"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1217916,
+ "bug_id": 264867,
+ "attachment_id": 0,
+ "creation_time": "2022-07-02T17:21:07Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Ok, I'm still able to reproduce the problem with my patch.  But, the frequency of the late wakeups is much much lower, and I'm fairly sure that the patch solves a legitimate problem on its own.\n\nSpecifically, getnextcpuevent() contains the following bit of code:\n\n/* Handle callout events. */\nif (event \u003e state-\u003enextcall)\n    event = state-\u003enextcall;\n\nIt gets called when a CPU goes idle, and the idle thread is scheduling the next timer interrupt.  \"nextcall\" is not volatile, and interrupts are enabled, so state-\u003enextcall can be modified between the check and the load, and the CPU will end up using a stale value.\n\nIt might be that there is another, similar race in handleevents(), since a different CPU might be updating state-\u003enextcall concurrently.  But I think the race is harmless since callout_process() should be able to find the next callout..."
+}

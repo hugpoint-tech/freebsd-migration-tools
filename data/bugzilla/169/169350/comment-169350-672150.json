@@ -1,0 +1,8 @@
+{
+ "id": 672150,
+ "bug_id": 169350,
+ "attachment_id": 0,
+ "creation_time": "2012-06-23T16:30:10Z",
+ "creator": "t10661789@yahoo.com",
+ "text": "Extraneous output when tracing writes from entry to return with output redirection to a file.\n\nFix: \n\nWork around:\n\nEither continue to use self-\u003eflag or use the predicate\n\n/this-\u003eflag \u0026\u0026 execname != \"dtrace\"/\nHow-To-Repeat: Consider the following script: test-bug.d\n\n#!/usr/sbin/dtrace -s\n#pragma D option quiet\n\nvfs::vop_read:entry, vfs::vop_write:entry\n/execname != \"dtrace\"/\n{\n        self-\u003eflag = 1;\n}\n\nvfs::vop_read:return, vfs::vop_write:return\n/self-\u003eflag/\n{\n        this-\u003eflag = 1;\n        self-\u003eflag = 0;\n}\n\nvfs::vop_read:return, vfs::vop_write:return\n/this-\u003eflag/\n{\n        printf(\"%s\\n\", execname);\n}\n\nAfter running\n\ndtrace -s test-bug.d -n 'tick-5s { exit(0); }' \u003e /tmp/test\n\nthe file /tmp/test would contains lines with dtrace, which should not be there. Somehow dtrace has inherit the value of this-\u003eflag."
+}

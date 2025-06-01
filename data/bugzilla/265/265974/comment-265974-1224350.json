@@ -1,0 +1,8 @@
+{
+ "id": 1224350,
+ "bug_id": 265974,
+ "attachment_id": 0,
+ "creation_time": "2022-08-27T00:13:30Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Pierre Habouzit from comment #6)\nI'm sorry, but I still don't quite see the problem.  I spent some time trying to write litmus tests to explore interactions between readers, writers, and smr_poll(), but didn't find anything surprising (yet).  For now I'm ignoring the deferred and lazy modes of SMR since they're not used in FreeBSD currently.\n\nI note that your litmus tests don't seem to take into account the fact that smr_advance() issues a atomic_thread_fence_rel() before updating the write sequence.  (On arm64 this expands to DMB SY, the same as atomic_thread_fence_seq_cst().)  With smr_enter() patched, both readers and writers issue a full memory barrier on arm64.\n\nWhat I don't really understand is why readers need to synchronize with smr_poll() at all.  Even with the barriers you proposed, it's possible for a reader to store a snapshot of wr_seq that is older than the global rd_seq.  This could happen if an interrupt or vmexit occurs between the load of wr_seq and the store to per-CPU memory.  So long as smr_poll() does not advance rd_seq beyond that of any CPU actively executing a read section, it's ok, and I don't see how that can happen.  What am I missing?\n\nThanks for your patience and for taking the time to report these problems.  I posted a first patch for review here: https://reviews.freebsd.org/D36370"
+}

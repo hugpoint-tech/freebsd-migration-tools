@@ -1,0 +1,8 @@
+{
+ "id": 924931,
+ "bug_id": 217618,
+ "attachment_id": 0,
+ "creation_time": "2017-03-07T21:02:37Z",
+ "creator": "donner@FreeBSD.org",
+ "text": "While experimenting with some extentions for flow tables, I noticed, that the hash function does not separate distinct entries clearly enough. Larger flows tables do reflect external structures and tend to heavily cluster the entries on a few hash values (i.e. src-ip and dst-ip are varied both within a network). Current code does not even include the protocol number.\n\nSo I propose to reuse the existing crc32 function for this small amount of data. The probability to have a uniform distributed hash key increases dramatically and overall the lookup is faster than step through a list of entries having the same key.\n\nNote: This code depends on a zeroed struct fhashentry*, because it does not select the individual fields. All functions despite ta_prepare_del_fhash do clean the structure. I'm not sure, if this is can cause a problem.\n\n--- sys/netpfil/ipfw/ip_fw_table_algo.c (revision 314807)\n+++ sys/netpfil/ipfw/ip_fw_table_algo.c (working copy)\n@@ -3163,7 +3176,7 @@\n {\n        uint32_t i;\n\n-       i = (f-\u003edip.s_addr) ^ (f-\u003esip.s_addr) ^ (f-\u003ee.dport) ^ (f-\u003ee.sport);\n+       i = crc32(f, sizeof(*f));\n\n        return (i % (hsize - 1));\n }\n@@ -3173,11 +3186,7 @@\n {\n        uint32_t i;\n\n-       i = (f-\u003edip6.__u6_addr.__u6_addr32[2]) ^\n-           (f-\u003edip6.__u6_addr.__u6_addr32[3]) ^\n-           (f-\u003esip6.__u6_addr.__u6_addr32[2]) ^\n-           (f-\u003esip6.__u6_addr.__u6_addr32[3]) ^\n-           (f-\u003ee.dport) ^ (f-\u003ee.sport);\n+       i = crc32(f, sizeof(*f));\n\n        return (i % (hsize - 1));\n }"
+}

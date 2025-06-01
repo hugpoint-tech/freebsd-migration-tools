@@ -1,0 +1,8 @@
+{
+ "id": 1117678,
+ "bug_id": 248608,
+ "attachment_id": 217162,
+ "creation_time": "2020-08-11T20:14:37Z",
+ "creator": "t@tstearns.com",
+ "text": "Created attachment 217162\nipfw off-by-one patch\n\nWhen I run `ipfw -t list` on release/12 or current, I get misaligned output between lines that do and do not have a last match timestamp, like so:\n\n00100 Tue Aug 11 03:03:26 2020 allow ip from any to any via lo0\n00200                         deny ip from any to 127.0.0.0/8\n\n(specifically, the \"allow\" and \"deny\" strings do not line up)\n\nThis appears to be a simple off-by-one logic error in ipfw2.c. The routine `ipfw_list` calculates the number of characters that a date string takes up, called `twidth`, then prints one of the following:\n\nIf a match timestamp exists, then twidth date characters are printed, followed by a space, followed by the rule string.\n\nIf a match timestamp does not exist, then twidth spaces are printed, followed by the rule string.\n\nThe correct behavior would be to print twidth characters followed by a space for both code paths, as is done in the attached patch. After applying this patch locally, I get correct results:\n\n00100 Tue Aug 11 03:03:26 2020 allow ip from any to any via lo0\n00200                          deny ip from any to 127.0.0.0/8"
+}

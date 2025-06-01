@@ -1,0 +1,8 @@
+{
+ "id": 1297470,
+ "bug_id": 277115,
+ "attachment_id": 0,
+ "creation_time": "2024-02-18T15:15:43Z",
+ "creator": "freebsd@dev.thsi.be",
+ "text": "Investigating a bit more, the patch-dao_ScsiIf-freebsd-cam.cc does not make much sense because flags is already CAM_DIR_NONE as per initializer, and the data_len, data_prt should already be zeroed by the bzero() call... so maybe some compiler optimization kicks in (maybe it doesn't detect the bzero and assumes data_len/ptr are left uninitialized?), and that messes with the macro cam_fill_csio?\nThe following patch also fixes the issue... it is strange.\n\n\n--- dao/ScsiIf-freebsd-cam.cc.orig      2024-02-18 14:48:05 UTC\n+++ dao/ScsiIf-freebsd-cam.cc\n@@ -128,6 +128,7 @@ int ScsiIf::sendCmd(const unsigned char *cmd, int cmdL\n                data_len = dataInLen;\n                flags = CAM_DIR_IN;\n        }\n+       fprintf(stderr, \"dataOut %p, dataOutLen %d, dataIn %p, dataInLen %d, flags %p\\n\", dataOut, dataOutLen, dataIn, dataInLen, flags);\n\n        cam_fill_csio(\u0026impl_-\u003eccb-\u003ecsio,\n                      DEF_RETRY_COUNT,"
+}

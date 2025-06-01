@@ -1,0 +1,8 @@
+{
+ "id": 21601,
+ "bug_id": 7020,
+ "attachment_id": 0,
+ "creation_time": "1998-06-22T15:30:00Z",
+ "creator": "seggers@semyam.dinoco.de",
+ "text": "\n\tWhile improving pkg_create I discovered that the error\nhandling of pkg_create (and the other pkg_*, too) is seriously broken.\nIt will never print an error message about certain errors to the user\nthus making him/her wonder why it failed.\n\n\tThe problem is the statement \"cleanup(0), errx(1, \"ABC\");\"\n- cleanup() does an exit(1) at its end in all cases.  The errx() will\nnever get executed.  And as the errx() is the only place printing an\nerror message ...\n\n\tI also saw the variable in_cleanup in it which is automatic\nand gets initialized to 0.  The next thing done there is testing if\nthis variable is not set.  Probably this variable should have been\nstatic but I'll have to take a closer look at it to be sure.\n\n\tThe former problem at least exists in pkg_add, too.  I did not\nlook at the other pkg_*, yet.  The latter problem does not exist there\n- the variable is static.\n\nFix: \n\nNot sure about how to best fix it.  If all cleanup() calls\nget followed by errx() it will be safe to just remove the exit().\nThis will break its use as signal handler.  A signalcleanup() should\nbe added which calls the old cleanup() and then does the exit() I\nthink.\n\n\tThe variable in cleanup() serve as a flag so that it doesn't\nget called from the program and at the same time by the signal\nprocessing.  Making it static should fix this problem and make it\nactually work as intended.\nHow-To-Repeat: \n\tJust take a look at the code."
+}

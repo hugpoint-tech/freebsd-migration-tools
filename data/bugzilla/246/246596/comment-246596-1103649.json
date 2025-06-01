@@ -1,0 +1,8 @@
+{
+ "id": 1103649,
+ "bug_id": 246596,
+ "attachment_id": 0,
+ "creation_time": "2020-05-20T10:15:46Z",
+ "creator": "patrykkotlowski@gmail.com",
+ "text": "Also I found another possible memory leak. In ctld.c in conf_apply fucntion there is:\n\n\t/*\n\t * Second, remove any LUNs present in the old configuration\n\t * and missing in the new one.\n\t */\n\tTAILQ_FOREACH_SAFE(oldlun, \u0026oldconf-\u003econf_luns, l_next, tmplun) {\n\t\tnewlun = lun_find(newconf, oldlun-\u003el_name);\n\t\tif (newlun == NULL) {\n\t\t\tlog_debugx(\"lun \\\"%s\\\", CTL lun %d \"\n\t\t\t    \"not found in new configuration; \"\n\t\t\t    \"removing\", oldlun-\u003el_name, oldlun-\u003el_ctl_lun);\n\t\t\terror = kernel_lun_remove(oldlun);\n\t\t\tif (error != 0) {\n\t\t\t\tlog_warnx(\"failed to remove lun \\\"%s\\\", \"\n\t\t\t\t    \"CTL lun %d\",\n\t\t\t\t    oldlun-\u003el_name, oldlun-\u003el_ctl_lun);\n\t\t\t\tcumulated_error++;\n\t\t\t}\n\t\t\tcontinue;\n\t\t}\n\nWhy here lun_delete function is not called before \"continue;\"?\n\nI next part of function where luns with changed size are deleted there is lun_delete() call: \n\n\t\tif (changed) {\n\t\t\terror = kernel_lun_remove(oldlun);\n\t\t\tif (error != 0) {\n\t\t\t\tlog_warnx(\"failed to remove lun \\\"%s\\\", \"\n\t\t\t\t    \"CTL lun %d\",\n\t\t\t\t    oldlun-\u003el_name, oldlun-\u003el_ctl_lun);\n\t\t\t\tcumulated_error++;\n\t\t\t}\n\t\t\tlun_delete(oldlun);\n\t\t\tcontinue;\n\t\t}\n\nI did't tested in but I think this is also memory leak."
+}

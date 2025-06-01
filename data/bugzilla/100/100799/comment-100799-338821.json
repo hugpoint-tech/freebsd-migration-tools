@@ -1,0 +1,8 @@
+{
+ "id": 338821,
+ "bug_id": 100799,
+ "attachment_id": 0,
+ "creation_time": "2006-07-25T07:50:10Z",
+ "creator": "tpoder@cis.vutbr.cz",
+ "text": "When I have vlan interfaces configured in rc.conf scripts them vlan interfaces are not create during system startup.\n\nFix: \n\nscript /etc/rc.d/mkvlan with follow content:\n\n#!/bin/sh\n#\n# PROVIDE: mkvlan\n# BEFORE: netif\n# KEYWORD: nojail\n\n. /etc/rc.subr\n. /etc/network.subr\n\nname=\"mkvlan\"\nrcvar=`set_rcvar`\nstart_cmd=\"mkvlan_start\"\nstop_cmd=\"mkvlan_stop\"\n\nmkvlan_start()\n{\n        echo -n \"creating vlan interfaces... \"\n        set | grep \"ifconfig_vlan[0-9]*=\" | while read ln ; do\n                ifn=`expr \"${ln}\" : \"ifconfig_\\(vlan[0-9]*\\)=.*\"`\n                echo -n \"${ifn} \"\n                ifconfig $ifn create\n        done\n        echo\n}\n\nmkvlan_stop()\n{\n}\n\nload_rc_config $name\nrun_rc_command \"$1\"\nHow-To-Repeat: Create line \n\nifconfig_vlan0=\"147.229.241.1/24 vlan 589 vlandev bge0\"\n\nin /etc/rc.conf"
+}

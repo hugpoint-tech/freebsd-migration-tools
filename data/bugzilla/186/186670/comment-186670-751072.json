@@ -1,0 +1,8 @@
+{
+ "id": 751072,
+ "bug_id": 186670,
+ "attachment_id": 0,
+ "creation_time": "2014-02-20T15:12:05Z",
+ "creator": "f.degner@mail.de",
+ "text": "On Thu, 13 Feb 2014 16:44:05 +0100, Craig Whipp \u003ccrwhipp@gmail.com\u003e wrote:\n\n\u003e Florian,\n\u003e\n\u003e Can you provide me with more details on what your configuration was\n\u003e when you were building this?  I've been unable to duplicate the error\n\u003e on a 10.0-RELEASE machine, and applying your patch results in a\n\u003e failure similar to what you reported in the pr.\n\u003e\n\u003e What FreeBSD version, output of 'uname -a', any locales configured (I\n\u003e see you have a .de top level domain in your email), customizations to\n\u003e make.conf, etc.\n\u003e\n\u003e Thanks,\n\u003e Craig\n\n\nCraig,\n\nthere's indeed something non-standard in my /etc/make.conf. The problem is\ntriggered by compiling astro/foxtrotgps with gcc46.\n\nWhen CC=gcc46 ./configure generates different Makefiles. Things break\nbecause it sets DATADIRNAME=share (it's DATADIRNAME=lib when $CC is \"cc\" or\n\"clang\"). DATADIRNAME is used to determine where the locale files go:\n\n% find work -name \"Makefile\" | xargs grep DATADIRNAME\n...\nwork/foxtrotgps-1.1.1/po/Makefile:itlocaledir =\n$(prefix)/$(DATADIRNAME)/locale\n...\n%\n\nThe interesting part is that \"share\" is actually the correct value. So the\nreal problem is that we get DATADIRNAME=lib by default. This in turn can\nbe fixed in a compiler-independent fashion by setting DATADIRNAME via\nCONFIGURE_ENV (see attached patch).\n\n\nCheers,\nFlo"
+}

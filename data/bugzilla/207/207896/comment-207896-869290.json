@@ -1,0 +1,8 @@
+{
+ "id": 869290,
+ "bug_id": 207896,
+ "attachment_id": 167991,
+ "creation_time": "2016-03-11T08:41:52Z",
+ "creator": "kbowling@freebsd.org",
+ "text": "Created attachment 167991\nupdate rc.d scripts to SIGTERM only master PID\n\nWe were losing many hundred zabbix agents out of many thousands when we would restart zabbix_agentd using the rc.d script in ports currently.\n\nI believe the root cause is that rc.subr by default checks against the command name and was sending SIGTERM to the parent and all the child processes (we run w/~32 children because if you run out with concurrent polls, the check will fail).  The processes have a sighandler and may terminate uncleanly if the other process are all SIGTERMing.  ipcs may show shared memory and/or a semaphore even though there are no processes running, and the agent cannot be [re]started until those are manually cleared with ipcrm.  The SIGTERM to all processes also seemed to cause restart to race occasionally, in that some of the child processes were still around while the new one was starting even if there was no IPC leak.. may be hard to trigger in practice unless you have long running userparams(?).\n\nThis patch also sets a default PATH and allows the user to override it in rc.conf.  This is often necessary for userparams on the agent, or externals on the proxy and server.\n\nI've only tested the agent rc.d changes, but assume the proxy and server face these same issues.  I'm not very familiar with rc.subr so suggestions for improvement welcome.\n\nInteresting poll of other platforms I can easily check with respect to pidfile:  Ubuntu 14.04 SysV init gets it right, Ubuntu 14.04 upstart job gets it wrong, CentOS 5 SysV init gets it wrong, and CentOS 7 systemd service gets it right."
+}

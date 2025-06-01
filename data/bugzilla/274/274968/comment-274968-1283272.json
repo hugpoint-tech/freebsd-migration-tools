@@ -1,0 +1,8 @@
+{
+ "id": 1283272,
+ "bug_id": 274968,
+ "attachment_id": 0,
+ "creation_time": "2023-11-08T19:29:24Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "The clng_dt_create function allocates global variables named dg_cv and dg_fd_locks, which are then used by the rest of the routines in clnt_dg.c.  They are never freed, and live for the life of the process.  These variables are arrays indexed by file descriptor.  To ensure that they have enough space, they are sized according to RLIMIT_NOFILE.  The problem is that resource limit can be very, very, big.  On my production servers, it's autoscaled to 22608720.  So any process that does _anything_ involving NIS must allocate 259 MiB just for these variables.\n\nThe exact same mistake is made in clnt_vc.c, with the vc_fd_locks and vc_cv variables.\n\nThese add up to about 984 MB for every sshd process on my system (I'm not sure how 259 gets multiplied to 984, but valgrind --tool=massif does show that all the memory is coming from clnt_dg_create).  A few hundred of those sshd processes and my entire server falls over.  Even with sshd rate limiting, about half of my server's physical RAM is used just for this one stupid array variable.\n\nStupidly, it appears that there's no need for a huge array.  Instead, the condvar could've been part of the CLIENT structure.\n\nEven stupider, this variable _never_ gets used in some simple applications like getgrouplist.  So we allocate it, fault in every page, and then never use it.  :facepalm:"
+}

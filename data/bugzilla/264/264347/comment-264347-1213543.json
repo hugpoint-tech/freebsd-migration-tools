@@ -1,0 +1,8 @@
+{
+ "id": 1213543,
+ "bug_id": 264347,
+ "attachment_id": 0,
+ "creation_time": "2022-05-30T09:52:03Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Bhyve's pci_xhci_init_ep() allocates space for multiple streams if the\nguest asks for them:\n\n        pstreams = XHCI_EPCTX_0_MAXP_STREAMS_GET(ep_ctx-\u003edwEpCtx0);\n        if (pstreams \u003e 0) {\n                ...;\n                devep-\u003eep_sctx_trbs = calloc(pstreams,\n                                        sizeof(struct pci_xhci_trb_ring));\n\nSo if the guest asks for one stream, only devep-\u003eep_sctx_trbs[0]\nis valid.\n\nep_sctx_trbs[] is used in pci_xhci_device_doorbell():\n\n\n        if (XHCI_EPCTX_0_MAXP_STREAMS_GET(ep_ctx-\u003edwEpCtx0) != 0) {\n                /*\n                 * Stream IDs of 0, 65535 (any stream), and 65534\n                 * (prime) are invalid.\n                 */\n                if (streamid == 0 || streamid == 65534 || streamid == 65535) {\n                        DPRINTF((\"pci_xhci: invalid stream\"));\n                        return;\n                }\n\n                ...;\n\n                sctx_tr = \u0026devep-\u003eep_sctx_trbs[streamid];\n\n                ...;\n\n                ringaddr = sctx_tr-\u003eringaddr;\n\nBut here, if the guest asks for one stream, the code requires streamid\nto be 1, and thus indexes beyond the end of ep_sctx_trbs[]."
+}

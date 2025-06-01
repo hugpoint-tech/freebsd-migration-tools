@@ -1,0 +1,8 @@
+{
+ "id": 13328,
+ "bug_id": 4327,
+ "attachment_id": 0,
+ "creation_time": "1997-08-17T23:20:00Z",
+ "creator": "serge@jbj.org",
+ "text": "\nI'm running into funny NFS over TCP problem. Mount works fine and the\nfilesystem is there for a while, I can access it and all. After a\nwhile the connection goes into CLOSE_WAIT status, which I think is\njust normal timeout after period of inactivity, and actually should\nreconnect on request, but that's exactlty where the problem is.\n\nnfs_connect() (called from nfs_reconnect()) tries to bind a privileged\nport (well, mount_nfs command sets it regardless, even though there is\n-P flag), so eventually it gets to in_pcbbind() which checks suser()\nin case of privileged port with CURRENT proc credentials. So, if super\nuser happens to be the one to initiate the request everything is fine,\nbut if it was non-superuser there is a problem, connection is never\ngonna be reistablished.\n\nSituation gets even worse if non-superuser invoked df command. In that\ncase the filesystem is just hung forever -- vfs struct is locked in\ngetfsstat(), and then eventually nfs_reconnect() gets called and loops\nforever attempting to connect, having vfs struct still locked. There\nis no way to neither unmount the file system not even cleanly reboot\nthe machine, everything hangs on the locked vfs struct.\n\nFix: \n\nAs a workaround I use modified version of mount_nfs with regular port use \n(unless -P is specidied), but I'm lucky that my server does not require\nprivileged port.\nHow-To-Repeat: \n\tmount -o -T server:/filesystem /mountpoint\n\n\twait 5 min, or until CLOSE_WAIT status for the nfs\n\tconnection is displaied in systat net display\n\n\tdf (not being super user)."
+}

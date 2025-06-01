@@ -1,0 +1,8 @@
+{
+ "id": 1180412,
+ "bug_id": 258845,
+ "attachment_id": 0,
+ "creation_time": "2021-10-01T13:44:09Z",
+ "creator": "emaste@freebsd.org",
+ "text": "iflib_if_ioctl has:\n\n  4360          case SIOCSIFFLAGS:\n  4361                  CTX_LOCK(ctx);\n  4362                  if (if_getflags(ifp) \u0026 IFF_UP) {\n  4363                          if (if_getdrvflags(ifp) \u0026 IFF_DRV_RUNNING) {\n  4364                                  if ((if_getflags(ifp) ^ ctx-\u003eifc_if_flags) \u0026\n  4365                                      (IFF_PROMISC | IFF_ALLMULTI)) {\n  4366                                          CTX_UNLOCK(ctx);\n  4367                                          err = IFDI_PROMISC_SET(ctx, if_getflags(ifp));\n  4368                                          CTX_LOCK(ctx);\n  4369                                  }\n  4370                          } else\n  4371                                  reinit = 1;\n  4372                  } else if (if_getdrvflags(ifp) \u0026 IFF_DRV_RUNNING) {\n  4373                          iflib_stop(ctx);\n  4374                  }\n  4375                  ctx-\u003eifc_if_flags = if_getflags(ifp);\n  4376                  CTX_UNLOCK(ctx);\n  4377                  break;\n\nNote that ctx-\u003eifc_if_flags is set regardless of error return from IFDI_PROMISC_SET(). Assume that IFDI_PROMISC_SET() fails for some reason. A subsequent SIOCSIFFLAGS call to set promisc or allmulti should result in another  IFDI_PROMISC_SET() call but will be skipped due to the comparison at line 4364."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 821028,
+ "bug_id": 199673,
+ "attachment_id": 155955,
+ "creation_time": "2015-04-24T19:05:10Z",
+ "creator": "vmagerya@gmail.com",
+ "text": "Created attachment 155955\nsysctl-overflow.diff\n\nHere's a part of 'sysctl vm.mvtotal' output on my 10.0/amd64\nmachine:\n\n  % sysctl vm.vmtotal\n  [...]\n  Virtual Memory:         (Total: 1654588K Active: 1536668K)\n  [...]\n\nIf on the other hand, when I try to retrieve the same data via\nsysctl(3), I get different total virtual memory:\n\n  % cat \u003etest.c \u003c\u003c'EOF'\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/sysctl.h\u003e\n#include \u003csys/vmmeter.h\u003e\n\nint main() {\n    struct vmtotal vt = {0};\n    size_t vtlen = sizeof(vt);\n    if (sysctlbyname(\"vm.vmtotal\", \u0026vt, \u0026vtlen, NULL, 0) != 0)\n        return -1;\n    ssize_t pagesize = getpagesize()/1024;\n    printf(\"vm.vmtotal.t_vm = %zd pages (%zd kB)\\n\",\n            (ssize_t)vt.t_vm,\n            pagesize*vt.t_vm);\n    return 0;\n}\n'EOF'\n  % c99 test.c \u0026\u0026 ./a.out\n  vm.vmtotal.t_vm = 1074154446 pages (4296617784 kB)\n\nAs you can see, the actual data coming out of sysctl(3) is\n4296617784K, not 1654588K as sysctl(8) says. This is because\nsysctl(8) has a multiplication overflow in the 'S_vmtotal'\nfunction [1] when the number of pages ('t_vm') is multiplied by\nthe page size ('pageKilo').\n\nI'm attaching a (completely untested) patch to fix this problem;\napply this patch to 'sbin/sysctl/sysctl.c'.\n\n[1] http://svnweb.freebsd.org/base/head/sbin/sysctl/sysctl.c?revision=278654\u0026view=markup#l530"
+}

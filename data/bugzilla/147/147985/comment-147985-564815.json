@@ -1,0 +1,8 @@
+{
+ "id": 564815,
+ "bug_id": 147985,
+ "attachment_id": 0,
+ "creation_time": "2010-06-19T00:30:02Z",
+ "creator": "freebsd@spam.t71.org",
+ "text": "alc network driver + tso ( + vlan ? ) does not work. \n\nalc0: \u003cAtheros AR8131 PCIe Gigabit Ethernet\u003e port 0xec00-0xec7f mem 0xfebc0000-0xfebfffff irq 17 at device 0.0 on pci1\nalc0: 15872 Tx FIFO, 15360 Rx FIFO\nalc0: Using 1 MSI message(s).\nmiibus0: \u003cMII bus\u003e on alc0\nalc0: Ethernet address: 90:e6:ba:f6:b6:c3\nalc0: [FILTER]\nalc0: link state changed to UP\n\nHello, I have a system using the ALC network card driver with vlans. By default the driver enables TSO4 support on the card. This support does not seem to work in this configuration and causes the OS to generate packets larger then MTU which are sent to the card to be fragmented. This doesn't seem to happen and the packets are dropped. This causes TCP connections to go extremely slowly as many re-transitions occur. ifconfig alc0 -tso fixes the problem.   \n\nThe problem may also occur without vlans however I have not tested this.\n\nFix: \n\nTemporary fix is to disable tso on the interface:\n\n/etc/rc.conf:\n\nifconfig_alc0=\"inet 192.168.1.1 netmask 255.255.255.0 -tso\"\nHow-To-Repeat: /etc/rc.conf:\ncloned_interfaces=\"vlan2 vlan3\"\nifconfig_alc0=\"inet 192.168.1.1 netmask 255.255.255.0\"\nifconfig_vlan2=\"inet 192.168.13.1 netmask 255.255.255.0 vlan 2 vlandev alc0\"\nifconfig_vlan3=\"inet 192.168.14.1 netmask 255.255.255.0 vlan 3 vlandev alc0\"\ndefaultrouter=\"192.168.14.254\"\n\n# scp largefile fred@remote.machine:/tmp/largefile \n.... goes very very slowly and stalls.\n\n# ifconfig alc0 -tso\n# scp largefile fred@remote.machine:/tmp/largefile \n.... proceeds normally."
+}

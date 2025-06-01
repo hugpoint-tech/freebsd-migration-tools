@@ -1,0 +1,8 @@
+{
+ "id": 1019949,
+ "bug_id": 231526,
+ "attachment_id": 0,
+ "creation_time": "2018-11-03T17:06:13Z",
+ "creator": "cem@freebsd.org",
+ "text": "Hm.  This patch provides a window where the ordering is wrong, right?  We delete the old address and routes, then add the new address and routes (at this point old alias is first), then with your patch remove the alias and re-add it (now second).  Also, it unnecessarily removes and adds the unchanged alias address, which I expect may break things like TCP connections.\n\nIsn't the problem that we're (ipnat, ddclient, etc?) relying on address ordering on an interface at all?  Alias is a special keyword to the ifconfig command just to allow configuring \u003e1 address, but aliases have no special meaning in the kernel -- all addresses are equal and just hang off a linked list from the interface ifp object.\n\nHypothetically we could add some sort of tagging via the ifa_flags field on interface addresses in the kernel, but there's no room in the SIOCAIFADDR ioctl for ifconfig to pass that additional information.\n\nDuplicating this to the original bug and will follow up ipnat / ddclient issue there.\n\n*** This bug has been marked as a duplicate of bug 119801 ***"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 868458,
+ "bug_id": 207736,
+ "attachment_id": 0,
+ "creation_time": "2016-03-06T11:43:29Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "[This has been reported on llvm bugzilla: 26856.]\n\nThe below causes gdb difficulties for its stack handling: more than just exception handling is at issue. I just happened to notice it via exception handling.\n\nFunction _Unwind_RaiseException below is from a FreeBSD \"buildworld\" using clang 3.8.0.\n\nDump of assembler code for function _Unwind_RaiseException:\n   0x41b2ab80 \u003c+0\u003e:\tmflr    r0\n   0x41b2ab84 \u003c+4\u003e:\tstw     r31,-148(r1)\n   0x41b2ab88 \u003c+8\u003e:\tstw     r30,-152(r1)\n   0x41b2ab8c \u003c+12\u003e:\tstw     r0,4(r1)\n   0x41b2ab90 \u003c+16\u003e:\tstwu    r1,-2992(r1)\n   0x41b2ab94 \u003c+20\u003e:\tmr      r31,r1\n. . .\n   0x41b2abe0 \u003c+96\u003e:\tstw     r31,2844(r31)\n(which replaces the earlier save of the old Frame pointer R31\nvalue with a copy of r1's current  value. Note the offset\nrelationships with the r1 adjustment: -2992+2844=-148)\n. . .\n   0x41b2add0 \u003c+592\u003e:\tlwz     r31,2844(r31)\n(This restores the r1 value that resulted from the \"stwu r1,-2992(r1)\" into R31.)\n. . .\n   0x41b2ae30 \u003c+688\u003e:\tlwz     r31,-148(r1)\n(This restores the r1 value that resulted from the \"stwu r1,-2992(r1)\" into R31.)\n. . .\n\nThe wrong r31 value is present when _Unwind_RaiseException returns.\n\nBut before that while _Unwind_RaiseException is active the C++ exception handling infrastructure has been given bad r31 information for around _Unwind_RaiseException's frame."
+}

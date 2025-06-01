@@ -1,0 +1,8 @@
+{
+ "id": 49485,
+ "bug_id": 16245,
+ "attachment_id": 0,
+ "creation_time": "2000-01-21T08:10:01Z",
+ "creator": "davids@webmaster.com",
+ "text": "\n\tThreaded code that uses libc_r and is based around 'poll' uses much\nmore system CPU time than it should. Problem is tracked to a math error in\nthe 'poll' routine.\n\nFix: \n\nIn libc_r/uthread/uthread_poll.c, we find the following suspicious\nmath:\n\n       } else if (timeout \u003e 0) {\n                /* Convert the timeout in msec to a timespec: */\n\n                ts.tv_sec = timeout / 1000;\n                ts.tv_nsec = (timeout % 1000) * 1000;\n\n                /* Set the wake up time: */\n                _thread_kern_set_timeout(\u0026ts);\n        } else if (timeout \u003c 0) {\n\n\tThis conversion from milliseconds to nanoseconds is incorrect. There\nare a million milliseconds in a nanosecond.\n\n---\nActually, there are a million nanoseconds in a millisecond, but I get the\npoint. =)\nHow-To-Repeat: \n\tRun any program that calls poll in a tight loop, relying on the\ntimeout in 'poll' to prevent a spin."
+}

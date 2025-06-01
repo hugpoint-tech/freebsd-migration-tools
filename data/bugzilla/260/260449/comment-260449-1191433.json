@@ -1,0 +1,8 @@
+{
+ "id": 1191433,
+ "bug_id": 260449,
+ "attachment_id": 0,
+ "creation_time": "2021-12-22T18:10:59Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "So I think the issue is that in cfiscsi_terminate_tasks() there is no request to store in PRIV_REQUEST() so it instead stores the session directly.  However, it is possible to send a request on the wire that also results in CTL_IO_TASK and and CTL_TASK_I_T_NEXUS_RESET in cfiscsi_pdu_handle_task_request:\n\n\tcase BHSTMR_FUNCTION_I_T_NEXUS_RESET:\n#if 0\n\t\tCFISCSI_SESSION_DEBUG(cs, \"BHSTMR_FUNCTION_I_T_NEXUS_RESET\");\n#endif\n\t\tio-\u003etaskio.task_action = CTL_TASK_I_T_NEXUS_RESET;\n\t\tbreak;\n\n\nAnd in this case, PRIV_REQUEST() is the request instead.\n\nYour test program constructs a normal CDB inquiry but then xors the first two bytes with 0x4b03 to generate 0x8b02 (little endian).  0x2 == ISCSI_BHS_OPCODE_TASK_REQUEST and 0x8b as the function == 0x80 | BHSTMR_FUNCTION_I_T_NEXUS_RESET.\n\nI think the bug is we need a clean way to differentiate between an on-the-wire reset vs the internally-initiatired reset.  One way may be to allocate a new CTL_TASK_INTERNAL_RESET or some such that terminate_tasks would use instead of of CTL_TASK_I_T_NEXUS_RESET, and ctl_run_task would treat as identical to CTL_TASK_I_T_NEXUS_RESET.  The only thing I don't yet understand for that is cfumass_done() in the usb storage driver checking for this opcode.  Nothing in the cfumass driver schedules a CTL_IO_TASK, so I suspect the code in cfumass_done is just stale copy/paste from cfiscsi_done?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 878736,
+ "bug_id": 209509,
+ "attachment_id": 0,
+ "creation_time": "2016-05-14T23:47:06Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "The problem may be caused by ssh. When it starts, ssh sets fd 0, 1 and 2 to non-blocking mode if they are not TTYs, restoring them to their original state on exit. This causes breakage if you use the open files (pipes or sockets) for other things while ssh is running.\n\nUnfortunately, fixing ssh requires adding threads or processes to do blocking reads and writes. On FreeBSD, although socket receives support MSG_DONTWAIT, socket sends do not (although their behaviour is affected by it slightly) and pipe reads and writes do not support anything like it. Performance of common use cases may be affected negatively.\n\nAs a workaround, try redirecting ssh's stderr through a 'cat'. For example,\n\n{ ssh ... 2\u003e\u00261 \u003e\u00263 3\u003e\u0026- | cat \u003e\u00262; } 3\u003e\u00261\n\n(Bug: this example loses ssh's exit status. Using fifos or doing pipe manipulations from C will avoid that.)"
+}

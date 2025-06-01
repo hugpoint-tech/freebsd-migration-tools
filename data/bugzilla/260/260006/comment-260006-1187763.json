@@ -1,0 +1,8 @@
+{
+ "id": 1187763,
+ "bug_id": 260006,
+ "attachment_id": 229685,
+ "creation_time": "2021-11-23T21:29:47Z",
+ "creator": "chris_horneck@dell.com",
+ "text": "Created attachment 229685\nTest program\n\nThis problem can happen with kernels compiled with GZIO and sysctl kern.compress_user_cores=1.\n\nIf the program being dumped has a memory segment with size \u003e= 0xFFFFFFFF, the segment will be silently truncated, which \"damages\" any memory segments written to the core file afterwards.\n\nThe root of the problem is in imgact_elf.c. The function compress_chunk accepts a length of type u_int (32-bits), while it's callers pass lengths of type size_t (64-bits). Thus, any segment with a length that cannot fit in 32-bits will be truncated.\n\nThe function compress_chunk lives on in later branches and appears to suffer the same problem.\n\nTrivial test program that allocates a large memory segment before crashing is attached. Kernel must be compiled with GZIO and sysctl kern.compress_user_cores=1."
+}

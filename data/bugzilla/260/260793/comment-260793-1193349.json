@@ -1,0 +1,8 @@
+{
+ "id": 1193349,
+ "bug_id": 260793,
+ "attachment_id": 0,
+ "creation_time": "2022-01-05T20:07:35Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Peter Much from comment #2)\nI think swapoff should handle this scenario.  swapon -a already silently ignores EBUSY from swapon(), which occurs when the file is already a swap device, so it shouldn't also discard blocks in a file that is already a swap device.  Normally the kernel wouldn't allow this, but we have: https://github.com/freebsd/freebsd-src/blob/main/sys/vm/swap_pager.c#L3006\n\nPerhaps swapon's swapon_trim() can check to see if a file at the path is already in use as a swap device.  I don't think we have a good way to do that though.  For devfs files we can compare the device number with the ones available from the vm.swap_info sysctl, but this won't work for regular files, I think.\n\nPerhaps we can extend the swapon() syscall to let the kernel perform the trimming.  Or add an IS_THIS_A_SWAP_DEVICE ioctl that swapon can check before trying to erase the file blocks."
+}

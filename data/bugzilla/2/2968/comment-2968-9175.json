@@ -1,0 +1,8 @@
+{
+ "id": 9175,
+ "bug_id": 2968,
+ "attachment_id": 0,
+ "creation_time": "1997-03-13T18:47:53Z",
+ "creator": "gjm11@dpmms.cam.ac.uk",
+ "text": "Robert Eckardt wrote:\n\n\u003e \tfmt experiences Bus error when one tries to format\n\u003e \ta text that contains ^M (CRs), i.e. e.g. from an\n\u003e \tMSDOS system.\n\nActually, that's not quite true. I think it only happens if you\ninvoke it with a file whose first line contains only non-printing\ncharacters.\n\nThe problem is caused by the fact that, when a line of this kind is\nseen, the |canonb| pointer may not get initialised; as a consequence\nthe loop\n    for (cp2--; cp2 \u003e= canonb \u0026\u0026 *cp2 == ' '; cp2--)\n(before the start of which |cp2==canonb| in this situation) loses\nbecause pointers are compared as if they're unsigned.\n\nI believe the following patch fixes the problem. It certainly\nlooks OK and repairs the test cases I've tried.\n\n---------- patch begins ----------\n*** fmt.c.orig\tThu Mar 13 10:57:48 1997\n--- fmt.c\tThu Mar 13 18:43:13 1997\n***************\n*** 147,153 ****\n  \tregister char *cp, *cp2, cc;\n  \tregister int c, col;\n  #define CHUNKSIZE 1024\n! \tstatic int lbufsize = 0, cbufsize = 0;\n  \n  \tif (center) {\n  \t\tlinebuf = malloc(BUFSIZ);\n--- 147,157 ----\n  \tregister char *cp, *cp2, cc;\n  \tregister int c, col;\n  #define CHUNKSIZE 1024\n! \tstatic int lbufsize = 0, cbufsize = CHUNKSIZE;\n! \n! \tcanonb = malloc(CHUNKSIZE);\n! \tif (canonb == 0)\n! \t\tabort();\n  \n  \tif (center) {\n  \t\tlinebuf = malloc(BUFSIZ);\n----------- patch ends -----------\n\n-- \nGareth McCaughan       Dept. of Pure Mathematics \u0026 Mathematical Statistics,\ngjm11@dpmms.cam.ac.uk  Cambridge University, England."
+}

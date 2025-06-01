@@ -1,0 +1,8 @@
+{
+ "id": 1159519,
+ "bug_id": 255589,
+ "attachment_id": 0,
+ "creation_time": "2021-05-04T10:50:38Z",
+ "creator": "adridg@freebsd.org",
+ "text": "I'm *fairly* sure this was introduced in upstream https://sourceforge.net/p/elftoolchain/code/3919/ and that it needs cleanup to remove the tempfile on the error-exit path with unrecognized input, something like this:\n\n```\n        switch (elf_kind(ecp-\u003eein)) {\n        case ELF_K_NONE:\n                if (tempfile != NULL) {\n                        if (unlink(tempfile) \u003c 0)\n                                err(EXIT_FAILURE, \"unlink %s failed\", tempfile);\n                        free(tempfile);\n                }\n                errx(EXIT_FAILURE, \"file format not recognized\");\n```\n\nAdding crees@ as upstream-involved.\n\nIn the meantime, ports are getting cruft like `${RM} ${STAGEDIR}${LOCALBASE}/bin/ecp.*` to clean up after strip(1).\n\nNote that you don't need to use a full path for the strip command; soemthing like `strip *.png` will bail out on the first png file and leave a single `ecp.\u003crandom\u003e` file in the current directory."
+}

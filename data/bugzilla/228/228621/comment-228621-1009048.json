@@ -1,0 +1,8 @@
+{
+ "id": 1009048,
+ "bug_id": 228621,
+ "attachment_id": 0,
+ "creation_time": "2018-08-29T18:24:33Z",
+ "creator": "jdc@koitsu.org",
+ "text": "I haven't seen this error myself and I bet many users haven't as well.  My theory is that this is because we happen to have ca_root_nss installed via pkg (a.k.a. security/ca_root_nss in ports). This is a common dependency in many different packages.\n\nca_root_nss package is responsible for creating /usr/local/etc/ssl/cert.pem, which base system OpenSSL (libssl.so.8) reads/honours.  You can verify this with truss.\n\npkg info -l ca_root_nss will not show this file in its packaging list because of how ca_root_nss works.  Some part of the pkg/port creates a hard link of /usr/local/etc/ssl/cert.pem --\u003e /usr/local/share/certs/ca-root-nss.crt, of which the latter *is* in the package list.  The pkg-message says it uses a symlink but this is false; see PR 228550 for details.\n\nThis is really part of a bigger problem that is the whole \"base system\" concept, but I don't want to get off-topic.  The --no-verify-peer kludge should be acceptable, though I would strongly suggest asking secteam@ first."
+}

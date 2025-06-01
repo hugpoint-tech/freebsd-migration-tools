@@ -1,0 +1,8 @@
+{
+ "id": 798606,
+ "bug_id": 195458,
+ "attachment_id": 0,
+ "creation_time": "2014-11-29T22:38:48Z",
+ "creator": "walter@lifeforms.nl",
+ "text": "I noticed today that the same problem happens when upgrading from 10.1-RC3 to 10.1-RELEASE, and also on a clean install of 10.1-RELEASE.\n\nI did some more digging. As a refresher, the hang didn't occur just when booting the new kernel. It happened only after \"freebsd-update install\" was executed to replace userland. What is so special about \"freebsd-update install\" that would trigger the problem?\n\nI think the interesting bit might be that it replaced /sbin/init.\n\nI can completely reliably trigger a hang on a default 10.1-RELEASE install on UFS2 in VMware Fusion with the following procedure:\n\n# chflags noschg /sbin/init\n# cp -Rp /sbin/init /sbin/init2\n# rm -f /sbin/init\n# mv /sbin/init2 /sbin/init\n# chflags schg /sbin/init\n# reboot\n=\u003e Hang after \"All buffers synced.\"\n\nI created two clean 10.1 UFS2 installs which both exhibit the problem 100% of trying.\n\nI tried doing the same on two clean 10.1 ZFS (auto) installs. ZFS does NOT exhibit the problem so far.\n\nI tried disabling softupdates (tunefs -n disable /dev/da0p2) before doing the procedure. In this case, on multiple machines, it also does NOT hang.\n\nOn 10.0 there's also no problem.\n\nSo: on FreeBSD 10.1, when using UFS2 with journaled softupdates, replacing init leads to a hang when rebooting/unmounting root afterwards.\n\nAnd a workaround might be to disable softupdates before upgrading to 10.1."
+}

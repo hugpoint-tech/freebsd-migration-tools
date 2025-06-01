@@ -1,0 +1,8 @@
+{
+ "id": 1242327,
+ "bug_id": 268820,
+ "attachment_id": 0,
+ "creation_time": "2023-01-07T23:26:34Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "FYI: The specific error report is:\n\n# c++ string_index_use.cpp \nstring_index_use.cpp:3:13: error: redefinition of 'index' as different kind of symbol\nstd::string index;\n            ^\n/usr/include/strings.h:62:7: note: previous definition is here\nchar    *index(const char *, int) __pure;                       /* LEGACY */\n         ^\n1 error generated.\n\nfor:\n\n# more string_index_use.cpp\n#include \u003cstring\u003e\n\nstd::string index;\n\nint main() {\n\n}\n\nI get the same for stable/13 and main [so: 14].\n\nFor reference, for the __BEGIN_DECLS related use in strings.h :\n\n# grep -r \"define.*__BEGIN_DECLS\" /usr/include/\n/usr/include/sys/cdefs.h:#define\t__BEGIN_DECLS\textern \"C\" {\n/usr/include/sys/cdefs.h:#define\t__BEGIN_DECLS\n\nand the code block is:\n\n#if defined(__cplusplus)\n#define __BEGIN_DECLS   extern \"C\" {\n#define __END_DECLS     }\n#else\n#define __BEGIN_DECLS\n#define __END_DECLS\n#endif\n\nThe strings.h is used via /usr/include/string.h by the text:\n\n. . .\n#include \u003csys/cdefs.h\u003e\n#include \u003csys/_null.h\u003e\n#include \u003csys/_types.h\u003e\n\n/*\n * Prototype functions which were historically defined in \u003cstring.h\u003e, but\n * are required by POSIX to be prototyped in \u003cstrings.h\u003e.\n */\n#if __BSD_VISIBLE\n#include \u003cstrings.h\u003e\n#endif\n. . .\n\nSo __BSD_VISIBLE in involved in causing the extra definition\nof index."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 15516,
+ "bug_id": 5043,
+ "attachment_id": 0,
+ "creation_time": "1997-11-14T15:00:01Z",
+ "creator": "mika@cs.caltech.edu",
+ "text": "malloc and free are S-L-O-W for reasonably large memory allocations.\nIn an otherwise unmodified environment, the program\n\n\n#include \u003cstdlib.h\u003e\nmain()\n{\n  int i=0;\n  char *x=NULL;\n  x=malloc(1000);\n  while(i++\u003c1000000) {\n\tx=realloc(x,500);\n\tx=realloc(x,1000);\n  }\n}\n\ntakes \n(80)vitalstatistix:/ufs/work10/test\u003etime a.out\n4.171u 62.224s 1:12.21 91.9%    3+125k 0+0io 0pf+0w\n\nto run---almost all this time is spent in madvise() (called from \nifree(), so it's in the free part, not the allocation part of the\ncode...)  This can be helped with setenv MALLOC_OPTIONS \"h\", \nafter which the timings are\n\n(78)vitalstatistix:/ufs/work10/test\u003etime a.out\n10.536u 0.039s 0:10.91 96.7%    1+37k 0+0io 1pf+0w\n\nfor the same program!\n\nOn a similar NetBSD/i386 system, the same program has timings\n\n(82)varese:/ufs/work10/test\u003etime a.out\n\n4.403u 0.019s 0:04.44 99.3% 0+0k 0+0io 52pf+0w\n\n(all these timings are from unprofiled, unoptimized code)\n\nThis problem surfaced on a real application that was using a lot of\nrealloc calls in parsing routines.\n\nFix: \n\neither make MALLOC_OPTIONS \"h\" the default, or at very least make\nthe implementation more clever about it.  Or use the NetBSD malloc package\ninstead.\nHow-To-Repeat: \n\tsee above"
+}

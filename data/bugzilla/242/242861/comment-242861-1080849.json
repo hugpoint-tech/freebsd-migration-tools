@@ -1,0 +1,8 @@
+{
+ "id": 1080849,
+ "bug_id": 242861,
+ "attachment_id": 210201,
+ "creation_time": "2019-12-24T15:18:44Z",
+ "creator": "dan+freebsd.org@obluda.cz",
+ "text": "Created attachment 210201\ntls.c::sm_RSA_generate_key() patch, based on revision 463590 of patch-tls.c\n\nhttps://svnweb.freebsd.org/base?view=revision\u0026revision=339260\n\nRevision 339260 update made sendmail compatibible with OpenSSL 1.1.1. The change has been based on patch-tls.c taken from mail/sendmail port.\n\nIt introduces sm_RSA_generate_key() function used replacement of original RSA_generate_key/RSA_generate_key_ex function.\n\nIt's code is broken badly. It may use NULL pointer and it returns NULL all the times.\n\nCode fragment of sm_RSA_generate_key() starting with:\n -----\nbn_rsa_r4 = BN_new();\nrc = BN_set_word(bn_rsa_r4, RSA_F4);\nif ((bn_rsa_r4 != NULL) \u0026\u0026 BN_set_word(bn_rsa_r4, RSA_F4) \u0026\u0026 (rsa = RSA_new()) != NULL)\n -----\n... is broken badly.\n\nIt calls BN_set_word(bn_rsa_r4, RSA_F4) twice, first time before the bn_rsa_r4 has been verified non-NULL causing possible NULL dereferrence. \n\nThe \"if\" body returns NULL if call to RSA_generate_key_ex() has succeeded. It's main issue causing the sm_RSA_generate_key() is returning NULL all the times.\n\nBut it's not the only issue - code here is just wrong. It doesn't free bn_rsa_r4 most of time causing memory leak. It doesn't honor function parameters using hardcoded constants instead. The bug has been introduced in revision 463887 of the patch-tls.c port's patch:\nhttps://svnweb.freebsd.org/ports?view=revision\u0026revision=463887\n\nThe patch I'm proposing here is based on correct version of port's patch-tls.c (e.g. 463887):\nhttps://svnweb.freebsd.org/ports?view=revision\u0026revision=463590"
+}

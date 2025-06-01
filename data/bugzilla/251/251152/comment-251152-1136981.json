@@ -1,0 +1,8 @@
+{
+ "id": 1136981,
+ "bug_id": 251152,
+ "attachment_id": 0,
+ "creation_time": "2020-12-18T05:54:10Z",
+ "creator": "scrappy@hub.org",
+ "text": "(In reply to Steve Wills from comment #6)\n\nIf the pkg-install is setup right ( which it isn't ), each of those variables that are set to yes are supposed to be prompted for ... which is what this code:\n\n--\n-post-install:\n-.if ! defined(BATCH) \u0026\u0026 ! defined(PACKAGE_BUILDING)\n-       @PKG_PREFIX=\"${PREFIX}\" ${SH} ${PKGINSTALL} ${PKGNAME} POST-INSTALL\n-.endif\n--\n\nthat was removed on last commit *did* do ... \n\nBasically, there is a pkg-install file that the last commit to the port somehow broke, but I'm not sure of the proper fix ...\n\nSo, the original code, we explicitedly called pkg-install to prompt the installer ( non-batch mode ) as to whether they want to enable bsdstats, as well as which modules within bsdstats they want to run ...\n\nThat code was removed, with, I think, the intended result being that something in:\n\n--\n-.include \u003cbsd.port.post.mk\u003e\n+.include \u003cbsd.port.mk\u003e\n--\n\nwould trigger it ( and it isn't ) ... found it:\n\n\"If the port needs to execute commands when the binary package is installed with pkg add or pkg install, use pkg-install\"\n - https://www.freebsd.org/doc/en_US.ISO8859-1/books/porters-handbook/pkg-install.html\n\nSo the old code was right ... if not a binary package, then explicitedly run pkg-install ... if using portmaster to install, we need that explicit ... \n\nReverting those changes now ..."
+}

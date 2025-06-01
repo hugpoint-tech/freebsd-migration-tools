@@ -1,0 +1,8 @@
+{
+ "id": 982642,
+ "bug_id": 226637,
+ "attachment_id": 191527,
+ "creation_time": "2018-03-15T18:07:32Z",
+ "creator": "eborisch+FreeBSD@gmail.com",
+ "text": "Created attachment 191527\nPatches to fix and improve mbuffer behavior on FreeBSD.\n\nOverview:\n\nWith no explicit counts set, mbuffer 2017.10.11 fails immediately on FreeBSD if the physical memory on the system \u003e ~ 6GB and kern.ipc.semvmx is its default (32767 * 50 * 4096).\n\n\nSteps to reproduce:\n\n\n$ mbuffer -q \u003c /dev/zero \u003e /dev/null\nmbuffer: fatal: cannot allocate more than 32767 blocks.\nThis is a system dependent limit, depending on the maximum semaphore value.\nPlease choose a bigger block size.\n\n\nAdditional information:\n\n\nAttached is a patch to fix/improve this behavior. Will also submit upstream. \n\nFixed (settings.c): reads the wrong parameter (checked SysV, but wants posix semaphore limits), and into an uninitialized and wrong-sized variable with sysctlbyname. Completely remove that part and just use 'mxnrsem = sysconf(_SC_SEM_VALUE_MAX)' which returns the desired value (such that sem_init(,,\u003c=mxnrsem) will not fail EINVAL). Tested on 11.1; I don't have a \u003c= 10.x around to test. Removes almost all __FreeBSD__ switches from settings.c.\n\nFixed (mbuffer.c): Don't allow default setting to be invalid. Clamp Numblocks to mxnrsem.\n\nEnhancement (mbuffer.c): Actually get free memory (similar value to the check of _SC_AVPHYS_PAGES used where available) rather than total system memory when calculating NumP/50 memory to use."
+}

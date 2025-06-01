@@ -1,0 +1,8 @@
+{
+ "id": 1334337,
+ "bug_id": 282449,
+ "attachment_id": 0,
+ "creation_time": "2024-11-10T22:35:27Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Looking at this again, I think the problem isn't with the general runningbufspace mechanism.  There's a specific code path in the SU+J implementation where we can deadlock when hirunningspace is small.\n\nWhat happens is, we prepare to write a data buf, claim space for it in the runningbuf total, then call bufstrategy(), which in turn might dispatch journal I/O asynchronously, which can block on runningbufspace.  Normally this happens in the context of the softdep flusher, which is exempt from the runningbufspace limit, but it can happen in a user thread as well:\n\n_sleep+0x1f0 waitrunningbufspace+0x76 bufwrite+0x24a softdep_process_journal+0x728 softdep_disk_io_initiation+0x79b ffs_geom_strategy+0x1f0 ufs_strategy+0x83 bufstrategy+0x36 bufwrite+0x1da cluster_wbuild+0x722 cluster_write+0x12f ffs_write+0x41d\n\nWhen hirunningspace == maxphys == runningbufspace, this recursive bufwrite() call will block forever.\n\nI suspect this bawrite() call in softdep_process_journal() should be gated on (curthread-\u003etd_pflags \u0026 TDP_NORUNNINGSPACE) != 0.  The softdep flusher will continue to issue async writes, but if a user thread is forced to flush journal records in order to initiate I/O, it'll do so synchronously."
+}

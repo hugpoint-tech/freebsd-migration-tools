@@ -1,0 +1,8 @@
+{
+ "id": 1120325,
+ "bug_id": 248652,
+ "attachment_id": 0,
+ "creation_time": "2020-08-31T22:05:59Z",
+ "creator": "vmaffione@FreeBSD.org",
+ "text": "Thanks a lot for the tests.\nI think the way netmap tx is handled right now needs improvement.\n\nAs far as I can tell, in your setup TX interrupts are simply not used (ix and ixl seem to use softirq for TX interrupt processing).\nYour experiments with increasing kern.hz cause the interrupt rate of the OS timer to increase, and therefore causing the iflib_timer() routine to be called more often. Being called more often, the TX ring is cleaned up (TX credits update) more often and therefore the application can submit new TX packets more often, hence the improved pps.\n\nHowever, clearly increasing kern.hz is not a viable approach.\nI think we should try to use a separate timer for netmap TX credits update, using higher resolution (e.g. callout_reset_sbt_on()), and maybe try to dynamically adjust the timer period to become smaller when transmitting at high rate, and lower when transmitting ad low rate.\nI'll try to come up with an experimental patch in the next days."
+}

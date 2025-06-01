@@ -1,0 +1,8 @@
+{
+ "id": 1285747,
+ "bug_id": 273088,
+ "attachment_id": 0,
+ "creation_time": "2023-11-26T10:14:29Z",
+ "creator": "markus@stoffdv.at",
+ "text": "I don't know why this request has not received any feedback, but I also think that this script should consider the same sources as /etc/rc.d/jail. Everything else is counterintuitive and should probably be considered unexpected behavior.\n\nTherefore I've added a second attachment which also fixes another issue with the original script.\n\nThe \"-e\" option separates the parameters by the separator provided. However, each jails parameters will be on a separate line (i.e. a new line character is inserted after the last parameter of a jail).\n\nIn case the \"path\" parameter is the last parameter of a jail, the script will consider the line break and the first parameter of the next jail as part of the value.\n\nExample:\n\n  $ cat /etc/jail.conf\n  issue { path = '/some/path'; }\n  cause { path = '/another/path'; }\n\n  $ jail -f /etc/jail.conf -e :\n  name=issue:path=/some/path\n  name=cause:path=/another/path\n\nIn the above case, the script would try to hand \"-path /some/path$'\\n'name=cause -prune\" to find, leading it to fail to parse its arguments (resulting in a noop for this script).\n\nTherefore I changed the separator to the newline character. Another option to fix the bug would be to just add the newline character to IFS. However, using newline as a separator allowed to simplify and optimize the main loop."
+}

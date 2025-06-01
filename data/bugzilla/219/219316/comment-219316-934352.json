@@ -1,0 +1,8 @@
+{
+ "id": 934352,
+ "bug_id": 219316,
+ "attachment_id": 0,
+ "creation_time": "2017-05-17T16:27:48Z",
+ "creator": "donner@FreeBSD.org",
+ "text": "# ipfw show\n00100 228070727002 277397011152705 nat tablearg ip4 from any to any flow table(natin) recv ext in\n00200 247814016293  35467809536790 nat tablearg ip4 from any to any flow table(natout) xmit ext out\n\n# cat /etc/firewall.rules\nnat 1 config ip a.b.c.48 same_ports\nnat 2 config ip a.b.d.48 same_ports\n...\nnat 127 config ip x.y.z.46 same_ports\nnat 128 config ip x.y.z.47 same_ports\n\ntable natin create type flow:dst-ip valtype nat\ntable natin setmask 255.255.255.255\ntable natin add a.b.c.48 1\ntable natin add a.b.d.48 2\n...\ntable natin add x.y.z.46 127\ntable natin add x.y.z.47 128\n\ntable natout create type flow:src-ip valtype nat\ntable natout setmask 255.192.0.127\ntable natout add 100.64.0.0 1\ntable natout add 100.64.0.1 2\n...\ntable natout add 100.64.0.126 127\ntable natout add 100.64.0.127 128\n\n\nThere are multiple machines doing this (with different NAT IPs)\n\nI'm going to extend the flow in the following way in order to reuse the ports much more:\n\ntable natin create type flow:src-ip,proto,src-port,dst-ip valtype nat\ntable natin setmask 0.0.15.0,1,3,255.255.255.255\n\ntable natout create type flow:src-ip,proto,dst-ip,dst-port valtype nat\ntable natout setmask 255.192.0.127,1,0.0.15.0,3\n\nYes, this generates 128 (NAT-IPs) * 2 (Protocol) * 16 (dest-ip) * 4 (dest-port) =  16384 NAT tables.\n\nDepending on the available RAM, I'll extent the masks further.\n\nBut I do need a different NAT table selection algorithm for this approach, the current linked list needs to be replaced by a much more efficient access scheme. I'll send this patch later."
+}

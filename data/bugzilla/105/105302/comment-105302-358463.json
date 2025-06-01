@@ -1,0 +1,8 @@
+{
+ "id": 358463,
+ "bug_id": 105302,
+ "attachment_id": 0,
+ "creation_time": "2006-11-08T21:20:21Z",
+ "creator": "marquis@roble.com",
+ "text": "The openssl{,-stable} port fails to correctly process OPENSSL_OVERWRITE_BASE\ninstead printing an error message:\n\n\"this ports conflicts with your base system, please undefine  OPENSSL_OVERWRITE_PORT, and use WITH_OPENSSL_BASE=yes instead\"\n\nWITH_OPENSSL_BASE doesn't cause the port to overwrite the base installation but installs under /usr/local, resulting in two different versions on the system.\n\nSinply deleting these if/endif sections in the Makefile restores\nthe expected behavior.\n\nFix: \n\nRemove the following from the Makefile:\n\n.if exists(/lib/libcrypto.so) || exists(/lib/libcrypto.so.3)\npre-everything::\n    @${ECHO_CMD} \"#\"\n    @${ECHO_CMD} \"# this ports does not support the dynamic root\"\n    @${ECHO_CMD} \"# please undefine OPENSSL_OVERWRITE_BASE\"\n    @${ECHO_CMD} \"# and use WITH_OPENSSL_PORT=yes instead.\"\n    @${ECHO_CMD} \"#\"\n    @${FALSE}\n \n.endif\n.if exists(${DESTDIR}/usr/lib/libcrypto.so.3) \u0026\u0026 ${OPENSSL_SHLIBVER} != 3\npre-everything::\n    @${ECHO_CMD} \"#\"\n    @${ECHO_CMD} \"# this ports conflicts with your base system\"\n    @${ECHO_CMD} \"# please undefine OPENSSL_OVERWRITE_BASE\"\n    @${ECHO_CMD} \"# and use WITH_OPENSSL_PORT=yes instead.\"\n    @${ECHO_CMD} \"#\"\n    @${FALSE}\n \n.endif"
+}

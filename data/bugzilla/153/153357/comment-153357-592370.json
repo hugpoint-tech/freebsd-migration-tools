@@ -1,0 +1,8 @@
+{
+ "id": 592370,
+ "bug_id": 153357,
+ "attachment_id": 0,
+ "creation_time": "2010-12-21T21:30:15Z",
+ "creator": "dam@c-mal.com",
+ "text": "The rc script for sabnzbd fails to stop the process.\n\n\n\nSee, I added a newsgroups host, which was added to sabnzbd.ini\n\n\nThe stop command in the rc.d script uses grep to find what host to send the stop command to (it uses the web interface to shutdown sabnzbd):\nhost=`grep -E '^host\\ =\\ [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' ${sabnzbd_conf_dir}/sabnzbd.ini | tr -dc '[0-9].'`\n\n\nThe problem is, now that I added a newsgroups host, grep matches it too.\n\nWhich gives me a $host variable with: \"127.0.0.1\" (interface sabnzbd binds to) AND again \"yourdummyngprovider.com\" (the newsgroups host) for a grand total of:\n$host=\"127.0.0.1yourdummyngprovider.com\"\n\nIn turn, the stop command then tries to curl to:\nhttp://127.0.0.1yourdummyngprovider.com:8080/api?mode=shutdown\u0026apikey=yourapikeyhere\n\nThis will never work.\n\nFix: \n\nI suggest changing the grep command from:\nhost=`grep -E '^host\\ =\\ [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' ${sabnzbd_conf_dir}/sabnzbd.ini | tr -dc '[0-9].'`\nto\nhost=`grep -E -m1 '^host\\ =\\ [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' ${sabnzbd_conf_dir}/sabnzbd.ini | tr -dc '[0-9].'`\n\n-m1 ensures grep stops after 1 match, which is what we want.\n\n\nNotice this is already done to determine what port the sabnzbd daemon is listening on:\nport=`grep -m1 ^port ${sabnzbd_conf_dir}/sabnzbd.ini | tr -dc '[0-9]'`\n\nI have made this change to the rc script on my box and it works fine.\nHow-To-Repeat: This problem is repeatable all the time."
+}

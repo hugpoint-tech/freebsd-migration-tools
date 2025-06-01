@@ -1,0 +1,8 @@
+{
+ "id": 434367,
+ "bug_id": 121422,
+ "attachment_id": 0,
+ "creation_time": "2008-03-06T09:20:01Z",
+ "creator": "aurelien@aurel32.net",
+ "text": "Since version 4.3, gcc changed its behaviour concerning the x86/x86-64 \nABI and the direction flag, that is it now assumes that the direction \nflag is cleared at the entry of a function and it doesn't clear once \nmore if needed.\n\nThis causes some problems with the FreeBSD kernel which does not clear\nthe direction flag when entering a signal handler. \n\nIf the signal handler is using code that need the direction flag cleared\n(for example bzero() or memset()), the code is incorrectly executed.\n\nThis has been first reported on the Linux kernel, but *BSD kernels have\nthe same problem. See http://gcc.gnu.org/ml/gcc/2008-03/msg00267.html for\nmore details\n\nFix: Patch attached\n\nPatch attached with submission follows:\nHow-To-Repeat: Testcase for x86-64\n\n#include \u003cstdint.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003csignal.h\u003e\n\nvoid handler(int signal) {\n        uint64_t rflags;\n        \n        asm volatile(\"pushfq ; popq %0\" : \"=g\" (rflags));\n\n        if (rflags \u0026 (1 \u003c\u003c 10))\n                printf(\"DF = 1\\n\");\n        else\n                printf(\"DF = 0\\n\");\n}\n\nint main() {\n        signal(SIGUSR1, handler);\n\n        while(1)\n        {\n                asm volatile(\"std\\r\\n\");\n        }\n\n        return 0;\n}"
+}

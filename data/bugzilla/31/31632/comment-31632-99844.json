@@ -1,0 +1,8 @@
+{
+ "id": 99844,
+ "bug_id": 31632,
+ "attachment_id": 0,
+ "creation_time": "2001-11-15T10:43:06Z",
+ "creator": "cristjc@earthlink.net",
+ "text": "On Tue, Oct 30, 2001 at 07:02:54PM +0900, Yuichi SHIMODA wrote:\n[snip]\n\n\u003e \u003eDescription:\n\u003e when my /etc/host.conf contains no \"bind\" entries,\n\u003e ip6fw command with ipv6 address argument shows error message.\n\u003e \n\u003e   ip6fw: error: hostname ``ff02::'' unknown\n\u003e   usage: ip6fw [options]\n\u003e     :\n\u003e     :\n\nThis bug was fixed in ipfw(8) long ago. There must be a way to keep\nthese two in better sync (like, should they really be separate code\nbases?).\n\nThis patch is more in sync with the current ipfw.c way to do this,\n\nIndex: ip6fw.c\n===================================================================\nRCS file: /export/ncvs/src/sbin/ip6fw/ip6fw.c,v\nretrieving revision 1.8\ndiff -u -r1.8 ip6fw.c\n--- ip6fw.c\t28 Oct 2001 20:19:14 -0000\t1.8\n+++ ip6fw.c\t15 Nov 2001 10:41:00 -0000\n@@ -515,15 +515,15 @@\n static int\n lookup_host (host, addr, family)\n \tchar *host;\n-\tu_char *addr;\n+\tstruct in6_addr *addr;\n {\n-\tstruct hostent *he = gethostbyname2(host, family);\n-\n-\tif (!he)\n-\t\treturn(-1);\n-\n-\tmemcpy(addr, he-\u003eh_addr_list[0], he-\u003eh_length);\n+\tstruct hostent *he;\n \n+\tif (inet_pton(family, host, addr) != 1) {\n+\t\tif ((he = gethostbyname2(host, family)) == NULL)\n+\t\t\treturn(-1);\n+\t\t*addr = *(struct in6_addr *)he-\u003eh_addr_list[0];\n+\t}\t\n \treturn(0);\n }\n \n\n-- \nCrist J. Clark                     |     cjclark@alum.mit.edu\n                                   |     cjclark@jhu.edu\nhttp://people.freebsd.org/~cjc/    |     cjc@freebsd.org"
+}

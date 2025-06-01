@@ -1,0 +1,8 @@
+{
+ "id": 856291,
+ "bug_id": 178238,
+ "attachment_id": 0,
+ "creation_time": "2015-12-30T15:07:55Z",
+ "creator": "noah.bergbauer@tum.de",
+ "text": "This PR is tagged 9.1-STABLE, but I just rediscovered this issue on 10.2-RELEASE.\n\nEasiest repro I could find:\n\n# preparation\nmkdir /testbed\ncd /testbed\nmkdir tmpmnt nullmnt\nmount -t tmpfs -o rw,size=10240 tmptestbed /testbed/tmpmnt/\n\n# test 1\nmount_nullfs /testbed/tmpmnt/ /testbed/nullmnt/\ndf -hi | grep testbed\ndd if=/dev/zero of=nullmnt/testfile # to fill up the tmpfs\ndf -hi | grep testbed # the filesystem is now full\nrm nullmnt/testfile \ndf -hi | grep testbed # bug: the filesystem is still full\numount /testbed/nullmnt\ndf -hi | grep testbed # the inode is released only once the nullfs is unmounted\n\n# test 2: nocache\nmount_nullfs -o nocache /testbed/tmpmnt/ /testbed/nullmnt/\ndf -hi | grep testbed\ndd if=/dev/zero of=nullmnt/testfile\nrm nullmnt/testfile \ndf -hi | grep testbed # everything is working properly here\numount /testbed/nullmnt\n\n\nSo a standard nullfs mount is unusable for long-term operation. I've only found out about the nocache option from an old mailing list post related to this PR, so after 2.5 years without a fix a note about this workaround on the manpage would be great."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 660384,
+ "bug_id": 166927,
+ "attachment_id": 0,
+ "creation_time": "2013-05-29T14:41:59Z",
+ "creator": "davide@FreeBSD.org",
+ "text": "I'm able to reproduce this on a stock kernel.\n\n# kldload linux\n# dtrace -n 'linuxulator32:time:linux_nanosleep:entry\nand on a separate window\n# kldunload linux\n\nI've taken a look at the code and here's my analysis of the bug.\nIf there are SDT probes enabled, unload should be prevented with error\n= EBUSY, but there's nothing in kern_kldunload() that prevents this.\nfbt probes actually implement a similar logic, in fact, they maintain\na reference counter per-module which is incremented in ftb_enabled()\n(and, simmetrically, decremented in fbt_disable()), so that if the\nuser tries to unload the module when ftb probes are active, i.e.\nrefcount \u003e 0, the unload fails.\nIn order to map the probe with the module, struct fbt_probe maintains\na field (fbtp_ctl) which keeps track of the linker_file_t to which the\nprobe belongs, and this field is set in\nfbt_provide_module_function().\n\nAccording to me, a similar strategy could be used for sdt so that they\nwon't fail anymore. OTOH, I'm quite unsure about how to maintain the\nmapping between std probe and linker_file_t in FreeBSD. Note that the\naforementioned strategy is implemented in Illumos for sdt as well, but\nthe SDT implementation in FreeBSD is different so the code cannot be\nimported (at least not trivially).\n\nDo you have any opinion about how this can be addressed?\nThanks,"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1079532,
+ "bug_id": 242637,
+ "attachment_id": 209951,
+ "creation_time": "2019-12-14T19:25:57Z",
+ "creator": "landonf@FreeBSD.org",
+ "text": "Created attachment 209951\nPatch for current (5.2.34) emulators/virtualbox-ose\n\nThis patch fixes bridging in cases where the interface's ng_ether netgraph node name does not match its interface name.\n\nThis is commonly seen with VLANs configured in rc.conf; for example:\n\n  ifconfig_igb0=\"up\"\n  vlans_igb0=\"12\"\n\nThis will create an 'igb0.12' VLAN interface, but because '.' is a reserved character in netgraph node names, the corresponding netgraph node will be named 'igb0_12':\n\n    Name: igb0_12         Type: ether           ID: 00000007   Num hooks: 0\n\nCurrently, VBoxNetFlt assumes a 1:1 correspondence between interface name and ng_ether node name; when attempting to bridge to igb0.12, the node named \"igb0.12\" is not found, and VBoxNetFlt's netgraph initialization silently fails.\n\nRather than assume the node name, this patch enumerates all ng_ether nodes, using the NGM_ETHER_GET_IFNAME control message to identify the ng_ether node corresponding to the target interface.\n\nI've attached patches for the current emulators/virtualbox-ose port, as well as a patch relative to the 6.1 patch posted on 2019-12-13 (https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=234878)."
+}

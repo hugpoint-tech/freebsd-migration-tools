@@ -1,0 +1,8 @@
+{
+ "id": 807562,
+ "bug_id": 197191,
+ "attachment_id": 152364,
+ "creation_time": "2015-01-30T06:17:45Z",
+ "creator": "christopherhall.hsw@gmail.com",
+ "text": "Created attachment 152364\npatch port Makefile to substitute \"/etc\"\n\nBasically devel/dconf does not read profiles from /usr/local/etc/dconf/profile\n\nHere is the problem that lead to this:\n\nI found that ibus engine preferences are not saved e.g. from a Chinese Bopomofo selecting traditional mode would not be retained and engine would always return to default when switching between English and Chinese.\n\nThe main settings panel (ibus-settings) is fine and not affected by this.\n\nhere is a small sample of truss output:\n\nopen(\"/etc/dconf/profile/ibus\",O_RDONLY,0666)    ERR#2 'No such file or directory'\nopen(\"/share/dconf/profile/ibus\",O_RDONLY,0666)  ERR#2 'No such file or directory'\nopen(\"/usr/share/dconf/profile/ibus\",O_RDONLY,0666) ERR#2 'No such file or directory'\nopen(\"/usr/local/share/dconf/profile/ibus\",O_RDONLY,0666) ERR#2 'No such file or directory'\ngetpid()                                         = 35300 (0x89e4)\nwrite(2,\"\\n(ibus-dconf:35300): dconf-WARNING **: unable to open named profile (ibus): using the null configuration.\\n\",106) = 106 (0x6a)\n\nThe textproc/ibus port actually installs this file as: /usr/local/etc/dconf/profile/ibus\n\nThe real cause is that the devel/dconf file: engine/dconf-engine-profile.c hard codes \"/etc\" and the sed command in port Makefile looks only for /etc/\ntherefore add an additional s/// to change all \"/etc\" (with quotes for safety)"
+}

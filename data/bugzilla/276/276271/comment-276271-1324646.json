@@ -1,0 +1,8 @@
+{
+ "id": 1324646,
+ "bug_id": 276271,
+ "attachment_id": 0,
+ "creation_time": "2024-09-09T19:24:20Z",
+ "creator": "mohd.akram@outlook.com",
+ "text": "The problem seems to be with the old bootstrap compiler used (1.5.1). The `has_method?` macro doesn't seem to work correctly in it:\n\n$ curl -OL https://github.com/dmgk/crystal-bootstrap/releases/download/1.5.1/crystal-1.5.1-amd64-llvm14.tar.xz\n$ tar -xf crystal-1.5.1-amd64-llvm14.tar.xz\n$ cat boehm.cr\n@[Link(\"gc-threaded\")]\nlib LibGC\n  fun set_stackbottom = GC_set_stackbottom(th : ThreadHandle, sb : StackBase*) : ThreadHandle\nend\nmodule GC\n  {% if !LibGC.has_method?(:set_stackbottom) %}\n    {% raise \"has_method? failed\" %}\n  {% end %}\nend\n$ CRYSTAL_PATH=/usr/local/lib/crystal .build/crystal build boehm.cr # build with the 1.5.1 compiler\nShowing last frame. Use --error-trace for full trace.\n\nIn boehm.cr:6:3\n\n 6 | {% if !LibGC.has_method?(:set_stackbottom) %}\n     ^\nError: has_method? failed\n$ crystal build boehm.cr # build with the 1.10.1 compiler\n$\n\nWill have to update the bootstrap compiler to eg. 1.10.1, the current version in ports, and it should work then."
+}

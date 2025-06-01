@@ -1,0 +1,8 @@
+{
+ "id": 946420,
+ "bug_id": 221310,
+ "attachment_id": 0,
+ "creation_time": "2017-08-07T13:32:21Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "The mechanism to pass environment variables such as COMMONNAME and SUBJECTALTNAME to openssl is via the ENV call in openssl.cnf.\n\nWe instruct openssl to use an openssl.cnf file specially crafted for PKI purposes, via the openssl command -config.  For example: \nopenssl ca -config $ext_file ...\n\nUnfortunately libressl has removed the ENV passing functionality, breaking our PKI system and I'm sure many others (eg OpenVPN's easy_rsa).\n\nAs a kludge, we're working around this issue with a really stupid approach below, though suggestions are welcome.  This approach, I think, really defeats the purpose and intent of removing the ENV functionality\n\nsed -e \"/SUBJECTALTNAME/s|\\$ENV::SUBJECTALTNAME|email:tom@host1,email:dick@host2,email:harry@host3|1\"  /pki/etc/openssl.cnf \u003e /md/openssl.cnf\nopenssl ca -config /md/openssl.cnf ...\n\nsed -e '/SUBJECTALTNAME/s|$ENV::SUBJECTALTNAME|email:tom@host1,email:dick@host2,email:harry@host3|1' /pki/etc/openssl.cnf \u003e /md/openssl.cnf\n\nA better approach is to switch \"on\" libressl's ability to read an openssl.cnf file, rather than removing that which makes openssl.cnf useful.\n\n(And if anyone has the C skills, a starting point may be\ngrep ENV work/openssl-1.0.2l/*/* | cut -d: -f1 | sort -u\nbut most of the work is in ca.c)\n\nReferences: \nhttps://readlist.com/lists/openbsd.org/misc/34/170969.html\nhttp://marc.info/?l=openbsd-ports\u0026m=144604049719515\u0026w=2\nhttps://github.com/OpenVPN/easy-rsa/issues/76"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 987312,
+ "bug_id": 227472,
+ "attachment_id": 0,
+ "creation_time": "2018-04-13T18:45:15Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Well, this panic is actually a different one from the one P165 aims to fix, but the nvme driver is probably using 'mp_ncpus' to determine the number of IRQs to allocate which isn't going to work out very well.  In particular, we don't schedule IRQs on HT threads by default, but only on the first thread in a core.  This means if nvme is allocating 48 interrupts per device, it is actually allocating 2 interrupts for each core (e.g. 2 IRQs on CPU 0, 2 on CPU2, etc.) when not using bus_bind_intr().  If you have NUMA enabled, then we now also restrict IRQs to cores local to the device.  Rather than using 'mp_ncpus', the driver should use bus_get_cpus() with INTR_CPUS to determine the set of CPUs it should bind interrupts to.  It can then use 'CPU_COUNT' on the result in place of 'mp_ncpus'.\n\n(It might still be worth testing to see if P165 makes a difference.)"
+}

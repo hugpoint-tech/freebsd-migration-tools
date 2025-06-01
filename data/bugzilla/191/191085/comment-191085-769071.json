@@ -1,0 +1,8 @@
+{
+ "id": 769071,
+ "bug_id": 191085,
+ "attachment_id": 0,
+ "creation_time": "2014-06-16T12:45:29Z",
+ "creator": "ohauer@FreeBSD.org",
+ "text": "The ${opt}_WITH construct is not usable in case the option has additional parameters like paths \n\nE.g dns/powerdns uses:\n\nPGSQL_CONFIGURE_ON=     --with-pgsql=${LOCALBASE}\nPGSQL_CONFIGURE_OFF=    --without-pgsql\nMYSQL_CONFIGURE_ON=     --with-mysql=${LOCALBASE}\nMYSQL_CONFIGURE_OFF=    --without-mysql\n\n\nFor testing change the four lines to the following two\nPGSQL_CONFIGURE_WITH=     pgsql=${LOCALBASE}\nMYSQL_CONFIGURE_WITH=     mysql=${LOCALBASE}\n\nThen test with make -V CONFIGURE_ARGS WITHOUT=PGSQL -C dns/powerdns\n... --without-pgsql=/usr/local\n-\u003e ${LOCALBASE} is not stripped\n\n\nWith the patch below it works as expected and many Makefiles can be simplified\n\nmake -V CONFIGURE_ARGS WITHOUT=PGSQL -C dns/powerdns\n... --without-pgsql\n\n\nIndex: /usr/ports/Mk/bsd.options.mk\n===================================================================\n--- /usr/ports/Mk/bsd.options.mk        (revision 357956)\n+++ /usr/ports/Mk/bsd.options.mk        (working copy)\n@@ -470,7 +470,7 @@\n .    endif\n .    if defined(${opt}_CONFIGURE_WITH)\n .      for iopt in ${${opt}_CONFIGURE_WITH}\n-CONFIGURE_ARGS+=       --without-${iopt}\n+CONFIGURE_ARGS+=       --without-${iopt:C/=.*//}\n .      endfor\n .    endif\n .    for configure in CONFIGURE CMAKE QMAKE"
+}

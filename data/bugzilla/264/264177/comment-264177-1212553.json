@@ -1,0 +1,8 @@
+{
+ "id": 1212553,
+ "bug_id": 264177,
+ "attachment_id": 0,
+ "creation_time": "2022-05-23T15:10:14Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "In bhyve's pci_nvme_append_iov_req(), if the guest provides a zero\nprp1 (i.e. gpaddr) for an I/O operation, then this code runs:\n\n        if ((req-\u003eprev_gpaddr + req-\u003eprev_size) == gpaddr) {\n                iovidx = req-\u003eio_req.br_iovcnt - 1;\n                ...;\n                req-\u003eprev_size += size;\n                ...;\n                req-\u003eio_req.br_iov[iovidx].iov_len = req-\u003eprev_size;\n\nprev_gpaddr, prev_size, and br_iovcnt are all ordinarily zero at this\npoint. So iovidx = -1, and the assignment to br_iov[iovidx].iov_len\nactually overwrites io_req.br_param. This later causes a bad pointer\ndereference in pci_nvme_io_done():\n\n        struct pci_nvme_ioreq *req = br-\u003ebr_param;\n        struct nvme_submission_queue *sq = req-\u003envme_sq;\n\nYou can see this happen if you boot a FreeBSD guest kernel in bhyve\nwith an nvme device, after modifying the guest kernel's\nnvme_payload_map() in /sys/dev/nvme/nvme_qpair.c to set\ntr-\u003ereq-\u003ecmd.prp1 to zero when it is called for the third time."
+}

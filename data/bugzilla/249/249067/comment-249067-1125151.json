@@ -1,0 +1,8 @@
+{
+ "id": 1125151,
+ "bug_id": 249067,
+ "attachment_id": 0,
+ "creation_time": "2020-10-02T17:51:00Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: markj\nDate: Fri Oct  2 17:50:23 UTC 2020\nNew revision: 366368\nURL: https://svnweb.freebsd.org/changeset/base/366368\n\nLog:\n  Implement sparse core dumps\n\n  Currently we allocate and map zero-filled anonymous pages when dumping\n  core.  This can result in lots of needless disk I/O and page\n  allocations.  This change tries to make the core dumper more clever and\n  represent unbacked ranges of virtual memory by holes in the core dump\n  file.\n\n  Add a new page fault type, VM_FAULT_NOFILL, which causes vm_fault() to\n  clean up and return an error when it would otherwise map a zero-filled\n  page.  Then, in the core dumper code, prefault all user pages and handle\n  errors by simply extending the size of the core file.  This also fixes a\n  bug related to the fact that vn_io_fault1() does not attempt partial I/O\n  in the face of errors from vm_fault_quick_hold_pages(): if a truncated\n  file is mapped into a user process, an attempt to dump beyond the end of\n  the file results in an error, but this means that valid pages\n  immediately preceding the end of the file might not have been dumped\n  either.\n\n  The change reduces the core dump size of trivial programs by a factor of\n  ten simply by excluding unaccessed libc.so pages.\n\n  PR:\t\t249067\n  Reviewed by:\tkib\n  Tested by:\tpho\n  MFC after:\t1 month\n  Sponsored by:\tThe FreeBSD Foundation\n  Differential Revision:\thttps://reviews.freebsd.org/D26590\n\nChanges:\n  head/sys/kern/imgact_elf.c\n  head/sys/vm/vm_fault.c\n  head/sys/vm/vm_map.h"
+}

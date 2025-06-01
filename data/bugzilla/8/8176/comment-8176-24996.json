@@ -1,0 +1,8 @@
+{
+ "id": 24996,
+ "bug_id": 8176,
+ "attachment_id": 0,
+ "creation_time": "1998-10-06T23:30:01Z",
+ "creator": "synk@swcp.com",
+ "text": "When getpwnam() is passed a very large buffer, it will recieve a SIGBUS\nor SIGSEGV.  As far as I've looked so far, it appears to manifest itself\nin __hashpw(), possibly during this macro:\n\n#define EXPAND(e)       e = t; while ( (*t++ = *p++) );\n\nThough I'm no coder, I think the problem might be that in getpwnam,\n\"name\" isn't necessarily null terminated. It is defined one byte\nlarger than what is bcopied into it, but the last byte might not\nbe zero.\n\nFix: \n\nIf it's really just a null termination problem, add the null.  I've\nnot yet recompiled my libraries to test this theory.\nHow-To-Repeat: #include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003cpwd.h\u003e\n\nchar zeename[]=\"AVeryLongStringGoesHere\";\nstruct passwd * gunk;\n\nmain()\n{\ngunk=getpwnam(zeename);\n}"
+}

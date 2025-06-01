@@ -1,0 +1,8 @@
+{
+ "id": 691039,
+ "bug_id": 173332,
+ "attachment_id": 0,
+ "creation_time": "2012-11-03T17:20:00Z",
+ "creator": "freebsd@damnhippie.dyndns.org",
+ "text": "watchdogd was changed in r239769 to use mlockall(2) to wire down the memory used by the app so that it can pat the watchdog without any delays caused by waiting for its pages to be swapped back in.  This has caused its resident size to increase from about 840KB to about 10MB, which is a serious problem on small-memory embedded systems.\n\nMost of the memory increase seems to be related to jemalloc allocating vmspace in chunks of 8MB at a time.  Normally this is innocuous; even if the app only uses a few bytes of allocated memory there's no large downside to having over-allocated some vmspace.  However, when mlockall(MCL_FUTURE) is in effect, it is no longer a vmspace allocation, physical pages for the entire 8MB region are prefaulted and wired.\n\nAnother megabyte or so of the growth seems to be related to wiring in pages (whether needed or not) from libc and libm.\n\nFix: The attached patch reduces the impact of the mlockall() change on small-memory embedded systems.  Such systems are often built with \"option NO_SWAPPING\" which eliminates most of the reason the mlockall() change was put in originally.\n\nNote that this is not really a full fix for the problem, it just reduces the  impact on the most resource-limited systems.\n\n\nPatch attached with submission follows:"
+}

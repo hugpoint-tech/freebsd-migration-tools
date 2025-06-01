@@ -1,0 +1,8 @@
+{
+ "id": 569645,
+ "bug_id": 148928,
+ "attachment_id": 0,
+ "creation_time": "2010-07-25T14:30:06Z",
+ "creator": "fmyoen@gmail.com",
+ "text": "It looks like during system startup (in some setups?) ipdivet.ko kernel module loads later than the default /etc/rc.firewall script executes, and thus script fails to properly add NAT related ipfw rules. In my case it was this rule:\n\n  if [ -n \"${natd_interface}\" ]; then\n    ${fwcmd} add 50 divert natd ip4 from any to any via ${natd_interface}\n  fi\n\nThis results in:\n\n  ipfw: getsockopt(IP_FW_ADD): Invalid argument\n\nSo after every reboot I should manually run sh /etc/rc.firewall to flush and add ipfw rules once again. I've got this problem at least on two my PCs and at least one guy has similar problem as reported here http://www.opennet.ru/openforum/vsluhforumID3/69154.html#26.\n\nHere is parts of my configuration files although I doubt it would help:\n\nrc.conf:\n\n  ifconfig_vr1=\"dhcp\"\n  gateway_enable=\"YES\"\n\n  # IPFW\n  firewall_enable=\"YES\"\n  firewall_type=\"OPEN\"\n\n  # NAT\n  natd_program=\"/sbin/natd\"\n  natd_enable=\"YES\"\n  natd_interface=\"vr1\"\n  natd_flags=\"-m\"\n\nsysctl.conf:\n\n  net.inet.ip.fw.one_pass=0\n\nFix: \n\necho 'ipdivert_load=\"YES\"' \u003e\u003e /boot/loader.conf causes normal rule execution during startup.\nHow-To-Repeat: Reboot PC."
+}

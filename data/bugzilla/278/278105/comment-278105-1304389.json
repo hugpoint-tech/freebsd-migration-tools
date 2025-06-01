@@ -1,0 +1,8 @@
+{
+ "id": 1304389,
+ "bug_id": 278105,
+ "attachment_id": 249843,
+ "creation_time": "2024-04-08T22:51:38Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "Created attachment 249843\nadd -ffp-contract=off to CFLAGS to avoid contracting floating point insns to FMA (fused multiply-add) which cause two self-test failures\n\nIn order to reproduce, you need to allow FMA instructions. I have been compiling with CPUTYPE?=znver1 in make.conf (or $LOCALBASE/etc/poudriere.d/make.conf, for poudriere), which seems to break the two self-tests. This is with the FreeBSD 14.0-RELEASE amd64 base compiler, clang 16.0.6, and also happens with GCC 13.2.0 from ports.\n\nRemoving CPUTYPE from make.conf fixed the self-test failures.\n\nSo... digging deeper, I find that adding either of these compiler options in CFLAGS fixes the self-test-failures even though CPUTYPE=znver1 (either one alone is sufficient, no need to use both):\n\n-ffp-contract=off # apparently also helps and might be cheaper.\n\nOR\n\n-mno-fma # no fused multiply add instructions at all\n\n\nNote: FMA are enabled with -match=haswell or higher for Intel, bdver1 or higher for AMD, or x86-64-v3 or higher for psABI versions (for the latter, see \u003chttps://gitlab.com/x86-psABIs/x86-64-ABI\u003e)\n\nMy proposal would be to CFLAGS+=-ffp-contract=off - but I don't know if this is bad for ARM64.  What do you think, Dirk?"
+}

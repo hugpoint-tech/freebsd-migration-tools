@@ -1,0 +1,8 @@
+{
+ "id": 862464,
+ "bug_id": 206761,
+ "attachment_id": 0,
+ "creation_time": "2016-01-31T10:04:35Z",
+ "creator": "ecturt@gmail.com",
+ "text": "I didn't even notice this before, but you're right.\n\nimgact_binmisc_add_entry:\n\n\tsx_xlock(\u0026interp_list_sx);\n\tif (imgact_binmisc_find_entry(xbe-\u003exbe_name) != NULL) {\n\t\tsx_xunlock(\u0026interp_list_sx);\n\t\treturn (EEXIST);\n\t}\n\n\t/* Preallocate a new entry. */\n\tibe = imgact_binmisc_new_entry(xbe);\n\tif (!ibe)\n\t\treturn (ENOMEM);\n\n\tSLIST_INSERT_HEAD(\u0026interpreter_list, ibe, link);\n\tinterp_list_entry_count++;\n\tsx_xunlock(\u0026interp_list_sx);\n\nIf the code ever reaches `return (ENOMEM);`, it is missing an `sx_xunlock(\u0026interp_list_sx);` call.\n\nUnfortunately, this bug isn't triggerable, because `imgact_binmisc_add_entry` uses `M_WAITOK` for its allocations, and so can never return `NULL`:\n\nstatic imgact_binmisc_entry_t *\nimgact_binmisc_new_entry(ximgact_binmisc_entry_t *xbe)\n{\n\tibe = malloc(sizeof(*ibe), M_BINMISC, M_WAITOK|M_ZERO);\n\n\t...\n\t\n\treturn (ibe);\n}\n\nMy recommendation is to just remove the following check altogether:\n\n\tif (!ibe)\n\t\treturn (ENOMEM);"
+}

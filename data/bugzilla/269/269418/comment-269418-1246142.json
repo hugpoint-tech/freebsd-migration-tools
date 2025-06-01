@@ -1,0 +1,8 @@
+{
+ "id": 1246142,
+ "bug_id": 269418,
+ "attachment_id": 0,
+ "creation_time": "2023-02-08T19:53:58Z",
+ "creator": "brian90013@gmail.com",
+ "text": "Hello,\n\nI am testing the E810 NIC on FreeBSD 12.4 using netmap and observe VLAN headers are stripped from incoming packets. I have -vlanhwtag set on the interface (though below I show why this doesn't matter). I tested this scenario with the same server, OS, and capture file using the e1000, ixgbe, and ixl drivers and all three kept the VLAN headers when using netmap with -vlanhwtag set on the interface.\n\nA quick look at ice_set_default_vsi_ctx() shows ICE_AQ_VSI_INNER_VLAN_EMODE_STR_BOTH is set in all cases. There are no conditionals using IFCAP_VLAN_HWTAGGING in the ice driver. I would expect the code to check for that capability and set ICE_AQ_VSI_INNER_VLAN_EMODE_NOTHING if -vlanhwtag like ixl does in ixl_initialize_vsi().\n\nI tried adding a conditional check but ran into the next issue. ixl_initialize_vsi() is called from ixl_if_init() so it reinitializes the VLAN setting every time iflib_if_ioctl() is run. On the ice driver, ice_initialize_vsi() is called from ice_if_attach_post() and ice_rebuild() but not ice_if_init(). So changing the VLAN capabilities using ifconfig doesn't appear to change the driver settings.\n\nI would like the ice driver to preserve VLAN headers when using netmap just like the other Intel iflib drivers. I have experimented with adding a call to ice_initialize_vsi() inside ice_if_init(), but there are other changes needed and I am looking for a solution with no side effects. Thank you for your time and your help!"
+}

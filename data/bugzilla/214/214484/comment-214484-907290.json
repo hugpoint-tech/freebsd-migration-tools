@@ -1,0 +1,8 @@
+{
+ "id": 907290,
+ "bug_id": 214484,
+ "attachment_id": 0,
+ "creation_time": "2016-11-13T17:48:03Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "When building bsd-user/freebsd/os-proc.c, you get this error if the ncurses port is installed:\n\n/usr/ports/emulators/qemu-user-static/work/qemu-bsd-user-ec807d10/bsd-user/freebsd/os-proc.c:307:33: error:\n      use of undeclared identifier 'O_CLOEXEC'\n        fd = open(p, O_RDONLY | O_CLOEXEC);\n                                ^\n1 error generated.\ngmake[3]: *** [/usr/ports/emulators/qemu-user-static/work/qemu-bsd-user-ec807d10/rules.mak:60: bsd-user/freebsd/os-proc.o] Error 1\n\n'pkg-config --cflags ncurses' gives:\n-I/usr/local/include -I/usr/local/include/ncurses -D_BSD_TYPES -D__BSD_VISIBLE -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600\n\nEither -D_POSIX_C_SOURCE=200112L or -D_XOPEN_SOURCE=600\nprevent O_CLOEXEC from being defined in fcntl.h\n\n\nThe [forthcoming] patch avoids adding the ncurses -D flags.  It also removes an obsolete part of post-patch that is not required given the current qemu source (which has -lelf in configure now).\n\nI've also opened an inquiry upstream with ncurses to see if those -D flags can't just be removed from its pkg-config files.\n\nIn the mean time, a local patch for the qemu port might be useful to avoid build errors for people who have ncurses installed.\n\np.s. this only occurs in the most recent qemu-sbruno update - before that 'configure' didn't invoke \"pkg-config --cflags ncurses\"."
+}

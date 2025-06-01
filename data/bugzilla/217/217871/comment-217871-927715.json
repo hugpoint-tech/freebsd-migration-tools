@@ -1,0 +1,8 @@
+{
+ "id": 927715,
+ "bug_id": 217871,
+ "attachment_id": 0,
+ "creation_time": "2017-03-26T19:54:33Z",
+ "creator": "jhujhiti@adjectivism.org",
+ "text": "Good news and bad news: The issue happens on a fresh install (11.0-RELEASE-p1 -\u003e Subversion head), but I've somewhat isolated it. This simple script fails consistently - epair0b does not get an address:\n\nifconfig epair0 create\nsetfib 1 ifconfig epair0a inet6 2001:db8::1/64 fib 1\nsetfib 2 ifconfig epair0b inet6 -ifdisabled accept_rtadv fib 2 up\nrtadvd -p rtadvd.pid -C rtadvd.sock -c /dev/null epair0a\nrtsol epair0b\nifconfig epair0b\npkill -kill -F rtadvd.pid\nrm -f rtadvd.pid rtadvd.sock\nifconfig epair0a destroy\n\nIf I remove \"setfib 1\", on the first run after boot, rtsol will complain that epair0b is disabled (and the subsequent ifconfig does show that the IFDISABLED flag is never removed from nd6 options, odd...), but epair0b successfully gets an address on every execution of the script after that.\n\nWhile this is pretty clearly some kind of bug, could the test case avoid it by not calling setfib in setup_iface? I'm not clear on why setfib is used given that the ifconfig always uses the fib argument too."
+}

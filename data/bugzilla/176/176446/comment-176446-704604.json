@@ -1,0 +1,8 @@
+{
+ "id": 704604,
+ "bug_id": 176446,
+ "attachment_id": 0,
+ "creation_time": "2013-02-27T12:54:20Z",
+ "creator": "jcharbon@verisign.com",
+ "text": "  I successfully reproduced this issue using only the socat tool:\n\nServer side:  Enable TCP debug, and launch socat server:\n\n# sysctl net.inet.tcp.log_debug=1\nnet.inet.tcp.log_debug: 0 -\u003e 1\n$ cat /some/where/response.sh\n#!/usr/bin/env bash\nread line\necho -n \n\"01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567\"\n$ socat TCP4-LISTEN:8181,fork,reuseaddr EXEC:/some/where/response.sh\n\nClient side:  Create socat client TCP load:\n\n$ cat ./request\n128\n$ while true; do socat ./request,ignoreeof\\!\\!./response \nTCP4:192.168.100.144:8181 \u0026 sleep 0.0001; done\n\nThen on server side just wait for a TCP debug in /var/log/debug.log like:\n\nkernel: TCP: [192.168.100.136]:48359 to [192.168.100.144]:8181; \nsyncache_socket: in_pcbconnect failed with error 48\nkernel: TCP: [192.168.100.136]:48359 to [192.168.100.144]:8181 tcpflags \n0x10\u003cACK\u003e; tcp_input: Listen socket: Socket allocation failed due to \nlimits or memory shortage, sending RST\nkernel: TCP: [192.168.100.136]:48359 to [192.168.100.144]:8181 tcpflags \n0x4\u003cRST\u003e; syncache_chkrst: Spurious RST without matching syncache entry \n(possibly syncookie only), segment ignored\n\n  Adding Jack F. Vogel (ixgbe driver maintainer), and Marc De La \nGueronniere (author of our work in progress patch for this issue).\n\n--\nJulien"
+}

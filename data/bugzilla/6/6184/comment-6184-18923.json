@@ -1,0 +1,8 @@
+{
+ "id": 18923,
+ "bug_id": 6184,
+ "attachment_id": 0,
+ "creation_time": "1999-09-09T10:42:26Z",
+ "creator": "jkoshy@FreeBSD.org",
+ "text": "\u003e There's a reason why I didn't commit that patch - I don't remember the\n\u003e details, but I vaguely recall someone convincing me that returning an\n\u003e error was not necessarily the right thing. It's been so long I'd have\n\u003e to search the archives to find out for sure.\n\nAs it stands, the patch is not correct because we need to be able to lseek\nto half-way of a 64 bit address range after opening /dev/[k]mem. \nPOSIX allows negative file offsets for special devices. \n{ISO/IEC 9945-1:1996 Rationale [B.6.5.3]}.\n\nOpenBSD solves this problem by allowing negative file offsets if the\nfile descriptor refers to a character device. NetBSD has a VOP_SEEK()\noperation and defers checking of the validity of the offset to its\nlower layers.  IMO, the NetBSD way is correct because EINVAL is supposed to\nbe returned if an 'invalid offset' results from the attempted lseek(), and\ndifferent filesystems can have different 'invalid offsets'.\n\nFor now I'm testing a simple version which checks for character \ndevices and allows negative offsets.\n\nRegards,\nKoshy"
+}

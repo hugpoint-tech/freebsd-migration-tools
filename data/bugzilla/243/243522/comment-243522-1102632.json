@@ -1,0 +1,8 @@
+{
+ "id": 1102632,
+ "bug_id": 243522,
+ "attachment_id": 214510,
+ "creation_time": "2020-05-15T03:29:17Z",
+ "creator": "leres@freebsd.org",
+ "text": "Created attachment 214510\npatch\n\nMy cybersecurity guys complained about this issue; here's my fix. The symptom is:\n\n    tcpslice: problems finding end packet of file ...\n\nThis is because pcap-int.h is not found while building. This comment from search.c explains the complication:\n\n    /* If we're building without pcap's internal headers, we have to just\n     * assume that the public pcap_pkthdr is the same as is written to\n     * the file.  This can cause problems on systems with 64-bit longs;\n     * the symptom is that tcpslice can't find any packets to read.\n     * The solution is to build with the pcap-int.h from the installed\n     * version of libpcap.\n     */\n\nSo adding -I${SRC_BASE}/contrib/libpcap to CPPFLAGS allows usage of pcap-int.h. But a patch to search.c is also needed due to the unfortunately ordering of includes (libpcap has some portability that pcap-int.h invokes that doesn't work if its invoked before string.h is included).\n\nHere's the upstream pull request: https://github.com/the-tcpdump-group/tcpslice/pull/6\n\nHappy to commit with maintainer approval."
+}

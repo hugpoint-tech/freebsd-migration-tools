@@ -1,0 +1,8 @@
+{
+ "id": 601418,
+ "bug_id": 155214,
+ "attachment_id": 0,
+ "creation_time": "2011-03-02T22:10:10Z",
+ "creator": "freebsd@damnhippie.dyndns.org",
+ "text": "With the latest generation of large-capacity SD cards, write speeds as low as\n20 kbytes/sec are seen.  These modern cards have erase-block sizes as large as \n8192K (compared to 32K typical on previous generations).  The at91_mci driver \ndoes only single-sector IO; apparently this requires the SD card to internally \nperform an expensive read-erase-modify-write cycle for each 512 byte block \nwritten to the card.\n\nIt should be noted that even with older SD cards that have smaller erase-block\nsizes, write throughput to the card rarely exceeds about 350 kbytes/sec; still\nvery slow for modern hardware.\n\nWith the patch provided, write throughput improves to approximately \n1500 kbytes/sec.  Read speeds also improve (was 640, now 2400 kbytes/sec).\n\nFix: The following patch adds support for multi-block IO to the at91_mci driver.\n\nThe patch is to -current even though the problem was discovered in 8.2-RC3.\nThe patched driver will also work in 8.2, but requires a few other items in\nthe arm/at91 directory to be back-ported as well (to support references to\nthings such as at91_master_clock and at91_is_rm9200)).\nHow-To-Repeat: The slow IO can be demonstrated using dd to write directly to the device\n(bypassing buffering and caching at higher layers):\n\ndvb# dd if=/dev/zero of=/dev/mmcsd0s2a bs=64k count=100\n100+0 records in\n100+0 records out\n6553600 bytes transferred in 266.252838 secs (24614 bytes/sec)\n\ndvb# dd if=/dev/zero of=/dev/mmcsd0s2a bs=6400k count=1\n1+0 records in\n1+0 records out\n6553600 bytes transferred in 265.004883 secs (24730 bytes/sec)"
+}

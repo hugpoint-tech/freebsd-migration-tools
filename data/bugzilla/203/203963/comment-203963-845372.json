@@ -1,0 +1,8 @@
+{
+ "id": 845372,
+ "bug_id": 203963,
+ "attachment_id": 0,
+ "creation_time": "2015-10-22T17:00:38Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "/sbin/savecore checks the freespace on the dump directory before saving a core, but it's file_size estimate is so wildly conservative that it's basically useless IMHO. The estimate does not consider the effects of sparseness (~ 3.5x space reduction), ZFS compression (~ 32x space reduction), or gzip compression (~ 68x space reduction).\n\nI disabled free space checks and submitted differential revision D2587.  However, I then learned that Isilon is planning to merge support for compressing core files directly on the dump device.  Once that change is in place, savecore's free space check will once again be useful.  The new behavior should be like this:\n\nIf core dump is compressed\n   If /var/crash has sufficient space\n       Write compressed core file\nelse\n    if user specified \"-z\"\n        Try to write compressed core file\n    else\n        Try to write sparse core file\nIf the write succeeded\n    Clear the core from the dump device\nelse\n    Delete the partial core file\n    Log an error message\n\nThis task is blocked by D2587 and D3057.  Neither review has an accompanying PR."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1053259,
+ "bug_id": 238327,
+ "attachment_id": 0,
+ "creation_time": "2019-06-04T21:06:22Z",
+ "creator": "eugen@freebsd.org",
+ "text": "If one builds and uses net/fping version 4.2 with option IPV6 disabled, the command fping -4 always fails with wrong error message:\n\nfping: can't specify both -4 and -6\n\nThis makes it impossible using fping probes with SmokePing as it runs fping with -4 option.\n\nIf src/fping.c is compiled without IPV6 defined, its global variable \"hints_ai_family\" has initial value AF_INET but following code assumes it should be AF_UNSPEC before processing options.\n\nEither port options IPV6 should be removed, or a patch added fixing the problem:\n\n--- fping.c.orig        2019-02-20 03:54:45.000000000 +0700\n+++ fping.c     2019-06-05 04:05:50.930412000 +0700\n@@ -427,7 +427,7 @@\n     while ((c = optparse_long(\u0026optparse_state, longopts, NULL)) != EOF) {\n         switch (c) {\n         case '4':\n-            if (hints_ai_family != AF_UNSPEC) {\n+            if (hints_ai_family == AF_INET6) {\n                 fprintf(stderr, \"%s: can't specify both -4 and -6\\n\", prog);\n                 exit(1);\n             }"
+}

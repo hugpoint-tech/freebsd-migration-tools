@@ -1,0 +1,8 @@
+{
+ "id": 929986,
+ "bug_id": 218568,
+ "attachment_id": 0,
+ "creation_time": "2017-04-11T17:29:47Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "When opening a vdev whose path is unknown, vdev_geom must find a geom provider with a label whose guids match te desired vdev.  However, due to partitioning, it is possible that two non-synonomous providers will share two labels.  For example, if the first partition starts at the beginning of the drive, then ada0 and ada0p1 will share the first label.  More troubling, if the last partition runs to the end of the drive, then ada0p3 and ada0 will share the last label.  If vdev_geom opens ada0 when it should've opened ada0p3, then the pool won't be readable.  If it opens ada0 when it should've opened ada0p1, then it will corrupt some other partition when it writes the 3rd and 4th labels.\n\nThe easiest way to observe this problem is to install ZFS to a pair of mirrored drives, using the default GPT partitioning scheme.  Power off, swap the drives, and power back on.  Depending on the order that geom probes its providers, ZFS may or may not attach to the correct partitions.  If it doesn't, then importing the pool will fail somewhere up stack, and the system will be left at the mountroot\u003e prompt."
+}

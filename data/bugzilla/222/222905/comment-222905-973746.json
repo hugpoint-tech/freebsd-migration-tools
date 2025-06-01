@@ -1,0 +1,8 @@
+{
+ "id": 973746,
+ "bug_id": 222905,
+ "attachment_id": 189969,
+ "creation_time": "2018-01-22T14:56:43Z",
+ "creator": "val@packett.cool",
+ "text": "Created attachment 189969\nlibinput-1.9.901.patch\n\nUpdate to 1.9.901 + add a new 'reopen' patch…\n\nSo, here's the story about that patch. I'm working on Wayland compositor stuff (https://github.com/myfreeweb/weston-rs + https://github.com/myfreeweb/loginw). I've been trying to figure out why in the heck does *only my compositor* (not Weston proper) reject input devices *only on my laptop* (not on my desktop)…\n\n/dev/input devices were readable and writable for group video. My setuid wrapper (loginw) was only setting the user when dropping privileges for the compositor (i.e. wasn't setting groups). I was testing unprivileged access, but I thought I was still testing privileged access.\n\nAnyway, it is very desirable to have the compositor unprivileged. The setuid wrapper passes it file descriptors to input devices, it does not need to open them directly.\n\nlibudev-devd does open them — to enumerate devices. When it is unprivileged, it does not set the right properties, which leads to rejection (the \"not tagged as supported input device\" message).\n\nlibinput opens the device via the compositor-provided mechanism (fd passing) only to compare to the device it got from libudev(-devd) enumeration. They have the same path, but the libudev one lacks properties. The correct one gets thrown away.\n\nThis patch uses the correct one instead of throwing it away :) which allows compositors to be unprivileged."
+}

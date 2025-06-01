@@ -1,0 +1,8 @@
+{
+ "id": 1097703,
+ "bug_id": 245688,
+ "attachment_id": 0,
+ "creation_time": "2020-04-18T00:32:41Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "The 'release' call seems to happens from fuse VOP_INACTIVE().  If this is true, there are two things broken:\n1. for nullfs caching nullfs cached vnode keeps a use reference on the lower vnode,\nwhich prevents inactivation of lowervp.  This can be easily worked around by eg.\nadding a flag to fuse mount that instructs nullfs to not enable caching over it.\n\nBut there s a second issue, which is potentially more serious and which,\nif resolved, make the first issue moot.\n\n2. VFS does not guarantee that VOP_INACTIVE() is called timely.  It could be\nmissed due to some races which makes locking incompatible with the VOP_INACTIVE()\ncall requirements, and then the call is not make until the next time usecount\ngoes to zero or the vnode is reclaimed.  So if 'release' must be called on time,\nVOP_INACTIVE() does not guarantee that it happens, even without nullfs.\n\nWRT VOP_CLOSE(), it is automatically bypassed to the lower vp, no special code\nis needed for this to happen."
+}

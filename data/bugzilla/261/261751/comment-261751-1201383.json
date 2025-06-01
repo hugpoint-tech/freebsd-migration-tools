@@ -1,0 +1,8 @@
+{
+ "id": 1201383,
+ "bug_id": 261751,
+ "attachment_id": 0,
+ "creation_time": "2022-03-02T13:40:57Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Thank you for the photo, I have an idea what's happening here and why I don't see it. I believe this issue is reproducible with vt_vga only, not with an EFI framebuffer.\n\nIn sys/dev/vt/hw/vga/vt_vga.c:vga_bitblt_one_text_pixels_block() there is an optimized special case for a \"pixel block\" having only two colours, and a more general case for n colours. In the case in your photo we are using the general case.\n\nI suspect the general case has the R and B channels swapped.  If you can easily try a patch we could confirm this by disabling the optimization. For example,\n\ndiff --git a/sys/dev/vt/hw/vga/vt_vga.c b/sys/dev/vt/hw/vga/vt_vga.c\nindex 563867399e53..c8041f1dac8b 100644\n--- a/sys/dev/vt/hw/vga/vt_vga.c\n+++ b/sys/dev/vt/hw/vga/vt_vga.c\n@@ -770,7 +770,7 @@ vga_bitblt_one_text_pixels_block(struct vt_device *vd,\n         * The pixels block is completed, we can now draw it on the\n         * screen.\n         */\n-       if (used_colors == 2)\n+       if (0 \u0026\u0026 used_colors == 2)\n                vga_bitblt_pixels_block_2colors(vd, pattern_2colors, fg, bg,\n                    x, y, vf-\u003evf_height);\n        else\n\nIf I am correct this would result in a display that is consistently incorrect -- the entire dialog background would be red, not just the location of the mouse cursor."
+}

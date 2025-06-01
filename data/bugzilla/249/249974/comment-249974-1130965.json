@@ -1,0 +1,8 @@
+{
+ "id": 1130965,
+ "bug_id": 249974,
+ "attachment_id": 0,
+ "creation_time": "2020-11-09T18:12:13Z",
+ "creator": "jcfyecrayz@liamekaens.com",
+ "text": "(In reply to Mateusz Piotrowski from comment #7)\n\nThanks, Mateusz.\n\nI have come to understand that powerpc64/12.x does not have lld, so it may be appropriate to change the -fuse-ld=lld conditional logic based on OSVERSION that was added:\n\n.if ${OPSYS} == FreeBSD \u0026\u0026 ${OSVERSION} \u003c 1200000\nLDFLAGS+=      -fuse-ld=lld\n.endif\n\n(see also discussion at bug 249990 comment 5)\n\nI don't have a powerpc build environment to test with yet, but if it turns out that powerpc64/11.x (for example) fails to build, the following may be necessary.  This is a bit harder to find when it comes time to remove support for 11.x, but I don't know of a way that is better at this time.  It does seem like meson abuses some things and triggers the link problems seen in this port and some others - most (all?) of the situations where this linking problem is showing up are meson-based.  So probably the best universal fix is to fix meson (e.g., don't put anything but lib specifications between --start-group and --end-group) but I do not have a meson patch right now.\n\n# This can be removed after OSVERSION \u003c 1200000 is no longer supported\n.if exists(/usr/bin/ld.lld) \u0026\u0026 ${/usr/bin/ld:L:tA} != /usr/bin/ld.lld\nLDFLAGS+=      -fuse-ld=lld\n.endif\n\nI know this is closed, but I am adding this comment in case powerpc builds fail."
+}

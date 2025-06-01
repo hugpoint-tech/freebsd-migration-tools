@@ -1,0 +1,8 @@
+{
+ "id": 1256247,
+ "bug_id": 270975,
+ "attachment_id": 0,
+ "creation_time": "2023-04-21T08:53:31Z",
+ "creator": "nkoch@demig.de",
+ "text": "We are running an embedded system with processes partly at rtprio doing io and often syncing. We have there a 12.1-p13 kernel with some modifications, including special device drivers, e.g. an sram based disk device.\nAs we rarely found the system to be completely unresponsive (no login, ssh possible) I added a utility that runs at very high rtprio and monitors the other processes. If it sees 100% cpu it throttles those processes using SIGSTOP/SIGCONT. That helped me to see that there was a thread in unkillable sleep in syscall sync using up most of the cpu, like it was busy waiting for something.\n\nAfter that I did some testing with unmodified kernels (withoud my device drivers) and simple test scripts that do write+sync+random sleep at normal\nand realtime priority.\n\nSo far I've tested FreeBSD12.1-release, FreeBSD12.1-p13, FreeBSD12.4-release.\nI've managed to have all of them bein unresponsive after one or more hours.\n\nFor FreeBSD12.4, I've had one console running a shell with rtprio. After \"killall sync \u0026\" and\n\"killall sh \u0026 \" the system was hanging. I could only switch vtys but could not login.\nIn an other test I've got the hang by calling \"procstat kstack 1\" in the rtprio shell.\n\nOne detail: kern.dirdelay, kern.metadelay and kern.filedelay are all set to 1."
+}

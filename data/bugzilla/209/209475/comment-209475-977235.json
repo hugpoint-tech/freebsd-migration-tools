@@ -1,0 +1,8 @@
+{
+ "id": 977235,
+ "bug_id": 209475,
+ "attachment_id": 190574,
+ "creation_time": "2018-02-13T11:54:04Z",
+ "creator": "fnoyanisi@yahoo.com",
+ "text": "Created attachment 190574\npatch with mallocarray(9), printf(9) and a single fallback block\n\nAttached is the latest patch with a single fallback block which is executed depending on the return values from mallcoarray(... | M_NOWAIT) calls. The code sets the value of respective variable that is passed to mallocarray(9) rather than directly using PH_HASHSIZ in the mallocarray(9) call.\n\nI tried the patch on a 512MB VM running FreeBSD-12.0CURRENT and verified that PF initialisation went okay. A log message indicating the memory allocation issue is present in /var/log/messages (and in the console).\n\nroot@test-vm:~ # uname -a\n\nFreeBSD test-vm 12.0-CURRENT FreeBSD 12.0-CURRENT #13: Wed Feb 14 13:28:52 NZDT 2018     root@test-vm:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\nroot@test-vm:~ # cat /boot/loader.conf\nnet.pf.states_hashsize=\"2147483648\"\nroot@test-vm:~ # sysctl hw.realmem\nhw.realmem: 536805376\nroot@test-vm:~ # kldstat\nId Refs Address            Size     Name\n 1    1 0xffffffff80200000 20bf2d0  kernel\nroot@test-vm:~ # service pf onestart\nEnabling pf.\nroot@test-vm:~ # kldstat\nId Refs Address            Size     Name\n 1    3 0xffffffff80200000 20bf2d0  kernel\n 2    1 0xffffffff82419000 33590    pf.ko\nroot@test-vm:~ # grep pf_initialize /var/log/messages\nFeb 14 13:40:20 test-vm kernel: pf_initialize : Not enough memory for 85899345920 bytes."
+}

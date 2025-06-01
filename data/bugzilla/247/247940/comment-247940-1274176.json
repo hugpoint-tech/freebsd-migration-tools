@@ -1,0 +1,8 @@
+{
+ "id": 1274176,
+ "bug_id": 247940,
+ "attachment_id": 0,
+ "creation_time": "2023-09-11T17:06:30Z",
+ "creator": "jrm@freebsd.org",
+ "text": "(In reply to Michael Osipov from comment #7)\nBased on your latest comment, there may be a few improvements we can\nmake.\n\n- Update the default options for some ports, so hopefully you have fewer\n  packages to build yourself.\n\n- Ensure that more ports use standardized names for the GSSAPI/Kerberos\n  options.  Of the ports you listed, most have the option names\n  GSSAPI_BASE GSSAPI_HEIMDAL GSSAPI_MIT, so we're close.  A few also\n  have GSSAPI_NONE.\n\n  This is good because it means you can put something like what's below\n  in make.conf to configure most ports that have a GSSAPI knob and avoid\n  the port dialogues.\n\n  OPTIONS_SET_FORCE+=GSSAPI_MIT\n  OPTIONS_UNSET_FORCE+=GSSAPI_BASE GSSAPI_HEIMDAL GSSAPI_NONE\n\n  If there is a specific port, like ftp/curl, that you want configured\n  differently, you also add this to make.conf.\n\n  ftp_curl_SET_FORCE+=GSSAPI_HEIMDAL\n  ftp_curl_UNSET_FORCE+=GSSAPI_BASE GSSAPI_MIT GSSAPI_NONE\n\n  I tested by putting these lines in\n  /usr/local/etc/poudriere.d/15amd64-make.conf and built the ports\n  without answering any dialogues.  This is the result.\n\n  % pkg info dns/bind918 | grep GSSAPI\n        GSSAPI_BASE    : off\n        GSSAPI_HEIMDAL : off\n        GSSAPI_MIT     : on\n        GSSAPI_NONE    : off\n\n  # pkg info curl | grep GSSAPI\n        GSSAPI_BASE    : off\n        GSSAPI_HEIMDAL : on\n        GSSAPI_MIT     : off\n        GSSAPI_NONE    : off\n\nIs this helpful?\n\nJoe"
+}

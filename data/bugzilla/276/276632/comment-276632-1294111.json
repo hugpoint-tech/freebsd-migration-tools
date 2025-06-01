@@ -1,0 +1,8 @@
+{
+ "id": 1294111,
+ "bug_id": 276632,
+ "attachment_id": 0,
+ "creation_time": "2024-01-26T02:22:11Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "remove_all_impl() will attempt to remove a file specified by its path, recursing if it encounters a directory.\n\nIt opens the file with O_CLOEXEC | O_RDONLY | O_DIRECTORY | O_NOFOLLOW, which for a dangling symlink returns EMLINK on FreeBSD, contradicting POSIX (which says it should return ELOOP in this scenario).  Bug 214633 notes this problem, but fixing it would break compatibility.\n\nremove_all_impl() however only handles ENOTDIR and ELOOP, so it incorrectly returns an error in this situation on FreeBSD.  We should extend it to check for EMLINK as well."
+}

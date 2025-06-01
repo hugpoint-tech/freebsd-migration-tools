@@ -1,0 +1,8 @@
+{
+ "id": 1235800,
+ "bug_id": 265857,
+ "attachment_id": 0,
+ "creation_time": "2022-11-16T15:42:10Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to benoitc from comment #1)\n\u003e looking at the source code:\n\n\u003e https://cgit.freebsd.org/src/tree/sys/dev/qlnx/qlnxe/qlnx_os.c#n2675\n\u003e it seems that this snippet initialising the ha record :\n\n\u003e ```\n\u003e ifp-\u003eif_flags |= IFF_UP;\n\u003e \t\t\tif (!(ifp-\u003eif_drv_flags \u0026 IFF_DRV_RUNNING)) {\n\u003e \t\t\t\tQLNX_LOCK(ha);\n\u003e \t\t\t\tqlnx_init_locked(ha);\n\u003e \t\t\t\tQLNX_UNLOCK(ha);\n\u003e \t\t\t}\n\u003e ```\n\n\u003e should also be added to \n\u003e https://cgit.freebsd.org/src/tree/sys/dev/qlnx/qlnxe/qlnx_os.c#n2687\n\n\u003e otherwise I am not sure when this is correctly initialised using an IPv6 address.\n\u003e Thoughts?\n\nLine https://cgit.freebsd.org/src/tree/sys/dev/qlnx/qlnxe/qlnx_os.c#n2687 calls ether_ioctl() which in turn calls `ifp-\u003eif_init(ifp-\u003eif_softc)`.\n\nFor qlnx driver `ifp-\u003eif_init` is `qlnx_init()` which is a wrapper of `qlnx_init_locked()`.\n\nSo when adding IPv6 addresses to the interface, it will be initialised (the same with IPv4)."
+}

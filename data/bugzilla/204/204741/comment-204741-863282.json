@@ -1,0 +1,8 @@
+{
+ "id": 863282,
+ "bug_id": 204741,
+ "attachment_id": 0,
+ "creation_time": "2016-02-04T08:30:46Z",
+ "creator": "ports@grosbein.net",
+ "text": "(In reply to Marcelo Araujo from comment #7)\n\nI've just checked the patcj https://reviews.freebsd.org/file/data/gy33khn4sdehavsph7oj/PHID-FILE-baw4djr3pgfqkftp7y5a/D5176.diff\n\nIt does NOT solve the problem. For syslogd_oomprotect=\"YES\" it just starts it with \"protect syslogd\" and, as I've already noted, syslogd forks to become a deamon and this ceases protection. That can be easily verified with commands:\n\n# killall syslogd\n# protect syslogd\n# ps -axwwo pid,flags,flags2,command | grep syslogd\n10614 10000000 00000000 /usr/sbin/syslogd\n\nSecond column shows \"flags\" attributes for a process and rightmost sixth digit is zero that means that P_PROTECTED flag is not set and syslogd is not protected, so the problem is not solved.\n\nsyslogd_oomprotect=\"ALL\" starts it with \"protect -i syslogd\":\n\n# killall syslogd\n# protect syslogd\n# ps -axwwo pid,flags,flags2,command | grep syslogd\n10635 10100000 00000001 /usr/sbin/syslogd -ssvv\n\nThis time we see P_PROTECTED is really set but next column shows \"flags2\" attributes with a flag P2_INHERIT_PROTECTED being set also. That is wrong too, as syslogd may start arbitrary subprocesses that should not be protected.\n\nWith my original patch:\n\n# killall syslogd\n# syslogd -O\n# ps -axwwo pid,flags,flags2,command | grep syslogd\n10678 10100000 00000000 /usr/sbin/syslogd -O\n\nNow the problem is solved correctly: P_PROTECTED is set and P2_INHERIT_PROTECTED is not. That's because my patch protects syslogd after it forked. Currently that cannot be accomplished by means of rc.subr only, without daemon source code modifications."
+}

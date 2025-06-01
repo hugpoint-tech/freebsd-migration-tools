@@ -1,0 +1,8 @@
+{
+ "id": 850313,
+ "bug_id": 204512,
+ "attachment_id": 0,
+ "creation_time": "2015-11-22T10:41:23Z",
+ "creator": "peterj@FreeBSD.org",
+ "text": "I've done some more poking around and compared the proposed port with bazel-0.1.1-installer-linux-x86_64.sh.  The latter installs a smaller bazel but separately installs a large collection of files in /usr/local/lib/bazel/base_workspace/ and appends that path to --package_path.  I suspect this is the correct approach.\n\nI have verified that adding ${WRKSRC} to --package_path make bazel work.\n\nHaving looker closer at the Makefile, I notice a couple of issues that should be looked into:\n- There's a test suite in bazel and it would be useful if that was hooked into \"make test\"\n- ${REINPLACE_CMD} includes the '-i' option.  Also '-i' takes an option so the Makefile winds up using '-e' as a suffix for backup files.\n- do-build deletes files in ${HOME}.  This is highly undesirable - the Makefile should override ${HOME} so that the port does not alter any files outside ${WRKDIR}\n- There are many occurrences of /bin/bash and md5sum that are not corrected.  This definitely causes test failures but it's not clear whether it would impact normal bazel operation."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 30429,
+ "bug_id": 10077,
+ "attachment_id": 0,
+ "creation_time": "1999-08-18T03:33:57Z",
+ "creator": "Tor.Egge@fast.no",
+ "text": "The ccd driver assumes that the request size is constant in order\nfor bp-\u003eb_resid to become 0 when all requests havve been completed.\nThis is not always true, since dscheck might truncate one or more\nof the requests fired off by ccdstart.\n\nccd must either perform some bounds checks or handle truncation\nof requests by the underlying devices.\n\nIndex: sys/dev/ccd/ccd.c\n===================================================================\nRCS file: /home/ncvs/src/sys/dev/ccd/ccd.c,v\nretrieving revision 1.52\ndiff -u -r1.52 ccd.c\n--- ccd.c\t1999/08/14 11:40:34\t1.52\n+++ ccd.c\t1999/08/18 02:29:34\n@@ -739,9 +739,22 @@\n \t * error, the bounds check will flag that for us.\n \t */\n \twlabel = cs-\u003esc_flags \u0026 (CCDF_WLABEL|CCDF_LABELLING);\n-\tif (ccdpart(bp-\u003eb_dev) != RAW_PART)\n+\tif (ccdpart(bp-\u003eb_dev) != RAW_PART) {\n \t\tif (bounds_check_with_label(bp, lp, wlabel) \u003c= 0)\n \t\t\tgoto done;\n+\t} else if (bp-\u003eb_blkno \u003c 0 ||\n+\t\t   bp-\u003eb_blkno + (bp-\u003eb_bcount \u003e\u003e DEV_BSHIFT) \u003e cs-\u003esc_size) {\n+\t\tif (bp-\u003eb_blkno == cs-\u003esc_size) {\n+\t\t\tbp-\u003eb_resid = bp-\u003eb_bcount;\n+\t\t\tgoto done;\n+\t\t}\n+\t\tif (bp-\u003eb_blkno \u003c 0 || bp-\u003eb_blkno \u003e cs-\u003esc_size) {\n+\t\t\tbp-\u003eb_error = EINVAL;\n+\t\t\tbp-\u003eb_flags |= B_ERROR;\n+\t\t\tgoto done;\n+\t\t}\n+\t\tbp-\u003eb_bcount = (cs-\u003esc_size - bp-\u003eb_blkno) \u003c\u003c DEV_BSHIFT;\n+\t}\n \n \tbp-\u003eb_resid = bp-\u003eb_bcount;\n \n\n\n- Tor Egge"
+}

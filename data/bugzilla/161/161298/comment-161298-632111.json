@@ -1,0 +1,8 @@
+{
+ "id": 632111,
+ "bug_id": 161298,
+ "attachment_id": 0,
+ "creation_time": "2011-10-05T11:30:06Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "\nAfter upgrading to 9.0-BETA3 and upgrading rxvt-unicode to last\nversion the urxvtd program started segfaulting when trying to open\na terminal.\n\nAfter some debugging I nailed it down to a 0 pointer being passed\nto strncpy() in libptytty/src/logging.C.\n\nA new patch in the last update to the port happens to call fill_utmpx()\nin that file with an argument(a pointer) set to 0 for certain\nconditions(on 9.0, for example). There is no check in the function\nfor NULL or 0 pointers though, so strncpy() gets passed a 0 pointer,\nresulting in a segmentation fault.\n\nMy fix simply adds a conditional check and skips the strncpy() when\nthe id argument is set to zero.\n\nHow-To-Repeat: \nOn a recent 9.0 system:\n\nInstall x11/rxvt-unicode\n\nLaunch \"urxvtd -o\" in a terminal window.(due to the bug I've been\nusing xterm)\n\nFrom another terminal window try opening a rxvt-unicode terminal\nby using the daemon, with \"urxvtc\".\n\nthe terminal should not open and the daemon exit on signal 11.\n\nIf gdb is used on urxvtd the stack will show it segfaults in strncpy()\ncalled from fill_utmpx()."
+}

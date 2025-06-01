@@ -1,0 +1,8 @@
+{
+ "id": 18047,
+ "bug_id": 5890,
+ "attachment_id": 0,
+ "creation_time": "1998-03-01T18:29:42Z",
+ "creator": "remy@synx.com",
+ "text": "Client is a Solaris 2.5.1 client machine running NFS V3. Server is the FreeBSD.\nThe exported directory is a plain one (no cross-mount).\nWhen the client do a rm -r of the directory, it gets a 'directory not empty' error.\nI tcpdumped the flow and found the following operations :\nClient : Stat directory\nServer : stat is .... COOKIE=XXX\nClient : (stat files in directory and remove files)\nServer : (OK a each operation)\nClient : rmdir COOKIE=XXX\nServer : Error : Invalid COOKIE (NFSERR_BAD_COOKIE)\n\nFiles in directory are not removed and client get the 'dir not empty' error.\nIt seems that the problem doesn't appear on all directories but for ones\nwith many files.\n\nPS: I'm not able to say if it's a Client or Server error. It may comes from the\nway the cookie is generated (directory has changed) or a Solaris misuses of a cookie value.\n\nFix: \n\nBy commented out the COOKIE test (sys/nfs/nfs_serv.c, v 1.52 1997/10/28 15:59:05 bde Exp)\nline 2578 and 2833 and all went OK.\n(I guessed the VOP_GETATTR was sufficient for consistency. (guessed only)).\nHow-To-Repeat: I can reproduce the problem and trace it on a specific directory. Don't know the\nexact conditions. I can investigate if it may help."
+}

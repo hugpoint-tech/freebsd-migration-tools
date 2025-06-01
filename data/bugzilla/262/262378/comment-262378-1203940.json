@@ -1,0 +1,8 @@
+{
+ "id": 1203940,
+ "bug_id": 262378,
+ "attachment_id": 0,
+ "creation_time": "2022-03-23T18:05:08Z",
+ "creator": "damjan.jov@gmail.com",
+ "text": "The large mapping exists even at the start of mmap_init() in that file, and at the start of its caller, virtual_init().\n\nStarting at the beginning, and patching main() in loader/main.c to also dump /proc/curproc/map, shows that the large mapping exists even at the start of main()  :-(.\n\nBut why is that absent in my test binary?\n\nActually, my test binary also has that large mapping:\n\n0x80063e000 0x82061e000 0 0 0 --- 0 0 0x0 NCOW NNC none - NCH -1\n\nbut it is situated much higher up in memory: starting at addresses around 0x80063e000 (beyond the 4th GiB), instead of around 0x62bd6000 for Wine, which frees up 0x7ffe0000 - 0x7ffe1000 which Wine needs.\n\nSetting kern.elf64.aslr.stack=0 seems to make that large mapping go away, so it looks to be a FreeBSD 14-CURRENT ASLR thing after all.\n\nDoes anybody know why we allocate this 0x1ffe0000 byte long mapping when kern.elf64.aslr.stack=1, and what determines its placement in memory? Who does that, libc, rtld-elf, the kernel?"
+}

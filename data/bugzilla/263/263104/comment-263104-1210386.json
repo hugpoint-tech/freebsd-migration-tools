@@ -1,0 +1,8 @@
+{
+ "id": 1210386,
+ "bug_id": 263104,
+ "attachment_id": 0,
+ "creation_time": "2022-05-08T14:24:31Z",
+ "creator": "pete@nomadlogic.org",
+ "text": "I think I've figured out why it is failing to build, one of the modules requires HTTP_AUTH_KRB5 to be set.  I figured this out by noticing this error when building:\n\ncc -o objs/ngx_http_auth_spnego_module.so  objs/addon/spnego-http-auth-nginx-module-c626163/ngx_http_auth_spnego_module.o  objs/ngx_http_auth_spnego_module_modules.o  -L/usr/local/lib -L /usr/\nlocal/lib -L  -shared\nld: error: undefined symbol: main\n\u003e\u003e\u003e referenced by crt1_c.c:73 (/usr/src/lib/csu/amd64/crt1_c.c:73)\n\u003e\u003e\u003e               /usr/lib/crt1.o:(_start)\n\nThis made me realize that www/nginx/files/extra-patch-spnego-http-auth-nginx-module-config was not being applied when the port was being built causing the ld error.  but after enabling HTTP_AUTH_KRB5 and rebuilding I am able to build a package, and the spnego module is able to link:\n\ncc -o objs/ngx_http_auth_spnego_module.so  objs/addon/spnego-http-auth-nginx-module-c626163/ngx_http_auth_spnego_module.o  objs/ngx_http_auth_spnego_module_modules.o  -L/usr/local/lib -L /usr/\nlocal/lib -L/usr/local/lib -lkrb5 -lgssapi_krb5  -shared\n\nI am not %100 sure how to fix this for the www/nginx-full port though, my reading of the Makefile makes it seem like it is enabled by default because it is listed in OPTIONS_DEFAULT."
+}

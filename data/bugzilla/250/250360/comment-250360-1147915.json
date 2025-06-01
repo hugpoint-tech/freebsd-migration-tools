@@ -1,0 +1,8 @@
+{
+ "id": 1147915,
+ "bug_id": 250360,
+ "attachment_id": 0,
+ "creation_time": "2021-02-20T21:26:11Z",
+ "creator": "tuexen@freebsd.org",
+ "text": "According to RFC 793, page 75, the segment text is ignored in the CLOSE-WAIT state.\nNo state change should happen, the missing FIN bit is ignored.\n\nThe following packetdrill script shows the behaviour, which is in tune with RFC 793:\n\n 0.000 socket(..., SOCK_STREAM, IPPROTO_TCP) = 3\n+0.000 fcntl(3, F_GETFL) = 0x2 (flags O_RDWR)\n+0.000 fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK) = 0\n+0.000 connect(3, ..., ...) = -1 EINPROGRESS (Operation now in progress)\n+0.000 \u003e S    0:0(0)               win 65535 \u003cmss 1460,nop,wscale 6,sackOK,TS val 100 ecr 0\u003e\n+0.050 \u003c S.   0:0(0)       ack   1 win 65535 \u003cmss 1460,sackOK,eol,eol\u003e\n+0.000 \u003e  .   1:1(0)       ack   1 win 65535\n+0.050 \u003c F.   1:513(512)   ack   1 win 65535\n+0.000 \u003e  .   1:1(0)       ack 514 win 65188\n+0.000 recv(3, ..., 256, 0) = 256\n+0.050 \u003c  .   1:1025(1024) ack   1 win 65535\n+0.000 \u003e  .   1:1(0)       ack 514 win 65444 \u003cnop,nop,sack 1:514\u003e\n+0.000 recv(3, ..., 1024, 0) = 256\n+0.000 send(3, ..., 512, 0) = 512\n+0.000 \u003e P.   1:513(512)   ack 514 win 65535\n+0.000 \u003c  . 514:514(0)     ack 513 win 65535\n+0.000 close(3) = 0\n+0.000 \u003e F. 513:513(0)     ack 514 win 65535\n+0.000 \u003c  . 514:514(0)     ack 514 win 65535"
+}

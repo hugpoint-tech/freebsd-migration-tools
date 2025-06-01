@@ -1,0 +1,8 @@
+{
+ "id": 1051321,
+ "bug_id": 238023,
+ "attachment_id": 204511,
+ "creation_time": "2019-05-21T13:47:50Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "Created attachment 204511\nProposed patch\n\nThere is an integer overflow vulnearability in function scsisanitize of sbin/camcontrol/camcontrol.c\n\n                                if ((scsi_get_sks(sense, ccb-\u003ecsio.sense_len -\n                                     ccb-\u003ecsio.sense_resid, sks) == 0)\n                                 \u0026\u0026 (quiet == 0)) {\n                                        int val;\n                                        u_int64_t percentage;\n\n                                        val = scsi_2btoul(\u0026sks[1]);\n                                        percentage = 10000 * val;\n\n                                        fprintf(stdout,\n                                                \"\\rSanitizing:  %ju.%02u %% \"\n                                                \"(%d/%d) done\",\n                                                (uintmax_t)(percentage /\n                                                (0x10000 * 100)),\n                                                (unsigned)((percentage /\n                                                0x10000) % 100),\n                                                val, 0x10000);\n                                        fflush(stdout);\n\nThe type for percentage is u_int64_t, and the type for val is int.\nTherefore, there would be integer overflow, which is similar to vulnerability that was fixed in https://github.com/freebsd/freebsd/commit/d1f96a5c3d79da16294b41369da6b5e512c7e8cd.\n\nThe attachment is the proposed patch."
+}

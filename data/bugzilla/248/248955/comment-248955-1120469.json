@@ -1,0 +1,8 @@
+{
+ "id": 1120469,
+ "bug_id": 248955,
+ "attachment_id": 0,
+ "creation_time": "2020-09-01T21:08:58Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "I am not sure this is the correct fix.\n\nA lot of drivers also pass it to ieee80211_vap_attach() which then tickles down to ifmedia_init() where it is set to ifm-\u003eifm_change = change_callback;  ifmedia_ioctl() then checks for a != 0 error.\n\nSeems to be a good copy\u0026paste error either way as one or the other case will break.\n\nIt seems in r178354 the first factoring out of things happened, when it could still return ENETRESET which was then after successive changes removed in https://svnweb.freebsd.org/base/head/sys/net80211/ieee80211.c?r1=193339\u0026r2=193340\u0026\n\nwhich is the code as it is today.  As a conclusion I'd say the drivers have not been updated to reflect these changes after r178354; see https://svnweb.freebsd.org/base/head/sys/dev/ath/if_ath.c?r1=178353\u0026r2=178354\u0026\nfor why this still was.\n\nWould you follow the conclusion that these days the drivers could savely check for != 0 and we should rather fix (the ones I found):\n./dev/ath/if_ath.c ./dev/bwi/if_bwi.c ./dev/iwm/if_iwm.c ./dev/iwn/if_iwn.c ./dev/malo/if_malo.c ./dev/mwl/if_mwl.c ./dev/otus/if_otus.c ./dev/usb/wlan/if_run.c ./dev/wtap/if_wtap.c\n\nCc:ing re-assigning back to the list so that other driver maintainers will also see."
+}

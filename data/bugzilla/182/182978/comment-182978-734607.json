@@ -1,0 +1,8 @@
+{
+ "id": 734607,
+ "bug_id": 182978,
+ "attachment_id": 0,
+ "creation_time": "2013-10-15T04:26:41Z",
+ "creator": "julio@meroh.net",
+ "text": "Great, thanks a lot for the quick reply. That patch fixed the boot for me.\n\nOn Mon, Oct 14, 2013 at 3:42 PM, Andreas Tobler \u003candreast@freebsd.org\u003e wrote:\n\u003e Hi,\n\u003e\n\u003e the reason is from this commit r256304.\n\u003e\n\u003e We're working on it.\n\u003e\n\u003e Basically, ata_probe does not longer return 0 and ata_kauai and\n\u003e ata_macio fail now. This is due to the fact that these drivers do not\n\u003e handle properly the BUS_* return codes other than 0.\n\u003e\n\u003e For the time being you can try the below.\n\u003e\n\u003e Gruss,\n\u003e Andreas\n\u003e\n\u003e Index: powerpc/powermac/ata_kauai.c\n\u003e ===================================================================\n\u003e --- powerpc/powermac/ata_kauai.c        (revision 256444)\n\u003e +++ powerpc/powermac/ata_kauai.c        (working copy)\n\u003e @@ -199,7 +199,7 @@\n\u003e         u_int32_t devid;\n\u003e         phandle_t node;\n\u003e         const char *compatstring = NULL;\n\u003e -       int i, found, rid;\n\u003e +       int err, i, found, rid;\n\u003e\n\u003e         found = 0;\n\u003e         devid = pci_get_devid(dev);\n\u003e @@ -252,8 +252,11 @@\n\u003e         /* XXX: ATAPI DMA is unreliable. We should find out why. */\n\u003e         ch-\u003eflags |= ATA_NO_ATAPI_DMA;\n\u003e         ata_generic_hw(dev);\n\u003e +       err = ata_probe(dev);\n\u003e +       if (err \u003e 0)\n\u003e +               return (err);\n\u003e\n\u003e -        return (ata_probe(dev));\n\u003e +        return (0);\n\u003e  }\n\u003e\n\u003e  #if USE_DBDMA_IRQ\n\n\n\n-- \nJulio Merino / @jmmv"
+}

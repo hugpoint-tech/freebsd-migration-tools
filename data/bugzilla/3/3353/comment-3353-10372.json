@@ -1,0 +1,8 @@
+{
+ "id": 10372,
+ "bug_id": 3353,
+ "attachment_id": 0,
+ "creation_time": "1997-04-20T12:11:49Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003etcpdump(1) does not correctly process target ports for monitoring which are \n\u003especified symbolically on the command line.  Given the command line: \n\u003e...\n\u003etcpdump relies on pcap(3) to call getservbyname(), and coincidentally\n\u003einteresting compilation warnings are issued when libpcap is built \n\u003eduring make world:\n\u003e\n\u003e/usr/src/lib/libpcap/../../contrib/libpcap/nametoaddr.c: \n\u003e    In function `pcap_nametoaddr':\n\u003e/usr/src/lib/libpcap/../../contrib/libpcap/nametoaddr.c:89: \n\u003e    warning: statement with no effect\n\nThe bugs are that /usr/src/lib/libpcap/Makefile puts `-Dlint' in CFLAGS,\nand endian.h has broken ifdefs involving lint in -current (was broken\nin rev.1.14).  The Makefile has excessive -Wall flags and -Dlint is a\nwrong fix for them.  The Makefile also has bogus -I flags.  There are\nno sources in ${.CURDIR} except when ${.CURDIR} is the object directory,\nand this case is handled by `-I.'.  The sources are in ${PCAP_DISTDIR},\netc.\n\n\u003ecc -E -c ../../contrib/libpcap/nametoaddr.c yields this \n\u003e(ostensibly correct per endian.h) expansion for line 125:\n\u003e\n\u003e  (( sp-\u003es_port ) = \n\u003e      __extension__ ({ register u_short __X = ( (u_short)( sp-\u003es_port ) ); \n\u003e      __asm (\"xchgb %h1, %b1\"\n\u003e           : \"=q\" (__X) \n\u003e           : \"0\" (__X));\n\u003e       __X; }) ) ;\n\nYou have to compile with the same CFLAGS as the Makefile to see the problem.\nCFLAGS is too long to type for contrib'ed sources :-(.\n\nI will fix endian.h.\n\nBruce"
+}

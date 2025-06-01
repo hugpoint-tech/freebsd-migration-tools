@@ -1,0 +1,8 @@
+{
+ "id": 1047359,
+ "bug_id": 230875,
+ "attachment_id": 0,
+ "creation_time": "2019-04-18T20:57:07Z",
+ "creator": "cem@freebsd.org",
+ "text": "So, lessons learned:\n\n1. We have difficulty providing /boot/entropy in a variety of scenarios, such as:\n   a. CI images\n   b. Embedded systems that do not use loader (MIPS, RISCV, PPC, ARM, ARM64, ...)\n   c. Release VM images and installers\n\n2. There is potential concern about availability of /boot/entropy even in systems where it would normally be provided, such as \"anything bad happens to the root filesystem\" on x86.\n\n3. There is concern about the implied blocking semantic as it relates to deadlocks.\n\n4. Stack cookies initializes itself very early after random initializes (much less is seeded); this is maybe problematic, because they are static for the rest of the kernel runtime.  Perhaps they could be initialized later?  It is unclear.  For now we have worked around it by using static cookies if random isn't seeded.\n\nFor (2) and some subcases of (1), I have a review out to make fast random sources available sooner and use them to become fully seeded early in boot: https://reviews.freebsd.org/D19928\n\nFor (3), I have a review out to add WITNESS warnings when potentially blocking random APIs are accessed with locks held: https://reviews.freebsd.org/D19948 .  It is somewhat noisy, because it does not seem to track already-hit instances.  There are a couple instances identified already by that change that can be addressed in a further change."
+}

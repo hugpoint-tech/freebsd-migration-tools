@@ -1,0 +1,8 @@
+{
+ "id": 670046,
+ "bug_id": 168936,
+ "attachment_id": 0,
+ "creation_time": "2012-06-11T02:10:09Z",
+ "creator": "bryan@shatow.net",
+ "text": "\tCurrently, when building any port, the \"portmgr options\" such as DOCS, EXAMPLES and NLS are not included in the resulting pkgng package.\n\tSpecifically, the options do not show in ALL_OPTIONS, so they are not added into the yaml. Adding them into ALL_OPTIONS makes them show in 'make showconfig', which is probably not wanted.\n\n\tThe reason this is a problem is that I am trying to detect if options have changed between a port and an older package with poudriere. Because of these 3 missing, the options are always different. I could easily add a hack for these 3, but more may be added later, or removed from the \"portmgr options\".\n\nFix: Patch fixes this by defining a PORTMGR_OPTIONS and then adding these into the pkgng yaml. It is done so that if the port has any of the \"portmgr options\" in its OPTIONS_DEFINE, it will properly NOT re-add it to the yaml. Instead of specifically checking these 3 options in bsd.pkgng.mk, use PORTMGR_OPTIONS as more options may be defined later.\n\n\t# With fix\n\t$ cd /usr/ports/ports-mgmt/portlint\n\t$ make deinstall install\n\t$ pkg query '%Ok %Ov' portlint\n\tDOCS on\n\tNLS on\n\tEXAMPLES on\n\t$ echo \"OPTIONS_UNSET=DOCS\" \u003e\u003e /etc/make.conf\n\t$ make deinstall install\n\t$ pkg query '%Ok %Ov' portlint\n\tDOCS off\n\tNLS on\n\tEXAMPLES on\nHow-To-Repeat: \t$ echo \"WITH_PKGNG=yes\" \u003e\u003e /etc/make.conf\n\t$ make -C /usr/ports/ports-mgmt/portlint install\n\t$ pkg query '%Ok %Ov' portlint\n\t-- no results --"
+}

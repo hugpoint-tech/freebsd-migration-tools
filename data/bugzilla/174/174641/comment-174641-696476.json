@@ -1,0 +1,8 @@
+{
+ "id": 696476,
+ "bug_id": 174641,
+ "attachment_id": 0,
+ "creation_time": "2012-12-22T19:00:00Z",
+ "creator": "freebsd@damnhippie.dyndns.org",
+ "text": "Programs which use mlockall(2), such as watchdogd, wire down physical pages \nfor all allocated vmspace.  jemalloc allocates large chunks of vmspace by \ndefault for efficiency.  A daemon such as watchdogd can accidentally use\nup all available ram on a small embedded system unless it tunes the lg_chunk \nvalue down as small as possible.\n\nA problem arises because the minimum size that can be configured for the \nlg_chunk option is machine-dependent (it's based on PAGE_SIZE) and it also \nmust be large enough to satisfy some of jemalloc's internal requirements \nwhich can't be known by the program.  The tuning must be done before the \nfirst allocation (before entry to main()), precluding the possibilty of \nusing runtime logic to determine the smallest legal value.  \n\nThe attached patch enhances jemalloc's handling of the lg_chunk option:\n - Requesting a value of zero asks jemalloc to quietly set the chunk size\n   to the smallest value allowable for the hardware it's running on.\n - Requesting a non-zero size smaller than the minimum will result in using\n   the minimum size and emitting a warning about clipping the value.\n\nIt also changes watchdogd to use this new feature."
+}

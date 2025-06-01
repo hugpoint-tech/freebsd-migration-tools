@@ -1,0 +1,8 @@
+{
+ "id": 417637,
+ "bug_id": 117943,
+ "attachment_id": 0,
+ "creation_time": "2007-11-09T16:00:01Z",
+ "creator": "sanpei@sanpei.org",
+ "text": "I'm planning to create new File server with ZFS.\nWhen I tested with ZFS, snapshot directory could not\naccess from NFSv3 client.\n\nFix: \n\nOpenSolaris was already fixed from below mail, after March 2006\nhttp://mail.opensolaris.org/pipermail/nfs-discuss/2006-March/001224.html\n\nImport new/latest zfs source into FreeBSD?\nHow-To-Repeat: 1. create zfs volume\n% zpool create -m /devel zdevel2 da0\n% zfs create zdevel2/nfs-test\n\n2. NFS export zfs volume/mount NFS\n% zfs share -a\n% zfs set sharenfs=\"-alldirs -maproot=0:0 -network 192.168.1.0 -mask 255.255.255.0\" zdevel2/nfs-test\n\n3. NFS mount\n\n% mount -t nfs nfs_server:/devel/nfs-test /mnt2\n\n4. create new snapshot\nzfs snapshot zdevel2/nfs-test@today\n\n5. access from NFS server to snapshot directory\nI could access snapshot directory, and correct \n\n6. access from NFS client\n\n% cd /mnt2/.zfs\n% ls\nsnapshot/               OK\n% cd snapshot/\n% pwd\n/mnt2/.zfs/snapshot     OK\n% ls -la\ntotal 2\ndr-xr-xr-x    2 root     wheel           2 Nov  9 23:03 ./\ndr-xr-xr-x    3 root     wheel           3 Nov  9 23:03 ../\ndrwxr-xr-x    3 root     wheel           3 Nov  9 23:04 today/\n% cd today/\n% pwd\n/mnt2                   NG!!\n\nand files in /mnt2/.zfs/snapshot/today/ is same as current\nfile, not same as snapshot revision(in NFS server)"
+}

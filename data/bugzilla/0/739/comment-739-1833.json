@@ -1,0 +1,8 @@
+{
+ "id": 1833,
+ "bug_id": 739,
+ "attachment_id": 0,
+ "creation_time": "1995-09-26T09:00:02Z",
+ "creator": "sysseh@devetir.qld.gov.au",
+ "text": "\n\tWhen using an output filter that reads all of its input before\n\tcommencing operation, lpd assumes that the printing is finished and\n\tstarts another job from that queue. This means that output can be\n\tinterleaved as each instance of the output filter finishes processing.\n\nFix: Find the following diff to correct the problem for printjob.c\n\n\n\nI do not speak for the Worker's Compensation Board of Queensland -\n                     They don't pay me enough for that!--DFnLTkuI14smKt0QhW3rUTEX0dTpirMIFJaLjTOzOCggxCni\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n*** printjob.c.dist\tFri Sep  8 14:21:53 1995\n- --- printjob.c\tFri Sep  8 14:23:54 1995\n***************\n*** 272,277 ****\n- --- 272,279 ----\n  \t\t\t\t(void) write(ofd, TR, strlen(TR));\n  \t\t}\n  \t\t(void) unlink(tempfile);\n+ \t\tclose(ofd);\t\t/* give ofilter an EOF indicator */\n+ \t\t(void)wait((int *)0);\t/* wait until ofilter finished */\n  \t\texit(0);\n  \t}\n  \tgoto again;\nHow-To-Repeat: \n\tCreate an output filter that reads all of its standard input before\n\tprinting, eg\n\n\tcat \u003e /tmp/foo.$$\n\tsome_random_data_fiddling\n\tcat /tmp/foo.$$\n\n\tSend off lots of jobs to that particular queue and watch your\n\tstuff interleave."
+}

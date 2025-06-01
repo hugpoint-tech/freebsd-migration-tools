@@ -1,0 +1,8 @@
+{
+ "id": 1317895,
+ "bug_id": 280438,
+ "attachment_id": 0,
+ "creation_time": "2024-07-25T14:32:23Z",
+ "creator": "jwb@freebsd.org",
+ "text": "Odd problem:\n\nI've found that when running FreeBSD as a VM, lpjs_compd is unable to use munge on initial startup.  So far, the failure happens consistently under Qemu and VirtualBox.  Oddly, I don't think I've encountered the problem when running on bare metal.\n\nrc.d/lpjs_compd:\n\n# PROVIDE: lpjs_compd\n# REQUIRE: munged\n# KEYWORD: shutdown\n\nI've tried various tweaks, such as \"LOGIN munged\" and \"DAEMON munged\", to no avail.\n\nWhat does fix the issue is changing the munge rc script to use DAEMON rather than LOGIN:\n\n--- /usr/ports/security/munge/files/munged.in   2024-04-02 08:22:54.039991000 -0500\n+++ /usr/ports/wip/munge/files/munged.in        2024-07-25 09:22:48.688638000 -0500\n@@ -1,7 +1,7 @@\n #!/bin/sh\n \n # PROVIDE: munged\n-# REQUIRE: LOGIN\n+# REQUIRE: DAEMON\n # KEYWORD: shutdown\n \n # Add the following line to /etc/rc.conf to enable munged:\n\nWas there a specific reason that LOGIN was chosen over DAEMON?  If not, can we apply the patch above?  I'd like to understand what's happening here, but fixing the issue ASAP is a higher priority."
+}

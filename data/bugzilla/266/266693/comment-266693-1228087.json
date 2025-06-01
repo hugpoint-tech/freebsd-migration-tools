@@ -1,0 +1,8 @@
+{
+ "id": 1228087,
+ "bug_id": 266693,
+ "attachment_id": 236928,
+ "creation_time": "2022-09-28T21:41:59Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 236928\nmalicious disk image that causes a page fault in g_llvm_free_vg() during taste\n\nIn llvm_textconf_decode():\n\n        /* basic checking */\n        if (vg-\u003evg_extentsize == 0)\n                goto bad;\n\n        md-\u003emd_vg = vg;\n        LIST_INSERT_HEAD(\u0026vg_list, vg, vg_next);\n        G_LLVM_DEBUG(3, \"vg: name=%s uuid=%s\", vg-\u003evg_name, vg-\u003evg_uuid);\n        return(0);\n\nbad:\n        g_llvm_free_vg(vg);\n        return (-1);\n\nThis means g_llvm_free_vg(vg) can be called without vg having been\ninserted into the list. But the latter calls LIST_REMOVE(vg, vg_next)\nunconditionally.\n\nI've attached a demo:\n\n# kldload geom_linux_lvm\n# mdconfig -f taste62b.img\npanic: Fatal page fault at 0xffffffc08b604da6: 0000000000000000\npanic() at panic+0x2a\npage_fault_handler() at page_fault_handler+0x1d6\ndo_trap_supervisor() at do_trap_supervisor+0x76\ncpu_exception_handler_supervisor() at cpu_exception_handler_supervisor+0x70\n--- exception 13, tval = 0\ng_llvm_free_vg() at g_llvm_free_vg+0xc4\nllvm_textconf_decode() at llvm_textconf_decode+0x4f4\ng_llvm_read_md() at g_llvm_read_md+0x214\ng_llvm_taste() at g_llvm_taste+0xd0\ng_new_provider_event() at g_new_provider_event+0xb8\none_event() at one_event+0x102\ng_run_events() at g_run_events+0x8a\ng_event_procbody() at g_event_procbody+0x56\nfork_exit() at fork_exit+0x80\nfork_trampoline() at fork_trampoline+0xa\n\nFreeBSD  14.0-CURRENT FreeBSD 14.0-CURRENT #197 main-n250931-18f03443a230-dirty: Wed Sep 28 17:36:45 EDT 2022     rtm@xxx:/usr/obj/usr/rtm/symbsd/src/riscv.riscv64/sys/RTM riscv"
+}

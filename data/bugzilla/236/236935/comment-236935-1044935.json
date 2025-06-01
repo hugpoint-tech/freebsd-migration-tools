@@ -1,0 +1,8 @@
+{
+ "id": 1044935,
+ "bug_id": 236935,
+ "attachment_id": 0,
+ "creation_time": "2019-04-02T05:55:45Z",
+ "creator": "phil@freebsd.org",
+ "text": "The fix is:\n\n+++ b/libxo/xo_buf.h\n@@ -114,7 +114,12 @@ static inline int\n xo_buf_has_room (xo_buffer_t *xbp, ssize_t len)\n {\n     if (xbp-\u003exb_curp + len \u003e= xbp-\u003exb_bufp + xbp-\u003exb_size) {\n-\tssize_t sz = xbp-\u003exb_size + XO_BUFSIZ;\n+\t/*\n+\t * Find out how much new space we need, round it up to XO_BUFSIZ\n+\t */\n+\tssize_t sz = (xbp-\u003exb_curp + len) - xbp-\u003exb_bufp;\n+\tsz = (sz + XO_BUFSIZ - 1) \u0026 ~(XO_BUFSIZ - 1);\n+\n\nInstead of rounding up to XO_BUFSIZ, I was just adding XO_BUFSIZ.  For large strings, this obviously fails.\n\nThanks,\n Phil"
+}

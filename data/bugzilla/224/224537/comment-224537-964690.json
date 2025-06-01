@@ -1,0 +1,8 @@
+{
+ "id": 964690,
+ "bug_id": 224537,
+ "attachment_id": 0,
+ "creation_time": "2017-12-23T08:37:26Z",
+ "creator": "jsellens@syonex.com",
+ "text": "/usr/sbin/cron allows multiple files in /etc/cron.d and /usr/local/etc/cron.d and uses the mtime of the directory as an indicator of when to reload the cron files.\n\nIn cron/database.c in load_database() at around line 100, the comment is:\n\n        /* if spooldir's mtime has not changed, we don't need to fiddle with\n         * the database.\n\nand the statbuf.st_mtime is compared to the previous version.\n\nIf a file in a directory changes, the mtime on the directory does not change, so changes to files in cron.d directories are often not noticed.\n\nRepeat by putting a cron file in /etc/cron.d, then using echo or cat to add an additional entry and notice that the additional entry does not run.  Similarly, use vi to edit the file, the directory's mtime does not change, and cron file changes are not loaded.\n\nThe cron(8) man page says: \"Thus cron need not be restarted whenever a crontab file is modified.\" which is incorrect.  It mentions that crontab(1) will update the directory time, but crontab(1) can't be used with /etc/cron.d or /usr/local/etc/cron.d files.\n\nPerhaps the code could compute and compare a checksum on the directory, or a checksum on the results of opendir() / readdir() , rather than looking only at the directory mtime?\n\n(I ran into this when puppet was updating files in /etc/cron.d and the commands being run were not changing.)\n\nThanks!"
+}

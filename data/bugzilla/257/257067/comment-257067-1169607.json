@@ -1,0 +1,8 @@
+{
+ "id": 1169607,
+ "bug_id": 257067,
+ "attachment_id": 0,
+ "creation_time": "2021-07-09T14:37:34Z",
+ "creator": "afedorov@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #4)\n\nI think the previous fix closed all similar problems: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=248958 and https://reviews.freebsd.org/D26226\n\nI have not yet found other problem areas in the ng_pppoe(4) code.\n\nThe main idea behind introducing NET_EPOCH in netgraph (4) is:\n- Data processing (NG_SEND_DATA_ *) should always be in the NET_EPOCH section.\n- Processing of service messages (NG_SEND_MSG_ *) should not be in the NET_EPOCH section. Because message handling (* _rcvmsg, connect/disconnect hooks, node constructor/destructor) allows sleeping and other forbidden operations for NET_EPOCH section.\n\nBut on many nodes, some data processing routines generate messages, and message processing routines generate data (as in this PR).\n\nUnfortunately, there are cases that are not so easy to fix without reworking ng_base.c."
+}

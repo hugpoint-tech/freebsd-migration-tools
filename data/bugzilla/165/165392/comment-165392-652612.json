@@ -1,0 +1,8 @@
+{
+ "id": 652612,
+ "bug_id": 165392,
+ "attachment_id": 0,
+ "creation_time": "2013-05-20T20:21:34Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "Hi!\n\n\u003e  A workaround is to call fsync() on the directory that contained the\n\u003e  deleted entries. It will then release its hold on the link count and\n\u003e  allow mkdir or other calls. If fsync() is only called when [EMLINK] is\n\u003e  returned, the performance impact should not be very bad, although it\n\u003e  still causes more I/O than necessary.\n\nI tried to implement this with the following patch:\n\n\thttp://people.freebsd.org/~jh/patches/ufs-check_linkcnt.diff\n\nHowever, VOP_FSYNC(9) with the MNT_WAIT flag seems not to update the\ni_nlink count for a reason unknown to me. I can verify that also by\ntaking your reproduction recipe above and adding \"fsync .\" between\n\"rmdir 1\" and \"mkdir a\".\n\nDoes this mean that fsync(2) is broken for directories on softdep\nenabled UFS?\n\nI have cc'd Kirk in hope he could shed some light on this.\n\n-- \nJaakko"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1259338,
+ "bug_id": 271383,
+ "attachment_id": 242135,
+ "creation_time": "2023-05-12T19:29:08Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 242135\nbroken ffs image with negative jb_blk that can cause fsck to crash\n\nI've attached a gzipped ffs image with a negative block number\nin a journal record which causes ffs_isblock() to index into its cp[]\nargument with a negative index. You may need valgrind to see the problem. A\nbacktrace from fsck_ffs -y fsck24a.img:\n\n(gdb) where\n#0  ffs_isblock (fs=\u003coptimized out\u003e, cp=0x800a370d8 \"\", h=-240) at /usr/src/sys/ufs/ffs/ffs_subr.c:922\n#1  0x0000000000227b10 in blk_isfree (bno=-9204789740589546200) at suj.c:523\n#2  0x000000000022781c in blk_isindir (blk=-9204789740589546200, ino=3, lbn=-4611686018427387913) at suj.c:377\n#3  0x00000000002273eb in indir_visit (ino=3, lbn=-4611686018427387913, blk=-9204789740589546200, frags=0x7fffffffe668, visitor=0x229180 \u003cblk_free_visit\u003e, flags=1) at suj.c:728\n#4  0x000000000022bb6e in blk_free_lbn (blk=-9204789740589546200, ino=3, lbn=-4611686018427387913, frags=8, follow=1) at suj.c:917\n#5  0x000000000022b9c9 in blk_check (sblk=0x800a93030) at suj.c:1541\n#6  0x0000000000227195 in cg_check_blk (sc=0x800a888c0) at suj.c:1612\n#7  0x0000000000226dc5 in cg_apply (apply=0x227150 \u003ccg_check_blk\u003e) at suj.c:1638\n#8  0x0000000000225571 in suj_check (filesys=0x7fffffffed71 \"junk\") at suj.c:2461\n#9  0x00000000002195c6 in checkfilesys (filesys=0x7fffffffed71 \"junk\") at main.c:356\n#10 0x0000000000218f72 in main (argc=1, argv=0x7fffffffea20) at main.c:210"
+}

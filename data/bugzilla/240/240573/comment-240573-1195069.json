@@ -1,0 +1,8 @@
+{
+ "id": 1195069,
+ "bug_id": 240573,
+ "attachment_id": 0,
+ "creation_time": "2022-01-17T13:51:39Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Ivan Rozhuk from comment #4)\nI looked through the other KERN_PROC sysctls and did not find any occurrences of the problem.  I could have missed something of course.\n\nkern_proc_filedesc_out() is a bit special.  It is used to provide info for an ELF coredump note as well as for KERN_PROC_FILEDESC.  During a coredump, the function is called twice: once to get the note size, and once to actually fill out the note.  NT_PROCSTAT_FILES notes contain path names.  So, if a referenced file is renamed between the two calls to kern_proc_filedesc_out(), we potentially have to truncate the new path to avoid corrupting the core dump.  The coredump code can reserve PATH_MAX bytes for each path to avoid this problem (this is enabled by the kern.coredump_pack_fileinfo sysctl), but that ends up bloating core dump sizes if a large number of files is open.\n\nMost other sysctls don't have such a requirement, and so are less likely to have silent truncation bugs."
+}

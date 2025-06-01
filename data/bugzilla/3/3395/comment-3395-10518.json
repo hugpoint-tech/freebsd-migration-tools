@@ -1,0 +1,8 @@
+{
+ "id": 10518,
+ "bug_id": 3395,
+ "attachment_id": 0,
+ "creation_time": "1997-04-27T19:30:01Z",
+ "creator": "dmm125@bellatlantic.net",
+ "text": "sio2 was configured for correct port and irq, but was not being\nprobed.  Turned on flags 0x80 to find failing routine.  Said probe\ntest 3 failed.  Tried adjusting DELAY() values before failure[3]\nto no avail.\n\nFix: \n\nin /sys/i386/isa/sio.c, apply this patch:\n\nDELAY(10000);           /* Some internal modems need this time */\n        if (idev-\u003eid_irq != 0)\n-                failures[3] = isa_irq_pending(idev) ? 0 : 1;\n+                failures[3] = isa_irq_pending(idev) ? 1 : 0;\n        failures[4] = (inb(iobase + com_iir) \u0026 IIR_IMASK) - IIR_TXRDY;\n\nAnyhow, this is what my sio.c said.  In the above at '-', it is implying\nthat probe test 3 will fail if there is no irq pending, which is\nthe opposite of what we want.\nHow-To-Repeat: just reboot with internal modem with correct irq and port address set\n(proper sio? enabled, of course), in 2.2.1 RELEASE."
+}

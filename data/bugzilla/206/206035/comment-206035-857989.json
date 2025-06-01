@@ -1,0 +1,8 @@
+{
+ "id": 857989,
+ "bug_id": 206035,
+ "attachment_id": 165265,
+ "creation_time": "2016-01-08T14:47:35Z",
+ "creator": "sgalabov@gmail.com",
+ "text": "Created attachment 165265\nSuggested fix for the problem (please see comments for details)\n\nWhile attaching a gpiobus to a GPIO controller with a single pin, the system panics due to a failed KASSERT in gpiobus_init_softc().\n\nThis is due to the fact that gpiobus obtains the maximum pin number from the GPIO controller (via GPIO_PIN_MAX) and immediately does a KASSERT, expecting that the obtained value is != 0.\n\nIn the case of a GPIO controller which controls a single pin, the returned value will be 0 (0 is the maximum pin number), which is absolutely valid.\n\nMoreover, right after the KASSERT the code in gpiobus_init_softc() actually adjusts the number of pins to the right value.\n\nThe suggestion is to change the KASSERT like so:\n-       KASSERT(sc-\u003esc_npins != 0, (\"GPIO device with no pins\"));\n+       KASSERT(sc-\u003esc_npins \u003e= 0, (\"GPIO device with no pins\"));\n\nThis, I believe, is a better approach than, say, simply postponing the KASSERT until after gpiobus has adjusted the number of pins, since if a broken GPIO controller driver returns a \u003c 0 value we'll be in even more trouble.\n\nI've attached a patch with the suggested fix."
+}

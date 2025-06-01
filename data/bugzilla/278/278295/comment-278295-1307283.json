@@ -1,0 +1,8 @@
+{
+ "id": 1307283,
+ "bug_id": 278295,
+ "attachment_id": 0,
+ "creation_time": "2024-05-02T16:30:36Z",
+ "creator": "cnbatch@gmail.com",
+ "text": "I've found the problem.\n\nWhen OpenVPN establishes a connection, it creates the tun0 interface and assigns an address to it. When running OpenVPN with setfib, the address assigned to tun0 appears in fib0 instead of fib 1. That's why subsequent routing entries all fail to add.\n\nI tried manually creating the tun interface, and I reached the same conclusion:\n\t\n'setfib 1 ifconfig tun create'\n'setfib 1 ifconfig tun0 inet 10.100.0.2 10.100.0.1 netmask 255.255.255.0 mtu 1500 up'\n\nThen running:\n\n'netstat -rn'\n'setfib 1 netstat -rn'\n\nThe output shows that the address of tun0 is assigned to fib 0 instead of fib 1.\n\nIf after running the command\n'setfib 1 openvpn connect_to_server.ovpn'\nI manually add the IP address of tun0 to fib 1, then followed by 'route add' commands, which would originally fail:\n\n'setfib 1 route add -net 0.0.0.0 10.100.0.1 128.0.0.0'\n'setfib 1 route add -net 128.0.0.0 10.100.0.1 128.0.0.0'\n\nno longer result in errors and are successfully added to fib 1.\n\nIt seems like it might be a bug in ifconfig."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 922973,
+ "bug_id": 217173,
+ "attachment_id": 0,
+ "creation_time": "2017-02-22T14:31:41Z",
+ "creator": "swills@FreeBSD.org",
+ "text": "(In reply to jhixson from comment #2)\n\nThere are a few issues with the RC script:\n\n1. I get an error from this:\n\n# service minio rcvar\n/usr/local/etc/rc.d/minio: ERROR: USAGE: load_rc_config name\n\nbecause \"load_rc_config ${name}\" is called before \"name=minio\".\n\n2. Also, minio_env is handled by rc.subr, so there's no need for that line in the rc script. It is needed in the command_args. (And users won't need to set minio_env, unless they for some reason prefer to set things in /etc/rc.conf instead of /usr/local/etc/minio/config.json.)\n\n3. The default minio_config directory /usr/local/etc/minio doesn't exist. The port should be updated to create it.\n\n4. The minio_disks setting doesn't default to anything so by default if the user simply enables the service and starts it, it will silently fail. The port should create a dir, perhaps /var/db/minio and default to that for the minio_disks setting.\n\n5. The minio_stop, minio_start and minio_check_pidfile functions are not needed. The default functions for these will work fine as long as you set procname=\"/usr/local/bin/minio\". (This will look like %%PREFIX%% in minio.in and get replaced during package build.)\n\n6. This is a bit of a personal preference, but I think it would be good to add --quiet to the command_args."
+}

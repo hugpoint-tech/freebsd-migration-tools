@@ -1,0 +1,8 @@
+{
+ "id": 881149,
+ "bug_id": 209877,
+ "attachment_id": 0,
+ "creation_time": "2016-05-31T00:09:56Z",
+ "creator": "eggert@cs.ucla.edu",
+ "text": "A user ran into a problem when building bleeding-edge Emacs and I tracked it down to a compatibility issue with FreeBSD's use of the 'lint' macro in C. You can see the original problem report in \u003chttp://bugs.gnu.org/23640\u003e (originally about Cygwin, but look for \"FreeBSD\" later on in the bug report).\n\nFreeBSD doesn't conform to the C standard in this area. To reproduce the conformance bug, compile the following three-line file t.c:\n\n#define lint 1\n#include \u003cstdio.h\u003e\n_Noreturn int x;\n\nThis C program violates a constraint because _Noreturn is allowed only on function declarations. The C compiler is therefore required to issue a diagnostic. However, the shell command 'cc -std=c11 -S t.c' silently ignores the _Noreturn.\n\nThe problem is that FreeBSD headers in /usr/include define _Noreturn to be empty if the symbol 'lint' is defined. But 'lint' is in user space, and users programs are allowed to use it for whatever they want. That's what Emacs was doing, and other programs are like Emacs in this respect, so the problem won't go away by my simply modifying GNU Emacs to use some symbol other than 'lint'.\n\nI suppose that one possible fix would be for cdefs.h to define its own symbol _FreeBSD_Noreturn instead of defining _Noreturn, and for other headers to use _FreeBSD_Noreturn rather than _Noreturn."
+}

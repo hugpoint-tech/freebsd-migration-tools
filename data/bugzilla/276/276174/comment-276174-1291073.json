@@ -1,0 +1,8 @@
+{
+ "id": 1291073,
+ "bug_id": 276174,
+ "attachment_id": 0,
+ "creation_time": "2024-01-07T20:19:13Z",
+ "creator": "billblake2018@gmail.com",
+ "text": "These are the commands and the resulting script that is put at the start of each out.img file:\n\n\u003e mkuzip -A zstd -o out.img in.img\n#!/bin/sh\n#Z4.0 Format\n(kldstat -qm g_uzip||kldload geom_uzip)\u003e\u0026-\u0026\u0026mount_cd9660 /dev/`mdconfig -af $0`.uzip $1\nexit $?\n\n\u003e mkuzip -A lzma -o out.img in.img\n#!/bin/sh\n#L3.0\nn=uncompress\nm=geom_$n\n(kldstat -m $m 2\u003e\u0026-||kldload $m)\u003e\u0026-\u0026\u0026mount_cd9660 /dev/`mdconfig -af $0`.$n $1\nexit $?\n\n\u003e mkuzip -A zlib -o out.img in.img\n#!/bin/sh\n#V2.0 Format\n(kldstat -qm g_uzip||kldload geom_uzip)\u003e\u0026-\u0026\u0026mount_cd9660 /dev/`mdconfig -af $0`.uzip $1\nexit $?\n\nI can't speak to the kldstat/kldload stuff since I didn't actually run these scripts.  However, look at the second example, which uses lzma.  It tries to mount /dev/md*.uncompress.  However, the mdconfig creates /dev/md*.uzip, so the mount fails. (I did the commands manually to confirm that this sequence doesn't work.)  The other two correctly use the .uzip device.  But in all three cases, the mount is mount_cd9660, which won't work since the file systems actually created are ufs file systems.  They need \"mount -o ro\" instead.  (Again, manually confirmed.)\n\nAlso, a nitpick: The mdconfig calls should have an option \"-o ro\".  Where it matters is when the config'd image is on a read-only file system; mdconfig will generate an error message without the read-only option, though it still configs the file."
+}

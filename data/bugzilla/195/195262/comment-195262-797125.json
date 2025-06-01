@@ -1,0 +1,8 @@
+{
+ "id": 797125,
+ "bug_id": 195262,
+ "attachment_id": 0,
+ "creation_time": "2014-11-21T22:26:26Z",
+ "creator": "delphij@FreeBSD.org",
+ "text": "I think these are false positives.\n\nharvest_mtx is a spinning mutex that is only acquired in random_harvestq.c, and it's already done quite carefully.\n\nThe problem is raised when calling msleep_spin_sbt(), which in turn tries to acquire sleepq chain lock (sys/kern/subr_sleepqueue.c).  In witness, the \"blessed\" order is sleepq chain and then entropy harvest mutex, this is not right (the system does not poke with entropy harvesting when manipulating sleepq chain), so you see the second LOR warning.\n\nWhen it tries to print the LOR warning, the code eventually calls printf() which in turn would go to syscons(4) where scrlock is acquired.  The defined lock order wants scrlock be acquired before harvest_mtx and therefore you would see the first LOR warning.\n\nCould you please try the attached patch and see if it solves the problem?  What it does is to move entropy mutex slightly higher, allowing it to be held before acquiring sleepq chain lock.  This would eliminate the (false) LOR warning and make the first LOR go away at the same time.\n\nAdding jhb@ and markm@ for review."
+}

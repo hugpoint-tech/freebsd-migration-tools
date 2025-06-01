@@ -1,0 +1,8 @@
+{
+ "id": 663470,
+ "bug_id": 167566,
+ "attachment_id": 0,
+ "creation_time": "2012-10-27T22:29:03Z",
+ "creator": "utisoft@gmail.com",
+ "text": "\u003e  Which module do you refer in \"...the module is loaded, ...\",\n\u003e  ipfw_nat.ko or ipdivert.ko?\n\u003e\n\u003e  In my understanding the problem occurs only when ipfw attempts to\n\u003e  load firewall rules including a \"divert\" directive and ipdivert.ko is\n\u003e  not loaded at that time.  natd(8) also requires ipdivert.ko, but\n\u003e  rc.d/natd already has required_modules=\"ipdivert\".\n\u003e  firewall_nat_enable is a knob for in-kernel NAT (this requires\n\u003e  ipfw_nat.ko), so more orthogonal way would be like the following\n\u003e  patch:\n\u003e\n\u003e  http://people.allbsd.org/~hrs/FreeBSD/ipfw.20121028-1.diff\n\u003e\n\u003e  It is still unclear to me what is harmful with \"checkyesno\n\u003e  natd_enable\" here.  Can you elaborate it a little more?\n\nCheck rcorder:\n\n[crees@pegasus]~% rcorder /etc/rc.d/* | grep -E 'natd|ipfw'\n/etc/rc.d/ipfw\n/etc/rc.d/natd\n\nThat means that natd doesn't run until after ipfw.  This means that on\nboot, when ipfw runs, neither ipfw_nat nor ipdivert are installed,\n*regardless of the state of natd_enable*.\n\nTherefore, checkyesno natd_enable does not guarantee that either\nipfw_nat or ipdivert is loaded *at the time rc.d/ipfw is run*.\n\nChris"
+}

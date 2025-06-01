@@ -1,0 +1,8 @@
+{
+ "id": 1036461,
+ "bug_id": 235391,
+ "attachment_id": 0,
+ "creation_time": "2019-02-07T08:38:13Z",
+ "creator": "mmel@FreeBSD.org",
+ "text": "This problem is caused by the folowing statement in ldscript.arm:\n\n  /* Adjust the address for the data segment.  We want to adjust up to\n     the same address within the page on the next page up.  */\n  . = ALIGN(0x1000) + (. \u0026 (0x1000 - 1)) ; \n  .data    :\n\nI'm unable to decode meaning or purpose of this calculation (is not it equivalent to pure . = . + 0x1000 ?) but changing it to more obvious: \n  . = ALIGN(0x1000);\nrestores right behavior (ELF file layout is in sync with memory layout).\nSo, whats now?\n\nThe elfcopy problem is already reported in PR232922, I will continue there.\n\nreadelf dump after alignment change (for kernel linked by ld.lld):\nProgram Headers:\n  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align\n  PHDR           0x000034 0xc0000034 0xc0000034 0x00120 0x00120 R   0x4\n  INTERP         0x7312ec 0xc07312ec 0xc07312ec 0x0000d 0x0000d R   0x1\n      [Requesting program interpreter: /red/herring]\n  LOAD           0x000000 0xc0000000 0xc0000000 0x7f3cb0 0x7f3cb0 R E 0x1000\n  LOAD           0x7f4000 0xc07f4000 0xc07f4000 0xcf848 0x2f0000 RW  0x4000\n  DYNAMIC        0x8c3800 0xc08c3800 0xc08c3800 0x00048 0x00048 RW  0x4\n  GNU_RELRO      0x8c3800 0xc08c3800 0xc08c3800 0x00048 0x00048 R   0x1\n  GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RW  0\n  NOTE           0x7c14dc 0xc07c14dc 0xc07c14dc 0x00024 0x00024 R   0x4\n  ARM_EXIDX      0x7d6c18 0xc07d6c18 0xc07d6c18 0x1d098 0x1d098 R   0x4"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 882919,
+ "bug_id": 210212,
+ "attachment_id": 0,
+ "creation_time": "2016-06-11T14:20:01Z",
+ "creator": "trasz@FreeBSD.org",
+ "text": "The libimg port removes X11 linkage, which makes linuxcnc fail to start, like this:\n\nTraceback (most recent call last):\n  File \"bin/axis\", line 123, in \u003cmodule\u003e\n    nf.start(root_window)\n  File \"/usr/home/trasz/git/linuxcnc/lib/python/nf.py\", line 119, in start\n    source_lib_tcl(r, \"support.tcl\")\n  File \"/usr/home/trasz/git/linuxcnc/lib/python/nf.py\", line 111, in source_lib_tcl\n    r.tk.call(\"source\", os.path.join(tcl_libdir, f))\n_tkinter.TclError: couldn't load file \"/usr/local/lib/Img/libtkimgxpm142.so.1\": /usr/local/lib/Img/libtkimgxpm142.so.1: Undefined symbol \"XParseColor\"\n\nRemoving the appropriate portion of Makefile seems to fix this problem:\n\nIndex: Makefile\n===================================================================\n--- Makefile    (revision 416716)\n+++ Makefile    (working copy)\n@@ -3,7 +3,7 @@\n \n PORTNAME=      libimg\n PORTVERSION=   1.4.2\n-PORTREVISION=  1\n+PORTREVISION=  2\n CATEGORIES?=   graphics tk\n MASTER_SITES=  SF/tkimg/tkimg/${PORTVERSION:R}\n DISTNAME=      tkimg${PORTVERSION}\n@@ -37,9 +37,6 @@\n .endfor\n \n post-configure:\n-       # Do not link with X11 -- none of tkimg code uses X directly\n-       ${REINPLACE_CMD} -E -e 's,-L[^[:space:]]+[[:space:]]+-lX[^[:space:]]*,,g' \\\n-               ${WRKSRC}/*/Makefile\n .for l in jpeg png tiff\n        # Link with -l$l\n        ${REINPLACE_CMD} -E \\"
+}

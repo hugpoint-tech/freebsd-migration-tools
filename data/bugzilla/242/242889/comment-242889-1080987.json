@@ -1,0 +1,8 @@
+{
+ "id": 1080987,
+ "bug_id": 242889,
+ "attachment_id": 0,
+ "creation_time": "2019-12-26T13:38:49Z",
+ "creator": "dmgk@freebsd.org",
+ "text": "(In reply to mikael.urankar from comment #0)\nI don't think fiodgnameArg needs additional padding, go implicitly aligns Buf to 8-byte boundary on aarch64:\n\n$ cat fiodgname_arg.c\n#include \u003cstdio.h\u003e\n#include \u003cstddef.h\u003e\n#include \u003csys/filio.h\u003e\n\nint main(int argc, char *argv[])\n{\n        printf(\"len: %zu\\n\", offsetof(struct fiodgname_arg, len));\n        printf(\"buf: %zu\\n\", offsetof(struct fiodgname_arg, buf));\n}\n\n$ cc -o fiodgname_arg fiodgname_arg.c \u0026\u0026 ./fiodgname_arg\nlen: 0\nbuf: 8\n\n$ cat fiodgname_arg.go\npackage main\n\nimport (\n        \"fmt\"\n        \"unsafe\"\n)\n\ntype fiodgnameArg struct {\n        Len int32\n        Buf *byte\n}\n\nfunc main() {\n        x := fiodgnameArg{}\n        fmt.Printf(\"x.Len: %d\\n\", unsafe.Offsetof(x.Len))\n        fmt.Printf(\"x.Buf: %d\\n\", unsafe.Offsetof(x.Buf))\n}\n\n$ go run fiodgname_arg.go\nx.Len: 0\nx.Buf: 8"
+}

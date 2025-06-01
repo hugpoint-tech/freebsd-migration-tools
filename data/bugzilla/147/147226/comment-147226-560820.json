@@ -1,0 +1,8 @@
+{
+ "id": 560820,
+ "bug_id": 147226,
+ "attachment_id": 0,
+ "creation_time": "2010-05-30T18:10:06Z",
+ "creator": "eugene.kharitonov@gmail.com",
+ "text": "read(3) returns -1 immediately, if we are trying to read more than 2Gb from file.\n\nHow-To-Repeat: This code demonstrates the bug: \n=====================================\n#include \u003csys/types.h\u003e\n#include \u003csys/uio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cstdio.h\u003e\n\n\nint main() {\n    const size_t bufferSize = 2L * (1 \u003c\u003c 30L);\n    //works\n    //const size_t toRead = 2L * (1 \u003c\u003c 30L) - 1 ;\n    //do not work\n    const size_t toRead = 2L * (1 \u003c\u003c 30L) ;\n\n    fprintf(stderr, \"%lu\\n\", bufferSize);\n    fprintf(stderr, \"%lu\\n\", sizeof(size_t));\n\n    int fd = open(\"hostlog.dat\", O_RDONLY);\n    char * buffer = (char*) malloc(bufferSize);\n\n    if(NULL == buffer) {\n        fprintf(stderr, \"Cannot allocate\\n\");\n        abort();\n    };\n    ssize_t res = read(fd, buffer, toRead);\n    fprintf(stderr, \"res = %ld\\n\", res);\n    free(buffer);\n    close(fd);\n\n    return res;\n}\n========================================\n[kharitonov@lala ~/bugfind]$ gcc44 -m64 -Wall ./do.c\n[kharitonov@lala ~/bugfind]$ ./a.out\n2147483648\n8\nres = -1\n[kharitonov@lala ~/bugfind]$ ls -l ./hostlog.dat\n-rw-rw-r--  1 kharitonov  dev  2346274816 28 May 21:14 ./hostlog.dat"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1228250,
+ "bug_id": 266720,
+ "attachment_id": 0,
+ "creation_time": "2022-09-30T11:03:49Z",
+ "creator": "bf@cebitec.uni-bielefeld.de",
+ "text": "NFSv4 server is FreeBSD-13.1, problem occurs at least on Linux and Solaris clients.\n\nThe seems to be a small time window triggered by reloading /etc/exports (using SIGHUP @mountd, or 'service mountd reload') causing valid client requests getting EPERM. We can reliably reproduce the glitch by running this little Perl script on a client:\n\n#!/usr/bin/perl\n\nwhile (1) {\n    open my $fh, $0 or warn($!);\n    sysread $fh, my $s, 64, 0 or warn($!);\n    close $fh\n}\n\nand SIGHUPing the mountd on the FreeBSD server. Many entries in /etc/exports help hitting the critical time window.\n\nFor our use case this problem has show-stopper qualities since we manage export ACLs on a per-volume basis, and we have lots of volumes."
+}

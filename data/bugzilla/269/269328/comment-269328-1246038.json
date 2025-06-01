@@ -1,0 +1,8 @@
+{
+ "id": 1246038,
+ "bug_id": 269328,
+ "attachment_id": 0,
+ "creation_time": "2023-02-08T01:40:27Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "This is all quite strange.  Our buffer cache should be coherent with the page\ncache.  The fact that simple write(2) can become inconsistent with the mmaped\nwrite means we have the big issue for NFS.\n\nBuffer cache consists of just buffer headers that collect a run of pages that\nrepresent the same frames as the buffer, in the file range.  Dirty pages are\ncleaned by the vfs_busy_pages(bp, TRUE) call when bwrite() is executing. Since\nthen, the dirtyness is carried by the buffer and not by pages. This is why\nwe have to flush both pages and buffers when we know that the server supports\ndeallocate.\n\nIn NFS case, since it has its own bufwrite() implementation, vfs_busy_pages(TRUE)\nis called by NFS code in ncl_writebp() (and in ncl_flush()).\n\nFrom your explanation, it is still not clear to me how did we lost a write.\nIt must be some case of doing direct write instead going through the buffer\ncache, I guess? Was the file opened with O_DIRECT?"
+}

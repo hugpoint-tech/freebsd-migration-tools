@@ -1,0 +1,8 @@
+{
+ "id": 550071,
+ "bug_id": 145004,
+ "attachment_id": 0,
+ "creation_time": "2010-03-24T15:20:04Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: luigi\nDate: Wed Mar 24 15:19:47 2010\nNew Revision: 205603\nURL: http://svn.freebsd.org/changeset/base/205603\n\nLog:\n  MFC 205602:\n  Honor ip.fw.one_pass when a packet comes out of a pipe without being delayed.\n  I forgot to handle this case when i did the mtag cleanup three months ago.\n  \n  I am merging immediately because this bugfix is important for\n  people using RELENG_8.\n  \n  PR:           145004\n\nModified:\n  stable/8/sys/netinet/ipfw/ip_dn_io.c\n\nModified: stable/8/sys/netinet/ipfw/ip_dn_io.c\n==============================================================================\n--- stable/8/sys/netinet/ipfw/ip_dn_io.c\tWed Mar 24 15:16:59 2010\t(r205602)\n+++ stable/8/sys/netinet/ipfw/ip_dn_io.c\tWed Mar 24 15:19:47 2010\t(r205603)\n@@ -762,7 +762,11 @@ dummynet_io(struct mbuf **m0, int dir, s\n \t *     \n \t */\n \tif (/*dn_cfg.io_fast \u0026\u0026*/ m == *m0 \u0026\u0026 (dir \u0026 PROTO_LAYER2) == 0 ) {\n-\t\t/* fast io */\n+\t\t/* fast io, rename the tag * to carry reinject info. */\n+\t\tstruct m_tag *tag = m_tag_first(m);\n+\n+\t\ttag-\u003em_tag_cookie = MTAG_IPFW_RULE;\n+\t\ttag-\u003em_tag_id = 0;\n \t\tio_pkt_fast++;\n \t\tif (m-\u003em_nextpkt != NULL) {\n \t\t\tprintf(\"dummynet: fast io: pkt chain detected!\\n\");\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

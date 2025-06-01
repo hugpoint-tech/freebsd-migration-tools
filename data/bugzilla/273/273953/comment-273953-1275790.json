@@ -1,0 +1,8 @@
+{
+ "id": 1275790,
+ "bug_id": 273953,
+ "attachment_id": 0,
+ "creation_time": "2023-09-20T03:45:31Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "This is cosmetic issue.\nmnt_lockref should be asserted only after vfs_op_enter().\nPatch below should be enough.\n\ncommit 5a85fa192ec81998b723361028da21c5bcb4e66f\nAuthor: Konstantin Belousov \u003ckib@FreeBSD.org\u003e\nDate:   Wed Sep 20 06:42:31 2023 +0300\n\n    vfs_remount_ro(): mnt_lockref should be only accessed after vfs_op_enter()\n    \n    PR:     273953\n\ndiff --git a/sys/kern/vfs_mount.c b/sys/kern/vfs_mount.c\nindex 45ab9cfc93cc..8364081585f8 100644\n--- a/sys/kern/vfs_mount.c\n+++ b/sys/kern/vfs_mount.c\n@@ -3004,6 +3004,7 @@ vfs_remount_ro(struct mount *mp)\n \tstruct vnode *vp_covered, *rootvp;\n \tint error;\n \n+\tvfs_op_enter(mp);\n \tKASSERT(mp-\u003emnt_lockref \u003e 0,\n \t    (\"vfs_remount_ro: mp %p is not busied\", mp));\n \tKASSERT((mp-\u003emnt_kern_flag \u0026 MNTK_UNMOUNT) == 0,\n@@ -3012,17 +3013,19 @@ vfs_remount_ro(struct mount *mp)\n \trootvp = NULL;\n \tvp_covered = mp-\u003emnt_vnodecovered;\n \terror = vget(vp_covered, LK_EXCLUSIVE | LK_NOWAIT);\n-\tif (error != 0)\n+\tif (error != 0) {\n+\t\tvfs_op_exit(mp);\n \t\treturn (error);\n+\t}\n \tVI_LOCK(vp_covered);\n \tif ((vp_covered-\u003ev_iflag \u0026 VI_MOUNT) != 0) {\n \t\tVI_UNLOCK(vp_covered);\n \t\tvput(vp_covered);\n+\t\tvfs_op_exit(mp);\n \t\treturn (EBUSY);\n \t}\n \tvp_covered-\u003ev_iflag |= VI_MOUNT;\n \tVI_UNLOCK(vp_covered);\n-\tvfs_op_enter(mp);\n \tvn_seqc_write_begin(vp_covered);\n \n \tMNT_ILOCK(mp);"
+}

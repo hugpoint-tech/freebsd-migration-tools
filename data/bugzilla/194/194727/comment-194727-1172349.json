@@ -1,0 +1,8 @@
+{
+ "id": 1172349,
+ "bug_id": 194727,
+ "attachment_id": 0,
+ "creation_time": "2021-07-30T00:57:42Z",
+ "creator": "theron.tarigo@gmail.com",
+ "text": "I started hacking on this today, and I see two options for fixing the kernel side:\n\n1. allow pcm_unregister to forcibly close and destroy the device file.  The kernel already does something like this for block storage devices removed while in use.  Applications may respond badly but it's better than what we have now, and pulseaudio and virtual_oss should already handle this.\n\n2. unhook uaudio instance destruction from device detach.  This allows the pcm device to persist independently of the usb device, ready to clean up when it can.\n\n(2) seems the better option, as it provides the opportunity to reattach pcm device when the USB device is reattached, or after resume from suspend.  However I'm unsure how to proceed with this option.  Are there any other drivers capable of persisting independently of their bus devices' detaching to use as an example?\n\nAs for the kernel resource \"leak\": I'm well aware option (2) leads right into this.  However unless implemented incorrectly these resources are still tied to a user process: recovery of the exhausted resource by action taken from within userspace (killing the offending and leaky application, as we already do for low memory, too many tabs playing audio, etc.) remains sufficient."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1087868,
+ "bug_id": 244054,
+ "attachment_id": 0,
+ "creation_time": "2020-02-12T10:05:55Z",
+ "creator": "timur@FreeBSD.org",
+ "text": "And getting freespace on ZFS is merely:\n\n```\n#define NEED_SOLARIS_BOOLEAN\n\n#include \u003csys/types.h\u003e\n#include \u003clibzfs.h\u003e\n#include \u003cerr.h\u003e\n\nint get_space(char *path) {\n        size_t blocksize = 1024;\n        libzfs_handle_t *libzfsp;\n        zfs_handle_t *zfsp;\n        uint64_t available, usedbysnapshots, usedbydataset,\n                usedbychildren, usedbyrefreservation, real_used, total;\n\n        if (path == NULL) {\n                warn(\"No way\");\n                return (-1);\n        }\n\n        if ((libzfsp = libzfs_init()) == NULL) {\n                warn(\"failed to initialize lib\");\n                return (-1);\n        }\n\n        libzfs_print_on_error(libzfsp, B_TRUE);\n\n        zfsp = zfs_path_to_zhandle(libzfsp, path,\n                ZFS_TYPE_VOLUME|ZFS_TYPE_DATASET|ZFS_TYPE_FILESYSTEM);\n        if (zfsp == NULL) {\n                warn(\"No zhandle\");\n                return (-1);\n        }\n\n        available = zfs_prop_get_int(zfsp, ZFS_PROP_AVAILABLE);\n        usedbysnapshots = zfs_prop_get_int(zfsp, ZFS_PROP_USEDSNAP);\n        usedbydataset = zfs_prop_get_int(zfsp, ZFS_PROP_USEDDS);\n        usedbychildren = zfs_prop_get_int(zfsp, ZFS_PROP_USEDCHILD);\n        usedbyrefreservation = zfs_prop_get_int(zfsp, ZFS_PROP_USEDREFRESERV);\n\n        warn(\"%ld %ld %ld %ld\\n\", available, usedbysnapshots, usedbydataset, usedbychildren);\n\n        zfs_close(zfsp);\n        libzfs_fini(libzfsp);\n        return 0;\n}\n\nint main(int argc, char *argv[]) {\n        get_space(argv[1]);\n        return 0;\n}\n```"
+}

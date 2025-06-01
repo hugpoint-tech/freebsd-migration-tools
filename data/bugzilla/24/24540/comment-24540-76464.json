@@ -1,0 +1,8 @@
+{
+ "id": 76464,
+ "bug_id": 24540,
+ "attachment_id": 0,
+ "creation_time": "2001-01-22T20:02:57Z",
+ "creator": "wollman@khavrinen.lcs.mit.edu",
+ "text": "\u003c\u003cOn Mon, 22 Jan 2001 11:10:02 -0800 (PST), Pete Fritchman \u003cpetef@databits.net\u003e said:\n\n\u003e  electron# ./domainname foo.bar\n\u003e  electron# ./domainname ''\n\u003e  electron# ./domainname\n\u003e  foo.bar\n\nI think this is a bug in sysctl.  Note the following:\n\nroot@khavrinen(6)# sysctl -w kern.domainname=''\nkern.domainname: foo.bar -\u003e foo.bar\n\nWhat is happening is that the sysctl() system call is interpreting the\nrequest to set the MIB variable to a zero-length object as if it were\nan indication that setting is not requested.  Here is an (untested)\nfix (beware cut\u0026paste has bogotified whitespace):\n\n\n\n--- kern_sysctl.c       2000/07/28 22:40:04     1.100\n+++ kern_sysctl.c       2001/01/22 20:01:38\n@@ -862,7 +862,7 @@\n                req.oldptr= old;\n        }\n \n-       if (newlen) {\n+       if (new) {\n                req.newlen = newlen;\n                req.newptr = new;\n        }\n@@ -1101,7 +1101,7 @@\n                req.oldptr= old;\n        }\n \n-       if (newlen) {\n+       if (new) {\n                if (!useracc(new, req.newlen, VM_PROT_READ))\n                        return (EFAULT);\n                req.newlen = newlen;\n\n-GAWollman"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1063882,
+ "bug_id": 240061,
+ "attachment_id": 0,
+ "creation_time": "2019-08-26T20:16:37Z",
+ "creator": "nwf20@cl.cam.ac.uk",
+ "text": "\u003e Out of curiosity, how did you come to notice this behaviour?\n\nWe've been studying heap temporal safety and wanted to make fairly strong assertions about the contents of, and aliasing of access to, heap memory.  (If you'd like to have a longer conversation, my inbox is open. :) )  In particular, I've been looking deeply at https://github.com/microsoft/snmalloc/ and was prodding at its use of MADV_FREE together with some in-kernel changes that crawls the address space.  I was hoping to have this crawler remove MADV_FREE'd pages as junk, but then wondered what would happen and then wrote a test and here we are.\n\nIncidentally, I *think* this behaviour implies that pages existing before fork()s will be held by the system (possibly paged out 'n all that, but still, present), even if all of their shadowing pages have been copied up, so long as the shadowing objects continue to exist?  I don't suppose there's an easy, even if expensive, way to measure how many such \"referenced but would never be found by vm_fault()\" pages there are?\n\n\u003e I suspect that this would result in excessive fragmentation of the map entries backing the malloc() store.\n\nThat is certainly a risk.  In the case of snmalloc's use of MADV_FREE, though, it is generally followed by a mmap() MAP_ANON of the same space (possibly much later, when it re-allocates the address space).  I assume that these anonymous map entries, both arising from mmap() and MADV_FREE's (proposed) vm_object_split()-based changes are subject to simplification when adjacent?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1038119,
+ "bug_id": 235708,
+ "attachment_id": 0,
+ "creation_time": "2019-02-17T20:45:09Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "It looks like FFS is still using the generic pager for its getpages_async VNOP, which doesn't work with block sizes larger than the system page size.\n\nThe synchronous variant uses vfs_bio_getpages() to handle larger blocksizes, but since that iteratively calls bread() it is a fundamentally synchronous operation.\nI need to do more digging, but right now it seems like trying to implement an asynchronous-ish variant of vfs_bio_getpages() might be too much work for little real benefit in a not-common use case.\n\nIt seems like it might be acceptable to implement an ffs_getpages_async() which still uses the asynchronous generic pager when possible, but if blocksize \u003e pagesize will fall back to synchronous vfs_bio_getpages() and then immediately call iodone.  In fact, vop_stdgetpages_async() is implemented as a call to synchronous VOP_GETPAGES() followed by iodone.  This would allow sendfile(2) to work with larger blocksizes while still preserving the performance benefit of asynchronous completion for the majority (blocksize \u003c= pagesize) case."
+}

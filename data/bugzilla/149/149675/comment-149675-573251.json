@@ -1,0 +1,8 @@
+{
+ "id": 573251,
+ "bug_id": 149675,
+ "attachment_id": 0,
+ "creation_time": "2010-08-15T18:47:04Z",
+ "creator": "hselasky@c2i.net",
+ "text": "Hi,\n\nI believe the following patch will fix your problem. Please apply and rebuild \nkernel / ucom module.\n\n--HPS\n\n--- sys/dev/usb/serial/usb_serial.c\n+++ sys/dev/usb/serial/usb_serial.c\n@@ -942,6 +942,7 @@\n        uint8_t new_msr;\n        uint8_t new_lsr;\n        uint8_t onoff;\n+       uint8_t lsr_delta;\n \n        tp = sc-\u003esc_tty;\n \n@@ -965,6 +966,7 @@\n                return;\n        }\n        onoff = ((sc-\u003esc_msr ^ new_msr) \u0026 SER_DCD);\n+       lsr_delta = (sc-\u003esc_lsr ^ new_lsr);\n \n        sc-\u003esc_msr = new_msr;\n        sc-\u003esc_lsr = new_lsr;\n@@ -977,6 +979,27 @@\n \n                ttydisc_modem(tp, onoff);\n        }\n+\n+       if ((lsr_delta \u0026 ULSR_BI) \u0026\u0026 (sc-\u003esc_lsr \u0026 ULSR_BI)) {\n+\n+               DPRINTF(\"BREAK detected\\n\");\n+\n+               ttydisc_rint(tp, 0, TRE_BREAK);\n+       }\n+\n+       if ((lsr_delta \u0026 ULSR_FE) \u0026\u0026 (sc-\u003esc_lsr \u0026 ULSR_FE)) {\n+\n+               DPRINTF(\"Frame error detected\\n\");\n+\n+               ttydisc_rint(tp, 0, TRE_FRAMING);\n+       }\n+\n+       if ((lsr_delta \u0026 ULSR_PE) \u0026\u0026 (sc-\u003esc_lsr \u0026 ULSR_PE)) {\n+\n+               DPRINTF(\"Parity error detected\\n\");\n+\n+               ttydisc_rint(tp, 0, TRE_PARITY);\n+       }\n }\n \n void\n\nSee USB P4 change ID 182430 for more details.\n\nhttp://p4web.freebsd.org/@@182430?ac=10"
+}

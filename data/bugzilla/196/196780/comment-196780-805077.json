@@ -1,0 +1,8 @@
+{
+ "id": 805077,
+ "bug_id": 196780,
+ "attachment_id": 151700,
+ "creation_time": "2015-01-15T19:18:03Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "Created attachment 151700\npatch to unbreak graphics/libspiro build on FreeBSD 8\n\nBuilding graphics/libspiro on FreeBSD 8 fails with the following error:\n\n[snip]\ngmake[2]: Entering directory '/wrkdirs/usr/ports/graphics/libspiro/work/fontforge-libspiro-15fdb23'\n  CC       spiro.lo\n  CC       spiroentrypoints.lo\n  CC       bezctx.lo\n  CCLD     libspiro.la\nlibtool:   error: CURRENT '' must be a nonnegative integer\nlibtool:   error: ':2:0' is not valid version information\nMakefile:495: recipe for target 'libspiro.la' failed\ngmake[2]: *** [libspiro.la] Error 1\n\nLooking around for 2:0 ...\n# grep '2:0' *\nMakefile:LIBSPIRO_VERSION = $0:2:0\nconfig.log:LIBSPIRO_VERSION='$0:2:0'\nconfig.status:S[\"LIBSPIRO_VERSION\"]=\"$0:2:0\"\n\nwhich is obviously bogus.\n\nThe origin is a typo in configure.ac:\n#-------------------------------------------\n# Pass variables to MAKEFILE.AM\nAC_SUBST(HOST,$host)\nAC_SUBST(LIBSPIRO_VERSION,$spiro_info)\n\nThis is incorrect because spiro_info is an m4 variable, so the $ gets\nprepended to its value when generating Makefile.  The Makefile than uses\nLIBSPIRO_VERSION here:\nlibspiro_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIBSPIRO_VERSION).\nThe shell then sees $0:2:0 and chokes.\n\nFreeBSD 9 and newer are able to build the port because their version of /bin/sh has been patched in a way that allows them to accept this as input."
+}

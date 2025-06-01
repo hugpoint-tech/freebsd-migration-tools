@@ -1,0 +1,8 @@
+{
+ "id": 1004468,
+ "bug_id": 230290,
+ "attachment_id": 195759,
+ "creation_time": "2018-08-02T09:15:19Z",
+ "creator": "johalun0@gmail.com",
+ "text": "Created attachment 195759\nPatch for acpi.c\n\nWhen adding listeners to acpi_sleep_event I realized that suspend via lid/button does not behave the same way as suspend via zzz or acpiconf. \n\nThe problem is that acpi's ioctl requests sleep state directly, ignoring to invoke registered handlers. This patch will fix that. \n\nThe drawback of this patch is that we have no chance to return an error from the ioctl call. To do that we need to do something like\n\nif (ACPI_FAILURE(AcpiOsExecute(OSL_NOTIFY_HANDLER, \n        acpi_invoke_sleep_eventhandler, \u0026state)))\n    return ERROR;\nelse \n    return 0;\n\nHowever, 'state' in this case does not live long enough to be passed to the event handler so we need to add something like:\n\nstatic int acpi_states[6] = {0,1,2,3,4,5}\n\nAnd pass \u0026acpi_states[state]\n\nThe purpose is to inform linuxkpi that we're suspending/resuming. For now the power_suspend_early event is used but that does not include what state we're suspending to so we're forced to assume we're always suspending to S3.\n\nWhich would be more preferable?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 754171,
+ "bug_id": 187358,
+ "attachment_id": 0,
+ "creation_time": "2014-03-07T22:50:00Z",
+ "creator": "bjk@FreeBSD.org",
+ "text": "security/pam_krb5 has logic to determine which krb5 implementation it will build against.  It can use either MIT krb5 or heimdal, but there is an added complication that heimdal can be found both in the base system and in ports (security/heimdal).  The heimdal in the base system in stable/8 and stable/9 is too old to support anonymous principals (for anonymous pkinit).  However, the configure logic for pam_krb5 does not handle this situation correctly, and attempts to build in FAST support that relies on anonymous principals, but pulls in the header files from the base system, which do not provide the necessary symbols for compilation.\nA new upstream release of pam_krb5 would include a newer version of the rra-c-util m4 macros that would correctly handle this situation, but the current release of pam_krb5 has an old copy of rra-c-util without that functionality.\n\nFix: \n\nI believe that it will be sufficient to pass in CONFIGURE_ARGS with CPPFLAGS=-I/usr/local/include and LDFLAGS=-L/usr/local/lib, but it is possible that further tweaks may be necessary.  Russ (the author of pam_krb5) tells me that it has logic to control whether to include \u003ckrb5.h\u003e or \u003ckrb5/krb5.h\u003e, and that may still result in broken behavior even with the CPPFLAGS forced.  In that case, config.h may need to be overridden.\nHow-To-Repeat: Build security/pam_krb5 against security/heimdal on a 9.2 or older system."
+}

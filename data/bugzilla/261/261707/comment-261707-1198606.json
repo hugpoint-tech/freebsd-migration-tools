@@ -1,0 +1,8 @@
+{
+ "id": 1198606,
+ "bug_id": 261707,
+ "attachment_id": 0,
+ "creation_time": "2022-02-10T11:09:40Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "Probably caused by base 3de96d664aaa.  You can try the following hack which essentially reverts that commit.  In bug 261773 it is also visible as corrupted icons in Firefox.  There must be non-anonymous swap objects with ref_count == 1 and active mappings.\n\n--- sys/vm/vm_pageout.c\n+++ sys/vm/vm_pageout.c\n@@ -732,8 +732,8 @@ vm_pageout_clean(vm_page_t m, int *numpagedout)\n static bool\n vm_pageout_object_act(vm_object_t object)\n {\n-\treturn (object-\u003eref_count \u003e\n-\t    ((object-\u003eflags \u0026 (OBJ_SWAP | OBJ_ANON)) == OBJ_SWAP ? 1 : 0));\n+\treturn (object-\u003eref_count \u003e 0);\n+//\t    ((object-\u003eflags \u0026 (OBJ_SWAP | OBJ_ANON)) == OBJ_SWAP ? 1 : 0));\n }\n \n static int"
+}

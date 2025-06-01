@@ -1,0 +1,8 @@
+{
+ "id": 439943,
+ "bug_id": 122562,
+ "attachment_id": 0,
+ "creation_time": "2008-04-08T12:10:00Z",
+ "creator": "susan.lan@zyxel.com.tw",
+ "text": "\tIn the very beginning of ip6_input():\n\n#ifdef IPSEC\n  /*\n   * should the inner packet be considered authentic?\n   * see comment in ah4_input().\n   */\n  if (m) {\n      m-\u003em_flags \u0026= ~M_AUTHIPHDR;\n      m-\u003em_flags \u0026= ~M_AUTHIPDGM;\n  }\n#endif\n\nConsider the case: a packet is encrypted as AH tunneled, and FreeBSD is the end point of the tunnel. After it tore off the outer IPv6 header, the mbuf will be inserted to NETISR again. Then ip6_forward() will be called again to process the packet. However, in ipsec6_in_reject(), the packet's source and destination will match the SP entry. Since ip6_input() has truned off the flag M_AUTHIPHDR and M_AUTHIPDGM, the packet will be dropped.\n\nI don't think with the codes AH tunnel could work properly.\n\nFix: \n\nI think the flag should be kept!\nHow-To-Repeat: \tSet IPsec rules as AH tunnel for the 2 PCs; send ICMP echo request from\none end of the tunnel to the other end. However, the echo reply will never be returned since the packet is not successfully sent out."
+}

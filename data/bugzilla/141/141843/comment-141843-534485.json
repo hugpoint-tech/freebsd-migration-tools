@@ -1,0 +1,8 @@
+{
+ "id": 534485,
+ "bug_id": 141843,
+ "attachment_id": 0,
+ "creation_time": "2010-02-24T08:19:29Z",
+ "creator": "Jean-Luc.Richier@imag.fr",
+ "text": "A other cause (or the same) seems that when the interface is reset (for \nexample with a ifconfig em0 down, the chip is reset, but the \nlast_hw_offload in the interface context is not reset\n\nI just had the following problem in FreeBSD8.0 RELEASE\n# ping www.google.com\n\tIt works\n# ifconfig em0 down up\n# ping www.google.com\n\tIt does not work\n# telnet -N \u003cipv4 router addr\u003e\n\tNormal error message\n# ping www.google.com\n\tIt works\n\nI made the following path to solve the problem (in em_stop):\n\n--- /sys/dev/e1000/if_em.c.DIST 2009-10-25 02:10:29.000000000 +0100\n+++ /sys/dev/e1000/if_em.c      2010-02-23 18:22:53.000000000 +0100\n@@ -2710,6 +2710,7 @@\n         ifp-\u003eif_drv_flags \u0026= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);\n\n         e1000_reset_hw(\u0026adapter-\u003ehw);\n+       adapter-\u003elast_hw_offload = 0;\n         if (adapter-\u003ehw.mac.type \u003e= e1000_82544)\n                 E1000_WRITE_REG(\u0026adapter-\u003ehw, E1000_WUC, 0);\n  }\n\n\n\n\n-- \nJean-Luc RICHIER (Jean-Luc.Richier@Imag.Fr)\nLaboratoire d'Informatique de Grenoble (LIG)\nCampus de Grenoble\n681 rue de la Passerelle\nBP 72, F-38402 St Martin d'Hères Cedex\nTel : +33 4 76 82 72 32 Fax : +33 4 76 82 72 87"
+}

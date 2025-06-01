@@ -1,0 +1,8 @@
+{
+ "id": 382930,
+ "bug_id": 110492,
+ "attachment_id": 0,
+ "creation_time": "2007-03-18T21:10:03Z",
+ "creator": "ggg_mail@inbox.ru",
+ "text": "I use Xfce 4.4 which uses HAL to shutdown the computer. But instead of\ncalling \"shutdown -p now\" it does \"shutdown -h now\" which forces me to\npress power button.\n\nSome investigating (see http://www.freebsd.org/cgi/query-pr.cgi?pr=110465)\nshowed that in the case when Xfce is configured with HAL it uses\n/usr/local/libexec/hal/scripts/hal-system-power-shutdown-freebsd script,\nwhich is directly executing \"shutdown -h now\". I think it would be more\ncorrect if there will be the \"-p\" option passed to shutdown. Or, there\nshould be (already present?) a customiseable option so anyone could choose.\n\nFix: \n\nReplace the /usr/local/libexec/hal/scripts/hal-system-power-shutdown-freebsd\nwith something like this:\n\n#!/bin/sh\n\nunsupported() {\n        echo \"org.freedesktop.Hal.Device.SystemPowerManagement.NotSupported\" \u003e\u00262\n        echo \"No shutdown command found\" \u003e\u00262\n        exit 1\n}\n\n#Try for common tools\nif [ -x \"/sbin/shutdown\" ] ; then\n        /sbin/shutdown -p now\n        exit $?\nelif [ -x \"/usr/sbin/shutdown\" ] ; then\n        /usr/sbin/shutdown -p now\n        exit $?\nelse\n        unsupported\nfi\nHow-To-Repeat: Try to do a poweroff by methods which use HAL, e.g. Xfce 4.4 shutdown dialog."
+}

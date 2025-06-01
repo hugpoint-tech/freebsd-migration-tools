@@ -1,0 +1,8 @@
+{
+ "id": 1082722,
+ "bug_id": 243096,
+ "attachment_id": 0,
+ "creation_time": "2020-01-08T15:59:51Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to lutz from comment #7)\n\u003e It's interesting to see how to derive such an issue from the coredump.\n\nAre you asking how I discovered this problem?  In kgdb I did:\n\n(kgdb) p/x *(struct ether_header *)m-\u003edata\n\nfrom the frame where the assertion failure occurred.  This showed an ethertype of 0x86dd after correcting for network byte order.\n\n\u003e OTOH, I'd would not panic in this case, because malformed packages can be easily sent to the host from outside, which in turn allows a remote crash of the device.\n\nIndeed.  The rest of ng_nat_rcvdata() assumes that the packet was validated by the IP stack, but in this configuration that is not happening.  So my patch fixes an obvious bug but there is a larger problem. :(\n\nIt looks like r342168 (which introduced the ability to receive packets from ng_ether) is quite incomplete.  Fortunately it was not merged to any stable branches yet.  It should of course be possible to fix this by duplicating some of the validation done in ip_input().  Gleb, Maxim, any thoughts?"
+}

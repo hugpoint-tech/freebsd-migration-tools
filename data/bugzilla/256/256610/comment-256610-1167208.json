@@ -1,0 +1,8 @@
+{
+ "id": 1167208,
+ "bug_id": 256610,
+ "attachment_id": 0,
+ "creation_time": "2021-06-21T16:01:40Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I'm curious how this is using unmapped mbufs?  Does ngtee use sendfile(2) under the hood?  While we could patch m_dup(), I don't know we want to enforce the policy that the dup is always unmapped?  That said, I think fixing m_dup is probably a single line change to replace the 'bcopy' with 'm_copydata' as is done in m_defrag():\n\ndiff --git a/sys/kern/uipc_mbuf.c b/sys/kern/uipc_mbuf.c\nindex b9e716b411be..1a2098c7c536 100644\n--- a/sys/kern/uipc_mbuf.c\n+++ b/sys/kern/uipc_mbuf.c\n@@ -719,7 +719,7 @@ m_dup(const struct mbuf *m, int how)\n \t\twhile (n-\u003em_len \u003c nsize \u0026\u0026 m != NULL) {\n \t\t\tint chunk = min(nsize - n-\u003em_len, m-\u003em_len - moff);\n \n-\t\t\tbcopy(m-\u003em_data + moff, n-\u003em_data + n-\u003em_len, chunk);\n+\t\t\tm_copydata(m, moff, chunk, n-\u003em_data + n-\u003em_len);\n \t\t\tmoff += chunk;\n \t\t\tn-\u003em_len += chunk;\n \t\t\tremain -= chunk;"
+}

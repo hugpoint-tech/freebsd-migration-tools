@@ -1,0 +1,8 @@
+{
+ "id": 939306,
+ "bug_id": 220217,
+ "attachment_id": 0,
+ "creation_time": "2017-06-24T09:22:53Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to vegeta from comment #2)\nThere is no other thread. We assert that 'rw_wowner(rw) != curthread', so the thread holding the lock must not be the current thread (trying to acquire the lock).\n\nThat assertion fails, so we are the thread holding the lock, yet we try to lock again.\n\nThat seems to be in tcp_timer_rexmt(). It holds a write lock on the struct inpcb, so when pf goes to look up the inpcb and tries to get a read lock we run into this assertion failure. (tcp_output() in fact asserts that the inpcb must be write locked when it's called.)\n\nI'm not quite sure how to fix this though. In fact, right now I don't understand how this ever works."
+}

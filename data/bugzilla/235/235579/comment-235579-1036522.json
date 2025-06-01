@@ -1,0 +1,8 @@
+{
+ "id": 1036522,
+ "bug_id": 235579,
+ "attachment_id": 0,
+ "creation_time": "2019-02-07T14:20:29Z",
+ "creator": "rick@perftech.com",
+ "text": "# node -p 'require(\"url\").parse(\"https://www.test.com/test\")'; node --version\nurl.js:385\nthis.hostname = toASCII(this.hostname, true);\n^\n\nError: Cannot convert name to ASCII\nat Url.parse (url.js:385:23)\nat Object.urlParse [as parse] (url.js:149:13)\nat [eval]:1:16\nat Script.runInThisContext (vm.js:123:20)\nat Object.runInThisContext (vm.js:312:38)\nat Object. ([eval]-wrapper:6:22)\nat Module._compile (internal/modules/cjs/loader.js:721:30)\nat evalScript (internal/bootstrap/node.js:720:27)\nat executeUserCode (internal/bootstrap/node.js:313:7)\nat startExecution (internal/bootstrap/node.js:276:5)\nv11.6.0\n\nIn stepping through the debugger, I now can see that toASCII doesn't seem to be getting resolved correctly and this is causing it to fail. The definition on line 24 or url.js is as follows:\n\n`const { toASCII } = internalBinding('config').hasIntl ? internalBinding('icu') : require('punycode');`\n\ninternalBinding('config').hasIntl is undefined so it is trying to destruct to punycode but that seems to be where the failure is occurring as 'toASCII' is defined as ƒ toASCII() { [native code] }. I see that punycode has been deprecated so not sure if that is the issue.\n\nLikewise when I change my code to `new URL(\"https://www.test.com/test\")`, it fails on the call to 'parse' on line 319 of internal/url.js. 'parse' is defined as ƒ parse() { [native code] } and that throws the error there."
+}

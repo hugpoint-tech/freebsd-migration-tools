@@ -1,0 +1,8 @@
+{
+ "id": 1277322,
+ "bug_id": 274132,
+ "attachment_id": 0,
+ "creation_time": "2023-09-28T03:29:48Z",
+ "creator": "g.branden.robinson@gmail.com",
+ "text": "(In reply to Mina Galić from comment #1)\nI recommend checking the first few macro calls in the pages to see if they are in the required order: Dd, Dt, Os.\n\nJudging by \u003chttps://opensource.apple.com/source/Heimdal/Heimdal-498/lib/kafs/kafs.3.auto.html\u003e, that is the problem.  It uses the ordering Dd, Os, Dt.\n\nExample:\n\n$ printf '.Dd 2023-09-27\\n.Os WackyOS\\n.Dt foobar 1\\n.Sh Name\\n.Nm foobar\\n.Nd wacky tobacky\\n' | groff -mdoc -Tascii\nUNTITLED()                           LOCAL                          UNTITLED()\n\nName\n       foobar -- wacky tobacky\n\nWackyOS                           2023-09-27                         foobar(1)\n\ngroff 1.23.0 is strict about this because it had to be to improve formatting of multiple man/mdoc documents in sequence.  \u003chttps://git.savannah.gnu.org/cgit/groff.git/commit/?id=f911d0075cdae4a9f940ef2cad27e53a7af01b61\u003e\n\nThere were also changes around `Dd`, `Dt`, and `Os` to handle degeneracy, that is, outright failure of the mdoc(7) document to use one of these macros at all.  \u003chttps://savannah.gnu.org/bugs/?62774\u003e"
+}

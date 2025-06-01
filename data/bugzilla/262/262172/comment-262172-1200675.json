@@ -1,0 +1,8 @@
+{
+ "id": 1200675,
+ "bug_id": 262172,
+ "attachment_id": 232076,
+ "creation_time": "2022-02-24T16:46:05Z",
+ "creator": "firk@cantconnect.ru",
+ "text": "Created attachment 232076\npatch for 12.3\n\nThe bind()/bindat() syscall for AF_UNIX returns EADDRINUSE when some file already exist at the specified path. EADDRINUSE should mean \"this address already bound to someone\", and this is not always true here. There may be just some file (not a socket) or a dead socket (pending non-unlinked vnode from already closed, previously bound socket). While the first case usually considered as an application error, the second usually means \"we need to remove this stale entry and try again\", but to do this we should first check if the socket is really dead.\n\nThere is a hacky way to do this: try to connect to it, and see what happens, but: 1) it is an extra unneeded system call,\n2) is the socket is not dead, the listening application will receive spurious connection request, which is not always desirable,\n3) there is a problem to distinguish between ECONNREFUSED from a dead socket and ECONNREFUSED from full-backlog; we can try to connect with a wrong protocol (SOCK_STREAM vs SOCK_DGRAM etc) to get another errno, but anyway it is a hack\n\nSo I made a patch to return EEXIST instead or EADDRINUSE when there is not really bound socket but just a random file or a dead socket. As this may cause some incompatibilities, I added sysctl to optionally enable this feature."
+}

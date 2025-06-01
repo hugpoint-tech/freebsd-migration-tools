@@ -1,0 +1,8 @@
+{
+ "id": 1195544,
+ "bug_id": 261338,
+ "attachment_id": 0,
+ "creation_time": "2022-01-19T17:52:28Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "(In reply to Dmitry K. from comment #3)\nYes, I think that's the problem.\nWhen creating a patch for stable/12 I totally missed the fact that in main the smp_*_shootdown functions got split into i386 and amd64 variants.  The i386 smp_targeted_tlb_shootdown has a paired sched_pin / sched_unpin while the amd64 smp_targeted_tlb_shootdown has only sched_unpin and expects the current thread to be already pinned.\n\nSo, I merged the amd64 variant into the shared x86 smp shootdown code of stable/12.  That works well with the merged amd64 pmap code, but it broke the i386 pmap code.\n\nLet me think how to fix the breakage.\nIt seems that maybe it would be sufficient to make the sched_unpin calls in smp_targeted_tlb_shootdown specific to amd64.  If I am not mistaken, on i386 smp_targeted_tlb_shootdown is always called with the current thread pinned, so internal pinning (which got removed by me) and unpinning should be unnecessary."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 3484,
+ "bug_id": 1242,
+ "attachment_id": 0,
+ "creation_time": "1996-05-24T15:50:24Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e\u003eConfidential:   yes\n\u003e\u003eSeverity:       critical\n\u003e\u003ePriority:       high\n\nSorry, fixing this would break binary compatibility.  It will take years\nto fix.\n\n\u003e\tIn the /usr/include/sys/stat.h, there are two macros:\n\u003e\tS_ISFIFO and S_ISSOCK.  They are the same (as mentioned in the\n\u003e\tcomment).\n\nThis was intentional.  Pipes were implemented as (not very-) special cases\nof socket pairs.  The file descriptor type to distinguish them from sockets\ndidn't exist until recently.  See kern_descrip.c.  Until recently, DTYPE_SOCK\nwas used for both sockets and fifos.  Now nameless pipes are implemented\ndifferently and DTYPE_PIPE (which should be DTYPE_FIFO to match VFIFO like\nDTYPE_SOCKET almost matches VSOCK) is used to distinguish them from sockets.\nNamed pipes still have tock DTYPE_SOCKET.\n\n\u003e\u003eFix:\n\u003e\t\n\u003e\tYou have to make difference between them, as in many other Unices.  Eg:\n\u003e\t#define S_ISFIFO( m ) (((m) \u0026 0170000 ) == 0010000 )\n\u003e\t#define S_ISSOCK( m ) (((m) \u0026 0170000 ) == 0140000 )\n\nThis will result in S_ISFIFO() being false for all fifos.  It will fail\neven for nameless pipes in -current, since pipe_stat() sets S_ISOCK when\nit should set S_IFIFO.\n\nBruce"
+}

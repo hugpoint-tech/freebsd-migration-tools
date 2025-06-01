@@ -1,0 +1,8 @@
+{
+ "id": 29412,
+ "bug_id": 9723,
+ "attachment_id": 0,
+ "creation_time": "1999-01-27T14:30:01Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "\nWhen the icmp code uses icmp_reflect to reply to a packet it rewrites\nthe original packet and then sends that. Unfortunately is does not clear\nm-\u003em_pkthdr.rcvif after using it, so the outgoing packet looks like it\nhas been recieved on some interface.\n\nThis is a problem if you have a firewall rule which then filters stuff on\nthe recieved packet. It looks like the same problem is present in current.\n\nFix: You can work around this by only filtering on incoming packets. I think it\nwould be correct to add a clearing of m-\u003em_pkthdr.rcvif toward the end of\nicmp_reflect. Something like the following seems to work on 2.2.8-STABLE,\nand looks like it would work on 3.0/4.0 too.\nHow-To-Repeat: \nSuppose you have a machine with de0 with address 10.0.0.1 and you have the\nfirewall rules:\n\n\tdeny ip from 10.0.0.1 to any recv de0\n\tallow ip from any to any\n\nPings from interface de0 will not be replied to, as the outgoing reply will\nmatch the first rule."
+}

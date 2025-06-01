@@ -1,0 +1,8 @@
+{
+ "id": 1233350,
+ "bug_id": 267416,
+ "attachment_id": 0,
+ "creation_time": "2022-10-29T12:08:36Z",
+ "creator": "pat@patmaddox.com",
+ "text": "I am trying to run `make install-missing-packages` on Cirrus CI. When I do, it fails with:\n\n    xargs: can't open /dev/tty: Device not configured\n\nThe `install-missing-packages` target includes a line with `${XARGS} -o` where `-o` means `Reopen stdin as /dev/tty in the child process` (see xargs(1)).\n\nI'm not sure why `-o` is in there, what else might be expecting it... but when I removed it, it worked fine:\n\n    sed -i '' -e 's:${XARGS} -o:${XARGS}:' /usr/ports/Mk/bsd.port.mk\n\nor this patch:\n\n    --- bsd.port.mk\t2022-10-29 04:59:04.058879000 -0700\n    +++ bsd.port.mk-fixed\t2022-10-29 04:59:58.919773000 -0700\n    @@ -4323,7 +4323,7 @@\n     install-missing-packages:\n     \t@_dirs=$$(${MISSING-DEPENDS-LIST}); \\\n     \t${ECHO_CMD} \"$${_dirs}\" | ${SED} \"s%${PORTSDIR}/%%g\" | \\\n    -\t\t${SU_CMD} \"${XARGS} -o ${PKG_BIN} install -A\"\n    +\t\t${SU_CMD} \"${XARGS} ${PKG_BIN} install -A\"\n     \n     ################################################################\n     # Everything after here are internal targets and really"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1353332,
+ "bug_id": 269207,
+ "attachment_id": 0,
+ "creation_time": "2025-03-05T21:15:14Z",
+ "creator": "fbsd@opal.com",
+ "text": "The existing code added when DETECT_TZ_CHANGES is defined does not work completely as expected.\n\nIt does detect changes to /etc/localtime.\n\nHowever, on occasion, it does not return the correct timezone, defaulting to \"UTC\" or timezone \"   \" (which comes from the WILDABBR code) and causing programs to receive a UTC result instead of a localtime result.\n\nIt seems to fail if called less than 61 seconds after system boot (this is because the change detection code uses CLOCK_MONOTONIC so it will not trigger until at least DETECT_TZ_CHANGES_INTERVAL=61 seconds after boot).  This causes programs started at boot to start in UTC timezone even though /etc/localtime is present and set to another timezone.  An easy fix for this is to return 1 when last_checked == 0.\n\nIt seems to also fail at other times too with an app switching back to UTC after already having learned the correct timezone.  I've not had time to debug this yet, but suspect it could have to do with calling tzsetwall() or other function that causes the timezone name to be reset."
+}

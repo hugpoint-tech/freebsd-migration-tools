@@ -1,0 +1,8 @@
+{
+ "id": 1056797,
+ "bug_id": 234216,
+ "attachment_id": 0,
+ "creation_time": "2019-07-05T18:46:11Z",
+ "creator": "zeising@FreeBSD.org",
+ "text": "Hi!\nThe CMSG_ macros are from our own sys/socket.h.  What I can't understand is where the register_t comes from.  The bredbandskollen code never uses it.\n\nLooking at the preprocessor output on amd64, with gcc8 (which doesn't have this issue), \n\nchar cmsgbuf[CMSG_SPACE(sizeof(int))];\n\nexpands to\n\nchar cmsgbuf[\n# 36 \"../framework/socketreceiver.h\" 3 4\n                ((((__uintptr_t)(sizeof(struct cmsghdr)) + (sizeof(__register_t) - 1)) \u0026 ~(sizeof(__register_t) - 1)) + (((__uintptr_t)(\n# 36 \"../framework/socketreceiver.h\"\n                sizeof(int)\n# 36 \"../framework/socketreceiver.h\" 3 4\n                ) + (sizeof(__register_t) - 1)) \u0026 ~(sizeof(__register_t) - 1)))\n# 36 \"../framework/socketreceiver.h\"\n                                       ];\n\n\nThe macro CMSG_SPACE macro looks like this (from sys/sys/socket.h)\n\n#define CMSG_SPACE(l)           (_ALIGN(sizeof(struct cmsghdr)) + _ALIGN(l))\n\nI wonder if _ALIGN expands to it, but I can't find that define.\n\nOn my amd64 system, through a series of includes, it looks like sys/socket.h includes x86/_types.h, which has a typedef for __register_t."
+}

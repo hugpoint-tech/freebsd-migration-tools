@@ -1,0 +1,8 @@
+{
+ "id": 479848,
+ "bug_id": 130652,
+ "attachment_id": 0,
+ "creation_time": "2009-01-17T16:20:03Z",
+ "creator": "tejblum@yandex-team.ru",
+ "text": "Some excerpt from rt_check(): \nrt_check()\n{\n/*1*/   RT_LOCK(rt0);\nretry:\n        ...\n                if ((rt = rt0-\u003ert_gwroute) != NULL) {\n/*2*/                   RT_LOCK(rt);            /* NB: gwroute */\n                        ....\n                }\n                 \n                if (rt == NULL) {  /* NOT AN ELSE CLAUSE */\n/*3*/                   RT_TEMP_UNLOCK(rt0); /* MUST return to undo this */\n/*4*/                   rt = rtalloc1_fib(rt0-\u003ert_gateway, 1, 0UL, fibnum);\n                        ....\n/*5*/                   RT_RELOCK(rt0);\n                        ....\n                                rt0-\u003ert_gwroute = rt;\n                }\n                RT_LOCK_ASSERT(rt);\n                RT_UNLOCK(rt0);\n                ....\n}\n\nThe function deals with route rt0 and rt. Usually, it locks rt0 in point /*1*/, then locks rt = rt0-\u003ert_gwroute in point /*2*/, then unlock rt0 and done. But sometimes, in lock rt inside rtalloc1_fib() in point /*4*/. Then, in point /*5*/, it locks rt0, which was unlocked in point /*3*/. The order of locking of rt0 and rt is reversed, so a deadlock is possible.\n\n(Also, if after RT_RELOCK(rt0) we found that rt0 is unusable, we should not forget to free rt before retry.)\n\nFix: Patch attached with submission follows:"
+}

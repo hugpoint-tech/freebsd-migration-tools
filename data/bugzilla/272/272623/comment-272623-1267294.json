@@ -1,0 +1,8 @@
+{
+ "id": 1267294,
+ "bug_id": 272623,
+ "attachment_id": 0,
+ "creation_time": "2023-07-22T12:19:00Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Alexey Dokuchaev from comment #2)\n\u003e Right, SDL 1.2 is preferred and that's what pulled when building packages.\n\nLooks contrary to upstream intention. OpenTTD added SDL2 in 1.10.0 and made it default (for plain/vendor build and bundled recipes for Windows, Debian, openSUSE). OpenTTD switched to CMake in 1.11.0 but kept SDL2 as default. According to bug 245253 the port kept SDL12 only per maintainer's discretion thus insincere to say in passive voice.\n\nCMakeLists.txt:\n\n            find_package(SDL2)\n            if(NOT SDL2_FOUND)\n                find_package(SDL)\n            endif()\n\nconfig.lib:\n\n\t\tsdl2_config=\"\"\n\t\tif [ -x \"`which sdl2-config`\" ]; then\n\t\t\tdetect_pkg_config \"$with_sdl\" \"sdl2\" \"sdl2_config\" \"2.0\"\n\t\tfi\n\t\tif [ -z \"$sdl2_config\" ]; then\n\t\t\tdetect_pkg_config \"$with_sdl\" \"sdl\" \"sdl_config\" \"1.2\"\n\t\tfi\n\n\u003e Autodetection is what the port does now and it works as intended.\n\nAutodetection in ports (unlike vendor build) is discouraged (see ports 7cffd3c8f908 or ports 4da13b8f8e61) and gets in the way of reproducible builds (see D24586).\n\n(In reply to Andrey Zakharchenko from comment #3)\n\u003e And SDL 1.2 is unusable for pure wayland environment without Xwayland layer.\n\ndevel/sdl12-compat can be used as a workaround. However, sdl12-compat may be more buggy than native sdl2 support and currently requires sdl12 during build to expose API and avoid package conflict due to missing provides/requires in the ports framework."
+}

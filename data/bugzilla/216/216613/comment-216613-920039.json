@@ -1,0 +1,8 @@
+{
+ "id": 920039,
+ "bug_id": 216613,
+ "attachment_id": 0,
+ "creation_time": "2017-02-03T16:29:06Z",
+ "creator": "alex.deiter@gmail.com",
+ "text": "Hello Patrick,\n\n\u003e\u003eCan you try this following patch on your system?\n\u003e\u003eThis resolves it on my test VM.\n\nThank you very much! This patch (plus previous patch) works fine for me.\nSuccessfully tested for amd64 CURRENT r313132 with enabled VIMAGE and TCP_RFC7413 kernel options.\n\nIndex: sys/netinet/tcp_subr.c\n===================================================================\n--- sys/netinet/tcp_subr.c      (revision 313106)\n+++ sys/netinet/tcp_subr.c      (working copy)\n@@ -679,6 +679,10 @@\n        V_sack_hole_zone = uma_zcreate(\"sackhole\", sizeof(struct sackhole),\n            NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);\n\n+#ifdef TCP_RFC7413\n+       tcp_fastopen_init();\n+#endif\n+\n        /* Skip initialization of globals for non-default instances. */\n        if (!IS_DEFAULT_VNET(curvnet))\n                return;\n@@ -732,10 +736,6 @@\n #ifdef TCPPCAP\n        tcp_pcap_init();\n #endif\n-\n-#ifdef TCP_RFC7413\n-       tcp_fastopen_init();\n-#endif\n }\n\n #ifdef VIMAGE\n\nIndex: sys/netinet/tcp_fastopen.c\n===================================================================\n--- sys/netinet/tcp_fastopen.c  (revision 313106)\n+++ sys/netinet/tcp_fastopen.c  (working copy)\n@@ -209,6 +209,7 @@\n        rm_init(\u0026V_tcp_fastopen_keylock, \"tfo_keylock\");\n        callout_init_rm(\u0026V_tcp_fastopen_autokey_ctx.c,\n            \u0026V_tcp_fastopen_keylock, 0);\n+       V_tcp_fastopen_autokey_ctx.v = curvnet;\n        V_tcp_fastopen_keys.newest = TCP_FASTOPEN_MAX_KEYS - 1;\n }"
+}

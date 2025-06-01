@@ -1,0 +1,8 @@
+{
+ "id": 939079,
+ "bug_id": 220198,
+ "attachment_id": 0,
+ "creation_time": "2017-06-21T23:24:27Z",
+ "creator": "woodsb02@freebsd.org",
+ "text": "My networking statistics appear to be double counting on two of my FreeBSD 12-CURRENT boxes running r319025.\n\nI discovered the double counting by comparing the output of \"systat -ifstat\" (which reports 988 KB/s) with the output of \"iftop -B\" (which reports 491 KB/s). I believe systat uses the kernel interface counters to infer bandwidth usage, whereas iftop gathers statistics using pcap. I know that iftop is the correct one, because my internet speed only gives me around ~500 KB/s unfortunately.\n\n# systat -ifstat -match igb0\n...\n      Interface           Traffic               Peak                Total\n           igb0  in    988.008 KB/s        988.008 KB/s           36.295 GB\n                 out    16.953 KB/s         16.953 KB/s          295.774 GB\n\n\n# iftop -i igb0 -B\n...\nTX:    cum:   31.7KB   peak:   9.69KB    rates:   9.69KB  7.92KB  7.92KB\nRX:           1.54MB            491KB              491KB   394KB   394KB\n\n\nThe two interfaces in these boxes are:\n\n$ pciconf -lvv | grep igb1 -A4\nigb1@pci0:4:0:0:        class=0x020000 card=0x00008086 chip=0x15398086 rev=0x03 hdr=0x00\n    vendor     = 'Intel Corporation'\n    device     = 'I211 Gigabit Network Connection'\n    class      = network\n    subclass   = ethernet\n\n$ pciconf -lvv | grep igb0 -A4\nigb0@pci0:8:0:0:        class=0x020000 card=0x15331849 chip=0x15338086 rev=0x03 hdr=0x00\n    vendor     = 'Intel Corporation'\n    device     = 'I210 Gigabit Network Connection'\n    class      = network\n    subclass   = ethernet"
+}

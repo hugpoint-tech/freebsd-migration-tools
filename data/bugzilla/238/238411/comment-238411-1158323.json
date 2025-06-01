@@ -1,0 +1,8 @@
+{
+ "id": 1158323,
+ "bug_id": 238411,
+ "attachment_id": 0,
+ "creation_time": "2021-04-25T23:03:18Z",
+ "creator": "abraham@gmx.at",
+ "text": "Let's ask differently in reference to the non-modified FreeBSD drivers. \n\nRegardless if I set \"ifconfig igb0 wol\" or not, I cannot enable the WOL feature on my NICS. So for me it's not clear with which functionality from OS perspective I can influence the field \"adapter-\u003ewol\".\n\nMy only workaround I found is to change the variable directly in the source code of the driver and overrule it.\n\nWhat I see from my theoretical analysis, the variables are stored in ROM at shutdown -\u003e method \"em_enable_phy_wakeup\":\n  E1000_WRITE_REG(hw, E1000_WUC, E1000_WUC_PHY_WAKE | E1000_WUC_PME_EN | E1000_WUC_APME);\n  E1000_WRITE_REG(hw, E1000_WUFC, adapter-\u003ewol);\n\nAt startup the register is read again:\n  apme_mask = E1000_WUC_APME;\n  eeprom_data = E1000_READ_REG(\u0026adapter-\u003ehw, E1000_WUC);\n  if (eeprom_data \u0026 apme_mask)\n    adapter-\u003ewol = (E1000_WUFC_MAG | E1000_WUFC_MC);\n\nAs the variable \"adapter-\u003ewol\" at startup seems to be zero, it means that the flag E1000_WUC_APME is not set, although it was written at shutdown.\n\nSo seen from my hardware perspective, the ROM settings are not properly recognized at startup, hence \"adapter-\u003ewol\" is always zero. The variable cannot be influenced by anything known to me.\n\nIs my analysis correct? Did I miss something?\n\nP.S: I have an E1000_DEV_ID_I210_COPPER_FLASHLESS installed."
+}

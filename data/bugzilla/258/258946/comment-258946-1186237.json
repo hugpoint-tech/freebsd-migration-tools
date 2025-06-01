@@ -1,0 +1,8 @@
+{
+ "id": 1186237,
+ "bug_id": 258946,
+ "attachment_id": 0,
+ "creation_time": "2021-11-11T21:30:08Z",
+ "creator": "adridg@freebsd.org",
+ "text": "I can't reproduce this problem on 13- with CMake 3.21.3 (which I think is current ports version). Here's a very very simple CMakeLists.txt:\n\n===\ncmake_minimum_required(VERSION 3.20 FATAL_ERROR)\nproject(pr-258946)\n\nfind_package(fmt REQUIRED)\n\nif(NOT EXISTS \"main.cc\")\n    file(WRITE \"main.cc\" \"#include \u003cfmt/core.h\u003e\\nint main() { fmt::print(\\\"Hello World\\\\n\\\"); }\\n\")\nendif()\n\nadd_executable(demo main.cc)\ntarget_link_libraries(demo fmt::fmt)\n===\n\nI have libfmt 8.0.1 from ports installed. I run the following in a directory containing just that CMakeLists.txt (it will create a source file to compile):\n\n```\ncmake .\nmake VERBOSE=1\n```\n\nCMake indicates doesn't complain, finds the *fmt* package (see the resulting CMakeCache.txt for confirmation) and the build looks like\n\n```\n[ 50%] Building CXX object CMakeFiles/demo.dir/main.cc.o\n/usr/bin/c++ -DFMT_SHARED -isystem /usr/local/include  -MD -MT CMakeFiles/demo.dir/main.cc.o -MF CMakeFiles/demo.dir/main.cc.o.d -o CMakeFiles/demo.dir/main.cc.o -c /tmp/pr-258946/main.cc\n```\n\n(Note FMT_SHARED comes from the `fmt-targets.cmake` file, as does the `-I` flag)\n\nLinking, in turn, does\n\n```\n[100%] Linking CXX executable demo\n/usr/local/bin/cmake -E cmake_link_script CMakeFiles/demo.dir/link.txt --verbose=1\n/usr/bin/c++ CMakeFiles/demo.dir/main.cc.o -o demo  -Wl,-rpath,/usr/local/lib /usr/local/lib/libfmt.so.8.0.1 -Wl,--as-needed \n```\n\nDavid, can you elaborate?"
+}

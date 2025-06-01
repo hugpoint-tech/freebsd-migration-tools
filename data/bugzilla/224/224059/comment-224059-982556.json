@@ -1,0 +1,8 @@
+{
+ "id": 982556,
+ "bug_id": 224059,
+ "attachment_id": 0,
+ "creation_time": "2018-03-15T05:03:27Z",
+ "creator": "kaho@elam.kais.kyoto-u.ac.jp",
+ "text": "(In reply to Niclas Zeising from comment #1)\n\nPlease try the patch. The problem seems to be caused by the function\niflib_init_locked() inside iflib_device_resume(), and iflib_init_locked()\nshould be invoked after iflib_stop().\n\nProbably, i219 has a problem when its PCI power state changes to D3.\nYou may loose a internet connection after resume because of a failure\nof waking up.\n\nAs a workaround, hw.pci.do_power_suspend=0 prevents to change\nfrom D1 to D3 state, but it makes energy consumption more. \n\n--- sys/net/iflib.c\t(revision 330961)\n+++ sys/net/iflib.c\t(working copy)\n@@ -4526,6 +4526,7 @@\n \tif_ctx_t ctx = device_get_softc(dev);\n \n \tCTX_LOCK(ctx);\n+\tiflib_stop(ctx);\n \tIFDI_SUSPEND(ctx);\n \tCTX_UNLOCK(ctx);"
+}

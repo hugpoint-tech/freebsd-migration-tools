@@ -1,0 +1,8 @@
+{
+ "id": 1301596,
+ "bug_id": 277804,
+ "attachment_id": 0,
+ "creation_time": "2024-03-20T02:24:52Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "I am not sure what happens there.  Most likely, you would need to add some\nprintf()s in your linux64.ko to get more diagnostic there.\n\nFirst, look at the long comment at the start of sys/compat/linux/linux.h\ndescribing arrangements for Linux and FreeBSD dev_t \u003c-\u003e (major, minor) layouts.\nI do not see anything special in the value of e.g. 55 vs. 52 for the /var dev_t\nin the last message.  I even wrote a simple check to ensure that I did not\nmissed anything:\n#include \u003csys/param.h\u003e\n#include \u003csys/conf.h\u003e\n#include \u003cstdbool.h\u003e\n#include \u003cstdio.h\u003e\n#include \"linux.h\"\n\nint\nmain(void)\n{\n\tdev_t d = 55;\n\tdev_t ld = linux_encode_dev(major(d), minor(d));\n\n\tprintf(\"%#lx %#lx %#x %#x\\n\", d, ld, linux_decode_major(ld),\n\t    linux_decode_minor(ld));\n}\n\n(you need to provide -I \u003cpath to src\u003e/sys/compat/linux when compiling it.\n\nSo perhaps check what is the dev_t for /var before linux_new_encode_dev() in\nlinux_kern_statat() on your machine."
+}

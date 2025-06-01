@@ -1,0 +1,8 @@
+{
+ "id": 1080975,
+ "bug_id": 242890,
+ "attachment_id": 0,
+ "creation_time": "2019-12-26T09:52:32Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "We are observing a strange problem on VMware when a kernel is compiled with RSS option.\nThe problem appears as lib resolver not being able to resolve DNS names.\nE.g., \"host google.com\" would resolve the name, but \"ping google.com\" would fail with \"Host name lookup failure\".\nA packet capture shows that both commands send exactly the same requests and get the same replies, but in the case of ping the host replies a port unreachable ICMP message.\nFor example:\n10.180.106.180.29707 \u003e 10.180.106.5.53: 50740+ A? s3.us-east-2.amazonaws.com. (55)\n10.180.106.5.53 \u003e 10.180.106.180.29707: 50740 1/0/0 A 52.219.80.194 (71)\n10.180.106.180 \u003e 10.180.106.5: ICMP 10.180.106.180 udp port 29707 unreachable, length 107\n\nOne difference between host(1)'s code and libc resolver's code might be that the latter performs connect(2) on the datagram / UDP socket used for DNS queries.\n\nOn the kernel side, I see that in_pcblookup_mbuf() fails to find the PCB matching the reply packet.\nPotentially interesting fields from the mbuf are:\n                uint32_t flowid = 0xc48d76be\n                uint8_t rsstype = 0x81 // M_HASHTYPE_RSS_IPV4"
+}

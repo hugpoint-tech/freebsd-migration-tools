@@ -1,0 +1,8 @@
+{
+ "id": 813288,
+ "bug_id": 198279,
+ "attachment_id": 153787,
+ "creation_time": "2015-03-04T15:59:01Z",
+ "creator": "jhs@berklix.com",
+ "text": "Created attachment 153787\nbsd.lib.mk.chflags.REL=ALL.diff to stop make world killing jails\n\nJails are lethaly killed by make world, unless /etc/make.conf contains this:\n        NO_FSCHG=\"yes\"\n        #       Avoid bsd.lib.mk 'INSTALLFLAGS+= -fschg' killing FreeBSD jails,\n        #       deleting /lib/libc.so.7 via 'cd /usr/src/lib/csu/amd64 ; make install'\n\nKilling:\n        uname -a\n        FreeBSD land.berklix.org 10.1-RELEASE-p6 FreeBSD 10.1-RELEASE-p6 #0: Tue Feb 24 19:00:21 UTC 2015\n   root@amd64-builder.daemonology.net:/usr/obj/usr/src/sys/GENERIC  amd64\n\n        cd /usr/src; make install\n        ===\u003e lib/libc (install)\n        install -s -o root -g wheel -m 444   -fschg -S  libc.so.7 /lib\n        install: /lib/libc.so.7: chflags: Operation not permitted\n        *** Error code 71\n\nRecovery:\n        /rescue/cp /usr/obj/usr/src/lib/libc/libc.so.7 /lib/\n\nman install falsely claims: -S Safe copy, But is broken by -fschg !\n\nSolutions:\n- Disable chflags in bsd.lib.mk \u0026 bsd.lib.mk.  Patches appended.\n- Or Extend bsd.lib.mk \u0026 bsd.lib.mk to be conditional on jail detection. (**)\n- Or Fix install to not break with chflags (**)\n(**) Last 2 should be done by those who want to keep Chflags in FreeBSD,\n     not me, I've used Unix since 1978, but find chflags a Wart best removed.\n\nI discovered this on 8.2-RELEASE 18 Jun 2013, \u0026 just got bitten again on\n10.1-RELEASE-p6, (as my jail's make.conf lost its NO_FSCHG=\"yes\")."
+}

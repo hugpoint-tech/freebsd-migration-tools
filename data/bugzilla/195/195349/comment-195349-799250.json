@@ -1,0 +1,8 @@
+{
+ "id": 799250,
+ "bug_id": 195349,
+ "attachment_id": 0,
+ "creation_time": "2014-12-04T06:23:47Z",
+ "creator": "olivier@cochard.me",
+ "text": "I reach to finish an 12 hours ZFS scrub by disabling MSI interrupts for AHCI ! (thanks mav@ for the temporary workaround).\n\nHere is how to do it:\n\necho 'hint.ahci.0.msi=\"0\"' \u003e\u003e /boot/loader.conf\nshutdown -r now\n\nOnce rebooted, check that `vmstat -i` report ahci0 using interrupt below 256.\nLike this example:\n\nroot@nas:~ # vmstat -i\ninterrupt                          total       rate\nirq17: ehci0 ehci1+                19403          4\nirq18: ohci0 ohci1+                    4          0\nirq19: ahci0                        3908          0\nirq256: hpet0:t0                  112433         26\nirq257: hpet0:t1                   33742          8\nirq260: bge0                        3354          0\nTotal                             172844         41\n\nWith this workaround, ZFS scrubbing is finished without any \"Command timeout\":\nroot@nas:~ # zpool status\n  pool: storage\n state: ONLINE\n  scan: scrub repaired 0 in 11h55m with 0 errors on Thu Dec  4 01:29:42 2014\nconfig:\n\n        NAME        STATE     READ WRITE CKSUM\n        storage     ONLINE       0     0     0\n          raidz1-0  ONLINE       0     0     0\n            ada0p1  ONLINE       0     0     0\n            ada1p1  ONLINE       0     0     0\n            ada2p1  ONLINE       0     0     0\n            ada3p1  ONLINE       0     0     0\n            ada4p1  ONLINE       0     0     0\n\nCan someone test this workaround and report its result too ?"
+}

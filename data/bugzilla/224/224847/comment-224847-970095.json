@@ -1,0 +1,8 @@
+{
+ "id": 970095,
+ "bug_id": 224847,
+ "attachment_id": 0,
+ "creation_time": "2018-01-08T11:19:14Z",
+ "creator": "val@packett.cool",
+ "text": "(In reply to Brooks Davis from comment #10)\nThe LLVM ports haven't changed, but they should! See bug 223191. To sum up:\n\n- the ports set the LLVM_BUILD_LLVM_DYLIB CMake option but not LLVM_LINK_LLVM_DYLIB, which makes llvm-config pretty broken (it defaults to static linking, and when asked for dynamic linking with --link-shared it outputs nonexistent tiny libraries libLLVM(Whatever).so instead of the big monolithic libLLVM that actually exists). They should set LLVM_LINK_LLVM_DYLIB!\n- CMake's standard library finds the whole path to libexecinfo: https://github.com/Kitware/CMake/blob/40dea7e4b2e1c4518337bba284a233bf6f788a1a/Modules/FindBacktrace.cmake#L75 LLVM uses that result as if it were a library name, creating the broken \"-l/usr/lib/libexecinfo.so\" linker flag in llvm-config's output for static linking.\n\nLLVM consumers also should change:\n\n- LLVM can add git version suffixes (this thread). Consumers should handle them. E.g. Meson 0.44 already does: https://github.com/mesonbuild/meson/pull/2787 — and Mesa will handle that for older Mesons https://lists.freedesktop.org/archives/mesa-dev/2018-January/181200.html We're on stable release Mesa, so we should fix this in the old (autoconf) Mesa build system."
+}

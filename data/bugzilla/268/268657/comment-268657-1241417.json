@@ -1,0 +1,8 @@
+{
+ "id": 1241417,
+ "bug_id": 268657,
+ "attachment_id": 239139,
+ "creation_time": "2022-12-31T02:46:28Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 239139\nworkaround\n\nCan you try the attached workaround (not the inlined below)? It should disable VAAPI under Wayland but not X11. However, it doesn't distinguish whether VAAPI is emulated via VDPAU or NVDEC.\n\nNVDEC-based nvidia-vaapi-driver installs nvidia_drv_video.so. If it's ported *before* libvdpau gains Wayland support maybe it should be renamed to nvidia-drm_drv_video.so to avoid package conflict and re-enable under Wayland. When mapping is not specified libva assumes DRM driver (kernel) name matches LIBVA_DRIVER_NAME (\u003cname\u003e_drv_video.so).\n\nSee https://github.com/elFarto/nvidia-vaapi-driver/blob/2938a5910315/meson.build#L48\n\ndiff --git a/meson.build b/meson.build\nindex 791deaf..7143b3a 100644\n--- a/meson.build\n+++ b/meson.build\n@@ -45,7 +45,7 @@ endif\n nvidia_incdir = include_directories('nvidia-include')\n \n shared_library(\n-    'nvidia_drv_video',\n+    'nvidia-drm_drv_video',\n     name_prefix: '',\n     sources: sources,\n     dependencies: [\n@@ -65,6 +65,6 @@ shared_library(\n \n meson.add_devenv(environment({\n     'NVD_LOG': '1',\n-    'LIBVA_DRIVER_NAME': 'nvidia',\n+    'LIBVA_DRIVER_NAME': 'nvidia-drm',\n     'LIBVA_DRIVERS_PATH': meson.project_build_root(),\n }))"
+}

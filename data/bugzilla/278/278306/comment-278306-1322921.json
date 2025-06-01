@@ -1,0 +1,8 @@
+{
+ "id": 1322921,
+ "bug_id": 278306,
+ "attachment_id": 0,
+ "creation_time": "2024-08-29T11:50:42Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "(In reply to Oleksandr Kryvulia from comment #9)\n\nThanks for the feedback.  That in theory seems the right solution to me.\n\nIf we wanted to \"automate\" this and let meta-flags like DHCP and WPA count as well, then we probably want to make sure the IF is up before wpa or hostapd start?\n\nI am not good at this and I probably do not understand all the possible side-effects but maybe someone from rc@ or net@ can review this?  I wonder if this would do the right thing...\n\n\ndiff --git libexec/rc/network.subr libexec/rc/network.subr\nindex 257643f48ba5..7e8502273353 100644\n--- libexec/rc/network.subr\n+++ libexec/rc/network.subr\n@@ -216,14 +216,15 @@ ifconfig_up()\n                ${IFCONFIG_CMD} $1 description \"${_ifconfig_descr}\"\n        fi\n \n+       if [ ${_cfg} -eq 0 ]; then\n+               ${IFCONFIG_CMD} $1 up\n+       fi\n        if wpaif $1; then\n                /etc/rc.d/wpa_supplicant start $1\n                _cfg=0          # XXX: not sure this should count\n        elif hostapif $1; then\n                /etc/rc.d/hostapd start $1\n                _cfg=0\n-       elif [ ${_cfg} -eq 0 ]; then\n-               ${IFCONFIG_CMD} $1 up\n        fi\n \n        if ! noafif $1 \u0026\u0026 afexists inet6; then"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 931274,
+ "bug_id": 218808,
+ "attachment_id": 0,
+ "creation_time": "2017-04-22T08:06:04Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to O. Hartmann from comment #0)\n\u003e I'm wondering about the error as it indicates a missing flag?\n\nProbably. Firefox uses --ignore-unresolved-symbol (ld.bfd 2.26+ or ld.gold 2.28+) or --warn-unresolved-symbol to allow environ(7) in shared libraries together with --no-undefined. This is a workaround for BSD libc, GNU libc is unaffected.\n\n$ cat a.c\n#include \u003cstdio.h\u003e\n\nvoid foo() {\n  extern char **environ;\n  for(int i = 0; environ[i] != NULL; i++)\n    printf(\"%s\\n\", environ[i]);\n}\n\n$ cc -fPIC -shared -Wl,-z,defs -o a.so a.c -B/usr/local/bin -Wl,--ignore-unresolved-symbol,environ\n$ cc -fPIC -shared -Wl,-z,defs -o a.so a.c -Wl,--warn-unresolved-symbols\n/tmp/a-52cbc1.o: In function `foo':\na.c:(.text+0x12): warning: undefined reference to `environ'\na.c:(.text+0x32): warning: undefined reference to `environ'\n\nhttp://searchfox.org/mozilla-central/rev/6e1c138a06a8/old-configure.in#662"
+}

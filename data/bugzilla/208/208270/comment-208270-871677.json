@@ -1,0 +1,8 @@
+{
+ "id": 871677,
+ "bug_id": 208270,
+ "attachment_id": 168585,
+ "creation_time": "2016-03-24T22:50:59Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 168585\nFix several std::map declarations in www/node\n\nDuring the exp-run in bug 208158, it was found that www/node gives errors with libc++ 3.8.0 [1]:\n\n/usr/include/c++/v1/map:837:5: error: static_assert failed \"Allocator::value_type must be same type as value_type\"\n    static_assert((is_same\u003ctypename allocator_type::value_type, value_type\u003e::value),\n    ^             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n../deps/v8/src/compiler/js-type-feedback.h:41:21: note: in instantiation of template class 'std::__1::map\u003cunsigned int, v8::internal::TypeFeedbackId, std::__1::less\u003cunsigned int\u003e, v8::internal::zone_allocator\u003cv8::internal::TypeFeedbackId\u003e \u003e' requested here\n  TypeFeedbackIdMap type_feedback_id_map_;\n                    ^\n\nThis is because libc++ 3.8.0 has added these sanity checks for custom std::map allocators, which *must* be of the type std::pair\u003cconst Key, Value\u003e.  I fixed the few std::map instances in the node source by adding this to their allocator types.\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR208158-default/2016-03-22_18h30m05s/logs/errors/node-5.9.0.log"
+}

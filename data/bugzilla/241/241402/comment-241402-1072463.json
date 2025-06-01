@@ -1,0 +1,8 @@
+{
+ "id": 1072463,
+ "bug_id": 241402,
+ "attachment_id": 0,
+ "creation_time": "2019-10-25T20:48:59Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Okay, I think I know what is likely causing this problem.  These headers are generated with the clang-tblgen tool, and this tool has a common part in contrib/llvm/lib/TableGen/Main.cpp which reads:\n\n   102    // Write output to memory.\n   103    std::string OutString;\n   104    raw_string_ostream Out(OutString);\n   105    if (MainFn(Out, Records))\n   106      return 1;\n   107\n   108    // Always write the depfile, even if the main output hasn't changed.\n   109    // If it's missing, Ninja considers the output dirty.  If this was below\n   110    // the early exit below and someone deleted the .inc.d file but not the .inc\n   111    // file, tablegen would never write the depfile.\n   112    if (!DependFilename.empty()) {\n   113      if (int Ret = createDependencyFile(Parser, argv0))\n   114        return Ret;\n   115    }\n   116\n   117    // Only updates the real output file if there are any differences.\n   118    // This prevents recompilation of all the files depending on it if there\n   119    // aren't any.\n   120    if (auto ExistingOrErr = MemoryBuffer::getFile(OutputFilename))\n   121      if (std::move(ExistingOrErr.get())-\u003egetBuffer() == Out.str())\n   122        return 0;\n\nE.g, it always writes the .d file, but if the .h file would have exactly the same contents, it does not overwrite it.  I think this was done in order to save on unnecessary rebuilding in the LLVM build system, but it works out badly for us.\n\nProbably the simplest solution is to touch the generated files after tblgen, or remove them beforehand.  I will try a few things."
+}

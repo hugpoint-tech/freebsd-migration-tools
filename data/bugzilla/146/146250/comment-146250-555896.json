@@ -1,0 +1,8 @@
+{
+ "id": 555896,
+ "bug_id": 146250,
+ "attachment_id": 0,
+ "creation_time": "2010-10-16T20:25:34Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bz\nDate: Sat Oct 16 19:25:27 2010\nNew Revision: 213930\nURL: http://svn.freebsd.org/changeset/base/213930\n\nLog:\n  Close a race acquiring the IF_ADDR_LOCK() for each entry while iterating\n  over all interfaces to make sure the address will neither change nor be\n  freed while we are working on it.\n  \n  PR:\t\tkern/146250\n  Submitted by:\tMikolaj Golub (to.my.trociny gmail.com)\n  MFC after:\t1 week\n\nModified:\n  head/sys/net/rtsock.c\n\nModified: head/sys/net/rtsock.c\n==============================================================================\n--- head/sys/net/rtsock.c\tSat Oct 16 18:42:09 2010\t(r213929)\n+++ head/sys/net/rtsock.c\tSat Oct 16 19:25:27 2010\t(r213930)\n@@ -1473,6 +1473,7 @@ sysctl_iflist(int af, struct walkarg *w)\n \tTAILQ_FOREACH(ifp, \u0026V_ifnet, if_link) {\n \t\tif (w-\u003ew_arg \u0026\u0026 w-\u003ew_arg != ifp-\u003eif_index)\n \t\t\tcontinue;\n+\t\tIF_ADDR_LOCK(ifp);\n \t\tifa = ifp-\u003eif_addr;\n \t\tinfo.rti_info[RTAX_IFP] = ifa-\u003eifa_addr;\n \t\tlen = rt_msg2(RTM_IFINFO, \u0026info, NULL, w);\n@@ -1530,10 +1531,13 @@ sysctl_iflist(int af, struct walkarg *w)\n \t\t\t\t\tgoto done;\n \t\t\t}\n \t\t}\n+\t\tIF_ADDR_UNLOCK(ifp);\n \t\tinfo.rti_info[RTAX_IFA] = info.rti_info[RTAX_NETMASK] =\n \t\t\tinfo.rti_info[RTAX_BRD] = NULL;\n \t}\n done:\n+\tif (ifp != NULL)\n+\t\tIF_ADDR_UNLOCK(ifp);\n \tIFNET_RUNLOCK();\n \treturn (error);\n }\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

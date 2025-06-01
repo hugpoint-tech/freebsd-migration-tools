@@ -1,0 +1,8 @@
+{
+ "id": 1239455,
+ "bug_id": 268390,
+ "attachment_id": 0,
+ "creation_time": "2022-12-15T10:47:25Z",
+ "creator": "michalx.gulbicki@intel.com",
+ "text": "Following KTLS test can fail randomly - no matter if any HW OCF backend is registered or not:\n\nktls_test:ktls_receive_aes128_gcm_1_3_bad_major  -\u003e  failed: /usr/src/tests/sys/kern/ktls_test.c:258: close(sv[1]) == 0 not met  [0.022s]\nktls_test:ktls_receive_aes128_gcm_1_3_bad_minor  -\u003e  failed: /usr/src/tests/sys/kern/ktls_test.c:258: close(sv[1]) == 0 not met  [0.018s]\nktls_test:ktls_receive_aes128_gcm_1_3_bad_type  -\u003e  failed: /usr/src/tests/sys/kern/ktls_test.c:258: close(sv[1]) == 0 not met  [0.020s]\nktls_test:ktls_receive_aes256_cbc_1_2_sha256_bad_minor  -\u003e  failed: /usr/src/tests/sys/kern/ktls_test.c:258: close(sv[1]) == 0 not met  [0.017s]\nktls_test:ktls_receive_chacha20_poly1305_1_3_bad_major  -\u003e  failed: /usr/src/tests/sys/kern/ktls_test.c:258: close(sv[1]) == 0 not met  [0.017s]\n\nAdding a few ms delay between sending request to ktls socket and calling rcvmsg makes code much more robust (10+ consecutive runs without any radom fail).\nusleep has been added here: (ktls_test.c)\n\ndiff --git a/tests/sys/kern/ktls_test.c b/tests/sys/kern/ktls_test.c\nindex 09fb96ed11e..8a7652a6645 100644\n--- a/tests/sys/kern/ktls_test.c\n+++ b/tests/sys/kern/ktls_test.c\n@@ -1506,6 +1506,7 @@ ktls_receive_tls_error(int fd, int expected_error)\n        msg.msg_iov = \u0026iov;\n        msg.msg_iovlen = 1;\n\n+       usleep(5 * 1000); // 5ms\n        ATF_REQUIRE(recvmsg(fd, \u0026msg, 0) == -1);\n        if (expected_error != 0)\n                ATF_REQUIRE(errno == expected_error);"
+}

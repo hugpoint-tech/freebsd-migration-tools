@@ -1,0 +1,8 @@
+{
+ "id": 1125552,
+ "bug_id": 249980,
+ "attachment_id": 0,
+ "creation_time": "2020-10-05T06:03:55Z",
+ "creator": "jah@FreeBSD.org",
+ "text": "It looks like you were running the build as non-root.\nPreviously the libtuner makefile was overriding bsd.lib.mk's install target with its own, which used 'cp' instead of 'install'.  Now it's using bsd.lib.mk's install target:\n\n_libinstall:\n.if defined(LIB) \u0026\u0026 !empty(LIB) \u0026\u0026 ${MK_INSTALLLIB} != \"no\"\n\t${INSTALL} ${TAG_ARGS:D${TAG_ARGS},dev} -C -o ${LIBOWN} -g ${LIBGRP} -m ${LIBMODE} \\\n\t    ${_INSTALLFLAGS} lib${LIB_PRIVATE}${LIB}.a ${DESTDIR}${_LIBDIR}/\n\n\n...where LIBOWN defaults to BINOWN which defaults to root (bsd.own.mk).\n\nSo how is non-root staging dealt with for other ports that use bsd.lib.mk?  I find it hard to believe that bsd.lib.mk's default install action is just broken for these cases."
+}

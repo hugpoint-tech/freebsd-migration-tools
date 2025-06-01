@@ -1,0 +1,8 @@
+{
+ "id": 877711,
+ "bug_id": 209352,
+ "attachment_id": 0,
+ "creation_time": "2016-05-07T00:58:43Z",
+ "creator": "pfg@FreeBSD.org",
+ "text": "This was noted from the openbsd-bugs list :\n\n(Reply from Tim Chase 2016-04-24)...\nCan be simplified to the test-case\n\n $ echo a,a,a,a,a | sed -r 's/\\\u003c.,/X\u0026/g'\n Xa,a,Xa,a,a\n $ echo a,a,a,a,a | gsed -r 's/\\\u003c.,/X\u0026/g'\n Xa,Xa,Xa,Xa,a\n\nIt appears the determination of \"\\\u003c\" can get thrown off when the\ncharacter preceding it is part of a replacement.\n_____\n\nI have reproduced it with the sed in FreeBSD\n_____\n\nThere is a solution candidate in openbsd-tech, but the patch doesn't apply directly:\n\nFrom  Martijn van Duren - 2016-05-04)\nFor those interested: The problem comes from the fact that the string\npointer increments to the end of the previous match and is then called\nwith the REG_NOTBOL. The REG_NOTBOL combined with a match at the begin\nof the string causes our regex library to treat the word as not begin of\nword.\nThe TRE implementation does the reverse and treats this case as if it\nalways is begin of word. This causes a similar bug under MacOS:\n$ echo 'foo foofoo' | sed -E 's/\\\u003cfoo/bar/g'\nbar barbar\n\nI've solved this problem by converting sed to use REG_STARTEND more\nexplicitly. Although this isn't a POSIX specified flag, it is already\nused by sed and shouldn't be a problem."
+}

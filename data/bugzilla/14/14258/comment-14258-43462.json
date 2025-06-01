@@ -1,0 +1,8 @@
+{
+ "id": 43462,
+ "bug_id": 14258,
+ "attachment_id": 0,
+ "creation_time": "1999-10-11T10:00:01Z",
+ "creator": "wim.livens@alcatel.be",
+ "text": "I've noticed that the IP_TOS socket option doesn't work on raw\nsockets.  There is no error returned and the TOS is stored in the\nprotocol control block but when the packet headers are constructed, a\nhardcoded zero is put (instead of inp-\u003einp_ip_tos). The same holds \nfor the ttl.\n\nFix: \n\nchange the following line rip_output(m, so, dst): (in netinet/raw_ip.c)\n                ip-\u003eip_tos = 0;\nto\n                ip-\u003eip_tos = inp-\u003einp_ip_tos;\n\n(similar for ip_ttl)\nHow-To-Repeat: do something like :\n sendsock=socket(AF_INET, SOCK_RAW, IPPROTO_OSPFIGP);\n tos=0xf0;\n if(setsockopt(sendsock, IPPROTO_IP, IP_TOS, (void*)\u0026tos, 4) ==  -1)\n    { printf(\"can't set tos bits\\n\"); exit(1); }\n sendto(sendsock, \u0026sendbuf, 12, 0, (struct sockaddr *) \u0026dest, 16);\n\nThen look with tcpdump and you'll see that tos is still zero."
+}

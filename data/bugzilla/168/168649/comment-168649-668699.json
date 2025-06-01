@@ -1,0 +1,8 @@
+{
+ "id": 668699,
+ "bug_id": 168649,
+ "attachment_id": 0,
+ "creation_time": "2012-06-04T02:20:12Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Under heavy enough load (250MBit TX), I'm seeing out of order frames being transmitted from the station.\n\nThis is with iperf, using a 250MBit UDP stream from a FreeBSD STA (SMP) to a FreeBSD AP, to a FreeBSD iperf server.\n\nDoing a 250Mbit UDP stream from a macosx laptop doesn't cause the iperf server to warn about out of order frames.\n\nAfter some code inspection, I discovered that there are multiple overlapping ath_start() entries.  For multiple traffic sources, there are already multiple ath_start() entries occuring - potentially one per TX'ing process. but for the single TX process, there's two;\n\n* iperf -\u003e sosend() -\u003e net80211_output -\u003e if_transmit -\u003e ath_start();\n* ath0 taskqueue -\u003e {rx | tx completion } -\u003e ath_start();\n\n(and the reset, channel change paths..)\n\nWhat I'm guessing is happening here is that the ath_start() processing is being preempted or racing with another, between where the frame dequeue from the ifnet and subsequent ath_tx_start() call occurs.\n\nSince there's no lock being held across this, and no serialisation being imposed, it's possible they're overlapping slightly.\n\nWhen I threw ath_start() into a taskqueue and just made ath_start() queue the taskqueue, the out of order frames went away.\n\nI haven't yet tried this with just adding a lock around the whole of ath_start(), but that should also work.\n\nI had issues with the taskqueue method when acpi is enabled, as there seems to be some much greater scheduling latency. I'll create a new PR for that.\n\nFix: \n\nNot yet.."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1336710,
+ "bug_id": 282984,
+ "attachment_id": 255466,
+ "creation_time": "2024-11-26T11:36:53Z",
+ "creator": "leon+freebsd@darkk.net.ru",
+ "text": "Created attachment 255466\npfctl -T makezero patch\n\nThere is a common pattern \"keep an entry in pf table while it's active + TTL seconds more\".\n\nThis pattern is observed:\n\n\u003e resetting the statistics for a single IP address in a table would allow me to\n\u003e _continuously_ block repeat offenders, while releasing one-time offenders\n\n- #282877\n\n\u003e Is there a way to remove entries based on the last date accessed ?\n\n- https://forums.freebsd.org/threads/pf-firewall-expiretable.61827/\n\nI need it for a policy-based routing based on a pf table that is filled with `unbound` ipset patch and is expired as soon as an address is silent for a while.\n\nI propose `makezero` command to pfctl that clears `pfras_tzero` for the entries with non-zero counters to implement that pattern.\n\n`pfctl -t tbl -T zero $ip1 $ip2 ...` is fine, but it means that \"activity\" is tracked somewhere else and this solution has it's pros and contras.\n\n- pflog might be dropping packets in case of consumer being somewhat slow\n- table counters are \"unavoidable\", but come with some performance penalty\n- both options are prone to TOCTOU race-condition \n\n\"makezero\" name combines semantics of `make` (doing things incrementally and only-as-necessary) and `zero` clearing statistics. :-)\n\nIn this case the cronjob maintaining the table would be as simple as:\n\n\u003e pfctl -t tbl -T makezero \u0026\u0026 pfctl -t tbl -T expire ${TTL}\n\nThe patch depends on 6463b6b59152fb1695bbe0de78f6e2675c5a765a and https://reviews.freebsd.org/D47697"
+}

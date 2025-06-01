@@ -1,0 +1,8 @@
+{
+ "id": 916029,
+ "bug_id": 215730,
+ "attachment_id": 0,
+ "creation_time": "2017-01-12T00:14:30Z",
+ "creator": "dch@freebsd.org",
+ "text": "Thanks for looking into this. In your log you see this:\n\n2017-01-12T04:05:04.911619+08:00: [ERROR]: database error: 0: success: no error\n\nNote that the original parent process continues to run and serve requests, only\nthe forked child that handles snapshots dies.\n\nI attached dtruss.log which shows the process forking, and failing to find the snapshot file:\n\n   890/100151:  fork(0x0, 0x0, 0x0)              = 891 0\n   890/100151:  gettimeofday(0x7FFFDEBF3C30, 0x0, 0x0)           = 0 0\n...\n   890/100151:  lstat(\"0001-bgs/00000000.ktss.tmp\\0\", 0x7FFFDEBF3C00, 0x0)               = -1 Err#2\n\n\nI think that this error corresponds to the failure of the forked process\nthat writes snapshots out to disk, to create the snapshot. Do you also\nsee ktserver.core there now too, or do you have the snapshot under 001-bgs/ ?\n\nroot@ice:/tmp # tree\n.\n|-- 0001-bgs\n|-- 0001-ulog\n|   `-- 0000000001.ulog\n`-- ktserver.core\n\n2 directories, 2 files\nroot@ice:/tmp #\n\n\nI uploaded the 117MB ktserver coredump here https://wintermute.skunkwerks.at/~dch/FreeBSD/PR215730/ along with dtruss.log."
+}

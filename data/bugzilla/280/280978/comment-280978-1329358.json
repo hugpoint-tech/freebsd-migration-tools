@@ -1,0 +1,8 @@
+{
+ "id": 1329358,
+ "bug_id": 280978,
+ "attachment_id": 0,
+ "creation_time": "2024-10-12T00:52:05Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/13 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=cc07d914bc80f0c644584de6eab2efd30e911d8d\n\ncommit cc07d914bc80f0c644584de6eab2efd30e911d8d\nAuthor:     Rick Macklem \u003crmacklem@FreeBSD.org\u003e\nAuthorDate: 2024-09-30 22:49:57 +0000\nCommit:     Rick Macklem \u003crmacklem@FreeBSD.org\u003e\nCommitDate: 2024-10-12 00:49:55 +0000\n\n    nfsd: Fix close handling when vfs.nfsd.enable_locallocks=1\n\n    nfsrv_freeopen() was being called after the mutex\n    lock was released, making it possible for other\n    kernel threads to change the lists while nfsrv_freeopen()\n    took the nfsstateid out of the lists.\n\n    This patch moves the code around\n    \"if (nfsrv_freeopen(stp, vp, 1 p) == 0) {\"\n    into nfsrv_freeopen(), so that it can remove the nfsstateid\n    structure from all lists before unlocking the mutex.\n    This should avoid any race between CLOSE and other nfsd threads\n    updating the NFSv4 state.\n\n    The patch does not affect semantics when vfs.nfsd.enable_locallocks=0.\n\n    PR:     280978\n    Tested by:      Matthew L. Dailey \u003cmatthew.l.dailey@dartmouth.edu\u003e\n\n    (cherry picked from commit eb345e05ac6602eeef0c33fce9025bbc8ec44d0f)\n\n sys/fs/nfsserver/nfs_nfsdstate.c | 62 +++++++++++++++++++---------------------\n 1 file changed, 30 insertions(+), 32 deletions(-)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1057465,
+ "bug_id": 238258,
+ "attachment_id": 0,
+ "creation_time": "2019-07-11T17:29:30Z",
+ "creator": "kevans@freebsd.org",
+ "text": "CC'ing tsoome@; partitionless disk setups were somewhat intentionally broken in r342151 [0] because they pose a number of problems (outlined in the commit message linked). loader/libsa built with the patch at [1] should workaround this, but more consideration needs to be made for loader handling these setups.\n\n[0] https://svnweb.freebsd.org/base?view=revision\u0026revision=342151\n[1]\n\nIndex: stand/libsa/zfs/zfs.c\n===================================================================\n--- stand/libsa/zfs/zfs.c       (revision 349913)\n+++ stand/libsa/zfs/zfs.c       (working copy)\n@@ -580,11 +580,10 @@\n        pa.fd = open(devname, O_RDONLY);\n        if (pa.fd == -1)\n                return (ENXIO);\n-       /*\n-        * We will not probe the whole disk, we can not boot from such\n-        * disks and some systems will misreport the disk sizes and will\n-        * hang while accessing the disk.\n-        */\n+       /* Probe the whole disk */\n+       ret = zfs_probe(pa.fd, pool_guid);\n+       if (ret == 0)\n+               return (0);\n        if (archsw.arch_getdev((void **)\u0026dev, devname, NULL) == 0) {\n                int partition = dev-\u003ed_partition;\n                int slice = dev-\u003ed_slice;"
+}

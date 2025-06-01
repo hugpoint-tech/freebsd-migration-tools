@@ -1,0 +1,8 @@
+{
+ "id": 1223928,
+ "bug_id": 265997,
+ "attachment_id": 0,
+ "creation_time": "2022-08-23T04:56:23Z",
+ "creator": "firk@cantconnect.ru",
+ "text": "The bug was introduced in r349951 r350478 which was also MFCed to 12.x as r351789\n\nPreviously, any unexpected cases will lead to just exiting syscall, leaving\nthe decision to the userspace sem wrapper (which was done that correctly).\n\nAfter these patches, non-zero sem-\u003e_has_waiters will lead to going straightly\nto umtxq_sleep() without checking if sem-\u003e_count is non-zero. Non-zero\nsem-\u003e_has_waiters may happen spuriously due to the same code: it doesn't\nclear this flag after cancelling sleep due to non-zero sem-\u003e_count.\n\n\n1. make sem_wait() and sem_post() race:\n- sem_wait() check _count in userspace, sees it is zero, calls kernel -\u003e do_sem_wait()\n- sem_post() sets _count to 1 and calls do_sem_wake() which does nothing because waiter-thread still not in queue\n- do_sem_wait() sets _has_waiters=1, then sees _count==1 and exits\n- userspace sem_wait() decrements _count back to 0 _has_waiters left non-zero\n\n2. make them race again:\n- sem_wait() check _count in userspace, sees it is zero, calls kernel -\u003e do_sem_wait()\n- sem_post() sets _count to 1 again, not touching _has_waiters, and calls do_sem_wake() which does nothing again, because waiter-thread not in queue\n- do_sem_wait() fails to set _has_waiters 0-\u003e1 because it already non-zero, and then goes to umtxq_sleep()\n- umtxq_sleep() has no chance to wake up without another sem_post(), despite the fact that _count==1"
+}

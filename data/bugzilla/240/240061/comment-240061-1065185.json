@@ -1,0 +1,8 @@
+{
+ "id": 1065185,
+ "bug_id": 240061,
+ "attachment_id": 0,
+ "creation_time": "2019-09-03T15:01:33Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "One possible alternative is to convert MADV_FREE to MADV_DONTNEED if the object has a backing object.  pmap_advise() needs to be updated to preserve the modified bits, but this should be fine since vm_page_advise(MADV_FREE) calls vm_page_undirty() anyway.\n\nSome basic testing on my workstation showed that virtually all calls to vm_object_madvise(MADV_FREE) are acting on an object with no backing object.  Obviously this may not be true in general.\n\n# dtrace -n 'fbt::vm_object_madvise:entry /args[0] \u0026\u0026 args[3] == 5/{@[args[0]-\u003ebacking_object == NULL] = count();}'\n^C\n        0               13\n        1            17504\n\nUntested patch here: https://people.freebsd.org/~markj/patches/madvise_cow.diff"
+}

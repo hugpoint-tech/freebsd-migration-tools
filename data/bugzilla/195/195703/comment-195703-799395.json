@@ -1,0 +1,8 @@
+{
+ "id": 799395,
+ "bug_id": 195703,
+ "attachment_id": 0,
+ "creation_time": "2014-12-05T08:29:05Z",
+ "creator": "cs@soi.spb.ru",
+ "text": "When booting on old hardware with CMOS clock set before year 2000, initial system time appears to be in the end of twenty first century. On 32-bit systems it falls beyond 2038 with interesting consequences.\n\nThis regression was introduced in 2006 by r162963 (then it was sys/i386/isa/clock.c).\n\nHere is the patch to correct this problem on modern systems:\n\n--- /usr/src/sys/x86/isa/atrtc.c        2014-08-14 06:33:26.168778002 +0000\n+++ atrtc.c     2014-12-04 10:50:10.597250292 +0000\n@@ -354,7 +354,7 @@\n #ifdef USE_RTC_CENTURY\n        ct.year += readrtc(RTC_CENTURY) * 100;\n #else\n-       ct.year += 2000;\n+       ct.year += ( ct.year \u003c 70 ? 2000 : 1900 );\n #endif\n        critical_exit();\n        /* Set dow = -1 because some clocks don't set it correctly. */"
+}

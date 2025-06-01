@@ -1,0 +1,8 @@
+{
+ "id": 1195301,
+ "bug_id": 261307,
+ "attachment_id": 231129,
+ "creation_time": "2022-01-18T14:13:49Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Created attachment 231129\nfix SIGBUS\n\nThis commit changed contrib/bc/configure from regular file to the symlink to configure.sh\n\nhttps://cgit.freebsd.org/src/commit/contrib/bc/configure?h=stable/12\u0026id=e32b8140f4e7de93eb7d571e7fcb2bf9db6c97a3\n\ngitup-0.96 crashes with SIGBUS trying to repair or update local repository copy when old (pre-commit) tree is present:\n\n1) The function save_repairs() contains logic error calling calculate_file_hash() function to calculate hash of local file passing file mode of an object from the repository. The function calculate_file_hash() assumes that mode describes local file, calls readlink() for supposed symlink, but readlink() returns -1 with errno=EINVAL. This returned value (\"uint32_t bytes_read\" assigned with -1) is used in a statement:\n\ntemp_path[bytes_read] = '\\0';\n\nSIGBUS is imminent.\n\n2) With this bug fixed by passing real mode of local file to calculate_file_hash(), the function save_file() still does not handle the situation because it halts on any error on symlink creation including EEXIST. Instead, it should remove old file preventing symlink creation and retry.\n\nThe patch solving the problem is attached."
+}

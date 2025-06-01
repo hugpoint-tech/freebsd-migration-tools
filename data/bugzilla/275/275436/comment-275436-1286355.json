@@ -1,0 +1,8 @@
+{
+ "id": 1286355,
+ "bug_id": 275436,
+ "attachment_id": 246673,
+ "creation_time": "2023-11-29T19:19:02Z",
+ "creator": "karels@freebsd.org",
+ "text": "Created attachment 246673\nsample patch that works around the problem\n\nThe tmpfs file system checks for available memory when a file is created, but not during writes.  If I create a file, then run the system nearly out of memory, I can write to that file until processes are killed because the system is out of memory, and in some cases the system is so screwed up that a shutdown cannot be run.  A df shows continuously growing usage and size while showing 0 for free space all along; this can go on for gigabytes.  Note, this is using a tmpfs file system with the default size.\n\nI'll attach a patch that adds a check in the write path, which helps.  It still runs the system out of memory and swap, so there are two additional changes in the patch: one divides swap space by two, and the other asks the VM system for the free memory in excess of the free target, using that in place of simply free memory.  I am not convinced that any of the changes are correct, but they help considerably.  With these changes, a large memory process keeps running although swap is exhausted when the writes fail.  More details or tests available on request."
+}

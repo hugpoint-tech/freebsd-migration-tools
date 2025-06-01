@@ -1,0 +1,8 @@
+{
+ "id": 433589,
+ "bug_id": 121257,
+ "attachment_id": 0,
+ "creation_time": "2008-03-01T10:10:01Z",
+ "creator": "vnovy@vnovy.net",
+ "text": "If TSO flag is set on interface and packets are diverted to natd by ipfw on \nsame interface, tcp traffic going out through this interface is very slow.\n\nIt's because tcp layer sends big packet with  TSO flag set, packet is       \ndiverted by ipfw and tcp layer gets OK return value.\n\nThen packet is reinjected to ip stack by natd, but TSO flag is lost. Packet \nis dropped by ip_output and ERR return value is delivered to natd, which can \ndo nothing with it.\n\nBecause tcp layer has no info about problem, packet is resend after tcp     \nretransmit timeout. retransmited packets are sent without TSO flag, so it is \nsent successfully.\n\nFix: \n\nAd hoc:\nDisable TSO flag on interface OR\nif possible, change ipfw rules to not divert all traffic on interface\n\nOR\n\nin natd rc script\nclear tso flag on interface when natd is started on it\n\nOR\n \nin kernel\nduring divert, reject packet with tso flag set. It gives tcp layer feedback \nand connection tso flag will be cleared.\nIt's easy to make this change in ipfw code. Maybe packet diverted by divert \nrule should be rejected, and packet diverted by tee rule should be accepted \n(they are not reinjected to ip stack usually).\nHow-To-Repeat: Just look at outgoing tcp traffic on interface with tso flag set and natd   \nrunning on it."
+}

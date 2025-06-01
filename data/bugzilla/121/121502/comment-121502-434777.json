@@ -1,0 +1,8 @@
+{
+ "id": 434777,
+ "bug_id": 121502,
+ "attachment_id": 0,
+ "creation_time": "2008-03-08T20:10:01Z",
+ "creator": "takeda@takeda.tk",
+ "text": "I wrote a simple shell script in the past that mounts remote filesystem, does the backup, and then checks if\nfilesystem was dumped correctly.\nAfter upgrade to FreeBSD 6.3 (from 6.2) the script started to warn about errors in the backup files.\nAccording to fsck the filesystem appears to be fine.\nAfter futher investigation it turns out that the option -P is a problem:\n\n[chinatsu]:/root# gzcat /backup/dump.chinatsu.3.5.2008-03-08.var.gz | restore -xNf -\nset owner/mode for '.'? [yn] n\n[chinatsu]:/root# restore -xNP \"gzcat /backup/dump.chinatsu.3.5.2008-03-08.var.gz\"\nunknown tape header type 0\nabort? [yn] n\nYou have not read any tapes yet.\nIf you are extracting just a few files, start with the last volume\nand work towards the first; restore can quickly skip tapes that\nhave no further files to extract. Otherwise, begin with volume 1.\nSpecify next volume #: 1\nnot at beginning of a file\nabort? [yn] n\nSegmentation fault\nExit 139\n\nFix: \n\nMy original command with option -P was as follows:\n(echo 1; echo n) | restore -xNP \"gzcat /backup/backup.dump\"\nUsing pipe gets rid of the problem, unfortunately, for each backup the script\nwill halt and wait for user input:\nset owner/mode for '.'? [yn]\n\nI don't know about any workaround for that (option -y doesn't seem to\napply here)\nHow-To-Repeat: The way my backup is done (I don't think this actually matters) is as follows:\nmksnap_ffs /usr /usr/.snap/backup\ndump -0 -auh 0 -f - /usr/.snap/backup | gzip -6 -c \u003e /backup/backup.dump\nrm /usr/.snap/backup"
+}

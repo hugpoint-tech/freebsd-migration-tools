@@ -1,0 +1,8 @@
+{
+ "id": 46450,
+ "bug_id": 15249,
+ "attachment_id": 0,
+ "creation_time": "1999-12-03T23:30:01Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "\n\tThere are a number of places in nfs_serv.c where certain badly-formed\n\tNFS requests can result in vput() being called on an uninitialised\n\tvnode pointer. In nfsrv_getattr(), nfsrv_lookup(), nfsrv_read(),\n\tand nfsrv_writegather(), the exit code performs a vput(vp) if vp\n\tis non-NULL. However since vp is not initialised before the macro\n\tnfsm_srvmtofh() is invoked, it is possible for this exit code to\n\tget called with a junk vp if nfsm_srvmtofh() does a 'goto nfsmout'.\n\n\tAnother problem that affects even more functions is that on certain\n\t(mainly kerboros related) errors nfsrv_fhtovp() does not leave NULL\n\tin its *vpp argument.\n\n\tFinally there is a problem in nqnfsrv_getlease() where it is\n\tpossible to get it to vput(NULL).\n\nFix: Apply the following patches in src/sys/nfs\n\t\nHow-To-Repeat: \n\tTo repeat the first problem, send a truncated request to an NFS\n\tserver where the request ends in the middle of the filehandle.\n\n\tI haven't cwtried to trigger the others, but it should be fairly\n\teasy."
+}

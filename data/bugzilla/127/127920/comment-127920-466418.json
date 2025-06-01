@@ -1,0 +1,8 @@
+{
+ "id": 466418,
+ "bug_id": 127920,
+ "attachment_id": 0,
+ "creation_time": "2008-10-07T14:00:09Z",
+ "creator": "hlh@restart.be",
+ "text": "My pf.conf:\n\n---begin---\nnet_if=\"em0\"\n\nset block-policy drop\nset debug misc\nset loginterface $net_if\nset state-policy if-bound\n\nscrub in all\n\nblock in  log all\nblock out log all\n\nset skip on lo0\n\nantispoof quick for $net_if inet\n\npass out quick on $net_if proto { tcp, udp, icmp, icmp6 } all keep state\npass  in quick on $net_if proto udp from any to ($net_if) port domain\npass     quick inet proto icmp all icmp-type echoreq keep state\npass  in quick inet proto icmp all icmp-type unreach code needfrag\npass  in quick inet6 proto icmp6 all\n\npass  in quick on $net_if       proto tcp from any to ($net_if) port ssh\\\n flags S/SA synproxy state (source-track rule, max-src-conn-rate 1/5,\\\n overload \u003cbad_hosts\u003e flush)\n\npass     quick on $net_if    proto ipv6\npass     quick on $net_if    inet6\n--- end ---\n\nNote the last rule which allow any IPv6 traffic!\n\nIf I `ssh -4` to this box, the connection succeed.\nIf I `ssh -6` to this box, I get a timeout and the last rule is of no use.\n\nIf I comment out the rule with synproxy, `ssh -6` succeed - the last rule allow it.\n\nIf I replace `synproxy state` with `keep state` everything is as expected.\n\nHenri\n\nHow-To-Repeat: see above."
+}

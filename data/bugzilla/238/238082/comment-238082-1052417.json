@@ -1,0 +1,8 @@
+{
+ "id": 1052417,
+ "bug_id": 238082,
+ "attachment_id": 0,
+ "creation_time": "2019-05-28T20:32:52Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #6)\n\nLooks like possible operator error in that a retry did\nnot fail. (I re-went through establishing the patch\nto what the poudriere bulk sees as the system-clang-8.)\n\nBut in trying to see what might be going on I notice there\nis logic like:\n\n# need LLVM for libEGL wherever possible, but mixing GCC and LLVM breaks Gallium\n.if ${CHOSEN_COMPILER_TYPE} == clang \\\n || (${COMPONENT} == libs \u0026\u0026 ${ARCH} != sparc64)        # no working LLVM\nMESA_LLVM_VER?= 60\n.endif\n\n.if \"${MESA_LLVM_VER}\" != \"\"\nBUILD_DEPENDS+= llvm${MESA_LLVM_VER}\u003e=3.9.0_4:devel/llvm${MESA_LLVM_VER}\n.if ${COMPONENT} != libs\nRUN_DEPENDS+=   llvm${MESA_LLVM_VER}\u003e=3.9.0_4:devel/llvm${MESA_LLVM_VER}\n.endif\nCONFIGURE_ENV+= LLVM_CONFIG=${LOCALBASE}/bin/llvm-config${MESA_LLVM_VER}\nLDFLAGS+=       -Wl,-rpath=${LOCALBASE}/llvm${MESA_LLVM_VER}/lib\nCONFIGURE_ARGS+=        --enable-llvm\n.else\nCONFIGURE_ARGS+=        --disable-llvm\n.endif\n\n\nSo it may be that devel/llvm60 ( or devel/llvm* ) needs to be patched\nin order to work for contexts that would use it.\n\nIt seems that devel/llvm60 got its pkg added but mesa-dri actually\nused what poudriere bulk saw as the system cc (system-clang-8 in my\ncontext).\n\nAs for my 2nd test:\n\n[00:01:44] [01] [00:00:00] Building graphics/mesa-dri | mesa-dri-18.3.2_2\n[00:23:45] [01] [00:22:01] Finished graphics/mesa-dri | mesa-dri-18.3.2_2: Success\n\nSo I guess I somehow had the context for poudriere bulk messed up\nrelative the the system cc that it saw."
+}

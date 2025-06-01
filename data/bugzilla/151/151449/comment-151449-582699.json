@@ -1,0 +1,8 @@
+{
+ "id": 582699,
+ "bug_id": 151449,
+ "attachment_id": 0,
+ "creation_time": "2010-10-14T11:40:04Z",
+ "creator": "mb@tns.cz",
+ "text": "I want to secure a GIF tunnel by IPsec. I have a GIF interface with an inet6 address and also inet6 tunnel addresses. I configure Racoon add the following rules to SPD by setkey:\nspdadd 2001:470:1f0b:102::1/128 2001:470:1f0b:102:20c:29ff:feed:ce83/128 41 -P in ipsec esp/transport//require;\nspdadd 2001:470:1f0b:102:20c:29ff:feed:ce83/128 2001:470:1f0b:102::1/128 41 -P out ipsec esp/transport//require;\n\nNow the first packet sent via the tunnel should establish an SA and the tunneled traffic should be encrypted by IPsec (in transport mode). But the packets are sent unencrypted, because the SPD entry does not match.\n\nI first tried it on 7.1, but the related kernel code is the same in 8.1. The bug is caused by searching for the upper layer protocol number in the GIF packet (IPv6 packet encapsulated in another IPv6 packet) in functions ipsec6_get_ulp(), ip6_lasthdr(), and ip6_nexthdr(). Instead of stopping on the header of the encapsulated packet and returning IPPROTO_IPV6 (41), the search continues into the encapsulated packet and returns its payload protocol number.\n\nFix: Apply the attached patch and rebuild the kernel.\n\nPatch attached with submission follows:\nHow-To-Repeat: Configure a GIF tunnel with both inner and outer addresses being IPv6. Set an IPsec policy that secures the tunnel by matching the upper layer protocol 41 (IPv6). This policy will never match and the communication will not be secured by IPsec."
+}

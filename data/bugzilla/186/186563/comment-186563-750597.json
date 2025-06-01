@@ -1,0 +1,8 @@
+{
+ "id": 750597,
+ "bug_id": 186563,
+ "attachment_id": 0,
+ "creation_time": "2014-02-20T06:07:36Z",
+ "creator": "naito.yuichiro@gmail.com",
+ "text": "Hello.\n\nI'm facing same problem on FreeBSD 10.0-R.\nFor quick fix, please apply following path.\n\n--- Makefile.org    2014-02-20 14:22:22.000000000 +0900\n+++ Makefile    2014-02-20 14:24:56.000000000 +0900\n@@ -19,7 +19,7 @@\n\n USE_GNOME=    libxml2\n USE_PGSQL=    yes\n-USES=        gmake iconv perl5 pkgconfig\n+USES=        gmake iconv:wchar_t perl5 pkgconfig\n USE_LDCONFIG=    yes\n GNU_CONFIGURE=    yes\n USE_PERL5=    build\n\nThis problem occurs when all following conditions are  satisfied.\n  1. on FreeBSD 10.0-R or later (means base system has iconv library)\n  2. converters/libiconv is installed\n  3. a ports application is using iconvctl() function.\n\nFor the condition 1. and 2.  , ports/Mk/Uses/iconv.mk adds\n'CFLAGS+=-DLIBICONV_PLUG' .\nLIBICONV_PLUG undefines iconvctl() and ICONV_SET_TRANSLITERATE  in\n/usr/local/include/iconv.h\n\nThis is the reason of the compile error.\n\nBut I'm not sure this path is correct fix by the following reasons.\n\n a) postgis does not need wchar_t conversion.\n      (Making iconv:iconvctl option is better solution?)\n\n b) if postgis configure does not detect iconvctl() function, they  do not\nuse iconvctl() and the defenitions.\n      (I should make a problem report of autoconf ?)\n\n\n-- \nYuichiro NAITO\n(naito.yuichiro@gmail.com)"
+}

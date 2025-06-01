@@ -1,0 +1,8 @@
+{
+ "id": 1255274,
+ "bug_id": 212829,
+ "attachment_id": 0,
+ "creation_time": "2023-04-15T00:22:21Z",
+ "creator": "ihor@antonovs.family",
+ "text": "After reading all comments I take the side of Phillip R. Jaenke (prj)\n\nDifferent services expect different signals, so creating a mechanism to pass signals to a child leaves a question \"how to signal daemon\" open. It is obviously a bad design.\n\nThe ideal solution would be to have a socket that daemon listens for various commands.\nI need to run this idea by kevans to make sure he has no objections for this work.\nThis might or might not be considered a scope creep. And if it is - I am going to spin off a new supervisor daemon. With sockets, config files, blackjack and hookers :)\n\n\nIn the meanwhile It is possible make `service` to send signal to the child.\nThere are 2 ways:\n\n1) In your rc script\n\n    pidfile=/path/to/child/pid\n    command=\"/usr/sbin/daemon\"\n    command_args=\"--child-pidfile $pidfile ....\n\nrc framework on `service foo reload` should send SIGHUP to the process identified by $pidfile\n\n2) There is a way to add custom commands to the rc script:\n\n    extra_commands=\"foobarnate\"\n    pidfile=/path/to/child/pid\n    command=\"/usr/sbin/daemon\"\n    command_args=\"--child-pidfile $pidfile ....\n\n    myservice_foobarnate() {\n        kill -SIGUSR1 $pidfile\n    }\n\nSo you can run `service myservice foobarnate` to execute completely custom logic."
+}

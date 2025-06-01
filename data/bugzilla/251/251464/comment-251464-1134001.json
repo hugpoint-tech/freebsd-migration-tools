@@ -1,0 +1,8 @@
+{
+ "id": 1134001,
+ "bug_id": 251464,
+ "attachment_id": 0,
+ "creation_time": "2020-11-29T19:44:30Z",
+ "creator": "crowston@protonmail.com",
+ "text": "I am not able to boot a single-processor OpenBSD install with less than 300 MB of memory. Such a configuration kills bhyve with an unemulated instruction abort trap.\n\nFor example:\n\nFailed to emulate instruction [0x45 0xf3 0x11 0xa3 0x3b 0x31 0xcf 0x18 0x48 0x74 0xcc 0x11 0xc4 0xb8 0x39] at 0xe9b656b\n./start.sh: line 14: 98904 Abort trap              bhyve -c sockets=1,cores=1,threads=1 -m 256M -H -w -u -s 0,amd_hostbridge -s 1:0,virtio-blk,/dev/zvol/tank0/bhyve/xxxx -s 1:1,virtio-net,tap3 -s 1:2,virtio-rnd -s 31,lpc -l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd -l com1,/dev/nmdm3A xxxx\n\nConsole output from the guest is\n\n probing: pc0 com0 com1 mem[640K 233M 16M 20K 4M 64K]\n disk: hd0\n \u003e\u003e OpenBSD/amd64 BOOTX64 3.50\n switching console to com0\n \u003e\u003e OpenBSD/amd64 BOOTX64 3.50\n boot\u003e \n booting hd0a:/bsd: 12879176+2753552+326368+0+704512 [811997-\n\nIn the instruction hex is decoded in long mode, it looks like\n0:  45                      rex.RB\n1:  f3 11 a3 3b 31 cf 18    repz adc DWORD PTR [rbx+0x18cf313b],esp\n8:  48 74 cc                rex.W je 0xffffffffffffffd7\nb:  11 c4                   adc    esp,eax\nd:  b8                      .byte 0xb8\ne:  39                      .byte 0x39\n\nBooting the exact same configuration with 300 MB or 512 MB works correctly.\n\nI am running some patches on top of 12.2-RELEASE, so it's possible I broke something at some stage. I looked at vmm_instruction_emul.c, but none of the latest patches look like they add anything to do with rex.RB or repz adc."
+}

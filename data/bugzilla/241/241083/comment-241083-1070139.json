@@ -1,0 +1,8 @@
+{
+ "id": 1070139,
+ "bug_id": 241083,
+ "attachment_id": 0,
+ "creation_time": "2019-10-05T14:13:34Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "Scenario:\n- Homegrown server, 6 disks\n- Each disk partitioned: ca. 3/4 for the first zpool (\"hal.1\"), ca. 1/5 for the second zpool, rest for misc. stuff\n- The first zpool is imported at boot (from unencrypted \"3/4\" partitions), it contains about 300 zfs filesystems + 20 volumes, where the latter are frequently partitioned (MBR, BSD, MBR + BSD, because they are used as iSCSI disks for virtualized installations of various operating systems)\n- The second zpool is manually imported (when needed) from the encrypted partitions (each of the \"1/5\" partitions is encrypted), it contains about 20 filesystems (incl. volumes)\n- Backups are kept by regularly taking recursive snapshots on both pools, about 10 backups are kept at any time\n- This results in over 500 device entries in /dev/zvol (e.g., \"/dev/zvol/hal.1/1/vdisks/925@backup.2019-09-21.21:59:27s2a\")\n- At some point, the second zpool is imported\n\nResult:\n- The import takes a long time\n- Using \"gstat -a\", it can be observed that there is much activity on each of the devices in /dev/zvol/... during the time it takes to import the second pool\n\nExpected result:\n- Importing a pool should not look at snapshot but only \"normal\" devices, where \"normal\" could be defined either as not containing a \"@\" or as being read/write or by trying the devices with the shortest path first (or maybe there is a better discriminator) in order to speed up the import\n- Maybe (by default) it should not look at devices in /dev/zvol at all because normally one would not want to create a pool from devices in another pool"
+}

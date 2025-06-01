@@ -1,0 +1,8 @@
+{
+ "id": 1043457,
+ "bug_id": 236714,
+ "attachment_id": 0,
+ "creation_time": "2019-03-22T12:16:09Z",
+ "creator": "trasz@FreeBSD.org",
+ "text": "I've stumbled upon something that seems to me to be a miscompilation issue in rctl(8).  Basically, this code in usr.bin/rctl/rctl.c:\n\n        racct_enable_len = sizeof(racct_enable);\n        error = sysctlbyname(\"kern.racct.enable\",\n            \u0026racct_enable, \u0026racct_enable_len, NULL, 0);\n\n        if (error != 0) {\n                if (errno == ENOENT)\n                        errx(1, \"RACCT/RCTL support not present in kernel; see rctl(8) for details\");\n\n                err(1, \"sysctlbyname\");\n        }\n\n        if (racct_enable == 0)\n                errx(1, \"RACCT/RCTL present, but disabled; enable using kern.racct.enable=1 tunable\");\n\nDoesn't work as expected unless the racct_enable is initialized before calling sysctlbyname(3).  Without this change:\n\n% doas rctl\nrctl: failed to show rules for '::': Function not implemented\n\nWith the change:\n\n% doas rctl\nrctl: RACCT/RCTL present, but disabled; enable using kern.racct.enable=1 tunable"
+}

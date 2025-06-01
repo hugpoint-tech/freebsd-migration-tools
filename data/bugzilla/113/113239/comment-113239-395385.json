@@ -1,0 +1,8 @@
+{
+ "id": 395385,
+ "bug_id": 113239,
+ "attachment_id": 0,
+ "creation_time": "2013-06-05T22:13:09Z",
+ "creator": "guy.helmer@gmail.com",
+ "text": "I'm not comfortable with working around the race condition by =\ndetermining whether a file seems \"too old\". Would serializing access to =\nthe queue work using the following patch:\n\nIndex: atrun.c\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=\n=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D\n--- atrun.c\t(revision 251433)\n+++ atrun.c\t(working copy)\n@@ -31,6 +31,7 @@\n /* System Headers */\n=20\n #include \u003csys/fcntl.h\u003e\n+#include \u003csys/file.h\u003e\n #include \u003csys/types.h\u003e\n #include \u003csys/stat.h\u003e\n #ifdef __FreeBSD__\n@@ -521,6 +522,9 @@\n     if ((spool =3D opendir(\".\")) =3D=3D NULL)\n \tperr(\"cannot read %s\", ATJOB_DIR);\n=20\n+    if (flock(dirfd(spool), LOCK_EX) =3D=3D -1)\n+\tperr(\"cannot lock %s\", ATJOB_DIR);\n+\n     now =3D time(NULL);\n     run_batch =3D 0;\n     batch_uid =3D (uid_t) -1;"
+}

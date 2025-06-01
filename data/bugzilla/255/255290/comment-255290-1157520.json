@@ -1,0 +1,8 @@
+{
+ "id": 1157520,
+ "bug_id": 255290,
+ "attachment_id": 0,
+ "creation_time": "2021-04-21T06:22:38Z",
+ "creator": "tobik@freebsd.org",
+ "text": "$ cat test.c \u003c\u003cEOF\n#include \u003cassert.h\u003e\nint main() { static_assert(1 == 1, \"\"); }\nEOF\n$ cc -D_POSIX_C_SOURCE=200809L -std=gnu11 test.c\ntest.c:2:14: warning: implicit declaration of function 'static_assert' is invalid in C99 [-Wimplicit-function-declaration]\nint main() { static_assert(1 == 1, \"\"); }\n             ^\n1 warning generated.\nld: error: undefined symbol: static_assert\n\u003e\u003e\u003e referenced by test.c\n\u003e\u003e\u003e               /tmp/test-8e234d.o:(main)\ncc: error: linker command failed with exit code 1 (use -v to see invocation)\n\nThis affects devel/rgbds where I had to remove _POSIX_C_SOURCE.\n\nIn assert.h we have:\n#if __ISO_C_VISIBLE \u003e= 2011 \u0026\u0026 !defined(__cplusplus)\n#define static_assert   _Static_assert\n#endif\n\nIn sys/cdefs.h we have:\n#if _POSIX_C_SOURCE \u003e= 200809\n#define __POSIX_VISIBLE         200809\n#define __ISO_C_VISIBLE         1999\n\nso static_assert is hidden when _POSIX_C_SOURCE=200809L because\n__ISO_C_VISIBLE is clamped to 1999.  I've reported this upstream\nbut we have found no evidence that POSIX 2008 mandates C99 and\nshould hide static_assert.\n\nOn Linux with musl and glibc and OpenBSD this works fine.\n\nOpenBSD uses __STDC_VERSION__ instead of __ISO_C_VISIBLE\nin assert.h which might be the more correct choice."
+}

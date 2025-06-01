@@ -1,0 +1,8 @@
+{
+ "id": 1184285,
+ "bug_id": 259504,
+ "attachment_id": 0,
+ "creation_time": "2021-10-28T14:02:04Z",
+ "creator": "freebsd-bugs@virtualtec.ch",
+ "text": "fuser {file} is supposed to return all pids that have {file} open. It doesn't:\n\n# fuser /usr/local/sbin/httpd \n/usr/local/sbin/httpd:\n\ncause seems to be a wrong type of fsid in fuser.c. With the following change:\n\n--- a/usr.bin/fstat/fuser.c\n+++ b/usr.bin/fstat/fuser.c\n@@ -92,7 +92,7 @@ struct consumer {\n        STAILQ_ENTRY(consumer)  next;\n };\n struct reqfile {\n-       uint32_t        fsid;\n+       uint64_t        fsid;\n        uint64_t        fileid;\n        const char      *name;\n        STAILQ_HEAD(, consumer) consumers;\n\n\nfuser does again what it's supposed to do:\n# fuser /usr/local/sbin/httpd \n/usr/local/sbin/httpd:   871x   870x   869x   868x   867x   832x\n\nThe bug seems to be present in releases since 12 up to at least 13-releng (didn't check 14)."
+}

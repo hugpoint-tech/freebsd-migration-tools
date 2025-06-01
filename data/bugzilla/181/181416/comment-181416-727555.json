@@ -1,0 +1,8 @@
+{
+ "id": 727555,
+ "bug_id": 181416,
+ "attachment_id": 0,
+ "creation_time": "2013-08-20T05:40:00Z",
+ "creator": "vitja.makarov@gmail.com",
+ "text": "Recently I was playing with small socket timeouts. setsockopt(2)\nSO_RCVTIMEO and found a problem with it: if timeout is small enough\nread(2) may return before timeout is actually expired.\n\nI was unable to reproduce this on linux box.\n\nI found that kernel uses a timer with 1/HZ precision so it converts\ntime in microseconds to ticks that's ok linux does it as well. The\nproblem is in details: freebsd uses floor() approach while linux uses\nceil():\n\nfrom FreeBSD's sys/kern/uipc_socket.c:\nval = (u_long)(tv.tv_sec * hz) + tv.tv_usec / tick;\nif (val == 0 \u0026\u0026 tv.tv_usec != 0)\n     val = 1; /* at least one tick if tv \u003e 0 */\n\nfrom Linux's net/core/sock.c:\n*timeo_p = tv.tv_sec*HZ + (tv.tv_usec+(1000000/HZ-1))/(1000000/HZ);\n\nSo, for instance, we have a freebsd system running with kern.hz set to\n100 and set receive timeout to 25ms that is converted to 2 ticks which\nis 20ms. In my test program read(2) returns with EAGAIN set in\n0.019ms."
+}

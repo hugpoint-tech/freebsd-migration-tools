@@ -1,0 +1,8 @@
+{
+ "id": 36092,
+ "bug_id": 11960,
+ "attachment_id": 0,
+ "creation_time": "1999-05-31T15:50:01Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "\nThe TCP wrapping which is now built into inetd logs denied connections,\nbut only logs accepted connections if you give the -l flag. This doesn't\nmatch the real tcpd's behavior, which logs allowed connections at a\nmuch lower syslog level.\n\nTieing the behavior to the -l flag is incorrect, because it makes it\nimpossible to selectivly log successful connections by using hosts.allow\nto adjust the syslog level. (The -l flag tries to log all connections).\n\nFix: \n\nApply the following to inetd.c - seems to apply to 3.2 and current.\n\t\n648,652c648,650\n\u003c \t\t\t\tif (log) {\n\u003c \t\t\t\t    syslog(allow_severity,\n\u003c \t\t\t\t        \"connection from %.500s, service %s (%s)\",\n\u003c \t\t\t\t\teval_client(\u0026req), service, sep-\u003ese_proto);\n\u003c \t\t\t\t}\n---\n\u003e \t\t\t\tsyslog(allow_severity,\n\u003e \t\t\t\t    \"connection from %.500s, service %s (%s)\",\n\u003e \t\t\t\t    eval_client(\u0026req), service, sep-\u003ese_proto);\nHow-To-Repeat: \nTry doing something like this in /etc/hosts.allow, which would \nlog smtpd connections to localhost at a seperate level, so syslogd\ncan put them all in one file.\n\nsmtpd: 127.0.0.1 : rfc931 1 : severity local1.info : allow"
+}

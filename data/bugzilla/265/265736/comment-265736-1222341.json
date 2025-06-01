@@ -1,0 +1,8 @@
+{
+ "id": 1222341,
+ "bug_id": 265736,
+ "attachment_id": 235799,
+ "creation_time": "2022-08-09T13:39:27Z",
+ "creator": "paulzhol@gmail.com",
+ "text": "Created attachment 235799\nbazil/fuse workaround\n\n(Copied from https://github.com/golang/go/issues/54100#issuecomment-1200165500)\n\nI ran the bazil/fuse/examples/hellofs example (https://github.com/bazil/fuse/blob/master/examples/hellofs/hello.go), under truss, getting the same result:\n# truss -SdHf -o /tmp/truss ./hellofs -fuse.debug /tmp/tst1\n2022/07/30 14:30:17 resource temporarily unavailable\n\n 3678 100150: 0.032046504 open(\"/dev/fuse\",O_RDWR|O_CLOEXEC,00) = 3 (0x3)\n\n 3678 100150: 0.032667484 fstat(3,{ mode=crw-rw-rw- ,inode=102,size=0,blksize=4096 }) = 0 (0x0)\n 3678 100150: 0.032856138 kqueue()               = 4 (0x4)\n 3678 100150: 0.033037163 fcntl(4,F_SETFD,FD_CLOEXEC) = 0 (0x0)\n\n\n 3678 100150: 0.033541314 compat11.kevent(4,{ 3,EVFILT_READ,EV_ADD|EV_CLEAR,0,0,0x827253f68 3,EVFILT_WRITE,EV_ADD|EV_CLEAR,0,0,0x827253f68 },2,0x0,0,0x0) = 0 (0x0)\n 3678 100150: 0.033721862 fcntl(3,F_GETFL,)      = 2 (0x2)\n 3678 100150: 0.033866169 fcntl(3,F_SETFL,O_RDWR|O_NONBLOCK) ERR#19 'Operation not supported by device'\n\nThe fcntl(3,F_SETFL,O_RDWR|O_NONBLOCK) reports an error, but still sets the underlying file status flag to non-blocking. This later causes a read to return EAGAIN which breaks the program."
+}

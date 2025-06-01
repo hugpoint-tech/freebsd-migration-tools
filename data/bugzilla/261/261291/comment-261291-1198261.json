@@ -1,0 +1,8 @@
+{
+ "id": 1198261,
+ "bug_id": 261291,
+ "attachment_id": 0,
+ "creation_time": "2022-02-08T16:24:56Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I reproduced the issue again.  Deliberately this time, by downing one leg of the LAGG during high traffic.  This time I tailored the packet capture more narrowly, so it didn't drop any packets (the original pcap file contained omissions just because tcpdump couldn't write to disk fast enough).  Crucially, it shows that the client sent a DESTROY_SESSION rpc which didn't show up in the original pcap file.  The sequence looks like this:\n\n1) The client's (172.30.156.243) last regular NFS call is packet 84\n2) After that are a ton of TCP segment reassemblies.  Probably related to the lagg interruption\n3) In packet 472, the client sends DESTROY_SESSION\n4) The server (172.30.99.32) replies NFS4_OK in packet 474\n5) The client sends EXCHANGE_ID in packet 475\n6) The server responds with NFS4_OK and clientid 0xd9e0ee6135000000 in packet 477\n7) The client sends CREATE_SESSION in packet 478 with clientid 0xd9e0ee6135000000\n8) The server replies NFS4ERR_STALE_CLIENTID in packet 480\n9) Go back to step 5 and loop\n\nCould there be a problem in how we handle the DESTROY_SESSION rpc?  If you want to look, I uploaded the new packet trace to my home directory on freefall, named \"slc-rb-nesx4-7-feb.create-session.pcap\"."
+}

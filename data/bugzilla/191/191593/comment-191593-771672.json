@@ -1,0 +1,8 @@
+{
+ "id": 771672,
+ "bug_id": 191593,
+ "attachment_id": 0,
+ "creation_time": "2014-07-04T01:46:32Z",
+ "creator": "adrian@freebsd.org",
+ "text": "Here's what I'm trying with:\n\nadrian@test3:~/work/freebsd % svn diff stable/10/src/sys/kern/\nIndex: stable/10/src/sys/kern/kern_lockf.c\n===================================================================\n--- stable/10/src/sys/kern/kern_lockf.c (revision 267627)\n+++ stable/10/src/sys/kern/kern_lockf.c (working copy)\n@@ -1425,6 +1425,14 @@\n                        if (lockf_debug \u0026 1)\n                                lf_print(\"lf_setlock: deadlock\", lock);\n #endif\n+\n+                       /*\n+                        * If the lock isn't waiting, return EAGAIN\n+                        * rather than EDEADLK.\n+                        */\n+                       if (((lock-\u003elf_flags \u0026 F_WAIT) == 0) \u0026\u0026\n+                           (error == EDEADLK))\n+                               error = EAGAIN;\n                        lf_free_lock(lock);\n                        goto out;\n                }\n\n.. this seems to fix the problem."
+}

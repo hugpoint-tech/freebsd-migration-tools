@@ -1,0 +1,8 @@
+{
+ "id": 390828,
+ "bug_id": 112257,
+ "attachment_id": 0,
+ "creation_time": "2007-04-29T22:10:10Z",
+ "creator": "chrismcc+freebsd@pricegrabber.com",
+ "text": "since perl was pulled out of the core, perl is only from ports.  This puts perl in /usr/local/bin.  Normally this also puts a symlink for /usr/bin/perl, but it is optional.  So, /usr/local/bin/perl will always exist , /usr/bin/perl might not.\n\nthe bugzilla install it hard coded to use /usr/bin/perl , not there, no work.\n\nFix: replace path\n\n\n[chrismcc@buildhost62 bugzilla]$ diff -u -7 Makefile~ Makefile\n\n\ndo-build:\n        @${SED} -e \"s:%%BUGZILLADIR%%:${BUGZILLADIR}:g; s:%%DOCSDIR%%:${DOCSDIR}:g\" \\\n                ${MASTERDIR}/pkg-message \u003e${PKGMESSAGE}\n\n do-install:\n        ${MKDIR} ${BUGZILLADIR}--JptGMOo947z9imdKlobKHWUka57l16liWpShkZ6Ba3ErBwRV\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- Makefile~   Mon Feb 12 06:23:26 2007\n+++ Makefile    Sun Apr 29 13:59:36 2007\n@@ -97,14 +97,15 @@\n post-patch:\n        @${PERL} -pi -e \"s!(?\u003c=webservergroup_default = ')apache!www!\" \\\n                ${WRKSRC}/checksetup.pl\n        @${FIND} ${WRKSRC} \\( -name \"CVS\" -or -name \".cvsignore\" -or -name \"*.orig\" \\\n                -or -name \"README.docs\" \\) | ${XARGS} ${RM} -rf\n        @${FIND} ${WRKSRC} -name \"*.p[ml]\" | \\\n                ${XARGS} ${REINPLACE_CMD} -i '' -e 's!/usr/lib/sendmail!/usr/sbin/sendmail!'\n+       @${PERL} -pi -e 's@#\\!/usr/bin/perl@#\\!/usr/local/bin/perl@' ${WRKSRC}/*cgi ${WRKSRC}/*pl ${WRKSRC}/contrib/*.pl ${WRKSRC}/docs/*pl\nHow-To-Repeat: remove /usr/bin/perl"
+}

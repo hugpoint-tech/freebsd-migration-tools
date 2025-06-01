@@ -1,0 +1,8 @@
+{
+ "id": 755741,
+ "bug_id": 187721,
+ "attachment_id": 0,
+ "creation_time": "2014-03-19T06:30:00Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "Building dovecot2 on FreeBSD 9.2 using security/heimdal port results in configure returning \n\n/usr/bin/ld: cannot find -lgssapi_krb5\n\nwhich is correct, because libgssapi_krb5 isn't built by the security/heimdal port.\nThe security/heimdal port builds libgssapi to contain the calls that lower versions of heimdal use in libgssapi_krb5.\n\nFix: \n\n.if defined(HEIMDAL_HOME)\nBUILD_DEPENDS+=  ${HEIMDAL_HOME}/lib/libgssapi.so:${PORTSDIR}/security/heimdal\nRUN_DEPENDS+=  ${HEIMDAL_HOME}/lib/libgssapi.so:${PORTSDIR}/security/heimdal\n.else\nLDFLAGS+=       -lgssapi_krb5\n.endif\n\nor for a minimal solution\n\n.if !defined(HEIMDAL_HOME)\nLDFLAGS+=       -lgssapi_krb5\n.endif\n\nIt is common practice to use HEIMDAL_HOME as both the trigger for recognition of use of the security/heimdal port as well as the location of the libs and headers.\nHow-To-Repeat: rm /usr/lib/libgssap* \n# In my case I don't build these, via src.conf WITHOUT_KERBEROS\ncd /usr/ports/security/heimdal \u0026\u0026 make install package\ncd /usr/ports/mail/dovecot2 \u0026\u0026 make install package"
+}

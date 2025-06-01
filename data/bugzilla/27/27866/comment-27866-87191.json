@@ -1,0 +1,8 @@
+{
+ "id": 87191,
+ "bug_id": 27866,
+ "attachment_id": 0,
+ "creation_time": "2001-06-04T01:10:00Z",
+ "creator": "peter.jeremy@alcatel.com.au",
+ "text": "\t`Fast' interrupts can be handled synchronously by calling\n\tthe bus and device interrupt handler directly from\n\t/sys/alpha/alpha/interrupt.c:alpha_dispatch_intr(), whereas\n\tother interrupts are scheduled as interrupt threads.\n\n\tUnfortunately, the test for fast interrupts in interrupt.c\n\tincorrectly uses INTR_FAST instead of IH_FAST, so fast\n\tinterrupts aren't detected.  This significantly increases\n\tlatencies for fast interrupts and can lead to SILO overflows.\n\n\tThis was detected by some code I added to determine what was\n\tcontributing to sio interrupt latencies.  I discovered that\n\tthe `fast interrupt found' probe was not being triggered.\n\nFix: [This fix has been tested on my Multia, but the following is\n\ta re-type of the fix]\nHow-To-Repeat: \tCode inspection:  If alpha_setup_intr() is called with\n\tINTR_FAST specified in \u003cflags\u003e, this will be passed onto\n\tithread_add_handler() where it will be mapped to\n\t(IH_FAST | IH_EXCLUSIVE) in (struct intrhand).ih_flags.\n\n\tWhen the interrupt occurs, alpha_dispatch_intr() tests\n\t(struct intrhand).ih_flags against INTR_FAST and so fails\n\tto detect that it is a fast interrupt."
+}

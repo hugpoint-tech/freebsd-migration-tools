@@ -1,0 +1,8 @@
+{
+ "id": 892907,
+ "bug_id": 211821,
+ "attachment_id": 0,
+ "creation_time": "2016-08-15T05:49:55Z",
+ "creator": "freebsd@g3os.org",
+ "text": "I think this is relevant:\n\n1) On my emac, it looks like `hz is a pointer to an int.  \n\n# dtrace -n 'BEGIN { printf(\"`hz: %d\\n\", `hz); exit(0); }'\ndtrace: invalid probe specifier BEGIN { printf(\"%d\\n\", `hz); exit(0); }: printf( ) argument #2 is incompatible with conversion #1 prototype:\n        conversion: %d\n         prototype: char, short, int, long, or long long\n          argument: int (*)()\n\n# dtrace -qn 'BEGIN { printf(\"`hz: %p, (int) `hz: %d\\n\", `hz, (int) `hz); exit(0); }'\ndtrace: buffer size lowered to 2m\n`hz: 3e8, (int) `hz: 1000\n\n\n2) On my amd64 system (running in virtualbox on a macbook), `hz is an int.\n\n# uname -a\nFreeBSD macbook.local 10.3-RELEASE FreeBSD 10.3-RELEASE #0 r297264: Fri Mar 25 02:10:02 UTC 2016     root@releng1.nyi.freebsd.org:/usr\n/obj/usr/src/sys/GENERIC  amd64\n\n# dtrace -qn 'BEGIN { printf(\"`hz: %d\\n\", `hz); exit(0); }'\n`hz: 1000\n\n# dtrace -qn 'BEGIN { printf(\"\u0026`hz: %p, `hz: %d\\n\", \u0026`hz, `hz); exit(0); }'\n\u0026`hz: ffffffff816a5d4c, `hz: 1000\n\n\n3) I would bet they should be the same.\n\nAssuming sys/sys/kernel.h is the right file, hz is defined as an int there so maybe it's not being brought into dtrace correctly on powerpc and/or on 32 bit systems.  Because I used trace(`hz), which tries to do the right thing (use a cast if needed) above, it seemed like it worked.  I'm also surprised the value of hz is 1000 on my amd64 system.  I thought it would be higher; I double checked to make sure I didn't copy the wrong text.  I guess it doesn't mean what I thought it meant."
+}

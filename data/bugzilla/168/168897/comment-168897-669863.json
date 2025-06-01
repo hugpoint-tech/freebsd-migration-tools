@@ -1,0 +1,8 @@
+{
+ "id": 669863,
+ "bug_id": 168897,
+ "attachment_id": 0,
+ "creation_time": "2012-06-09T17:20:10Z",
+ "creator": "vvd@FreeBSD.org",
+ "text": "Start/stop script /usr/local/etc/rc.d/vboxguest of port emulators/virtualbox-ose-additions don't unload kernel module vboxguest.ko after run /usr/local/etc/rc.d/vboxguest stop.\n\nCommand kldstat -m vboxguest can't find module with name vboxguest, because real name of this module is pci/vboxguest:\n# kldstat -m vboxguest\nkldstat: can't find module vboxguest: No such file or directory\n# kldstat -v -n vboxguest\nId Refs Address            Size     Name\n 2    1 0xffffffff80e12000 26018    vboxguest.ko (/boot/modules/vboxguest.ko)\n        Contains modules:\n                Id Name\n                277 pci/vboxguest\n# kldstat -m pci/vboxguest\nId  Refs Name\n277    1 pci/vboxguest\n\nFix: --- /usr/ports/emulators/virtualbox-ose-additions/files/vboxguest.in.old    2012-06-09 19:54:28.879336155 +0400\n+++ /usr/ports/emulators/virtualbox-ose-additions/files/vboxguest.in        2012-06-09 19:54:46.510330673 +0400\n@@ -24,7 +24,7 @@\n \n vboxguest_start()\n {\n-       if ! kldstat -q -m vboxguest;\n+       if ! kldstat -q -m pci/vboxguest;\n        then\n                if ! kldload vboxguest \u003e /dev/null 2\u003e\u00261;\n                then\n@@ -36,7 +36,7 @@\n \n vboxguest_stop()\n {\n-        if kldstat -q -m vboxguest;\n+        if kldstat -q -m pci/vboxguest;\n         then\n                 if ! kldunload vboxguest \u003e /dev/null 2\u003e\u00261;\n                 then\n\nPatch attached with submission follows:\nHow-To-Repeat: /usr/local/etc/rc.d/vboxservice stop\nkldstat\n/usr/local/etc/rc.d/vboxguest stop\nkldstat\n\nModule vboxguest.ko exist after stop."
+}

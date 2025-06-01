@@ -1,0 +1,8 @@
+{
+ "id": 1187837,
+ "bug_id": 260016,
+ "attachment_id": 229695,
+ "creation_time": "2021-11-24T14:25:48Z",
+ "creator": "adridg@freebsd.org",
+ "text": "Created attachment 229695\nPatch for ports-tree\n\nWhen libtextstyle outputs a hyperlink, on terminals that support hyperlinks, it outputs `\\e]8;id=\u003cid-part\u003e;\u003curl-part\u003e;` . The id-part and the url-part are user-supplied (by the calling program). In a common case where the ID is NULL, libtextstyle invents one based on a simple hash. On my system, with bison as calling program, the hash is usually  `5b1...` (32 characters).\n\nLibtextstyle outputs the escape-sequence by calling `tputs()` five times. It passes e.g. the id-part as a string to `tputs()`. From the tputs manpage, it seems that only terminal-escape codes should be passed in, or return-values from tparm(). In any case, when the string passed to `tputs()` starts with a digit, this is interpreted **on BSDs only** by ncurses as specifying a delay. The leading digits vanish from the output.\n\nThe attached patch replaces the `tputs()` calls with a call to write the strings to the output stream. This avoids any interpretation of the id-part and url that `tputs()` might do.\n\n(I would never have noticed, but in combination with bugs in ncurses and specific terminal settings, this crashes bison; avoiding the ncurses bugs by patching libtextstyle fixes my bison crashes)\n\nThe attached patch applies to the ports-tree; it adds a single patch to replace tputs in the relevant routing with direct-writes. I suppose this warrants an exp-run (given the warning in the Makefile) and ought-to-be-upstreamed, but I don't know how to do the latter."
+}

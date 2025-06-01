@@ -1,0 +1,8 @@
+{
+ "id": 62422,
+ "bug_id": 20255,
+ "attachment_id": 0,
+ "creation_time": "2000-08-08T02:12:36Z",
+ "creator": "dej@ox.org",
+ "text": "The \"channel dead\" problem is not limited to suspend and resume.\n\nI can produce it using my VIA82C686 driver by running \"xgalaga\" from the\nports collection.\n\nFrom the code, the channel is marked dead if the driver is unable to\nmake progress writing data for more than one second.  My driver was\nusing 16K buffers divided into two 8K halves.  At 8 kbps, there could be\na race between the timeout in the write routine and the buffer playing. \nTherefore, I changed my code to use smaller buffers, so now I have four\n4K buffers.  However, I still occasionally get this error.\n\nIn FreeBSD 4.0, xgalaga's sounds lagged the action often by a second or\nmore.  I believe that the application may not be writing correctly to\nthe audio device.  If this is the case, then to mark the channel dead is\nnot appropriate behavior, since a reboot is required to reset the\nsystem.  One can envision a denial-of-service attack whose effect is to\nmute the target computer until it is rebooted.\n\nI will attempt to patch my kernel to reset the \"Dead\" bit when the\ndevice is closed, to get around the immediate DOS, and to enable further\nexperimentation.  I may be able to determine the sequence of actions\nthat provoke the problem.  In any event, to have suspend/resume handlers\nin the low-level drivers themselves is not a good solution to a problem\nthat was introduced at a higher layer."
+}

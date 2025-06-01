@@ -1,0 +1,8 @@
+{
+ "id": 3023,
+ "bug_id": 1102,
+ "attachment_id": 0,
+ "creation_time": "1996-03-27T03:30:03Z",
+ "creator": "smpatel@xi.dorm.umd.edu",
+ "text": "\nSince the ELF format provides no way to tell the difference between FreeBSD, \nSysV, and Linux ELF binaries, we need to devise a way to set the correct\ncompatibility sysvec for ELF binaries.  Dynamic bins work fine, but static\nELF binaries are always assumed to be FreeBSD (therefore Linux ELF binaries do\nnot work in -current).\n\nI've heard / thought of 3 possible fixes:\n\n1.  Use a wrapper program that will pass in the sysvec to use when running a\nbinary.  I.E.  you'd need to invoke a static ELF binary with something like\n\"compat -linux linux.helloworld.elf.static\".  This is pretty messy IMO.\n\n2.  Use one of the unused bytes in the ELF e_ident to store an \"OS Type\".\nThe problem with this is that you'd need to alter a Linux ELF binary to add\nthe \"OS Type\".  While this wouldn't break anything, it's very messy.\n\n3.  Follow the \"interp\" sections hints (current behavior) unless the\nenvironment variable COMPAT_SYSVEC exists.  If the variable exists, it\noverrides the sysvec in the \"interp\" section.  This means that we can now\ninvoke Linux ELF binaries by:\n\n(export COMPAT_SYSVEC=linux; linux.helloworld.elf.static)\n\n\nI think solution #3 would be the cleanest way to do this...  The patch below\nwill implement this solution.  It works great here.\n\nFix: This implements solution #3 from above.  Valid values for the COMPAT_SYSVEC\nenvironment variable are currently \"freebsd\" and \"linux\".  Don't forget to\nrecompile the linux LKM since this edits a header file."
+}

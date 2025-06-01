@@ -1,0 +1,8 @@
+{
+ "id": 1076593,
+ "bug_id": 242150,
+ "attachment_id": 0,
+ "creation_time": "2019-11-24T00:05:16Z",
+ "creator": "john@saltant.com",
+ "text": "I think I have resolved this by rebuilding math/gmp, though I can only speculate about the root cause.\n\nWhat I did:\n\n1.  Try with clean ports tree\n\n# poudriere ports -c -p clean\n# poudriere bulk -j myjail -z myset -p clean lang/gcc9\n\nSuccess =\u003e not a problem with hardware, jail, make.conf or $SET-make.conf\n\n2.  Try with an empty ccache cache\n\n# rm -fr /var/cache/ccache/*\n# poudriere bulk -j myjail -z myset -p default -C lang/gcc9\n\nFail =\u003e must be a problem with a bad package cache\n\n4.  Rebuild dependencies first\n\n# poudriere bulk -j myjail -z myset -p default -C devel/binutils lang/gcc9\n\nFail\n\n# poudriere bulk -j myjail -z myset -p default -C math/mpfr lang/gcc9\n\nFail\n\n# poudriere bulk -j myjail -z myset -p default -C math/mpc lang/gcc9\n\nFail\n\n# poudriere bulk -j myjail -z myset -p default -C math/gmp lang/gcc9\n\nSuccess\n\nIn retrospect it is clear that building math/gmp with CPU_OPTS on an EC2 m5 instance (\"skylake\") and then trying to use that package on a CPU that has been discontinued for over four years (\"sandybridge\") was probably not a good idea. If folks think I should take additional action here, please say so. Otherwise I think this bug can be closed."
+}

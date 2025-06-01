@@ -1,0 +1,8 @@
+{
+ "id": 679903,
+ "bug_id": 170899,
+ "attachment_id": 0,
+ "creation_time": "2012-08-23T01:20:01Z",
+ "creator": "ryanrfrederick@gmail.com",
+ "text": "When running net-im/openfire with enough arguments that the Openfire Java process appears in the process list (`ps auxwww`) as a bracketed process, e.g. \"[java]\", the rc script's pidfile check on lines 68 and 84 fails to return the pidfile and thus successfully display Openfire's status or stop Openfire.\n\nFix: \n\nPerhaps replace the current check_pidfile subversion with a check_pidfile() subversion method similar to the one found in www/tomcat6:\n\n--SNIP--\n\ntomcat_check_pidfile() {\n        _pidfile=$1\n        if [ -z \"$_pidfile\" ]; then\n                err 3 'USAGE: tomcat_check_pidfile pidfile'\n        fi\n        if [ ! -f $_pidfile ]; then\n                debug \"pid file ($_pidfile): not readable.\"\n                return\n        fi\n        read _pid _junk \u003c $_pidfile\n        if [ -z \"$_pid\" ]; then\n                debug \"pid file ($_pidfile): no pid in file.\"\n                return\n        fi\n        if [ -n \"`%%LOCALBASE%%/bin/jps -l | grep -e \"^$_pid $java_class\\$\"`\" ]; then\n                echo -n $_pid\n        fi\n}\n\n--SNIP--\nHow-To-Repeat: Start Openfire with a sufficient list of arguments specified in openfire_javargs (e.g. openfire_javargs=\"-Xmx256M -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=12345 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false\") to cause the process to be bracketed in the process list, then attempt to run `/usr/local/etc/rc.d/openfire status` or `/usr/local/etc/rc.d/openfire stop`."
+}

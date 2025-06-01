@@ -1,0 +1,8 @@
+{
+ "id": 1145959,
+ "bug_id": 253411,
+ "attachment_id": 0,
+ "creation_time": "2021-02-10T14:05:31Z",
+ "creator": "jmillikin@gmail.com",
+ "text": "Documentation for functions such as getdirentries(2) or getdents(2) describe a `d_off' field of `struct dirent' as a cookie that can be passed to lseek(2) to resume a directory seek at a given position. This field is not set for dirents read from a FUSE filesystem.\n\nI believe this may be caused by a missing field assignment in `fuse_internal_readdir_processdata()'.\n\nBelow is a simple test driver that will print out dirent fields for a provided directory. Run it on a UFS volume and a fusefs volume to see different `d_off' behavior.\n\n------------\n\n#include \u003csys/types.h\u003e\n#include \u003cdirent.h\u003e\n#include \u003cstdio.h\u003e\n\nint main(int argc, char **argv) {\n  if (argc != 2) {\n    fprintf(stderr, \"usage: %s DIRPATH\\n\", argv[0]);\n    return 1;\n  }\n  DIR *dir_p = opendir(argv[1]);\n  int dir_fd = dirfd(dir_p);\n  char buf[4096];\n  ssize_t rc = getdents(dir_fd, buf, 4096);\n\n  ssize_t offset = 0;\n  int ii = 0;\n  while (offset \u003c rc) {\n    struct dirent *dent = (struct dirent*)(buf + offset);\n    printf(\"dents[%d] = {\\n\", ii);\n    printf(\"  .d_fileno = %lu,\\n\", dent-\u003ed_fileno);\n    printf(\"  .d_off = %ld,\\n\", dent-\u003ed_off);\n    printf(\"  .d_name = \\\"%s\\\",\\n\", dent-\u003ed_name);\n    printf(\"}\\n\");\n    offset += dent-\u003ed_reclen;\n    ii += 1;\n  }\n\n  return 0;\n}"
+}

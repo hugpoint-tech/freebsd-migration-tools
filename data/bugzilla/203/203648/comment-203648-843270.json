@@ -1,0 +1,8 @@
+{
+ "id": 843270,
+ "bug_id": 203648,
+ "attachment_id": 0,
+ "creation_time": "2015-10-08T19:27:00Z",
+ "creator": "scdbackup@gmx.net",
+ "text": "usr.sbin/makefs/cd9660/iso9660_rrip.c\n\nCID 1008927: Operands don't affect result (CONSTANT_EXPRESSION_RESULT)\n   result_independent_of_operands: (uint64_t)fnode-\u003einode-\u003est.st_dev \u003e\u003e 32\n   is 0 regardless of the values of its operands. This occurs as an\n   argument to a function call.\n\n660                cd9660_bothendian_dword((uint64_t)fnode-\u003einode-\u003est.st_dev \u003e\u003e 32,\n661                    pn_field-\u003eattr.rr_entry.PN.high);\n\n--------------- Source analysis:\n\nThe complained statement is in an if case which obviously shall\ntake care for 64-bit dev_t.\nBut the test expression looks for 256-bit dev_t (which i doubt\nthat it does exist anywhere).\n\n        if (sizeof (fnode-\u003einode-\u003est.st_dev) \u003e 32)\n               cd9660_bothendian_dword((uint64_t)fnode-\u003einode-\u003est.st_dev \u003e\u003e 32,\n                   pn_field-\u003eattr.rr_entry.PN.high);\n        else\n                cd9660_bothendian_dword(0, pn_field-\u003eattr.rr_entry.PN.high);\n\n--------------- Remedy proposal:\n\n-        if (sizeof (fnode-\u003einode-\u003est.st_dev) \u003e 32)\n+        if (sizeof (fnode-\u003einode-\u003est.st_dev) \u003e 4)"
+}

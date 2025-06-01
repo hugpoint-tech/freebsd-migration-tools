@@ -1,0 +1,8 @@
+{
+ "id": 1146471,
+ "bug_id": 253337,
+ "attachment_id": 0,
+ "creation_time": "2021-02-13T16:44:49Z",
+ "creator": "cem@freebsd.org",
+ "text": "Ok, here's what's going on:\n\nOur rlimit value (cur) is fine; same as glibc (8MB).\n\nGlibc is parsing /proc/self/maps to limit the pthread \"stack size\" based on adjacent mappings, *which it assumes cannot be part of the stack*.  In FreeBSD, we actually have explicit no-access mapping for the region the stack can grow into (rlim_max):\n\n00007fffdffff000-00007ffffffdf000 ---p 00000000 00:00 0\n00007ffffffdf000-00007ffffffff000 rw-p 00000000 00:00 0           [stack]\n\nI.e., that earlier mapping also corresponds to the stack.\n\nLinux doesn't do this, or doesn't report it in /proc/self/maps."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1309983,
+ "bug_id": 279195,
+ "attachment_id": 0,
+ "creation_time": "2024-05-21T08:34:19Z",
+ "creator": "kp@freebsd.org",
+ "text": "Yeah, that seems to need this:\n\ndiff --git a/sys/net/if_vlan.c b/sys/net/if_vlan.c\nindex b69d8107e30d..b936d4673404 100644\n--- a/sys/net/if_vlan.c\n+++ b/sys/net/if_vlan.c\n@@ -1715,10 +1715,17 @@ vlan_config(struct ifvlan *ifv, struct ifnet *p, uint16_t vid,\n                ifv-\u003eifv_proto = proto;\n\n                if (ifv-\u003eifv_vid != vid) {\n+                       int oldvid = ifv-\u003eifv_vid;\n+\n                        /* Re-hash */\n                        vlan_remhash(trunk, ifv);\n                        ifv-\u003eifv_vid = vid;\n                        error = vlan_inshash(trunk, ifv);\n+                       if (error) {\n+                               ifv-\u003eifv_vid = oldvid;\n+                               /* Re-insert back where we found it. */\n+                               vlan_inshash(trunk, ifv);\n+                       }\n                }\n                /* Will unlock */\n                goto done;\n\nAfter # ifconfig vlan0 vlan 110 you'll see that vlan0 thinks it's on 111, so when it tries to vlan_remhash() it's not where it expects to find it.\n\nThere may be a similar problem in the case where we don't yet have a vlandev."
+}

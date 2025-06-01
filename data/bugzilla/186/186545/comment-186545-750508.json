@@ -1,0 +1,8 @@
+{
+ "id": 750508,
+ "bug_id": 186545,
+ "attachment_id": 0,
+ "creation_time": "2014-02-07T18:00:01Z",
+ "creator": "petef@databits.net",
+ "text": "When using pam_sss for HBAC (host-based access control), pam_sss must be marked as required in the account PAM facility (\"sufficient\" is not OK - if pam_sss denies access to a known user, we can't allow pam_unix.so to return success later and let the user log in). Much like pam_ldap, pam_sss needs to be able to return PAM_IGNORE in the case of an unknown user to satisfy the \"required\" PAM configuration.\n\nFix: diff attached.\n\nThis has also been submitted to the upstream maintainers: https://fedorahosted.org/sssd/ticket/2232\n\nsuccessful pam account configuration with this patch:\n\naccount         required        pam_nologin.so\naccount         required        pam_login_access.so\naccount         required        pam_unix.so\naccount         required        /usr/local/lib/pam_sss.so ignore_unknown_user\n\nThis enforces HBAC rules on users that pam_sss knows about, and allows local users (e.g. root) to log in.\n\nPatch attached with submission follows:\nHow-To-Repeat: install security/sssd, configure \u0026 run sssd, add to sshd's pam config:\n\naccount         required        /usr/local/lib/pam_sss.so\n\nand try to log in with a local user account."
+}

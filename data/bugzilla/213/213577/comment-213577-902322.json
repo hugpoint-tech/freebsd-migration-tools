@@ -1,0 +1,8 @@
+{
+ "id": 902322,
+ "bug_id": 213577,
+ "attachment_id": 175879,
+ "creation_time": "2016-10-17T20:28:16Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "Created attachment 175879\nPatch to replace RAND_SSLeay by arc4random_buf if LibreSSL is detected\n\nWhen using data encryption at rest on MariaDB built with LibreSSL like described here\n\nhttps://mariadb.com/kb/en/mariadb/data-at-rest-encryption/\n\nthe following error occurs and mysql-server won't start:\n\n2016-10-17 17:45:32 34426872832 [ERROR] InnoDB: Redo log crypto: generate 16-byte random number as crypto msg failed.\n2016-10-17 17:45:32 804006400  InnoDB: Assertion failure in thread 34426872832 in file log0crypt.cc line 379\n\nThis is due to my_random_bytes using OpenSSL's deprecated RAND_* functions, which exist in LibreSSL for ABI compatibility, but have been disabled, see also:\n\nhttp://man.openbsd.org/OpenBSD-current/man3/RAND_set_rand_method.3 and the implementation of RAND_SSLeay here: https://github.com/libressl/libressl/blob/master/src/crypto/rand/rand_lib.c#L36\n\nThe attached patch fixes this by replacing the random function with arc4random_buf (which AFAIK should be non-blocking and should always be preferred).\n\nRight now the fix is only applied if LibreSSL is detected. I feel like it would be better to always use arc4random on *BSD and push that fix upstream, but this might require a lot more effort and discussion than just fixing it in the FreeBSD ports tree and for LibreSSL.\n\np.s. I created and tested the patch on 10.1.17, which was the current version until like 90 minutes ago, but it should apply and build cleanly anyway."
+}

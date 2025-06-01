@@ -1,0 +1,8 @@
+{
+ "id": 1302333,
+ "bug_id": 277863,
+ "attachment_id": 0,
+ "creation_time": "2024-03-25T12:37:14Z",
+ "creator": "des@FreeBSD.org",
+ "text": "Your code assumes that errno will be unchanged if mktime() succeeds. This is incorrect.  Here is a better test program:\n\n    #include \u003cerrno.h\u003e\n    #include \u003cstdio.h\u003e\n    #include \u003ctime.h\u003e\n    \n    int\n    main(void)\n    {\n            struct tm tm = { .tm_mday = 1, .tm_year = 69, .tm_yday = -1 };\n            time_t t = mktime(\u0026tm);\n            if (tm.tm_yday == -1) {\n                    perror(\"mktime failed\");\n                    return 1;\n            }\n            printf(\"%04d-%02d-%02d %02d:%02d:%02d %s = %ld\\n\",\n                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,\n                tm.tm_hour, tm.tm_min, tm.tm_sec, tzname[0],\n                (long)t);\n            return 0;\n    }\n\nIf you want to argue that errno _should_ be zero if mktime() succeeds, I invite you to make that argument to the tzcode maintainers (https://www.iana.org/time-zones), the Austin Group (https://www.austingroupbugs.net/), and the C standardization committee (https://www.open-std.org/jtc1/sc22/wg14/), but please take the time to familiarize yourself with prior work in this area (notably WG14 N3147) first."
+}

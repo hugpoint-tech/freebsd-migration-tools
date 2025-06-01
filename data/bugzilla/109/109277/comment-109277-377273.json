@@ -1,0 +1,8 @@
+{
+ "id": 377273,
+ "bug_id": 109277,
+ "attachment_id": 0,
+ "creation_time": "2007-02-19T00:18:34Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Sun, 18 Feb 2007, Dmitry Pryanishnikov wrote:\n\n\u003e\u003e Description:\n\u003e    Very rare (maybe, once a month) spontaneous crashes occur during the\n\u003e    active simultaneous use of kernel ppp and system console. When console\n\u003e    is in X.org mode, system just silently reboots. OTOH, there is a certain\n\u003e    chance to get valid crash dump when system console is in text mode.\n\u003e    Last such a crash was \"panic: clist reservation botch\" (see cblock_alloc()\n\u003e    function in /sys/kern/tty_subr.c), this was RELENG_6 as of 1-Feb-2007,\n\u003e    backtrace was:\n\u003e ...\n\u003e    Looks like ppp(4) enters cblock_alloc(), then gets preempted, then\n\u003e    ttyinput() reenters cblock_alloc().\n\u003e\n\u003e\u003e Fix:\n\u003e    I'm ready to provide further debugging information on this issue.\n\u003e    Unfortunately, I'm not familiar enough with the locking concepts\n\u003e    in modern FreeBSD kernels (and in tty subsystem particularly)\n\u003e    in order to make the fix myself.\n\nTty locking is especially simple and not very good -- everything must\nbe Giant-locked to work.  However, the default for network drivers is\nnow not to use Giant locking.  ppp doesn't seem to be aware of this.\nThe only simple fix seems to be to pessimize all network drivers by\nconfiguring Giant locking for them all -- see netisr.c.  I'm not sure\nif this is enough -- it is probably necessary to Giant-lock all calls\ninto ppp (especially ioctls), but things in netisr.c only logically\naffect isrs.\n\nBruce"
+}

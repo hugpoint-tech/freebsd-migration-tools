@@ -1,0 +1,8 @@
+{
+ "id": 744376,
+ "bug_id": 185165,
+ "attachment_id": 0,
+ "creation_time": "2013-12-24T19:10:00Z",
+ "creator": "guyyur@gmail.com",
+ "text": "I am running 10.0-RC1 on the BeagleBone Black and the net/mpd5 port is\ncrashing in libnetgraph NgMkSockNode due to stack alignment.\n\n10.0-RC1 World and kernel were compiled in a VirtualBox VM\nrunning 9.2-RELEASE-p2 i386.\nclang and ARM_EABI used as the default make options.\n\nAdded prints in NgMkSockNode show rbuf is aligned on 2-byte and not 4-byte which is needed to access ni-\u003eid (a uint32_t).\n\nni = 0xbfffe87a\nrbuf = 0xbfffe842\nsizeof(resp-\u003eheader) = 56\n\n\n(gdb) bt\n#0  0x201529a0 in NgMkSockNode (name=\u003cvalue optimized out\u003e, csp=0xbfffe95c,\n    dsp=0xbfffe958) at /usr/src/lib/libnetgraph/sock.c:134\n#1  0x00037b9c in MppcTestCap () at ccp_mppc.c:754\n#2  0x0007c1f4 in main (ac=4, av=0xbfffeb90) at main.c:248\n#3  0x0000d1b0 in __start (argc=4, argv=0xbfffeb90, env=0xbfffeba4,\n    ps_strings=\u003cvalue optimized out\u003e, obj=\u003cvalue optimized out\u003e,\n    cleanup=\u003cvalue optimized out\u003e) at /usr/src/lib/csu/arm/crt1.c:115\n#4  0x203e9dc0 in _thr_ast (curthread=0x200fd000)\n    at /usr/src/lib/libthr/thread/thr_sig.c:265\n\n\nPutting rbuf in a union with struct ng_mesg sorted the alignment to 4-byte and mpd5 didn't crash.\nI attached the changes I used to test mpd5 doesn't crash with correct alignment.\n\nHow-To-Repeat: Install and run the net/mpd5 port on arm using ARM EABI."
+}

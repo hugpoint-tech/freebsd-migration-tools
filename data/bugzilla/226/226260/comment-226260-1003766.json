@@ -1,0 +1,8 @@
+{
+ "id": 1003766,
+ "bug_id": 226260,
+ "attachment_id": 0,
+ "creation_time": "2018-07-29T17:24:20Z",
+ "creator": "jpicalau+freebsd_bugzilla@elmandria.com",
+ "text": "I just found this report while in the process of figuring out the same issue. I figure I should just as well provide some details and findings.\n\nThe reason why that configuration doesn't work when placed in /etc/rc.conf.d/netif is that the service that handles dhcp is dhclient, which goes and look for its configuration in /etc/rc.conf.d/dhclient.\n\nNow, both netif and dhclient will also load /etc/rc.conf.d/network. (`load_rc_config network' in both of those services file). However, there is a comment against this loading line in /etc/rc.d/netif stating that this is loaded for compatibility, which I interpret as meaning that it might not work forever.\n\nIt seems like there is a more general issue with the /etc/rc.conf.d/ mechanism not being well-suited for handling variables used in network.subr. Any rc script including network.subr could start making use of a functionality that depends on one of those variables in the future and result in breakage for people having one of those set in /etc/rc.conf.d, but for another script. It would be good to get some clarity here in order to avoid such unexpected configuration issues.\n\nIn the meanwhile, I think it is prudent to use /etc/rc.conf for any variable that ends up being \"shared\" between rc scripts in this fashion."
+}

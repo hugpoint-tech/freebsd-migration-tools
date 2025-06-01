@@ -1,0 +1,8 @@
+{
+ "id": 974819,
+ "bug_id": 217261,
+ "attachment_id": 0,
+ "creation_time": "2018-01-30T00:42:24Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: jhb\nDate: Tue Jan 30 00:41:54 UTC 2018\nNew revision: 328581\nURL: https://svnweb.freebsd.org/changeset/base/328581\n\nLog:\n  MFC 327755: Allow the fast-path for disk AIO requests to fail requests.\n\n  - If aio_qphysio() returns a non-zero error code, fail the request rather\n    than queueing it to the AIO kproc pool to be retried via the slow path.\n    Currently this means that if vm_fault_quick_hold_pages() reports an\n    error, EFAULT is returned from the fast-path rather than retrying the\n    request in the slow path where it will still fail with EFAULT.\n  - If aio_qphysio() wishes to use the fast path for a device that doesn't\n    support unmapped I/O but there are already the maximum number of\n    such requests in flight, fail with EAGAIN as we do for other AIO\n    resource limits rather than queueing the request to the AIO kproc pool.\n  - Move the opcode check for aio_qphysio() out of the caller and into\n    aio_qphysio() to simplify some logic and remove two goto's while here.\n    It also uses a whitelist (only supported for LIO_READ / LIO_WRITE)\n    rather than a blacklist (skipped for LIO_SYNC).\n\n  PR:\t\t217261\n  Sponsored by:\tChelsio Communications\n\nChanges:\n_U  stable/11/\n  stable/11/sys/kern/vfs_aio.c"
+}

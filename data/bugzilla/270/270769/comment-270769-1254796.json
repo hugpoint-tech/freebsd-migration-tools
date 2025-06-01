@@ -1,0 +1,8 @@
+{
+ "id": 1254796,
+ "bug_id": 270769,
+ "attachment_id": 0,
+ "creation_time": "2023-04-11T20:13:31Z",
+ "creator": "emaste@freebsd.org",
+ "text": "From the exp-run in PR258872\nhttps://pkg-status.freebsd.org/gohan05/data/mainamd64PR258872-default/2023-04-05_14h36m44s/logs/errors/postgresql13-client-13.10.log\n\n==========\nSTRIPPROG='strip -x' /bin/sh ../../../config/install-sh -c -m 644 -s libpq.a '/wrkdirs/usr/ports/databases/postgresql13-client/work/stage/usr/local/lib/libpq.a'\nstrip: error: '/wrkdirs/usr/ports/databases/postgresql13-client/work/stage/usr/local/lib/_inst.20299_': not stripping symbol '.L.str' because it is named in a relocation\n==========\n\npgsql's build has requested to strip all non-global symbols (strip -x), but there is at least one non-global symbol that in fact cannot be stripped because it is referenced by a relocation.\n\nBoth GNU strip and ELF Tool Chain strip silently handle this case (and just retain the local symbol), but LLVM strip is stricter and emits an error upon request to strip a non-removable local symbol.\n\nThere is an LLVM ticket open for this at https://github.com/llvm/llvm-project/issues/47468. It probably makes sense for LLVM strip to behave the same as GNU and ELF Tool Chain strip, but I believe pgsql should just not use strip -x when there are symbols that cannot be stripped. My suggestion would be to consider just not stripping .a archives."
+}

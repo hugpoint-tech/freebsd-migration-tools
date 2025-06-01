@@ -1,0 +1,8 @@
+{
+ "id": 912437,
+ "bug_id": 214923,
+ "attachment_id": 0,
+ "creation_time": "2016-12-19T14:54:11Z",
+ "creator": "yjh0502@gmail.com",
+ "text": "(In reply to Konstantin Belousov from comment #17)\n\nYes, I believe that both hangs/panic is caused by the same problem, as both symptom could be reproduced by same procedure.\n\nI made a simple script to reproduce the problem on both GENERIC/debug kernels, 10.3 and 11.0. I reproduced and observed the problem by\n - running 'top' on console and start following script via ssh, or\n - running 'top' and following script on 'tmux'\n\nI can reproduce the problem almost instantly after running the script. If you cannot reproduce the problem, try to re-run the script several times after cleaning up processes using 'pkill watchman xargs'.\n\n'watchman' command can be installed with 'pkg'.\n\nhttps://gist.github.com/yjh0502/1355939dc89a055029d1161e5501a50a\n\n#!/usr/bin/env bash\n\nmkdir -p foo bar\nseq -w 0 100 | xargs -n1 -I{} touch foo/{}.c\n\necho '[\"subscribe\",\"./\",\"mysub\",{\"fields\":[\"name\"],\"expression\":[\"allof\",[\"type\",\"f\"],[\"not\",\"empty\"],[\"suffix\",\"c\"]]}]' | watchman -p -j --server-encoding=json \u003e /dev/null \u0026\nwhile true; do find bar/ -type f | xargs -n1 -P5 -I'{}' mv '{}' foo; done \u0026\nwhile true; do find foo/ -type f | xargs -n1 -P5 -I'{}' mv '{}' bar; done \u0026\n\nwait"
+}

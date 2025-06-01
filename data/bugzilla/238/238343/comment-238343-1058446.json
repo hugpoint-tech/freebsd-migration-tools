@@ -1,0 +1,8 @@
+{
+ "id": 1058446,
+ "bug_id": 238343,
+ "attachment_id": 0,
+ "creation_time": "2019-07-19T18:32:08Z",
+ "creator": "sigsys@gmail.com",
+ "text": "Small patch to make it work with geli.  Trimming triggered detach-on-last-close.\n\nIndex: sbin/swapon/swapon.c\n===================================================================\n--- sbin/swapon/swapon.c\t(revision 350115)\n+++ sbin/swapon/swapon.c\t(working copy)\n@@ -436,7 +436,8 @@\n {\n \tstruct stat sb;\n \tchar *dname, *args;\n-\tint error;\n+\tconst char *ret;\n+\tint error, fd;\n \n \terror = stat(name, \u0026sb);\n \n@@ -469,7 +470,13 @@\n \t\t}\n \t} while (0);\n \n-\treturn (swap_on_off_sfile(name, doingall));\n+\t/* Hold geli device open to avoid triggering detach on last close. */\n+\tfd = open(name, O_WRONLY);\n+\tif (fd \u003c 0)\n+\t\terrx(1, \"Cannot open %s\", name);\n+\tret = swap_on_off_sfile(name, doingall);\n+\tclose(fd);\n+\treturn ret;\n }\n \n static const char *"
+}

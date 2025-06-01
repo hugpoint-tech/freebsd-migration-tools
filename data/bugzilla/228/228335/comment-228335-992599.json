@@ -1,0 +1,8 @@
+{
+ "id": 992599,
+ "bug_id": 228335,
+ "attachment_id": 0,
+ "creation_time": "2018-05-18T23:54:50Z",
+ "creator": "bryanv@FreeBSD.org",
+ "text": "See this comment in virtio.h:\n\n/*\n * Each virtqueue indirect descriptor list must be physically contiguous.\n * To allow us to malloc(9) each list individually, limit the number\n * supported to what will fit in one page. With 4KB pages, this is a limit\n * of 256 descriptors. If there is ever a need for more, we can switch to\n * contigmalloc(9) for the larger allocations, similar to what\n * bus_dmamem_alloc(9) does.\n *\n * Note the sizeof(struct vring_desc) is 16 bytes.\n */\n#define VIRTIO_MAX_INDIRECT ((int) (PAGE_SIZE / 16))\n\nThis code is quite old but my recollection is that the minimum allocation returned by contigmalloc() is (was?) a page which ends up wasting a lot of memory. What is the \"different memory allocator\"? If you're indifferent to VirtIO then disabling indrect descriptors is an option. However, I believe there are a handful of other places in VirtIO where the malloc allocation is capped at one page.\n\nThat being said, I don't like depending on the behavior of malloc behavior here. I'm working on VirtIO V1 support, and after that, was going to switch VirtIO to bus_dma(9) for later IOMMU/\"physical\" virtio devices support."
+}

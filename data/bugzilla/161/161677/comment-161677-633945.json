@@ -1,0 +1,8 @@
+{
+ "id": 633945,
+ "bug_id": 161677,
+ "attachment_id": 0,
+ "creation_time": "2011-10-15T10:30:05Z",
+ "creator": "yerenkow@gmail.com",
+ "text": "When working with disk images, I have problems with boot them.\nBooting went fine until screen with boot choices, and with FreeBSD logo, after choicing any, finished with message:\nCan't work out which disk we are booting from.\nGuessed BIOS device 0xffffffff not found by probes, defaulting to disk0:\n\npanic: free: guard1 fail @ 0x3f2880b8 from sys/boot/i386/loader/../../common/module.c:1004\n\nIf I trying to boot in VirtualBox, then all the same, except that there's no last message, about panic, VirtBox just hangs.\n\nFix: \n\nUse mbr probably? :)\nHow-To-Repeat: This is my way to make it:\n\ntouch $imagefile\ntruncate -s 4G $imagefile\nmdconfig -af $imagefile -u $u\ngpart create -s gpt /dev/md$u\ngpart add -s 64k -t freebsd-boot -i 1 md$u\ngpart add -t freebsd-ufs -s 2G -i 2 md$u\ngpart add -t freebsd-swap -i 3 md$u\nnewfs -Uj /dev/md${u}p2\nmount -o rw,noatime /dev/md${u}p2 $mountdir\n.\nmake installworld DESTDIR=$mountdir\nmake distribution DESTDIR=$mountdir\nmake installkernel DESTDIR=$mountdir\ngpart bootcode -b $mountdir/boot/pmbr md$u\ngpart bootcode -p $mountdir/boot/gptboot -i 1 md$u\n\n\nThat's it, we created image;\nNow any one to test:\n1. VBoxManage convertfromraw $imagefile $imagevdi --format VDI -- and test in VirtualBox;\n2. dd if=/$imagefile of=/dev/da* bs=1M  -- write to some USB disk, and boot from it."
+}

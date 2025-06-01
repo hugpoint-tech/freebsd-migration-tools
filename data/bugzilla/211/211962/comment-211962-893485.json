@@ -1,0 +1,8 @@
+{
+ "id": 893485,
+ "bug_id": 211962,
+ "attachment_id": 0,
+ "creation_time": "2016-08-18T11:25:26Z",
+ "creator": "aler@playground.ru",
+ "text": "Hardware (from dmesg): QLogic NetXtreme II BCM57711E 10GbE (A0) BXE v:1.78.79 (but this seems not important here)\n\nSometimes (randomly) bxe driver reduces its sending speed to very slow values, and one or more queues fastly increases dev.bxe.#.queue.#.tx_soft_errors value. This can be stopped and returned to normal operation only by restarting the interface (ifconfig down + ifconfig up).\n\nIt seems i found the bug that causes this.\nIn bxe_tx_mq_start_locked(), when we have both pending and new packet, it first tries to enqueue new packet and exits on fail. After that, it dequeues pending packet and tryes to handle it.\nSometimes the tx queue gets overflowed by accident. It is nothing bad, bad what happens next: bxe_tx_mq_start_locked() getting called again and again, with new packets that TCP layer trying to send. Everytime called it tryes to enqueue them, fails and exits, having no way to handle pending packets and reduce queue length.\n\nI'm new to bxe driver source code and can be wrong but the patch seems fixed the problem."
+}

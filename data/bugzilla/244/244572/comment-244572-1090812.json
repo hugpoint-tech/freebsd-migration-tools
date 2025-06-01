@@ -1,0 +1,8 @@
+{
+ "id": 1090812,
+ "bug_id": 244572,
+ "attachment_id": 212118,
+ "creation_time": "2020-03-03T13:40:34Z",
+ "creator": "aboyer@pensando.io",
+ "text": "Created attachment 212118\nProposed patch to linux_file_close()\n\nIf an RDMA driver resets itself by posting a NETDEV_UNREGISTER event while a userspace process has the device open, cleanup will fail and unregister will hang forever.\n\n(This is admittedly an obscure corner case.)\n\nThis is what should happen when the process shuts down:\n#2 0xffffffff80e9a4e6 at ib_destroy_qp+0xd6\n#3 0xffffffff80e98ab0 at ib_uverbs_cleanup_ucontext+0x1e0\n#4 0xffffffff80e9879c at ib_uverbs_close+0x6c\n#5 0xffffffff80e45cda at linux_file_close+0x18a\n\nThe issue is that the uverbs file will be partially destroyed by the unregister process, clearing the uverbs file's fops structure. Then, when the userspace process shuts down, the uverbs file will be closed, but its -\u003erelease() function (ib_uverbs_close() in this case) will not be called.\n\nThis leaks whatever RDMA data structures were in use by the process.\n\nTo fix the issue, change linux_file_close() to use the file pointer's embedded f_ops, rather than pulling them from the cdev. This allows cleanup to run even after the cdev has been destroyed.\n\nThe attached patch has been tested on FreeBSD 11.3-RELEASE-p5 and 12.1-RELEASE-p1."
+}

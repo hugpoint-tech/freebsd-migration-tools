@@ -1,0 +1,8 @@
+{
+ "id": 608480,
+ "bug_id": 156637,
+ "attachment_id": 0,
+ "creation_time": "2011-04-25T09:20:18Z",
+ "creator": "streambag@streambag.se",
+ "text": "When including \u003csys/file.h\u003e with _XOPEN_SOURCE defined to 500 or higher, compila\ntion will fail with a message similar to this one (using clang, gcc fails with a\n similar message):\n\nIn file included from main.c:3:\n/usr/include/sys/file.h:161:2: error: unknown type name 'u_int'\n        u_int   xf_flag;        /* flags (see fcntl.h) */\n\nu_int is defined in types.h, but it is wrapped in a #if __BSD_VISIBLE.\n\n__BSD_VISIBLE is defined in cdefs.h only if _POSIX_C_SOURCE is not defined (whic\nh it is if _XOPEN_SOURCE is defined).\n\nI found the following (short) thread about this problem from 2009:\nhttp://www.mail-archive.com/freebsd-hackers@freebsd.org/msg69469.html\n\nFix: \n\nI'm not sure what the correct solution is. Any one of the following would solve the problem:\n* sys/file.h should not use u_int\n* The relevant parts of sys/file.h should be wrapped in #if __BSD_VISIBLE\n* The definition of u_int should not be wrapped in #if __BSD_VISIBLE\n* _XOPEN_SOURCE \u003e= 500 should not imply _POSIX_C_SOURCE\n* _POSIX_C_SOURCE should not stop __BSD_VISIBLE from being defined.\nHow-To-Repeat: Try to compile the following code:\n\n#define _XOPEN_SOURCE 500\n#include \u003csys/file.h\u003e\n\nint main(int argc, char *argv[]) {\n    return 0;\n}"
+}

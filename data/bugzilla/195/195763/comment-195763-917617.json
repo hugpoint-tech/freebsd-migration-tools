@@ -1,0 +1,8 @@
+{
+ "id": 917617,
+ "bug_id": 195763,
+ "attachment_id": 179126,
+ "creation_time": "2017-01-20T06:27:46Z",
+ "creator": "kevans@freebsd.org",
+ "text": "Created attachment 179126\nProposed patch to address zero length match issues with bsdgrep\n\nHi,\n\nAttached is a patch that seems to fix the behavior of zero-length matches. procline() was previously using something along the lines of 'next start (st) == match start' to indicate failure, but this isn't right when zero-length matches are possible. Therefore, we make a couple of critical changes:\n\n1.) Keep track of the number of total matches we came across\n2.) Don't add zero-length matches to our output\n3.) If we had any matches, keep going. If st didn't advance beyond our first match, we only had zero-length matches\n\nTo fix the empty expression case, I changed the argv pattern matching bits in main() to actually skip invalid expressions. \n\nYour test expressions now yield the following results:\nroot@ghost:/usr/obj/usr/src/usr.bin/grep# echo '01:1:01' | ./bsdgrep -Eo '(^|:)0*'\n0\n:\n:0\n# Good\nroot@ghost:/usr/obj/usr/src/usr.bin/grep# echo '1:1:01' | ./bsdgrep -Eo '(^|:)0*'\n:\n:0\n# Better\nroot@ghost:/usr/obj/usr/src/usr.bin/grep# echo 'bla bla' | ./bsdgrep -Eo '[[:alnum:]]*'\nbla\nbla\n# Good\nroot@ghost:/usr/obj/usr/src/usr.bin/grep# printf 'bla\\nbla\\n' | ./bsdgrep -Eo ''\n# Good\n\nI think this approach is mostly right, except for perhaps the bits in grep.c:main() to make sure we don't recognize invalid patterns as input patterns."
+}

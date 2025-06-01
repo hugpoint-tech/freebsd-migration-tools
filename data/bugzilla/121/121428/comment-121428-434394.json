@@ -1,0 +1,8 @@
+{
+ "id": 434394,
+ "bug_id": 121428,
+ "attachment_id": 0,
+ "creation_time": "2008-03-06T15:10:06Z",
+ "creator": "olli@secnetix.de",
+ "text": "\nThe options switch \"Enable Mesa 3D (for GL modes)\" is broken.\nIn fact it's broken in a very interesting way.  :-)\n\nIt turns out that these lines are the culprit:\n\n    OPTIONS=MESAGL   \"Enable Mesa 3D (for GL modes)\"   off\n\n    .if ${ARCH} == amd64\n    WITH_MESAGL=    no\n    .else\n    WITH_MESAGL?=   yes\n    .endif\n    .if ${WITH_MESAGL} == yes\n    CONFIGURE_ARGS+=        --with-mesa\n\nFirst case:  options MESAGL is *disabled*.  Then the options\nframework sets the variable WITHOUT_MESAGL=true.  The above\ncode (running on non-amd64) then sets WITH_MESAGL=yes anyway\nenabling Mesa support even though the user didn't want it.\n\nSecond case:  options MESAGL is *enabled*.  As a result, the\nvariable WITH_MESAGL is set to \"true\" (not \"yes\"!).  The\nabove code only checks for the value \"yes\", therefore *not*\nenabling Mesa support.\n\nHow-To-Repeat: \nOn a FreeBSD/i386 machine:\n\ncd /usr/ports/x11/xlockmore\nmake config\nmake\n\nNotice that Mesa/GL modes are *not* included if you enabled\nthem in the config menu.  Notice that they *are* included\nif you disabled them."
+}

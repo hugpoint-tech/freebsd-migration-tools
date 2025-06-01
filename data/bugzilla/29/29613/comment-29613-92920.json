@@ -1,0 +1,8 @@
+{
+ "id": 92920,
+ "bug_id": 29613,
+ "attachment_id": 0,
+ "creation_time": "2001-08-10T21:30:10Z",
+ "creator": "tjohnson@viacasting.com",
+ "text": "My goal is to build a satellite link simulator, and collect all the dropped packets.\n\nsetup an ethernet bridge, then divert packets into a divert socket.  While the packets properly leave the ipfw rules, they are never delivered to the divert socket itself.\n\nHow-To-Repeat: \nupdev=xl0\nbackdev=xl1\nprintsocket=6975\nupbw=10Mbits/sec\nuplat=50\nupplr=0.2\nbackbw=10Mbits/sec\nbacklat=50\nbackplr=0\n\nsysctl -w net.link.ether.bridge_cfg=\"$updev:1,$backdev:1,\"\nsysctl -w net.link.ether.bridge=1\nsysctl -w net.link.ether.bridge_ipfw=1\n\nipfw -q flush\nipfw -q pipe flush\nipfw pipe 10 config bw $upbw delay $uplat\nipfw pipe 11 config bw $backbw delay $backlat\nipfw add 90 prob $upplr   divert $printsocket ip from any to any via $updev   in\nipfw add 91 prob $backplr divert $printsocket ip from any to any via $backdev in\nipfw add 100 pipe 10 ip from any to any via $updev in\nipfw add 101 pipe 11 ip from any to any via $backdev in\n\nThen run something which reads packets from a divert socket.  I used http://www.bobdbob.com/~protius/software/prettyprint.c.\n\nThen run a ping or something through the ethernet bridge.  Note that while the packets are properly matched and removed from ipfw by rules 90 and 91, they are never delivered to prettyprint."
+}

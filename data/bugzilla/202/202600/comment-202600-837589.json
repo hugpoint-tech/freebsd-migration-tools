@@ -1,0 +1,8 @@
+{
+ "id": 837589,
+ "bug_id": 202600,
+ "attachment_id": 160262,
+ "creation_time": "2015-08-23T18:51:16Z",
+ "creator": "naddy@FreeBSD.org",
+ "text": "Created attachment 160262\nndp.c diff\n\nndp -p performs unaligned accesses on architectures that require strict alignment for 64-bit types (e.g. sparc64). Even if we trap these on FreeBSD rather than sending SIGBUS, this should be fixed.\n\nThe sysctl used to pass the prefix list uses a packed format:\n  one struct in6_prefix, several struct sockaddr_in6,\n  one struct in6_prefix, several struct sockaddr_in6,\n  ...\nThis was fine when both structs had the same alignment requirement (int32_t).  However, there is a time_t in in6_prefix which has pushed that struct's alignment to int64_t.\n\nThe attached patch is taken from NetBSD (Martin Husemann):\nhttp://cvsweb.netbsd.org/bsdweb.cgi/src/usr.sbin/ndp/ndp.c.diff?r1=1.41\u0026r2=1.42\n\"Simplify code to print the router/prefix list: use memcpy and local structs properly aligned on the stack to decode the binary format passed by the kernel - instead of (bogusly) assuming the format will obey all local alignement requirements.\"\n\nThe kernel side of this was fixed independently in r235681."
+}

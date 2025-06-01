@@ -1,0 +1,8 @@
+{
+ "id": 1214443,
+ "bug_id": 263779,
+ "attachment_id": 0,
+ "creation_time": "2022-06-05T13:30:38Z",
+ "creator": "nobutaka@FreeBSD.org",
+ "text": "I have updated editors/imhex port to 1.18.2 and I am still investigating the segmentation fault. It seems that ImGui::SaveIniSettingsToDisk is called from a signal handler with the following code.\n\n-------------------------------------------------------------------------\n[ImHex-1.18.2/main/source/window/window.cpp]\n\n        EventManager::subscribe\u003cEventAbnormalTermination\u003e(this, [this, CrashBackupFileName](int) {\n            ImGui::SaveIniSettingsToDisk(this-\u003em_imguiSettingsPath.string().c_str());\n\n            if (!ProjectFile::hasUnsavedChanges())\n                return;\n\n            for (const auto \u0026path : fs::getDefaultPaths(fs::ImHexPath::Config)) {\n                if (ProjectFile::store((std::fs::path(path) / CrashBackupFileName).string()))\n                    break;\n            }\n        });\n\n        EventManager::subscribe\u003cRequestOpenPopup\u003e(this, [this](auto name) {\n            this-\u003em_popupsToOpen.push_back(name);\n        });\n\n        auto signalHandler = [](int signalNumber) {\n            EventManager::post\u003cEventAbnormalTermination\u003e(signalNumber);\n\n            if (std::uncaught_exceptions() \u003e 0) {\n                log::fatal(\"Uncaught exception thrown!\");\n            }\n\n            // Let's not loop on this...\n            std::signal(signalNumber, nullptr);\n\n#if defined(DEBUG)\n            assert(false);\n#else\n            std::raise(signalNumber);\n#endif\n        };\n\n-------------------------------------------------------------------------"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1061813,
+ "bug_id": 239749,
+ "attachment_id": 0,
+ "creation_time": "2019-08-13T18:42:15Z",
+ "creator": "zeising@FreeBSD.org",
+ "text": "So, I did some more digging, and I think my initial conclusions weren't entirely correct.\n\nI set up the following mini network, with a client on one subnet, and a server on another, and a router in between running PF.  All machines are running FreeBSD 12.0.\n\n\n|server| ---- \u003cMTU 1280\u003e ---- |router| ---- \u003cMTU 1500\u003e ---- |client|\n\nserver IP: 2001:db8:ffff:ff00::2\nclient IP: 2001:db8:ffff:ff10::2\n\nI then try two connections to the server:\nOne with ssh, running ssh on the client to connect to sshd on the server.\nOne using netcat:\nnc command on server: nc -6 -l 1234\nnc command on client: cat /usr/share/examples/IPv6/USAGE | nc -6 ip-of-server\nBetween the ssh and nc invocations, I wipe the TCP host cache using\nsysctl net.inet.tcp.hostcache.purgenow=1\n\n\nI run the above tests with three different router configurations.\nFirst, I use the ruleset modulate.pf.conf, which uses modulate state for state tracking of TCP connections.\nSecond, I use the ruleset keep.pf.conf, which uses keep state for state tracking.\nThird, I disable PF completely.\n\n\nIn the first case, using modulate state, the ssh connection stalls, and it looks like the path mtu discovery fails.  The nc connection works though.\nIn the second and third case, things work as normal.\n\nI am guessing that 'modulate state' somehow screws up path MTU discovery, so that the ptb packet sent by the router isn't recognized by the client, but this is just a guess.\n\n\nI've attached the two different PF rule sets used, as well as /etc/rc.conf from the router, and pcap traffic dumps from all three runs."
+}

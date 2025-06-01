@@ -1,0 +1,8 @@
+{
+ "id": 1295888,
+ "bug_id": 276562,
+ "attachment_id": 0,
+ "creation_time": "2024-02-08T15:03:28Z",
+ "creator": "cc@FreeBSD.org",
+ "text": "(In reply to Chris Hutchinson from comment #8)\n\nHi Chris,\n\nI used the following script to workaround the `service netif restart` panic. Hope you will find help.\n\n#!/bin/sh\n\nNUM_INPUT=$#\ndisplay_usage() {\n\techo \"This script only supports two input arguments.\"\n\techo -e \"\\nUsage:\\n$0 \u003cmode\u003e \u003cchannel\u003e\\n\"\n}\n# check whether user had supplied -h or --help. If yes display usage\nif [ \"$1\" = \"help\" -o \"$1\" = \"-h\" ]; then\n\tdisplay_usage\n\texit 0\nfi\n# if other than two arguments supplied, display usage\nif [  $NUM_INPUT -ne 2 ]; then\n\tdisplay_usage\n\texit 1\nfi\n\nMOD=$1\nCHN=$2\necho \"working on bring up the wlan0 and testing 802.$MOD channel $CHN\"\n\nkldunload if_iwlwifi \u0026\u0026 sleep 1\nkldload if_iwlwifi \u0026\u0026 sleep 1\n\nif [ \"$MOD\" = \"11b\" -o \"$MOD\" = \"11g\" ]; then\n\twpa_passphrase \"SSID\" \"****\" \u003e /etc/wpa_supplicant.conf\n\tifconfig wlan0 create wlandev iwlwifi0 regdomain fcc country US ssid SSID mode $MOD channel $CHN\nelif [ \"$MOD\" = \"11a\" ]; then\n\twpa_passphrase \"SSID\" \"****\" \u003e /etc/wpa_supplicant.conf\n\tifconfig wlan0 create wlandev iwlwifi0 regdomain fcc country US ssid SSID mode $MOD channel $CHN\nfi\nsleep 1\n\nifconfig wlan0 up \u0026\u0026 sleep 1\nifconfig wlan0 scan \u0026\u0026 sleep 1\nwpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant.conf \u0026\u0026 sleep 2\n\ndhclient wlan0 \u0026\u0026 sleep 2\n\necho \"test done!\""
+}

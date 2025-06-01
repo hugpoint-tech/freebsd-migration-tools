@@ -1,0 +1,8 @@
+{
+ "id": 578510,
+ "bug_id": 150648,
+ "attachment_id": 0,
+ "creation_time": "2010-09-17T14:20:00Z",
+ "creator": "rdna@rdna.ru",
+ "text": "man 8 rshd:\n--\u003e\nDESCRIPTION\n\t...\n     6.   A null terminated user name of at most 16 characters is retrieved on\n\t  the initial socket.  This user name is interpreted as a user iden-\n\t  tity to use on the server's machine.\n\t...\nDIAGNOSTICS\n\t...\n     Ruser too long.\n\t     The name of the user on the remote machine is longer than 16\n\t     characters.\n\t...\n\u003c--\n\nBut user with length of name at 15 characters (15 + '\\0' = 16)\ncan't run the command via rsh on host. He get \"Ruser too long\".\n\nThis bug is critical for one of my users. Length of his name is 15\ncharacters :)\n\nHow-To-Repeat: 1. On host1 (rsh-server):\n# testuser=$(jot -b u -s \"\" 15)\n# echo ${#testuser}\n15\n# pw useradd $testuser -u 12345 -c \"Test user\" -d /home/test -g operator -m -w no -s /bin/sh\n# pw usershow $testuser\nuuuuuuuuuuuuuuu:*:12345:5::0:0:Test user:/home/test:/bin/sh\n\n2. On host2 (client):\n# testuser=$(jot -b u -s \"\" 15)\n# echo ${#testuser}\n15\n# pw useradd $testuser -u 12345 -c \"Test user\" -d /home/test -g operator -m -w no -s /bin/sh\n# pw usershow $testuser\nuuuuuuuuuuuuuuu:*:12345:5::0:0:Test user:/home/test:/bin/sh\n# su -l $testuser\n$ id\nuid=12345(uuuuuuuuuuuuuuu) gid=5(operator) groups=5(operator)\t\n$ rsh host1 hostname\nrshd: ruser too long"
+}

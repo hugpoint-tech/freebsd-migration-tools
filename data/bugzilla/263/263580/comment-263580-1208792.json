@@ -1,0 +1,8 @@
+{
+ "id": 1208792,
+ "bug_id": 263580,
+ "attachment_id": 0,
+ "creation_time": "2022-04-26T23:58:57Z",
+ "creator": "koobs@FreeBSD.org",
+ "text": "The upstream sdist (PyPI tarball creation) process has a process for checking and ensuring cython files are compiled to C files prior to upload:\n\nclass CheckSDist(sdist):\n    \"\"\"Custom sdist that ensures Cython has compiled all pyx files to c.\"\"\"\n\nUnfortunately the check for Cython is not made conditional:\n\ntry:\n    import Cython\n\nHowever later in the setup.py, the following only adds (registers) and actual cython dependency if socket.c doesnt exist (indicating cython sources havent been compiled)\n\nif not os.path.exists(os.path.join(\"zmq\", \"backend\", \"cython\", \"socket.c\")):\n    # this generally means pip install from git\n    # which requires Cython\n    setup_args.setdefault(\"setup_requires\", []).append(\n        f\"cython\u003e={min_cython_version}\n\nAdding a cython dependency to the port is spurious, and a better approach is either:\n\n1) merge/move the import line to within the source file check, so both the try import and the registration are conditional, and send upstream, OR\n\n2) hack: remove the try/import/exception block.\n\nAs far as Python version support goes, the standard is to declare version support against the versions upstream CI's and passes tests against. If they are testing with Cython builds, that means their sdist pipeline is untested, which is problematic and should be reported too."
+}

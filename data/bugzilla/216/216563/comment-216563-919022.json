@@ -1,0 +1,8 @@
+{
+ "id": 919022,
+ "bug_id": 216563,
+ "attachment_id": 0,
+ "creation_time": "2017-01-29T01:57:19Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "GCC 5.4.0 and also 4.9.0 from ports fail to generate working code for rawtherapee, a C++11 application, and cause it to drop core with a SIGBUS on i386. This is with -O3 -msse2.  \n\namd64 is unaffected. Other architectures are untested. GCC 6 and 7-devel are untested.\n\nTo reproduce, compile ports/heads/graphics/rawtherapee-devel as of r432608 (exactly this version!), add \"CFLAGS+=-g\" and \"STRIP=\" to the Makefile and see that it is hit by a SIGBUS in post-install when it tries to check if the program is able to start. DO NOT USE WITH_DEBUG=yes, that will change compiler flags and mask the bug!\n\nDebugging this reveals that the generated code crashes when initalizing an auto double[8] = { ... } vector upon entry to the function, when it tries to copy it around with SSE instructions that require 16-byte alignment, but the source address has some 0x...8 address. This affects i386 on 10.3-RELEASE and 11.0-RELEASE (both fully patched).\n\nI am reporting this against GCC because this does NOT happen when the code is recompiled with base clang (3.4.0 for FreeBSD 10.3, or 3.8.0 for FreeBSD 11.0.) without changing anything else on the system (in particular, gdk, gtk, ... are NOT touched when switching compilers).\n\nWorkaround: add -mstackrealign."
+}

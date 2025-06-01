@@ -1,0 +1,8 @@
+{
+ "id": 78389,
+ "bug_id": 25156,
+ "attachment_id": 0,
+ "creation_time": "2001-02-17T01:30:01Z",
+ "creator": "dot@dotat.at",
+ "text": "\nA very common operation with mixer(8) is to change the overall sound\nvolume. At the moment you must do this with a command like \"mixer vol 75\";\nthe patch below allows you to omit the first argument in which case it\nassumes \"vol\".\n\nFix: \n\n--- /usr/src/usr.sbin/mixer/mixer.c\t2000/10/26 14:39:35\t1.11.2.2\n+++ /usr/src/usr.sbin/mixer/mixer.c\t2001/02/17 01:21:33\n@@ -181,13 +181,9 @@\n \t\t\tcontinue;\n \t\t}\n \n-\t\tif ((dev = res_name(*argv, devmask)) == -1) {\n-\t\t\twarnx(\"unknown device: %s\", *argv);\n-\t\t\tdusage = 1;\n-\t\t\tbreak;\n-\t\t}\n-\n-\t\tswitch(argc \u003e 1 ? sscanf(argv[1], \"%d:%d\", \u0026l, \u0026r) : 0) {\n+\t\tdev = res_name(*argv, devmask);\n+\t\tswitch(dev == -1 ? -sscanf(argv[0], \"%d\", \u0026l) :\n+\t\t\targc \u003e 1 ? sscanf(argv[1], \"%d:%d\", \u0026l, \u0026r) : 0) {\n \t\tcase 0:\n \t\t\tif (ioctl(baz, MIXER_READ(dev),\u0026bar)== -1) {\n \t\t\t\twarn(\"MIXER_READ\");\n@@ -202,6 +198,13 @@\n \n \t\t\targc--; argv++;\n \t\t\tbreak;\n+\t\tcase -1:\n+\t\t\tif ((dev = res_name(\"vol\", devmask)) == -1) {\n+\t\t\t\twarnx(\"unknown device: %s\", *argv);\n+\t\t\t\tdusage = 1;\n+\t\t\t\tbreak;\n+\t\t\t}\n+\t\t\targc += 1; argv -= 1;\n \t\tcase 1:\n \t\t\tr = l;\n \t\tcase 2:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1045569,
+ "bug_id": 237067,
+ "attachment_id": 0,
+ "creation_time": "2019-04-07T04:48:15Z",
+ "creator": "vi@endrift.com",
+ "text": "When using GELI with autodetach enabled (which it is by default if using geli_devices in rc.conf) enabled, ZFS can trigger a panic.\n\nSteps to reproduce:\n\n- Create a VM with FreeBSD 12.0-RELEASE rootfs and two attached drives, which I'll be calling ada0 and ada1 for simplicity\n- Format the devices with geli init with no passphrase:\n# dd if=/dev/random of=/root/k bs=64 count=1\n# geli init -PK /root/k ada0\n# geli init -PK /root/k ada1\n- Attach to the devices and set up a mirrored zpool (I don't know if the mirroring is needed, this is just what my setup was when I discovered it):\n# geli attach -pk /root/k ada0\n# geli attach -pk /root/k ada1\n# zpool create pool mirror ada0.eli ada1.eli\n- Ensure zfs and geli load at boot:\n# cat \u003e\u003e /boot/loader.conf \u003c\u003cEND\nzfs_load=\"YES\"\ngeom_eli_load=\"YES\"\nEND\n# cat \u003e\u003e /etc/rc.conf \u003c\u003cEND\ngeli_devices=\"ada0 ada1\"\ngeli_ada0_flags=\"-p -k /root/k\"\ngeli_ada1_flags=\"-p -k /root/k\"\nEND\n- Reboot the VM and run `zpool status`\n\nExpected results:\n- GELI and ZFS work and it shows the status of `pool`\n\nActual results:\n- Kernel panic in vdev_dtl_reassess\n\nI don't seem to have a way to gather the crashlog from this VM (I'm using VMware Player on Linux to reproduce at the moment) otherwise I'd attach it.\n\nConfiguration:\n- Running stock amd64 FreeBSD 12.0-RELEASE on a fresh installation."
+}

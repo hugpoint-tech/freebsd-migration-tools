@@ -1,0 +1,8 @@
+{
+ "id": 42046,
+ "bug_id": 13793,
+ "attachment_id": 0,
+ "creation_time": "1999-09-17T19:06:49Z",
+ "creator": "wpaul@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eclosed\n\n\nThe bug here was that I was initializing the maximum packet size for the \nmini receive ring incorrectly. The maximum length determines how small a \npacket has to be in order for it to be DMAed into the mini receive ring \ninstead of the normal ring. I set the length to MHLEN, however the mini \nring receive buffers are actually sized at MHLEN - ETHER_ALIGN; the first \ntwo bytes are shaved off in order to produce proper payload alignment. \nIt happens that MHLEN is 96, so frames of exactly 95 and 96 bytes in \nsize would be corrupted. In your failing case, the frame is 95 bytes long. \n\nI patched if_ti.c in -current and -stable to fix this. You can also fix \nthis by changing: \n\nrcb-\u003eti_max_len = MHLEN; \n\nto:        \n\nrcb-\u003eti_max_len = MHLEN - ETHER_ALIGN; \n\nin ti_gibinit() if you're in a rush and don't want to cvsup again.\n"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 548545,
+ "bug_id": 144726,
+ "attachment_id": 0,
+ "creation_time": "2010-03-14T05:20:03Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "On a system prior to r197319, any given time that list_net_interfaces is\nrun more than once, the list grows as the variables in list_net_interfaces\nafter that commit is a local and not a global variable.\n\nExample (RELENG_8):\n\n# . /etc/rc.subr ; . /etc/network.subr ; . /etc/defaults/rc.conf ; list_net_interfaces\nlo0 lo0 lo0 lo0 plip0 bge0 bge1plip0 bge0 bge1plip0 bge0 bge1\n# uname -a\nFreeBSD foo.localdomain 8.0-STABLE FreeBSD 8.0-STABLE #1 r204854M: Fri Mar 12 22:21:06 PST 2010     root@:/usr/obj/scratch/ip-thinclient-test/releng_8/sys/GENERIC  amd64\n\nExample (9-CURRENT):\n\n[gcooper@bayonetta /scratch/src/head/usr.bin/hexdump]$ . /etc/rc.subr ; . /etc/network.subr ; . /etc/defaults/rc.conf ; list_net_interfaces\nlo0 em0 fwe0\n[gcooper@bayonetta /scratch/src/head/usr.bin/hexdump]$ uname -a\nFreeBSD bayonetta.localdomain 9.0-CURRENT FreeBSD 9.0-CURRENT #2: Thu Mar  4 13:16:39 PST 2010     gcooper@bayonetta.localdomain:/usr/obj/usr/src/sys/BAYONETTA  amd64\n\nIt would be nice if this variable scoping was properly backported so\nothers could use the functions more than once without unsetting the\nvariables beforehand (it saves me from duplicating network interface\ndetection in a script I'm using).\n\nFix: \n\nMFC the code in r197139 (it was supposed to be MFCed after 3 days according\nto the commit email: http://svn.freebsd.org/changeset/base/197139 ).\nHow-To-Repeat: 1. Use a system based off of sources prior to r197319.\n2. Execute: . /etc/rc.subr ; . /etc/network.subr ; . /etc/defaults/rc.conf ;\n   list_net_interfaces"
+}

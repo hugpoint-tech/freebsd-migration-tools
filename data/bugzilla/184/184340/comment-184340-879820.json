@@ -1,0 +1,8 @@
+{
+ "id": 879820,
+ "bug_id": 184340,
+ "attachment_id": 0,
+ "creation_time": "2016-05-22T22:03:04Z",
+ "creator": "s_bugzilla@nedprod.com",
+ "text": "(In reply to Jilles Tjoelker from comment #5)\n\nI appreciate the detail in your reply. However, this is not a code development problem - as you mention, openat() is the correct solution to programming long paths. Rather it's a user problem - we are stuck with software written by others which was designed around a Linux PATH_MAX of 4096. Being that we cannot rewrite all this software to not be so stupid, it generates substantial gotchas for end users.\n\nIn terms of how to refactor the BSD kernel to handle this, I believe NT simply uses dynamic memory allocation for all paths, and therefore the 64Kb path limit is tractable except when frequently modifying paths as the win32 layer likes to do. An ideal solution for BSD would be some sort of variant storage which could be either 256 bytes of path or a dynamic memory allocation to a path. Perhaps a zero length path could mean \"pointer to a dynamically allocated path follows\", so something like:\n\nunion\n{\n  char path[256];        // for paths \u003c 255\n  struct\n  {\n    char _zero;             // lowest byte in memory is zero\n    char _magic;            // magic marker byte to detect unioned path\n    unsigned short length;  // length of path\n    char *path;             // dynamically allocated pointer to path\n  };\n};\n\nAnyway, I'm no expert in the BSD kernel, but I would find it nice to not have to install ZFS on Linux just so I can zfs snapshot the volume onto FreeBSD as my sole method of working around the BSD PATH_MAX limit."
+}

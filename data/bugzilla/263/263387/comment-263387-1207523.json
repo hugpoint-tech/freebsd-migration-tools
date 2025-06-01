@@ -1,0 +1,8 @@
+{
+ "id": 1207523,
+ "bug_id": 263387,
+ "attachment_id": 0,
+ "creation_time": "2022-04-18T12:54:11Z",
+ "creator": "dev@submerge.ch",
+ "text": "Looks like these commands are actually run _inside_ lldb, with the relevant qtcreator code in src/plugins/debugger/lldb/lldbengine.cpp:\n\n\u003e    executeCommand(\"script sys.path.insert(1, '\" + rp.dumperPath.path().toLocal8Bit() + \"')\");\n\u003e    // This triggers reportState(\"enginesetupok\") or \"enginesetupfailed\":\n\u003e    executeCommand(\"script from lldbbridge import *\");\n\nlldb gained support for lua scripting in recent versions, even though python is probably still default. There is a CLI argument (-l or --script-language) to choose the language, but I don't see it used in qtcreator sources.\n\n@Ivan: Can you double check in the debugger logs that qtcreator uses lldb13 or lldb14 from ports, something like:\n\n\u003e STARTING LLDB: /usr/local/bin/lldb14\n\nAt least on 13.0-RELEASE lldb in base defaults to lua scripts...\n\n\u003e ~\u003e /usr/bin/lldb\n\u003e (lldb) script sys.path.insert(1, '/usr/local/share/qtcreator/debugger/')\n\u003e error: lua failed attempting to evaluate 'sys.path.insert(1, '/usr/local/share/qtcreator/debugger/')': [string \"buffer\"]:1: attempt to index a nil value (global 'sys')\n\n...whereas lldb13 from ports defaults to python:\n\n\u003e ~\u003e /usr/local/bin/lldb13\n\u003e (lldb) script sys.path.insert(1, '/usr/local/share/qtcreator/debugger/')\n\u003e (lldb) script sys.path\n\u003e ['/usr/local/llvm13/lib', '/usr/local/share/qtcreator/debugger/', '/usr/local/llvm13/lib/python3.8/site-packages', '/usr/local/lib/python38.zip', '/usr/local/lib/python3.8', '/usr/local/lib/python3.8/lib-dynload', '/usr/local/lib/python3.8/site-packages', '.']"
+}

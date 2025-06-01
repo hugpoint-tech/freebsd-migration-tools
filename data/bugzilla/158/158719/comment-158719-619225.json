@@ -1,0 +1,8 @@
+{
+ "id": 619225,
+ "bug_id": 158719,
+ "attachment_id": 0,
+ "creation_time": "2011-07-08T08:40:01Z",
+ "creator": "peterjeremy@acm.org",
+ "text": "\tkgdb does not work on sparc64.  Following some investigation,\n\tthe problem is that the sparc64 kgdb has two \"core_stratum\"\n\ttarget_ops structures active - the default \"Local core dump file\"\n\tdefined in contrib/gdb/gdb/corelow.c and the FreeBSD-specific\n\t\"kernel core dump file\" defined in gnu/usr.bin/gdb/kgdb/trgt.c\n\n\tOn at least i386 and amd64, the \"Local core dump file\" is\n\tinhibited by statically defining coreops_suppress_target as\n\tnon-zero in gnu/usr.bin/gdb/libgdb/fbsd-threads.c (this file\n\tdefines \"FreeBSD multithreaded core dump file\" target_ops\n\twhich is itself inhibited by fbsdcoreops_suppress_target in\n\tgnu/usr.bin/gdb/kgdb/trgt.c).\n\n\tsparc64 does not include fbsd-threads.c and therefore\n\tthe \"Local core dump file\" is not inhibited.  As a result,\n\tcontrib/gdb/gdb/target.c::find_core_target() finds multiple\n\ttargets and returns NULL.\n\n\tNote that it's possible that similar problems exist on other\n\tarchitectures.\n\nFix: It's not possible to directly inhibit the \"Local core dump file\"\n\tby defining coreops_suppress_target in trgt.c because that\n\tresults in a duplicate definition on (eg) amd64.  Likewise a\n\tweak DATA symbol does not override a strong BSS symbol.\n\n\tThe following patch therefore defines coreops_suppress_target\n\tin a file that is only active on sparc64 kgdb.\nHow-To-Repeat: \tRun \"kgdb /boot/kernel/kernel /dev/mem\" as root on sparc64.\n\tIt will report \"GDB can't read core files on this machine.\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 93223,
+ "bug_id": 29704,
+ "attachment_id": 0,
+ "creation_time": "2002-03-24T04:58:24Z",
+ "creator": "bp@FreeBSD.org",
+ "text": "On Fri, 22 Mar 2002, Paul Trunley wrote:\n\n\u003e I believe that this is a problem with smbfs and not with the Identify \n\u003e utility.  I've included a small program that demonstrates the issue.  On \n\u003e local filesystems it is permissable to close an fd that had previously been \n\u003e mmap'd.  The mmap'd region is still accessable.  On an smbfs file this \n\u003e results in a segmenation fault when the region is accessed.\n\u003e \n\u003e Boris, I'm working on a patch to fix the problem.  If you want some more \n\u003e details please feel free to contact me.\n\n\tYes, this is an expected behavior - smbfs uses a counter to track\nopen/close operations and if it became zero, an SMB \"close\" request sent\nto server. Obviously, mmap() doesn't give additional VOP_OPEN() call and\nfile is really closed after close(), so any subsequent read/write operation\nwill fail.\n\n\tIn the DOS/Windows world it is normal to have strong relation\nbetween open/close operations, while VOP_OPEN()/VOP_CLOSE() in FreeBSD do\nnot match sometime (I'm suspect that it is possible to remove\ninconsistence, though).\n\n\tOne of the possible solutions is to remove smb_close request from\nsmbfs_close() vop and leave it only in the smbfs_inactive(), but this will\nnot allow programs to immediately release a file by just closing it.\n\n-- \nBoris Popov\nhttp://rbp.euro.ru"
+}

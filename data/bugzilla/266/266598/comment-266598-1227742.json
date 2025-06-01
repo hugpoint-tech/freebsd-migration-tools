@@ -1,0 +1,8 @@
+{
+ "id": 1227742,
+ "bug_id": 266598,
+ "attachment_id": 0,
+ "creation_time": "2022-09-26T09:55:43Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Kristof Provost from comment #10)\nI suspect I found it:\n\ndiff --git a/sys/net/if_ovpn.c b/sys/net/if_ovpn.c\nindex 286125fb42d5..0577fcee8618 100644\n--- a/sys/net/if_ovpn.c\n+++ b/sys/net/if_ovpn.c\n@@ -1572,7 +1581,7 @@ ovpn_get_af(struct mbuf *m)\n                return (AF_INET);\n\n        ip6 = mtod(m, struct ip6_hdr *);\n-       if (ip6-\u003eip6_vfc == IPV6_VERSION)\n+       if ((ip6-\u003eip6_vfc \u0026 IPV6_VERSION_MASK) == IPV6_VERSION)\n                return (AF_INET6);\n\n        return (0);\n\nThe check for 'what IP version is this packet?' didn't account for the ToS field sharing bits with the IP version field. We didn't see the outgoing packet in tcpdump, because the BPF capture point (for outbound traffic) is conditional on the address family (in part to avoid capturing control packets, in part because the capture point needs to know).\nOn the receive side the packet gets decrypted, but not passed to the IP stack, because we don't know where to send it (i.e. v4 or v6).\n\nSmall fix for a bigger issue.\n\nI'll also extend the FreeBSD if_ovpn tests to include packets with the ToS bits set."
+}

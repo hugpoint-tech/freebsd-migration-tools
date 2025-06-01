@@ -1,0 +1,8 @@
+{
+ "id": 1207951,
+ "bug_id": 263288,
+ "attachment_id": 0,
+ "creation_time": "2022-04-21T09:15:06Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to wcarson.bugzilla from comment #10)\n\n\u003e However in the above debug message it added an extra :1 after ff02 in the \n\u003e destination that does not appear in the tcpdump. Is that normal?\nIt may be the embedded form of IPv6 link-local scoped address, see https://docs.freebsd.org/en/books/developers-handbook/ipv6/#ipv6-scope-index .\n\n\nIf your host is not for production, try turn on 'net.inet6.icmp6.nd6_onlink_ns_rfc4861' to see if it helps.\n\n# sysctl net.inet6.icmp6.nd6_onlink_ns_rfc4861=1\n\nBe aware that knob is to prevent CVE-2008-2476, see also https://www.freebsd.org/security/advisories/FreeBSD-SA-08:10.nd6.asc.\n\nThe symptom is weird, and I could not reproduce it.\n\nDo you have multiple fibs? Check these:\n# sysctl net.fibs\n# sysctl net.add_addr_allfibs\n# ifconfig em0 | grep fib\n\nIt will also be helpful if you provide traffic dumps.\n# tcpdump -nvi em0 'icmp6' -w dump.pcap\nand then \n# service rtsold restart \u0026\u0026 sleep 3 \u0026\u0026 ndp -c \u0026\u0026 ping6 ipv6.google.com"
+}

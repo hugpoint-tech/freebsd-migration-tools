@@ -1,0 +1,8 @@
+{
+ "id": 1156186,
+ "bug_id": 254580,
+ "attachment_id": 0,
+ "creation_time": "2021-04-14T13:47:13Z",
+ "creator": "nwhitehorn@FreeBSD.org",
+ "text": "Still broken.\n\nThe core problem is that yubikey-manager 4.0 and above simply don't support FreeBSD with their HID mode and needs someone to write a FreeBSD backend. The following diff \"fixes\" the issue by removing support for the HID backend, which means the port is crippled but at least can still work through the PCSC backend:\n\n--- yubikey-manager-4.0.2/ykman/hid/__init__.py 2021-04-12 03:23:08.142234800 -0400\n+++ /tmp/__init__.py    2021-04-14 09:44:54.413841000 -0400\n@@ -43,10 +43,12 @@\n elif sys.platform.startswith(\"darwin\"):\n     from . import macos as backend\n else:\n-    raise Exception(\"Unsupported platform\")\n+    backend = None\n \n-\n-list_otp_devices: Callable[[], List[OtpYubiKeyDevice]] = backend.list_devices\n+if backend is not None:\n+       list_otp_devices: Callable[[], List[OtpYubiKeyDevice]] = backend.list_devices\n+else:\n+       list_otp_devices: Callable[[], List[OtpYubiKeyDevice]] = lambda: []\n \n \n class CtapYubiKeyDevice(YkmanDevice):"
+}

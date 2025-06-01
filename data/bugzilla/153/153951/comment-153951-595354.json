@@ -1,0 +1,8 @@
+{
+ "id": 595354,
+ "bug_id": 153951,
+ "attachment_id": 0,
+ "creation_time": "2011-01-13T14:30:10Z",
+ "creator": "sthaug@nethelp.no",
+ "text": "I have a server with an Intel X520-LR1 Ethernet card, which is a\n10GBase-LR card:\n\n  http://ark.intel.com/Product.aspx?id=41164\n\nThe card contains the Intel 82599ES controller:\n\n  http://ark.intel.com/Product.aspx?id=41282\n\npciconf -lv shows:\n\nix0@pci0:28:0:0:        class=0x020000 card=0x00068086 chip=0x10fb8086 rev=0x01 hdr=0x00\n    vendor     = 'Intel Corporation'\n    class      = network\n    subclass   = ethernet\n\nwhere /sys/dev/ixgbe/ixgbe_type.h has the PCI ID definition:\n\n#define IXGBE_DEV_ID_82599_SFP  0x10FB\n\nThe problem is that this card is shown by ifconfig as a 10GBase-SR card:\n\n% ifconfig ix0\nix0: flags=8843\u003cUP,BROADCAST,RUNNING,SIMPLEX,MULTICAST\u003e metric 0 mtu 1500\n        options=1bb\u003cRXCSUM,TXCSUM,VLAN_MTU,VLAN_HWTAGGING,JUMBO_MTU,VLAN_HWCSUM,TSO4\u003e\n        ether 00:1b:21:7c:7b:94\n        media: Ethernet autoselect (10Gbase-SR \u003cfull-duplex\u003e)\n        status: active\n\nI believe this is due to the following code in /sys/dev/ixgbe/ixgbe.c\nline 423, routine ixgbe_attach():\n\n                case IXGBE_DEV_ID_82599_SFP:\n                        adapter-\u003eoptics = IFM_10G_SR;\n\nI'm looking at version 1.17.2.12.2.1, from 8.2-RC1, but I see this code\nis the same in version 1.45, from HEAD:\n\n  http://www.freebsd.org/cgi/cvsweb.cgi/src/sys/dev/ixgbe/ixgbe.c?rev=1.45;content-type=text/plain\n\nFix: Fix pasted in so space/tabs won't be correct:\n\nHow-To-Repeat: Insert Intel X520-LR1 Ethernet card into server, compile kernel with ixgbe driver, reboot, type ifconfig, look at the values for the detected ixN card."
+}

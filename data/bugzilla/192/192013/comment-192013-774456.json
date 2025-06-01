@@ -1,0 +1,8 @@
+{
+ "id": 774456,
+ "bug_id": 192013,
+ "attachment_id": 0,
+ "creation_time": "2014-07-23T19:18:50Z",
+ "creator": "des@FreeBSD.org",
+ "text": "Something about the patch was nagging me, and I suddenly realized a) why pf insists on having a correct checksum and b) why this breaks TSO.  The answer to a) is that there are cases (e.g. scrub, redirect) where it modifies the packet and then recalculates the checksum.  I *think*, but am not 100% positive, that the answer to b) is that the code does not clear the CSUM_TSO flag, so the adapter expects the checksum field to be 0 and calculates an incorrect checksum.\n\n(Actually, I'm surprised that any of the patches actually work; my guess is that you're simply not exercising the parts of pf that require a correct checksum.  Unfortunately, I don't have a Xen environment to test on, so I can't reproduce the bug.)\n\nThere are basically two ways to go from here: the first is to keep the code there but modify it so that it clears the TSO flag after calculating the checksum, and the other is to fix pf so that it doesn't try to update the checksum if CSUM_DELAY_DATA is set, but instead makes sure that the correct flags are set.  The latter option is clearly preferable as the former basically defeats hardware offloading, thereby increasing CPU usage.\n\nI also want to modify in6_delayed_cksum() so it works like in_delayed_cksum() (i.e. takes no arguments other than the mbuf)."
+}

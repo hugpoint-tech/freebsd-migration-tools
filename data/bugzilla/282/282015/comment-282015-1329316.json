@@ -1,0 +1,8 @@
+{
+ "id": 1329316,
+ "bug_id": 282015,
+ "attachment_id": 0,
+ "creation_time": "2024-10-11T17:32:45Z",
+ "creator": "ivy@FreeBSD.org",
+ "text": "patch to /usr/local/etc/rc.d/smartctl_exporter:\n\n--- smartctl_exporter.old       2024-10-11 18:28:43.712179000 +0100\n+++ smartctl_exporter   2024-10-11 18:28:53.758091000 +0100\n@@ -28,7 +28,7 @@\n : ${smartctl_exporter_enable:=\"NO\"}\n : ${smartctl_exporter_user:=\"root\"}\n : ${smartctl_exporter_listen_address:=\"localhost:9633\"}\n-: ${smartctl_exporter_devices:=\"$(geom disk status -s | cut -f1 -d\\ | sed -e s,^,/dev/,g)\"}\n+: ${smartctl_exporter_devices:=\"$(geom disk status -s | awk '{print $1}' | sed -e s,^,/dev/,g)\"}\n : ${smartctl_exporter_log_level:=\"\"}\n : ${smartctl_exporter_log_format:=\"\"}\n\nrationale:\n\n'geom disk status -s' produces this output:\n\n--o\u003c--\n# geom disk status -s\nada0  N/A  N/A\nada1  N/A  N/A\n cd0  N/A  N/A\n da4  N/A  N/A\n da6  N/A  N/A\n da0  N/A  N/A\n da7  N/A  N/A\n da5  N/A  N/A\n da3  N/A  N/A\n da2  N/A  N/A\n da1  N/A  N/A\n--o\u003c--\n\nwith the current script, that turns into this:\n\n--o\u003c--\n# geom disk status -s | cut -f1 -d\\ \nada0\nada1\n\n\n\n\n\n\n\n--o\u003c--\n\nin other words, it's replaced all the 'da' entries with blank lines.\n\nwith awk, this works correctly:\n\n--o\u003c--\n# geom disk status -s | awk '{print $1}'\nada0\nada1\ncd0\nda4\nda6\nda0\nda7\nda5\nda3\nda2\nda1\n--o\u003c--\n\ntested with smartctl_exporter 0.12.0_6, FreeBSD 15.0-CURRENT #43 lf/main-n269060-ffd494371643: Tue Sep 17 05:59:59 BST 2024"
+}

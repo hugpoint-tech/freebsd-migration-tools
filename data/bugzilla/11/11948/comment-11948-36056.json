@@ -1,0 +1,8 @@
+{
+ "id": 36056,
+ "bug_id": 11948,
+ "attachment_id": 0,
+ "creation_time": "1999-05-30T23:50:01Z",
+ "creator": "toasty@dragondata.com",
+ "text": "\nWhen mmap'ing a device, then forking, the resident size of the child process\nbecomes negative.\n\nFix: \n\nI couldn't find a fix for this within an hour of looking, and had to move\non. This appeared between 3.0 and 3.1, so it shouldn't be *too* hard to\nfind. :)\n\n\n\nKevin\nHow-To-Repeat: \n1.c:\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003csys/errno.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/mman.h\u003e\n\nvoid main(void) {\n int k;\n char *low;\n int devmem;\n\n    devmem = open(\"/dev/mem\",O_RDWR);   \n    low1mb = (char *)mmap(0, 0x800000, (PROT_READ | PROT_WRITE), MAP_INHERIT | MAP_SHARED, devmem, 0);\n\n   printf(\"Starting 2...\\n\");      \n   if (rfork(RFCFDG|RFPROC)) {             \n        usleep(100);    \n   } else {\n        k = execl(\"./2\", \"2\", (char *) 0);              \n        if (k) {\n                printf(\"io returned %d errno %d\\n\",k, errno);           \n        }\n   _exit(0);       \n   }\n\n}\n\n\n\n\n2.c:\n\nvoid main(void) { \n     while(1)   \n        sleep(10000);\n}\n\n\n\nCompile, and run '1'.\n\ntop shows:\n\n\n  PID USERNAME PRI NICE  SIZE    RES STATE    TIME   WCPU    CPU COMMAND\n  899 root      10   0   748K 32760M nanslp   0:00  0.00%  0.00% 2\n\n\nps shows:\n\nroot     899  0.0 53622.9   748 -7960  p1  I     6:14AM   0:00.00 2\n0   899     1   0  10  0   748 -7960 nanslp I     p1    0:00.00 2\n\n\n\nRepeatedly doing this will cause the kernel to panic with \"panic: multiple\nfrees\"."
+}

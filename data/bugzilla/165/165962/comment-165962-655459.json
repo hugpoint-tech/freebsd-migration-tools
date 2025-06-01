@@ -1,0 +1,8 @@
+{
+ "id": 655459,
+ "bug_id": 165962,
+ "attachment_id": 0,
+ "creation_time": "2012-03-12T06:30:10Z",
+ "creator": "olivier@cochard.me",
+ "text": "Once run growfs on a partition that had an UFS label, this label is\nremoved and it's no more possible to re-set it with tunefs:\ntunefs -p display the label, but glabel didn't and the UFS name is not visible in /dev/ufs/.\n\nHow-To-Repeat: Here is how to reproduce this problem easly (tested on 8.3 and 9.0):\n\nmdconfig -a -t malloc -s 10MB\ngpart create -s mbr /dev/md0\ngpart add -t freebsd -s 5MB /dev/md0\nnewfs -L THELABEL /dev/md0s1\nglabel status | grep THELABEL\n=\u003e Label is present, now we resize the slice:\ngpart resize -i 1 /dev/md0\nglabel status | grep THELABEL\n=\u003e Label is still present, now we growfs the slice:\ngrowfs /dev/md0s1\ntunefs -p /dev/md0s1 | grep label\ntunefs: volume label: (-L)  THELABEL\n=\u003e tunefs still see the volume label\nglabel status | grep THELABEL\n=\u003e glabel didn't see the UFS label !\nOk, I will try to re-set it:\ntunefs -L THELABEL /dev/md0s1\nglabel status | grep THELABEL\n=\u003e Still no label"
+}

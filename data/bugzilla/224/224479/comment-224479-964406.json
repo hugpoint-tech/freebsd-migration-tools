@@ -1,0 +1,8 @@
+{
+ "id": 964406,
+ "bug_id": 224479,
+ "attachment_id": 0,
+ "creation_time": "2017-12-20T11:17:30Z",
+ "creator": "wosch@FreeBSD.org",
+ "text": "I built a new kernel on -current. The build was successfully, and I rebooted the machine. To my surprise the machine hangs in a kernel panic during swapoff sys call.\n\nIt turns out that if the machine used some swap, it will panic at the next reboot. This is 100% reproducible.\n\nHow to repeat:\n\n# make sure that the machine used some swap. Here I’m using a perl script which will \n# grow at least a 1GB RAM big\n$ perl -e '$a=`man tcsh`; for(0..3000) { $b.=$a}'\n\n# check the swap usage, e.g.\n$  top -b 2 | egrep ^Swap\nSwap: 2500M Total, 18M Used, 2482M Free\n\n# reboot the machine\n$ reboot\n\non the console I get this:\nswap_pager: I/O error - pagein failed; blkno 280694, size 4096, error 5\npanic: swap_pager_force_pagein: read from swap failed\n\nI saw this on two machines, one use a 1GB swap device and the other a 2GB swap file\ncat /etc/fstab \n/dev/vtbd0p3    /               ufs     rw      1       1\n\ncat /etc/fstab \nmd99\tnone\tswap\tsw,file=/var/swap/swap.0,late\t0\t0\n\nThis problem is new to me, I didn’t saw this 3 weeks ago in November. Using swapoff/swapon on the command line works fine.\n\nWorkaround: before a reboot, disable swap with the swapoff command:\n$ swapoff  -a\nswapoff: removing /dev/md99 as swap device\n$ reboot"
+}

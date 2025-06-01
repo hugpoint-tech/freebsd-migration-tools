@@ -1,0 +1,8 @@
+{
+ "id": 610870,
+ "bug_id": 157104,
+ "attachment_id": 0,
+ "creation_time": "2011-05-17T08:30:09Z",
+ "creator": "fahlgren@tutus.se",
+ "text": "If you build NTPD without IPv6 by adding the flag -DDISABLE_IPV6 to the makefile will you get a lot of errors during run time. The errors is that it failes to bind 0.0.0.0#123, and that message was repeated for all interfaces.\n\nFix: I didn't trace it down to exactly where that was done. But I found that line 1218 -\u003e 1233 in:\n\nhttp://svnweb.freebsd.org/base/release/8.2.0/contrib/ntp/ntpd/ntp_io.c?view=markup\n\nlooks suspicious. The call to isc_net_probeipv6 is done regardless if we should have IPv6 or not. If ISC_PLATFORM_HAVEIPV6 is defined will also INCLUDE_IPV6_SUPPORT be defined according to line 60 so removing the second block seems like a correct solution. That solved my problem at least, Patch attached that applies to 8.2.0 cleanly. Patching head failed due to space changes after the if statements, but the same problem exists in the same place.\n\nPatch attached with submission follows:\nHow-To-Repeat: Add -DDISABLE_IPV6 to the CFLAGS and rebuild ntpd. Run it on a machine with IPv6 enabled."
+}

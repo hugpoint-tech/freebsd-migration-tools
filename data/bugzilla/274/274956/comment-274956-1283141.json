@@ -1,0 +1,8 @@
+{
+ "id": 1283141,
+ "bug_id": 274956,
+ "attachment_id": 0,
+ "creation_time": "2023-11-07T17:21:46Z",
+ "creator": "jfc@mit.edu",
+ "text": "I see in your log\n\nuart0: \u003cFreescale i.MX UART\u003e mem 0x30860000-0x3086ffff irq 45 on simplebus3\ndevice_attach: uart0 attach returned 2\nuart0: \u003cFreescale i.MX UART\u003e mem 0x30880000-0x3088ffff irq 46 on simplebus3\ndevice_attach: uart0 attach returned 2\nuart0: \u003cFreescale i.MX UART\u003e mem 0x30890000-0x3089ffff irq 47 on simplebus3\ndevice_attach: uart0 attach returned 2\n\nThe crash in uart_grab may be because there is no uart device to grab.\n\nThe faulting source code looks like\n\n kobjop_t _m;\n kobjop_desc_t _desc = \u0026uart_grab_desc\n kobj_method_t **_cep = \u0026((kobj_t)this)-\u003eops-\u003ecache[_desc-\u003eid \u0026 (256 - 1)]\n kobj_method_t *_ce = *_cep\n if (_ce-\u003edesc != _desc) _ce = kobj_lookup_method(((kobj_t)this)-\u003eops-\u003ecls, _cep, _desc)\n _m = _ce-\u003efunc\n\nOn my system the PC (uart_grab + 0x30) corresponds to the load of _ce-\u003edesc.  If your kernel has the same register assignments the base address of the load holds 0x00656572665f7365 = \"es_Free\"."
+}

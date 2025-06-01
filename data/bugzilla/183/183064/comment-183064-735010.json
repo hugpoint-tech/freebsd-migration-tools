@@ -1,0 +1,8 @@
+{
+ "id": 735010,
+ "bug_id": 183064,
+ "attachment_id": 0,
+ "creation_time": "2013-11-15T05:44:46Z",
+ "creator": "kientzle@FreeBSD.org",
+ "text": "I think the link failure from face_for_font and the temacs crash might\nactually be unrelated, strange as that seems.\n\nI built emacs-nox11 with Ashish=92 patches as follows on FreeBSD-CURRENT\ni386 r257485:\n\n $ CFLAGS=3D=91-g -O=92 make\n\nthen it crash when it tries to build the dumped emacs.\n\nUnfortunately, temacs isn=92t built with CFLAGS; so I had to\ncopy the link line and add -g to get something debuggable.\n\nI ran the resulting temacs command in gdb:\n\n$ cd work/emacs-24.3/src\n$ gdb temacs\n(gdb) break format_time_string\n(gdb) run =97batch =97load loadup bootstrap\n\nthen it crashes the first time it enters format_time_string\nin editfns.c.\n\nThis looks like it might be a compiler bug:  The function\ndeclares\n\n      char buffer[4000];\n      char *buf =3D buffer;\n\n  but then crashes a few lines later at\n\n      buf[0] =3D =91\\1=92;\n\nwith buf being a NULL pointer.  I checked and it is the\nfirst time through the while loop.  It could also be the stack\ngetting stomped from some other function, I suppose.\n\nTim"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 678937,
+ "bug_id": 170713,
+ "attachment_id": 0,
+ "creation_time": "2012-08-23T01:56:34Z",
+ "creator": "np@FreeBSD.org",
+ "text": "First, note that only kern.ipc.nmbclusters is a valid tunable.  The rest \nof the nmbXXX settings in your loader.conf have no effect.  There are \nsysctls but no tunables for the rest.\n\nTake a look at tunable_mbinit in kern_mbuf.c -- on recent FreeBSD \nversions it starts with nmbclusters and sizes others based on this.  You \ncan set nmbclusters really high and influence the values of the other \nparameters.\n\nIn my opinion we should have a TUNABLE_INT_FETCH for all of the nmbXXX \nand autocalculate the ones that are not set, just like what we do for \nnmbclusters today.\n\nstatic void\ntunable_mbinit(void *dummy)\n{\n\tTUNABLE_INT_FETCH(\"kern.ipc.nmbclusters\", \u0026nmbclusters);\n\n\t/* This has to be done before VM init. */\n\tif (nmbclusters == 0)\n\t\tnmbclusters = 1024 + maxusers * 64;\n\tnmbjumbop = nmbclusters / 2;\n\tnmbjumbo9 = nmbjumbop / 2;\n\tnmbjumbo16 = nmbjumbo9 / 2;\n}\n\n\nCompare this to the tunable_mbinit in 7 and you can see why the \nnmbclusters tunable does not affect the others -- it is updated after \nthe other values have already been calculated.\nstatic void\ntunable_mbinit(void *dummy)\n{\n\n\t/* This has to be done before VM init. */\n\tnmbclusters = 1024 + maxusers * 64;\n\tnmbjumbop = nmbclusters / 2;\n\tnmbjumbo9 = nmbjumbop / 2;\n\tnmbjumbo16 = nmbjumbo9 / 2;\n\tTUNABLE_INT_FETCH(\"kern.ipc.nmbclusters\", \u0026nmbclusters);\n}\n\nRegards,\nNavdeep"
+}

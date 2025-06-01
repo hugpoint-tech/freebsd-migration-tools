@@ -1,0 +1,8 @@
+{
+ "id": 867146,
+ "bug_id": 207446,
+ "attachment_id": 0,
+ "creation_time": "2016-02-26T22:17:36Z",
+ "creator": "wac@google.com",
+ "text": "After further investigation it looks like the driver is accidentally using driver's vtnet_max_vq_pairs*2 + 1 for the control virtqueue instead of device's max_virtqueue_pairs*2 + 1.\n\nI'm about to attach a patch to current which propagates the device's max_virtqueue_pairs number in order to make sure the control virtqueue winds up in the correct place per the virtio spec. \"vt_device_max_vq_pairs\"  The patch also exposes this as a read-only sysctl dev.vtnet.X.device_max_vq_pairs.\n\ne.g. # sysctl -a | grep vq_pair\ndev.vtnet.0.act_vq_pairs: 3\ndev.vtnet.0.max_vq_pairs: 3\ndev.vtnet.0.device_max_vq_pairs: 16\n\nI've tested the patch successfully with a VM that supports 16 max_virtqueue_pairs with vtnet_max_vq_pairs at the default of 8, as well as hw.vtnet.mq_max_pairs=3, and with hw.vtnet.mq_disable=1.\n\nIt'd be nice to include the original patch that raises VTNET_MAX_QUEUE_PAIRS as well though since that should have some performance advantages on many cpu-ed VMs."
+}

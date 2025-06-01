@@ -1,0 +1,8 @@
+{
+ "id": 13336,
+ "bug_id": 4329,
+ "attachment_id": 0,
+ "creation_time": "1997-08-18T09:10:00Z",
+ "creator": "shin@sm.sony.co.jp",
+ "text": "read(2) from Bt848 device (/dev/bktr0) sleeps forever.\n\nFix: \n\nbktr-\u003eflags \u0026= ~(METEOR_CAP_MASK | METEOR_WANT_MASK);\n\n+ #if 1 /* bugfix */\n+       bt848 = bktr-\u003ebase;\n+       start_capture(bktr, METEOR_SINGLE);\n+\n+       /* wait for capture to complete */\n+       bt848-\u003eint_stat = ALL_INTS_CLEARED;\n+       bt848-\u003egpio_dma_ctl = FIFO_ENABLED;\n+       bt848-\u003egpio_dma_ctl = bktr-\u003ecapcontrol;\n+\n+       bt848-\u003eint_mask = BT848_INT_MYSTERYBIT |\n+                       BT848_INT_RISCI      |\n+                       BT848_INT_VSYNC      |\n+                       BT848_INT_FMTCHG;\n+\n+       bt848-\u003ecap_ctl = bktr-\u003ebktr_cap_ctl;\n+ #else\n        /* Start capture */\n        bt848 = bktr-\u003ebase;\n        bt848-\u003egpio_dma_ctl = FIFO_ENABLED;\n        bt848-\u003egpio_dma_ctl = FIFO_RISC_ENABLED;\n+ #endif\n\n        status = tsleep((caddr_t)bktr, METPRI, \"captur\", 0);\n        if (!status)            /* successful capture */--CGKp3J2lvP8M9YxNhX8t0CV5KixHQC5JdyjL0vdFe2LbD3Wl\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n*** brooktree848.c.~1~  Sun Aug 17 19:20:33 1997\n--- brooktree848.c      Mon Aug 18 16:37:05 1997\n***************\n*** 1132,1141 ****\n--- 1132,1158 ----\nHow-To-Repeat: dd if=/dev/bktr0 of=/dev/null bs=614400 count=1"
+}

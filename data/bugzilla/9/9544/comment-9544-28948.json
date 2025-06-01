@@ -1,0 +1,8 @@
+{
+ "id": 28948,
+ "bug_id": 9544,
+ "attachment_id": 0,
+ "creation_time": "1999-01-17T21:50:00Z",
+ "creator": "jake@checker.org",
+ "text": "\n\t\nA stub to have vinum loaded and configured on startup was\nadded to /etc/rc ( Thanks! ), unfortunately, the variable\n$vinum_slices is not properly initialized when vinum is started.\n/etc/rc.conf has to be sucked in before the command\nvinum read $vinum_slices is executed.\n\nFix: The code fragment\n\n# If there is a global system configuration file, suck it in.\nif [ -f /etc/rc.conf ]; then\n        . /etc/rc.conf\nfi\n\nneeds to be moved from where it is now to somewhere before\nvinum gets configured.\n\nHere is an attempt at a patch:\nh24-64-221-247# diff -u /usr/src/etc/rc /etc/rc | less\n\n\nThank you--owA17G4gevC3qEE5HwuDdb8lkclVrRjKmbsS17AUkZ5Pbdy1\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- /usr/src/etc/rc     Sun Jan 17 09:43:03 1999\n+++ /etc/rc     Sun Jan 17 13:33:43 1999\n@@ -22,6 +22,11 @@\n PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin\n export PATH\n \n+# If there is a global system configuration file, suck it in.\n+if [ -f /etc/rc.conf ]; then\n+        . /etc/rc.conf\n+fi\n+\n # Configure ccd devices.\n if [ -f /etc/ccd.conf ]; then\n        ccdconfig -C\n@@ -88,11 +93,6 @@\n if [ $? != 0 ]; then\n        echo \"Filesystem mount failed, startup aborted\"\n        exit 1\n-fi\n-\n-# If there is a global system configuration file, suck it in.\n-if [ -f /etc/rc.conf ]; then\n-       . /etc/rc.conf\n fi\n \n # If old file exists, whine until they fix it.\nHow-To-Repeat: \n\t\nTry to have vinum loaded on startup using the stubs in /etc/rc and \n/etc/rc.conf."
+}

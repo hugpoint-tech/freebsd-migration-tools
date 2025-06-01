@@ -1,0 +1,8 @@
+{
+ "id": 930087,
+ "bug_id": 218597,
+ "attachment_id": 181725,
+ "creation_time": "2017-04-12T16:07:03Z",
+ "creator": "alexandre.martins@mc2-technologies.com",
+ "text": "Created attachment 181725\nproposed patch\n\nI using a dual core ARMADA 38X platform that contains a CESA module to accelerate cryptography operations.\n\nI have some crashes when using the cryptodev through OpenSSL.\n\nThe crash only happen when the following conditions are met:\n - Multi-core system is used\n - Hardware acceleration is used\n - Hardware acceleration perform an interruption to signal the operations completion\n\nThat are the scenario, first:\n - A process ask a cryptographic operation\n - The crypto operation is send to the CESA\n - msleep is called, but the process seems to be migrated on another CPU, and msleep return immediately (spurious wakeup)\n   (I puted a KASSERT that check if the CRYPTO_F_DONE is present and it rise)\n - The operation looks like complete and memory is freed\n - The CESA performs the cryptographic operation on the freed memory that may cause corruption in some other parts of the kernel.\n\nSecond:\n - The call to crypto_dispatch is done, but the scheduler prempt the process before the lock on ces-\u003elock is done\n - The CESA perform the operation and crypto_done is called by the ithread\n - The flag CRYPTO_F_DONE is put and scheduler preempt the ithread\n - The user process continue, take the lock and check the flag, that is present, and doesn't call msleep.\n - It free the memory, and return to the userland\n - The ithread is resumed and calls the callbacks that crash by accessing the freed memory.\n\nI attach my proposed patch to fix that issue"
+}

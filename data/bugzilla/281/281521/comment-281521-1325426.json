@@ -1,0 +1,8 @@
+{
+ "id": 1325426,
+ "bug_id": 281521,
+ "attachment_id": 0,
+ "creation_time": "2024-09-15T16:54:23Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Clang 19 has become more strict about function redefinitions, which\nresults in:\n\n  compat/arc4random.c:197:1: error: redefinition of 'arc4random_buf'\n    197 | arc4random_buf(void *buf, size_t n)\n        | ^\n  /usr/include/ssp/stdlib.h:38:22: note: previous definition is here\n     38 | __ssp_redirect(void, arc4random_buf, (void *__buf, size_t __len),\n        |                      ^\n\nThe problem is that the configure script \"detects\" arc4random_buf just\nfine, due to the ports system passing ac_cv_func_arc4random_buf=yes, but\nit also has an overriding part:\n\n  # fork detection missing, weak seed on failure\n  # https://svnweb.freebsd.org/base/head/lib/libc/gen/arc4random.c?revision=268642\u0026view=markup\n  USE_BUILTIN_ARC4RANDOM=yes\n\nI think both of these are no longer true, so delete these lines in\npost-patch, which ensures that compat/arc4random.c is _not_ compiled at\nall."
+}

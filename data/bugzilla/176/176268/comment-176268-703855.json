@@ -1,0 +1,8 @@
+{
+ "id": 703855,
+ "bug_id": 176268,
+ "attachment_id": 0,
+ "creation_time": "2013-02-19T16:00:00Z",
+ "creator": "kajetan.staszkiewicz@innogames.de",
+ "text": "When using FreeBSD as a loadbalancer with route-to pf rules redirecting traffic to machines behind the loadbalancer and public addresses assigned on carp interface and it is impossible to use synproxy.\n\nAs far as I understand the code, proxied packets to the target server are sent using normal routing table lookup which ends up with sending them on lo0 or carp (the public one, as it has the public address configured) interface.\n\nFix: A known workaround is to provide a second pf rule on lo or carp interface to do synproxy and loadbalancing again. But this solution requires a double (or tripple, when including carp interface) amount of pf rules.\n\nThe attached patch modifies the following things:\n- Adds an additional route* route_to_ro parameter to pf_send_tcp which is then passed to ip_output.\n- Inside pf_test_state_tcp if a synproxy-related packet is about to be sent behind the loadbalancer, create a route structure and fill it with loadbalancing information stored in the state.\n\nThe patch has a status of \"works for me\" and was not yet tested on heavy traffic.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Use synproxy with route-to, outgoing packetes appear on lo0 or carp interfaces instead of the one provided in route-to pf rule."
+}

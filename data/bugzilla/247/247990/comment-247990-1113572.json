@@ -1,0 +1,8 @@
+{
+ "id": 1113572,
+ "bug_id": 247990,
+ "attachment_id": 0,
+ "creation_time": "2020-07-15T08:01:30Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "I am using thin jails with ezjail and ran into https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=247983.\nThe reason for this is that make's ':tA' uses realpath which leads to the symlinked basejail and results in a failed if clause. This seems to be the only spot in the Mk system (except bsd.gecko.k) for this.\n\nHere is a patch which solves my issue:\nroot@bsd1srv:/usr/ports/Mk\n# svn diff\nIndex: bsd.port.mk\n===================================================================\n--- bsd.port.mk (Revision 542158)\n+++ bsd.port.mk (Arbeitskopie)\n@@ -1851,7 +1851,7 @@\n .include \"${PORTSDIR}/Mk/bsd.gcc.mk\"\n .endif\n\n-.if defined(LLD_UNSAFE) \u0026\u0026 ${/usr/bin/ld:L:tA} == /usr/bin/ld.lld\n+.if defined(LLD_UNSAFE) \u0026\u0026 ( ${/usr/bin/ld:L:tA} == /usr/bin/ld.lld || ${/usr/bin/ld:L:tA} == /basejail/usr/bin/ld.lld )\n LDFLAGS+=      -fuse-ld=bfd\n BINARY_ALIAS+= ld=${LD}\n .  if ${ARCH} == powerpc64\n\nWhether this is a suitable fix or there can be a better one, you decide."
+}

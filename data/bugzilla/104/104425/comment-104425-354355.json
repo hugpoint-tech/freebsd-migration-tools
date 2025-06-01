@@ -1,0 +1,8 @@
+{
+ "id": 354355,
+ "bug_id": 104425,
+ "attachment_id": 0,
+ "creation_time": "2006-10-14T19:30:19Z",
+ "creator": "wes@softweyr.com",
+ "text": "wes@zaphod$ cat hello.cc\n#include \u003ciostream\u003e\n#include \u003cfenv.h\u003e\n\nusing namespace std;\n\nint main(int argc, char *argv[])\n{\n        fenv_t envp;\n        int i = fegetenv(\u0026envp);\n        fesetenv(\u0026envp);\n        cout \u003c\u003c \"Hello, world\" \u003c\u003c endl;\n}\n\nwes@zaphod$ c++ -g hello.cc -lm\n/var/tmp//ccgJGfUg.o(.text+0x1b6): In function `fesetenv':\n/usr/include/fenv.h:211: undefined reference to `__test_sse()'\n\nThe problem seems to lie in the C++ runtime startup, the nearly identical C program has no problems:\n\nwes@zaphod$ cat hello.c\n#include \u003cstdio.h\u003e\n#include \u003cfenv.h\u003e\n#pragma STDC FENV_ACCESS ON\n\nint main(int argc, char *argv[])\n{\n        fenv_t envp;\n        int i = fegetenv(\u0026envp);\n        fesetenv(\u0026envp);\n        printf(\"Hello, world\\n\");\n}\nwes@zaphod$ cc -g hello.c -lm\nwes@zaphod$ ./a.out\nHello, world\n\nFix: \n\nStill working on it.  This may be a show-stopper for release, if we care about C++ and floating-point support.\nHow-To-Repeat: Attempt to compile any C++ program that calls fesetenv."
+}

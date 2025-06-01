@@ -1,0 +1,8 @@
+{
+ "id": 865661,
+ "bug_id": 207222,
+ "attachment_id": 167110,
+ "creation_time": "2016-02-17T11:33:45Z",
+ "creator": "adam.strohl-fbsd@ateamsystems.com",
+ "text": "Created attachment 167110\nFixes redeclaration if initgroups()\n\nThe issue appears to be that src/shrpx.h defines initgroups() and doesn't use the HAVE_UNISTD_H define flag to see if it should or shouldn't.\n\nThe attached patch wraps this definition around an #ifndef statement to avoid defining it if you've got unistd.h, which the rest of the code uses:\n\n #if defined(HAVE_DECL_INITGROUPS) \u0026\u0026 !HAVE_DECL_INITGROUPS\n+#ifndef HAVE_UNISTD_H\n inline int initgroups(const char *user, gid_t group) { return 0; }\n+#endif\n #endif // defined(HAVE_DECL_INITGROUPS) \u0026\u0026 !HAVE_DECL_INITGROUPS\n\nFor immediate fix you can drop the attached patch into your \u003cpoudriere port base\u003e/www/nghttp2/files directory and rebuild. Verified that it works here (compiling on 10.1 with a 10.1 poudriere jail):\n\n====\u003e\u003e [01] Starting build of www/nghttp2\n====\u003e\u003e [01] Finished build of www/nghttp2: Success"
+}

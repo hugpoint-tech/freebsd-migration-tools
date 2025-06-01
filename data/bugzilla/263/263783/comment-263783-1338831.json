@@ -1,0 +1,8 @@
+{
+ "id": 1338831,
+ "bug_id": 263783,
+ "attachment_id": 0,
+ "creation_time": "2024-12-12T01:05:55Z",
+ "creator": "khorben@defora.org",
+ "text": "(In reply to mike from comment #46)\nThanks for testing!\nIt is progress indeed. For the moment I do not see what can cause the panic (maybe related to VNET again?) but I will let you know as soon as I figure anything out on my side.\n\nIn the meantime you can try to add this in the code:\n\n static int\n umb_add_inet_config\n {\n [...]\n mtx_unlock(\u0026sc-\u003esc_mutex);\n+CURVNET_SET_QUIET(vnet0);\n rv = in_control(NULL, SIOCAIFADDR, (caddr_t)\u0026ifra, ifp, curthread);\n+CURVNET_RESTORE();\n mtx_lock(\u0026sc-\u003esc_mutex);\n [...]\n }\n\nIf this solves the problem, I suspect there will be another panic when the link goes up and down; basically for the other two calls of in_control(). The same procedure will apply.\n\nLet me know if you would like me to provide a tentative patch instead.\n\nHTH,\n-- khorben"
+}

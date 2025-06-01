@@ -1,0 +1,8 @@
+{
+ "id": 1317718,
+ "bug_id": 280418,
+ "attachment_id": 252245,
+ "creation_time": "2024-07-23T18:10:21Z",
+ "creator": "steve@Watt.COM",
+ "text": "Created attachment 252245\nPatch for src/usr.bin/calendar/calendar.c to add the missing setsid()\n\nThe presenting symptom is that the daily and security emails from cron/periodic were arriving with the envelope-sender set to some completely random user.\n\nAfter much one-experiment-per-day debugging, I isolated it down to 300.calendar changing the login userid. It seems to be missing its setsid() before calling setusercontext().\n\nEasy-to-demonstrate sample:\n\u003e (root@rivendell) 43# sh\n\u003e # id -p\n\u003e uid     root\n\u003e groups  users wheel www vboxusers\n\u003e # calendar -a\n\u003e # id -p\n\u003e login   _tss\n\u003e uid     root\n\u003e groups  users wheel www vboxusers\n\u003e # exit\n\u003e (root@rivendell) 44# id -p\n\u003e login   _tss\n\u003e uid     root\n\u003e (root@rivendell) 45#\n\nThe fix is startlingly simple, with a little help on -questions from Kyle Evans, see attached."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1302286,
+ "bug_id": 277828,
+ "attachment_id": 0,
+ "creation_time": "2024-03-24T23:28:15Z",
+ "creator": "mp@FreeBSD.org",
+ "text": "The issue is base.txz having hard links across filesystems (/ for /etc and /usr). This looks to have been introduced via the below commit where the install flags were changed from \"-lrs\" to \"-lm\". As \"make distributeworld\" creates the base directory on a single filesystem when certctl is run, \"-lm\" creates hard links which requires /etc and /usr/ to be on the same filesystem.\n\nhttps://github.com/freebsd/freebsd-src/commit/a401c8cb26b22688087ad7c5ee527718459df15a\n\nThis patch should fix this specific issue.\n\ndiff --git a/usr.sbin/certctl/certctl.sh b/usr.sbin/certctl/certctl.sh\nindex 997a7d835d53..f95b4561d852 100755\n--- a/usr.sbin/certctl/certctl.sh\n+++ b/usr.sbin/certctl/certctl.sh\n@@ -110,7 +110,7 @@ create_trusted()\n {\n        local hash certhash otherfile otherhash\n        local suffix\n-       local link=${2:+-lm}\n+       local link=${2:+-lrs}\n\n        hash=$(do_hash \"$1\") || return\n        certhash=$(openssl x509 -sha1 -in \"$1\" -noout -fingerprint)\n@@ -159,7 +159,7 @@ resolve_certname()\n create_untrusted()\n {\n        local srcfile filename\n-       local link=${2:+-lm}\n+       local link=${2:+-lrs}\n\n        set -- $(resolve_certname \"$1\")\n        srcfile=$1"
+}

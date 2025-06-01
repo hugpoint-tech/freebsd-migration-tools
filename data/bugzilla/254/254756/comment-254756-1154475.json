@@ -1,0 +1,8 @@
+{
+ "id": 1154475,
+ "bug_id": 254756,
+ "attachment_id": 0,
+ "creation_time": "2021-04-04T07:29:57Z",
+ "creator": "mansaxel@besserwisser.org",
+ "text": "The geo.freebsd.org domain has no ipv6 nameservers. This breaks pkg update for v6 -only hosts that use local_unbound without forwarders.\n\nSteps to reproduce impact: \n\n1. Install an IPv6-only FreeBSD host with local_unbound and start with an empty /etc/resolv.conf (for instance if installed from local media) so that /var/unbound/forward.conf gets unpopulated. \n\n2. Attempt \"pkg\" operations on the new system. \n\n3. Fail. \n\nEven if there is (and there is!) v6 connectivity to the servers holding the pkg data, we can never reach them. \n\nDNS infrastructure analysis: \n\n$ dig org. NS +short | while read NS ; do dig $NS AAAA +short ; done  \n2001:500:48::1\n2001:500:40::1\n2001:500:f::1\n2001:500:e::1\n2001:500:b::1\n2001:500:c::1\n$ dig freebsd.org NS +short \nns5.he.net.\nns2.he.net.\nns3.he.net.\nns4.he.net.\n$ for ns in 2 3 4 5 ; do dig ns${ns}.he.net. AAAA +short ; done \n2001:470:200::2\n2001:470:300::2\n2001:470:400::2\n2001:470:500::2\n$ dig geo.freebsd.org. NS +short \ngns1.freebsd.org.\ngns2.freebsd.org.\n$ for ns in 1 2 ; do dig gns${ns}.freebsd.org. AAAA +short ; done \n$ for ns in 1 2 ; do dig gns${ns}.freebsd.org. A +short ; done \n96.47.72.24\n213.138.116.75\n$"
+}

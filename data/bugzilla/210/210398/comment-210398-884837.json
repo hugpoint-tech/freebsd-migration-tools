@@ -1,0 +1,8 @@
+{
+ "id": 884837,
+ "bug_id": 210398,
+ "attachment_id": 0,
+ "creation_time": "2016-06-24T13:59:58Z",
+ "creator": "tobik@freebsd.org",
+ "text": "It seems like there is still an issue with the mupdf update. \n\nWhen loading PDF files with embedded JPEG images llpp fails with:\n\n\u003e error: jpeg error: Wrong JPEG library version: library is 90, caller expects 80\n\nIt also looks like graphics/mupdf starts (re-)building stuff during the stage phase.\n\nThe zathura-pdf-mupdf patch did not work for me. If I open the same PDF in zathura I get this:\n\u003e error: could not load plugin /usr/local/lib/zathura/pdf.so (/usr/local/lib/zathura/pdf.so: Undefined symbol \"js_newobject\")\n\nI had to link llpp with libmupdfthird.a in addition to libmupdf.a. The same likely applies here.  I tried to quickly fix this by adding MUPDF_LIB=\"-lmupdf -lmupdfthird\" to the Makefile but that did not work:\n\n\u003e LD pdf.so\n\u003e /usr/bin/ld: /usr/local/lib/libmupdf.a(list-device.o): relocation R_X86_64_32S against `a local symbol' can not be used when making a shared object; recompile with -fPIC\n\u003e /usr/local/lib/libmupdf.a: could not read symbols: Bad value\n\nI think mupdf's build/pic/libmupdfthird.a should be installed as ${LOCALBASE}/lib/libmupdfthird_pic.a as well.\n\nzathura-pdf-mupdf also gives quite a lot of undefined function warnings which leads to zathura failing to load the mupdf pugin. I'll attach a new patch for zathura-pdf-mupdf next.\n\nThe fixed zathura-pdf-mupdf can open PDF with JPEG images, so the JPEG issue seems to be only in llpp. I'll investigate."
+}

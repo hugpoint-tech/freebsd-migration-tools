@@ -1,0 +1,8 @@
+{
+ "id": 440820,
+ "bug_id": 122744,
+ "attachment_id": 0,
+ "creation_time": "2009-02-02T14:23:29Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eclosed\n\nWhile the handling of over-sized hash tables isn't great, I think it's \nmore likely that this crash was caused by the bug fixed in the following \nrevision to tcp_hostcache.c: \n\nr170405 | andre | 2007-06-07 22:41:50 +0100 (Thu, 07 Jun 2007) | 9 lines \n\nIn tcp_hc_insert() we may have the case where we have hit the global \ncache size limit but this bucket row is empty.  Normally we want to \nrecycle the oldest entry in the bucket row.  If there isn't any the \nTAILQ_REMOVE leads to a panic by trying to remove a non-existing \nelement.  Fix this by just returning NULL and failing the insert. \nThis is not a problem as the TCP hostache is only advisory. \n\nSubmitted by:   jhb \n\nAnd MFC'd: \n\nr181015 | jhb | 2008-07-30 21:52:12 +0100 (Wed, 30 Jul 2008) | 4 lines \n\nMFC: If we hit the global cache size limit but the bucket row is empty \nthen we won't find an entry to recycle, so just return NULL and fail the \ninsert. \n\nThat is to say: the bug wasn't in the table being too large, but in the \nhandling of an over-full table of a larger size.  This fix was merged to \nFreeBSD 6.x prior to FreeBSD 6.4.  I'm closing the PR on the basis that \nthe reported bug is fixed, but we should consider ways to improve \noversize hash configurations, which are typically reported by panics \nduring boot.  If this problem recurs, please follow up on the PR and I \nwill reopen it.  Thanks for the bug report!"
+}

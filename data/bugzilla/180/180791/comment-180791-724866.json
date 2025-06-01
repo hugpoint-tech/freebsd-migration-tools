@@ -1,0 +1,8 @@
+{
+ "id": 724866,
+ "bug_id": 180791,
+ "attachment_id": 0,
+ "creation_time": "2013-07-24T08:30:00Z",
+ "creator": "shahark@mellanox.com",
+ "text": "Two related problems:\n\n1. ifdown on an eth interface(using mlxen) panics the kernel.\n2. kldunload mlxen when the interface is up - crashes the kernel\n\nFix: ### first fix ####\n\n\u003cpre\u003e\nqueue_delayed_work(mdev-\u003eworkqueue, \u0026priv-\u003estats_task, STATS_DELAY);\n        }\n-   if (mdev-\u003emac_removed[MLX4_MAX_PORTS + 1 - priv-\u003eport]) {\n-           panic(\"mlx4_en_do_get_stats: Unexpected mac removed for %d\\n\",\n-               priv-\u003eport);\n-           mdev-\u003emac_removed[MLX4_MAX_PORTS + 1 - priv-\u003eport] = 0;\n-   }\n        mutex_unlock(\u0026mdev-\u003estate_lock);\n }\n\u003c/pre\u003e\n\n\n\n### second fix ###\n\n\u003cpre\u003e\n\n\n+        mlx4_en_stop_port(dev);\n+\n        cancel_delayed_work(\u0026priv-\u003estats_task);\n        /* flush any pending task for this netdev */\n        flush_workqueue(mdev-\u003eworkqueue);\n\u003c/pre\u003e--U7fUA59EjbJmxeI7D3ZMT2Tqk9KNrXvQTwdtf5iJEOW4ny3M\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\ndiff --git a/sys/ofed/drivers/net/mlx4/en_netdev.c b/sys/ofed/drivers/net/mlx4/en_netdev.c\nindex acb2c12..157f05d 100755\n--- a/sys/ofed/drivers/net/mlx4/en_netdev.c\n+++ b/sys/ofed/drivers/net/mlx4/en_netdev.c\n@@ -495,11 +495,6 @@ static void mlx4_en_do_get_stats(struct work_struct *work)\nHow-To-Repeat: 1. bring a Mellanox HCA up and try to ifdown it.\n2. kldunload mlxen when an eth interface is up(using mlxen)"
+}

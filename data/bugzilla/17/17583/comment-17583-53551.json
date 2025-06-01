@@ -1,0 +1,8 @@
+{
+ "id": 53551,
+ "bug_id": 17583,
+ "attachment_id": 0,
+ "creation_time": "2000-03-24T18:10:01Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "\n\tIn certain circumstances, the NETATALK code can cause an mbuf\n\tchain to be freed multiple times.\n\n\tThe code uses a 'struct aarptab' to store information about\n\tappletalk addresses, which includes an mbuf pointer 'aap_hold'.\n\tIn most places, the code is careful about ensuring that mbuf\n\tchains referenced by this mechanism are freed only once, but\n\tthere is a subtle problem in at_aarpinput(). The code fragment\n\tlooks something like:\n\n \tif (aat-\u003eaat_hold != NULL) {\n\t    (*ac-\u003eac_if.if_output)(\u0026ac-\u003eac_if, aat-\u003eaat_hold, ...);\n \t    aat-\u003eaat_hold = NULL;\n \t}\n\n\tThe problem here is that when if_output() is called,\n\taat-\u003eaat_hold contains a non-NULL pointer. If the interface\n\tif_output routine calls aarpresolve(), then aarpresolve()\n\tmay free aat-\u003eaat_hold. This can result in aat_hold being\n\tm_freem'd twice, since if_output will also free it.\n\n\tThe simple solution is to ensure that aat_hold is NULLed out\n\tbefore calling the if_output routine. The patch below does\n\tthis by copying the mbuf pointer into a local variable\n\tso that aat-\u003eaat_hold can be NULL when if_output is called.\n\nHow-To-Repeat: \n\tConnecting a FreeBSD router to a busy network seemed to\n\ttrigger this problem every few hours, but it should be easy\n\tto construct a sequence of packet arrivals which cause it\n\tdirectly."
+}

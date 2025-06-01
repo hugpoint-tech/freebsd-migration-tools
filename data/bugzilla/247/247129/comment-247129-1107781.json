@@ -1,0 +1,8 @@
+{
+ "id": 1107781,
+ "bug_id": 247129,
+ "attachment_id": 0,
+ "creation_time": "2020-06-11T17:54:20Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to nikethmurali from comment #3)\nA couple more comments:\n\nChanging dlen to be unsigned seems dangerous.  For example, we have:\n\n 450         dlen = ntohs(pip-\u003eip_len) - (pip-\u003eip_hl \u003c\u003c 2);                                                                                                   \n 451         if (dlen \u003c ICMP_MINLEN)                                                                                                                          \n 452                 return (PKT_ALIAS_IGNORED);\n\nWhat happens if a malicious packet defines a header length longer than ip_len?  If dlen is unsigned, it will end up being a large number and will pass the subsequent check.\n\nRegarding the alignment issue, wouldn't it be simpler to modify each of ProtoAliasIn/Out and FragmentIn/Out to take a struct ip * as input, and have them update fields directly?  Then those functions know that the ip address fields are not necessarily self-aligned and the compiler can handle it."
+}

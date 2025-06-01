@@ -1,0 +1,8 @@
+{
+ "id": 814911,
+ "bug_id": 198570,
+ "attachment_id": 0,
+ "creation_time": "2015-03-13T20:58:53Z",
+ "creator": "s_bugzilla@nedprod.com",
+ "text": "Related: #197695 (Fix broken KERN_PROC_FILEDESC sysctl), #197778 (Implement the AT_EMPTY_PATH race free Linux extension).\n\nThe lack of a facility to fetch the current path of an open file descriptor prevents race free filesystem code. For example, right now there is no reliable way of opening a fd to the containing directory of an open file handle, and therefore there is no way of unlinking, renaming or hard linking a file which has been relocated by a third party since it was opened.\n\nIdeally FreeBSD ought to provide direct fd file operations (#197778), but even with a full suite of those there remains one occasion when you really must have the full path for an open fd: when you are symlinking from somewhere to wherever that fd references on the filing system.\n\nWhat is annoying is that this is straightforward on Windows especially, and with a bit of work on Linux. On OS X F_GETPATH is unstable with respect to hard links, so it returns any of the hard links to a fd, and it's somewhat random which you get.\n\nWould there be any appetite for FreeBSD to gain a F_GETPATH fnctl?\n\nchar buffer[4096];\nint len;\nif(-1==(len=fnctl(fd, F_GETPATH, buffer, sizeof(buffer))))\n  errno might be EBADF, EOVERFLOW;\nbuffer[0...len] contains the zero terminated path of the hard link originally opened as the fd which is a null string if that hard link has been deleted.\n\nThis would bring to FreeBSD semantic equivalence to Linux and Windows. And not replicate the broken F_GETPATH in OS X.\n\nNiall"
+}

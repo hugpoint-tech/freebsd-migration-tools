@@ -1,0 +1,8 @@
+{
+ "id": 618826,
+ "bug_id": 158641,
+ "attachment_id": 0,
+ "creation_time": "2011-07-04T17:20:08Z",
+ "creator": "tom@FreeBSD.org",
+ "text": "\nWhen a pipe has more than 8192 bytes written to it, the current process\nhangs and does not handle signals correctly.\n\nHow-To-Repeat: \n#include \u003csys/types.h\u003e\n#include \u003csys/uio.h\u003e\n#include \u003csignal.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n\n#define BUFFER_LENGTH 16384\n\nvoid catch_alrm(int sig_num) {\n    printf(\"Alarm received\\n\");\n    fflush(stdout);\n}\n\nint main (int argc, char **argv) {\n    char buff_read[BUFFER_LENGTH];\n    int pdes[2];\n    if ( pipe(pdes) != 0) {\n\treturn 1;\n    }\n    signal(SIGALRM, catch_alrm);\n\n    int mypid = getpid();\n    write( pdes[1], argv[1], strlen(argv[1]) );\n    kill(mypid, SIGALRM);\n\n    return 0;\n}\n\n/*\n\nSave the above as \"pipefreeze.c\", then run:\n\n% cc -g -Wall pipefreeze.c \u0026\u0026 ./a.out HELLO\n% perl -e 'print q(x) x 8192' | xargs ./a.out \u0026\n\nThe first input of \u003c 8192 bytes works fine, the second does not.\nSending \"kill -ALRM PID\" to the second process in the second example\nterminates the process, but does not call the signal handler.\n\n*/"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1184896,
+ "bug_id": 218514,
+ "attachment_id": 229215,
+ "creation_time": "2021-11-02T05:05:52Z",
+ "creator": "kargl@FreeBSD.org",
+ "text": "Created attachment 229215\nFinal diff and this PR can be closed\n\nAs mention previously, the minmax polynomial approximation\nin the kernel for cosl() seem to have a bad set of coefficients.\n\nIn testing, cosl() in the interval [0.785, pi/4] for 1 million\nvalues and pi/4 written to 37 decimal digits.  The old version\non an aarch64 system gave\n\n% tlibm/tlibm_lmath -l -x 0.78 -X 7.85398163397448309615660845819875721e-1L cos\nInterval tested for cosl: [0.78,0.785398]\ncount: 1000000\n  xm =  7.80213913234863919029058821396125599e-01L\nlibm =  7.10763080972549562455058499280609083e-01L\nmpfr =  7.10763080972549562455058499280608983e-01L\n ULP = 1.04431\n\nThe max ULP exceeds 1, which is not good.  So, I rinsed off a 10 \nyear code and recomputed coefficients.  The new minmax polynomial\nnow yields\n\n tlibm/tlibm_lmath -l -x 0.78 -X 7.85398163397448309615660845819875721e-1L cos\nInterval tested for cosl: [0.78,0.785398]\ncount: 1000000\n  xm =  7.82916198746768272588844890973704219e-01L\nlibm =  7.08859615479571058183956453286628396e-01L\nmpfr =  7.08859615479571058183956453286628469e-01L\n ULP = 0.75407\n\nwhich is very good.  The attach fixes the coefficients."
+}

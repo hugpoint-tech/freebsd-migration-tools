@@ -1,0 +1,8 @@
+{
+ "id": 497866,
+ "bug_id": 134391,
+ "attachment_id": 0,
+ "creation_time": "2009-05-09T16:20:01Z",
+ "creator": "phk@critter.freebsd.dk",
+ "text": "\tThe dladdr(3) function does not return anything remotely\n\tuseful for the main program, because it only examines the\n\tdynamic symbol table.\n\n\tThe most common use for this function, is to construct a\n\tbacktrace.\n\n\tports/devel/libexecinfo is an example of this use.\n\nFix: \n\nLinking the program with `-Wl,--export-dynamic fills the\n\tdynamic symbol table with all non-static symbols, which is\n\ta bit better, but still useless because all static functions\n\tare invisible.\n\n\tA simple correct solution escapes me, since we might not\n\teven be able to open the original binary again to read the\n\tDWARF symbol table.\n\n\tOne, quasi-hackish way to solve this, is to notice that the\n\tprogram references dladdr(3) in the first place, and have rtld(1)\n\tload the DWARF-symbol table(s) also.\nHow-To-Repeat: \t#include \u003cstdio.h\u003e\n\t#include \u003cdlfcn.h\u003e\n\n\textern void foo(const void *a);\n\tstatic void bar(void *a);\n\n\tint\n\tmain(int argc, char **argv)\n\t{\n\n\t\t(void)argc;\n\t\t(void)argv;\n\n\t\tfoo((const char *)bar + 4);\n\t\treturn (0);\n\t}\n\n\tvoid foo(const void *a)\n\t{\n\t\tDl_info info;\n\t\tint i;\n\n\t\ti = dladdr(a, \u0026info);\n\n\t\tprintf(\"i = %d (%p)\\n\", i, a);\n\t\tprintf(\"fn = %s\\n\", info.dli_fname);\n\t\tprintf(\"fb = %p\\n\", info.dli_fbase);\n\t\tprintf(\"sn = %s\\n\", info.dli_sname);\n\t\tprintf(\"sb = %p\\n\", info.dli_saddr);\n\t}\n\n\tstatic void bar(void *b)\n\t{\n\t\tprintf(\"%p\\n\", b);\n\t}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 781029,
+ "bug_id": 192878,
+ "attachment_id": 0,
+ "creation_time": "2014-08-21T18:13:36Z",
+ "creator": "marino@FreeBSD.org",
+ "text": "In my 10-second review, I only spotted one set of things I'd change (besides the USES= not be 2-tabbed)\n\n+do-install:\n+.for P in ${PROGRAMS}\n+\t${CP} ${WRKSRC}/sbin/$P ${STAGEDIR}${PREFIX}/sbin\n+.endfor\n+.for C in ${ETCFILES} \n+\t${CP} ${WRKSRC}/etc/$C ${STAGEDIR}${PREFIX}/etc\n+.endfor\n+.for R in ${RCDFILES}\n+\t${CP} ${WRKSRC}/etc/rc.d/$R ${STAGEDIR}${PREFIX}/etc/rc.d\n+.endfor\n+\n+.for D in ${DOCFILES}\n+\t@${MKDIR} ${STAGEDIR}${DOCSDIR}\n+\t${INSTALL_DATA} ${WRKSRC}/share/doc/pr/$D ${STAGEDIR}${DOCSDIR}\n+.endfor\n\n\nproblem 1) You use $CP instead of $INSTALL_ macros\n\nproblen 2) See the top 3 loops?  \nThe don't need to exist at all.  For example, the first one should be:\n(cd ${WRKSRC}/sbin \u0026\u0026 ${INSTALL_PROGRAM} ${PROGRAMS} ${STAGEDIR}${PREFIX}\n\nproblem 3)\nyou create the DOCSDIR directory once per file.  It's inside the loop!!\nand you don't need a loop either (see problem 2)\nYou need to check ${PORT_OPTIONS:MDOC}\n\n\nalso, portlint did not complain about ${CP}?  or you didn't run portlint?"
+}

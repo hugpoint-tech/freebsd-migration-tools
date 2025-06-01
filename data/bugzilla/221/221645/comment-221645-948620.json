@@ -1,0 +1,8 @@
+{
+ "id": 948620,
+ "bug_id": 221645,
+ "attachment_id": 0,
+ "creation_time": "2017-08-20T07:19:59Z",
+ "creator": "solence@zoho.eu",
+ "text": "This build fails with the following error:\n\nSource/JavaScriptCore/heap/MachineStackMarker.cpp: In function 'void pthreadSignalHandlerSuspendResume(int, siginfo_t*, void*)':\nSource/JavaScriptCore/heap/MachineStackMarker.cpp:92:69: error: 'mcontext_t {aka struct __mcontext}' has no member named 'uc_regs'\n     threadData-\u003esuspendedMachineContext = *userContext-\u003euc_mcontext.uc_regs;\n                                                                     ^\nninja: build stopped: subcommand failed.\n\n\nThere is an exception in MachineStackMarker.cpp for PowerPC to use uc_regs, which is not declared on PowerPC, so this does not make much sense:\n\n    ucontext_t* userContext = static_cast\u003cucontext_t*\u003e(ucontext);\n#if CPU(PPC)\n    threadData-\u003esuspendedMachineContext = *userContext-\u003euc_mcontext.uc_regs;\n#else\n    threadData-\u003esuspendedMachineContext = userContext-\u003euc_mcontext;\n#endif\n\n\nHere is the definition of mcontext_t on PowerPC for reference:\n\ntypedef struct __mcontext {\n        int             mc_vers;\n        int             mc_flags;\n#define _MC_FP_VALID    0x01\n#define _MC_AV_VALID    0x02\n        int             mc_onstack;             /* saved onstack flag */\n        int             mc_len;                 /* sizeof(__mcontext) */\n        uint64_t        mc_avec[32*2];          /* vector register file */\n        uint32_t        mc_av[2];\n        register_t      mc_frame[42];\n        uint64_t        mc_fpreg[33];\n} mcontext_t __aligned(16);\n\n\nRemoving the exception allows the build to continue."
+}

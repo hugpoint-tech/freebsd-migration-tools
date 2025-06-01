@@ -1,0 +1,8 @@
+{
+ "id": 580946,
+ "bug_id": 151111,
+ "attachment_id": 0,
+ "creation_time": "2010-10-18T13:11:55Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "On Thu, Sep 30, 2010 at 11:56:18AM +0000, Oleg A. Mamontov wrote:\nO\u003e for i in `jot 1000`; do zfs mount tank; printf '%4d   ' $i; sysctl vfs.numvnodes; zfs umount tank; done\nO\u003e ########################\nO\u003e  1   vfs.numvnodes: 708\nO\u003e  2   vfs.numvnodes: 709\nO\u003e  3   vfs.numvnodes: 710\nO\u003e  4   vfs.numvnodes: 711\nO\u003e  5   vfs.numvnodes: 712\nO\u003e \nO\u003e ..\nO\u003e \nO\u003e 995   vfs.numvnodes: 1702\nO\u003e 996   vfs.numvnodes: 1703\nO\u003e 997   vfs.numvnodes: 1704\nO\u003e 998   vfs.numvnodes: 1705\nO\u003e 999   vfs.numvnodes: 1706\nO\u003e 1000   vfs.numvnodes: 1707\n\nHere is my lame investigation of the problem. In the zfs_domount() function\nwe've got the following code:\n\n        /* Grab extra reference. */\n        VERIFY(VFS_ROOT(vfsp, LK_EXCLUSIVE, \u0026vp) == 0);\n        VOP_UNLOCK(vp, 0);\n\nI suppose this code is expected to put an extra reference on the\nvfsp-\u003emnt_vnodecovered vnode. Do I mistake here? If I don't then this is\nthe source of leak.\n\nDebugging shows that zfs_zget(), called subsequently from zfs_root(),\ndoes not find an existing znode/vnode and allocates a new one, see at the\nend of zfs_zget() function. This vnode gots a reference and is forgotten.\n\nSorry, if I am being mistaken :)\n\n-- \nTotus tuus, Glebius."
+}

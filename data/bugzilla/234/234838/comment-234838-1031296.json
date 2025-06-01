@@ -1,0 +1,8 @@
+{
+ "id": 1031296,
+ "bug_id": 234838,
+ "attachment_id": 0,
+ "creation_time": "2019-01-11T04:20:22Z",
+ "creator": "leif@ofWilsonCreek.com",
+ "text": "Of course! Thanks for looking!\n\nIt's our standby MySQL database, so there's a light but steady stream of network IO for the DB replication. Its filesystems are ZFS. Once an hour, six other machines (developer sandboxes) pull the latest ZFS snapshot of the DB (in parallel) so our developers can clone any recent hourly snapshot for testing. These messages happen about three times per day at the top of the hour when this hourly pull would be running. They happen sometimes at other odd times: once on Jan 4, and once on Dec 19, looking at logs going back to Dec 12. So it probably isn't just the 6 concurrent `zfs send`s that cause it.\n\nAlso at the top of the hour, it runs a mysqldump cron which takes ~10 minutes. That has nothing to do with the network; just full disclosure that it increases CPU load significantly.\n\nThere are batch jobs that send a lot of transactions through the DB replication stream, but they don't seem to correlate. I think those cause only minimal network IO but high CPU \u0026 disk load.\n\nThe machine doesn't do anything else.\n\nHopefully that's a helpful idea of the work load. It's the only machine I've upgraded to 12. Our other machines are running 11.1. This one is my canary; I dare not upgrade the more important machines with this symptom.\n\nAlso, occasionally it will panic with the message \"Fatal double fault\" and no backtrace. I can get you more on that if you want. Sometimes this panic happens when the machine is booting, before it has even configured the network. Related? I dunno. Just giving you anything that might be useful."
+}

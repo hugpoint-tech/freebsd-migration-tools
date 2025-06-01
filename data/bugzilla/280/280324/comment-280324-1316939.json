@@ -1,0 +1,8 @@
+{
+ "id": 1316939,
+ "bug_id": 280324,
+ "attachment_id": 0,
+ "creation_time": "2024-07-17T08:33:06Z",
+ "creator": "freebsd@dev.thsi.be",
+ "text": "Hello,\n\nWithout NATIVECOMP, emacs-devel@nox fails to build on a poudriere jail version 15.0-CURRENT 1500020, with this error:\n\n\ntimespec-sub.c:38:12: error: operand argument to checked integer operation must be an integer type other than plain 'char', 'bool', bit-precise, or an enumeration ('bool' invalid)\n   38 |   if (v == ckd_sub (\u0026rs, rs, borrow))\n      |            ^~~~~~~~~~~~~~~~~~~~~~~~~\n/usr/include/stdckdint.h:24:37: note: expanded from macro 'ckd_sub'\n   24 |         (_Bool)__builtin_sub_overflow((a), (b), (result))\n      |                                            ^~~\n1 error generated.\n\n\nThis simple patch allows the build to succeed.\n\n--- lib/timespec-sub.c.orig     2024-07-17 08:05:02 UTC\n+++ lib/timespec-sub.c\n@@ -35,7 +35,7 @@ timespec_sub (struct timespec a, struct timespec b)\n   time_t rs;\n   int rns;\n   bool v = ckd_sub (\u0026rs, a.tv_sec, b.tv_sec);\n-  if (v == ckd_sub (\u0026rs, rs, borrow))\n+  if (v == ckd_sub (\u0026rs, rs, borrow ? 1 : 0))\n     rns = nsdiff + TIMESPEC_HZ * borrow;\n   else\n     {"
+}

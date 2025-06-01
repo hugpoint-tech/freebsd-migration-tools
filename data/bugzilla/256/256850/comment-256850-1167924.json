@@ -1,0 +1,8 @@
+{
+ "id": 1167924,
+ "bug_id": 256850,
+ "attachment_id": 226064,
+ "creation_time": "2021-06-26T19:55:34Z",
+ "creator": "maxim.shalomikhin@kaspersky.com",
+ "text": "Created attachment 226064\nPatch for sys/net/if_ethersubr.c\n\nI have a system with about 300 tap interfaces (openvpn tunnels) combined in one bridge. After upgrading from releng/11.4 to releng/12.2 I noticed a lot of repeated MAC (ether) addresses on tap interfaces.\n\nHow to reproduce:\nOn FreeBSD 12 or 13, create ~100 tap interfaces, then check MACs for uniqueness:\nifconfig -a | grep ether | sort | uniq -c | sort -r\n\nQuick FIX (change mac from userspace):\nifconfig ${ov_dev} ether \"00:bd:`jot -r -s ':' -w '%02x' 4`\"\n\nAccording to sys/net/ieee_oui.h, MAC address for TAP must be \"58:9c:fc:10:XX:XX\" (65536 unique macs), but there are two issues with ether_gen_addr():\n1. Fourth byte sometimes \"00\" and sometimes \"10\" (minor issue)\n2. Fifth byte in ~50% cases is FF (major issue due to char digest[] is signed)\nSo it's only ~256 unique macs for tap and this is very annoying.\n\nThe small patch (tested on amd64 13.0-RELEASE-p2) attached."
+}

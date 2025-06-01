@@ -1,0 +1,8 @@
+{
+ "id": 599640,
+ "bug_id": 154842,
+ "attachment_id": 0,
+ "creation_time": "2011-02-17T10:30:10Z",
+ "creator": "yv@lifelink.ru",
+ "text": "This problem occurs when the software (i used mpd5 from ports), that uses libradius, re-sends the acct-packet. Due to a bug in the library the second and subsequent acct-packets are have corrupted request authenticator and can not be accepted radius server with an error:\n\n Received Accounting-Request packet from client x.x.x.x with invalid signature! (Shared secret is incorrect.) Dropping packet without response.\n\nFix: \n\n/* Send the request */\n        n = sendto(h-\u003efd, h-\u003eout, h-\u003eout_len, 0,\n@@ -910,6 +906,10 @@\n        }\n\n        h-\u003etry = h-\u003esrv = 0;\n+       if (h-\u003eout[POS_CODE] != RAD_ACCESS_REQUEST) {\n+               /* Insert the request authenticator into the request */\n+               insert_request_authenticator(h, h-\u003esrv);\n+       }\n\n        return rad_continue_send_request(h, 0, fd, tv);\n }--tIcrxiKwoGADxfRgEyMgO8JnC8w5tBKe599rEuBBHJVn5QfD\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- radlib.c    2010-06-14 02:09:06.000000000 +0000\n+++ radlib.c.new        2011-02-16 10:28:11.000000000 +0000\n@@ -641,10 +641,6 @@\n                        insert_scrambled_password(h, h-\u003esrv);\n        }\n        insert_message_authenticator(h, 0);\n-       if (h-\u003eout[POS_CODE] != RAD_ACCESS_REQUEST) {\n-               /* Insert the request authenticator into the request */\n-               insert_request_authenticator(h, h-\u003esrv);\n-       }\nHow-To-Repeat: drop first acct-packet."
+}

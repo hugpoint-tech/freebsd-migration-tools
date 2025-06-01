@@ -1,0 +1,8 @@
+{
+ "id": 103858,
+ "bug_id": 32806,
+ "attachment_id": 0,
+ "creation_time": "2001-12-31T21:51:18Z",
+ "creator": "maxim@macomnet.ru",
+ "text": "Please review the patch below:\n\nIndex: ip_icmp.c\n===================================================================\nRCS file: /home/ncvs/src/sys/netinet/ip_icmp.c,v\nretrieving revision 1.65\ndiff -u -r1.65 ip_icmp.c\n--- ip_icmp.c\t14 Dec 2001 19:32:47 -0000\t1.65\n+++ ip_icmp.c\t31 Dec 2001 21:47:47 -0000\n@@ -601,14 +601,23 @@\n \tt = ip-\u003eip_dst;\n \tip-\u003eip_dst = ip-\u003eip_src;\n \t/*\n-\t * If the incoming packet was addressed directly to us,\n-\t * use dst as the src for the reply.  Otherwise (broadcast\n-\t * or anonymous), use the address which corresponds\n-\t * to the incoming interface.\n+\t * The incoming packet was addressed directly to us,\n+\t * use dst as the src for the reply.\n \t */\n \tLIST_FOREACH(ia, INADDR_HASH(t.s_addr), ia_hash)\n \t\tif (t.s_addr == IA_SIN(ia)-\u003esin_addr.s_addr)\n \t\t\tgoto match;\n+\t/*\n+\t * Our outgoing packet hits an \"unreach\" ipfw rule,\n+\t * use src as the src for the reply.\n+\t */\n+\tLIST_FOREACH(ia, INADDR_HASH(ip-\u003eip_src.s_addr), ia_hash)\n+\t\tif (ip-\u003eip_src.s_addr == IA_SIN(ia)-\u003esin_addr.s_addr)\n+\t\t\tgoto match;\n+\t/*\n+\t * The incoming packet is a broadcast or anonymous, use\n+\t * the address which corresponds to the incoming interface.\n+\t */\n \tKASSERT(m-\u003em_pkthdr.rcvif != NULL, (\"icmp_reflect: NULL rcvif\"));\n \tif (m-\u003em_pkthdr.rcvif-\u003eif_flags \u0026 IFF_BROADCAST) {\n \t\tTAILQ_FOREACH(ifa, \u0026m-\u003em_pkthdr.rcvif-\u003eif_addrhead, ifa_link) {\n\n-- \nMaxim Konovalov, MAcomnet, Internet-Intranet Dept., system engineer\nphone: +7 (095) 796-9079, mailto: maxim@macomnet.ru"
+}

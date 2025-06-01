@@ -1,0 +1,8 @@
+{
+ "id": 393297,
+ "bug_id": 112806,
+ "attachment_id": 0,
+ "creation_time": "2007-05-20T15:10:04Z",
+ "creator": "olivier@gid0.org",
+ "text": "When using a fresh system installed with NO_RCMDS=yes in /etc/make.conf (or /etc/src.conf for -CURRENT), x11/xorg fails to compile because of x11/xorg-apps which depends on x11/xsm which wants an rsh-like program during configure :\n\n# cd /usr/ports/x11/xorg\n# make install clean\n[...]\nchecking for a BSD-compatible install... /usr/bin/install -c -o root -g wheel\nchecking for rsh... no\nchecking for rcmd... no\nchecking for remsh... no\nconfigure: error: No rsh like program found\n===\u003e  Script \"configure\" failed unexpectedly.\n[...]\n*** Error code 1\n\nStop in /usr/ports/x11/xsm.\n*** Error code 1\n\nStop in /usr/ports/x11/xorg-apps.\n*** Error code 1\n\nStop in /usr/ports/x11/xorg.\n\nFix: \n\nSince x11/xsm can't be built without RSH, remove the line\nxsm:${PORTSDIR}/x11/xsm \\\nfrom x11/xorg-apps/Makefile\n\nOr, if you need xsm, (only a temporary workaround, very dirty) :\n# touch /usr/local/bin/rsh\n# cd /usr/ports/x11/xsm\n# make install clean\n# rm /usr/local/bin/rsh\n# cd /usr/ports/x11/xorg\n# make install clean\n\nIt would maybe be better for x11/xorg-apps to only install xsm if {rsh,rcmd,remsh} is present, or if NO_RCMDS isn't set.\nHow-To-Repeat: # echo 'NO_RCMDS=yes' \u003e\u003e /etc/make.conf\n# cd /usr/src\n# make buildworld\n# make installworld\n# make delete-old\n# cd /usr/ports/x11/xsm\n# make"
+}

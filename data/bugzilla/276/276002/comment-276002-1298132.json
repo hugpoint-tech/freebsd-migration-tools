@@ -1,0 +1,8 @@
+{
+ "id": 1298132,
+ "bug_id": 276002,
+ "attachment_id": 0,
+ "creation_time": "2024-02-22T06:16:50Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Rick Macklem from comment #63)\nvfs_bio_getpages() is called with the pages exclusively busy.  As you noted,\nbread_gb() wants to additionally shared-busy the same pages, which is impossible.\nSo vfs_bio_getpages() changes its busy mode from exclusive to shared, same as\nnormal lock mode can be downgraded.  When bread_gb() acquires and releases the\nshared busy, it does +1 and -1 to the shared busy counter, so the page stays\nshared busy after the bread_gb() finishes.\n\nThen vfs_bio_getpages() does the upgrade from shared to exclusive, and since\nthe shared busy state could be dropped, we recheck the validity of the pages.\nIf some page was invalidated, we need to re-validate the buffer.\n\nAnd this is indeed might be not correct for NFS, now I think. Other thread\ncould do a short read making only part of the page valid.  Then the bogus pages\nreplacement does not help to preserve the valid content.\n\nPeter, could you, please, retest nfs client with the sysctl vfs.nfs.use_buf_pager\nset to 0?"
+}

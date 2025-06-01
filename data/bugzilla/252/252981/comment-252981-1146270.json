@@ -1,0 +1,8 @@
+{
+ "id": 1146270,
+ "bug_id": 252981,
+ "attachment_id": 0,
+ "creation_time": "2021-02-12T15:35:42Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I think for 13.0 we should just modify ZFS to not use hardware crypto drivers.  Per comment 1 the OCF wrapper in ZFS is buggy with respect to asynchronous completions.\n\nGoing forward there are at least three possible solutions:\n1. Modify ZFS to use separate sessions for hardware and software crypto, and only use hardware crypto when ot != DMU_OT_INTENT_LOG \u0026\u0026 ot != DMU_OT_DNODE in zio_do_crypto_data().  This side-steps the AAD problem.\n2. Modify qat(4) to authenticate AAD and perform encryption/decryption in separate requests, passing intermediate hash state from the first request to the second.  qat(4) can handle arbitrarily large GMAC requests.  I'm not sure how easy this is but I think it's possible.\n3. Modify opencrypto to fall back to software crypto if the hardware can't handle the request for some reason.  jhb suggested that this would be useful for other purposes, e.g., if one is decrypting small packets, where the CPU cost of handling the request in software is the same as the request setup cost in a hardware driver.  This requires some thought around reordering of requests within a session."
+}

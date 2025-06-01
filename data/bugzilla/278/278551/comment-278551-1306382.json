@@ -1,0 +1,8 @@
+{
+ "id": 1306382,
+ "bug_id": 278551,
+ "attachment_id": 0,
+ "creation_time": "2024-04-24T16:39:36Z",
+ "creator": "emaste@freebsd.org",
+ "text": "I can reproduce this with GCC 10, 11, 12, and 13. I cannot reproduce this with Clang 16 or 17.\n\n$ clang++16 -std=c++20 -static-libgcc -static-libstdc++ -static -pthread -O3 \"main.cpp\" -o \"main_clang++\" \u0026\u0026 ./main_clang++\nclang-16: warning: argument unused during compilation: '-static-libgcc' [-Wunused-command-line-argument]\nclang-16: warning: argument unused during compilation: '-static-libstdc++' [-Wunused-command-line-argument]\nkernel\nFreeBSD RELEASE 14.0 doesn't reach here.\n\n$ clang++17 -std=c++20 -static-libgcc -static-libstdc++ -static -pthread -O3 \"main.cpp\" -o \"main_clang++\" \u0026\u0026 ./main_clang++\nclang++: warning: argument unused during compilation: '-static-libgcc' [-Wunused-command-line-argument]\nclang++: warning: argument unused during compilation: '-static-libstdc++' [-Wunused-command-line-argument]\nkernel\nFreeBSD RELEASE 14.0 doesn't reach here.\n\nIt's reproducible with any exception with GCC:\n\nstatic-except.cc:\n\nint fn(void) { throw (int)0; }\nint main(int argc, char *argv[]) \n{\n        try { \n                fn();\n        } catch (int i) {\n                return 0;\n        }\n        return 1;\n}\n\n$ g++13 -static static-except.cc -o static-except \u0026\u0026 ./static-except\nAbort trap (core dumped)\n\nI'll change this to a lang/gcc bug"
+}

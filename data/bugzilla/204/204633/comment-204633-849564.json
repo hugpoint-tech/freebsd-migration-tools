@@ -1,0 +1,8 @@
+{
+ "id": 849564,
+ "bug_id": 204633,
+ "attachment_id": 0,
+ "creation_time": "2015-11-17T19:08:21Z",
+ "creator": "jtl@freebsd.org",
+ "text": "(In reply to Mark Johnston from comment #1)\n\u003e The assertion is failing because the thread holds a spin mutex or a critical section, \n\u003e in which case it is not valid to try and acquire a sleep mutex. It could probably be \n\u003e triggered in a non-INVARIANTS kernel too, since uma_zfree_arg() will attempt to \n\u003e acquire the corresponding zone lock, which is also a sleep mutex.\n\nGood point. That makes this very much look like intended behavior.\n\nI only saw this when I tried testing my changes with an unusually high load. Presumably, that caused the allocator to need to acquire the zone lock when it would normally not need to do so. I wonder how many other things have slipped through without enough testing to actually trigger the assert?\n\nPerhaps, I should propose a man page change to make this more clear. And/or add a check in malloc/free to catch these problems more reliably."
+}

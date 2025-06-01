@@ -1,0 +1,8 @@
+{
+ "id": 1188085,
+ "bug_id": 260055,
+ "attachment_id": 0,
+ "creation_time": "2021-11-26T13:25:30Z",
+ "creator": "eugen@freebsd.org",
+ "text": "(In reply to Konstantin Belousov from comment #1)\n\nmpd5 uses additional threads to talk with RADIUS server only and these additional threads are short-lived. The output of \"thread apply all bt\" in this PR was not redacted, so there was only single thread 1 at the moment.\n\nThe socket is IPv4 UDP created by incoming L2TP over UDP request. It is in blocking read mode.\n\n\u003e That said, GetSockDstAddress() is strange.  From its name, it seems\nthat the purpose of the function is to obtain the destination address,\nas the control message. But it also tries to read some data from the\nsocket, and the data is discarded.\n\nI coded the function GetSockDstAddress(). It is called just once after socket creation in case L2TP server \"self\" address not specified in the mpd.conf\n\nYou are right, the purpose is to receive control message with destination address from the kernel and it is my first attempt to programm this. I believed this is right way to do that without reading payload data from the socket. \n\nMaybe there is some application logic error if some payload data is discarded, but recvmsg() still has control message to return because of IP_RECVDSTADDR socket option, hasn't it? So it should not block just after first UDP datagramm arrived, I believe.\n\nI am interested in fixing the problem and will add more information you requested. However, I need also to minimize impact on this production server, so please show exact command I should use to catch the kernel-side backtrace. This my machine still uses FreeBSD 11.4-STABLE/i386 r365547 (September 2020)."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 76961,
+ "bug_id": 24704,
+ "attachment_id": 0,
+ "creation_time": "2001-01-28T21:20:01Z",
+ "creator": "tony@nua.ie",
+ "text": "Under certain circumstances, syslogd will quickly and repeatedly fill /dev/console with corrupt log output.  Messages are output at a rate of tens per second.  Whenever syslogd exhibits this behaviour, it consumes a large slice of CPU time.  An example of this output is:\n\n4 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus /kernel: Jan 24 23:17:23 cerberus syslogd: restart\n\nThese messsages appear on the console without line breaks and without any meaningful log content.\n\nThe problem seems to be connected with the newly added LOG_CONSOLE facility (MFC'd recently from CURRENT).  It occurs whenever /etc/syslog.conf contains an entry that causes log messages with the LOG_CONSOLE facility to be directed to /dev/console.  A typical example of a triggering syslog.conf entry would be:\n\n*.*                 /dev/console\n\nFix: \n\nEnsure that syslog.conf does not use wildcards in such a way that messages with the LOG_CONSOLE facility are directed to /dev/console.\n\nThe syslogd.c source file seems to include code to prevent this particular problem from arising, but it appears to be broken.\nHow-To-Repeat: 1) Edit /etc/syslog.conf\n\n2) Insert the line:\n   *.*                /dev/console\n   near the top of the file.\n\n3) Restart syslogd"
+}

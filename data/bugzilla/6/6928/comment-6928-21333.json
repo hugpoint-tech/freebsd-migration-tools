@@ -1,0 +1,8 @@
+{
+ "id": 21333,
+ "bug_id": 6928,
+ "attachment_id": 0,
+ "creation_time": "1998-06-12T17:50:01Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "\nioctl(/dev/sysmouse, CONS_MOUSECTL, \u0026mouse) with\nmouse-\u003eoperation == MOUSE_BUTTON_EVENT uses values from overlapping unions:\n\nstruct mouse_data {\n        int     x;\n        int     y;\n        int     z;\n        int     buttons;\n};      \n\nstruct mouse_event {\n        int     id;                     /* one based */\n        int     value;\n};    \n\nstruct mouse_info {\n        int     operation;      \n        union {\n                struct mouse_data data;\n                struct mouse_mode mode; \n                struct mouse_event event;\n        }u;\n};      \n\nmouse_info.u.event.id overlaps with mouse_info.u.data.x .  However,\nthe MOUSE_BUTTON_EVENT case uses u.event.id and u.event.value to\ndetermine what button event occurred, and then uses u.data.x,\nu.data.y, and u.data.z to determine if mouse motion occurred in\norder to set the MOUSE_POSCHANGED flag.  Since event.id is one-based,\nu.data.x will always be nonzero so MOUSE_POSCHANGED will always be\nset.\n\nFix: Don't try to set MOUSE_POSCHANGED in the MOUSE_BUTTON_EVENT case since no\nmotion information is available?\nHow-To-Repeat: \nexamine /sys/i386/isa/sysmouse.c\n(while trying to figure out how to map a keyboard key into a mouse button)"
+}

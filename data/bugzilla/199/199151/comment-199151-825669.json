@@ -1,0 +1,8 @@
+{
+ "id": 825669,
+ "bug_id": 199151,
+ "attachment_id": 0,
+ "creation_time": "2015-05-27T17:41:53Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I would take any user vs system times with a large grain of salt.  The total runtime of threads on x86 is fairly precise as it is based on TSC samples at each context switch.  However, the user vs system breakdown is very imprecise.  Each statclock tick bumps either a user or system counter.  Then calcru() uses these counters to subdivide the total thread runtime.  However, this can be very imprecise (e.g. if the thread mostly runs in short bursts in between statclock ticks then you can end up with a very skewed distribution).  For that reason, I only ever compare real time and the sum of user + system.\n\nAt some point I might add precise timing where we sample the TSC on each state transition (e.g. kernel -\u003e user and vice versa) and keep separate broken out counters.  It would need to be an optional thing under some sort of #ifdef since it would be very expensive on smaller embedded boards without a cheap CPU ticker.  OTOH, it probably could be enabled by default on amd64 at least.\n\nI did write various SSE/AVX versions of memcpy/memset/strlen last summer.  My microbenchmarks did seem to show a noticable difference when I unrolled the SSE to do 4 moves at a time.  While there was certainly a bit of noise, the minimum runtimes for my tests seemed to be fairly reliable, and those changed fairly deterministically going from 1 to 2 to 4 moves at a time."
+}

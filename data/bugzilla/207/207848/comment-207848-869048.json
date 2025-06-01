@@ -1,0 +1,8 @@
+{
+ "id": 869048,
+ "bug_id": 207848,
+ "attachment_id": 0,
+ "creation_time": "2016-03-09T16:51:14Z",
+ "creator": "jtl@freebsd.org",
+ "text": "As reported in review D4893, it is possible for a knote list lock to be held forever.\n\nThe sequence of events is:\n\nThread 1 obtains the knlist lock.\n\nThread 2 hits KN_LIST_LOCK(). It finds that kn-\u003ekn_knlist is non-NULL, so it waits to acquire the knlist lock.\n\nThread 1 calls knlist_remove_kq(). This sets kn-\u003ekn_knlist to NULL. It then releases the knlist lock.\n\nThread 2 obtains the knlist lock.\n\nThread 2 hits KN_LIST_UNLOCK(). It finds that kn-\u003ekn_knlist is NULL, so it does not release the knlist lock.\n\nThe fix seems to be to recheck kn-\u003ekn_knlist after acquiring the lock, and then immediately release the lock. The submitter of review D4893 is going to work on a patch."
+}

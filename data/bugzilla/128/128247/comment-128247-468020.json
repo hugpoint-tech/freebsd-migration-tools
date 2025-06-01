@@ -1,0 +1,8 @@
+{
+ "id": 468020,
+ "bug_id": 128247,
+ "attachment_id": 0,
+ "creation_time": "2009-02-04T10:35:41Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: bz\nDate: Wed Feb  4 10:35:27 2009\nNew Revision: 188113\nURL: http://svn.freebsd.org/changeset/base/188113\n\nLog:\n  When iterating through the list trying to find a router in\n  defrouter_select(), NULL the cached llentry after unlocking\n  as we are no longer interested in it and with the second\n  iteration would try to unlock it again resulting in\n  panic: Lock (rw) lle not locked @ ...\n  \n  Reported by:\tMark Atkinson \u003cm.atkinson@f5.com\u003e\n  Tested by:\tMark Atkinson \u003cm.atkinson@f5.com\u003e\n  PR:\t\tkern/128247 (in follow-up, unrelated to original report)\n\nModified:\n  head/sys/netinet6/nd6_rtr.c\n\nModified: head/sys/netinet6/nd6_rtr.c\n==============================================================================\n--- head/sys/netinet6/nd6_rtr.c\tWed Feb  4 01:14:06 2009\t(r188112)\n+++ head/sys/netinet6/nd6_rtr.c\tWed Feb  4 10:35:27 2009\t(r188113)\n@@ -651,8 +651,10 @@ defrouter_select(void)\n \t\t\tselected_dr = dr;\n \t\t}\n \t\tIF_AFDATA_UNLOCK(dr-\u003eifp);\n-\t\tif (ln != NULL)\n+\t\tif (ln != NULL) {\n \t\t\tLLE_RUNLOCK(ln);\n+\t\t\tln = NULL;\n+\t\t}\n \n \t\tif (dr-\u003einstalled \u0026\u0026 installed_dr == NULL)\n \t\t\tinstalled_dr = dr;\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

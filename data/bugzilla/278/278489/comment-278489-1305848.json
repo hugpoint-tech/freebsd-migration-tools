@@ -1,0 +1,8 @@
+{
+ "id": 1305848,
+ "bug_id": 278489,
+ "attachment_id": 0,
+ "creation_time": "2024-04-20T20:22:49Z",
+ "creator": "martin@bxlr.sk",
+ "text": "It seems dtrace on FreeBSD is not matching constructor functions during execution.\n\nVery simple test program:\n\n#include \u003cstdio.h\u003e\n\nvoid __attribute__((constructor)) myinit() {\n\tprintf(\"%s: hello\\n\", __func__);\n}\n\nint main() {\n\treturn 42;\n}\n\nListing the probes works as expected:\n\n# dtrace -ln 'pid$target:a.out::entry' -c ./simple\nmyinit: hello\n   ID   PROVIDER            MODULE                          FUNCTION NAME\n82966    pid5454            simple             __do_global_dtors_aux entry\n82967    pid5454            simple                  register_classes entry\n82968    pid5454            simple             __do_global_ctors_aux entry\n82969    pid5454            simple                            _start entry\n82970    pid5454            simple                              main entry\n82971    pid5454            simple                            myinit entry\n\n\nBut when I run it:\n\n# dtrace -n 'pid$target:a.out::entry' -c ./simple\nmyinit: hello\ndtrace: description 'pid$target:a.out::entry' matched 6 probes\ndtrace: pid 5458 exited with status 42\nCPU     ID                    FUNCTION:NAME\n  1  82969                     _start:entry\n  1  82970                       main:entry\n  1  82966      __do_global_dtors_aux:entry\n\nmyinit() is not matched.\n\nThis works on Solaris where constructor functions are properly matched."
+}

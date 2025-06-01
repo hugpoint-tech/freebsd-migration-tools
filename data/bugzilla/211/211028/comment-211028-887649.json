@@ -1,0 +1,8 @@
+{
+ "id": 887649,
+ "bug_id": 211028,
+ "attachment_id": 0,
+ "creation_time": "2016-07-12T09:32:25Z",
+ "creator": "decui@microsoft.com",
+ "text": "When testing Hyper-V's Online VHDX Resize feature (refer to Bug 211000), I noticed an issue: after resizing “da1”, if there was a disk read before \"camcontrol reprobe da1\", gpart couldn't detect the new “free space\", though it could detect the new disk capacity.\n\nTo reproduce the bug, we need to run FreeBSD 12-CURRENT guest on Hyper-V (we need to make sure the 2 patches mentioned by https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=211000#c4 are used to avoid the known issues) and do the following\n\n1. This is before the disk capacity change:\n[root@decui-b11 ~]# gpart show  da1\n=\u003e      63  83886017  da1  MBR  (40G)\n        63  83886017       - free -  (40G)\n\n2. Expand the disk capacity from 40GB to 50GB by Hyper-V management tool.\n\n3. \n[root@decui-b11 ~]# dd if=/dev/da1 of=/dev/null bs=512 count=1\n1+0 records in\n1+0 records out\n512 bytes transferred in 0.000715 secs (715864 bytes/sec)\n[root@decui-b11 ~]# gpart show  da1\n=\u003e      63  83886017  da1  MBR  (50G)\n        63  83886017       - free -  (40G)\n\nWe can see the 'free' space can't grow to 50GB.\n\n4. This can't help:\n[root@decui-b11 ~]# camcontrol reprobe da1\n[root@decui-b11 ~]# gpart show  da1\n=\u003e      63  83886017  da1  MBR  (50G)\n        63  83886017       - free -  (40G)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 26768,
+ "bug_id": 8790,
+ "attachment_id": 0,
+ "creation_time": "1999-07-24T13:07:16Z",
+ "creator": "nick.hibma@jrc.it",
+ "text": "The problem is probably in ordinary():\n\nstatic void\nordinary(p, ch)\nregister struct parse *p; \nregister int ch;\n{\n        register cat_t *cap = p-\u003eg-\u003ecategories;\n \n        if ((p-\u003eg-\u003ecflags\u0026REG_ICASE) \u0026\u0026 isalpha((unsigned char)ch) \u0026\u0026\nothercase(ch) != ch)\n                bothcases(p, ch);\n        else {\n                EMIT(OCHAR, (unsigned char)ch);\n                if (cap[ch] == 0)\n                        cap[ch] = p-\u003eg-\u003encategories++;\n        }\n}\n\n\np-\u003eg-\u003ecategories is NC*sizeof(cat_t) big, which is 256 bytes. With\nBACKSL being 1\u003c\u003c8 you end up beyond that limit. Me thinks. Possible\npatch (to src/lib/libc/regex/regcomp.c, rev.1.12):\n\n--- regcomp.c   Wed Sep 16 10:13:00 1998\n+++ /tmp/regcomp.c      Sat Jul 24 14:02:42 1999\n@@ -1043,8 +1043,8 @@\n                bothcases(p, ch);\n        else {\n                EMIT(OCHAR, (unsigned char)ch);\n-               if (cap[ch] == 0)\n-                       cap[ch] = p-\u003eg-\u003encategories++;\n+               if (cap[(unsigned char) ch] == 0)\n+                       cap[(unsigned char) ch] = p-\u003eg-\u003encategories++;\n        }\n }\n \n\nNick\n-- \nISIS/STA, T.P.270, Joint Research Centre, 21020 Ispra, Italy"
+}

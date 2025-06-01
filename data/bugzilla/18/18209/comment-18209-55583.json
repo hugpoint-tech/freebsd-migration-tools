@@ -1,0 +1,8 @@
+{
+ "id": 55583,
+ "bug_id": 18209,
+ "attachment_id": 0,
+ "creation_time": "2000-04-25T18:20:01Z",
+ "creator": "jason@express.ru",
+ "text": "\nwhen handling exec*() system calls, FreeBSD checks if the new executable image\nmemory requirements fit into active RLIMIT_* bounds. if they do not fit,\nexec*() fails returning ENOMEM. The problem is, this check is never done for\nELF binaries, thus, ELF-format program can grab all available memory, no matter\nhow low *rlimits are.\n\nHow-To-Repeat: \n/*\n *  This program demonstrates a leak in freebsd exec(), which [erroneously]\n *  allows ELF program to get as much memory as it wishes, ignoring *rlimit\n *  settings, while [correctly] denying any non-ELF program to exceed *rlimit\n *  settings on exec().\n *  How to use:\n *        gcc -elf -o m_elf m.c        # compat 3 probably required for fbsd4\n *        gcc -aout -o m_aout m.c\n *        /usr/bin/limits -d 1 ./m_aout\n *        /usr/bin/limits -d 1 ./m_elf\n *  you'll see the difference.\n */\n\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cstring.h\u003e\n\nchar            a[ 10000000 ] ;\n\nint             main( int ac, char **av ) {\n        memset( a, 1, sizeof(a) ) ;\n        puts( \"sleeping\" ) ;\n        sleep( 100 ) ;\n        return 0 ;\n}"
+}

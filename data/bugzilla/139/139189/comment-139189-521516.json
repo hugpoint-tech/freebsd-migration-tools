@@ -1,0 +1,8 @@
+{
+ "id": 521516,
+ "bug_id": 139189,
+ "attachment_id": 0,
+ "creation_time": "2009-09-27T16:30:01Z",
+ "creator": "nightrecon@hotmail.com",
+ "text": "A portupgrade -a of PHP-5.2.10 to 5.2.11 can cause CLI and FastCGI PHP breakage. This entails building with previously established and working make config options. Simply executing php -v at a prompt will return this error:\n\nSep 26 12:15:42 testbed suhosin[48982]: ALERT - canary mismatch on efree() - heap overflow detected (attacker 'REMOTE_ADDR not set', file 'unknown') \n\nAt first it appears to be a problem with the Suhosin patch, as rebuilding PHP without Suhosin seems to fix the problem. Upon further investigation the problem is actually a clash between the Suhosin patch and the Mailhead patch. \n\nNote the Suhosin patch is suhosin-patch-5.2.11-0.9.7.patch.gz while the Mailheader patch is php-5.2.10-mail-header.patch. Since the default config has the Mailheader patch switched \"off\" in the Makefile, this will not normally produce this error.\n\nThis occurred as I had previously selected both options in previous builds. Both Apache and lighttpd web servers are running PHP as FastCGI with mod_fcgid, so it is unknown if this also affects mod_php5.\n\nFix: \n\nBuild PHP without the Mailheader patch, which is the default. Do not build with Suhosin and Mailheader both enabled.\n\nPossibly consider removing the mailheader patch from the Makefile until such time as the two can be utilized together as in the past.\nHow-To-Repeat: When performing a \"make config\" in lang/php5 if both Suhosin and Mailheader options are chosen this will produce the problem, in addition to the CLI, CGI, and FastCGI options."
+}

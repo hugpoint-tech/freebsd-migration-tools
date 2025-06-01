@@ -1,0 +1,8 @@
+{
+ "id": 1170033,
+ "bug_id": 257132,
+ "attachment_id": 0,
+ "creation_time": "2021-07-12T18:36:20Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "It turns out that this is due some code generated in $OBJDIR/offset.inc, during an amd64 to i386 cross-build:\n\n# 33 \"/usr/src/sys/sys/kpilite.h\"\n# 1 \"./offset.inc\" 1\n#ifndef _OFFSET_INC_\n#define _OFFSET_INC_\n#if 0 /* disabled by -frewrite-includes */\n#if !defined(GENOFFSET) \u0026\u0026 (!defined(KLD_MODULE) || defined(KLD_TIED))\n#endif\n#endif /* disabled by -frewrite-includes */\n#if 1 /* evaluated by -frewrite-includes */\n# 4 \"./offset.inc\"\nstruct thread_lite {\n        u_char  pad_td_priority[0x27e - 0];\n        u_char  td_priority;\n        u_char  pad_td_critnest[0x30c - (0x27e + sizeof(u_char))];\n        u_int   td_critnest;\n        u_char  pad_td_owepreempt[0xb8 - (0x30c + sizeof(u_int))];\n        u_char  td_owepreempt;\n        u_char  pad_td_pinned[0xd8 - (0xb8 + sizeof(u_char))];\n        int     td_pinned;\n};\n#endif\n\nE.g. this defines tpad_td_owepreempt as a negative size:\n\n27: error: array is too large (18446744073709551016 elements)\n        u_char  pad_td_owepreempt[0xb8 - (0x30c + sizeof(u_int))];\n                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\nFor some reason, generating this offset.inc file on a native i386 build results in a very different struct:\n\nstruct thread_lite {\n        u_char  pad_td_owepreempt[0xb8 - 0];\n        u_char  td_owepreempt;\n        u_char  pad_td_pinned[0xd8 - (0xb8 + sizeof(u_char))];\n        int     td_pinned;\n        u_char  pad_td_priority[0x27e - (0xd8 + sizeof(int))];\n        u_char  td_priority;\n        u_char  pad_td_critnest[0x30c - (0x27e + sizeof(u_char))];\n        u_int   td_critnest;\n};"
+}

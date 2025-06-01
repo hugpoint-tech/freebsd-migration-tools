@@ -1,0 +1,8 @@
+{
+ "id": 675534,
+ "bug_id": 170021,
+ "attachment_id": 0,
+ "creation_time": "2012-07-20T13:10:10Z",
+ "creator": "smccoy@greatbaysoftware.com",
+ "text": "We saw this when moving from 8.1 to 8.3; I later found that r209897 is the specific change that introduces this issue. Kernels after r209897 show a 20% drop in performance for Postgres's pgbench, and we've also been using \"bonnie\", which shows similar or worse drops.\n\nWe have a possible workaround: Eric van Gyzen on freebsd-stable suggested changing the value of the machdep.idle sysctl from \"acpi\". I've tried \"mwait\" so far and it restores I/O performance (or bettered it in a couple cases).\n\nOur system is an Intel S5520UR Server with 12 GB RAM, dual 4-core CPUs. Storage is a LSI MegaSAS 1078 controller (mfi) in a RAID-10 configuration, using UFS + geom_journal for filesystem. \n\nHere's a summary of the averaged bonnie outputs for r209896, r209897, and r209897 with machdep.idle=mwait:\n\n              ------------Sequential Output------------ ------Sequential Input----- ----Random---\n              --Per Char-- -----Block---- ---Rewrite--  --Per Char-- -----Block---- ----Seeks----\nMachine    MB  K/sec  %CPU  K/sec    %CPU  K/sec  %CPU  K/sec   %CPU   K/sec   %CPU   /sec   %CPU\n\n209896    100 141372 99.66 176170   54.72 226918 62.42 153879 100.04 3551889  98.74 275536 232.08\n209897    100  99306 99.78  89651.8 49.82 110016 74.5  152890  99.52 4443177  95.72 171110 181.42\n +mwait   100 177231 99.98 364950   66.14 423017 66.2  153827  99.26 3288740 103.1  279108 240.38\n\nThe send-pr web page indicates the formatting of the above may get messed up, so here's an alternative view, if you can't read it: http://itsapad.appspot.com/262002/raw"
+}

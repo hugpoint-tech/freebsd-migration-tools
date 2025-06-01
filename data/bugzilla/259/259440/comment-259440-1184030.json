@@ -1,0 +1,8 @@
+{
+ "id": 1184030,
+ "bug_id": 259440,
+ "attachment_id": 0,
+ "creation_time": "2021-10-26T18:26:11Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Note that in my testing (and in Chelsio's internal QA) the initiator has generally been found to be fairly robust for many failure modes.  I do think one panic I've seen is that there might be some cases (bad header CRC?) where it can try to abort the connection without freeing the current WIP PDU but due to data already in flight on the socket it tries to process another PDU and trips over the WIP PDU.  In fact, I think that's the panic you got here.  I think at one point I made it just bail here locally rather than the assertion failure for this case.  That's the only panic I have run into when using the software target or initiator though.\n\nSomething like this:\n\ndiff --git a/sys/dev/iscsi/icl_soft.c b/sys/dev/iscsi/icl_soft.c\nindex 45d2e53d8db0..3566aa07c7c7 100644\n--- a/sys/dev/iscsi/icl_soft.c\n+++ b/sys/dev/iscsi/icl_soft.c\n@@ -577,8 +577,12 @@ icl_conn_receive_pdu(struct icl_soft_conn *isc, struct mbuf **r, size_t *rs)\n \tbool more_needed;\n \n \tif (isc-\u003ereceive_state == ICL_CONN_STATE_BHS) {\n-\t\tKASSERT(isc-\u003ereceive_pdu == NULL,\n-\t\t    (\"isc-\u003ereceive_pdu != NULL\"));\n+\t\tif (isc-\u003ereceive_pdu != NULL) {\n+\t\t\tICL_DEBUG(\"dropping PDU received after error\");\n+\t\t\ticl_conn_fail(ic);\n+\t\t\treturn (NULL);\n+\t\t}\n+\t\t\t\n \t\trequest = icl_soft_conn_new_pdu(ic, M_NOWAIT);\n \t\tif (request == NULL) {\n \t\t\tICL_DEBUG(\"failed to allocate PDU; \""
+}

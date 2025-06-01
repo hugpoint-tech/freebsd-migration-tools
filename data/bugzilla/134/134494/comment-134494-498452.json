@@ -1,0 +1,8 @@
+{
+ "id": 498452,
+ "bug_id": 134494,
+ "attachment_id": 0,
+ "creation_time": "2009-05-12T19:10:02Z",
+ "creator": "l.messner@physik.tu-berlin.de",
+ "text": "The rc-script of latest openldap24-server (here: openldap-sasl-server-2.4.16_1) errors out if you solely use the slapd.d (cn=config) directory for configuring slapd. About slapd.d see [1].\n\n[1] http://www.zytrax.com/books/ldap/ch6/slapd-config.html\n\nFix: \n\nCheck which configuration mechanism is used. Use slapd.conf if both exist.\n\nLines in rc.d/slapd that are problematic:\n---\nrequired_files=\"/usr/local/etc/openldap/slapd.conf\"\nDATABASEDIR=`awk '$1 == \"directory\" {print $2}' \"/usr/local/etc/openldap/slapd.conf\"`\nchown \"$slapd_owner\" \"/usr/local/etc/openldap/slapd.conf\"\n---\nFor getting the DATABASEDIR sth. like \n\nDATABASEDIR=`awk '$1 == \"olcDbDirectory:\" {print $2}' /usr/local/etc/openldap/slapd.d/cn=config/olcDatabase*.ldif`\n\nshould be ok in case slapd.d is used.\nHow-To-Repeat: Follow the steps described in [1]. In short:\n * cd /usr/local/etc/openldap\n * edit slapd.conf (not needed for error replication)\n * mkdir slapd.d\n * slaptest -f slapd.conf -F slapd.d\n * mv slapd.conf slapd.conf.bkup\n * ../rc.d/slapd restart"
+}

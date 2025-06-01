@@ -1,0 +1,8 @@
+{
+ "id": 63171,
+ "bug_id": 20471,
+ "attachment_id": 0,
+ "creation_time": "2000-08-26T01:42:15Z",
+ "creator": "jeffe@ichips.intel.com",
+ "text": "I have also seen this problem under 4.1-RELEASE\n\nDebugging it, I have found that there is a problem in libfetch/http.c\n\nThe function _http_request declares the local variables clength, length,\n\nand size to be of type of type size_t, which is an unsigned 32 bit int.\nIt then\nimmediately initializes them to -1, which will set them to 2^32-1.  If\nno length or size\nis ever gotten, then these remain with this value.  Ultimately, size is\ncopied into us-\u003esize (struct url_stat), which is of type off_t, which is\n\na signed 64 bit int, and the -1 meaning is then totally lost.  The main\nfetch program does check for -1, but will never see it in this case.\n\nThe fix would be to either to change those three variables to type\nssize_t\n(signed 32 bit int), and make everything that touches them match (a bit\nof work), do the same thing, but change them to off_t (may be best), or\nto\nget rid of the '-1's  and replace them with SIZE_T_MAX,\nand explicitly check for that when assigning  us-\u003esize,  setting it\ndirectly\nto -1 if so.\n\nI have not checked to see if there are other places this might happen.\n\nJeff Eaton"
+}

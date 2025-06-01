@@ -1,0 +1,8 @@
+{
+ "id": 957978,
+ "bug_id": 223382,
+ "attachment_id": 0,
+ "creation_time": "2017-11-02T15:08:46Z",
+ "creator": "garrisoncreek@gmail.com",
+ "text": "When a UDP-encap SA is being updated with port change (e.g., MOBIKE update SA), the updated SA is now an ESP SA.\n\nThe bug is in the function key_updateaddresses. Instead of setting up the right NAT info on the new updated SA, it does it on the old SA (which is about to be freed). As a result, the updated SA has an empty NAT-T structure which means ESP.\n\nsys/netipsec/key.c\n\n    newsav-\u003enatt = NULL;\n    newsav-\u003esah = sah;\n    newsav-\u003estate = SADB_SASTATE_MATURE;\n    error = key_setnatt(sav, mhp);\n    if (error != 0)\n        goto fail;\n\nWhen this is patched to:\n\n    error = key_setnatt(newsav, mhp);\n\nUDP-encap info (if any) is preserved.\n\nNOTE: There are other SA address updates, it may be that key_setnatt(sav, mhp) makes sense for them. I have not tested all scenarios."
+}

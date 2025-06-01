@@ -1,0 +1,8 @@
+{
+ "id": 1303238,
+ "bug_id": 277875,
+ "attachment_id": 0,
+ "creation_time": "2024-04-01T08:24:55Z",
+ "creator": "kp@freebsd.org",
+ "text": "That truss output is strange.\n\nWe only DIOCXROLLBACK from pfctl_rules() (in sbin/pfctl), and then only after a 'goto _error'.\n\nThat must mean we've failed to load one of the options in pfctl_load_options(). All but one of those are old-style ioctls and show no errors, so that would imply that it has to be pfctl_load_logif() (i.e. pfctl_set_statusif() in libpfctl) that fails.\nHowever, that can really only fail if the log interface name is too long, and that does not appear to be the case here.\n\nThat's a newly converted-to-netlink call, so at least that's somewhat plausible at a source of shiny new bugs.\n\nIt's also all we have to go on right now. Can you try running `dtrace -n 'fbt::pf_handle_set_statusif:return { printf(\"%#x %#x\", arg0, arg1); }'` and then loading the relevant pf.conf?"
+}

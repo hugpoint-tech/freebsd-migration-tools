@@ -1,0 +1,8 @@
+{
+ "id": 79398,
+ "bug_id": 25474,
+ "attachment_id": 0,
+ "creation_time": "2001-03-01T14:20:01Z",
+ "creator": "bakhtin@amt.ru",
+ "text": "\nI'm trying to dump my filesystems to fifo pipe (created by mkfifo) and\nhave got a problem. If we use dump -f FILE and FILE is fifo, it dumps\nfs fine, but after that it fails to close this file. Looking into dump sources\n(tape.c file) I have found a problem: after closing the file it tries to\nreopen it several times:\n        while ((f = open(tape, 0)) \u003c 0)\n                sleep (10);\n        (void) close(f);\n\n\tAnd because nobody is listening at the other end of this pipe,\nwe'll wait for a long time...\n\nFix: \n\n{bakhtin}/home/bakhtin/work/dump\u003ediff tape.c /usr/src/sbin/dump/tape.c\n46d45\n\u003c #include !\u003csys/stat.h!\u003e\n326d324\n\u003c       struct stat sp;\n369d366\n\u003c       fstat(tapefd,\u0026sp);\n371d367\n\u003c       if(S_ISFIFO(sp.st_mode)) return;\nHow-To-Repeat: \n\tmkfifo PIPE\n\tdd if=PIPE of=/dev/null\u0026\n\tdump -0 -f PIPE /"
+}

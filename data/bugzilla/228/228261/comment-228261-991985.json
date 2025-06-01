@@ -1,0 +1,8 @@
+{
+ "id": 991985,
+ "bug_id": 228261,
+ "attachment_id": 0,
+ "creation_time": "2018-05-15T03:09:46Z",
+ "creator": "FreeBSD@ShaneWare.Biz",
+ "text": "I am the port maintainer for devel/godot\n\nThe automated port builds for current have been emailing me for a while about a build failure of the godot port. Turns out that one particular file takes over 1.5 hours to compile and is normally killed as a runaway. My poudriere builds don't kill runaways and I hadn't noticed the 2 hour build times.\n\nThe issue is related to an optimisation, so should be a more general issue than one ports code base. Using -O0 bypasses this issue but -O1 or higher hits it. It is also amd64 specific, adding -m32 bypasses the issue.\n\nThis build issue has been noticed by other godot developers (on osx and debian), and a commit has made to llvm-master that resolves it which has not been merged into the 6.0 release. Using clang++-devel from llvm-devel-7.0.d20180225 does not hit this issue.\n\nThe same patch should be applied to current as well as the llvm60 port.\n\nThe llvm commit that reportedly fixes this is\nhttps://github.com/llvm-project/llvm-project-20170507/commit/595304ad70df4db24a803b5ea3edc2acd8f850d6\n\nThe godot project issue related to this is\nhttps://github.com/godotengine/godot/issues/18023\n\nYou don't need to build the entire godot port to test this, you can start building the port, then stop it after the first files compile and just compile the one file, if it takes more than 10 seconds you have hit the issue.\n\ncd /usr/ports/devel/godot\nmake\nCtrl-C\ncd work/godot-3.0.2-stable\nclang++60 -o test.o -O3 -I. -Icore -Icore/math -Iplatform/x11 servers/physics/collision_solver_sat.cpp"
+}

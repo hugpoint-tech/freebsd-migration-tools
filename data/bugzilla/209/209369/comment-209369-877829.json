@@ -1,0 +1,8 @@
+{
+ "id": 877829,
+ "bug_id": 209369,
+ "attachment_id": 0,
+ "creation_time": "2016-05-07T22:34:56Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "FWIW, this worked too:\n\n--- src/slm/thread/slmthread.cpp.orig   2014-11-14 14:17:48 UTC\n+++ src/slm/thread/slmthread.cpp\n@@ -226,6 +226,30 @@ FILE* fp = NULL;\n CThreadSlm::TNode* levels[16];\n CThreadSlm::TLeaf* lastLevel;\n\n+static inline float\n+effectivePr(bool usingLogPr, float a)\n+{\n+    return usingLogPr ? a / log(2.0f) : -log2(a);\n+}\n+\n+static inline float\n+originalPr(bool usingLogPr, float b)\n+{\n+    return usingLogPr ? b * log(2.0f) : exp2(-b);\n+}\n+\n+static inline float\n+effectiveBow(bool usingLogPr, float a)\n+{\n+    return usingLogPr ? exp(-a) : a;\n+}\n+\n+static inline float\n+originalBow(bool usingLogPr, float b)\n+{\n+    return usingLogPr ? -log(b) : b;\n+}\n+\n int\n main(int argc, char* argv[])\n {\n@@ -250,10 +274,10 @@ main(int argc, char* argv[])\n\n     bool usingLogPr = slm.isUseLogPr();\n\n-    #define EffectivePr(a)  (float((usingLogPr) ? ((a) / log(2.0)) : (-log2((a)))))\n-    #define OriginalPr(b)   (float((usingLogPr) ? ((b) * log(2.0)) : (exp2(-(b)))))\n-    #define EffectiveBow(a) (float((usingLogPr) ? (exp(-(a))) : ((a))))\n-    #define OriginalBow(b)  (float((usingLogPr) ? (-log((b))) : ((b))))\n+    #define EffectivePr(a)  effectivePr(usingLogPr, (a))\n+    #define OriginalPr(b)   originalPr(usingLogPr, (b))\n+    #define EffectiveBow(a) effectiveBow(usingLogPr, (a))\n+    #define OriginalBow(b)  originalBow(usingLogPr, (b))\n\n     printf(\"\\nfirst pass...\"); fflush(stdout);\n     for (int lvl = 0; lvl \u003c= slm.getN(); ++lvl) {"
+}

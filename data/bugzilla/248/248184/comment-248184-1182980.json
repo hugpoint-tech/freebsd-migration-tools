@@ -1,0 +1,8 @@
+{
+ "id": 1182980,
+ "bug_id": 248184,
+ "attachment_id": 0,
+ "creation_time": "2021-10-19T13:11:48Z",
+ "creator": "tobik@freebsd.org",
+ "text": "(In reply to Conrad Meyer from comment #1)\nThe problem is also present with AT_EXECPATH.\n\nAT_EXECPATH doesn't really make a difference if the wrong name\nis copied to userspace in the first place.\n\n$ freebsd-version\n13.0-RELEASE-p4\n$ cat execpath.c\n#include \u003csys/auxv.h\u003e\n#include \u003climits.h\u003e\n#include \u003cstdio.h\u003e\n\nint\nmain(int argc, char *argv[])\n{\n        char pathname[PATH_MAX];\n        elf_aux_info(AT_EXECPATH, pathname, PATH_MAX);\n        puts(pathname);\n        return 0;\n}\n$ make execpath\n$ ln -f execpath tmp/execpath\n$ ./execpath\n/home/tobias/execpath\n$ ./tmp/execpath\n/home/tobias/tmp/execpath\n$ ./execpath # I'd expect this to return /home/tobias/execpath again but:\n/home/tobias/tmp/execpath\n\nNow I'm coming back to this because lang/rust uses hardlinks in the build\nby default. We have disabled this since it caused intermittent build failures\nbecause env::current_exe (uses kern.proc.pathname.-1 sysctl internally) might\nreturns the wrong pathname (one of the hardlinks) sometimes and rustc fails\nto find the right std crate.  This is my working theory anyway. It's difficult\nto trigger the problem on my package builder.\n\nI was going to experiment with switching it over to AT_EXECPATH but I guess\nthat will make no difference because of the current behavior of it.\n\nIf getexecname() would be just a wrapper for elf_aux_info(AT_EXECPATH) then\nit wouldn't solve the problem either.\n\nAny suggestions what we should use instead of kern.proc.pathname, AT_EXECPATH,\nor /proc/curproc/file?"
+}

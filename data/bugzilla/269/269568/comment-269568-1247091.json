@@ -1,0 +1,8 @@
+{
+ "id": 1247091,
+ "bug_id": 269568,
+ "attachment_id": 0,
+ "creation_time": "2023-02-15T18:20:24Z",
+ "creator": "tom@hur.st",
+ "text": "In updating the sysutils/jdupes port to 1.21.3, I came across a reproducible crash in the LOW_MEMORY=1 executable after it's been stripped:\n\nProcess 46048 launched: '/usr/local/poudriere/ports/default/sysutils/jdupes/work/jdupes-1.21.3/jdupes.stripped' (x86_64)\nProcess 46048 stopped\n* thread #1, name = 'jdupes.stripped', stop reason = signal SIGSEGV: address access protected (fault address: 0x7fffffffd768)\n    frame #0: 0x0000000800211c90 ld-elf.so.1`_rtld [inlined] init_rtld(mapbase=\"\\U0000007fELF\\U00000002\\U00000001\\U00000001\\t\", aux_info=0x00007fffffffe100) at rtld.c:2406:5\n   2403      * The \"path\" member can't be initialized yet because string constants\n   2404      * cannot yet be accessed. Below we will set it correctly.\n   2405      */\n-\u003e 2406     memset(\u0026objtmp, 0, sizeof(objtmp));\n   2407     objtmp.path = NULL;\n   2408     objtmp.rtld = true;\n   2409     objtmp.mapbase = mapbase;\n\nHere's a small script to reproduce the issue more directly:\n\n#!/bin/sh\nset -e\ntest -e jdupes || git clone --depth=50 https://github.com/jbruchon/jdupes.git\ncd jdupes\ngit checkout v1.21.3\ngmake clean all LOW_MEMORY=1\nstrip ./jdupes\nlldb ./jdupes\n\nIf /usr/local/bin/strip (GNU binutils) is used the crash doesn't occur."
+}

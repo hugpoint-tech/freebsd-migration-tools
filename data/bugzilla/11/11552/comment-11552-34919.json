@@ -1,0 +1,8 @@
+{
+ "id": 34919,
+ "bug_id": 11552,
+ "attachment_id": 0,
+ "creation_time": "1999-05-07T06:42:09Z",
+ "creator": "peter.jeremy@auss2.alcatel.com.au",
+ "text": "A slight correction to my previous problem:\n\nThe bug appears to be a buffer size discrepancy between sendmail and\nmail.local.  When using LMTP, sendmail chops its input into 2047-byte\n`lines' (ie it probably does fgets() into a 2048-byte buffer, though I\ncan't quickly find the code).  To send as LMTP, it appends a CR and\nLF.  Additionally, if the input line begins with a `.' it prepends\nanother `.'.  Thus the worst-case LMTP line written by sendmail is\n2050 bytes.\n\nmail.local reads input into a 2048 character buffer using fgets(),\ntherefore it reads a maximum of 2047-bytes at once.  In the worst case,\nthis means that the 2050-byte line written by sendmail will be read as\na 2047 byte line (with no terminating newline), followed by a 3 byte\nline.  If these 3 bytes are `.' CR LF (ie the 2050-byte line sent\nby sendmail ended with a `.'), then mail.local sees it as the end of\ninput.\n\nThe problem will therefore occur when sendmail reads input of the\nform `.' (2045 characters) `.', where the first `.' is either at the\nbeginning of the line, or on a 2047-byte boundary.\n\nSince SMTP has a line-length restriction of 1024 characters, any mail\ntransferred via SMTP will have already been chopped into 1024\ncharacter segments, preventing this bug being triggered (though a\nsimilar bug could possibly occur).\n\nThis being the case, a better patch would be to increase the size of\n`line' in mail.local.c:store() from 2048 to 2051 (or more) bytes.\n\nPeter"
+}

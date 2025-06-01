@@ -1,0 +1,8 @@
+{
+ "id": 1110079,
+ "bug_id": 247494,
+ "attachment_id": 0,
+ "creation_time": "2020-06-23T16:44:00Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: cem\nDate: Tue Jun 23 16:43:48 UTC 2020\nNew revision: 362545\nURL: https://svnweb.freebsd.org/changeset/base/362545\n\nLog:\n  sort(1): Fix two wchar-related bugs in radixsort\n\n  Sort(1)'s radixsort implementation was broken for multibyte LC_CTYPEs in at\n  least two ways:\n\n    * In actual radix sort, it would only bucket the least significant\n      byte from each wchar, ignoring the 24 most-significant bits of each\n      unicode character.\n\n    * In degenerate cases / \"fast paths,\" it would fall back to another\n      sorting algorithm (default: mergesort) with a bogus comparator\n      offset.  The string comparison functions in sort(1) take an offset\n      in units of the operating character size.  However, radixsort was\n      passing an offset in units of bytes.  The byte offset must be\n      divided by sizeof(wchar_t).\n\n  This revision addresses both discovered issues.\n\n  Some example testcases:\n\n    $ (echo ? ; echo ? ; echo ?) | \\\n    LC_CTYPE=ja_JP.UTF-8 LC_COLLATE=C LANG=C sort --radixsort --debug\n\n    $ (echo ? ; echo ? ; echo ?) | \\\n    LC_CTYPE=C LC_COLLATE=C LANG=C           sort --radixsort --debug\n\n    $ (for i in $(jot 34); do echo ?????; echo ?????; echo ?????; done) | \\\n    LC_CTYPE=ja_JP.UTF-8 LC_COLLATE=C LANG=C sort --radixsort --debug\n\n  PR:\t\t247494\n  Reported by:\tknu\n  MFC after:\tI do not intend to, but parties interested in stable might want to\n\nChanges:\n  head/usr.bin/sort/radixsort.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 630947,
+ "bug_id": 161048,
+ "attachment_id": 0,
+ "creation_time": "2012-03-03T02:14:08Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: nwhitehorn\nDate: Sat Mar  3 02:13:53 2012\nNew Revision: 232427\nURL: http://svn.freebsd.org/changeset/base/232427\n\nLog:\n  MFC r230482-230484,r230997:\n  \n  Per popular demand, if installing from a graphics terminal, show the\n  installer log in real time on VTY 3, and spawn a shell on VTY 4.\n  \n  PR:\t\tbin/161048\n\nModified:\n  stable/9/release/rc.local\nDirectory Properties:\n  stable/9/release/   (props changed)\n\nModified: stable/9/release/rc.local\n==============================================================================\n--- stable/9/release/rc.local\tSat Mar  3 01:33:10 2012\t(r232426)\n+++ stable/9/release/rc.local\tSat Mar  3 02:13:53 2012\t(r232427)\n@@ -12,12 +12,21 @@ MACHINE=`uname -m`\n \n kbdcontrol -d \u003e/dev/null 2\u003e\u00261\n if [ $? -eq 0 ]; then\n-\t# Syscons: use xterm\n+\t# Syscons: use xterm, start interesting things on other VTYs\n \tif [ ${MACHINE} = \"pc98\" ]; then\n \t\tTERM=cons25w\n \telse\n \t\tTERM=xterm\n \tfi\n+\n+\tif [ -z \"$EXTERNAL_VTY_STARTED\" ]; then\n+\t\t# Init will clean these processes up if/when the system\n+\t\t# goes multiuser\n+\t\ttouch /tmp/bsdinstall_log\n+\t\ttail -f /tmp/bsdinstall_log \u003e /dev/ttyv2 \u0026\n+\t\t/usr/libexec/getty autologin ttyv3 \u0026\n+\t\tEXTERNAL_VTY_STARTED=1\n+\tfi\n else\n \t# Serial or other console\n \techo\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

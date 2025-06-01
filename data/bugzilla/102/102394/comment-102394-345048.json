@@ -1,0 +1,8 @@
+{
+ "id": 345048,
+ "bug_id": 102394,
+ "attachment_id": 0,
+ "creation_time": "2006-08-22T18:10:15Z",
+ "creator": "kattyo@abk.nu",
+ "text": "ls(1) command shows inode number about symblic link references when used with -P option.\n\nIn manpage, the -P option shows symbolic link itself instead of it pointed to.\nBut now ls(1) shows inode number which resolved symbolic link references.\nIf manpage is correct, please fix this.\n\n\nfollowing command line option settings is \nconflicted by default when used with only -P option:\n\u003e                case 'P':\n\u003e                        fts_options \u0026= ~FTS_COMFOLLOW;\n\u003e                        fts_options \u0026= ~FTS_LOGICAL;\n\u003e                        fts_options |= FTS_PHYSICAL;\n\u003e                        break;\n..\n\u003e        /*\n\u003e         * If not -F, -d or -l options, follow any symbolic links listed on\n\u003e         * the command line.\n\u003e         */\n\u003e        if (!f_longform \u0026\u0026 !f_listdir \u0026\u0026 !f_type)\n\u003e                fts_options |= FTS_COMFOLLOW;\n\nFix: \n\nThis is not tested.\n\nsrc/bin/ls/ls.c:\n \t\tcase 'P':\n \t\t\tfts_options \u0026= ~FTS_COMFOLLOW;\n \t\t\tfts_options \u0026= ~FTS_LOGICAL;\n \t\t\tfts_options |= FTS_PHYSICAL;\n+\t\t\tf_listdir = 1;\n \t\t\tbreak;\nHow-To-Repeat: kattyo@ bin $ \\ls -iF /usr/sbin/mailwrapper\n1578123 /usr/sbin/mailwrapper*\nkattyo@ bin $ \\ls -il mailq\n1201534 lrwxr-xr-x  1 root  wheel  21 May 11 11:29 mailq -\u003e /usr/sbin/mailwrapper\nkattyo@ bin $ \\ls -iL mailq\n1578123 mailq\nkattyo@ bin $ \\ls -iH mailq\n1578123 mailq\nkattyo@ bin $ \\ls -iP mailq\n1578123 mailq\nkattyo@ bin $ \\ls -ih mailq\n1578123 mailq\nkattyo@ bin $ \\ls -id mailq\n1201534 mailq"
+}

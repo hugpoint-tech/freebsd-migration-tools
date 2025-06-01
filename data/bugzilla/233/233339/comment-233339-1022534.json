@@ -1,0 +1,8 @@
+{
+ "id": 1022534,
+ "bug_id": 233339,
+ "attachment_id": 0,
+ "creation_time": "2018-11-19T20:40:50Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "I occasionally hit a kernel build failure when building a kernel from scratch (i.e., no -DKERNFAST or anything like that).  It manifests like this:\n\nnm: 'genassym.o': No such file or directory\nnm: 'genassym.o': No such file or directory\n/usr/home/markj/src/freebsd-dev/sys/amd64/linux32/linux32_support.s:38:2: error: expected relocatable expression\n movl $-EFAULT,%eax\n ^\n\nAt this point, if I go into the objdir for linux.ko, I see an empty assym.inc and no genassym.o.  In kmod.mk we have:\n\n480 assym.inc: genassym.o\n481 offset.inc: genoffset.o\n482 assym.inc: ${SYSDIR}/kern/genassym.sh\n483         sh ${SYSDIR}/kern/genassym.sh genassym.o \u003e ${.TARGET}\n484 genassym.o: ${SYSDIR}/${MACHINE}/${MACHINE}/genassym.c offset.inc\n485 genassym.o: ${SRCS:Mopt_*.h}\n486         ${CC} -c ${CFLAGS:N-flto:N-fno-common} \\\n487             ${SYSDIR}/${MACHINE}/${MACHINE}/genassym.c\n488 offset.inc: ${SYSDIR}/kern/genoffset.sh genoffset.o\n489         sh ${SYSDIR}/kern/genoffset.sh genoffset.o \u003e ${.TARGET}\n490 genoffset.o: ${SYSDIR}/kern/genoffset.c\n491 genoffset.o: ${SRCS:Mopt_*.h}\n492         ${CC} -c ${CFLAGS:N-flto:N-fno-common} \\\n493             ${SYSDIR}/kern/genoffset.c\n\nSo, we *should* have compiled genassym.c before invoking genassym.sh (which is where the nm(1) error above comes from), but that's not happening.  The problem seems to be that the dependency is satisfied by the kernel's genassym.o, which is generated very early during the kernel build, so when building modules we don't wait for the module's genassym.o to be created."
+}

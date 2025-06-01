@@ -1,0 +1,8 @@
+{
+ "id": 486475,
+ "bug_id": 131999,
+ "attachment_id": 0,
+ "creation_time": "2009-02-23T07:30:03Z",
+ "creator": "myself@rojer.pp.ru",
+ "text": "# ls -lo logs\nlrwxr-xr-x   1 root   www-rojer  schg   17 Sep 16  2006 logs -\u003e /logs/rojer\n# ls -ldo /logs/rojer\ndrwxr-x---  2 root  www-rojer  - 512 Feb 23 09:59 /logs/rojer\n# chflags -h noschg logs\n# ls -lo logs\nlrwxr-xr-x  1 root  www-rojer  schg 17 Sep 16  2006 logs -\u003e /logs/rojer.pp.ru\n\ni. e. nothing happened\n\ntruss of chflags reveals the problem: usage of stat() where lstat() should have been used.\n\n# truss chflags -h noschg logs\n[...]\nstat(\"logs\",{ mode=drwxr-x--- ,inode=22303757,size=512,blksize=4096 }) = 0 (0x0)\nprocess exit, rval = 0\n\nthis way, lchflags(2) is never actually called because chflags(3) doesn't think it is necessary.\n\nFix: \n\ni had a glance at bin/chflags/chflags.c and it seems to be using fts_* functions to traverse the tree. somehow those need to be told to use lstat to return information, when appropriate.\nHow-To-Repeat: create a symlink pointing to an existing flagless entry (this is important),\nuse chfalgs -h to set flags on the symlink - this one succeeds.\nthen try chflags -h to remove the flag you just set - this one fails, because stat(2) returns information on the entry symlink points at that does not have the flag."
+}

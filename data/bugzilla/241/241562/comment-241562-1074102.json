@@ -1,0 +1,8 @@
+{
+ "id": 1074102,
+ "bug_id": 241562,
+ "attachment_id": 0,
+ "creation_time": "2019-11-06T00:15:12Z",
+ "creator": "cem@freebsd.org",
+ "text": "Ok, so, I believe this is a difference in Clang defaults across arch.\n\nClass hierarchy:\n\nFreeBSD.h: class LLVM_LIBRARY_VISIBILITY FreeBSD : public Generic_ELF\n(Doesn't override ::IsUnwindTablesDefault().)\n\nGnu.h: class LLVM_LIBRARY_VISIBILITY Generic_ELF : public Generic_GCC\n\nGnu.h: class LLVM_LIBRARY_VISIBILITY Generic_GCC : public ToolChain\n\n(Files are: clang/lib/Driver/Toolchain{.cpp,s/{FreeBSD,Gnu}.h}, clang/include/clang/Driver/Toolchain.h. )\n\nDefault implementation:\n   246 bool ToolChain::IsUnwindTablesDefault(const ArgList \u0026Args) const {\n   247   return false;\n\nGeneric_GCC overrides:\n  289   bool IsUnwindTablesDefault(const llvm::opt::ArgList \u0026Args) const override;\n\n  2538 bool Generic_GCC::IsUnwindTablesDefault(const ArgList \u0026Args) const {\n  2539   return getArch() == llvm::Triple::x86_64;\n  2540 }\n\nFuck's sake."
+}

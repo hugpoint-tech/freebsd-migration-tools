@@ -1,0 +1,8 @@
+{
+ "id": 930080,
+ "bug_id": 218564,
+ "attachment_id": 0,
+ "creation_time": "2017-04-12T15:28:05Z",
+ "creator": "woodsb02@freebsd.org",
+ "text": "Testing with a dummy program reveals that indeed the existing patch does not clear the environment variables at all, but instead simply adds a new environment variable named environ with the value \"NULL\".\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n\nint main(int argc, char *argv[]) {\n        char **ep;\n        extern char **environ;\n        putenv (\"environ=NULL\");\n        for (ep = environ; *ep; ep++)\n                (void)printf(\"%s\\n\", *ep);\n}\n\n$ ./a.out\nenviron=NULL\n_=/home/testuser/./a.out\nPWD=/home/testuser\nEDITOR=/usr/local/bin/vim\n... (prints the remainder of my environment variables)\n\n\nHowever, using similar code from the FreeBSD env(1) command as suggested by jbeich successfully creates an empty environment.\n\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n\nextern char **environ;\n\nint main(int argc, char *argv[]) {\n        char **ep;\n        extern char **environ;\n        char *cleanenv[1];\n        environ = cleanenv;\n        cleanenv[0] = NULL;\n        for (ep = environ; *ep; ep++)\n                (void)printf(\"%s\\n\", *ep);\n}\n\n$ ./a.out\n$"
+}

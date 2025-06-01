@@ -1,0 +1,8 @@
+{
+ "id": 1130975,
+ "bug_id": 250954,
+ "attachment_id": 0,
+ "creation_time": "2020-11-09T18:56:37Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Michał Górny from comment #12)\nI believe the intended use of PT_SETDBREGS in combination with the new thread\ntracking is to set debug registers to desired configuration on each PL_FLAG_BORN\nevent.  This should be most straight-forward.\n\nWRT to the race itself, trying to close it would affect normal operation of\nthread creation, as opposed to just causing minor inconvenience to the ptrace(2)\nconsumers.  We create thread, including the setup of all machine state, then\nwe fire it running, up to the point of running at trampoline returning to the\nuser space.  This moment is when we report TBD_BORN to ptracestop().  It is\nimportant to do that stop from the context of the running new thread, so that\nwe already know that all hardware state is copied as needed.  Would we report\nTDB_BORN before copying, it means that copying should occur under process lock\nto guarantee consistency with potential modifications from debuggers, and we\ndo not want this.\n\nAlso I think existing consumers of TDB_BORN already expect that the event comes\nfrom the running thread, not from the embryo.  So it really need be yet another\nevent to not break API."
+}

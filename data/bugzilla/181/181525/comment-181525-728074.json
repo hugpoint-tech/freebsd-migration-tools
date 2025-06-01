@@ -1,0 +1,8 @@
+{
+ "id": 728074,
+ "bug_id": 181525,
+ "attachment_id": 0,
+ "creation_time": "2013-08-25T14:30:00Z",
+ "creator": "gb+ML-2011@derbrauer.homelinux.net",
+ "text": "i3lock 2.5\n\ni3lock screenlocker could be unlocked after installation with any phrase. One \"anykey\" is enough to unlock.\n\nAfter discussion on german freebsd mailing list we found the reason(s):\ni3lock uses PAM to get authorization. It uses \"auth include login\" PAM modul, which itself uses pam_self. pam_self leads to the behavior that any phrase could do the unlock cause pam_self give login permission if the calling process comes from the same UID - regardless of the submitted passphrase. With pam_self als \"sufficent modul\" a user could authenticate itself without his/her password.\n\nUsing PAM modul \"auth include system\" disable this - more or less lightly - security hole, but the user could never authenticate itself, also with the correct password. This reason is that only root have access to verify the crypted passwords.\nSo i3lock binary needs also setuid bit flagged. Other screen locker/saver have this also set, from the same reasons.\n\nWith current default settings i3lock under FreeBSD is useless and maybe a security problem if the user don't pay attention on above.\n\nFix: \n\n/usr/local/etc/pam.d/i3lock:\n- auth include login\n+ auth include system\n\nchmod 4111 /usr/local/bin/i3lock\n(slock port do for example the same during with install script)\nHow-To-Repeat: Build and install i3lock, use it as a user:\na)\n%i3lock\n\n(Any phrase could do the unlock)"
+}

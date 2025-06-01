@@ -1,0 +1,8 @@
+{
+ "id": 762384,
+ "bug_id": 189353,
+ "attachment_id": 0,
+ "creation_time": "2014-05-04T13:37:43Z",
+ "creator": "kostikbel@gmail.com",
+ "text": "Yes, I think you are right.  Please try the following patch, which worked\r\nfor me, but I only lightly tested it.\r\n\r\ndiff --git a/lib/libc/gen/sem_new.c b/lib/libc/gen/sem_new.c\r\nindex 9a2ab27..8e4a91d 100644\r\n--- a/lib/libc/gen/sem_new.c\r\n+++ b/lib/libc/gen/sem_new.c\r\n@@ -161,7 +161,7 @@ _sem_open(const char *name, int flags, ...)\r\n \r\n \t_pthread_mutex_lock(\u0026sem_llock);\r\n \tLIST_FOREACH(ni, \u0026sem_list, next) {\r\n-\t\tif (strcmp(name, ni-\u003ename) == 0) {\r\n+\t\tif (ni-\u003ename != NULL \u0026\u0026 strcmp(name, ni-\u003ename) == 0) {\r\n \t\t\tif ((flags \u0026 (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL)) {\r\n \t\t\t\t_pthread_mutex_unlock(\u0026sem_llock);\r\n \t\t\t\terrno = EEXIST;\r\n@@ -287,20 +287,32 @@ _sem_close(sem_t *sem)\r\n int\r\n _sem_unlink(const char *name)\r\n {\r\n+\tstruct sem_nameinfo *ni;\r\n \tchar path[PATH_MAX];\r\n+\tint error;\r\n \r\n \tif (name[0] != '/') {\r\n \t\terrno = ENOENT;\r\n \t\treturn -1;\r\n \t}\r\n \tname++;\r\n-\r\n \tstrcpy(path, SEM_PREFIX);\r\n \tif (strlcat(path, name, sizeof(path)) \u003e= sizeof(path)) {\r\n \t\terrno = ENAMETOOLONG;\r\n \t\treturn (-1);\r\n \t}\r\n-\treturn unlink(path);\r\n+\r\n+\t_pthread_once(\u0026once, sem_module_init);\r\n+\t_pthread_mutex_lock(\u0026sem_llock);\r\n+\tLIST_FOREACH(ni, \u0026sem_list, next) {\r\n+\t\tif (ni-\u003ename != NULL \u0026\u0026 strcmp(name, ni-\u003ename) == 0) {\r\n+\t\t\tni-\u003ename = NULL;\r\n+\t\t\tbreak;\r\n+\t\t}\r\n+\t}\r\n+\terror = unlink(path);\r\n+\t_pthread_mutex_unlock(\u0026sem_llock);\r\n+\treturn (error);\r\n }\r\n \r\n int"
+}

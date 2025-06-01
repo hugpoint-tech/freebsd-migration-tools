@@ -1,0 +1,8 @@
+{
+ "id": 566378,
+ "bug_id": 148296,
+ "attachment_id": 0,
+ "creation_time": "2010-07-26T12:56:03Z",
+ "creator": "olgeni@FreeBSD.org",
+ "text": "Hello,\n\nOn Wed, 14 Jul 2010, Andrey V. Elsukov wrote:\n\n\u003e just one note - user can create partition that doesn't start from 1.\n\u003e For example:\n\u003e \t# mdconfig -s 100m\n\u003e \t# gpart create -s gpt md0\n\u003e \t# gpart add -i 5 -t freebsd-zfs md0\n\nThis is slower, but safer: it doesn't fall back to slices, and only \nskips checks when a vdev is found at the unit level.\n\n--- zfs.c.orig\t2010-06-14 04:09:06.000000000 +0200\n+++ zfs.c\t2010-07-26 13:37:23.490536162 +0200\n@@ -408,20 +408,27 @@\n\n  \t\t/*\n  \t\t * If we find a vdev, the zfs code will eat the fd, otherwise\n-\t\t * we close it.\n+\t\t * we close it and check for vdevs in slices and partitions.\n  \t\t */\n  \t\tif (vdev_probe(vdev_read, (void*) (uintptr_t) fd, 0))\n  \t\t\tclose(fd);\n+\t\telse\n+\t\t\tcontinue;\n+\n+\t\tfor (slice = 1; slice \u003c= 4; slice++) {\n+\t\t\tsprintf(devname, \"disk%ds%d:\", unit, slice);\n+\t\t\tfd = open(devname, O_RDONLY);\n+\t\t\tif (fd == -1)\n+\t\t\t\tcontinue;\n+\t\t\tif (vdev_probe(vdev_read, (void*) (uintptr_t) fd, 0))\n+\t\t\t\tclose(fd);\n+\t\t}\n\n  \t\tfor (slice = 1; slice \u003c= 128; slice++) {\n  \t\t\tsprintf(devname, \"disk%dp%d:\", unit, slice);\n  \t\t\tfd = open(devname, O_RDONLY);\n-\t\t\tif (fd == -1) {\n-\t\t\t\tsprintf(devname, \"disk%ds%d:\", unit, slice);\n-\t\t\t\tfd = open(devname, O_RDONLY);\n-\t\t\t\tif (fd == -1)\n-\t\t\t\t\tcontinue;\n-\t\t\t}\n+\t\t\tif (fd == -1)\n+\t\t\t\tcontinue;\n  \t\t\tif (vdev_probe(vdev_read, (void*) (uintptr_t) fd, 0))\n  \t\t\t\tclose(fd);\n  \t\t}"
+}

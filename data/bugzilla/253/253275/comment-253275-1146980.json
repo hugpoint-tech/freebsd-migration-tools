@@ -1,0 +1,8 @@
+{
+ "id": 1146980,
+ "bug_id": 253275,
+ "attachment_id": 0,
+ "creation_time": "2021-02-16T12:22:40Z",
+ "creator": "dgr@semihalf.com",
+ "text": "I haven't looked at all the ports yet, but from what I've seen, ports fail due to few reasons. Some ports build static libraries and it seems that currently the best way to fix this is by setting WITHOUT_PIE.\n\nSome other ports could most likely work with PIE enabled, but makefiles override default system CFLAGS and still use default LDFLAGS. This causes linker to try linking with -pie but without -fPIC being used in compiling. audio/play is an example, it overrides CFLAGS with -O.\n\nAnother reason that I've seen is caused by setting CFLAGS=\"${CFLAGS}\" in MAKE_ARGS. I'm not really sure how bmake works in this case, but I think that it starts ignoring any further processing of CFLAGS and we are left with CFLAGS from sys.mk and no modifications made in bsd.prog.mk are taken into account. This happens for www/mathopd. I removed MAKE_ARGS for that and it built fine. -DFREEBSD_SENDFILE was also properly passed further. I haven't tested if it works after building though, but I don't see any reason why it shouldn't."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1283267,
+ "bug_id": 274966,
+ "attachment_id": 0,
+ "creation_time": "2023-11-08T17:30:13Z",
+ "creator": "islituo@gmail.com",
+ "text": "Hello,\nOur static analysis tool finds a possible data race in firewire.c.\nThe accesses to fwdev-\u003edst and fwdev-\u003estatus are often protected by the lock FW_GLOCK(fc). Here is an example in firewire.c:\n\n  146. fw_noderesolve_nodeid() {\n         ......\n  150.   FW_GLOCK(fc);\n  151.   STAILQ_FOREACH(fwdev, \u0026fc-\u003edevices, link)\n  152.   if (fwdev-\u003edst == dst \u0026\u0026 fwdev-\u003estatus != FWDEVINVAL)\n  153.     break;\n  154.   FW_GUNLOCK(fc);\n         ......\n  157. }\n\nBut they are accessed in the following calling context without holding the lock:\n\n  fw_bus_probe_thread()  --\u003e Line 1737\n    fw_explore(fc);  --\u003e Line 1747\n      err = fw_explore_node(\u0026dfwdev);  --\u003e Line 1723\n        fwdev-\u003edst = node;  --\u003e Line 1630\n        fwdev-\u003estatus = FWDEVINIT;  --\u003e Line 1631\n\nAnd thus can cause possible data races.\n\nI am not quite sure whether these possible data races are real andhow to fix them if they are real. \n\nAny feedback would be appreciated, thanks!\n\nReported-by: BassCheck \u003cbass@buaa.edu.cn\u003e"
+}

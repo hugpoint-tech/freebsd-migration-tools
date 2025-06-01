@@ -1,0 +1,8 @@
+{
+ "id": 1169342,
+ "bug_id": 257043,
+ "attachment_id": 0,
+ "creation_time": "2021-07-07T22:56:31Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I believe that the KASSERT() at line# 2471 in sys/kern/vfs_cache.c\nis not feasible for the NFS client.\nIn general, the NFS client cannot know that a directory has been\nmodified locally on the server (or by another NFS client) such\nthat the same file name now refers to a different file.\n(NFS does not have a cache coherency protocol.)\n\nFor NFS, what needs to happen for this case is that the new\nentry needs to replace the old (now bogus/stale) entry.\n\nI will look to see if a change in directory attributes can\nbe used to invalidate all entries in the cache for that directory\nfor the case of re-reading the directory, but this will, at best,\nreduce the likelyhood of having a new file for the same name and\nnot stop it from happening.\n\nNot using the \"rdirplus\" mount option should avoid the problem in\nthe meantime.\n\nmjg@, can you change cache_enter_time() so that it replaces the\nentry instead of panics?\n\nI reproduced this by doing the following:\n- NFS mount and \"ll\".\n- go to server and do two \"mv\"s, where nfs_clstate.c and xxx.c were files\n  in the directory\n# mv nfs_clstate.c xxxx\n# mv xxx.c nfs_clstate.c\n- then \"ll\" again on the NFS client"
+}

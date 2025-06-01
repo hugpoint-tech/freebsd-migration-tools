@@ -1,0 +1,8 @@
+{
+ "id": 1325016,
+ "bug_id": 281460,
+ "attachment_id": 0,
+ "creation_time": "2024-09-12T14:14:34Z",
+ "creator": "freebsd@oldach.net",
+ "text": "amd64 with stripped-down kernel (kind of MINIMAL). crypto.ko gets dynamically loaded. In that scenario, loading if_ovpn fails though:\n\nroot@latitude / # kldload if_ovpn\nkldload: an error occurred while loading module if_ovpn. Please check dmesg(8) for more details.\nroot@latitude / # dmesg -a | tail -2\nlink_elf_obj: symbol crypto_freesession undefined\nlinker_load_file: /boot/kernel/if_ovpn.ko - unsupported file type\nroot@latitude / #\n\nI noticed that crypto_freesession is a *local* text symbol in crypto.ko.\n\nroot@latitude / # nm /boot/kernel/crypto.ko | fgrep crypto_freesession\n0000000000000d60 t crypto_freesession\nroot@latitude / #\n\nHowever, in a GENERIC kernel (with device crypto) it's a global text symbol:\n\nroot@latitude / # nm /boot/GENERIC/kernel | fgrep crypto_freesession\nffffffff805a0520 T crypto_freesession\nroot@latitude / #\n\nIndeed if_ovpn kldloads nicely with linked-in crypto.\n\nIs this intended behaviour?"
+}

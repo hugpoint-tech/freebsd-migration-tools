@@ -1,0 +1,8 @@
+{
+ "id": 1243739,
+ "bug_id": 269042,
+ "attachment_id": 0,
+ "creation_time": "2023-01-19T07:33:32Z",
+ "creator": "bugs.fbsd@paepcke.de",
+ "text": "Hello all, \n\nhttps://cgit.freebsd.org/src/commit/sbin/ifconfig?id=2c24ad3377a6f584e484656db8390e4eb7cfc119\n\nhttps://reviews.freebsd.org/D37873\n\nSince this commit replaced the general silent fail\nfor any kind of kdload error with a hard (exit) fail,\nexcept for ENOENT - ifconfig fails hard (exit) even\nin case the user has not even the permission to launch\nthe syscall to kldload. \n\n-\t/*\n-\t * Try to load the module.  But ignore failures, because ifconfig can't\n-\t * infer the names of all drivers (eg mlx4en(4)).\n-\t */\n-\t(void) kldload(ifkind);\n+\t/* Try to load the module. */\n+\tif (kldload(ifkind) \u003c 0) {\n+\t\tswitch (errno) {\n+\t\tcase ENOENT:\n+\t\t\t/*\n+\t\t\t * Ignore ENOENT, because ifconfig can't infer the\n+\t\t\t * names of all drivers (eg mlx4en(4)).\n+\t\t\t */\n+\t\t\tbreak;\n+\t\tdefault:\n+\t\t\terr(1, \"kldload(%s)\", ifkind);\n+\t\t}\n+\t}\n\nWas this intentional or can we add nother exception\nfor informal msg without (hard) exit here?\n\nThank you! \nMichael"
+}

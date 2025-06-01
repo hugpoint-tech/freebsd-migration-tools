@@ -1,0 +1,8 @@
+{
+ "id": 951787,
+ "bug_id": 222288,
+ "attachment_id": 0,
+ "creation_time": "2017-09-13T14:57:00Z",
+ "creator": "dnelson@allantgroup.com",
+ "text": "It looks like the ABD commit may have introduced a leak of geom bio structs.  It's a slow leak so it's not obvious, but after a few weeks of uptime, one of my 8GB-RAM systems had accumulated a couple million g_bio objects according to vmstat (over 2GB of RAM) and was starting to swap.  I rebooted it, and after 11 hours, I'm up to 310182:\n\n# uptime\n 9:55AM  up 11:08, 11 users, load averages: 0.50, 0.54, 0.55\n# vmstat -z | egrep 'ITEM|g_bio' \nITEM                   SIZE   LIMIT     USED     FREE       REQ   FAIL SLEEP\ng_bio:                  376,      0,  310182,     818, 38182778,     0,   0\n\nLooking at base r321610 itself, it looks like there's a g_bio_destroy() call that got relocated from vdev_geom_io_intr() to vdev_geom_io_done(); maybe there are cases where vdev_geom_io_intr is called, but vdev_geom_io_done isn't?  I don't know enough about ZFS internals to get any farther than this.\n\nRolling the kernel back to r321609 makes the leak stop, and updating to r321610 makes it appear again."
+}

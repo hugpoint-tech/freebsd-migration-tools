@@ -1,0 +1,8 @@
+{
+ "id": 420644,
+ "bug_id": 118547,
+ "attachment_id": 0,
+ "creation_time": "2007-12-11T10:20:01Z",
+ "creator": "andrew@kispest.home",
+ "text": "\nWhen you try to login with a valid kerberos principal into XDM, you\nget \"Login incorrect\" message.\n\n/var/log/xdm.log says:\nxdm error (pid XXX): pam_setcred failure: error in service module\n\nXDM executes two pam_setcred calls. The first is in xdm-1.1.6/greeter/greet.c:\n\nGreetUser()\n[...]\n\tRUN_AND_CHECK_PAM_ERROR(pam_setcred,\n\t\t\t\t(*pamhp, 0));\n                                         ^\n\nSo the flags is 0.\n\nHowever, /usr/src/lib/libpam/modules/pam_krb5/pam_krb5.c contains:\n\npam_sm_setcred()\n[...]\n\tif (flags \u0026 PAM_DELETE_CRED)\n\t\treturn (PAM_SUCCESS);\n\n\tif (flags \u0026 PAM_REFRESH_CRED)\n\t\treturn (PAM_SUCCESS);\n\n\tif (flags \u0026 PAM_REINITIALIZE_CRED)\n\t\treturn (PAM_SUCCESS);\n\n\tif (!(flags \u0026 PAM_ESTABLISH_CRED))\n\t\treturn (PAM_SERVICE_ERR);\n\nSo if flags is 0, you get PAM_SERVICE_ERR.\n\nThe second pam_setcred call is in xdm-1.1.6/session.c:\n\nStartClient()\n[...]\n\t    pam_error = pam_setcred (pamh, PAM_ESTABLISH_CRED);\n\nI don't really know why the second pam_setcred call is neccessary.\n\nFix: I have created a patch which calls the first pam_setcred with\nPAM_ESTABLISH_CRED and the second with PAM_REINITIALIZE_CRED parameter.\nIt may break other pam modules.\nHow-To-Repeat: \nInstall a kerberos KDC, and put pam_krb5 into pam config files."
+}

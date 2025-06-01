@@ -1,0 +1,8 @@
+{
+ "id": 1060771,
+ "bug_id": 239686,
+ "attachment_id": 0,
+ "creation_time": "2019-08-07T12:38:51Z",
+ "creator": "jamie@catflap.org",
+ "text": "What version of freebsd are you running? Does it have \"mandoc\"?\n\nI verified by re-downloading the patch from this attachment and patching against a fresh port checkout. giving:\n\n% l /usr/local/man/man8/lsof.8.gz\n40 -r--r--r--  1 root  wheel  - 37,611  7 Aug 12:58 /usr/local/man/man8/lsof.8.gz\n\nI'm using 12-stable\n\n--------- \n\nThe offending line is line 8. The \"$\" is the RE for end of line, hence the match is for '/' as the last character of a line.\n\nFor some reason, the trailing '/' causes the conversion by \"mandoc\" to get corrupted. Hence the kludge to change it for \"dummy\", do the conversion, then put it back again.\n\nI don't know if it's the fault of mandoc, or the manpage itself - I am not familiar with mdoc / man / roff formatting.\n\nHence the kludge.\n\nThe before/after diff is shown in my first comment.\n\nWithout the sed kludge, this diff is instead:\n\n13:36 (14) \"lsof-4.93.2\" jamie@thompson%  mandoc -man -T man Lsof.8 | diff - Lsof.8\n1,2c1\n\u003c .ds VN 4.93.2\n\u003c\n---\n\u003e .so ./version\n7c6\n\u003c .if !\\n(.g \\{.   if !\\n()P .nr )P 1v\n---\n\u003e .   if !\\n()P .nr )P 1v\n78,82c77\n\u003c       Apple Darwin 9 and Mac OS X 10.[567]\n\u003c       FreeBSD 8.[234], 9.0 and 1[012].0 for AMD64-based systems\n\u003c       Linux 2.1.72 and above for x86-based systems\n\u003c       Solaris 9, 10 and 11\n\u003c\n---\n\u003e .so ./00DIALECTS\n4533d4527\n\u003c\n\nThat \"if...\" line is corrupted, and man terminates at that point, showing an empty man page containing just the header and footer."
+}

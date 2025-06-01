@@ -1,0 +1,8 @@
+{
+ "id": 890538,
+ "bug_id": 211399,
+ "attachment_id": 173125,
+ "creation_time": "2016-07-30T18:26:19Z",
+ "creator": "freebsd-2024@virtual-estates.net",
+ "text": "Created attachment 173125\nFix and then some\n\n\u003e Do check the code ngie@ added in phabricator\n\nNgie's proposal is a work-around, not a fix. He unconditionally adds \\n to the argument, duplicating it entirely in the process :)\n\nThe full patch, attached, fixes the problem and also makes use of the tlen-field to avoid calling strlen() in process.c. I change the type of tlen from size_t to int, because that's what printf wants to see.\n\nI'd like us to begin using the lengths already set by compile.c so that, some day, the lines may come straight from the mmap-ed script instead of being copies.\n\nThe bare minimum required to fix the problem in the PR is just one hunk from the above:\n\nIndex: compile.c\n===================================================================\n--- compile.c   (revision 303554)\n+++ compile.c   (working copy)\n@@ -753,7 +753,10 @@\n                                err(1, \"realloc\");\n                }\n        }\n-       text[size] = '\\0';\n+       /* Ensure, there is a new line at the end: */\n+       if (text[size - 1] != '\\n') {\n+               text[size++] = '\\n';\n+       }\n        if ((text = realloc(text, size + 1)) == NULL)\n                err(1, \"realloc\");\n        *ptlen = size;\n\nBoth ours (multi_test_ and GNU's test-suits pass with either the above minimum hunk or the bigger patch in the attachment."
+}

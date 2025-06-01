@@ -1,0 +1,8 @@
+{
+ "id": 405812,
+ "bug_id": 115469,
+ "attachment_id": 0,
+ "creation_time": "2007-08-13T16:30:01Z",
+ "creator": "tijl@ulyssis.org",
+ "text": "In kern_sig.c:issignal(), when a thread receives a signal and the\nprocess is being traced, ptracestop() is called, which suspends all\nthreads in the process and notifies the parent. When the threads\nare resumed, ptracestop() returns td-\u003etd_xsig, the signal to be\nactually delivered to the process.\n\nResuming the process is done by the parent calling\nptrace(PT_CONTINUE, sig) which stores sig in td-\u003etd_xsig but\ncurrently also calls psignal(). The latter causes the signal to be\nqueued again and the process stops on it again when it is handled.\n\nFix: If a process is stopped ptrace should use td_xsig to deliver the\nsignal and otherwise (PT_ATTACH case) it should use psignal(),\nwhich is what the following patch does.\nHow-To-Repeat: You can hit on this problem when debugging a process that has its\nown signal handlers. In that case when a signal is sent to the\nprocess, the process stops and gdb notifies you of the signal. When\nyou let the process continue and deal with the signal, the signal\nhandler is called, but then when the process returns from the\nhandler, it stops again and again and again..."
+}

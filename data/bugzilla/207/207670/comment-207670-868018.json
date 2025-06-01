@@ -1,0 +1,8 @@
+{
+ "id": 868018,
+ "bug_id": 207670,
+ "attachment_id": 0,
+ "creation_time": "2016-03-03T06:18:23Z",
+ "creator": "cy@FreeBSD.org",
+ "text": "You need more than just a kdc. You'll need something similar to this:\n\n/usr/local/sbin/krb5kdc \u0026\u0026 echo -n\n' krb5kdc' || {\n        echo\n        echo 'krb5kdc failed to start'\n}\n# /usr/local/sbin/krb5kdc -p 7111 -r REDACTED \u0026\u0026 echo -n ' RED_krb5kdc'\necho -n ' kadmind';     /usr/local/sbin/kadmind\n\nAlso it's possible to run more than one kdc on a single server (see example above), if that server is serving two or more realms. You could do that through a for loop.\n\nAdditionally, when running a slave it's the following is needed.\n\nkrb5_prop stream tcp46\tnowait\troot\t/usr/local/sbin/kpropd\tkpropd\n\nThen propagate using this for each kdc.\n\nif [ $# -lt 1 ]\nthen\n\texit 0\nfi\n\n/usr/local/sbin/kdb5_util dump /var/run/slave_dump\nfor $SLAVE in $*\ndo\n\t/usr/local/sbin/kprop -f /var/run/slave_dump $SLAVE\ndone"
+}

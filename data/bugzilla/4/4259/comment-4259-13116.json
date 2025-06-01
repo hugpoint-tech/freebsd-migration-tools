@@ -1,0 +1,8 @@
+{
+ "id": 13116,
+ "bug_id": 4259,
+ "attachment_id": 0,
+ "creation_time": "1997-08-10T12:22:43Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003esleep(3) is now broken for arguments \u003e 100000000 seconds (threshold\n\u003efound empirically); it returns immediately in this case.  Among\n\nIt's always been broken like that.  Anything involving itimers is\nrestricted to an interval of 10^8 seconds (see itimerfix()).  The problem\nis more serious for sleep() than for setitimer() because sleep()\n\"can't fail\".  Perhaps the error handling is sloppier than before -\nerrors for signanosleep(2) are not checked for, and the remaining time\nis not set for EINVAL errors (I think it should only be set for EINTR\nerrors as in Linux - setting it in other cases is a waste of time and\ncan't be relied on by portable applications).\n\nRestricting the interval to 10^8 seconds avoids overflow problems (until\n10^ seconds = about 3 years before time_t overflows :-).  tv_usec's are\nsigned longs in `struct timeval' and time_t's (which happen to be signed\nlongs) in `struct timespec', so UINT_MAX is not representable on systems\nwith normal 32-bit ints and longs.  nanosleep(2) should split up the\ninterval into pieces \u003c= 10^8 seconds long and sleep(3) should split up\nthe interval into pieces \u003c= TIME_T_MAX long if it is implemented using\nnanosleep().\n\nBruce"
+}

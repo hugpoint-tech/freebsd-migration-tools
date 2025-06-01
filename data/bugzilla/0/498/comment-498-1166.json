@@ -1,0 +1,8 @@
+{
+ "id": 1166,
+ "bug_id": 498,
+ "attachment_id": 0,
+ "creation_time": "1995-06-07T19:10:02Z",
+ "creator": "sawada@zoo.ncl.omron.co.jp",
+ "text": "\nAt boot time, kernel always says:\nInvalid time in real time clock.\nCheck and reset the date immediately!\n\nIn inittodr() of sys/i386/isa/clock.c:\n        /* Look if we have a RTC present and the time is valid */\n        if (rtcin(RTC_STATUSD) != RTCSD_PWR)\n                goto wrong_time;\n\nThis RTC status check is failed,\nbecause rtcin(RTC_STATUSD) returns 0x82.\n\nIn sys/i386/isa/rtc.h:\n#define RTC_STATUSD     0x0d    /* status register D (R) Lost Power */\n#define  RTCSD_PWR       0x80   /* clock lost power */\n\nTo check the RTC status, \nwe should check only the MSB bit of rtcin(RTC_STATUSD).\nAccording to the system manual of PS/55 note,\nthe lower 7 bits are system reserved.\n\nFix: \n\nThe above line:\n        if (rtcin(RTC_STATUSD) != RTCSD_PWR)\nshuould be\n        if ((rtcin(RTC_STATUSD) \u0026 RTCSD_PWR) != RTCSD_PWR)\nor\n        if (!(rtcin(RTC_STATUSD) \u0026 RTCSD_PWR))\n\nThe corresponding lines in NetBSD-current are here:\n\n(in rtcget() of sys/arch/i386/isa/clock.c)\n        if (mc146818_read(NULL, MC_REGD) \u0026 MC_REGD_VRT == 0) /* XXX softc */\n                return (-1);\n\n(in sys/dev/ic/mc146818.h)\n#define MC_REGD         0xd     /* Control register D */\n\n/*       MC_REGD_UNUSED 0x7f    UNUSED */\n#define  MC_REGD_VRT    0x80    /* Valid RAM and Time bit */\n\nThanks in advance.\nHow-To-Repeat: \nAlways at boot time."
+}

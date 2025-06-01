@@ -1,0 +1,8 @@
+{
+ "id": 818204,
+ "bug_id": 199140,
+ "attachment_id": 0,
+ "creation_time": "2015-04-03T07:54:27Z",
+ "creator": "sigsys@gmail.com",
+ "text": "On a UFS2 filesystem with soft updates, deleting a directory of thousands of symlinks is hundreds of times slower than deleting regular files.\n\nIt looks like the writes are synchronous.\n\n  $ mkdir test1 \u0026\u0026 for f in `seq 5000`; do touch \"test1/$f\"; done\n  $ mkdir test2 \u0026\u0026 for f in `seq 5000`; do echo test \u003e \"test2/$f\"; done\n  $ mkdir test3 \u0026\u0026 for f in `seq 5000`; do ln -s test \"test3/$f\"; done\n  $ sync\n  $ time rm -r test1\n          0.20 real         0.01 user         0.17 sys\n  $ time rm -r test2\n          0.30 real         0.00 user         0.25 sys\n  $ time rm -r test3\n         94.73 real         0.02 user         0.72 sys\n\nBut if the symlinks are made large enough that their targets cannot be stored in the inode directly, then unlinking them is fast!\n\n  $ test=\"$(perl -e 'print \"x\"x1023')\"\n  $ mkdir test4 \u0026\u0026 for f in `seq 5000`; do ln -s \"$test\" \"test4/$f\"; done\n  $ time rm -r test4\n          0.17 real         0.00 user         0.17 sys"
+}

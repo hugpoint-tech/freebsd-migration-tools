@@ -1,0 +1,8 @@
+{
+ "id": 889678,
+ "bug_id": 211028,
+ "attachment_id": 0,
+ "creation_time": "2016-07-24T09:25:26Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "There's no size decreases.  The sizes match what is in the initial probe messages.\n\nWhat's happening is that the disk is mis-partitioned like this:\n\nDisk size: 143374650 sectors\nsector 0: PMBR\nsector 1-39: GPT\n40-143374615: partition space inside gpt\n143374610-143374649 backup GPT\n\nNote the overlap, da0-da5 are all like this.\n\ndmesg says:\nda1 at mpt0 bus 0 scbus0 target 1 lun 0\nda1: \u003cFUJITSU MAS3735NC 5B08\u003e Fixed Direct Access SCSI-3 device\nda1: Serial Number A107P49025H2\nda1: 320.000MB/s transfers (160.000MHz, offset 127, 16bit)\nda1: Command Queueing enabled\nda1: 70007MB (143374650 512 byte sectors)\n\nThere is no size change.  The problem is that instead of copying the media size, you're introducing a new resize event at open time that wasn't there before - even when there's no resize.  g_part is now calling its resize code paths and trying to make sense.\n\nGEOM_PART: partition 3 has end offset beyond last LBA: 143374615 \u003e 143374610\nGEOM_PART: integrity check failed (da1, GPT)\n\nThis matches the bad partitioning and the GPT should have been rejected the very first time around.  The problem is that it is only being detected perhaps 1 in 10 times.\n\nAside from the panic, the second problem is the inconsistency.  It should be attempting to repair all 6 drives, but isn't. Sometimes it doesn't detect any of the bad disks and boots successfully.  Is the event getting lost?  I think you're racing with initialization / tasting somehow and I suspect that's a bigger problem."
+}

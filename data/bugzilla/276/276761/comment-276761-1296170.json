@@ -1,0 +1,8 @@
+{
+ "id": 1296170,
+ "bug_id": 276761,
+ "attachment_id": 0,
+ "creation_time": "2024-02-10T10:25:11Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "Just a summary of our findings:\n\nUnder rare circumstances, tcp_close() is called without being followed up quickly - prior of any timer going off - by tcp_discardcb(). In tcp_close() the socket buffers are relinquished, but the clean up of associated state would only be done later in tcp_discardcb(). \n\nThe change exposing this was to no longer discard the SACK scoreboard immediately with a Retransmission timeout, in order to avoid unneccessary retransmissions in such an event. The SACK scoreboard is used for transmission selection during loss recovery or retransmission timeouts.\n\nAdditionally, timers could be restarted after having sent a RST packet from tcp_drop() - while the session was already closed.\n\nIn summary, it appears that there always existed the problem of inconsistent state in between tcp_close() and tcp_discardcb(), where a timer could trigger. However, as an RTO would previously clean the SACK scoreboard state, this would not lead to external visible misbehavior or a panic.\n\nThe three commits address these issues individually\n- clean any SACK state together with releasing the socket buffer\n- stop re-arming any timers in the case of sending a RST (while in CLOSED state)\n- stop timers in tcp_close() instead of waiting for the final clean-up of tcpcb state in tcp_discardcb()."
+}

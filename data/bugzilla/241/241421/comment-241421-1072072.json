@@ -1,0 +1,8 @@
+{
+ "id": 1072072,
+ "bug_id": 241421,
+ "attachment_id": 0,
+ "creation_time": "2019-10-22T20:39:36Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "While trying to secure... time (net/ntp), I've noticed that it experiences segmentation faults (SIGSGV).\n\nEnvironment\nFreeBSD 12.1-STABLE #0 r353429M: Sat Oct 12 19:02:59 AEDT 2019\n\nkern.elf64.aslr.stack_gap=1\nkern.elf64.aslr.honor_sbrk=1\nkern.elf64.aslr.pie_enable=1\nkern.elf64.aslr.enable=1\nkern.elf64.pie_base=16912384\nkern.elf64.nxstack=1\n\nsecurity.mac.ntpd.uid=123\nsecurity.mac.ntpd.enabled=1\n\nFrom the /etc/make.conf\nCFLAGS include -fPIE -fPIC -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack\nLDFLAGS include -pie -z relro -z now -z noexecstack \n\n# make -C /usr/ports/net/ntp -DUSE_K8 showconfig|grep =on\n     IPV6=on: IPv6 protocol support\n     LOCAL_CLOCK=on: Enable local clock reference\n     SHM=on: Enable SHM clock attached thru shared memory\n     SSL=on: SSL protocol support\n     THREADS=on: Threading support\n\nAnd we kick-off ntp with\nsu -m ntpd -c \"/usr/local/sbin/ntpd -c /etc/ntp.conf -u ntpd -x -G --nofork\"\n\nYes this does require other files to be ntpd readable, and logs writeable\n\nWith the nofork, it requires multiple tries to get it to start.  Over approx 15 tests, the minimum number of attempts (using stack_gap=1) is 11 and the most 41.  I use a process monitor (s6) which retries starting ntp approx 1.01 seconds until successful.\n\nWhen kern.elf64.aslr.stack_gap=0, ntp starts on the first attempt.\n\nI'm sharing this because ntpd has a problem with aslr (particularly when enabled via stack_gap, and I had used different percentages stack_gap=1|2|3 during additional tests)."
+}

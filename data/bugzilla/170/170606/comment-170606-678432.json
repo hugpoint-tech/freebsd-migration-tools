@@ -1,0 +1,8 @@
+{
+ "id": 678432,
+ "bug_id": 170606,
+ "attachment_id": 0,
+ "creation_time": "2012-08-13T19:34:16Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: hselasky\nDate: Mon Aug 13 18:34:04 2012\nNew Revision: 239240\nURL: http://svn.freebsd.org/changeset/base/239240\n\nLog:\n  Fix for missing locks due to recent change.\n  \n  PR:\t\tusb/170606\n  MFC after:\t2 weeks\n\nModified:\n  head/sys/dev/usb/usb_device.c\n\nModified: head/sys/dev/usb/usb_device.c\n==============================================================================\n--- head/sys/dev/usb/usb_device.c\tMon Aug 13 18:10:52 2012\t(r239239)\n+++ head/sys/dev/usb/usb_device.c\tMon Aug 13 18:34:04 2012\t(r239240)\n@@ -2777,8 +2777,15 @@ usbd_set_endpoint_mode(struct usb_device\n     uint8_t ep_mode)\n {   \n \tusb_error_t error;\n+\tuint8_t do_unlock;\n \n-\tsx_assert(\u0026udev-\u003eenum_sx, SA_LOCKED);\n+\t/* automatic locking */\n+\tif (usbd_enum_is_locked(udev)) {\n+\t\tdo_unlock = 0;\n+\t} else {\n+\t\tdo_unlock = 1;\n+\t\tusbd_enum_lock(udev);\n+\t}\n \n \tif (udev-\u003ebus-\u003emethods-\u003eset_endpoint_mode != NULL) {\n \t\terror = (udev-\u003ebus-\u003emethods-\u003eset_endpoint_mode) (\n@@ -2792,6 +2799,9 @@ usbd_set_endpoint_mode(struct usb_device\n \t/* only set new mode regardless of error */\n \tep-\u003eep_mode = ep_mode;\n \n+\tif (do_unlock)\n+\t\tusbd_enum_unlock(udev);\n+\n \treturn (error);\n }\n \n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

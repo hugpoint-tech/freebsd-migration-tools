@@ -1,0 +1,8 @@
+{
+ "id": 1050820,
+ "bug_id": 237922,
+ "attachment_id": 0,
+ "creation_time": "2019-05-16T11:59:02Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "There is a kernel stack disclosure vulnerability in function freebsd32_swapcontext of sys/arm64/arm64/freebsd32_machdep.c.\n\n\nint\nfreebsd32_swapcontext(struct thread *td, struct freebsd32_swapcontext_args *uap)\n{\n        ucontext32_t uc;\n        int ret;\n\n        if (uap-\u003eoucp == NULL || uap-\u003eucp == NULL)\n                ret = EINVAL;\n        else {\n+               bzero(\u0026uc, sizeof(uc));\n                get_mcontext32(td, \u0026uc.uc_mcontext, GET_MC_CLEAR_RET);\n                PROC_LOCK(td-\u003etd_proc);\n                uc.uc_sigmask = td-\u003etd_sigmask;\n                PROC_UNLOCK(td-\u003etd_proc);\n                ret = copyout(\u0026uc, uap-\u003eoucp, UC32_COPY_SIZE);\n                if (ret == 0) {\n                        ret = copyin(uap-\u003eucp, \u0026uc, UC32_COPY_SIZE);\n                        if (ret == 0) {\n                                ret = set_mcontext32(td, \u0026uc.uc_mcontext);\n                                kern_sigprocmask(td, SIG_SETMASK,\n                                                \u0026uc.uc_sigmask, NULL, 0);\n                        }\n                }\n        }\n        return (ret);\n}\n\nThere is no initialization in else branch, which can lead to leaking stack information to user space. This is the vulnerability that are same with CVE-2018-17155 which was fixed in https://github.com/freebsd/freebsd/commit/ca2c73670f229fe64818fd64c8cdd5b517912966."
+}

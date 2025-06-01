@@ -1,0 +1,8 @@
+{
+ "id": 1153559,
+ "bug_id": 254303,
+ "attachment_id": 0,
+ "creation_time": "2021-03-26T23:46:29Z",
+ "creator": "melifaro@FreeBSD.org",
+ "text": "(In reply to Aleks from comment #15)\nThank you!\n\nShort summary:\n\nFrom the private core.5 you sent me:\n* rtentry looks perfectly fine, but the nexthop pointer is (mostly) zeroed\n\n* from the core2: failure to resolve nh_priv pointer\n* from the original kgdb_backtrace: nhg has zero pointer to nh_ctl\n\nSo far it looks like we're removing the additional reference from the nexthop group in some corner case scenario, which results in the group being freed, with the rtentry still pointing to this group.\n\nRe reproduction: I don't have 2 full-view peers, so I ended up duplicating the feed from a single peer \u0026 introducing some delay, to mimic propagation delays.\nSo far I wasn't able to reproduce any panic.\nAre there any additional specifics (e.g. links flapping) in the setup?\n\n\nIS there any chance you could run\n\nstdbuf -o0 route -n monitor \u003e zebra_log.txt at startup (or, actually, at the point in time when all peers are down) and then try to turn up first and then the second peer?\nIf you could also run something like\n`while true; do date \u003e\u003e nhg.log ; netstat -4OnW \u003e\u003e nhg.log ; sleep 5; done`\n\nand share both files along with the core backtrace, that would be awesome.\n\nIf there is a possibility of getting access to the server - that would really speed the things up."
+}

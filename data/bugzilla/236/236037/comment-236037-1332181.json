@@ -1,0 +1,8 @@
+{
+ "id": 1332181,
+ "bug_id": 236037,
+ "attachment_id": 0,
+ "creation_time": "2024-10-29T03:44:22Z",
+ "creator": "wollman@FreeBSD.org",
+ "text": "Just a couple of comments on what we do, make of it what you will:\n\n* The server runs FreeBSD, built WITHOUT_KERBEROS (all of our FreeBSD machines are) and using exclusively ports to get MIT krb5 and services (ldap, pg, ssh, libsasl, etc.) built against that krb5. We build our own package repo so we don't really care what the default state is, so long as the port actually depends upon security/krb5. (And actually works, of course.)\n\n* Most of our clients run Ubuntu, and libpq on Debian-derived systems always includes GSSAPI support. (There's a huge pile of hair the Debian folks invented to paper over the differences between MIT and Heimdal, and there's no reason FreeBSD should want or care to do that; a normal site is going to choose one or the other depending on their requirements.)\n\nWe actually do set things up so that (human) database users are required to use GSSAPI authentication, and they have individual and group schemas in a globally shared database. We use some stuff in pg_hba.conf to allow non-human users to still use passwords where there's no alternative, We don't need pg_ident.conf at all, because the `krb_realm=` and `include_realm=` options in pg_hba.conf do everything we need. (Non-human users are placed in a special group that gets checked first, and for safety are also given names with `/` in them so they can't conflict with a legitimate user.)\n\nBecause our implementation is old and has been upgraded in-place for over a decade, we override PG_USER, PG_GROUP, and PG_UID on our package builds to be compatible with the existing installations."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1174204,
+ "bug_id": 257817,
+ "attachment_id": 0,
+ "creation_time": "2021-08-13T17:20:14Z",
+ "creator": "mandree@FreeBSD.org",
+ "text": "+++ This bug was initially created as a clone of Bug #257816 +++\n\naffects FreeBSD 12.2 and 13.0\n\nafter a user reports against e2fsprogs, I conclude that restore(8) is broken and cannot faithfully recreate a hardlink to a symbolic link.\n\ntar(1) with libarchive(3) fails in a similar vain.\n\nI am attaching a demo script that uses two 20M sized swap-based md(4) devices, formats them with newfs -U and sets up some corner cases with symlinks \n\n### The error in question is, for dump/restore on 13.0:\n\nrestore:\nwarning: cannot create hard link ./usr/local/sbin/hardlink-to-abssymlink-\u003e./usr/local/sbin/abssymlink: No such file or directory\n\nmtree verification:\nsbin/file: \n        link count (1, 2)\nusr/local/sbin/abssymlink: \n        link count (2, 1)\nusr/local/sbin/relsymlink: \n        link count (2, 1)\nusr/local/sbin/hardlink-to-relsymlink: \n        type (link, file)\n./usr/local/sbin/hardlink-to-abssymlink missing\n\n\nand consequential differences shown with mtree.\n\n### The error in question is, for tar (libarchive) on 13.0:\n\n./usr/local/sbin/hardlink-to-abssymlink: Hard-link target './usr/local/sbin/abssymlink' does not exist.\n./usr/local/sbin/hardlink-to-relsymlink: Hard-link target './usr/local/sbin/relsymlink' does not exist.\n\nmtree verification:\n.:      modification time (Fri Aug 13 19:12:46 2021, Fri Aug 13 19:12:47 2021)\n./usr/local/sbin/abssymlink missing\n./usr/local/sbin/hardlink-to-abssymlink missing\n./usr/local/sbin/hardlink-to-relsymlink missing\n./usr/local/sbin/relsymlink missing\n\n\n\n### gtar from the gtar-1.34 (archivers/gtar) succeeds!"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1311517,
+ "bug_id": 279443,
+ "attachment_id": 251126,
+ "creation_time": "2024-05-31T21:22:09Z",
+ "creator": "yuri@freebsd.org",
+ "text": "Created attachment 251126\nget_executable_filename.cpp\n\nThe attached code crashes due to the LIBCPP assertion:\n\n1390│ template \u003cclass _Tp, class _Allocator\u003e\n1391│ _LIBCPP_CONSTEXPR_SINCE_CXX20 inline _LIBCPP_HIDE_FROM_ABI typename vector\u003c_Tp, _Allocator\u003e::reference\n1392│ vector\u003c_Tp, _Allocator\u003e::operator[](size_type __n) _NOEXCEPT {\n1393├─\u003e _LIBCPP_ASSERT_VALID_ELEMENT_ACCESS(__n \u003c size(), \"vector[] index out of bounds\");\n1394│   return this-\u003e__begin_[__n];\n1395│ }\n\nIt should be possible to get an address of the end of the std::vector object, even though it doesn't point to an allocated byte.\n\nRegular asserts are disabled, but LIBCPP asserts are enabled for some reason.\nIt is unclear to me when LIBCPP assertions should be enabled, but optimized runs with -DNDEBUG should definitely have them disabled.\n\nEnabled assertions also cause the performance degradation.\n\nThis assertion caused the discovery of a real bug in the devel/hpx port, where the attached testcase comes from.\n\n\nClang-18.1.5"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 975207,
+ "bug_id": 225450,
+ "attachment_id": 0,
+ "creation_time": "2018-02-01T19:12:57Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "So it looks like the panic is a double fault.  Please try this hack patch to see if it cleans up the printfs:\n\nIndex: amd64/amd64/trap.c\n===================================================================\n--- amd64/amd64/trap.c  (revision 328557)\n+++ amd64/amd64/trap.c  (working copy)\n@@ -830,6 +830,11 @@\n void\n dblfault_handler(struct trapframe *frame)\n {\n+\n+       static int dblflt_lock = 0;\n+\n+       while (!atomic_cmpset_int(\u0026dblflt_lock, 0, 1))\n+               cpu_spinwait();\n #ifdef KDTRACE_HOOKS\n        if (dtrace_doubletrap_func != NULL)\n                (*dtrace_doubletrap_func)();\n\nIt won't fix the panic, but hopefully only one CPU will print out the messages so we can debug this further."
+}

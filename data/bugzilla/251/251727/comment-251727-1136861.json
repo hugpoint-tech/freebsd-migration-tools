@@ -1,0 +1,8 @@
+{
+ "id": 1136861,
+ "bug_id": 251727,
+ "attachment_id": 0,
+ "creation_time": "2020-12-17T12:26:56Z",
+ "creator": "guru@unixarea.de",
+ "text": "here is a proposal to fix this issue with values in device.hints(5) as:\n\n# grep init_clear /boot/device.hints \nhint.hdaa.0.init_clear=1\nhint.hdaa.1.init_clear=1\n\n# svn diff sys/dev/sound/pci/hda/hdaa.c\nIndex: sys/dev/sound/pci/hda/hdaa.c\n===================================================================\n--- sys/dev/sound/pci/hda/hdaa.c\t(revisión: 368166)\n+++ sys/dev/sound/pci/hda/hdaa.c\t(copia de trabajo)\n@@ -5031,6 +5031,11 @@\n \n \t\tpincap = w-\u003ewclass.pin.cap;\n \n+\t\t/* default is \"disable everything\" */\n+\t\tdevinfo-\u003einit_clear = 1;\n+\t\tresource_int_value(device_get_name(devinfo-\u003edev),\n+\t    \t\tdevice_get_unit(devinfo-\u003edev), \"init_clear\",\n+\t\t\t\u0026(devinfo-\u003einit_clear));\n \t\t/* Disable everything. */\n \t\tif (devinfo-\u003einit_clear) {\n \t\t\tw-\u003ewclass.pin.ctrl \u0026= ~(\n@@ -6671,10 +6676,6 @@\n \t    SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,\n \t    \"reconfig\", CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_NEEDGIANT,\n \t    dev, 0, hdaa_sysctl_reconfig, \"I\", \"Reprocess configuration\");\n-\tSYSCTL_ADD_INT(device_get_sysctl_ctx(dev),\n-\t    SYSCTL_CHILDREN(device_get_sysctl_tree(dev)), OID_AUTO,\n-\t    \"init_clear\", CTLFLAG_RW,\n-\t    \u0026devinfo-\u003einit_clear, 1,\"Clear initial pin widget configuration\");\n \tbus_generic_attach(dev);\n \treturn (0);\n }"
+}

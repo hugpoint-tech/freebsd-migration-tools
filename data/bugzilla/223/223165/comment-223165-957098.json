@@ -1,0 +1,8 @@
+{
+ "id": 957098,
+ "bug_id": 223165,
+ "attachment_id": 0,
+ "creation_time": "2017-10-25T15:34:15Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "clang will in some cases optimize away null checks of parameters qualified with _Nonnull. It doesn't seem to have done that in a libthr built with clang 5.0:\n\n0000000000008cf0 \u003c_pthread_condattr_destroy\u003e:\n    8cf0:       55                      push   %rbp\n    8cf1:       48 89 e5                mov    %rsp,%rbp\n    8cf4:       53                      push   %rbx\n    8cf5:       50                      push   %rax\n    8cf6:       48 89 fb                mov    %rdi,%rbx\n    8cf9:       b8 16 00 00 00          mov    $0x16,%eax\n    8cfe:       48 85 db                test   %rbx,%rbx\n    8d01:       74 16                   je     8d19 \u003c_pthread_condattr_destroy+0x29\u003e\n    ...\n\n... but I've seen it do that a number of times in Isilon OneFS. With 3.9.1 we have:\n\n0000000000008de0 \u003c_pthread_condattr_destroy\u003e:\n    8de0:       55                      push   %rbp\n    8de1:       48 89 e5                mov    %rsp,%rbp\n    8de4:       53                      push   %rbx\n    8de5:       50                      push   %rax\n    8de6:       48 89 fb                mov    %rdi,%rbx\n    8de9:       48 8b 3b                mov    (%rbx),%rdi\n    8dec:       b8 16 00 00 00          mov    $0x16,%eax\n    8df1:       48 85 ff                test   %rdi,%rdi\n    ...\n\nI don't think that there's a bug here in light of comment 2."
+}

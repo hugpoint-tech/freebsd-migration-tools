@@ -1,0 +1,8 @@
+{
+ "id": 1188642,
+ "bug_id": 260126,
+ "attachment_id": 0,
+ "creation_time": "2021-12-01T19:10:54Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "It looks like syslog(3)'s ENOBUFS handling comes from PR 72366.  glibc doesn't appear to do anything special to handle ENOBUFS (i.e., upon an error the message is just dropped, I think), and OpenBSD has a special sendsyslog system call which supports messages up to 8192 bytes and will put messages in a global ring buffer upon ENOBUFS from sosend().  (Though, that ring buffer only gets drained when something tries to log again, it looks like messages could linger there indefinitely.)  It also looks like OpenBSD quite recently raised the default recv dgram socket buffer size to 16KB.\n\nI can see two complementary approaches, then:\n1. change syslog(3) to truncate the message to some minimum size before retrying upon ENOBUFS\n2. raise socket buffer defaults to accommodate a maximum line length of 8192.\n\nI think the latter is sufficient and will hopefully be uncontroversial:\n\nindex 0ec1ba677173..e0e08470d36a 100644\n--- a/sys/kern/uipc_usrreq.c\n+++ b/sys/kern/uipc_usrreq.c\n@@ -157,7 +157,7 @@ static struct task  unp_defer_task;\n static u_long  unpst_sendspace = PIPSIZ;\n static u_long  unpst_recvspace = PIPSIZ;\n static u_long  unpdg_sendspace = 2*1024;       /* really max datagram size */\n-static u_long  unpdg_recvspace = 4*1024;\n+static u_long  unpdg_recvspace = 16*1024;\n static u_long  unpsp_sendspace = PIPSIZ;       /* really max datagram size */\n static u_long  unpsp_recvspace = PIPSIZ;"
+}

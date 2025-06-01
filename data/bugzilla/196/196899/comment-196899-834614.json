@@ -1,0 +1,8 @@
+{
+ "id": 834614,
+ "bug_id": 196899,
+ "attachment_id": 159455,
+ "creation_time": "2015-08-02T08:46:19Z",
+ "creator": "mikael@FreeBSD.org",
+ "text": "Created attachment 159455\narmv6 fix\n\nHi,\nI've successfully compiled an \"unregisterised\" version of ghc for armv6 (thanks Gábor for your help)\n\nSome issues I encounter:\n\nI'm hitting this problem at runtime:\nhttps://ghc.haskell.org/trac/ghc/ticket/9673\nI've tried to use ld.gold but the issue is still there (I may have missed something)\nCompiling with -O0 just works (cf SRC_HC_OPTS, GhcStage*HcOpts in the patch) \n\n\nghc-stage1 has a .text segment larger than the default maximum set by the kernel.\nSection Headers:\n[Nr] Name  Type     Addr     Off    Size    ES Flg Lk Inf Al\n[13] .text PROGBITS 00014168 004168 474c7fc 00 AX  0  0   8\n\nerror message:\nText segment size exceeds system limit\nAbort\n\nThis issue is solved with: sysctl kern.maxtsiz=80000000\n\n\nThe DYNAMIC option is mandatory on armv6:\nghc.mk:159: *** dyn is not in $(GhcLibWays), but $(DYNAMIC_GHC_PROGRAMS) is YES.  Stop.\n\nI can't find a way to make it mandatory for armv6 using the 'options' framework (or any other means)\n\n\nI've attached a patch for review. I've heard that you'll update ghc to a newer version,\nlet me know if you want me to generate a patch against your development repository.\n\nThe boostrap binaries can be found here:\nhttp://mikael.urankar.free.fr/FreeBSD/arm/ghc-7.8.3-arm-freebsd11-boot.tar.bz2\n\nbuild log with BOOT option on:\nhttp://mikael.urankar.free.fr/FreeBSD/arm/build_logs/ghc-7.8.3_1_boot_option_on.log\n\nbuild log with BOOT option off:\nhttp://mikael.urankar.free.fr/FreeBSD/arm/build_logs/ghc-7.8.3_1_boot_option_off.log"
+}

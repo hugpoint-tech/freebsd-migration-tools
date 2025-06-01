@@ -1,0 +1,8 @@
+{
+ "id": 1175125,
+ "bug_id": 257318,
+ "attachment_id": 0,
+ "creation_time": "2021-08-20T18:24:14Z",
+ "creator": "jcaplan@blackberry.com",
+ "text": "Just to add a bit more detail.\n\nA single iteration might look like this:\n\n# sysctl vm.uma_kmem_total\nvm.uma_kmem_total: 26247168\n#devctl attach pci0:3:0:0\n#devctl detach pci0:3:0:0\n# sysctl vm.uma_kmem_total                 \nvm.uma_kmem_total: 26251264\n\n\nComparing the output before and after for vmstat -m shows that there is no change in dynamic memory allocated from malloc().\n\nHowever we see from vm.uma_kmem_total that the UMA is gradually consuming more memory, and a diff of vmstat -z shows several changes in zone allocations at the UMA layer.\n\nIt appears that all allocations are accounted for at the malloc level yet there is a continuous slow leak of additional pages allocated at the UMA level.\n\nI'm not sure there's anything particularly special about mounting/unmounting, it's just an obviously reversible operation that allocates and then frees a lot of memory. So it's possible this is a specific instance of a more general problem."
+}

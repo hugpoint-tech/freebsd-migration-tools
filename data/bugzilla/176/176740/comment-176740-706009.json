@@ -1,0 +1,8 @@
+{
+ "id": 706009,
+ "bug_id": 176740,
+ "attachment_id": 0,
+ "creation_time": "2013-03-13T09:42:03Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: des\nDate: Wed Mar 13 09:41:55 2013\nNew Revision: 248231\nURL: http://svnweb.freebsd.org/changeset/base/248231\n\nLog:\n  Unlike OpenBSD's, our setusercontext() will intentionally ignore the user's\n  own umask setting (from ~/.login.conf) unless running with the user's UID.\n  Therefore, we need to call it again with LOGIN_SETUMASK after changing UID.\n  \n  PR:\t\tbin/176740\n  Submitted by:\tJohn Marshall \u003cjohn.marshall@riverwillow.com.au\u003e\n  MFC after:\t1 week\n\nModified:\n  head/crypto/openssh/session.c\n\nModified: head/crypto/openssh/session.c\n==============================================================================\n--- head/crypto/openssh/session.c\tWed Mar 13 06:42:01 2013\t(r248230)\n+++ head/crypto/openssh/session.c\tWed Mar 13 09:41:55 2013\t(r248231)\n@@ -1533,6 +1533,12 @@ do_setusercontext(struct passwd *pw)\n \t\t\tperror(\"unable to set user context (setuser)\");\n \t\t\texit(1);\n \t\t}\n+\n+\t\t/*\n+\t\t * FreeBSD's setusercontext() will not apply the user's\n+\t\t * own umask setting unless running with the user's UID.\n+\t\t */\n+\t\tsetusercontext(lc, pw, pw-\u003epw_uid, LOGIN_SETUMASK);\n #else\n \t\t/* Permanently switch to the desired uid. */\n \t\tpermanently_set_uid(pw);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

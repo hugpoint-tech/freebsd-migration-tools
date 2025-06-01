@@ -1,0 +1,8 @@
+{
+ "id": 1176476,
+ "bug_id": 258056,
+ "attachment_id": 0,
+ "creation_time": "2021-09-01T09:58:07Z",
+ "creator": "kwhite.uottawa@gmail.com",
+ "text": "(In reply to Ralf van der Enden from comment #9)\nThanks for your suggestion! I updating rclone using your patch.  It does not fix the problem with 14.0-CURRENT.\n\nAfter patching:\n\n# .../net/rclone/work/stage/usr/local/bin/rclone version\nrclone v1.56.0-DEV\n- os/version: freebsd 14.0-current (64 bit)\n- os/kernel: 14.0-current (amd64)\n- os/type: freebsd\n- os/arch: amd64\n- go/version: go1.17\n- go/linking: static\n- go/tags: none\n\n# .../net/rclone/work/stage/usr/local/bin/rclone mount  --http-url https://www.freebsd.org/ :http: /mnt --read-only\n2021/09/01 05:37:33 Fatal error: failed to umount FUSE fs: resource temporarily unavailable\n\n# uname -ap\nFreeBSD e6220 14.0-CURRENT FreeBSD 14.0-CURRENT #1 main-n248890-1a4c5061fc5-dirty: Tue Aug 24 13:11:06 EDT 2021     root@e6220:/usr/obj/usr/src/amd64.amd64/sys/GENERIC-NODEBUG  amd64 amd64\n\n=============\nIt might not be simple.  Here's were I'm at for investigation.\n\nOn CURRENT, if you run \"go test -v\" in the ${WRKDIR}/rclone-1.56.0/vendor/bazil.org/fuse directory, the tests \"PASS\" but \"TestMountOptionReadOnly\" takes 60.01s [probably a timeout].  On 13.0-RELEASE (and any release before commit 7b8622fa22) that particular test takes 0.01s.\n\nGo 1.9 added kevent for open files which might exercise different code paths. https://github.com/golang/go/issues/24331\n\n...keith"
+}

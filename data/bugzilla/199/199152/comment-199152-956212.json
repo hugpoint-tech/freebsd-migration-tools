@@ -1,0 +1,8 @@
+{
+ "id": 956212,
+ "bug_id": 199152,
+ "attachment_id": 0,
+ "creation_time": "2017-10-18T14:39:55Z",
+ "creator": "longwitz@incore.de",
+ "text": "Seen in FreeBSD 10.3-STABLE r317782: \n\n1. The problem with the first failing umount on a readonly mounted partition is solved by commit 281457.\n\n2. There is probably in issue with mount -r /mydosfs, it is a little bit suprising that the bit FSIMOD is set on a readonly mount. That is the reason for the failing first umount in absence of the patch mentioned above. The backtrace for this situation is included in the output of a DTrace script:\n\n  1   4751   msdosfs_mount:entry       called with mnt_flag=0x1\n  1  18090   mountmsdosfs:entry        called with mnt_flag=0x1\n  1  15625   fillinusemap:entry        called with pm_flags=0x20000000, pm_maxcluster=98305, pm_inusemap=fffffe0003e5b000\n  1  18456   usemap_free:entry         called with pm_flags=0x20000000, pm_maxcluster=98305 and cn=67\n\n              kernel`fillinusemap+0x16d\n              kernel`mountmsdosfs+0x9be\n              kernel`msdosfs_mount+0x66a\n              kernel`vfs_donmount+0xf50\n              kernel`sys_nmount+0x71\n              kernel`amd64_syscall+0x452\n              kernel`0xffffffff807f364b\n\n  1  18457   usemap_free:return       returned with pm_flags=0x21000000\n  1  15626   fillinusemap:return      returncode=0, pm_flags=0x21000000, pm_maxcluster=98305, pm_inusemap=fffffe0003e5b000\n  1  18091   mountmsdosfs:return      returncode=0, mnt_flag=0x1001, pm_flags=0xa1000000, pm_inusemap=fffffe0003e5b000\n  1   4752   msdosfs_mount:return     returncode=0\n\nFSIMOD (=0x1000000) is set on call number 67 in usemap_free().\n\n3. To compile the kernel with MSDOSFS_DEBUG some patches are nesessary."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 928093,
+ "bug_id": 218113,
+ "attachment_id": 0,
+ "creation_time": "2017-03-29T01:49:49Z",
+ "creator": "kaho@elam.kais.kyoto-u.ac.jp",
+ "text": "(In reply to igor from comment #14)\nHello,\n\n\u003e I suspect the call adapter-\u003ememrid == PCIR_BAR(IGB_MSIX_BAR) that precedes\n\u003e bus_alloc_resource_any(...) is superfluous as the latter overwrites\n\u003e adapter-\u003ememrid regardless of what PCIR_BAR(...) returns earlier.\n\nif_igb.c\n2823:\tadapter-\u003ememrid = PCIR_BAR(IGB_MSIX_BAR);\n2824:\tbar = pci_read_config(dev, adapter-\u003ememrid, 4);\n2825:\tif (bar == 0) /* use next bar */\n2826:\t\tadapter-\u003ememrid += 4;\n2827:\tadapter-\u003emsix_mem = bus_alloc_resource_any(dev,\n2828:\t    SYS_RES_MEMORY, \u0026adapter-\u003ememrid, RF_ACTIVE);\n\n2902:\tif (adapter-\u003emsix_mem != NULL) {\n2903:\t\tbus_release_resource(dev, SYS_RES_MEMORY,\n2904:\t\t    adapter-\u003ememrid, adapter-\u003emsix_mem);\n2905:\t\tadapter-\u003emsix_mem = NULL;\n2906: \t}\n\nThe variable memrid has the address of pci register using for MSI-X.\nin line 2823: A normal chip uses \"PCIR_BAR(IGB_MSIX_BAR)\" meaning BAR3 and\nthe memrid saves it. \n2824: It reads BAR3 register using the variable memrid.\n2825-2826: If BAR3 has 0, BAR3 is not using and the memrid changes to indicate BAR4. Some chips use BAR4 instead of BAR3.\nIf BAR3 is using, nothing do. \n2827-2828: It allocates memory indicated by memrid which has BAR3 or BAR4.\nmsix_mem saves its information.\n2902: NULL means free or not using.\n2903: The resource releases here. The original code always uses BAR3\nregardless which BAR is using and it causes the panic when it is using BAR4.\n2905: mark as unused.  \n\nIn dmesg \nmap[10]: BAR0\nmap[1c]: BAR3 -- i350\nmap[20]: BAR4 -- i340"
+}

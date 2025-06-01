@@ -1,0 +1,8 @@
+{
+ "id": 789754,
+ "bug_id": 175783,
+ "attachment_id": 0,
+ "creation_time": "2014-10-04T15:27:32Z",
+ "creator": "lwhsu@FreeBSD.org",
+ "text": "I've tested with latest postgresql92-server and postgresql93-server, both of them still have the same issue.\n\nFollowing is my test steps:\n\n1) pkg install postgresql92-server\n\n2) pkg install postgresql-plv8js\n   for postgresql93, add this line in /etc/make.conf:\n     DEFAULT_VERSIONS=pgsql=9.3\n   and build manually from databases/postgresql-plv8js\n\n3) psql -U pgsql -c \"create extension plv8\" postgres\n\n4) psql -U pgsql postgres, then input example from: http://pgxn.org/dist/plv8/\n\n    CREATE OR REPLACE FUNCTION plv8_test(keys text[], vals text[])\n    RETURNS text AS $$\n      var o = {};\n      for(var i=0; i\u003ckeys.length; i++){\n        o[keys[i]] = vals[i];\n      }\n      return JSON.stringify(o);\n    $$ LANGUAGE plv8 IMMUTABLE STRICT;\n\nIf postgresql-server is built without LDFLAGS+= -L${LOCALBASE}/lib ${PTHREAD_LIBS} ,\nserver will hang in 4), and cannot be stopped normally.\n\nI also found that in config.log, there are:\n\n    configure: using LDFLAGS= -L/usr/local/lib -Wl,-rpath,/usr/lib:/usr/local/lib -L/usr/local/lib -L/usr/local/lib -L/usr/lib  -L/usr/local/lib -Wl,--as-needed\n\nalthough we have CONFIGURE_ENV+= PTHREAD_LIBS=\"${PTHREAD_LIBS}\" in Makefile.\n\nAnd with LDFLAGS+= -L${LOCALBASE}/lib ${PTHREAD_LIBS} , it becomes:\n\n    configure: using LDFLAGS= -L/usr/local/lib -pthread -Wl,-rpath,/usr/lib:/usr/local/lib -L/usr/local/lib -L/usr/local/lib -L/usr/lib  -L/usr/local/lib -Wl,--as-needed\n\nMaybe there is problem in postgresql's configuration system?  I'll try to find out.  However, can we have this patch for now?"
+}

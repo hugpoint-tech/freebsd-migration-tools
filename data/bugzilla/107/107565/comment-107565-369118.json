@@ -1,0 +1,8 @@
+{
+ "id": 369118,
+ "bug_id": 107565,
+ "attachment_id": 0,
+ "creation_time": "2007-01-05T14:50:14Z",
+ "creator": "Igor@FreeBSD.org",
+ "text": "It is impossible to specify more than one IP-address and mask in colon-\nseparated form. During my investigation I've found that /xx form uses the\nsame dangerous parsing method and it's work relies only on atoi() behavior\nhack.\n\nAs I see that the parsing works quite stupidly. It just passes entire line\nafter delimiter to external function (either atoi() or inet_aton()) and the\nlast one just can't parse the line of it contains anything else after the\ncurrent pair of address:mask.\n\nThe file in question is /usr/src/sbin/ipfw/ipfw2.c, the lines starting\nfrom #2714.\n\nFix: \n\nfsfwc002# diff /usr/src/sbin/ipfw/ipfw2.c.old /usr/src/sbin/ipfw/ipfw2.c\n2722a2723,2731\n\u003e         char t[15];\n\u003e         int ti;\n\u003e\n\u003e         for(ti=0; ti\u003c16 \u0026\u0026 p[ti] != 0; ti++){\n\u003e                 t[ti]=p[ti+1];\n\u003e                 if(t[ti] != '.' \u0026\u0026 (t[ti] \u003c '0' || t[ti] \u003e '9'))\n\u003e                         t[ti] = '\\0';\n\u003e         }\n\u003e\n2734c2743\n\u003c               if (!inet_aton(p, (struct in_addr *)\u0026d[1]))\n---\n\u003e               if (!inet_aton(t, (struct in_addr *)\u0026d[1]))\n2738c2747\n\u003c               masklen = atoi(p);\n---\n\u003e               masklen = atoi(t);\nHow-To-Repeat: ipfw add count all from any to 192.168.0.0/24,192.168.2.0:255.255.255.0\nThe previous one works well. The next one doesn't.\nipfw add count all from any to 192.168.0.0:255.255.255.0,192.168.2.0:255.255.255.0"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 6668,
+ "bug_id": 2204,
+ "attachment_id": 0,
+ "creation_time": "1996-12-14T13:16:09Z",
+ "creator": "j@uriah.heep.sax.de",
+ "text": "As dawes@physics.usyd.edu.au wrote:\n\n\u003e I've seen team hang when stderr is a file.  'top' reports that it is\n\u003e stuck in lockf.\n\n\u003e I haven't looked into this very deeply, but #undef'ing F_SETLKW seems to\n\u003e avoid the problem.  This is already done for SunOS (maybe for the same\n\u003e reason?).\n\nI think team's error is it that it does both locking methods, fcntl()\nand flock(), if either F_SETLKW as LOCK_EX are available.  Since they\nfinally go into the same common code path in the kernel, this might\ncause the deadlock.  I believe the code would be correctly written as:\n\n{\n# if (defined F_SETLKW)\n    struct flock l;\n    l.l_whence = 0; l.l_start = 0L; l.l_len = 0L;\n    l.l_type = F_WRLCK; fcntl(fileno(stderr),F_SETLKW,\u0026l);\n# elif (defined LOCK_EX)\n    flock(fileno(stderr),LOCK_EX);\n# endif\n  fprintf(stderr,a,b,c,d,e,f,g,h,i);\n# if (defined LOCK_EX)\n    flock(fileno(stderr),LOCK_UN);\n# elif (defined F_SETLKW)\n    l.l_type = F_UNLCK; fcntl(fileno(stderr),F_SETLKW,\u0026l);\n# endif\n}\n\nSince flock() doesn't suffer from the braindeadness mentioned in the\nfcntl(2) man page, i'll add your suggested patch however.\n\n-- \ncheers, J\"org\n\njoerg_wunsch@uriah.heep.sax.de -- http://www.sax.de/~joerg/ -- NIC: JW11-RIPE\nNever trust an operating system you don't have sources for. ;-)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1246430,
+ "bug_id": 268148,
+ "attachment_id": 0,
+ "creation_time": "2023-02-10T20:03:35Z",
+ "creator": "freebsd-2024@virtual-estates.net",
+ "text": "Though this can, indeed, be overcome with large RAM and /tmp, the problem is aggravated by the build-parallelization. Setting MAKE_JOBS_UNSAFE=yes allows the build to proceed. But...\n\nEven when I build the port with MAKE_JOBS_UNSAFE=yes, I still see multiple lto1-processes running -- using up all of my processors.\n\nIn fact, there are 8 processes -- which is the ostensible CPU-count here: 4 cores, doubled by the \"hyper-threading\". I see gmake running with -j8.\n\nI also see these warnings repeated:\nlto-wrapper: warning: jobserver is not available: '--jobserver-auth=' is not present in 'MAKEFLAGS'\nlto-wrapper: note: see the '-flto' option documentation for more information\n\nWith the MAKE_JOBS_NUMBER is set to 5 here normally, during the regular -- parallelized -- build the load went up much higher than 8, and the /tmp filled up.\n\nTo summarize:\n . When building normally -- parallelized -- there are many lto1 processes. It appears, each parallel-running linking fires off $CPU_COUNT lto1-processes which both pointlessly compete for the CPU (the load far exceeds the CPU-count) and fill up /tmp\n . Running with MAKE_JOBS_UNSAFE=yes, there are 8 (processor-count) lto1-processes\n . The MAKE_JOBS_NUMBER-value is not respected\n\nI think, the port ought to address these issues -- particularly, the first one."
+}

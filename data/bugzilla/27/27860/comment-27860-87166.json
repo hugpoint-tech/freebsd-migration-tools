@@ -1,0 +1,8 @@
+{
+ "id": 87166,
+ "bug_id": 27860,
+ "attachment_id": 0,
+ "creation_time": "2001-06-07T22:58:19Z",
+ "creator": "dwmalone@maths.tcd.ie",
+ "text": "On Mon, Jun 04, 2001 at 05:30:53AM +0900, Yoshihiro Koya wrote:\n\u003e \u003eDescription:\n\u003e Too long user name causes sshd to dump core.\n\u003e I tried to make patch. But, I couldn't do it.\n\nI've found the problem - it looks like a reintroduction of a bug\nin getpwent.c. It was originally fixed in versions 1.47 and 1.48\nbut the bug was brought back in again with the nsswitch stuff.\n\nI'm testing the patch below which seems to fix the problem. If\nsomeone can review it for me I'll commit it tomorrow.\n\nNote - MAXLOGNAME includes space for the trailing \\0, which the\nkey doesn't seem to include - hence the comparison with MAXLOGNAME-1.\nI've tested it with a 16 character username and things seem to work\nas expected.\n\n\tDavid.\n\n\nIndex: src/lib/libc/gen/getpwent.c\n===================================================================\nRCS file: /cvs/FreeBSD-CVS/src/lib/libc/gen/getpwent.c,v\nretrieving revision 1.59\ndiff -u -r1.59 getpwent.c\n--- src/lib/libc/gen/getpwent.c\t2001/01/24 12:59:22\t1.59\n+++ src/lib/libc/gen/getpwent.c\t2001/06/07 21:30:34\n@@ -386,7 +386,9 @@\n \tcase _PW_KEYBYNAME:\n \t\tname = va_arg(ap, const char *);\n \t\tlen = strlen(name);\n-\t\tmemmove(bf + 1, name, (size_t)MIN(len, MAXLOGNAME));\n+\t\tif (len \u003e MAXLOGNAME - 1)\n+\t\t\treturn NS_NOTFOUND;\n+\t\tmemmove(bf + 1, name, len);\n \t\tkey.size = len + 1;\n \t\tbreak;\n \tcase _PW_KEYBYUID:"
+}

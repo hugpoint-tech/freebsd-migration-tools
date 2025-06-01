@@ -1,0 +1,8 @@
+{
+ "id": 1086028,
+ "bug_id": 243711,
+ "attachment_id": 0,
+ "creation_time": "2020-01-30T16:19:59Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to alex_y_xu from comment #2)\nAh, I think the snapshots have invariants-checking disabled, which would explain why you're not seeing the problem during boot.\n\n\u003e I want to use a non-SMP kernel because I am on a single-CPU VM and I assume that no-SMP kernels are more efficient.\n\nFair enough.  Indeed, mtx_lock_spin() does nothing but disable interrupts in non-SMP FreeBSD kernels (and nothing if they are already disabled).  Non-SMP kernels definitely aren't as well tested though.  It looks like DTrace has been broken there basically forever: MAXCPU is 256 in kernel modules even when compiled without SMP:\n\n#if defined(SMP) || defined(KLD_MODULE)                                                                               \n#ifndef MAXCPU                                                                                                        \n#define MAXCPU          256                                                                                           \n#endif                                                                                                                \n#else                                                                                                                 \n#define MAXCPU          1                                                                                             \n#endif \n\n... and smp_rendezvous() and other kernel APIs use pass-by-value for cpuset_t's for a reason that is not clear to me."
+}

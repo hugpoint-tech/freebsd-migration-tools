@@ -1,0 +1,8 @@
+{
+ "id": 13802,
+ "bug_id": 4486,
+ "attachment_id": 0,
+ "creation_time": "1997-09-09T17:50:44Z",
+ "creator": "Tor.Egge@idi.ntnu.no",
+ "text": "Some S3 cards does not like accesses to the monocrome \nvideo memory address region (starting at memory address 0xb8000),\nand the memory dump hangs when dumping that region.\n\nWith the following ugly hack/workaround, and defining SDDUMP_HANGS\nas an option in the kernel config file, the kernel will probably be\nable to perform a core dump.\n\nIndex: sd.c\n===================================================================\nRCS file: /home/ncvs/src/sys/scsi/sd.c,v\nretrieving revision 1.95.2.3\ndiff -c -r1.95.2.3 sd.c\n*** sd.c\t1997/08/11 02:04:09\t1.95.2.3\n--- sd.c\t1997/08/27 16:57:47\n***************\n*** 932,937 ****\n--- 932,944 ----\n  \n  \tblknum = dumplo + blkoff;\n  \twhile (num \u003e 0) {\n+ #if defined(SDDUMP_HANGS) \u0026\u0026 defined(__i386__)\n+ \t\tif ((vm_offset_t) addr\u003e=0xa0000 \u0026\u0026 \n+ \t\t    (vm_offset_t) addr \u003c 0x100000)\n+ \t\t  pmap_enter(kernel_pmap, (vm_offset_t)CADDR1, trunc_page(0),\n+ \t\t  \t  VM_PROT_READ, TRUE);\n+ \t\telse\n+ #endif\n  \t\tpmap_enter(kernel_pmap, (vm_offset_t)CADDR1, trunc_page(addr),\n  \t\t\tVM_PROT_READ, TRUE);\n  \t\t/*"
+}

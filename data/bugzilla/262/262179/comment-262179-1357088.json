@@ -1,0 +1,8 @@
+{
+ "id": 1357088,
+ "bug_id": 262179,
+ "attachment_id": 0,
+ "creation_time": "2025-03-29T19:00:25Z",
+ "creator": "crest@rlwinm.de",
+ "text": "You're right. I didn't consider renaming (or unlinking) the jail root because my jails normally always have a mountpoint as root which makes blocks renaming. \n\nI guess having a simplified jails-root-only even simpler nullfs would be possible, but mounting filesystems can get expensive if you have lots of processes with lots of file descriptors (to patch the overmounted directory). It would be ugly and a massive POLA violation to have jails implicitly mount a pseudo-fs in their jail root. It would also have to be reference counted if multiple jails share a jail root. So we can't rely in pr_path for the fix.\n\nHow about having a fast path if the opening credentials of the file descriptor and the receiving thread reference the same struct prison (or are both NULL), but otherwise scan upwards the parent directory chain toward the root until hitting a the first jail root (no looping through nested jails). If it's not inside the jail's root reject the message with EPERM?"
+}

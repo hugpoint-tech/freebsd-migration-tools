@@ -1,0 +1,8 @@
+{
+ "id": 612230,
+ "bug_id": 157365,
+ "attachment_id": 0,
+ "creation_time": "2011-05-29T21:55:36Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: rmacklem\nDate: Sun May 29 20:55:23 2011\nNew Revision: 222464\nURL: http://svn.freebsd.org/changeset/base/222464\n\nLog:\n  Add a check for MNTK_UNMOUNTF at the beginning of nfs_sync()\n  in the old NFS client so that a forced dismount doesn't\n  get stuck in the VFS_SYNC() call that happens before\n  VFS_UNMOUNT() in dounmount(). Analagous to r222329 for the new NFS client.\n  An additional change is needed before forced dismounts will work.\n  \n  PR:\t\tkern/157365\n  MFC after:\t2 weeks\n\nModified:\n  head/sys/nfsclient/nfs_vfsops.c\n\nModified: head/sys/nfsclient/nfs_vfsops.c\n==============================================================================\n--- head/sys/nfsclient/nfs_vfsops.c\tSun May 29 20:46:53 2011\t(r222463)\n+++ head/sys/nfsclient/nfs_vfsops.c\tSun May 29 20:55:23 2011\t(r222464)\n@@ -1408,10 +1408,20 @@ nfs_sync(struct mount *mp, int waitfor)\n \n \ttd = curthread;\n \n+\tMNT_ILOCK(mp);\n+\t/*\n+\t * If a forced dismount is in progress, return from here so that\n+\t * the umount(2) syscall doesn't get stuck in VFS_SYNC() before\n+\t * calling VFS_UNMOUNT().\n+\t */\n+\tif ((mp-\u003emnt_kern_flag \u0026 MNTK_UNMOUNTF) != 0) {\n+\t\tMNT_IUNLOCK(mp);\n+\t\treturn (EBADF);\n+\t}\n+\n \t/*\n \t * Force stale buffer cache information to be flushed.\n \t */\n-\tMNT_ILOCK(mp);\n loop:\n \tMNT_VNODE_FOREACH(vp, mp, mvp) {\n \t\tVI_LOCK(vp);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

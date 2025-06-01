@@ -1,0 +1,8 @@
+{
+ "id": 52890,
+ "bug_id": 17386,
+ "attachment_id": 0,
+ "creation_time": "2000-03-15T06:40:02Z",
+ "creator": "adrian@ubergeeks.com",
+ "text": "\n\tIf extended file flags are set on the mtree files in /etc/mtree,\n\tpkg_create cannot remove its temp files, because of how pkg_create \n\tcopies the mtree file to /var/tmp.  It exec's cp(1) with '-p' \n\twhich preserves the flags as well as the usual file metadata.\n\n\tSince the only files that are copied in this way are the pkg\n\tmetadata files, e.g. +COMMENT, +DESCR, etc., it is of no great\n\tloss that the timestamps are not preserved in the created pacakge.\n\tIt is a bother when pkg_create leaves garbage in /var/tmp that may\n\tnot be easily removed.  The preservation of the flags is lost in\n\tpkg since tarfiles cannot handle the file flags.\n\n\tFYI, This bug was actually encountered when running \"make package\"\n\tfor the gmake port.\n\nFix: Apply the following patch to usr.sbin/pkg_install/lib/file.c.  Note,\n\t'-r' was replaced with '-R' per the cp(1) manpage's recommendatons.\n\tSince no recurssive copies were actually found in the code, it may\n\tbe possible to remove '-R' altogether.\nHow-To-Repeat: \n\t# sh\n\t# cd /tmp\n\t# for i in DESCR COMMENT PLIST FOO; do echo FOO \u003e $i; done\n\t# chflags schg /etc/mtree/BSD.local.dist\n\t# pkg_create -c COMMENT -d DESCR -f PLIST -p /tmp \\\n\t\t-m /etc/mtree/BSD.local.dist PKG.tgz\n\trm: /var/tmp/instmp.Xk5440/+MTREE_DIRS: Operation not permitted\n\trm: /var/tmp/instmp.Xk5440: Directory not empty\n\tpkg_create: couldn't remove temporary dir '/var/tmp/instmp.Xk5440'\n\t# ls -lo /var/tmp/instmp.go5393 \n\ttotal 5\n\t-r--r--r--  1 root  wheel  schg 4112 Dec 20 00:53 +MTREE_DIRS"
+}

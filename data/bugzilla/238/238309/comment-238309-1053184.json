@@ -1,0 +1,8 @@
+{
+ "id": 1053184,
+ "bug_id": 238309,
+ "attachment_id": 0,
+ "creation_time": "2019-06-04T00:38:22Z",
+ "creator": "cem@freebsd.org",
+ "text": "dumpconf() is an overloaded API.  It is called in multiple ways in geom_dump.c:\n\n1. NULL indent, NULL cp, !NULL pp\n2. !NULL indent, NULL cp, !NULL pp\n3. !NULL indent, NULL cp, NULL pp\n\nI.e., NULL indent =\u003e !NULL pp.  But !NULL indent implies nothing about pp.  The logic in g_slice_dumpconf is correct, though confusing.\n\nIt would probably be more clear to assert these invariants, which might inform PVS-Studio well enough to clear the false positives.  Something like:\n\n    #define KASSERT_IMPLIES(a, b, c) KASSERT(!(a) || (b), c)\n\n    ...\n\n    KASSERT_IMPLIES(indent == NULL, pp != NULL, (\"dumpconf API violation\"));\n\ntl;dr false positive"
+}

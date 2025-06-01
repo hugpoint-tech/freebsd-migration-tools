@@ -1,0 +1,8 @@
+{
+ "id": 64334,
+ "bug_id": 20785,
+ "attachment_id": 0,
+ "creation_time": "2000-08-22T19:10:01Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "\nChanging the IP address of an interface may not necessarily cause new\nsockets to make use of the new IP address, if the address is in the same\nsubnet as the previous address under IPv4.  This only seems to affect\noutgoing packets to non-local addresses; the correct IP is used for outgoing\nlocal packets on the subnet.\n\nFix: \n\nWork-around is to revert back to the old IP, or to delete and re-add the\ndefault gateway route entry.  Presumably the outgoing IP address is tied\nto the route entry somehow, so any use of that route forces use of the\nold IP, which is no longer valid for that interface.  Given that the new IP\naddress is in the same subnet, ideally we could make use of the same route\nentry.  In any case, continuing to make use of the now defunct IP address\nis counter-intuitive (and misbehavior, in my view).  I have not tried this\nwith interfaces other than xl0.\nHow-To-Repeat: \n(terminal one)\nifconfig xl0 inet 192.168.11.200\nroute add default 192.168.11.1\n\n(terminal two)\ntcpdump -eni xl0\n\n(terminal one)\nifconfig xl0 inet 192.168.11.100\nping -c 100 128.2.1.2\n\n(terminal two output)\ntcpdump: listening on xl0\n14:00:24.529628 0:c0:4f:3b:cb:62 0:a0:cc:67:f6:fe 0800 98: 192.168.11.200 \u003e 128.\n2.1.2: icmp: echo request\n14:00:24.568225 0:a0:cc:67:f6:fe 0:c0:4f:3b:cb:62 0800 98: 128.2.1.2 \u003e 192.168.1\n1.200: icmp: echo reply\n\nAnd needless to say, the echo responses don't propagate back up the stack\nto the ping application, as they are for the wrong IP.  A ping of 192.168.11.1\nworks fine."
+}

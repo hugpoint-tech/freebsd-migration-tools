@@ -1,0 +1,8 @@
+{
+ "id": 1074549,
+ "bug_id": 241808,
+ "attachment_id": 0,
+ "creation_time": "2019-11-08T21:44:03Z",
+ "creator": "vmaffione@FreeBSD.org",
+ "text": "Very interesting, thanks for catching it.\nI think the real problem here (even before r354288) is that nothing prevents a call to kevent(fd, EV_ENABLE) to happen before kevent(fd, EVADD) is called, as you are reporting.\n\nOn mevent_add() and mevent_update(), mevent_notify() is called to wakeup the I/O thread, that will call kevent(changelist) to update the kernel.\nA race condition is possible where the client calls mevent_add() and mevent_update(EV_ENABLE) before the I/O thread has the chance to wake up and calls mevent_build()+kevent(changelist), which is exactly what happens in your case.\nr354288 only makes this race condition more likely (this explains why I did not catch the bug on my machine when I tested e1000).\nYour fix makes the race condition less likely, but I think it's still there.\nI tried to rework and simplify mevent.c to make sure EV_ADD is always called before EV_ENABLE or EV_DISABLE.\n\nLet me know what you think about that:\nhttps://reviews.freebsd.org/D22286"
+}

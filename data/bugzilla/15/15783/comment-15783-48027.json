@@ -1,0 +1,8 @@
+{
+ "id": 48027,
+ "bug_id": 15783,
+ "attachment_id": 0,
+ "creation_time": "1999-12-30T15:40:02Z",
+ "creator": "pfritz@nap.com.ar",
+ "text": "While stress-testing Apache on FreeBSD, we found an out of memory condition. We found that tcp streams are kept in the last stage (the timed wait) for 60 seconds, while the specs say that this state has to last 2 round-trip times. So, if you open and close enough connections per second, you can waste all memory and halt the service. This error was also present in OpenBSD and NetBSD, but they crashed to the kernel when out of memory, while FreeBSD only didn't let more connections to be created until the others timed out.\n\nFix: \n\nI could alleviate the problem changing the timeout form 60 seconds to 6 seconds, but what should be done is the rewriting of the tcp state machine.\nI changed in /usr/src/sys/netinet/tcp_timer.h the value of TCPTV_MSL from 30 seconds to 3 seconds, and rebuilt the kernel.\nHow-To-Repeat: open a connection to the web server, close it, and look at how many seconds it takes to destroy the endpoint and release the memory.\nI used netstat -m."
+}

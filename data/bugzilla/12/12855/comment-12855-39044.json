@@ -1,0 +1,8 @@
+{
+ "id": 39044,
+ "bug_id": 12855,
+ "attachment_id": 0,
+ "creation_time": "1999-07-28T18:10:01Z",
+ "creator": "kfarmer@sympatico.ca",
+ "text": "if a user creates a very deep directory structure (eg, /usr/home/guest/tmp/tmp/tmp/tmp/tmp/....)\nThen umounting the filesystem causes: panic:softdep_flushfiles:looping.\nalso: rm -rf cannot remove the directory structure, claims 'directory not empty'\n\nHow-To-Repeat: 1) create a directory structure at least 256(?) directories deep.\n2) umount the filesystem.\n\nfsck is able to fix this on reboot.\nrm -r is able to remove the structure if you go far enough into it.\n\nfrom ffs_softdep.c: line 675\n\nsoftdep_worklist_busy = 0;\n        /*\n         * If we are unmounting then it is an error to fail. If we\n         * are simply trying to downgrade to read-only, then filesystem\n         * activity can keep us busy forever, so we just fail with EBUSY.\n         */\n        if (loopcnt == 0) {\n                if (oldmnt-\u003emnt_kern_flag \u0026 MNTK_UNMOUNT)\n                        panic(\"softdep_flushfiles: looping\");\n                error = EBUSY;\n        }\n        return (error);"
+}

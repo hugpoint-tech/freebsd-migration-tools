@@ -1,0 +1,8 @@
+{
+ "id": 40325,
+ "bug_id": 13261,
+ "attachment_id": 0,
+ "creation_time": "1999-08-19T23:30:00Z",
+ "creator": "ian@plutotech.com",
+ "text": "When a STAT command is sent to ftpd as an out-of-band transmission during a file transfer, the command is mishandled on every other receipt of the command.  On the first receipt, the command is handled correctly, but is left in the tmpline buffer.  On the next SIGURG, the hacked-up getline() returns an empty string and that STAT request is ignored.  The next one works, the one after that fails, and so on.\n\nFix: \n\nIn ftpd.c, in the myoob() routine, a line should be added in the if branch that handles the STAT command, to set tmpline[0] = '\\0'; (as it already does for the ABOR command).  I have applied and tested this fix on my local system, and it results in correct behavior (every STAT request receives a response).\nHow-To-Repeat: Send a series of STAT requests as OOB data to an ftpd while a file transfer is in progress, and observe that you get a response to every other request."
+}

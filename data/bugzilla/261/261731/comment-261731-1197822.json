@@ -1,0 +1,8 @@
+{
+ "id": 1197822,
+ "bug_id": 261731,
+ "attachment_id": 0,
+ "creation_time": "2022-02-05T08:38:12Z",
+ "creator": "peterj@FreeBSD.org",
+ "text": "Discussion in the thread beginning https://lists.freebsd.org/archives/freebsd-fs/2022-January/000688.html has revealed that at least UFS relies on support of BIO_ORDERED for correct operation but examination of sys/geom/gate/g_gate.c shows that geom_gate ignores BIO_ORDERED.  This could lead to potential filesystem corruption.\n\nBIO_ORDERED forms a barrier on BIO operations: An operation marked with BIO_ORDERED must not be executed until all prior operations have been retired and no operations after that operation can commence before the BIO_ORDERED operation has been written to stable (non-volatile) storage and retired.  The requirement that the operation be written to stable storage means that the flag must be forwarded to the userland daemon for handling.\n\nThere are no other bio_flags that appear to need explicit support within geom_gate.\n\nFixing this bug therefore requires:\n1) An enhancement to struct g_gate_ctl_io to support passing BIO_ORDERED to userland.  This could be achieved by:\n   a) Adding a new field.  This would not change the structure size on 64-bit architectures.\n   b) Split the existing gctl_cmd field into 2 uint16_t fields (which matches struct bio).  This would not change the structure size.\n   c) Treating BIO_ORDERED as a flag that can be OR'd into the existing gctl_cmd field.  This would not change the structure size.\n2) Updating userland geom_gate clients, their network protocols and peer daemons.  Within the base system, the clients are hastd, ggatec and ggatel."
+}

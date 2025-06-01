@@ -1,0 +1,8 @@
+{
+ "id": 1140291,
+ "bug_id": 233622,
+ "attachment_id": 0,
+ "creation_time": "2021-01-06T14:58:55Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/12 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=62489e19ebe287034833d07aeb74ca0f0599be6e\n\ncommit 62489e19ebe287034833d07aeb74ca0f0599be6e\nAuthor:     Mark Johnston \u003cmarkj@FreeBSD.org\u003e\nAuthorDate: 2020-12-23 05:11:16 +0000\nCommit:     Mark Johnston \u003cmarkj@FreeBSD.org\u003e\nCommitDate: 2021-01-06 14:41:53 +0000\n\n    netgraph: Fix ng_ether's shutdown handing\n\n    When tearing down a VNET, netgraph sends shutdown messages to all of the\n    nodes before detaching interfaces (SI_SUB_NETGRAPH comes before\n    SI_SUB_INIT_IF in teardown order).  ng_ether nodes handle this by\n    destroying themselves without detaching from the parent ifnet.  Then,\n    when ifnets go away they detach their ng_ether nodes again, triggering a\n    use-after-free.\n\n    Handle this by modifying ng_ether_shutdown() to detach from the ifnet.\n    If the shutdown was triggered by an ifnet being destroyed, we will clear\n    priv-\u003eifp in the ng_ether detach callback, so priv-\u003eifp may be NULL.\n\n    Also get rid of the printf in vnet_netgraph_uninit().  It can be\n    triggered trivially by ng_ether since ng_ether_shutdown() persists the\n    node unless NG_REALLY_DIE is set.\n\n    PR:             233622\n    Reviewed by:    afedorov, kp, Lutz Donnerhacke\n\n    (cherry picked from commit cd698c51790e956fed0975f451d3dfc361dc7c24)\n\n sys/netgraph/ng_base.c  |  4 +---\n sys/netgraph/ng_ether.c | 13 ++++++-------\n 2 files changed, 7 insertions(+), 10 deletions(-)"
+}

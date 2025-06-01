@@ -1,0 +1,8 @@
+{
+ "id": 14113,
+ "bug_id": 4599,
+ "attachment_id": 0,
+ "creation_time": "1997-09-21T22:20:01Z",
+ "creator": "hsu@mail.clinet.fi",
+ "text": "\nmktemp is supposed to randomize a given pathname by replacing X's in the\ngiven string with process-specific numbers/data.  However, if the given\nstring does not point to a valid path, it returns NULL and botches the\nargument string.  As it is supposed just to create a path name, this should\nnot happen ?\n\nThis breaks rdist6, which wants to create a temporary path and patch up\nmissing directories on the path afterwards.\n\nFix: \n\nDirty workaround for rdist6 (server.c):\n\n#if 0\t\t\n\t\tif (!mktemp(new)) {\n\t\t  error(\"Cannot create temporary name, errno %d.\", errno);\n\t\t}\n#else\n\t\t{\n\t\t  char *p;\n\t\t  p = strstr(new, \"XXXXXX\");\n\t\t  if (p)\n\t\t    sprintf(p, \"%6d\", getpid() % 1000000);\n\t\t  else\n\t\t    error(\"Cannot create temporary name\");\n\t\t}\n#endif\n\n-- \nHeikki Suonsivu, T{ysikuu 10 C 83/02210 Espoo/FINLAND, hsu@clinet.fi\nmobile +358-40-5519679 work +358-9-43542270 fax -4555276\nHow-To-Repeat: \n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n\nmain()\n{\n\tchar foo[1024];\n\n\tstrcpy(foo, \"/some/unexistent/directoryXXXXXX\");\n\tif (!mktemp(foo)) {\n\t\tperror(foo);\n\t}\n\tprintf(\"foo become %s\\n\", foo);\n}\n\nhsu#katiska.clinet.fi Sun 10: ./hello\n/some/unexistent: No such file or directory\nfoo become /some/unexistent\nhsu#katiska.clinet.fi Sun 11:"
+}

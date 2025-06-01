@@ -1,0 +1,8 @@
+{
+ "id": 820167,
+ "bug_id": 199509,
+ "attachment_id": 0,
+ "creation_time": "2015-04-18T07:02:30Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "CCACHE_DIR can be tuned in bsd.port.mk, based on the value passed in on the command-line/environment. It should be fixed to use the value determined in bsd.port.mk like so, instead of hardcoding the assumption that it's either $HOME/.ccache or /root/.ccache:\n\n$ svn diff ./ports/Mk/Scripts/check_leftovers.sh\nIndex: ports/Mk/Scripts/check_leftovers.sh\n===================================================================\n--- ports/Mk/Scripts/check_leftovers.sh (revision 476341)\n+++ ports/Mk/Scripts/check_leftovers.sh (.../ports/Mk/Scripts/check_leftovers.sh)       (working copy)\n@@ -40,6 +40,7 @@\n else\n        LOCALBASE=$(make -C ${portdir} -VLOCALBASE)\n fi\n+ccache_dir=$(make -C ${portsdir} -VCCACHE_DIR)\n homedirs=$(awk -F: -v users=$(make -C ${portdir} -V USERS|sed -e 's, ,|,g;/^$/d') 'users \u0026\u0026 $1 ~ users {print $9}' ${PORTSDIR}/UIDs|sort -u|sed -e \"s|/usr/local|${PREFIX}|\")\n plistsub_sed=$(make -C ${portdir} -VPLIST_SUB_SED | /bin/sh ${PORTSDIR}/Mk/Scripts/plist_sub_sed_sort.sh)\n tmpplist=$(make -C ${portdir} -VTMPPLIST)\n@@ -47,7 +48,7 @@\n while read modtype path extra; do\n        # Ignore everything from these files/directories\n        case \"${path}\" in\n-               ${HOME:-/root}/.ccache/*|/root/.ccache/*|\\\n+               ${ccache_dir}|\\\n                /compat/linux/proc/*|\\\n                /dev/*|\\\n                /etc/make.conf.bak|\\"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 862329,
+ "bug_id": 206755,
+ "attachment_id": 0,
+ "creation_time": "2016-01-30T09:53:38Z",
+ "creator": "ecturt@gmail.com",
+ "text": "`tdfx_query_update` in `sys/dev/tdfx/tdfx_pci.c` doesn't check the result of `copyin` calls:\n\nstatic int\ntdfx_query_update(u_int cmd, struct tdfx_pio_data *piod)\n{\n\t/* XXX Comment this later, after careful inspection and spring cleaning :) */\n\t/* Return vals */\n\tu_int8_t  ret_byte;\n\tu_int16_t ret_word;\n\tu_int32_t ret_dword;\n\t\n\t...\n\t\n\tswitch (piod-\u003esize) {\n\t\tcase 1:\n\t\t\tcopyin(piod-\u003evalue, \u0026ret_byte, 1);\n\t\t\tpreval = ret_byte \u003c\u003c (8 * (piod-\u003eport \u0026 0x3));\n\t\t\tmask = 0xff \u003c\u003c (8 * (piod-\u003eport \u0026 0x3));\n\t\t\tbreak;\n\t\tcase 2:\n\t\t\tcopyin(piod-\u003evalue, \u0026ret_word, 2);\n\t\t\tpreval = ret_word \u003c\u003c (8 * (piod-\u003eport \u0026 0x3));\n\t\t\tmask = 0xffff \u003c\u003c (8 * (piod-\u003eport \u0026 0x3));\n\t\t\tbreak;\n\t\tcase 4:\n\t\t\tcopyin(piod-\u003evalue, \u0026ret_dword, 4);\n\t\t\tpreval = ret_dword;\n\t\t\tmask = ~0;\n\t\t\tbreak;\n\t\tdefault:\n\t\t\treturn -EINVAL;\n\t}\n\t/* Finally, combine the values and write it to the port */\n\tretval = (retval \u0026 ~mask) | preval;\n\tpci_write_config(tdfx_info-\u003edev, piod-\u003eport \u0026 ~3, retval, 4);\n\nIf the user supplies a bad pointer, so that the `copyin` calls fail, `pci_write_config` will be passed an uninitialised stack value."
+}

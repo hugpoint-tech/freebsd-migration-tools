@@ -1,0 +1,8 @@
+{
+ "id": 1037096,
+ "bug_id": 235657,
+ "attachment_id": 201915,
+ "creation_time": "2019-02-11T05:46:11Z",
+ "creator": "karl@denninger.net",
+ "text": "Created attachment 201915\nDiff against /usr/src/libexec/atrun directory\n\nI have no idea why this hasn't bit people before, or isn't biting people now.... but it is biting me.\n\n/usr/libexec/atrun is the \"batch\" job executor out of the cron and by default runs every 5 minutes.\n\nThe code has an unlink call in it that attempts to remove old jobs from the queue but unfortunately the queue code can select a job to run, call fork() to start it, post-fork() the child can give up the CPU before it opens the file containing the job and thus the queue code (which is in the parent) can execute the unlink before the child process gets the file open.  If this happens you get a \"file not found\" error in the cron log and the job doesn't run.\n\nThe attached patch fixes the potential race by moving the unlink into the child; it may not be the most-elegant, but it works.  Unfortunately due to the code's structure (it performs multiple tests on the file to be run for security reasons) there are multiple error exits and, in the event of any of those, you must unlink the file as well or it will try to run repeatedly -- yet you can't unlink it immediately after it is opened because some of the tests require it still be on the filesystem."
+}

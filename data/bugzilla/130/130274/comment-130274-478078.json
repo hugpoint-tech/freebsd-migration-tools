@@ -1,0 +1,8 @@
+{
+ "id": 478078,
+ "bug_id": 130274,
+ "attachment_id": 0,
+ "creation_time": "2009-01-07T20:00:06Z",
+ "creator": "kirk@strauser.com",
+ "text": "I cannot use shmget() to allocate 2GB or more of shared memory, regardless of the settings of kern.ipc.shmmax and kern.ipc.shmall.  Right now, I have:\n\n$ sysctl kern.ipc.shmmax                           \nkern.ipc.shmmax: 8589934592\n$ sysctl kern.ipc.shmall\nkern.ipc.shmall: 2097152   # 8GB / 4096\n\nHere's a minimal test program I wrote:\n\n########################\n\n#include \u003cstdio.h\u003e\n#include \u003csys/shm.h\u003e\n\nint main() {\n    size_t size = 2*1024*1024*1024l - 4096;\n    int segid;\n    printf(\"Requested: %zd\\n\", size);\n    segid = shmget(234, size, IPC_CREAT);\n    if(segid == -1) {\n        perror(\"Died\");\n        return;\n    }\n    printf(\"SHM ID   : %zd\\n\", segid);\n}\n\n########################\n\nIf I define \"size\" to be no larger than 2GB-4KB, then the program finishes successfully.  Otherwise, it fails with [ENOSPC].\n\nHow-To-Repeat: Try to allocate 2GB or more of shared memory."
+}

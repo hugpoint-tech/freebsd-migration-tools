@@ -1,0 +1,8 @@
+{
+ "id": 1276205,
+ "bug_id": 269473,
+ "attachment_id": 0,
+ "creation_time": "2023-09-21T17:55:23Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "(In reply to Bernard Spil from comment #18)\nIf the certs directory isn't empty it isn't deleted when deleting the old package, and then \"make install\" of the new version seems to fail, while \"pkg add\" does work because it renames the directory to certs.pkgsave.  I'd say this is a bug in pkg.  \"make install\" should have the same behaviour as \"pkg add\".  For now we could add the following to pkg-plist:\n\nFor openssl ports:\n\n@preexec if [ -d %D/openssl/certs ]; then [ ! -e %D/openssl/certs.pkgsave ] \u0026\u0026 mv %D/openssl/certs %D/openssl/certs.pkgsave; fi\n\nFor libressl ports:\n\n@preexec if [ -d %D/etc/ssl/certs ]; then [ ! -e %D/etc/ssl/certs.pkgsave ] \u0026\u0026 mv %D/etc/ssl/certs %D/etc/ssl/certs.pkgsave; fi\n\n\nThere should also be an UPDATING entry for situations like comment #5.  Something like this:\n\n--\nAFFECTS: users of security/openssl* and security/libressl*\nAUTHOR: brnrd@freebsd.org\n\nThe directories /usr/local/openssl/certs and /usr/local/etc/ssl/certs have been replaced with symbolic links to /etc/ssl/certs.  Any CA certificates in these directories should be moved to /usr/local/share/certs and then installed to /etc/ssl/certs using \"certctl rehash\".  See certctl(8) for more information.\n\nIf the directory certs exists when installing the package it will be renamed certs.pkgsave.  If certs.pkgsave exists package installation will fail.\n--"
+}

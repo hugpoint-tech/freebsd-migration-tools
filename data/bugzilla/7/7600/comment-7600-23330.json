@@ -1,0 +1,8 @@
+{
+ "id": 23330,
+ "bug_id": 7600,
+ "attachment_id": 0,
+ "creation_time": "1998-08-13T03:10:01Z",
+ "creator": "loschert@servint.com",
+ "text": "\nWhile testing a couple of server apps that I had written, I discovered that in certain situations, the process would \"run-away\".  At that point, the app could only be killed with a kill -9 and top would show that the process was eating up 99.9% of the cpu cycles.\n\nI found that the condition that instigated the problem was starting the app as a background process and then exiting the shell.  Almost immediately after exiting the shell, the process would go haywire. :)\n\nThe apps use pthreads and therefore -libc_r.\n\nI attempted to isolate the problem this evening by stripping out extraneous code.  I was able to cut it down to the following program.  The line that it does not like is the printf line that calls pthread_self to show the thread id.\n\nFix: \n\nDon't know, hope this helps though.\nHow-To-Repeat: \n1. Compile the below code with the following command:\n\n\tgcc -Wall -o bug FILENAME.c -lc_r\n\n2. Run the program in the background with:\n\n\t./bug \u0026\n\n3. Exit the shell.\n\n4. Log back in, check cpu usage with top.\n\n\n\n----CODE BEGINS (FILENAME.c)----\n\n\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cpthread.h\u003e\n\nvoid     *newthread    (void *vptr);\n\n\nint main()\n{\n     pthread_t      thread;\n\n     pthread_create (\u0026thread, NULL, newthread, NULL);\n     pthread_join   (thread, NULL);\n     exit(0);\n}\n\n\nvoid *newthread(void *vptr)\n{\n     for(;;) {\n          printf(\"Thread %d: Just looped again.\\n\", (int) pthread_self());\n          sleep(5);\n     }\n}\n\n\n----CODE ENDS----"
+}

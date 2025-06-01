@@ -1,0 +1,8 @@
+{
+ "id": 969502,
+ "bug_id": 224669,
+ "attachment_id": 0,
+ "creation_time": "2018-01-04T10:01:34Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Jan Beich from comment #10)\n\u003e Notice how \"comparison between pointer and integer\" issue is similar to\n\u003e \"ordered comparison between pointer and integer\". Clang prefers to not warn\n\u003e about possible bugs unless it's C++ or C++11.\n\u003e \n\u003e $ cat a.c\n\u003e int main()\n\u003e {\n\u003e   const char *value[] = { \"\", \"bar\" };\n\u003e   if (value[0] == '\\0')\n\u003e     return 1;\n\u003e   return 0;\n\u003e }\n\u003e $ cc a.c\n\u003e $ c++ -std=gnu++98 -x c++ a.c\n\u003e $ gcc7 a.c\n\u003e a.c: In function 'main':\n\u003e a.c:4:16: warning: comparison between pointer and zero character constant\n\u003e [-Wpointer-compare]\n\u003e    if (value[0] == '\\0')\n\u003e                 ^~\n\u003e a.c:4:7: note: did you mean to dereference the pointer?\n\u003e    if (value[0] == '\\0')\n\u003e        ^\n\u003e $ g++7 -std=gnu++98 -x c++ a.c\n\u003e a.c: In function 'int main()':\n\u003e a.c:4:19: warning: comparison between pointer and zero character constant\n\u003e [-Wpointer-compare]\n\u003e    if (value[0] == '\\0')\n\u003e                    ^~~~\n\u003e a.c:4:19: note: did you mean to dereference the pointer?\n\nHmm I think that is actually a bit weird.  I would have expected this warning to always fire, but apparently not.  I have not yet been able to find where this exactly changed between clang 5 and 6.\n\nIn any case, these warnings point to real programming errors, so ideally they should be properly patched.  As a workaround USE_CXXSTD=gnu++98 is fine with me, though gcc still warns in that case."
+}

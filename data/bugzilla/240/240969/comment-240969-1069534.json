@@ -1,0 +1,8 @@
+{
+ "id": 1069534,
+ "bug_id": 240969,
+ "attachment_id": 0,
+ "creation_time": "2019-10-01T13:21:22Z",
+ "creator": "topical@gmx.net",
+ "text": "If you define multiple FIB and set \"net.add_addr_allfibs=0\", ND reachability packets are sent via wrong interface, containing wrong data.\n\nEffectively:\n  * reachability detection only works in FIB 0\n  * neighbour routers/firewalls may barf about strange ND packets for other FIBs (this is what happens to me)\n\nStill, network connectivity recovers automatically as standard ND multicasts are sent out automatically after reachability detection fails.\n\nAfter some investigation, I found the source of the problem: review D1998 introduced FIB-aware nd6_ns_output_fib() and a legacy wrapper nd6_ns_output() passing RT_DEFAULT_FIB unconditionally. So, all calls to nd6_ns_output() must be enhanced by FIB and replaced by calls to nd6_ns_output_fib(). \n\nAs nd6_ns_output() is enclosed by \"#ifndef BURN_BRIDGES\", this seems to be the original intention, but work has never been finished."
+}

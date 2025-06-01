@@ -1,0 +1,8 @@
+{
+ "id": 842673,
+ "bug_id": 203514,
+ "attachment_id": 161664,
+ "creation_time": "2015-10-02T23:28:41Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 161664\nmaintainer version\n\nMy idea of the proper fix is attached. Sorry, most of your changes ended up discarded. I haven't QA'd it yet. ;)\n\n\u003e-CONFIGURE_ENV=\tac_cv_path_PYTHON=python2\n\u003e-python_CMD=\t/usr/bin/env python2\n\u003e+TEST_USES=\tpython:2,build shebangfix\n\u003e+TEST_CONFIGURE_ENV=\tac_cv_path_PYTHON=\"${PYTHON_CMD}\"\n\nThis has a few issues:\n\n- PYTHON_CMD specifies fully-qualified python version, so you don't\n  need lang/python2 dependency -\u003e USES=python:2 vs. USES=python:-2.7\n- HAVE_PYTHON is expanded to a random value when TESTS is disabled;\n  fortunately, the enabled code is only invoked by |check| target\n\n\u003e+TEST_EXTRACT_DEPENDS=\t${NONEXISTENT}:${PORTSDIR}/devel/googletest:patch\n\u003e \n\u003e+post-extract-TEST-on:\n\u003e+\t@${CP} -R `${MAKE} -C ${PORTSDIR}/devel/googletest -V WRKSRC` ${WRKSRC}/gtest\n[...]\n\u003e+@@ -85,6 +85,7 @@ if HAVE_PYTHON\n\u003e+     fused-src/gtest/gtest.h \\\n\u003e+     test/gmock_test.cc\n\u003e+   test_gmock_fused_test_CPPFLAGS = -I\"$(srcdir)/fused-src\"\n\u003e++  test_gmock_fused_test_LDFLAGS = -lpthread\n\nEnabling python stuff was probably a mistake. System gtest/gmock don't ship the source code that can be fused, so no point in testing it and complicating the port.\n\ngmock_doctor.py still needs |/usr/bin/env python2| shebang as it won't\nrun with /usr/local/bin/python when USES=python is not provided."
+}

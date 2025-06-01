@@ -1,0 +1,8 @@
+{
+ "id": 886296,
+ "bug_id": 210799,
+ "attachment_id": 0,
+ "creation_time": "2016-07-03T20:16:44Z",
+ "creator": "josla972@student.liu.se",
+ "text": "After I upgraded from FreeBSD 9.0 to 10.3-RELEASE on my Mac Mini G4, I found that \"kldload if_bwi\" would make the system unstable, and if I included it to be loaded in loader.conf, I could not even boot. This used to work just fine.\n\nDigging through the commits the bwi folder of the git clone of freebsd, I found the issue:\n\ncommit ad311f67aaa6771c007f5046d032924146784a23\nAuthor: mav \u003cmav@FreeBSD.org\u003e\nDate:   Tue Apr 21 11:27:50 2015 +0000\n\n\n    MFC r280347: Remove MAXBSIZE use from drivers where it has nothing to do.\n    \n    In some cases limits are just not needed, in others -- DFLTPHYS is the\n    right constant to use instead.\n\ndiff --git a/sys/dev/bwi/if_bwi.c b/sys/dev/bwi/if_bwi.c\nindex 911e49e..6ce433c1 100644\n--- a/sys/dev/bwi/if_bwi.c\n+++ b/sys/dev/bwi/if_bwi.c\n@@ -1915,7 +1915,7 @@ bwi_dma_alloc(struct bwi_softc *sc)\n                               lowaddr,                 /* lowaddr */\n                               BUS_SPACE_MAXADDR,       /* highaddr */\n                               NULL, NULL,              /* filter, filterarg */\n-                              MAXBSIZE,                /* maxsize */\n+                              BUS_SPACE_MAXSIZE,       /* maxsize */\n                               BUS_SPACE_UNRESTRICTED,  /* nsegments */\n                               BUS_SPACE_MAXSIZE_32BIT, /* maxsegsize */\n                               BUS_DMA_ALLOCNOW,        /* flags */\n\n\n\nReverting this commit made the system stable, if_bwi started working, and I could boot again."
+}

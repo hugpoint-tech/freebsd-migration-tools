@@ -1,0 +1,8 @@
+{
+ "id": 1977,
+ "bug_id": 782,
+ "attachment_id": 0,
+ "creation_time": "1995-10-22T06:00:45Z",
+ "creator": "davidg@FreeBSD.org",
+ "text": "State Changed\nFrom-To: open-\u003eanalyzed\n\nSorry that I missed your bug report...you really should trim down your \nkernel config file - it was so long that I missed the important information \nat the end of your bug report. :-) \nAnyway, I've just looked at the problem...it is fixable, but requires an \narchitectural change (one that was made to 4.4BSD-lite/2, but not yet to \nFreeBSD). Basically, the check for the filesystem being read-only is done \nat the wrong layer and whenever a filesystem is forcibly dismounted, there \nis a chance that operations on still-open files will cause this panic. This \nhappens because the filesystem mountpoint has been ripped away. The type/ops \nvector is also changed to VBAD/deadfs so that future operations on the vnode \nare directed to the deadfs, but in your case, v_mount is referenced when it \nobviously shouldn't have been (before it gets to the FS layer). The fix is to \nmove the references to v_mount into the filesystem layer and out of the \nsyscall - this way the fchown (and many other syscalls) will end up in the \ndead_setattr() (which is defined to return EBADF), before v_mount is ever \nreferenced. ...problem solved. \nI don't know if I consider this a \"critical\" bug, however, as it might be \ndifficult to manifest during normal operations. I think that \"slirp\" must be \ndoing something strange - like an fchown() on a TTY. I'll have to look into \nthis in more detail. \n"
+}

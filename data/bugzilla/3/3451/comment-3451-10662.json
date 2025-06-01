@@ -1,0 +1,8 @@
+{
+ "id": 10662,
+ "bug_id": 3451,
+ "attachment_id": 0,
+ "creation_time": "1997-06-14T14:07:46Z",
+ "creator": "tim@X2296",
+ "text": "On Sat, 14 Jun 1997, Bruce Evans wrote:\n\n\u003e \u003e   \t*str = realloc(h.base, (size_t)(h.size - h.left + 1));\n\u003e \u003e   \tif (*str == NULL)\t/* failed to realloc it to actual size */\n\u003e \u003e ! \t\treturn (-1);\n\u003e \u003e ! \t(*str)[h.size - h.left] = '\\0';\n\u003e \u003e   \treturn (ret);\n\u003e \u003e   }\n\u003e \n\u003e One more problem: realloc() can fail, resulting in a leaking the memory\n\u003e pointed to by h.base.\n\nWhich, of course, points us to yet another error in the original\nvasprintf.c...  :)  The test to see if str is NULL is\n*str == NULL....\n\nFinal patch frees h.base (as is done everywhere else) and fixes \nthat... :)\n\n\n*** old.vasprintf.c\tTue Apr 29 21:32:00 1997\n--- vasprintf.c\tSat Jun 14 08:56:41 1997\n***************\n*** 111,119 ****\n  \tif (h.base == NULL)\t/* failed to realloc in writehook */\n  \t\treturn (-1);\n  \n- \th.base[h.size - h.left] = '\\0';\n  \t*str = realloc(h.base, (size_t)(h.size - h.left + 1));\n! \tif (*str == NULL)\t/* failed to realloc it to actual size */\n! \t\t*str = h.base;\t/* return oversize buffer */\n  \treturn (ret);\n  }\n--- 111,121 ----\n  \tif (h.base == NULL)\t/* failed to realloc in writehook */\n  \t\treturn (-1);\n  \n  \t*str = realloc(h.base, (size_t)(h.size - h.left + 1));\n! \tif (str == NULL) {\t/* failed to realloc it to actual size */\n! \t\tfree(h.base);\n! \t\treturn (-1);\n! \t}\n! \t(*str)[h.size - h.left] = '\\0';\n  \treturn (ret);\n  }\n\n\n--\ntIM...HOEk\noptimization: The theory that making your code incomprehensible by using\n              only one-letter variable names will make it run faster."
+}

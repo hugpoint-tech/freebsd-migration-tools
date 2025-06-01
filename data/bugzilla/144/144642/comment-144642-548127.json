@@ -1,0 +1,8 @@
+{
+ "id": 548127,
+ "bug_id": 144642,
+ "attachment_id": 0,
+ "creation_time": "2010-08-23T13:16:37Z",
+ "creator": "a_hartwig@fastmail.fm",
+ "text": "The problem still exists in FreeBSD 8.1 Release.\n\nThis patch stops by panic soon after setting the interface up:\n\n# diff -b -C 7 if_rum.c.orig if_rum.c\n*** if_rum.c.orig    Tue Aug 10 15:05:51 2010\n--- if_rum.c    Tue Aug 10 20:34:20 2010\n***************\n*** 2109,2122 ****\n--- 2109,2127 ----\n    rum_prepare_beacon(struct rum_softc *sc, struct ieee80211vap *vap)\n    {\n        struct ieee80211com *ic = vap-\u003eiv_ic;\n        const struct ieee80211_txparam *tp;\n        struct rum_tx_desc desc;\n        struct mbuf *m0;\n\n+      /* Guard against default ni_chan */\n+      if (vap-\u003eiv_bss-\u003eni_chan == IEEE80211_CHAN_ANYC) {\n+          return 0;\n+      }\n+\n        m0 = ieee80211_beacon_alloc(vap-\u003eiv_bss,\u0026RUM_VAP(vap)-\u003ebo);\n        if (m0 == NULL) {\n            return ENOBUFS;\n        }\n\n        tp =\u0026vap-\u003eiv_txparms[ieee80211_chan2mode(ic-\u003eic_bsschan)];\n        rum_setup_tx_desc(sc,\u0026desc, RT2573_TX_TIMESTAMP, RT2573_TX_HWSEQ,\n#\n\nAt the suggestion of Alex Kozlov I ran the shell script:\nfor i in `jot - 1 200`; do sudo /etc/rc.d/netif start; done\non my 2x800MHz PIII system and it did not panic. Alex ran it on some more recent systems and still saw panics. While I think FreeBSD should be \"bullet proof\" I believe this patch should still be accepted since it makes the system at least somewhat more robust.\n\nThe code for the newer run driver makes the same kind of test as suggested by this patch before calling ieee80211_beacon_alloc()."
+}

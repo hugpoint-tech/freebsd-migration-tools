@@ -1,0 +1,8 @@
+{
+ "id": 1289303,
+ "bug_id": 275929,
+ "attachment_id": 0,
+ "creation_time": "2023-12-25T14:12:18Z",
+ "creator": "jwb@freebsd.org",
+ "text": "FYI, you can easily support other platforms using SIMDE.  The patches below were all that was needed, in addition to a math/simde dependency, to make plink 1.9b6.17 work on Apple M1 via pkgsrc.\n\n$NetBSD$\n\n# Support non-x86\n\n--- SFMT.h.orig 2023-12-25 14:05:59.079320161 +0000\n+++ SFMT.h\n@@ -129,7 +129,10 @@ extern \"C\" {\n   128-bit SIMD like data type for standard C\n   ------------------------------------------*/\n #ifdef __LP64__\n-  #include \u003cemmintrin.h\u003e\n+  // #include \u003cemmintrin.h\u003e\n+  #define SIMDE_ENABLE_NATIVE_ALIASES\n+  #include \u003csimde/x86/sse2.h\u003e\n+\n \n /** 128-bit data structure */\n union W128_T {\n$NetBSD$\n\n# Support non-x86\n\n--- plink_common.h.orig 2023-12-25 14:02:07.377466789 +0000\n+++ plink_common.h\n@@ -187,14 +187,9 @@\n // http://esr.ibiblio.org/?p=5095 ).\n \n #ifdef __LP64__\n-  #ifndef __SSE2__\n-    // It's obviously possible to support this by writing 64-bit non-SSE2 code\n-    // shadowing each SSE2 intrinsic, but this almost certainly isn't worth the\n-    // development/testing effort until regular PLINK 2.0 development is\n-    // complete.  No researcher has ever asked me for this feature.\n-    #error \"64-bit builds currently require SSE2.  Try producing a 32-bit build instead.\"\n-  #endif\n-  #include \u003cemmintrin.h\u003e\n+// #include \u003cemmintrin.h\u003e\n+  #define SIMDE_ENABLE_NATIVE_ALIASES\n+  #include \u003csimde/x86/sse2.h\u003e\n \n   #define VECFTYPE __m128\n   #define VECITYPE __m128i"
+}

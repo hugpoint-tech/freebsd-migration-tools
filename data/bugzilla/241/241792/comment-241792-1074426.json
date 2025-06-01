@@ -1,0 +1,8 @@
+{
+ "id": 1074426,
+ "bug_id": 241792,
+ "attachment_id": 0,
+ "creation_time": "2019-11-07T21:44:40Z",
+ "creator": "sigsys@gmail.com",
+ "text": "There's a certain VM where autoconfiguration via DHCP works with Linux but not FreeBSD.  I have no information on how this VM is setup apart that it's hosted with KVM/QEMU.\n\nThe DHCP server sends a lease with a /32 netmask.  This makes adding the default route fail since it is not reachable via any interface.  Linux's dhclient-script seem to usually have a special case for that and explicitly adds an interface route to the router's address.\n\nFreeBSD's dhclient-script has a special case for when the router address is the same as the leased address, but not when it's a different address that doesn't fall in the interface's subnet.\n\nWith this change, DHCP just works on this VM:\n\nIndex: sbin/dhclient/dhclient-script\n===================================================================\n--- sbin/dhclient/dhclient-script\t(revision 354408)\n+++ sbin/dhclient/dhclient-script\t(working copy)\n@@ -173,6 +173,9 @@\n\t\t\tif [ \"$new_ip_address\" = \"$router\" ]; then\n\t\t\t\troute add default -iface $router \u003e/dev/null 2\u003e\u00261\n\t\t\telse\n+\t\t\t\tif [ \"$new_subnet_mask\" = \"255.255.255.255\" ]; then\n+\t\t\t\t\troute add \"$router\" -iface \"$interface\" \u003e/dev/null 2\u003e\u00261\n+\t\t\t\tfi\n\t\t\t\troute add default $router \u003e/dev/null 2\u003e\u00261\n\t\t\tfi\n\t\tfi"
+}

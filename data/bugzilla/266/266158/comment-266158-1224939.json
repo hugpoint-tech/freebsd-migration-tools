@@ -1,0 +1,8 @@
+{
+ "id": 1224939,
+ "bug_id": 266158,
+ "attachment_id": 0,
+ "creation_time": "2022-09-01T14:09:05Z",
+ "creator": "0mp@FreeBSD.org",
+ "text": "In the source code (sys/sys/bio.h), bio_bcount is documented as \"Valid bytes in buffer\". bio_length is documented as \"Like bio_bcount\". Unfortunately, they are not the same. Here's a sh(1) script to show that:\n\n    # Create a memory device.\n    md=$(mdconfig -s 1G)\n    # Trace the io subsystem when the dd command is executing. Limit the results to\n    # the PID of the dd command only.\n    dtrace -n '\n            io:::start /pid == $target/ {\n                    @bcount[execname] = quantize(args[0]-\u003ebio_bcount);\n                    @length[execname] = quantize(args[0]-\u003ebio_length);\n            }\n    ' -c \"dd if=/dev/random of=/dev/$md bs=1m count=230 oflag=sync\"\n    # Remove the memory device.\n    mdconfig -d -u \"$md\""
+}

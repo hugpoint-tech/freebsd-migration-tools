@@ -1,0 +1,8 @@
+{
+ "id": 1113165,
+ "bug_id": 247126,
+ "attachment_id": 0,
+ "creation_time": "2020-07-11T23:25:55Z",
+ "creator": "leres@freebsd.org",
+ "text": "Here are some additional regressions the review has turned up (so far):\n\nFlag processing ends after the first -e PATTERN:\n\n    echo foobar \u003e test\n\n    grep -e foo -i \u003c test\n    foobar\n\n    zgrep -e foo -i \u003c test\n    zcat: can't stat: -i: No such file or directory\n\nThis bug hides another bug; multiple -e patterns are supposed to behave\nlike multiple patterns in a -f file:\n\n    echo foobar \u003e test6\n    echo howdy \u003e\u003e test6\n\n    grep -e foo -e how test6\n    foobar\n    howdy\n\nThe zgrep wrapper only uses the last -e pattern seen.\n\nLong flags that end with certain characters:\n\n    echo foobar \u003e test\n\n    grep -e foo --ignore-case \u003c test\n    foobar\n\n    zgrep -e foo --ignore-case \u003c test\n    zcat: can't stat: --ignore-case: No such file or directory\n\nLong flags that take arguments are problematic as well:\n\n    echo tiresome \u003e test5\n    grep --regexp=some  test5\n    tiresome\n\n    zgrep --regexp=some test5 \u003c /dev/null\n    test5:tiresome\n    zcat: (stdin): unexpected end of file\n\nNo whitespace between a flag and its argument:\n    \n    echo foobar \u003e test\n \n    grep -efoo test\n    foobar\n    \n    zgrep -efoo test \u003c /dev/null\n    zcat: (stdin): unexpected end of file\n    test:foobar"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 681146,
+ "bug_id": 171118,
+ "attachment_id": 0,
+ "creation_time": "2013-10-21T16:18:34Z",
+ "creator": "roger.pau@citrix.com",
+ "text": "When using libxl the event sent is a \"poweroff\", but I guess XenServer \ntoolstack is sending a \"halt\" event instead (which libxl doesn't use \nfor anything). The following patch wires the \"halt\" event handler to \nthe \"poweroff\" handler and removes the now unused \"halt\" handler.\n\nI'm currently on a trip, so I haven't been able to test the patch \n(not even compile tested).\n\n---\ndiff --git a/sys/dev/xen/control/control.c b/sys/dev/xen/control/control.c\nindex 35c923d..78894ba 100644\n--- a/sys/dev/xen/control/control.c\n+++ b/sys/dev/xen/control/control.c\n@@ -158,7 +158,6 @@ static xctrl_shutdown_handler_t xctrl_poweroff;\n static xctrl_shutdown_handler_t xctrl_reboot;\n static xctrl_shutdown_handler_t xctrl_suspend;\n static xctrl_shutdown_handler_t xctrl_crash;\n-static xctrl_shutdown_handler_t xctrl_halt;\n \n /*-------------------------- Private Data Structures -------------------------*/\n /** Element type for lookup table of event name to handler. */\n@@ -173,7 +172,7 @@ static const struct xctrl_shutdown_reason xctrl_shutdown_reasons[] = {\n \t{ \"reboot\",   xctrl_reboot   },\n \t{ \"suspend\",  xctrl_suspend  },\n \t{ \"crash\",    xctrl_crash    },\n-\t{ \"halt\",     xctrl_halt     },\n+\t{ \"halt\",     xctrl_poweroff },\n };\n \n struct xctrl_softc {\n@@ -427,12 +426,6 @@ xctrl_crash()\n }\n \n static void\n-xctrl_halt()\n-{\n-\tshutdown_nice(RB_HALT);\n-}\n-\n-static void\n xen_pv_shutdown_final(void *arg, int howto)\n {\n \t/*"
+}

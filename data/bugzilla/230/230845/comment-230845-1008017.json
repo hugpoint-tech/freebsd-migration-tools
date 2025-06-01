@@ -1,0 +1,8 @@
+{
+ "id": 1008017,
+ "bug_id": 230845,
+ "attachment_id": 0,
+ "creation_time": "2018-08-23T16:03:40Z",
+ "creator": "kp@freebsd.org",
+ "text": "This likely means you wound up calling arp_ifnet() without a curvnet set.\nThat's important context for basically all networking operations, but it's not going to be set when called from a kernel thread, as appears to be the case here.\n\nUsually all you have to do is ensure that the correct vnet is set.\n\nThis is untested (and may not even compile), but might fix it:\n\ndiff --git a/sys/dev/xen/netfront/netfront.c b/sys/dev/xen/netfront/netfront.c\nindex ba8ac3caf7f..12938354f9c 100644\n--- a/sys/dev/xen/netfront/netfront.c\n+++ b/sys/dev/xen/netfront/netfront.c\n@@ -962,6 +962,8 @@ netfront_backend_changed(device_t dev, XenbusState newstate)\n\n        DPRINTK(\"newstate=%d\\n\", newstate);\n\n+       CURVNET_SET(sc-\u003exn_ifp-\u003evnet);\n+\n        switch (newstate) {\n        case XenbusStateInitialising:\n        case XenbusStateInitialised:\n@@ -994,6 +996,8 @@ netfront_backend_changed(device_t dev, XenbusState newstate)\n #endif\n                break;\n        }\n+\n+       CURVNET_RESTORE();\n }\n\n /**"
+}

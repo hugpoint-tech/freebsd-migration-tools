@@ -1,0 +1,8 @@
+{
+ "id": 1274337,
+ "bug_id": 273291,
+ "attachment_id": 0,
+ "creation_time": "2023-09-12T11:31:30Z",
+ "creator": "junchoon@dec.sakura.ne.jp",
+ "text": "(In reply to Tatsuki Makino from comment #24)\n\nCurrently, confirmed that -O0 in CFLAGS fixed the crash even with working profile and cache, but slow. It would be llvm13/clang13 problem with optimization, which bites firefox 117 but not 116 and earlier.\n\nI'll report back if -O1 works or not. Now building with -O1.\n\n\nSome details:\nFirst, I've tested clearling (actually, moved) cache. It is still under ~/.cache/mozilla/firefox. It didn't help even with blank profile.\n\nAs I'm not sure how I can force -O0, to surely pick within poudriere build, added \"CFLAGS+= -O0\" line in www/firefox/Makefile, which failed because \"-O0 -O3\" in the commandline invoked by make. Maybe the latter \"-O3\" was used.\n\nNext, turned OPTIMIZED_CFLAGS off, with reverting the above-mentioned change.\nThis binary crashes, maybe because actually \"-O2\" was used.\n\nSo I've turned OPTIMIZED_CFLAGS on again, and patched Mk/bsd.gecko.mk with the patch below. With this, \"-O2 -O0\" was used.\nThis worked with blank profile and cache. So made both blank again and copied working ones there, still works! But slow.\n\nNow -O3 and -O2 are known to crash. So buiding with -O1, modifying the patch below.\nLooking into running poudriere build log, \"-O2 -O1\" is used.\n\n\n--- a/Mk/bsd.gecko.mk\n+++ b/Mk/bsd.gecko.mk\n@@ -213,7 +213,7 @@\n MOZ_EXPORT+=\tMOZ_GOOGLE_SAFEBROWSING_API_KEY=AIzaSyBsp9n41JLW8jCokwn7vhoaMejDFRd1mp8\n \n .    if ${PORT_OPTIONS:MOPTIMIZED_CFLAGS}\n-CFLAGS+=\t\t-O3\n+CFLAGS+=\t\t-O0\n MOZ_EXPORT+=\tMOZ_OPTIMIZE_FLAGS=\"${CFLAGS:M-O*}\"\n MOZ_OPTIONS+=\t--enable-optimize\n .    else"
+}

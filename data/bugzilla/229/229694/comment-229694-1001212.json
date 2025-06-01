@@ -1,0 +1,8 @@
+{
+ "id": 1001212,
+ "bug_id": 229694,
+ "attachment_id": 0,
+ "creation_time": "2018-07-11T11:10:29Z",
+ "creator": "eugen@freebsd.org",
+ "text": "Hi!\n\n\"zpool scrub\" may hang in an uninterruptable disk i/o state in case of damaged pool data for 11.2-STABLE/amd64 r335757. This is easily reproduceable using file-backed ZFS pool when files reside on another (\"real\") pool:\n\ncd dir # resides on ZFS\nsize=100\nrm -f vdev1 vdev2\ntruncate -s ${size}m vdev1 vdev2\nzpool create ztest $(realpath vdev1)\nzpool add ztest $(realpath vdev2)\n# simulate data corruption\ndd if=/dev/urandom of=vdev2 bs=1m count=${size}\nzpool scrub ztest\n\nThe last command \"zpool scrub\" always hangs here:\n\nload: 0.53  cmd: zpool 2130 [tx-\u003etx_sync_done_cv] 34.59r 0.00u 0.00s 0% 3692k\n\n\"kill -9\" cannot kill it."
+}

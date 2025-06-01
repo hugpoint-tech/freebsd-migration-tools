@@ -1,0 +1,8 @@
+{
+ "id": 958435,
+ "bug_id": 223440,
+ "attachment_id": 0,
+ "creation_time": "2017-11-05T21:23:37Z",
+ "creator": "emaste@freebsd.org",
+ "text": "\u003e contrib/sqlite3/sqlite3.c\n\u003e crypto/heimdal/lib/sqlite/sqlite3.c\n\nAFAICT this is the only issue that needs more effort / investigation, as it appears that it does not correctly handle EINVAL or EOPNOTSUPP:\n\n#if defined(HAVE_POSIX_FALLOCATE) \u0026\u0026 HAVE_POSIX_FALLOCATE\n      /* The code below is handling the return value of osFallocate() \n      ** correctly. posix_fallocate() is defined to \"returns zero on success, \n      ** or an error number on  failure\". See the manpage for details. */\n      int err;\n      do{\n        err = osFallocate(pFile-\u003eh, buf.st_size, nSize-buf.st_size);\n      }while( err==EINTR );\n      if( err ) return SQLITE_IOERR_WRITE;\n#else\n\nOther source files with posix_fallocate / fallocate do not have an issue:\n\n\u003e contrib/netbsd-tests/lib/libc/sys/t_posix_fallocate.c\n\nIt's only testing that posix_fallocate doesn't change errno, and that EBADF is returned for a bad fd (-1), so no issue here.\n\n\u003e contrib/llvm/lib/Support/Unix/Path.inc\n\nFixed by r325420\n\n\u003e contrib/pjdfstest/pjdfstest.c\n\nAppears to be test harness only; I did not find a test invoking posix_fallocate or fallocate."
+}

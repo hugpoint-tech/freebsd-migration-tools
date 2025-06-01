@@ -1,0 +1,8 @@
+{
+ "id": 804172,
+ "bug_id": 191359,
+ "attachment_id": 0,
+ "creation_time": "2015-01-07T13:44:34Z",
+ "creator": "luke.tw@gmail.com",
+ "text": "Dear Peter, \n\nI managed to find the root cause.\nThe bug can be reproduced by setting \"sysctl vm.memguard.options=2\" and ssh activity\n   1. memguard.options = 2 enable memguard to protect all allocations that are bigger than PAGE_SIZE.\n   2. ssh activity allocates mbuf that uses zone with UMA_ZONE_REFCNT flag. The zone is protected by memguard.\n        \nHowever, these two features save values in the same union plinks in vm_page\n   1. memguard save allocation size in vm_page-\u003eplinks.memguard.v\n   2. UMA_ZONE_REFCNT save refcount in vm_page-\u003eplinks.s.pv\n        \nThe following patch can work around this bug.\n\nIndex: sys/vm/memguard.c\n===================================================================\n--- sys/vm/memguard.c   (revision 276729)\n+++ sys/vm/memguard.c   (working copy)\n@@ -506,6 +506,9 @@\n            zone-\u003euz_flags \u0026 UMA_ZONE_NOFREE)\n                return (0);\n\n+       if (zone-\u003euz_flags \u0026 UMA_ZONE_REFCNT)\n+               return (0);\n+\n        if (memguard_cmp(zone-\u003euz_size))\n                return (1);"
+}

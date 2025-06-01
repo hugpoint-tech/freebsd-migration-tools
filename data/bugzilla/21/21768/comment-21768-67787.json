@@ -1,0 +1,8 @@
+{
+ "id": 67787,
+ "bug_id": 21768,
+ "attachment_id": 0,
+ "creation_time": "2000-10-06T07:09:26Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Thu, 5 Oct 2000 pb@hert.org wrote:\n\n\u003e \u003eDescription:\n\u003e \n\u003e    Trailing slash after a symlink which points to a regular file resolves\n\u003e    the link, where i think it should return EISDIR.\n\nI think you mean ENOTDIR.  If so, I agree (see the log message for rev.1.8\nof vfs_lookup.c).\n\n\u003e --- vfs_lookup.c        Thu Oct  5 16:25:22 2000\n\u003e +++ vfs_lookup.c.new    Thu Oct  5 16:24:44 2000\n\u003e @@ -504,6 +504,14 @@\n\u003e         }\n\u003e  \n\u003e         /*\n\u003e +        * Check for bogus trailing slashes.\n\u003e +        */\n\u003e +       if (trailing_slash \u0026\u0026 dp-\u003ev_type != VDIR) {\n\u003e +               error = ENOTDIR;\n\u003e +               goto bad2;\n\u003e +       }\n\u003e +\n\u003e +       /*\n\u003e          * Check for symbolic link\n\u003e          */\n\u003e         if ((dp-\u003ev_type == VLNK) \u0026\u0026\n\u003e @@ -515,14 +523,6 @@\n\u003e                         goto bad2;\n\u003e                 }\n\u003e                 return (0);\n\u003e -       }\n\u003e -\n\u003e -       /*\n\u003e -        * Check for bogus trailing slashes.\n\u003e -        */\n\u003e -       if (trailing_slash \u0026\u0026 dp-\u003ev_type != VDIR) {\n\u003e -               error = ENOTDIR;\n\u003e -               goto bad2;\n\u003e         }\n\u003e  \n\u003e  nextname:\n\nI think this breaks the case of a symlink to a directory.  Symlinks to\ndirectories must be followed and turned into directories before the\ncheck for bogus trailing slashes.\n\nBruce"
+}

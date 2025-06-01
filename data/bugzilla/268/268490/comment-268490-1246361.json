@@ -1,0 +1,8 @@
+{
+ "id": 1246361,
+ "bug_id": 268490,
+ "attachment_id": 0,
+ "creation_time": "2023-02-10T12:23:18Z",
+ "creator": "kbowling@freebsd.org",
+ "text": "(In reply to Daniel Duerr from comment #4)\n\n1) Clone FreeBSD src, check out 12.4:\npkg install git-lite\ngit clone https://git.freebsd.org/src.git /usr/src\ncd /usr/src\ngit checkout releng/12.4\n\n2) Start the bisecting using the 12.4 release branch as a known bad point, 12.2 as known good and limit the search to the e1000 driver commits:\ncd /usr/src\ngit bisect start releng/12.4 releng/12.2 -- sys/dev/e1000\n\n3) Build and install the kernel:\ncd /usr/src\nmake -j `sysctl -n hw.ncpu` buildkernel KERNCONF=GENERIC-NODEBUG\nmake installkernel KERNCONF=GENERIC-NODEBUG\n\n4) Reboot the system.  You will be in the new kernel (confirm with uname -a, it will show you the build date and git hash).\n\n5) Perform some test like your iperf.\n\n6) If the performance is good:\ncd /usr/src\ngit bisect good\nRepeat step 3 \u0026 4\n\n7) If the performance is bad:\ncd /usr/src\ngit bisect bad\nRepeat step 3 \u0026 4\n\n8) Keep repeating steps 3 through 7.  After a handful of repetitions, you will run out of commits to test and it will spit out the first bad hash.  Post that here.\n\n9) To restore your system to a desired kernel, say 12.4 with security patches:\ngit checkout releng/12.2\nRepeat step 3 \u0026 4"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 449210,
+ "bug_id": 124457,
+ "attachment_id": 0,
+ "creation_time": "2008-06-10T20:30:01Z",
+ "creator": "kaworu@kaworu.ch",
+ "text": "files/502.pgsql act as a backup script if daily_pgsql_backup_enable is enable (daily_pgsql_backup_enable=\"YES\") in /etc/periodic.conf or /etc/periodic.conf.local. In the script (run as root) the umask is set to 077 to protect the backup files but the problem is that all postgresql command are run as pgsql user with su(1) and the -l (login) option and then the umask is set to default (022 on my system).\n\nHere are the first relevant lines:\n57     # Protect the data\n58     umask 077\n59     dbnames=`su -l pgsql -c \"psql -q -t -A -d template1 -c SELECT\\ datname\\ FROM\\ pg_database\\ WHERE\\ datname!=\\'template0\\'\"`\n\nFix: I ranked this bug as non-critical because the permissions on /usr/local/pgsql/backups are properly set at creation.\n\nHere is a patch which ensure a proper umask before each su(1) command. It's maybe not the perfect fix, but it works. chmod'ing files juste after backup isn't a good solution because the file is world readable between the creation (pg_dump) and the chmod command. \nHow-To-Repeat: install any of the databases/postgresql8x-server, then look at the /usr/local/etc/periodic/daily/502.pgsql file.\ntry to make a backup (set daily_pgsql_backup_enable=\"YES\" in /etc/periodic.conf or /etc/periodic.conf.local, then run the script as root).\ncheck the permission on /usr/local/pgsql/backups/pgdump* files."
+}

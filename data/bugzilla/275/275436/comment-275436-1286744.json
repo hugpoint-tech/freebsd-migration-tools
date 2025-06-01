@@ -1,0 +1,8 @@
+{
+ "id": 1286744,
+ "bug_id": 275436,
+ "attachment_id": 0,
+ "creation_time": "2023-12-03T08:04:51Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "VM (alomst) always ensures that there are several free pages.  More, it even\ntypically manages to free several pages in reasonable time.\n\nThis is why our OOM organized in current way:\n- global OOM triggers when VM cannot get a free page despite existence of the\n  page shortage, in all domains, for some time.  It is typically triggered\n  when kernel allocates too much unmanaged pages (not tmpfs case).\n- per-process OOM triggers when page fault handler needs a page and cannot\n  allocate it after several cycles of allocation attempts.\n\nI added the second (per-process) OOM since global OOM (similar to your patch)\nwas not able to handle typical situation with usermode sitting on too many\ndirty pages.\n\nNow that I formulated this, I think that for tmpfs a reasonable approach would\nbe something in line of per-process OOM: try the allocation, and return ENOSPC\nif it failed, with some criteria for restart.  You might look at vm/vm_fault.c\nvm_fault_allocate_oom()."
+}

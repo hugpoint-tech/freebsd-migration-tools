@@ -1,0 +1,8 @@
+{
+ "id": 1307273,
+ "bug_id": 278666,
+ "attachment_id": 0,
+ "creation_time": "2024-05-02T14:37:56Z",
+ "creator": "tuexen@freebsd.org",
+ "text": "I was wrong. The text says:\n```\nonce per RTO of that destination address plus the protocol parameter 'HB.interval', with jittering of +/- 50% of the RTO value\n```\nThis means you use RTO + HB.interval +/- RTO/2. This should result in [HB.interval + RTO - RTO/2, Hb.interval + RTO + RTO/2].\nThe code we use when removing the integer overflow protection:\n```\njitter = rndval % to_ticks;\nif (to_ticks \u003e 1) {\n\tto_ticks \u003e\u003e= 1;\n}\nto_ticks += jitter;\n```\nIsn't `jitter` in [0, RTO] and we are then adding that to RTO/2. Doesn't this result in a value in [RTO/2, 3*RTO/2]. We finally add HB.interval.\n\nSo I think the code is almost correct. The jitter stuff should only be done on idle confirmed paths, which are not potentially failed. Once we agree on the timer value, I'll fix when the jitter will be used."
+}

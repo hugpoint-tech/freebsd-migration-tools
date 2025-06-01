@@ -1,0 +1,8 @@
+{
+ "id": 912712,
+ "bug_id": 212318,
+ "attachment_id": 0,
+ "creation_time": "2016-12-21T10:47:10Z",
+ "creator": "m.r.sopacua@gmail.com",
+ "text": "I have several nodes all using /dev/fuse, but I'm using an rc.d script to mount/unmount them, which is run by root. My unmounting part is this:\n\nntfsmount_unmount() {\n        # We can't check this, since mount -p with path argument only checks\n        # nodes in fstab(5).\n        #       if /sbin/mount -p ${ntfsmount_mountpoint} \u003e/dev/null 2\u003e\u00261\n        # So we need to envoke mount -p without argument and grep for the\n        # mountpoint instead.\n        if check_is_mounted ${ntfsmount_mountpoint}\n        then\n                /sbin/umount ${ntfsmount_mountpoint}\n        fi\n}\n\ncheck_is_mounted() {\n        local mp is_mounted\n\n        mp=\"$1\"\n        is_mounted=`/sbin/mount -p|sed -ne \"s,^/dev/fuse.*[[:space:]]\\(${mp}\\)[[:space:]].*$,\\\\1,p\"`\n        if [ ! -z \"${is_mounted}\" -a x\"${is_mounted}\" = x\"${mp}\" ]\n        then\n                return 0\n        fi\n        return 1\n}\n\nThis does the right thing for me. As for the code you've shown, it seems like a bug to use fstat, as you can never get the path it is mounted *on* from that."
+}

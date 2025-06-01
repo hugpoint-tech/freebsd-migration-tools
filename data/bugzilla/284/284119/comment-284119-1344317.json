@@ -1,0 +1,8 @@
+{
+ "id": 1344317,
+ "bug_id": 284119,
+ "attachment_id": 0,
+ "creation_time": "2025-01-17T19:15:04Z",
+ "creator": "emaste@freebsd.org",
+ "text": "install -U -M can pass the owner and group through to the METALOG:\n\n$ install -U -M /dev/stdout -o root -g wheel /usr/bin/true /tmp\n./tmp/true type=file uname=root gname=wheel mode=0755 size=5008\n\ninstall also accepts numeric uid and gid.  These should produce uid= and gid= in the METALOG, but we still get uname and gname:\n\n$ install -U -M /dev/stdout -o 0 -g 0 /usr/bin/true /tmp\n./tmp/true type=file uname=0 gname=0 mode=0755 size=5008\n\nIn normal (non -U) mode we attempt to look up the name, and parse it as an id if that fails:\n\n        if (owner != NULL \u0026\u0026 !dounpriv) {\n                if (uid_from_user(owner, \u0026uid) == -1) {\n                        id_t id;\n                        if (!parseid(owner, \u0026id))\n                                errx(1, \"unknown user %s\", owner);\n                        uid = id;\n                }\n        } else\n                uid = (uid_t)-1;\n\nSomething similar is needed for -U -M mode"
+}

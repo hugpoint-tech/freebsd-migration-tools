@@ -1,0 +1,8 @@
+{
+ "id": 1038010,
+ "bug_id": 234671,
+ "attachment_id": 0,
+ "creation_time": "2019-02-16T20:46:31Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "After merging the upstream fixes, clang won't crash anymore with a fatal error.  It still will refuse to compile the glfs.c file though, now with:\n\nerror: versioned symbol glfs_upcall_register@@GFAPI_3.13.0 must be defined\nerror: versioned symbol glfs_upcall_unregister@@GFAPI_3.13.0 must be defined\n2 errors generated.\n\nIndeed, this is an error in the code, which seems to have been fixed in this upstream commit (together with a lot of other symbol breakage):\n\nhttps://github.com/gluster/glusterfs/commit/b4ce5e090dee2afc9ed0c86456a54f76a2bb6563\n\nCan you try applying that, or at least parts of it?  Alternatively, a minimal fix is:\n\n--- a/glfs.c       2019-01-10 08:57:50.000000000 +0100\n+++ b/glfs.c       2019-02-16 21:45:03.999966000 +0100\n@@ -48952,7 +48952,7 @@\n GFAPI_SYMVER_PUBLIC_DEFAULT(glfs_sysrq, 3.10.0);\n\n int\n-glfs_upcall_register (struct glfs *fs, uint32_t event_list,\n+pub_glfs_upcall_register (struct glfs *fs, uint32_t event_list,\n                       glfs_upcall_cbk cbk, void *data)\n {\n         int ret = 0;\n@@ -49003,7 +49003,7 @@\n }\n GFAPI_SYMVER_PUBLIC_DEFAULT(glfs_upcall_register, 3.13.0);\n\n-int glfs_upcall_unregister (struct glfs *fs, uint32_t event_list)\n+int pub_glfs_upcall_unregister (struct glfs *fs, uint32_t event_list)\n {\n         int ret = 0;\n         /* list of supported upcall events */"
+}

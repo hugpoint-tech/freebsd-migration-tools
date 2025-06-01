@@ -1,0 +1,8 @@
+{
+ "id": 1181190,
+ "bug_id": 258960,
+ "attachment_id": 228476,
+ "creation_time": "2021-10-06T09:26:33Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 228476\nProgram to generate a FAT32 image that causes mount_msdosfs to allocate huge amounts of memory.\n\nI've attached a program that generates a FAT32 disk image that, when\nmounted, causes the kernel's msdosfs_mount() to try to allocate 1000\nGB of memory. On my machine this ends up killing every process due to\nlack of swap. I don't think the mount process itself can be killed, so\nit's a fairly fatal condition. The cause is some parameters in the\nFAT32 image that have outrageous values, for example the \"total\nlogical sectors\" at BPB offset 0x020 is 120 million, much larger than\nthe actual disk image. msdosfs_mount() allocates an amount of memory\nderived from pmp-\u003emaxcluster, which is the product of some of these\nhuge values:\n\n    pmp-\u003epm_inusemap = malloc(howmany(pmp-\u003epm_maxcluster + 1, N_INUSEBITS)\n                  * sizeof(*pmp-\u003epm_inusemap),\n                  M_MSDOSFSFAT, M_WAITOK);\n\nHere's how to produce and mount an image that causes this problem,\nusing the attached fat323.c program:\n\n% cc fat323.c\n% ./a.out\n% sudo mdconfig -f fat323.img\n% sudo mount_msdosfs /dev/md0 /mnt\n\nMy machine runs FreeBSD xxx 13.0-RELEASE-p4 FreeBSD 13.0-RELEASE-p4 #0: Tue Aug 24 07:33:27 UTC 2021     root@amd64-builder.daemonology.net:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64"
+}

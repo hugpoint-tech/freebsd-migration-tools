@@ -1,0 +1,8 @@
+{
+ "id": 59975,
+ "bug_id": 19544,
+ "attachment_id": 0,
+ "creation_time": "2000-06-27T13:20:00Z",
+ "creator": "olgeni@uli.it",
+ "text": "If there are no dummynet pipes configured in the system, an attempt to delete\nany pipe with \"ipfw pipe delete\" will result in a kernel panic (trap 12).\n\n(kgdb) up\n#3  0xc032fe09 in trap_pfault (frame=0xc64a0d58, usermode=0, eva=0)\n    at ../../i386/i386/trap.c:820\n820                     trap_fatal(frame, eva);\n(kgdb) up\n#4  0xc032f9c3 in trap (frame={tf_fs = 16, tf_es = 16, tf_ds = 16,\n      tf_edi = -968225348, tf_esi = 0, tf_ebp = -968225368,\n      tf_isp = -968225404, tf_ebx = -1058306304, tf_edx = -968232960,\n      tf_ecx = 0, tf_eax = 0, tf_trapno = 12, tf_err = 0,\n      tf_eip = -1071642696, tf_cs = 8, tf_eflags = 66182, tf_esp = -968225348,\n      tf_ss = 0}) at ../../i386/i386/trap.c:426\n426                             (void) trap_pfault(\u0026frame, FALSE, eva);\n(kgdb) up\n#5  0xc02007b8 in delete_pipe (p=0xc64a0dbc)\n    at ../../netinet/ip_dummynet.c:1559\n1559                all_pipes = b-\u003enext ;\n(kgdb) print b\n$1 = (struct dn_pipe *) 0x0\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(kgdb) up\n#6  0xc0200c32 in ip_dn_ctl (sopt=0xc64a0f14)\n    at ../../netinet/ip_dummynet.c:1750\n1750            error = delete_pipe(p);\n(kgdb) print p\n$2 = (struct dn_pipe *) 0xc64a0dbc\n(kgdb)\n\nHow-To-Repeat: As root, run:\n\n# ipfw pipe show\n[to check that the pipe list is really empty]\n# ipfw pipe delete 1\n[panic]"
+}

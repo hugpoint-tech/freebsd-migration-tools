@@ -1,0 +1,8 @@
+{
+ "id": 1358704,
+ "bug_id": 277959,
+ "attachment_id": 0,
+ "creation_time": "2025-04-10T15:00:16Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch releng/13.4 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=a1f4a530dea32e6987b8788e5ad1f99ffb96fbbf\n\ncommit a1f4a530dea32e6987b8788e5ad1f99ffb96fbbf\nAuthor:     Kyle Evans \u003ckevans@FreeBSD.org\u003e\nAuthorDate: 2024-11-19 19:51:27 +0000\nCommit:     Philip Paeps \u003cphilip@FreeBSD.org\u003e\nCommitDate: 2025-04-10 14:39:15 +0000\n\n    daemon: stop rebuilding the kqueue every restart of the child\n\n    We populate the kqueue with all of four kevents: three signal handlers and\n    one for read of the child pipe.  Every time we start the child, we rebuild\n    this kqueue from scratch for the child and tear it down before we exit and\n    check if we need to restart the child.  As a consequence, we effectively\n    drop any of the signals we're interested in between restarts.\n\n    Push the kqueue out into the daemon state to avoid losing any signal events\n    in the process, and reimplement the restart timer in terms of kqueue timers.\n    The pipe read event will be automatically deleted upon last close, which\n    leaves us with only the signal events that really get retained between\n    restarts of the child.\n\n    Approved by:    so\n    Security:       FreeBSD-EN-25:06.daemon\n    PR:             277959\n    Reviewed by:    des, markj\n\n    (cherry picked from commit bc1dfc316a2bba97773a14b96f5e976a52524be4)\n    (cherry picked from commit 4bb1a558a2811a27b1211579cb257a11df49c0e1)\n\n usr.sbin/daemon/daemon.c | 121 +++++++++++++++++++++++++++++++++++++++--------\n 1 file changed, 101 insertions(+), 20 deletions(-)"
+}

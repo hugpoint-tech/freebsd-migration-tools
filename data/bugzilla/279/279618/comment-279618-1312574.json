@@ -1,0 +1,8 @@
+{
+ "id": 1312574,
+ "bug_id": 279618,
+ "attachment_id": 0,
+ "creation_time": "2024-06-10T00:24:14Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "6cb9418289f90 introduced a special check on the first nibble of an in6_addr:\n\n+               switch (sin6-\u003esin6_addr.s6_addr[0]) {\n+               case 0x00:\n\nIf it doesn't fall into any of the two categories it will not attempt to do name resolution and lookup the PTR because it sets NI_NUMERICHOST.\n\nI cannot see why this \"else\" case was ever added (and someone should dig into the KAME archives to understand).  Also someone should check if POSIX says anything beyond the RFC and fully understand what is supposed to go on.\n\nAddresses with the IPv6 DNS64 default prefix 64:ff9b::/96 such as 64:ff9b::4007:8d09 (zoo) will not be resolved and that does indeed break software (e.g. postfix in an ipv6-only setup behind a NAT64).\n\nManually calling\nhp = getipnodebyaddr(\u0026sin6.sin6_addr, sizeof(struct in6_addr), AF_INET6, \u0026h_error);\nwill result in the correct answer from an accordingly setup resolver."
+}

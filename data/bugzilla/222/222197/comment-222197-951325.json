@@ -1,0 +1,8 @@
+{
+ "id": 951325,
+ "bug_id": 222197,
+ "attachment_id": 0,
+ "creation_time": "2017-09-10T13:58:41Z",
+ "creator": "vivek@khera.org",
+ "text": "The clock skew daemon interferes with ntpd upon startup.\n\nOn boot, the following is observed:\n\nStarting sshd.\nPerforming sanity check on sshd configuration.\nStarting google_network_setup.\nStarting google_ip_forwarding_daemon.\nStarting google_clock_skew_daemon.\nStarting google_accounts_daemon.\nntpd is not running.\nNo core dumps found.\nClearing /tmp (X related).\nUpdating motd:.\nMounting late filesystems:.\nStarting ntpd.\nSep  8 20:17:20 yertle ntpd[697]: unable to bind to wildcard address :: - another process may be running - EXITING\n\nWhat happens is that the clock skew daemon starts and does not see ntpd running. It then proceeds to set the time using ntpdate. By luck of timing, it does so at the precise moment that ntpd wants to start, causing that to fail. Subsequently, since ntpd was not discovered by the daemon it is not restarted, and the system time drifts without ntpd to keep it in check.\n\nOnce the system is running, if you stop the clock skew daemon, start ntpd, then re-start the clock skew daemon, you will observe it stop and restart ntpd. If you stop ntpd, and restart the clock skew daemon, you will observe the \"ntpd is not running.\" message, and ntpd is not started.\n\nIt seems to me that ntpd should come before the clock skew daemon in the startup order. The documentation implies that the daemon only does work on startup or migrate, so it is necessary for migration and ntpd is necessary for the rest of the time."
+}

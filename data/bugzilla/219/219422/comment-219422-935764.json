@@ -1,0 +1,8 @@
+{
+ "id": 935764,
+ "bug_id": 219422,
+ "attachment_id": 0,
+ "creation_time": "2017-05-28T21:56:21Z",
+ "creator": "prj@rootwyrm.com",
+ "text": "Tested 4.5.10 - same problem. This appears to be a MAJOR regression in Samba somewhere. It's failing to configure for the specified IP address correctly, but OTHER IP addresses permit access. \n\nMore worryingly, this is happening when those IP addresses are explicitly NOT bound. e.g.\nbind interfaces only = yes\ninterfaces = ue0 127.0.0.1/32\n\nue0: 10.10.0.90, REMOVED::90\nlo0: 127.0.0.1, 10.53.0.1/32, 10.53.0.2/32\n\nRSAT DNS will NOT work on the ue0 interfaces, but DOES connect and work on the 10.53.0.[1,2] addresses.\n\nThere's ANOTHER even NASTIER regression I just found as well:\n\n  GSS server Update(krb5)(1) Update failed:  Miscellaneous failure (see text): Failed to find SKYHORN$@TEST.PVT(kvno 2) in keytab FILE:/var/db/samba4/private/secrets.keytab (aes256-cts-hmac-sha1-96)\nroot@skyhorn:~ # ktutil -k /var/db/samba4/private/secrets.keytab list | grep SKYHORN\n  1  des-cbc-crc              SKYHORN$@TEST.PVT\n  1  des-cbc-md5              SKYHORN$@TEST.PVT\n  1  arcfour-hmac-md5         SKYHORN$@TEST.PVT\n  1  aes128-cts-hmac-sha1-96  SKYHORN$@TEST.PVT\n  1  aes256-cts-hmac-sha1-96  SKYHORN$@TEST.PVT\n\nYep - the KVNO's being shifted by one in Samba. Which results in SEVERE breakage on the DC. So not only do you have a potential security vulnerability here (clearly access is NOT being properly checked or handled for the dnsserver component) but you have a regression in the KCC that prevents self-managing!"
+}

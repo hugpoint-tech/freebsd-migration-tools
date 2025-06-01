@@ -1,0 +1,8 @@
+{
+ "id": 349032,
+ "bug_id": 103304,
+ "attachment_id": 0,
+ "creation_time": "2006-09-15T17:00:32Z",
+ "creator": "volker@vwsoft.com",
+ "text": "pf silently accepts rules which shall be queued to a non-existent queue.\n\nExample:\n\nif_int=\"vr0\"\nif_ext=\"ng0\"\n\naltq on $if_ext cbq bandwidth 64Kb queue { q_low}\nqueue q_low cbq( borrow rio default )\n\npass quick on $if_int all\npass quick on $if_ext proto icmp all queue ( nonexistent )\npass quick on $if_ext all queue ( q_low )\n\nwhich creates _one_ queue but queues to two different (one non-exist) queues.\n\npfctl -gf [file] does not claim about the missing queue which might lead the administrator into unwanted results (haven't checked if it might lead pf into a failure situation).\n\npfctl -sa gives:\n\nFILTER RULES:\npass quick on vr0 all\npass quick on ng0 proto icmp all queue nonexistent\npass quick on ng0 all queue q_low\n\nALTQ:\nqueue root_ng0 bandwidth 64Kb priority 0 cbq( wrr root ) {q_low}\nqueue  q_low bandwidth 64Kb cbq( rio borrow default )\n\nThis is just an example rule. IF names and proto's used do not matter here.\n\nFix: \n\npf should at least claim about the nonexistent queue and deny loading."
+}

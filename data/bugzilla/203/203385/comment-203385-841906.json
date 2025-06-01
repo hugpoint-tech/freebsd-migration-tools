@@ -1,0 +1,8 @@
+{
+ "id": 841906,
+ "bug_id": 203385,
+ "attachment_id": 161446,
+ "creation_time": "2015-09-26T22:10:54Z",
+ "creator": "landon@landonf.org",
+ "text": "Created attachment 161446\nBCM57765 support patch\n\nThis patch adds support for the BCM57765[2] card reader function included in Broadcom's BCM57766 ethernet/sd3.0 controller. This controller is commonly found in laptops and Apple hardware (MBP, iMac, etc).\n\nThe BCM57765 chipset is almost fully compatible with the SD3.0 spec, but does not support deriving a frequency below 781KHz from its default base clock via the standard SD3.0-configured 10-bit clock divisor.\n\nIf such a divisor is set, card identification (which requires a 400KHz clock frequency) will time out[1].\n\nAs a work-around, I've made use of an undocumented device-specific clock control register to switch the controller to a 63MHz clock source when targeting clock speeds below 781KHz; the clock source is likewise switched back to the 200MHz clock when targeting speeds greater than 781KHz.\n\nAdditionally, this patch fixes a small sdhci_pci bug; the sdhci_pci_softc-\u003equirks flag was not copied to the sdhci_slot, resulting in `quirk` behavior not being applied by sdhci.c.\n\n[1] A number of Linux/FreeBSD users have noted that bringing up the chipsets' associated ethernet interface will allow SD cards to enumerate (slowly). This is a controller implementation side-effect triggered by the ethernet driver's reading of the hardware statistics registers.\n\n[2] This may also fix card detection when using the BCM57785 chipset, but I don't have access to the BCM57785 chipset and can't verify."
+}

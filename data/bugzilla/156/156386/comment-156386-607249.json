@@ -1,0 +1,8 @@
+{
+ "id": 607249,
+ "bug_id": 156386,
+ "attachment_id": 0,
+ "creation_time": "2011-04-14T03:10:07Z",
+ "creator": "inyaoo@gmail.com",
+ "text": "Since 256.29 nvidia driver allows setting EnableMSI via sysctl which was\nlong available on linux before. However, sysctls are initialized at the\nlast stage of module loading when the device is already attached.\n\nLinux uses NVreg_EnableMSI as a module parameter via modprobe(8) but\nit doesn't seem to work on FreeBSD when set via kenv(1) or loader(8).\n\nFix: Below workaround allows one to enable MSI via device.hints(5)\n\n  hint.nvidia.%d.msi=1\n\nnot sure if it'll work with different settings on each card with\na multicard setup.\nHow-To-Repeat: 1. load nvidia.ko\n2. set hw.nvidia.registry.EnableMSI via sysctl\n3. start X11 # ???\n4. check pciconf -lc and/or vmstat -i\n\n1. apply the patch\n2. kenv hint.nvidia.0.msi=1\n3. kldload nvidia\n4. check pciconf -lc and/or vmstat -i\n\n`pciconf -lc' diff\n  -    cap 05[68] = MSI supports 1 message, 64 bit \n  +    cap 05[68] = MSI supports 1 message, 64 bit enabled with 1 message\n\n`vmstat -i' diff\n   interrupt                          total       rate\n  -irq16: vgapci0++                    3639         13\n   irq18: uhci2 ehci0*                 XXXX          X\n   irq20: fxp0                         XXXX          X\n   irq21: uhci1                        XXXX          X\n   irq22: hpet0                        XXXX          X\n   irq23: uhci3 ehci1                  XXXX          X\n  +irq256: vgapci0                     5167         20\n   irq257: hdac0                       XXXX          X\n   irq258: ahci1:ch0                   XXXX          X\n   irq259: ahci1:ch1                   XXXX          X"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1181285,
+ "bug_id": 258856,
+ "attachment_id": 0,
+ "creation_time": "2021-10-07T03:10:12Z",
+ "creator": "ashish@FreeBSD.org",
+ "text": "(In reply to Yasuhiro Kimura from comment #15)\n\nHi Kimura-san!\n\n\nFollowing excerpt from truss output looks interesting:\n\n---------\n 3037: read(5,\";;; -*- Mode: emacs-lisp -*-\\n;;;\\n;;; Startup file for GNU Emacs\\n\\n;;;\\n;;; OS\\M-g\\M^R\\M-0\\M-e\\M-\"\\M^C\\M-c\\M^A\\M-.\\M-f\\M-$\\M^\\\\M-e\\M^G\\M-:\\n;;;\\n(cond ((eq system-type 'gnu/linux)\\n       (setq utahime:os-name\\n\\t     (substring (shell-command-to-stri\n 3037: lseek(5,0x0,SEEK_SET)                     = 0 (0x0)\n 3037: close(5)                                  = 0 (0x0)\n 3037: openat(AT_FDCWD,\"/home/yasu/.emacs\",O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH,00) = 5 (0x5)\n 3037: fstat(5,{ mode=lrwxr-xr-x ,inode=471008,size=29,blksize=4096 }) = 0 (0x0)\n 3037: readlinkat(5,\"\",0x7fffffffd090,1024)      ERR#2 'No such file or directory'\n 3037: close(5)                                  = 0 (0x0)\n---------\n\nCompared to following output on my GNU/Linux host:\n\n---------\nopenat(AT_FDCWD, \".emacs\", O_RDONLY|O_NOFOLLOW|O_CLOEXEC|O_PATH) = 3\nnewfstatat(3, \"\", {st_mode=S_IFLNK|0777, st_size=15, ...}, AT_EMPTY_PATH) = 0\nreadlinkat(3, \"\", \".emacs.d/.emacs\", 1024) = 15\n---------\n\n---------\nlrwxrwxrwx abbe users 15 B Thu Oct  7 08:09:27 2021  .emacs ⇒ .emacs.d/.emacs\n---------\n\nEsp. the readlinkat() syscall invocation where it returns ENOENT (on FreeBSD), compared to GNU/Linux where it returns the symlink target.\n\nI'm trying to get access to a recent 14-CURRENT host, where I can verify this. It'll take me some time.\n\nThank you for providing outputs so far.\n\nAnd thanks in advance for patience."
+}

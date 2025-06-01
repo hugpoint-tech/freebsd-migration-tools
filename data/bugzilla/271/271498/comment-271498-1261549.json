@@ -1,0 +1,8 @@
+{
+ "id": 1261549,
+ "bug_id": 271498,
+ "attachment_id": 0,
+ "creation_time": "2023-05-30T22:48:37Z",
+ "creator": "girgen@FreeBSD.org",
+ "text": "Since we want the same llvm as the compiler, as I see it we have two choices. Either use the compiler that comes with llvm, in which case we use the default LLVM out of the box. Easy:\n\n```\nLLVM_USES= llvm:max=15,lib\nLLVN_CONFIGURE_ENV= CC=${LLVM_PREFIX}/bin/clang${LLVM_DEFAULT}\n```\n\nor we decide to use the base system compiler, and match LLVM version with it:\n\n```\n.include \u003cbsd.port.pre.mk\u003e\n\n.if ${PORT_OPTIONS:MLLVM}\n# Sync LLVM to the preferred compiler if possible\n# or else use a lower version compiler that is compatible.\n# LLVM 16 and later are not yet supported in PostgreSQL.\n.  if ${COMPILER_VERSION} \u003e= 160\nPG_LLVM_SUFFIX=         15\nCONFIGURE_ENV+=         CC=${LOCALBASE}/bin/clang${PG_LLVM_SUFFIX}\n.  else\nPG_LLVM_SUFFIX=         ${COMPILER_VERSION:C/.$//}\n.  endif\n\nLIB_DEPENDS+=           libLLVM-${PG_LLVM_SUFFIX}.so:devel/llvm${PG_LLVM_SUFFIX}\nINSTALL_DIRS+=          src/backend/jit/llvm\n.endif\n\n```\n\nI suggest the latter, just sticking with the base compiler, seems like the safest bet."
+}

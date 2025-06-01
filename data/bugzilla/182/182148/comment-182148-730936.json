@@ -1,0 +1,8 @@
+{
+ "id": 730936,
+ "bug_id": 182148,
+ "attachment_id": 0,
+ "creation_time": "2013-09-16T11:30:00Z",
+ "creator": "tps@vr-web.de",
+ "text": "Having a script:\n--- snip\n#!/bin/sh\n\ntimecmd() {\n  echo \"$(date) -- \\\"$*\\\"\"\n  time -h -- $*\n  res=$?\n  echo\n  echo\n  return $res\n}\n\ntimecmd portupgrade -aDFR -O\n--- snap\n\nleads to output:\n--- snip\n# update up\nMon Sep 16 11:28:47 CEST 2013 -- \"portupgrade -aDFR -O\"\n[Reading data from pkg(8) ... - 272 packages found - done]\n---\u003e  Fetching the distfile(s) for 'sqlite3-3.8.0.2' (databases/sqlite3)\n---\u003e  Fetching '/usr/ports/databases/sqlite3'\n^D\n--- snap\n\nat this point the script stops. Changing it to read:\n--- snip\n#!/bin/sh\n\ntimecmd() {\n  echo \"$(date) -- \\\"$*\\\"\"\n  time -h -- $*\n  res=$?\n  echo\n  echo\n  return $res\n}\n\ntimecmd portupgrade -aDFR -O \\\u003c /dev/null\n--- snap\n\nleads to output:\n--- snip\n# update up\nMon Sep 16 12:22:51 CEST 2013 -- \"portupgrade -aDFR -O \u003c /dev/null\"\n[Reading data from pkg(8) ... - 272 packages found - done]\n: date format error\n\n--- snap\n\nLooks like there is something going on inside portupgrade while fiddling with stdio/stderr/stdin giving strange results or leading to hanging processes waiting for input.\n\nFix: \n\nDo not use portupgrade with any io-redirects\nDo not use \"time\" or others to execute portupgrade\n\nSo really: no fix known.\nHow-To-Repeat: Copy the above script, execute it to update ports database"
+}

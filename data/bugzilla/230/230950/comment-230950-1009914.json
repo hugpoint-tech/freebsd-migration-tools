@@ -1,0 +1,8 @@
+{
+ "id": 1009914,
+ "bug_id": 230950,
+ "attachment_id": 0,
+ "creation_time": "2018-09-03T23:32:19Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "Ok, 2nd try; I still cannot reproduce the ip6_output() panics.  If you've got a few spare minutes try this one; it at least survives the tests I can do at the moment.\n\ndiff --git a/sys/netinet/in_pcb.c b/sys/netinet/in_pcb.c\nindex 98838fa041a..95ec83dd4d4 100644\n--- a/sys/netinet/in_pcb.c\n+++ b/sys/netinet/in_pcb.c\n@@ -1596,6 +1596,9 @@ in_pcbfree_deferred(epoch_context_t ctx)\n #endif\n        if (inp-\u003einp_options)\n                (void)m_free(inp-\u003einp_options);\n+       CURVNET_SET(inp-\u003einp_vnet);\n+       RO_INVALIDATE_CACHE(\u0026inp-\u003einp_route);\n+       CURVNET_RESTORE();\n        inp-\u003einp_vflag = 0;\n        crfree(inp-\u003einp_cred);\n #ifdef MAC\n@@ -1644,7 +1647,6 @@ in_pcbfree(struct inpcb *inp)\n        INP_LIST_WLOCK(pcbinfo);\n        in_pcbremlists(inp);\n        INP_LIST_WUNLOCK(pcbinfo);\n-       RO_INVALIDATE_CACHE(\u0026inp-\u003einp_route);\n        /* mark as destruction in progress */\n        inp-\u003einp_flags2 |= INP_FREED;\n        INP_WUNLOCK(inp);"
+}

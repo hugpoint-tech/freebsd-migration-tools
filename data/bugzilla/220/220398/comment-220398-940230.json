@@ -1,0 +1,8 @@
+{
+ "id": 940230,
+ "bug_id": 220398,
+ "attachment_id": 183968,
+ "creation_time": "2017-06-30T21:53:05Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Created attachment 183968\nReproduction program\n\nIt may seem stupid, but you can call lio_listio(2) with an empty aiocb list.  I would naively expect lio_listio to do nothing and return in that case.  Indeed, that's what it does when mode == LIO_WAIT.  However, if mode == LIO_NOWAIT, then asynchronous notifications never get delivered.  With SIGEV_KEVENT, no kevent is ever delivered, and with SIGEV_SIGNAL, no signal is ever delivered.  I haven't checked other SIGEV_ values.\n\nThe attached program demonstrates the problem: it calls lio_listio with LIO_NOWAIT and notification via SIGTERM.  But no signal ever gets delivered, so the program exits normally.\n\njhb feels that the Open Group's specification is ambiguous on this point, but that sending asynchronous notification immediately would be sensible."
+}

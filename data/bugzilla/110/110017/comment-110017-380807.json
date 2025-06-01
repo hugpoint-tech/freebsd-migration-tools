@@ -1,0 +1,8 @@
+{
+ "id": 380807,
+ "bug_id": 110017,
+ "attachment_id": 0,
+ "creation_time": "2010-09-15T22:49:44Z",
+ "creator": "hcaldwell@fastsoft.com",
+ "text": "We ran into this same problem with the PowerEdge 1950 and PowerEdge\nR710.\n\nI spent some time looking at the problem, and it looks like what is\nhappening is that oflush() is called right before a case that will end\nup continuing back to the top of the loop, at which time setttymode()\ngets called, which calls tcflush() right off the bat (with TCIOFLUSH).\nSo the buffered data is sent, but for at least these machines, it\ndoesn't get a chance to be completely written before the call to\ntcflush(), causing it to get into a garbled state.\n\nHere is a patch that uses tcdrain() to make sure that the data is\ncompletely written to the terminal before returning from oflush().  I\nthink that this addresses the problem more directly.\n\n--- getty/main.c\t(revision 212627)\n+++ getty/main.c\t(working copy)\n@@ -689,8 +689,10 @@\n static void\n oflush(void)\n {\n-\tif (obufcnt)\n+\tif (obufcnt) {\n \t\twrite(STDOUT_FILENO, outbuf, obufcnt);\n+\t\ttcdrain(STDOUT_FILENO);\n+\t}\n \tobufcnt = 0;\n }\n \n-- \nHeath Caldwell\nhncaldwell@fastsoft.com"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1173624,
+ "bug_id": 256952,
+ "attachment_id": 227028,
+ "creation_time": "2021-08-09T08:54:11Z",
+ "creator": "vico13.chen@gmail.com",
+ "text": "Comment on attachment 227028\nnote_hup.patch\n\nHi Vladimir,\nI have several questions:\n\n1. For 'LINUX_EPOLL_EVRD', it is defined only as “LINUX_EPOLLIN|LINUX_EPOLLRDNORM\". If the user call epoll with only \"EPOLLRDHUP\", then filter will be no actions.\n\n2. The Linux behavior for Linux are:\n    a.If both sender and receiver are shutdown, Linux reports 'EPOLLHUP | EPOLLRDHUP | EPOLLRDNORM | EPOLLIN'\n    b.If only receiver is shutdown, Linux reports 'EPOLLRDHUP | EPOLLRDNORM | EPOLLIN'.\n    c. For EPOLL error, Linux reports it with other epoll events but not report epoll error only once error detected.\n    d. LINUX_EPOLLERR and LINUX_EPOLLHUP are always in EPOLL mask.\n    For this patch, based on Linux behavior a) and b), EPOLLRDNORM is missed for socket. \n\n3. No masks for this patch. For example, if the applications only request EPOLLHUP, but EPOLLIN is detected, the applicaiton will be waken up and catch EPOLLIN.\n\nIt is better to design a generic framework to handle all cases to match Linux behavior. And let each module to handle its own EPOLL events, for example, socket knows its own epoll behavior, and pipe knows its own epoll behavior, and epoll_to_kevent is a generic handling.\n\nPlease refer https://reviews.freebsd.org/D31037, as someone has concerns to introduce pevent and pmask in kevent structure. Coudl you please help clarify the issue?"
+}

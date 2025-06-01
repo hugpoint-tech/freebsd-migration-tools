@@ -1,0 +1,8 @@
+{
+ "id": 1162942,
+ "bug_id": 256132,
+ "attachment_id": 0,
+ "creation_time": "2021-05-24T19:29:45Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "If I read the value of the sysctl kern.supported_archs on an arm64 FreeBSD 13.0-RELEASE system, I get the output\n\n    kern.supported_archs: aarch64 armv7\n\nHowever, this list is incomplete.  Clearly, the kernel is also capable of executing armv6 binaries.  This unfortunately means that Poudriere refuses to install an armv6 jail on the system, making it difficult for me to test armv6 ports.\n\nIt seems like this is the consequence of unfortunate programming.  sys/kern/kern_mib.c defines the sysctl like such:\n\n---\n#ifdef COMPAT_FREEBSD32\n#define MACHINE_ARCHES  MACHINE_ARCH \" \" MACHINE_ARCH32\n#else\n#define MACHINE_ARCHES  MACHINE_ARCH\n#endif\n#endif\n\nSYSCTL_STRING(_kern, OID_AUTO, supported_archs, CTLFLAG_RD | CTLFLAG_MPSAFE,\n    MACHINE_ARCHES, 0, \"Supported architectures for binaries\");\n---\n\nso if COMPAT_FREEBSD32 is enabled, the kernel claims support for exactly one additional 32 bit architecture, which is clearly insufficient: (a) there can be multiple supported 32 bit architectures and (b) support for 32 bit programs may depend on processor features.  For example, on arm64 not all cores support executing 32 bit binaries, but the way the sysctl is set up, the kernel just wrongly claims it can, probably failing only when execution is tried (I have no such system to test this, but e.g. the Apple M1 chip is like this).  This seems quite unexpected.\n\nPlease fix the way kern.supported_archs is set up such that the list reflects both armv6 and armv7 for arm64 cores and that only if the AArch32 execution state is supported at all."
+}

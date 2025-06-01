@@ -1,0 +1,8 @@
+{
+ "id": 724,
+ "bug_id": 312,
+ "attachment_id": 0,
+ "creation_time": "1995-04-09T09:10:01Z",
+ "creator": "pritc003@maroon.tc.umn.edu",
+ "text": "\nIf a program does a link(\"file1\", \"file2\") system call followed by an \nunlink(\"file1\") system call on a msdos file system, the system will \npanic with the following message:\n\npanic: msdosfs_lock: locking against myself\n\nThis is because the msdosfs link code does not vput the vnode like\nit should before returning.  The link code should also return an\nerror to the user so that the calling program doesn't accidently \ndestroy the file it was attempting to link, thinking that the\nlink() call actually worked.\n\nFix: The attached fix corrects the msdosfs_link() routine to correctly vput \nthe vnode before returning, and return an error of EMLINK (too many \nlinks) to the user.  Feel free to choose another errno if you think\nsomething else is more appropriate.  ENODEV would be my next choice.\n\nHow-To-Repeat: \nCompile and run the following program on a msdos file system:\n\n#include \u003cstdio.h\u003e\n#include \u003cfcntl.h\u003e\n\nmain()\n{\n\tint\tfd;\n\n\tif ((fd = open(\"testfile\", O_RDWR | O_CREAT, 0666)) \u003c 0) {\n\t\tperror(\"open\");\n\t\texit(1);\n\t}\n\tif (link(\"testfile\", \"newfile\") \u003c 0) {\n\t\tperror(\"link\");\n\t\texit(1);\n\t}\n\tif (unlink(\"testfile\") \u003c 0) {\n\t\tperror(\"unlink\");\n\t\texit(1);\n\t}\n\tclose(fd);\n}"
+}

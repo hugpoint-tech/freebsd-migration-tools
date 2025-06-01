@@ -1,0 +1,8 @@
+{
+ "id": 752414,
+ "bug_id": 186956,
+ "attachment_id": 0,
+ "creation_time": "2014-02-22T08:10:00Z",
+ "creator": "jonc@chen.org.nz",
+ "text": "Starting up tomcat-7 with additional debug flags: \"-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=8000,suspend=n\" results in:\n\n/usr/local/openjdk7/jre/lib/amd64/libnpt.so: Undefined symbol \"libiconv_open\"\n\nSure enough:\n\n8:53pm\u003e nm /usr/local/openjdk7/jre/lib/amd64/libnpt.so | grep iconv \n0000000000002070 t iconvConvert\n                 U libiconv\n                 U libiconv_close\n                 U libiconv_open\n\nThis is because I also have libiconv installed, and openjdk/jdk/src/solaris/instrument/EncodingSupport_md.c is including /usr/local/include/iconv.h instead of /usr/include/iconv.h during compilation from its: #include \u003ciconv.h\u003e directive.\n\nFix: \n\nA workaround is to shift /usr/local/include/iconv.h out of the way during the build (and restore once complete).\n\nA possible fix would be to patch EncodingSupport_md.c to force it to use the base system's iconv.h during post-patch?\nHow-To-Repeat: Install libiconv.\nBuild java/openjdk7"
+}

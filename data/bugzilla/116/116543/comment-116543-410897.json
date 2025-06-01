@@ -1,0 +1,8 @@
+{
+ "id": 410897,
+ "bug_id": 116543,
+ "attachment_id": 0,
+ "creation_time": "2007-09-22T09:50:06Z",
+ "creator": "martin@horcicka.eu",
+ "text": "lockf(1) is broken since revision 1.12 of src/usr.bin/lockf/lockf.c. The author of the changes did not realize that the lock file is removed (by default) before being closed by the process that holds it.\n\nConsider the following series of events:\n\n  Process A acquires the lock file\n  Process B tries to acquire it as well but fails and waits\n  Process A removes and closes the lock file\n  Process B wakes up and acquires the lock file which is already removed (!)\n  Process C acquires the lock file because there was no file of that name (!)\n  Now both processes B and C think they hold the lock file (!)\n\nFix: \n\nThrow away all changes of src/usr.bin/lockf/lockf.c after revision 1.11. They are wrong.\nHow-To-Repeat: Run this command in two terminals at the same time:\n\n  lockf lock sh -c 'for n in `jot 10`; do echo mmm; sleep 1; done'\n\nOne of them will start running and the other will wait. When the first stops running, run it again. Now you can see two processes running at the same time and both thinking they hold the lock file."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1162014,
+ "bug_id": 255945,
+ "attachment_id": 0,
+ "creation_time": "2021-05-18T19:52:56Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Please repeat your tests while running this dtrace command:\n\nsudo dtrace -i 'fbt:fusefs:fuse_vnop_advlock:entry {printf(\"dataflags=%#x, flags=%#x\", ((struct fuse_data*)(args[0]-\u003ea_vp-\u003ev_mount-\u003emnt_data))-\u003edataflags, args[0]-\u003ea_flags);}'\n\nIn the output, look for bit 0x2000 (FSESS_POSIX_LOCKS) in the dataflags field.  If it's not set, then the locks are being handled locally rather than in the FUSE server.  Also, look for bit 0x20 (F_FLOCK) in the flags field.  If it _is_ set, then the locks are also being handled locally rather than in the FUSE server.\n\nWhen I run your test script with sshfs, I see that FSESS_POSIX_LOCKS is unset and F_FLOCK is set, on both 13.0-RELEASE and 14.0-CURRENT."
+}

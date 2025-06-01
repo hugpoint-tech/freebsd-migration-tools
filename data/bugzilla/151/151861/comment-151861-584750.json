@@ -1,0 +1,8 @@
+{
+ "id": 584750,
+ "bug_id": 151861,
+ "attachment_id": 0,
+ "creation_time": "2010-11-03T10:06:49Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "On 2010-11-02, Kostik Belousov wrote:\n\u003e Why do you think that your patch is not correct ?\n\nWell, I didn't say that I think it's incorrect. :)\n\n\u003e I feel that more explicit handling of the state of the DAG is cleaner.\n\nI don't disagree but there is a problem with your patch. If an object\nhas the DF_1_NODELETE flag set, dag is initialized in\nload_needed_objects(). In this case the reference count isn't correctly\nbumped in dlopen() because dag_inited is already set.\n\n(BTW. I think that there shouldn't be the ref_dag(obj1) call in\nload_needed_objects(). Now the reference count is increased twice in the\nnodelete case.)\n\n\u003e --- a/libexec/rtld-elf/rtld.c\n\u003e +++ b/libexec/rtld-elf/rtld.c\n\u003e @@ -1275,8 +1275,11 @@ init_dag(Obj_Entry *root)\n\u003e  {\n\u003e      DoneList donelist;\n\u003e  \n\u003e +    if (root-\u003edag_inited)\n\u003e +\t    return;\n\nWhy init_dag() should be allowed to be called multiple times for an\nobject?\n\nThanks.\n-- \nJaakko"
+}

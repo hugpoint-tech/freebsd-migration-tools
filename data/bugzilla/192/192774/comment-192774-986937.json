@@ -1,0 +1,8 @@
+{
+ "id": 986937,
+ "bug_id": 192774,
+ "attachment_id": 0,
+ "creation_time": "2018-04-10T20:32:06Z",
+ "creator": "longwitz@incore.de",
+ "text": "After updating on old FreeBSD V8 server to 10 Stable my L2TP/IPSEC connections were broken. The reason for this was the commit 285204 given in this bug report. Racoon tried to connect to the remote server on port 1701 instead of 500:\n  initiate new phase 1 negotiation: 192.168.14.23[500]\u003c=\u003e192.168.14.3[1701]\n\nThe following patch for racoon solved this problem for me:\n\n--- src/racoon/pfkey.c.orig     2012-08-23 13:10:45.000000000 +0200\n+++ src/racoon/pfkey.c  2018-04-10 15:35:17.603722000 +0200\n@@ -1931,11 +1931,13 @@\n                delph2(iph2);\n                return -1;\n        }\n+       set_port(iph2-\u003edst, 0);\n        iph2-\u003esrc = dupsaddr(src);\n        if (iph2-\u003esrc == NULL) {\n                delph2(iph2);\n                return -1;\n        }\n+       set_port(iph2-\u003esrc, 0);\n\n        /* If sa_src and sa_dst have been set, this mean we have to\n         * set iph2-\u003esa_src and iph2-\u003esa_dst to provide the addresses\n\nI suggest this patch should go in the files directory of the port security/ipsec-tools."
+}

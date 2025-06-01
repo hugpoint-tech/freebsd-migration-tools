@@ -1,0 +1,8 @@
+{
+ "id": 916613,
+ "bug_id": 216086,
+ "attachment_id": 178894,
+ "creation_time": "2017-01-14T22:44:16Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 178894\nDon't free openowner+opens when a recovery attempt fails\n\nWhen the NFSv4.1 client attempts recovery from a server crash/reboot and\nthe new ExchangeID/CreateSession fails 5 times, the code free'd the\nopenowner structure and cleared the NFSCLFLAGS_HASCLIENTID.\n\nHowever, it is possible that a process holds the lock on the openowner\nat this time and, as such, the openowner should not be free'd.\nIt also makes sense to keep the opens in case a subsequent recovery\nis successful. This scenario would not normally happen, but apparently\ndoes for the AmazonEFS server.\n\nThis patch changes the code to not free the openowner + opens and\nleave the flag set for the crash/lease_expiry recovery cases."
+}

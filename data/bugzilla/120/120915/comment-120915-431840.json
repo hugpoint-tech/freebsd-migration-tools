@@ -1,0 +1,8 @@
+{
+ "id": 431840,
+ "bug_id": 120915,
+ "attachment_id": 0,
+ "creation_time": "2008-02-20T19:40:02Z",
+ "creator": "pmc@citylink.dinoex.sub.org",
+ "text": "\n\tAfter upgrade from 5.5 to 6.3 kernel has pagefault on boot.\n\tkernel.GENERIC has the same problem.\n\n\tLocation: tulip_txput+0x1eb\n\n\tBacktrace (more or less, due to optimization):\n\t\tdevice_attach\n\t\t-\u003e tulip_pci_attach\n\t\t   -\u003e tulip_reset\n\t\t      -\u003e tulip_media_select\n\t\t\t -\u003e tulip_txprobe\n\t\t\t    -\u003e tulip_txput\n\n\tcompiling a kernel without if_de will help (depending on the\n\tdefinition of \"help\"), but when loading if_de.ko the\n\tpagefault is here again.\n\nFix: The problem seems to be that during attach a mediaselect\n\tis done, during mediaselect a testpacket is sent and during\n\tpacketsend the BPF is fed - but at that point of the attach\n\tthe BPF structure seems not yet available - which is nowhere\n\tchecked.\n\tPatch (see below) helps for me, while I do not know if this\n\tis now the way things should be done. And what I do not really \n\tunderstand is how such a thing can go undetected for seemingly \n\ttwo+ years, as it is practically a \"can-not-work-by-design\" \n\tcondition.\nHow-To-Repeat: \n\tTry to boot generic with the appropriate netif card."
+}

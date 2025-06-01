@@ -1,0 +1,8 @@
+{
+ "id": 1048819,
+ "bug_id": 237600,
+ "attachment_id": 0,
+ "creation_time": "2019-04-27T10:31:20Z",
+ "creator": "vas@sibptus.ru",
+ "text": "The default setup of the port is to run \"apcupsd --kill-on-powerfail\". This means when the UPS power is exhausted, apcupsd sends a signal to the UPS to hybernate and initiates a system shutdown. Thus the complete shutdown sequence must fit within the UPS grace period.\n\nWhile this may be tolerated on workstations, it is completely unusable on busy servers, especially running multiple virtual machines in bhyve, because the UPS grace period may be not long enough for all the VMs to shut down correctly. Thus we observe a race condition and cannot predict if there will be enough time for the daemons/VMs to stop, before the host is powered off.\n\nIdeally, apcupsd should wait for all the shutdown scripts to complete, and only then should it send the hybernate signal to the UPS. This means that:\n\n1. apcupsd should be started without the --kill-on-powerfail option, perhaps without any options at all, or with the --term-on-powerfail option. It is easy to implement, just alter the default apcupsd_flags.\n\n2. The \"apcupsd --killpower\" command should be called somewhere near the very end of the shutdown sequence, on the condition that /var/run/powerfail exists. \n\nI cannot currently suggest where to put \"apcupsd --killpower\" in /usr/local/etc/rc.d/ so that it is executed last.\n\nI think that the way apcupsd is run on FreeBSD should be seriously reconsidered."
+}

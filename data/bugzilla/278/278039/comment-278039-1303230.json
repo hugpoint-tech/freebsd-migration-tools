@@ -1,0 +1,8 @@
+{
+ "id": 1303230,
+ "bug_id": 278039,
+ "attachment_id": 0,
+ "creation_time": "2024-04-01T06:47:40Z",
+ "creator": "freebsd@kumba.dev",
+ "text": "Looking at it a bit more, I think this is related to Bug #226688, where you can't add IPv4 255.255.255.255 to a table, either:\n\u003e # ipfw set 2 table test1 create\n\u003e # ipfw set 2 table test1 add 255.255.255.255\n\u003e error: 255.255.255.255/32 0\n\u003e ipfw: Adding record failed: Invalid argument\n\nOn a whim, I tried adding the IPv6 equivalent, and that also fails:\n\u003e # ipfw set 2 table test1 add ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff\n\u003e error: ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128 0\n\u003e ipfw: Adding record failed: Invalid argument\n\nBut you can add, numerically, the address directly below that:\n\u003e # ipfw set 2 table test1 add ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe\n\u003e added: ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe/128 0\n\nGoing back to IPv4, the same applies for 0.0.0.0/32:\n\u003e # ipfw set 2 table test1 add 0.0.0.0\n\u003e error: 0.0.0.0/32 0\n\u003e ipfw: Adding record failed: Invalid argument\n\nBut like Lexi highlights, change the CIDR, and it accepts it:\n\u003e # ipfw set 2 table test1 add 0.0.0.0/31\n\u003e added: 0.0.0.0/31 0\n\nThe last item is functionally the same as adding 0.0.0.1, or in the IPv6 case, ::1.\n\nSo it feels like there is a range check somewhere that's doing \"x \u003e 0\" and/or \"x \u003c MAX\", when it should be using \u003e= or \u003c=, cause functionally, ::/0.0.0.0 and 255.255.255.255/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff are just fancy ways of representing 0 and 2^32-1/2^128-1."
+}

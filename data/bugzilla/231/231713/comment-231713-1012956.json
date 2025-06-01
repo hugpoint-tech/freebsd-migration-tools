@@ -1,0 +1,8 @@
+{
+ "id": 1012956,
+ "bug_id": 231713,
+ "attachment_id": 0,
+ "creation_time": "2018-09-25T12:35:17Z",
+ "creator": "sebastian.huber@embedded-brains.de",
+ "text": "We have\n\nstatic int\nmmc_calculate_clock(struct mmc_softc *sc)\n{\n...\n\t/*\n\t * HS400 must be tuned in HS200 mode, so in case of HS400 we begin\n\t * with HS200 following the sequence as described in \"6.6.2.2 HS200\n\t * timing mode selection\" of the eMMC specification v5.1, too, and\n\t * switch to max_timing later.  HS400ES requires no tuning and, thus,\n\t * can be switch to directly, but requires the same detour via high\n\t * speed mode as does HS400 (see mmc_switch_to_hs400()).\n\t */\n\ths400 = max_timing == bus_timing_mmc_hs400;\n\ttiming = hs400 == true ? bus_timing_mmc_hs200 : max_timing;\n\tfor (i = 0; i \u003c sc-\u003echild_count; i++) {\n\t\tivar = device_get_ivars(sc-\u003echild_list[i]);\n\t\tif ((ivar-\u003etimings \u0026 ~(1 \u003c\u003c bus_timing_normal)) == 0)\n\t\t\tcontinue;\n...\n\t\t/* Set clock (must be done before initial tuning). */\n\t\tmmcbr_set_clock(dev, max_dtr);\n\t\tmmcbr_update_ios(dev);\n...\n\t}\n\t(void)mmc_select_card(sc, 0);\n\treturn (max_dtr);\n}\n\nSo, for cards with ivar-\u003etimings == bus_timing_normal the mmcbr_set_clock(dev, max_dtr) is not called. This way the clock stays at SD_MMC_CARD_ID_FREQUENCY == 400kHz. I think this problem was introduced with:\n\ncommit 398d5fc6afb7ce20f0cf9ecc4fe286e72afdbf29\nAuthor: marius \u003cmarius@FreeBSD.org\u003e\nDate:   Sun Jul 23 16:11:47 2017 +0000\n\n    o Add support for eMMC HS200 and HS400 bus speed modes at 200 MHz to\n      sdhci(4), mmc(4) and mmcsd(4). For the most part, this consists of:"
+}

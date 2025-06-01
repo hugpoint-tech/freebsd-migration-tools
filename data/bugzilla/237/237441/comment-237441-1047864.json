@@ -1,0 +1,8 @@
+{
+ "id": 1047864,
+ "bug_id": 237441,
+ "attachment_id": 0,
+ "creation_time": "2019-04-21T16:06:25Z",
+ "creator": "bugmenot@mailinator.com",
+ "text": "Reading 215737 carefully, I couldn't decide if this was the same problem but ultimately decided it wasn't.\n\nEnvironment:  OSX High Sierra running QEMU and the 12.0 release qcow2 image published on the FreeBSD site.\n\nQemu command line:  qemu-system-x86_64 -m 2048 -hda FreeBSD-12.0-RELEASE-amd64.qcow2  -netdev user,id=mynet0,hostfwd=tcp:127.0.0.1:7722-:22 -device virtio-net-pci,netdev=mynet0\n\nTrying to install pkg fails.  If you do the following command:\n\nfetch http://pkg.freebsd.org/FreeBSD:12:amd64/latest/Latest/pkg.txz\n\nyou will consistently get the following (Note:  with or without [TR]XCSUM enabled):\n\nfetch: pkg.txz appears to be truncated: 3395051/3395052 bytes\n\nIf you download the full package and use dd to grab all but the last byte, the SHA256 sums match so the data's not corrupted, just missing the final byte (a 'Z') character.  Furthermore, if you run tcpdump in the guest against the vtnet0 interface while it's transferring you can see the final 'Z' byte in the final packet so qemu is getting the data to the guest.  If you then ktrace the fetch process, you'll see that its final read *doesn't* have the 'Z' which rules out a bug in fetch/libfetch.\n\nUsing fetch to test for sizing, I started downloading packages at the jumbo frame boundary and found that packages \u003c= 8956 bytes work and \u003e= 8960 exhibit the failure."
+}

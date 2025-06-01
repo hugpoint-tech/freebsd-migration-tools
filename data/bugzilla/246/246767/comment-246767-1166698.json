@@ -1,0 +1,8 @@
+{
+ "id": 1166698,
+ "bug_id": 246767,
+ "attachment_id": 0,
+ "creation_time": "2021-06-17T12:09:32Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Adriaan de Groot from comment #21)\n\"pkg set -n mesa-libs:libglvnd\" cannot be used in this case because some ports would end up depending on both mesa-libs (for libgbm.so) and libglvnd (for libEGL.so). As such all direct consumers of mesa-libs must be rebuilt. Unfortunately, I can't test if portmaster/portupgrade instructions make sense.\n\n# Post-libglvnd upgrade example on a DE-less dual-stack X11 + Wayland system\n$ pkg info -qr mesa-libs | xargs pkg info -qo | sort -u\nbenchmarks/glmark2            # glmark2-drm and glmark2-es2-drm\ndevel/sdl20                   # SDL_VIDEODRIVER=kmsdrm\ngraphics/mesa-dri             # mesa-libs via libglapi\nmultimedia/mpv                # --gpu-context=drm\nx11-servers/xorg-server       # modesetting and glamor (default on Intel without xf86-video-intel)\nx11-servers/xwayland-devel    # DRI3 on non-NVIDIA\nx11-toolkits/wlroots          # WLR_BACKENDS=drm (default on console)\n\n20210617:\n  AFFECTS: users of graphics/mesa-libs\n  AUTHOR: ?\n\n  Some libraries from mesa-libs are now provided by libglvnd while\n  others were renamed. When building outside poudriere make sure to\n  remove mesa-libs first in order to avoid conflict with libglvnd.\n\n  For portmaster users:\n  # pkg delete -f mesa-libs\n  # portmaster -a\n\n  For portupgrade users:\n  # pkg delete -f mesa-libs\n  # portupgrade -a"
+}

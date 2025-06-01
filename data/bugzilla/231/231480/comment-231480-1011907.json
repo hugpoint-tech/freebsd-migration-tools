@@ -1,0 +1,8 @@
+{
+ "id": 1011907,
+ "bug_id": 231480,
+ "attachment_id": 0,
+ "creation_time": "2018-09-19T14:55:41Z",
+ "creator": "noah.bergbauer@tum.de",
+ "text": "Grub-bhyve has access to the host filesystem through the '(host)' pseudofs. Considering that the typical Linux guest would have its grub configuration on its boot partition (as the handbook suggests: https://www.freebsd.org/doc/handbook/virtualization-host-bhyve.html) this means that having root permissions on the guest allows you to access the host filesystem on the next VM boot, for example:\n\n* Add \"source (host)/root/secret.txt\" to the head of grub.cfg\n* Add \"myvalue=$password\" to the kernel command line\n* Shut down VM\n* On the host: \"echo password=verysecret12345 \u003e /root/secret.txt\"\n* Launch VM\n\n$ cat /proc/cmdline \nconsole=ttyS0 BOOT_IMAGE=/boot/vmlinuz-4.4.0-75-generic root=UUID=e757cf85-936a-4fe8-b099-54046961756d ro myvalue=verysecret12345\n$ \n\nAs you can see this might be a critical information leak in certain circumstances, especially because you have to (?) run grub-bhyve as root on the host system.\n\nPerhaps an option could be added to chroot the bootloader once it is done loading libraries and opening image/disk files? Module loading is disabled so the filesystem appears to be the only remaining attack surface."
+}

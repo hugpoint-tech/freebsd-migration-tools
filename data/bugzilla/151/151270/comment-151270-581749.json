@@ -1,0 +1,8 @@
+{
+ "id": 581749,
+ "bug_id": 151270,
+ "attachment_id": 0,
+ "creation_time": "2010-10-06T22:20:01Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "The upstream configure script contains broken code in the detection for\nthe browser plugin:\n\nBROWSER_PLUGIN_DIR=\"${BROWSER_PLUGIN_DIR:-\"\\${libdir}/mozilla/plugins\"}\"\n\nPOSIX does not require this to work and many shells such as the current\nFreeBSD /bin/sh as of the time of writing silently assign an incorrect\nvalue. (Some shells such as dash even flag a syntax error.)\n\nI plan to change our sh to do what is expected by the author (assign the\nliteral string ${libdir}/mozilla/plugins if BROWSER_PLUGIN_DIR is not\nset yet). This is both because bash and ksh93 do the same thing and\nbecause it is otherwise much harder to make splitting WORD in\n${VAR+WORD} work in a consistent manner (the change enforces that each\nsubstitution ends with the same double-quote state as it started).\n\nThis change, however, causes the browser plugin to be built, which\nsubsequently causes a pointyhat failure because the browser plugin's\nfiles are not in the plist. To fix this, I suggest explicitly disabling\nthe browser plugin via --disable-browser-plugin.\n\nUpstream has removed the browser plugin entirely in their 0.2.2 branch,\nalthough there is no release yet with this change. I would like to\ncommit the sh changes before that release.\n\nFix: Apply this patch.\nHow-To-Repeat: Build/install the port with patched sh.\n\nThe patch (to head r212508) is available at\nhttp://www.stack.nl/~jilles/unix/sh-expand-parser-20100919.patch\nuntil I commit it to 9-CURRENT."
+}

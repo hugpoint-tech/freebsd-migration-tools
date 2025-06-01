@@ -1,0 +1,8 @@
+{
+ "id": 834774,
+ "bug_id": 189531,
+ "attachment_id": 0,
+ "creation_time": "2015-08-03T17:33:46Z",
+ "creator": "sbruno@FreeBSD.org",
+ "text": "(In reply to jkriordan from comment #0)\nPlease post the revision of FreeBSD you are using for this issue.  Looking at logs, WOL has not been touched since:\n\n------------------------------------------------------------------------\nr251600 | yongari | 2013-06-10 00:31:49 -0700 (Mon, 10 Jun 2013) | 24 lines\n\nAvoid unnecessary controller reinitialization by checking driver\nrunning state.  fxp(4) requires controller reinitialization for the\nfollowing cases.\n o RX lockup condition on i82557\n o promiscuous mode change\n o multicast filter change\n o WOL configuration\n o TSO/VLAN hardware tagging/checksum offloading configuration\n o MAC reprogramming after speed/duplex/flow-control resolution\n o Any events that result in MAC reprogramming(link UP/DOWN,\n   remote link partner's restart of auto-negotiation etc)\n o Microcode loading/unloading\nApart from above cases which come from hardware limitation, upper\nstack also blindly reinitializes controller whenever an IP address\nis assigned. After r194573, fxp(4) no longer needs to reinitialize\nthe controller to program multicast filter after upping the\ninterface. So keeping track of driver running state should remove\nall unnecessary controller reinitializations.\n\nThis change will also address endless controller reinitialization\ntriggered by dhclient(8).\n\nTested by:      hrs, Alban Hertroys \u003charamrae@gmail.com\u003e"
+}

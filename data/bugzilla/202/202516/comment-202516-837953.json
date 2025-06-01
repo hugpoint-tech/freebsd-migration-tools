@@ -1,0 +1,8 @@
+{
+ "id": 837953,
+ "bug_id": 202516,
+ "attachment_id": 0,
+ "creation_time": "2015-08-26T11:26:05Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "(In reply to Raphael Kubo da Costa from comment #9)\nThere are already two helper variables for GNU configure ports so I don't mind adding two for cmake, but one variable which sets both options is fine too I think.  Then you don't even need a helper variable.  You can add the definitions directly to CMAKE_ARGS.  Ports that use uncommon names can set their own CMAKE_ARGS or use patches.\n\nTo prevent this from getting worse in the future FindIconv.cmake should be added to cmake though.  It needs to handle the following three cases:\n\n- iconv.h and iconv() provided by libc (e.g. in /usr)\n- iconv.h and iconv() provided by libiconv  (e.g. in /usr/local)\n- both of the above are available, prefer libc\n\nUnless LIBICONV_PLUG is defined, the iconv.h from libiconv renames all functions to something only libiconv provides (iconv() becomes libiconv(), iconv_open() becomes libiconv_open() etc.).  So, without LIBICONV_PLUG this header enforces the use of libiconv, with LIBICONV_PLUG the intention is to use libc (but libiconv can still be used as a fall back).  This means that after having found iconv.h FindIconv.cmake should look for the library by compiling+linking a test program that includes \u003ciconv.h\u003e and calls iconv().  This test should try libc first and then libiconv (and other names for it)."
+}

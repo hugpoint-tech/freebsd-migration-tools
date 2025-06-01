@@ -1,0 +1,8 @@
+{
+ "id": 1011160,
+ "bug_id": 230156,
+ "attachment_id": 0,
+ "creation_time": "2018-09-13T20:54:53Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "Actually the CFLAGS is a symptom but not exactly limited to i386.\nNSIG is defined as 32 in /usr/include/sys/signal.h.\nIn dash it creates an array 2 times the size of NSIG:\n    char *signal_names[2 * NSIG + 3];\nBut later it tries to reference index SIGRTMAX (defined as 126) in\nwork/dash-0.5.10.2/src/mksignames.c:\n    #if defined (SIGRTMAX)\n      rtmax = SIGRTMAX;\n      signal_names[rtmax] = \"RTMAX\";\n    #endif\nSo this is causing an out-of-bounds write. It would be a problem\non amd64 and i386. It probably only manifested as a *crash* on i386\nthough.\nRedefining NSIG to be larger would fix the problem but I'm going to\njust keep UNUSABLE_RT_SIGNALS defined for now to not enable the RT\nsignal handling."
+}

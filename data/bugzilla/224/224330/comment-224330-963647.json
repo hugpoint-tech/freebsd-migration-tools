@@ -1,0 +1,8 @@
+{
+ "id": 963647,
+ "bug_id": 224330,
+ "attachment_id": 0,
+ "creation_time": "2017-12-15T03:01:24Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "(In reply to Mark Millard from comment #16)\n\nWhy the source lines were odd. . .\n\nStupid /usr/src_bisect/ vintage mistake on my part:\nit was at -r326346 instead of -r326347 (from something\nprior that I'd looked at).\n\nUpdating /usr/src_bisect back to -r326347 leads to\nthe addr2line based lookup making sense. . .\n\n# addr2line -e /usr/obj/DESTDIRs/clang-armv7dbg-installkernel_bisect/usr/lib/debug/boot/kernel/kernel.debug  0xc052d9f4\n/usr/src_bisect/sys/vm/uma_core.c:792\n\nline 792 is the sched_bind(curthread, cpu) line\nin:\n \nstatic void\ncache_drain_safe(uma_zone_t zone)\n{\n        int cpu;\n \n        /*\n         * Polite bucket sizes shrinking was not enouth, shrink aggressively.\n         */\n        if (zone)\n                cache_shrink(zone);\n        else\n                zone_foreach(cache_shrink);\n\n        CPU_FOREACH(cpu) {\n                thread_lock(curthread);\n                sched_bind(curthread, cpu);\n                thread_unlock(curthread);\n \n                if (zone)\n                        cache_drain_safe_cpu(zone);\n                else\n                        zone_foreach(cache_drain_safe_cpu);\n        }\n        thread_lock(curthread);\n        sched_unbind(curthread);\n        thread_unlock(curthread);\n}"
+}

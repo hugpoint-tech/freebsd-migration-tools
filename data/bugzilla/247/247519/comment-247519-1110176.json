@@ -1,0 +1,8 @@
+{
+ "id": 1110176,
+ "bug_id": 247519,
+ "attachment_id": 215904,
+ "creation_time": "2020-06-24T10:17:58Z",
+ "creator": "se@FreeBSD.org",
+ "text": "Created attachment 215904\nMake error case return error exit status\n\nWhen the condition for e.g. \"ERROR: 'buildworld' is not a valid target for ...\" is hit, make exits with a status of 0 indicating success.\n\nThis is a problem if \"etcupdate\" is used in such a situation, leading to an empty current directory and deletion of all rc files from /etc.\n\nTo repeat:\n\n# cd /usr/src\n# env WITH_DIRDEPS_BUILD=yes make buildworld\nERROR: 'buildworld' is not a valid target for amd64.\n\nYou can see the targets which are valid for a given machine\nby running 'env MACHINE=\u003cmachine\u003e make show-valid-targets'\nFor other information, read: \n\n# echo $?\n0\n\n(Besides WITH_DIRDEPS_BUILD=yes being suggested in the context of WITH_META_MODE=yes and leading to no targets being accepted except for the destroy targets, the above error text stops after \"read:\" without giving any indication what to read ...)\n\n# env MACHINE=amd64 make show-valid-targets\nOther targets:\n  destroy\n  destroy-arch\n  destroy-host\n  destroy-stage\n\nThe attached diff might not be the best solution, but it does at least prevent the removal of the rc files if etcupdate is invoked in such a situation."
+}

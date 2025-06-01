@@ -1,0 +1,8 @@
+{
+ "id": 959303,
+ "bug_id": 201276,
+ "attachment_id": 187941,
+ "creation_time": "2017-11-12T15:15:22Z",
+ "creator": "jan.kokemueller@gmail.com",
+ "text": "Created attachment 187941\nSpecial case traced pdfork processes in wait6\n\nI've attached a (only very lightly tested) patch that makes \"truss -f\" work with pdfork. It acknowledges that traced processes created in PTRACE_FORK mode are a special case and makes their notifications visible to wait(2) again.\n\nSome questions:\n - Why is P_TRACED cleared so early in exit1()? This makes it impossible to just check for P_TRACED in proc_to_reap() because some notifications near process exit would be missed. I've hacked around it by introducing another process flag that is set if P_TRACED was set.\n - This is also the reason why I check for P_WEXIT in procdesc_close and don't send SIGKILL in this case. Otherwise the traced process would be reparented to init and sent SIGCHLD to init instead of the tracing process.\n - I've seen that procdesc_free() is called two times in procdesc_close(). Is that correct?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 531117,
+ "bug_id": 141177,
+ "attachment_id": 0,
+ "creation_time": "2009-12-04T22:40:02Z",
+ "creator": "dernst@gmx.de",
+ "text": "Having created a FIFO on a zfs filesystem with someone reading on it, causes a panic() if you write() and fsync() on it. Seems zfs related since I could not reproduce it with a FIFO on a UFS filesystem.\n\nReproduced it so far on two different machines running 8.0/amd64 and once in VirtualBox using stock kernel and base system for 8.0/i386.\n\nHow-To-Repeat: mkfifo /mnt/zfs/testpipe\ntail -f /mnt/zfs/testpipe \u0026\n\ncc test.c -o test\n./test\n\n\nwith ./test.c being something like this:\n#include \u003csys/types.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n\nint main(void) {\n        char fifo[] = \"/mnt/zfs/testpipe\";\n        int fd;\n\n        fd = open(fifo, O_WRONLY);\n        if(fd \u003c 0) {\n                perror(\"open\");\n                return 1;\n        }\n\n        write(fd, \"asdf\\n\", sizeof(char)*5);\n        fsync(fd);\n\n        close(fd);\n\n\n        return 0;\n}\n\nalternatively vim from ports can be used too, typing something like this on an opened file:\n:w \u003e\u003e /mnt/zfs/testpipe"
+}

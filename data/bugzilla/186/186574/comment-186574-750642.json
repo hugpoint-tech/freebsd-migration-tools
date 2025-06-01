@@ -1,0 +1,8 @@
+{
+ "id": 750642,
+ "bug_id": 186574,
+ "attachment_id": 0,
+ "creation_time": "2014-02-09T05:20:00Z",
+ "creator": "lorne@cons.org.nz",
+ "text": "\nRunning \"zpool history zroot\" on my FreeBSD 10-RELEASE machine results\nin zpool entering an infinite loop.\n\nFix: This appears to be caused by having a history record larger than\nlibzfs's HIS_BUF_LEN.\n\nzpool_get_history reads HIS_BUF_LEN sized chunks and parses entire\nrecords at a time. When an entire record isn't contained within a\nsingle chunk, zpool_get_history correctly concludes the result was\ntruncated. The next read is aligned such that any truncated record\nwill be at the beginning of the buffer. zpool_get_history then loops\nwith the assumption this will read the entire record. When a record\nlarger than HIS_BUF_LEN is encountered, it will always be truncated,\neven if it's at the start of the buffer, and zpool_get_history will\nloop indefinitely.\n\nWith a warning patched in:\n\n  History for 'zroot':\n  HIS_BUF_LEN (0x20000) too small to fit record of length 0x239c8\n\nWith a dynamically increasing buffer the history is successfully\nprinted.\n\nI don't believe the particular record is malformed. The slightly\nredacted output of running strings over the data is here:\nhttps://gist.github.com/thefloweringash/1fd434541c05fc091b10\n\nPatch attached to introduce a dynamically sized buffer. This solves\nthe problem for me. However I don't know how HIS_BUF_LEN was chosen,\nand could be patching a symptom.\nHow-To-Repeat: \nRun \"zpool history\" on an affected pool."
+}

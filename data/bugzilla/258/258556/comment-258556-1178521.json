@@ -1,0 +1,8 @@
+{
+ "id": 1178521,
+ "bug_id": 258556,
+ "attachment_id": 0,
+ "creation_time": "2021-09-17T10:41:42Z",
+ "creator": "dinoex@FreeBSD.org",
+ "text": "With OpenSSL from ports I build a new version of tinyfuge (5.1.1):\nSources: https://github.com/ingwarsw/tinyfugue\n\nThe compiled code fails on starting the SSL connection.\n\nOutput:\n% Trying to connect to ap: XXXX:f840::42 8889.\n% SSL: cert verify depth exceeded: allowed=0 actual=2\n% SSL: cert verify error: err=22 'certificate chain too long' depth:2 cn:/C=US/O=Internet\n    Security Research Group/CN=ISRG Root X1\n% Intermediate connection to ap failed: SSL/lib: error:1416F086:SSL\n\n\nWhile debugging with gcc the static memory of the application gets overwritten.\nssl_options is overwritten with bad data.\n\nThe code of the application seems fine, -Wall does not show any hints.\nOnce I enabled \"-g\" in CFLAGS the application runs.\n\nOutput:\n% Trying to connect to ap: XXXX:f840::42 8889.\n% SSL: chain: depth:2 cn:/C=US/O=Internet Security Research Group/CN=ISRG Root X1\n% SSL: chain: depth:1 cn:/C=US/O=Let's Encrypt/CN=R3\n% SSL: chain: depth:0 cn:/CN=ap.XXXX.org\n% SSL: cert verified: OK ret=0\n% Connected to ap using cipher TLS_AES_256_GCM_SHA384.\n\n\nI tested a few compilers:\nclang version 10.0.1 (base)\nclang version 12.0.1 (devel/llvm12)\ngcc10 (FreeBSD Ports Collection) 10.3.0\n\n\nThe Problem happens with:\nclang\nclang12\nclang -O1\nclang12 -O1\n\nThe application runs with:\nclang -g\nclang -O0\nclang12 -O0\ngcc10 -O2\ngcc10 -O3\n\nThe structure on FreeBSD 12.2 has an address of:\n0x7fffffffe4c0  (fail)\n0x7fffffffe340  (ok)\nI guess there is something going wrong with the memory mapping."
+}

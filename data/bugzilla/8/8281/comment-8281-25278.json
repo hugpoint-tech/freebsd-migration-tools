@@ -1,0 +1,8 @@
+{
+ "id": 25278,
+ "bug_id": 8281,
+ "attachment_id": 0,
+ "creation_time": "1998-10-12T10:10:00Z",
+ "creator": "kobayasi@north.ad.jp",
+ "text": "\nwritev() in libc_r causes loop when it's called with the following\narguments:\n\t* the iovcnt is more than 0\n\t* at the last member of the iovec array, the iov_len set to 0\n\n(Detail)\n\nwritev() defined in /usr/src/lib/libc_r/uthread/uthread_writev.c, calls\n_thread_sys_writev() in itself.\n\nWhen _thread_sys_writev() returns 0, writev() does't increment the index \nof the iovec array. So if the index points to the last member of the \narray, writev() calls _thread_sys_writev() with the member whose iov_len\nset to 0. Because there is nothing to write, _thread_sys_writev() returns\n0, and writev() doesn't increment the index...\n\nFix: Apply the following patch or something like this.\n\nHow-To-Repeat: \nCompile the following code with -lc_r, and run it.\n\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n\n#include \u003cfcntl.h\u003e\n#include \u003csys/stat.h\u003e\n\n#include \u003csys/types.h\u003e\n#include \u003csys/uio.h\u003e\n#include \u003cunistd.h\u003e\n\nstatic char\tb1[] = \"test\";\nstatic char\tb2[] = \"foo\";\n\nint main(int argc, char **argv)\n{\n  int\tfd;\n  struct iovec\tbuf[2];\n\n  if (argc != 2) {\n    fprintf(stderr, \"Usage: %s \u003cfilename\u003e\\n\", *argv);\n    exit(1);\n  }\n  \n  if ((fd = open(*(argv + 1), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) \u003c 0) {\n    perror(\"open\");\n    exit(1);\n  }\n\n  buf[0].iov_base = b1;\n  buf[0].iov_len = strlen(b1);\n  \n  buf[1].iov_base = b2;\n  buf[1].iov_len = 0;\n\n  if (writev(fd, buf, 2) \u003c 0) {\n    perror(\"writev\");\n    exit(1);\n  }\n  \n  close(fd);\n  \n  exit(0);\n}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 416579,
+ "bug_id": 117716,
+ "attachment_id": 0,
+ "creation_time": "2007-10-31T12:40:03Z",
+ "creator": "fullermd@over-yonder.net",
+ "text": "\tAttempting to remount a filesystem fails to flush its outstanding\n\tbuffers, and spews out errors like\n\t\t softdep_waitidle: Failed to flush worklist for 0xc3b60d0c\n\n\tOnce this occurs the filesystem can't be re-mounted, can't be\n\tumount'd, and can't be umount -f'd.  Any attempt to do so will elicit\n\ta repeat of the softdep_waitidle message.  Reboot won't cleanly\n\tunmount it either.  Post-reboot fscking turns up a lot of errors.\n\n\tUsing umount instead of mount -u doesn't provoke it (or at least,\n\tdoes so MUCH less often; mount -u does it reliably).  If filesystem\n\tis made without softupdates, it also doesn't occur.\n\n\tThis has been going on for at least a year in -CURRENT, and so it's\n\tprobably in RELENG_7 too.  See previous reports like\n\t\u003chttp://lists.freebsd.org/pipermail/freebsd-current/2007-February/069178.html\u003e\n\nHow-To-Repeat: \n\tNOTE: Running this script will produce a mounted filesystem on /mnt\n\tthat can't be gotten rid of without rebooting.  No additional\n\tinstability has ever been observed from this, but be warned.\n\n#!/bin/sh -ex\n\n# Make file\nrm -f /tmp/fs\ndd if=/dev/zero of=/tmp/fs bs=1m count=20\n\n# Make vnode\nmdconfig -a -t vnode -f /tmp/fs -u 10\n\n# Make the filesystem\nnewfs -U /dev/md10\n\n# Mount\nmount /dev/md10 /mnt\n\n# Make the big tree\nmtree -deU -f /etc/mtree/BSD.usr.dist -p /mnt/ \u003e\u003e /dev/null\n\n# Sync up\nsync ; sync ; sync\n\n# Now blow it away\nrm -rf /mnt/*\n\n# This works...\n#umount /mnt\n\n# But this doesn't\nmount -u -o ro /mnt\n# BOOM."
+}

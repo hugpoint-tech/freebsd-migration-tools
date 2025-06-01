@@ -1,0 +1,8 @@
+{
+ "id": 773035,
+ "bug_id": 191586,
+ "attachment_id": 0,
+ "creation_time": "2014-07-12T16:39:01Z",
+ "creator": "kevlo@FreeBSD.org",
+ "text": "Hi Terry,\n\nAs you suggested, I asked Vincent Lubet how Mac OS X validates EAFNOSUPPORT\nin bind(2).  Here is his response. \n\n\"xnu version of bind() does not check the address family for AF_INET sockets \n for compatibility with older program -- that's a piece of code we inherited \n from FreeBSD!\n\n I do not have access to the POSIX test suite code but as Mac OS X was \n granted conformance I have to assume the POSIX test suite for bind()\n does not test for bogus address family for AF_INET sockets. May be they\n only test for AF_UNIX.\"\n\nSince Mac OS X was granted POSIX conformance, it makes more sense to me\nto validate EAFNOSUPPORT in bind(2) for AF_UNIX only.\nI think connect(2) should also return EAFNOSUPPORT for AF_UNIX on wrong\naddress family.\n\nHere is the proposed patch, thanks\n\nIndex: sys/kern/uipc_usrreq.c\n===================================================================\n--- sys/kern/uipc_usrreq.c\t(revision 268570)\n+++ sys/kern/uipc_usrreq.c\t(working copy)\n@@ -467,6 +467,9 @@ uipc_bindat(int fd, struct socket *so, struct sock\n \tcap_rights_t rights;\n \tchar *buf;\n \n+\tif (nam-\u003esa_family != AF_UNIX)\n+\t\treturn (EAFNOSUPPORT);\n+\n \tunp = sotounpcb(so);\n \tKASSERT(unp != NULL, (\"uipc_bind: unp == NULL\"));\n \n@@ -1278,6 +1281,9 @@ unp_connectat(int fd, struct socket *so, struct so\n \tcap_rights_t rights;\n \tint error, len;\n \n+\tif (nam-\u003esa_family != AF_UNIX)\n+\t\treturn (EAFNOSUPPORT);\n+\n \tUNP_LINK_WLOCK_ASSERT();\n \n \tunp = sotounpcb(so);"
+}

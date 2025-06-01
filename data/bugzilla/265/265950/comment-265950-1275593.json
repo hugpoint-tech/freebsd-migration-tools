@@ -1,0 +1,8 @@
+{
+ "id": 1275593,
+ "bug_id": 265950,
+ "attachment_id": 0,
+ "creation_time": "2023-09-19T02:31:08Z",
+ "creator": "yuripv@FreeBSD.org",
+ "text": "This one is interesting and is actually an issue with isupper() (and other is* functions) via __sbistype()-\u003e__sbmaskrune().\n\n__sbmaskrune() looks like the following:\n\nstatic __inline int\n__sbmaskrune(__ct_rune_t _c, unsigned long _f)\n{\n        return (_c \u003c 0 || _c \u003e= __mb_sb_limit) ? 0 :\n               _CurrentRuneLocale-\u003e__runetype[_c] \u0026 _f;\n}\n\nThe culprit here is __mb_sb_limit which is NOT related to thread locale and rather specifies the limit of the global locale.\n\nWhen global locale is set to the one with UTF-8 encoding (also true for EUC and other encodings), __mb_sb_limit goes down to 128 (from the initial 256, which is also the limit for ISO8859-1 and other single byte locales) so we are failing the 0xC0 test early.\n\nThis behavior seems to be introduced in base 367ed4e13d697ceb415183d8a7acddf5f707667c, long before the xlocale work was integrated so it wasn't really an issue back then."
+}

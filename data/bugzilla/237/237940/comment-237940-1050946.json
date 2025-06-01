@@ -1,0 +1,8 @@
+{
+ "id": 1050946,
+ "bug_id": 237940,
+ "attachment_id": 0,
+ "creation_time": "2019-05-17T18:21:00Z",
+ "creator": "cem@freebsd.org",
+ "text": "Yes, the temperature field is inherently misaligned.\n\nThe __aligned(4) was added in r240671 as a hack for printing out the nvme_controller_data and nvme_namespace_data pages as 32-bit hex values with a naive cast -- avoiding a -Wcast-align warning.  At the time, nvme_health_information_page wasn't used by nvmecontrol -- it was probably just added at the same time because it was also __packed.\n\nToday we mostly print the page using a specialized printer, print_log_health, rather than any uint32 cast hex hack.  print_hex -\u003e print_dwords still uses this hack for the log page data if -x flag is specified, but print functions take the raw void* buffer pointer rather than a structure pointer, so we can probably drop the __aligned attribute.\n\nAdditionally, get_log_buffer() allocates the buffer using plain malloc() with the log page size.  This implicitly provides 4-byte alignment because FreeBSD only supports 32-bit and 64-bit architectures, and the log page is \u003e4 bytes in size, so any standard C compliant malloc must provide 4-byte alignment on any platform FreeBSD runs on.  It might be more clear to use aligned_alloc() to provide that guarantee explicitly instead, but I don't feel strongly about it.\n\nTl;dr: I think we can drop the __aligned(4) attribute now, and probably on the other structures as well."
+}

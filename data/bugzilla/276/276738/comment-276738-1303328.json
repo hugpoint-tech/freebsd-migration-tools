@@ -1,0 +1,8 @@
+{
+ "id": 1303328,
+ "bug_id": 276738,
+ "attachment_id": 0,
+ "creation_time": "2024-04-01T17:21:07Z",
+ "creator": "fbsd@zubko.cc",
+ "text": "(In reply to Warner Losh from comment #4)\n\u003emeans we should simply not define _Static_assert for C++ at all.\nTried some invasive and dirty sanity test of this hypothesis in the 15-CURRENT, by commenting out all of the relevant static assert section in cdefs.h (lines 237-251):\n\n/*\n#if !__has_extension(c_static_assert)\n#if (defined(__cplusplus) \u0026\u0026 __cplusplus \u003e= 201103L) || \\\n    __has_extension(cxx_static_assert)\n#define\t_Static_assert(x, y)\tstatic_assert(x, y)\n#elif __GNUC_PREREQ__(4,6) \u0026\u0026 !defined(__cplusplus)\n/* Nothing, gcc 4.6 and higher has _Static_assert built-in */\n#elif defined(__COUNTER__)\n#define\t_Static_assert(x, y)\t__Static_assert(x, __COUNTER__)\n#define\t__Static_assert(x, y)\t___Static_assert(x, y)\n#define\t___Static_assert(x, y)\ttypedef char __assert_ ## y[(x) ? 1 : -1] \\\n\t\t\t\t__unused\n#else\n#define\t_Static_assert(x, y)\tstruct __hack\n#endif\n#endif\n*/\n\nIt does seem to work indeed, at least in the case of the bug, that redirected me here in the first place: https://github.com/google/benchmark/issues/1593\nThe benchmark seems to be building and passing the test fine in this scenario.\n\nHowever, the change appears to be somewhat breaking - I have some anecdotal evidence (general feeling, nothing scientific atm) that the compilation of the C++ code (LLVM and such) got slower to some extent after this change, and some apps I tested started crashing (KDE/kwin?) or behaving erratically. Just giving an initial glimpse here, for someone more familiar with the topic to chime in."
+}

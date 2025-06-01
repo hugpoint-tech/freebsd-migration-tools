@@ -1,0 +1,8 @@
+{
+ "id": 1300043,
+ "bug_id": 277492,
+ "attachment_id": 0,
+ "creation_time": "2024-03-07T16:50:06Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "(In reply to Gleb Popov from comment #14)\nGrep for 'gmake|GMAKE|MAKE_CMD' to find suspicious lines.  These are the ones in lang/ghc/Makefile:\n\n$ egrep -n 'gmake|GMAKE|MAKE_CMD' lang/ghc/Makefile\n20:USES=\t\t\tautoreconf compiler:c11 gmake \\\n215:\tcd ${BOOT_DIR} \u0026\u0026 ${MAKE_CMD} PACKAGES='' install\n276:\t\t\u0026\u0026 ${GMAKE} binary-dist TAR_COMP=xz \\\n295:\t\t\u0026\u0026 ${GMAKE} binary-dist TAR_COMP=xz \\\n\nIt looks like 215 is the one from comment 0.  You can replace that line with:\n\n\tcd ${BOOT_DIR} \u0026\u0026 ${SETENVI} ${WRK_ENV} ${MAKE_CMD} PACKAGES='' install\n\nLine 276 and 295 would become:\n\n\t\t\u0026\u0026 ${SETENVI} ${WRK_ENV} ${GMAKE} binary-dist TAR_COMP=xz \\\n\nFor testing you can put something like this in make.conf (/usr/local/etc/poudriere.d/make.conf):\n\n.MAKEFLAGS+=\t-D __GMAKE_TRAP__\n\nIf a port fails to build with this then there are more commands that need SETENVI."
+}

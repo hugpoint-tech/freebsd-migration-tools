@@ -1,0 +1,8 @@
+{
+ "id": 798642,
+ "bug_id": 195525,
+ "attachment_id": 0,
+ "creation_time": "2014-11-30T12:28:33Z",
+ "creator": "bugs@andrewmcdonnell.net",
+ "text": "I have a carambola2 which I build FreeBSD using freebsd-wifi-build.\nThe kernel fails to read the uboot environment, producing the following errors:\n\n    argv is invalid\n    envp is invalid\n\nI tracked this down to sys/mips/.atheros/ar71xx_machdep.c and the following code fragment:\n\n\t/*\n\t * Until some more sensible abstractions for uboot/redboot\n\t * environment handling, we have to make this a compile-time\n\t * hack.  The existing code handles the uboot environment\n\t * very incorrectly so we should just ignore initialising\n\t * the relevant pointers.\n\t */\n#ifndef\tAR71XX_ENV_UBOOT\n\targc = a0;\n\targv = (char**)a1;\n\tenvp = (char**)a2;\n\n\nFor the Carambola2, those registers are in fact accurate and should not be #ifdef'd out.  However, the variables are in fact an array of strings of \"name=value\" not pairs of strings \"name\", \"value\", so to fix this for my own case I had to extend the code that parses them later in the file.\n\nNotwithstanding the comment regards 'more sensible abstractions', I have a patch that makes the variables work (for the carambola2, at least)\n\nhttps://github.com/pastcompute/freebsd/commit/9d06660cb53ff4c07048aaab0b086e612f5f155f\n\nHowever, I suspect you may wish to restrict this fix to _just_ the carambola2 board, lest it break other peoples systems.  Any advice on how to filter a fragment of code to a specific kernel configuration would be appreciated, as I am mostly experienced with hacking other systems kernels..."
+}

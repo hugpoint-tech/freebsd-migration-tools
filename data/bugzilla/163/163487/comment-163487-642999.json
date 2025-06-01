@@ -1,0 +1,8 @@
+{
+ "id": 642999,
+ "bug_id": 163487,
+ "attachment_id": 0,
+ "creation_time": "2012-06-02T05:55:38Z",
+ "creator": "markjdb@gmail.com",
+ "text": "Hm, it's not really clear to me how this could have worked on FreeBSD\n8.2 - the problem's been around for a while, based on a quick look\nthrough the history of syslogd.c.\n\nThere's a bug in the way that domain info gets trimmed off the host\nfilters. When syslogd sees a line like\n\n+shawshank-1.ply.claimlynx.com\n\nit trims it to \"shawshank-1\" and uses that string to match incoming\nmessages - you can see in the debug output that the incoming message\ncomes with a hostname of \"shawshank-1\" rather than the FQDN.\n\nsyslogd uses trimdomain(3) to get a hostname out of the host filter, and\nin your case it passes\n\n\"shawshank-1.ply.claimlynx.com,shawshank-2.ply.claimlynx.com\"\n\nto trimdomain(3), which has no effect. Then when the message from\n\"shawshank-1\" comes it, it doesn't get matched against either of the\nFQDNs and thus isn't logged.\n\nYou can try to verify this by changing your filter to\n\n+shawshank-1,shawshank-2\n\nI haven't actually tried to reproduce this - it's based on a reading of\nthe syslogd code. I'll post a patch soon.\n\nThanks,\n-Mark"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1345434,
+ "bug_id": 281402,
+ "attachment_id": 0,
+ "creation_time": "2025-01-22T19:48:08Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I've determined the cause of the alerts, and it's boring: SIMD code.  When I change the raidz implementation to the scalar algorithm, all of the KMSAN alerts go away.  But with any SIMD algorithm, I get the alerts.  Here's a summary of the various raidz algorithms.  \n  - cycle: warnings\n  - fastest: warnings\n  - original: ok\n  - scaler: ok\n  - sse2: warnings\n  - ssse3: warnings\n  - avx2: warnings\n  - avx512f: untested\n  - avx512bw: untested\n\nI'll open a separate PR to OpenZFS to make the algorithm easier to select.  Regarding the false alarms, if KMSAN can't be made to understand SIMD instructions, would it be possible to annotate functions like raidz_gen_pq_add with extra information for KMSAN?"
+}

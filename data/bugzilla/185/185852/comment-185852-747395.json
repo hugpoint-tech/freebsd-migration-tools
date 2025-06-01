@@ -1,0 +1,8 @@
+{
+ "id": 747395,
+ "bug_id": 185852,
+ "attachment_id": 0,
+ "creation_time": "2014-01-17T16:10:03Z",
+ "creator": "blub@speed.at",
+ "text": "Many of gctl_copyin's error cases don't actually set the request's nerror member.\nIf for instance the \"class\" value gets corrupted (or deliberately set to a bad value) (specifically to be non-null-terminated but GCTL_PARAM_ASCII added to its flags), the gctl_copyin will not get to setting kvalue, which is then NULL and later-on accessed in gctl_get_class, where it checks for a terminating null character.\n\nSeems like the a lot of the geom subsystem could use some more error checking.\nIe GEOM_PARAM_KERNELVALUE never gets set on the request argument, so why aren't all accesses to its kvalue member masked by this flag if it exists?\n\n(A kernel should not have to rely on the userspace being friendly to it. This is a lucky case in that you by default need to be in the operator group to issue such a request.)\n\nFix: \n\nmake gctl_error or its callers (gctl_copyin) set req-\u003enerror in all error cases.\n\nThe diff [1] is dirty and not the recommended way to go about this, but it did protect against the geom_crash.c file linked in the \"How to repeat the problem\" section. (got the correct \"unterminated param value\" error with it)\nWhich shows me that my assumption of how/where this is going bad is probably correct.\n\n[1] \u003chttp://users.archbsd.net/~blub/pastes/blub/geom_ctl.diff\u003e\nHow-To-Repeat: Send a libgeom request filled with garbage.\nExample code:\nhttp://users.archbsd.net/~blub/pastes/blub/geom_crash.c\n\ncompile with -lgeom and run with a 'doit' parameter to trigger the panic"
+}

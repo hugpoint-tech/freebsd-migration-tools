@@ -1,0 +1,8 @@
+{
+ "id": 1321023,
+ "bug_id": 269770,
+ "attachment_id": 0,
+ "creation_time": "2024-08-17T06:51:26Z",
+ "creator": "eugen@freebsd.org",
+ "text": "(In reply to Peter Much from comment #6)\n\n\u003e the logic when and how this happens is unintellegible\n\nIn case of ipfw nat:\n\n1) When \"ipfw nat\" rule processes packets in-kernel, a packet is passed to ipfw_nat_ptr() that points to ipfw_nat() function in sys/netpfil/ipfw/ip_fw_nat.c\n\n2) ipfw_nat() can call LibAliasOut(), LibAliasOutTry() or LibAliasIn().\n2.1) LibAliasIn() calls LibAliasInLocked().\n2.2) LibAliasOut() and LibAliasOutTry() call LibAliasOutLocked() than can call LibAliasInLocked(), too.\n\n3) So we end up in LibAliasInLocked() or LibAliasOutLocked() and both call HouseKeeping() function sometimes (not every time) calls CleanupLink(la, \u0026lnk, 0) to remove expired links but it is not supposed to touch permanent links we have configured for port forwarding."
+}

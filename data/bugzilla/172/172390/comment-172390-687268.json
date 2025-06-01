@@ -1,0 +1,8 @@
+{
+ "id": 687268,
+ "bug_id": 172390,
+ "attachment_id": 0,
+ "creation_time": "2012-10-06T12:10:13Z",
+ "creator": "tony@lavanauts.org",
+ "text": "Programs that use the resolver library but query IPv6 resolvers directly require access to the IPv6 extensions in resolv.h.  However, the definition for struct __res_state_ext is missing from the standard system header files.\n\nFix: \n\nInclude a definition for struct __res_state_ext in resolv.h\n\nstruct __res_state_ext {\n        union res_sockaddr_union nsaddrs[MAXNS];\n        struct sort_list {\n                int     af;\n                union {\n                        struct in_addr  ina;\n                        struct in6_addr in6a;\n                } addr, mask;\n        } sort_list[MAXRESOLVSORT];\n        char nsuffix[64];\n        char nsuffix2[64];\n};\nHow-To-Repeat: The following will fail to compile:\n\n#include \u003csys/types.h\u003e\n#include \u003cnetinet/in.h\u003e\n#include \u003carpa/nameser.h\u003e\n#include \u003cresolv.h\u003e\n\nint main(void) {\n  struct __res_state myres;\n  struct __res_state_ext *myres6;\n  struct sockaddr_in6 *mysockaddr6;\n\n  res_ninit(\u0026myres);\n  myres6 = myres._u._ext.ext;\n  mysockaddr6 = \u0026(myres6-\u003ensaddrs[0].sin6); \n}"
+}

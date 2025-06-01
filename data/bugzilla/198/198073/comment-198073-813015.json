@@ -1,0 +1,8 @@
+{
+ "id": 813015,
+ "bug_id": 198073,
+ "attachment_id": 0,
+ "creation_time": "2015-03-03T08:16:07Z",
+ "creator": "dch@freebsd.org",
+ "text": "AFAICT the issue is that `go get` $THING retrieves upstream packages afresh. I found the same issue when doing the OSX port for hugo, a go static site engine.\n\nI'm not sure yet if /usr/ports/lang/go/files/bsd.go.mk correctly handles versioning of dependent components; I can't see how e.g. https://github.com/freebsd/freebsd-ports/blob/master/security/go.crypto/Makefile seems to get things right, as the bsd.go.mk file has no smarts.\n\nIs the best option is to implement a port of godep, and then use a godep file as a patch that specifies the required dependencies?\n\n@cheffo BTW I am on efnet/#freebsdports as dch if you want to discuss over IRC.\n\nThe best long-term solution is probably to extend bsd.go.mk so that it can simply be given a list of tuples for dependencies, extracted from Godep output, and it will Do The Right Thing wrt fetching and updating:\n\n{\n\t\"ImportPath\": \"github.com/influxdb/influxdb\",\n\t\"GoVersion\": \"go1.4.2\",\n\t\"Deps\": [\n\t\t{\n\t\t\t\"ImportPath\": \"github.com/boltdb/bolt\",\n\t\t\t\"Comment\": \"v1.0-43-gcf33c9e\",\n\t\t\t\"Rev\": \"cf33c9e0ca0a23509b8bb8edfc63e4776bb1a330\"\n\t\t},\n\t\t{\n\t\t\t\"ImportPath\": \"golang.org/x/crypto/bcrypt\",\n\t\t\t\"Rev\": \"1351f936d976c60a0a48d728281922cf63eafb8d\"\n\t\t},\n\t\t{\n\t\t\t\"ImportPath\": \"golang.org/x/crypto/blowfish\",\n\t\t\t\"Rev\": \"1351f936d976c60a0a48d728281922cf63eafb8d\"\n\t\t}\n\t]\n}\n\nBut that's beyond my skills at present."
+}

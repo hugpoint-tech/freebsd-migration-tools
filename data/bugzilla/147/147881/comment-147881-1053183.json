@@ -1,0 +1,8 @@
+{
+ "id": 1053183,
+ "bug_id": 147881,
+ "attachment_id": 0,
+ "creation_time": "2019-06-04T00:07:54Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Personally, I think Quentin Rameau's patch is all you need.\nI don't think embedded comments in the sharenfs property are needed\nand it just makes the patch much more involved.\nThe one slightly scary thing about it is that \"; ;\" is allowed and results\nin the file system being exported read/write to the world, because it will\ngenerate a line with just the mountpoint in it. (I never use ZFS, so I don't\nknow if a blank sharenfs property is allowed and results in the same thing?)\nIt might be safer to not allow that case?\n\nOne other change would be to take the \"const\" off the argument for\ntranslate_opts() and don't have it strlcpy() the shareopts, since they\nhave already be copied by the caller with Quentin's patch.\n\nI don't recommend changing the exports(5) syntax for two reasons:\n1- Any change must be 100% backwards compatible or it is a POLA violation\n   and can't go in FreeBSD. (ie. Any exports file that worked before must\n   still work and provide the same semantics.)\n2 - Parsing of exports file(s) is done by a function called\n    get_exportlist_one() in src/usr.sbin/mountd/mountd.c and, if you\n    look at it, you will find the code convoluted and difficult to modify\n    without breaking it.\n\nI'm not a ZFS guy, so I can't help w.r.t. getting this in FreeBSD.\nI'd suggest you post on a FreeBSD mailing list about this and hope that\nsomeone on the ZFS side is interested in getting the patch in."
+}

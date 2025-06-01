@@ -1,0 +1,8 @@
+{
+ "id": 431685,
+ "bug_id": 120881,
+ "attachment_id": 0,
+ "creation_time": "2008-05-22T23:19:38Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "mckusick    2008-05-22 22:19:33 UTC\n\n  FreeBSD src repository\n\n  Modified files:\n    sbin/restore         tape.c \n  Log:\n  This fixes the \"getfile: lost data\" panic when restoring dumps\n  on a 7.0 or later system that were created on a pre-5.0 system.\n  We must ensure that restore zeros out the previously undefined\n  birthtime and external attribute size fields when reading dump\n  tapes made by the UFS1 dump program.\n  \n  The problem is that UFS2 dump carefully zeros out the unused\n  birthtime and external attribute size fields in the dump header\n  when dumping UFS1 filesystems, but the UFS1 dump didn't know about\n  those fields (they were spares) so just left whatever random junk\n  was in them. So, when restoring one of these pre-UFS2 dumps,\n  the new restore would eventually trip across a header that had\n  a non-zero external attribute size and try to extract it. That\n  consumed several tape blocks which left it totally out of sync\n  and very unhappy (i.e., the panic). The fix is in the gethead()\n  function which modernizes old headers by copying old fields to\n  their new location (and with this fix) zeroing out previously\n  undefined fields.\n  \n  PR:             bin/120881\n  Review by:      David Malone \u0026 Scott Lambert\n  MFC after:      1 week\n  \n  Revision  Changes    Path\n  1.53      +3 -0      src/sbin/restore/tape.c\n_______________________________________________\ncvs-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/cvs-all\nTo unsubscribe, send any mail to \"cvs-all-unsubscribe@freebsd.org\""
+}

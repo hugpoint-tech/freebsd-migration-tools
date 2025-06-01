@@ -1,0 +1,8 @@
+{
+ "id": 848832,
+ "bug_id": 204438,
+ "attachment_id": 0,
+ "creation_time": "2015-11-12T18:20:08Z",
+ "creator": "alfred@FreeBSD.org",
+ "text": "I believe the reason for the adjustment is that \"sb_max\" is for \"max kernel memory taken by the socketbuffer INCLUDING MBUFS THEMSELVES\"\n\nSo what is actually happening is that each MCLSIZE (size of cluster) of \"data\" is having MSIZE (size of mbuf) added to it.\n\nWhy is it scaled up so?  Because in reality one needs MSIZE actual memory for each cluster as metadata to point to it.\n\nAnd why is this done?  So that you can actually trust \"sb_max\" to mean maximum kernel memory taken to support N bytes per socket.\n\nI didn't realize Linux silents truncates the requested amount, that's a little scary, however I'm learning to trust more and more what Linux does.\n\nWhat might make a bit more sense in the long run is actually to make:\n\n1) kern.ipc.maxsockbuf == max number of bytes of DATA in each socketbuffer\n2) kern.ipc.maxsockbufmeta = max number of bytes of DATA + METADATA required to be allocated."
+}

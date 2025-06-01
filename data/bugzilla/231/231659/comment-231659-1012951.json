@@ -1,0 +1,8 @@
+{
+ "id": 1012951,
+ "bug_id": 231659,
+ "attachment_id": 0,
+ "creation_time": "2018-09-25T11:31:29Z",
+ "creator": "lev@FreeBSD.org",
+ "text": "Steps to reproduce for me:\n\n(1) Two hosts:\n  192.168.134.1, 12-ALPHA7, slow, without AES-NI\n  192.168.134.2, 11-STABLE, fast, with AES-NI\n\n(2) Setup IPsec transport for TCP port 5201 (iperf3 part):\n (a) on 192.168.134.2\nsetkey -c\u003c\u003c__END\nflush;\nspdflush;\nadd 192.168.134.1 192.168.134.2 esp 0x10001 -E rijndael-cbc \"0123456789abcdef\";\nadd 192.168.134.2 192.168.134.1 esp 0x10002 -E rijndael-cbc \"0123456789abcdef\";\nspdadd 192.168.134.2/32[5201] 192.168.134.1/32 tcp -P out ipsec esp/transport//require;\nspdadd 192.168.134.1/32 192.168.134.2/32[5201] tcp -P in  ipsec esp/transport//require;\n__END\n (b) on 192.168.134.1\nsetkey -c \u003c\u003c__END\nflush;\nspdflush;\nadd 192.168.134.1 192.168.134.2 esp 0x10001 -E rijndael-cbc \"0123456789abcdef\";\nadd 192.168.134.2 192.168.134.1 esp 0x10002 -E rijndael-cbc \"0123456789abcdef\";\nspdadd 192.168.134.1/32 192.168.134.2/32[5201] tcp -P out ipsec esp/transport//require;\nspdadd 192.168.134.2/32[5201] 192.168.134.1/32 tcp -P in  ipsec esp/transport//require;\n__END\n\n(3) run \"iperf3 -s\" on 192.168.134.2\n(4) run \"iperf -c 192.168.134.2 -R\" on 192.168.134.1\n(5) Almost instant crash on 192.168.134.1.\n\nIt looks have something to do with timings, as same setup where slow 192.168.134.1 is replaced bu much faster and AES-NI-capable system (same FreeBSD version) make crash much more hard to reproduce. I've got only one for 6 hours of testing with fast system."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 916618,
+ "bug_id": 216088,
+ "attachment_id": 178896,
+ "creation_time": "2017-01-14T23:07:44Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 178896\nDon't free unrecovered opens when recovery of them fails\n\nWhen the NFSv4.1 client is recovering from a server crash/reboot and the\nrecovery of opens fails, the code in current free's the unrecovered opens.\n\nByte range locks cannot be kept, since a conflicting lock might have been\nacquired by a different client while it is not recovered. The server is\nsupposed to not allow a recovery when it has previously not been recovered.\n\nHowever, since all opens for POSIX clients are Share_Deny_None, it seems\nsafe to attempt to recover them again, in case the server allows this.\n\nThis patch changes the client recovery code so that it retains unrecovered\nopens, so a subsequent recovery can attempt to recover them.\n\nNormally, this should not happen, but the AmazonEFS server crashes/reboots\nfrequently, including while recovery is still being done."
+}

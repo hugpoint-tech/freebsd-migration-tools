@@ -1,0 +1,8 @@
+{
+ "id": 1258836,
+ "bug_id": 271312,
+ "attachment_id": 242053,
+ "creation_time": "2023-05-08T09:45:10Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 242053\nbroken file system image that causes fsck to crash due to off-by-one maxino check\n\nfsck_ffs has some checks for an out-of-range i-number that say \"... \u003e\nmaxino\" which I think should be \u003e=.\n\nOne consequence is that inoinfo() in fsutil.c can index beyond the end\nof inostathead[]:\n\n        if (inum \u003e maxino)\n                errx(EEXIT, \"inoinfo: inumber %ju out of range\",\n                    (uintmax_t)inum);\n        ilp = \u0026inostathead[inum / sblock.fs_ipg];\n\nA backtrace from fsck_ffs -y on the attached file-system image:\n\nProgram received signal SIGBUS, Bus error.\nObject-specific hardware error.\n0x000000000021f051 in pass2check (idesc=0x7fffffffe7b8) at pass2.c:486\n486                     switch (inoinfo(dirp-\u003ed_ino)-\u003eino_state) {\n(gdb) where\n#0  0x000000000021f051 in pass2check (idesc=0x7fffffffe7b8) at pass2.c:486\n#1  0x00000000002093e7 in dirscan (idesc=0x7fffffffe7b8) at dir.c:211\n#2  0x000000000021318b in ckinode (dp=0x7fffffffe6b8, idesc=0x7fffffffe7b8)\n    at inode.c:126\n#3  0x000000000021e130 in pass2 () at pass2.c:202\n#4  0x0000000000219a7d in checkfilesys (filesys=0x7fffffffed79 \"junk\")\n    at main.c:468\n#5  0x0000000000218f42 in main (argc=1, argv=0x7fffffffea28) at main.c:210"
+}

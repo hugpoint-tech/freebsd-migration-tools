@@ -1,0 +1,8 @@
+{
+ "id": 804431,
+ "bug_id": 196474,
+ "attachment_id": 0,
+ "creation_time": "2015-01-12T22:24:23Z",
+ "creator": "jamie@FreeBSD.org",
+ "text": "[A repeat from the database going down]\n\nI'm with Bjoern in that I see the problem on the jail_set end, and not the jail_get end.  But I wouldn't want to make the command fail.  It seems a reasonable analog to (the correct) \"ip4=disable\", and in fact ends up treating it the same way in every respect except the jail_get panic.\n\nIt's never proper for pr_ip4 to have a negative value.  It used to be, before the PR_IP4_DISABLE flag, and I would test for it in the proper places.  But I was incorrect to keep that vestige when I added the flag.  I must have considered it proper at the time since I took pains to keep it, but a years-later code review concludes differently.\n\nMy patch merely gets rid of the -1 that doesn't belong.\n\nAfter that, the only difference between an ip4-disabled jail and one that is set to no addresses is the PR_IP4_DISABLED flag.  Both have no addresses, and will not admit to supporting IPV4.  In fact, PR_IP4_DISABLED, which is only ever referenced in kern_jail.c, becomes write-only and useless.  I plan to issue a second patch which removes it entirely.  But that isn't quite part of this bug.\n\nOn the matter of signed versus unsigned ints in vfs_get/setopt, that's a whole 'nother can of worms, and one I don't think we need to open up just for this one bug."
+}

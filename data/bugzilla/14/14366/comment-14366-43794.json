@@ -1,0 +1,8 @@
+{
+ "id": 43794,
+ "bug_id": 14366,
+ "attachment_id": 0,
+ "creation_time": "1999-10-17T08:20:01Z",
+ "creator": "tempest@ecst.csuchico.edu",
+ "text": "Using wdm to login causes the system call getlogin() to return \"root\" if one isn't logged in as root. The immediate consequence that I encountered is programs like trn posts messages that says one is \"root\" rather than the actual user.\n\nProblem is the BSD macro never gets set as it's defined in \u003csys/param.h\u003e but it's included only if CSRG_BASED is defined and FreeBSD doesn't define it.\n\nFix: patch xdm/session.c as follows:\n\n\n\n-#ifdef CSRG_BASED\n+#if defined(CSRG_BASED) || defined(__FreeBSD__)\n #include \u003csys/param.h\u003e\n+#include \u003cunistd.h\u003e\n #endif\n #ifdef HAS_SETUSERCONTEXT\n #include \u003clogin_cap.h\u003e--EOapyEIMFbLOKbMscaISliq1X5FTkKFJY1JwYI4vvJHbB0HD\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- session.c.orig      Mon Mar  2 03:56:36 1998\n+++ session.c   Sun Oct 17 00:01:10 1999\n@@ -63,8 +63,9 @@\n #endif\n #endif\nHow-To-Repeat: Run this program as a non-root user and it will return root rather than the user's login.\n\n#include \u003cunistd.h\u003e\nmain() { printf(\"%s\\n\",getlogin()); }"
+}

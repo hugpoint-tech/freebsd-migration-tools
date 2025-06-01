@@ -1,0 +1,8 @@
+{
+ "id": 972572,
+ "bug_id": 209475,
+ "attachment_id": 0,
+ "creation_time": "2018-01-16T09:46:07Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to fehmi noyan isi from comment #12)\nYes, that's probably one of them.\n\nThere are a couple of allocations in pf_initialize() and they all use M_WAITOK.\n\nI do see why, because it's non-trivial to cope with allocation failures in that part of the code. It gets called from a VNET_SYSINIT(), so it doesn't have a reasonable way of aborting the initialisation.\n\nAs an aside, the allocations should probably be changed to use mallocarray() too, because the multiplication they do (pf_hashsize * sizeof(pf_idhash) for example) might overflow. pf_hashsize can be set by the user (although only root, because it's a sysctl, fortunately), so we must verify it won't overflow before trying to allocate it."
+}

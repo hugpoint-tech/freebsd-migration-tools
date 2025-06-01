@@ -1,0 +1,8 @@
+{
+ "id": 1160627,
+ "bug_id": 254590,
+ "attachment_id": 0,
+ "creation_time": "2021-05-11T01:16:02Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch stable/13 references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=3e67975a0c0807073daff24a3b6fa8942d3305d2\n\ncommit 3e67975a0c0807073daff24a3b6fa8942d3305d2\nAuthor:     Rick Macklem \u003crmacklem@FreeBSD.org\u003e\nAuthorDate: 2021-04-27 22:32:35 +0000\nCommit:     Rick Macklem \u003crmacklem@FreeBSD.org\u003e\nCommitDate: 2021-05-11 01:12:21 +0000\n\n    nfsd: fix a NFSv4.1 Linux client mount stuck in CLOSE_WAIT\n\n    It was reported that a NFSv4.1 Linux client mount against\n    a FreeBSD12 server was hung, with the TCP connection in\n    CLOSE_WAIT state on the server.\n    When a NFSv4.1/4.2 mount is done and the back channel is\n    bound to the TCP connection, the soclose() is delayed until\n    a new TCP connection is bound to the back channel, due to\n    a reference count being held on the SVCXPRT structure in\n    the krpc for the socket. Without the soclose() call, the socket\n    will remain in CLOSE_WAIT and this somehow caused the Linux\n    client to hang.\n\n    This patch adds calls to soshutdown(.., SHUT_WR) that\n    are performed when the server side krpc sees that the\n    socket is no longer usable.  Since this can be done\n    before the back channel is bound to a new TCP connection,\n    it allows the TCP connection to proceed to CLOSED state.\n\n    PR:     254590\n    (cherry picked from commit db8c27f499105dcc9872dcc46e88bdd570c24fee)\n\n sys/rpc/svc.c | 5 +++++\n 1 file changed, 5 insertions(+)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 962511,
+ "bug_id": 224160,
+ "attachment_id": 0,
+ "creation_time": "2017-12-07T13:07:28Z",
+ "creator": "wosch@FreeBSD.org",
+ "text": "The wc(1) command has several optimizations to run as fast as possible. However, it is still slow in some use cases, much slower than the GNU wc command\n\nUsing the OpenStreetMap database dump planet-latest.osm.bz2\n(from https://wiki.openstreetmap.org/wiki/Planet.osm)\nwhich it is a 61GB bzip'd XML file.\n\nI checked how large the uncompressed XML is, on a 32 CPU machine:\n\n# FreeBSD wc\n$ pbzip2 -dc planet-latest.osm.bz2 | time wc -c\n908171295050\n    4729.53 real      4400.69 user       199.34 sys\n\nthe wc(1) command was running at 100% CPU time, and pbzip2 was using only 500% CPU time.\n\n\nI run the tests again with GNU wc. The wc command was using only 20% CPU time, and pbzip2 around 3000%.\n\n# GNU wc\n$ pbzip2 -dc planet-latest.osm.bz2 | time gwc -c\n908171295050\n    2003.15 real         8.86 user       355.53 sys\n\nThe FreeBSD wc(1) command is using 500 times more user time (4400 \u003c-\u003e 9) than the GNU wc, and a little bit less system time (199 \u003c-\u003e 355). The bottleneck was not pbzip2, it was wc. \n\nWe should check why the optimization for wc -c for reading from stdin is not working."
+}

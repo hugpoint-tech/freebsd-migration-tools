@@ -1,0 +1,8 @@
+{
+ "id": 732195,
+ "bug_id": 182426,
+ "attachment_id": 0,
+ "creation_time": "2013-09-30T22:41:23Z",
+ "creator": "freebsd@grem.de",
+ "text": "Suggested solution for the my.cnf problem:\n\nThe mariadb ports use the same strategy as the mysql port, which is\nallowing one additional configuration directory, making use of\nDEFAULT_SYSCONFDIR and adding DEFAULT_SYSCONFDIR/mysql to the list of\npossible my.cnf locations. This essentially means, that besides HOME\nand MYSQL_HOME, the following directories are possible my.cnf locations:\n\n/etc\n/etc/mysql\n/usr/local/etc\n/usr/local/etc/mysql\n\nSomething goes wrong in configuring DEFAULT_SYSCONFDIR, so it never\nis set in config.h. As a result, only the first two directories are\navailable, and those are exactly the ones we don't want on FreeBSD. So\ninstead of trying to fix DEFAULT_SYSCONFDIR, I modified the patch to\nmysys/default.c to use /usr/local/etc and /usr/local/etc/mysql in place\nof /etc and /etc/mysql. As a consequence, my.cnf files in those paths\nthat violate hier(7) won't get picked up anymore, which IMHO is correct\nbehavior.\n\nFind attached a drop in replacement for files/patch-mysys_default.c for\nboth ports mariadb55-(server|client)\n\nThere are two caveats:\n\n1. The change probably should be pointed out in pkg-message\n2. It might be more elegant to somehow make use of PREFIX instead\n   of /usr/local in the patch\n\nCheers,\nMichael\n\n-- \nMichael Gmelin"
+}

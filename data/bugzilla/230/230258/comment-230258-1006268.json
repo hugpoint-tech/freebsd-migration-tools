@@ -1,0 +1,8 @@
+{
+ "id": 1006268,
+ "bug_id": 230258,
+ "attachment_id": 0,
+ "creation_time": "2018-08-13T07:38:39Z",
+ "creator": "acid@moosefs.com",
+ "text": "Ok. As I see there are two different problems. One is entry/attr cache timeout and the other is file size handling. In Linux file size is strictly connected with attribute cache and therefore proper handling of attribute timeouts is important there. In FreeBSD it looks that it works differently. My small patch only fixed file size handling (which is very important - much more important than handling other attributes).\n\nI've checked the code and what I see is that entry cache is now totally disabled (which is good, because it is better not to cache at all than cache without timeout). Attribute cache is there only in theory (\"cached_attrs\" field in \"struct fuse_vnode_data\"). In theory, because in the code attributes are set but ... never used. Only field va_nlink is used in \"link\" operation and only to check if it reaches FUSE_LINK_MAX.\n\nThis is why Conrad's patch didn't change anything.\n\nTo add full attr_timeout support we should add \"struct timespec attrtimeout\" field to \"struct fuse_vnode_data\", fill it correctly in \"cache_attrs\" and use it - mainly in \"fuse_vnop_getattr\" - check \"attrtimeout\" before dispatching FUSE_GETATTR and fill \"vap\" field using cached attributes instead.\n\nTo add full entry_timeout support maybe we can use \"cache_enter_time\" instead of \"cache_enter\" and store timeout in entry cache and then use it in lookup.\n\nI might try to create a patch at least for attr_timeout. The only problem is that I'm unfamiliar with writing code on the kernel level. In this case I don't know how to obtain \"monotonic\" clock in the kernel."
+}

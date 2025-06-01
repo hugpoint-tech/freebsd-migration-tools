@@ -1,0 +1,8 @@
+{
+ "id": 916995,
+ "bug_id": 216127,
+ "attachment_id": 0,
+ "creation_time": "2017-01-17T03:38:28Z",
+ "creator": "cem@freebsd.org",
+ "text": "The kernel code (e.g. ffs_findextattr) indicates that EA names are not, in fact, nul-terminated.  So the headers restore uses are wrong, as is the restore code.  This piece of kernel code hasn't changed substantially since the early 2000s.\n\nThe misleading header comment and macros that reference ea_name as if it is a nul-terminated string were introduced in 2007 in r167010.  It immediately precedes r167011, which introduced extattr support to restore.\n\nea_name will *happen* to be nul-terminated when ea_namelength % 8 == 1, like in your \"m\" example.  This is because `sizeof(uint32_t) + 3 * sizeof(uint8_t) + strlen(ea_name)` is padded to multiples of 8 bytes, and the padding is always zeroed.\n\nWell, there's a long time between ~2002 and 2007.  Maybe Kirk just forgot that ea_name wasn't nul-terminated, or didn't try any keys with length == 1 (mod 8).\n\nI propose the following actions:\n\n* Fix the ufs/extattr.h documentation for ea_name, and remove EXTATTR_SET_LENGTHS macro (unused) entirely (it uses strlen(ea_name))\n* Fix accompanying documentation in extattr.9, fs.5.\n* Merge set_extattr_file(), set_extattr_link(), and set_extattr_fd() in restore and fix uses of ea_name that assume nul-termination.\n* Finally, perform the simplification that was proposed in the r167010 commit log.\n\nI'll draw up some patches."
+}

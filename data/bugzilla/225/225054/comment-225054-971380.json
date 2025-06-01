@@ -1,0 +1,8 @@
+{
+ "id": 971380,
+ "bug_id": 225054,
+ "attachment_id": 0,
+ "creation_time": "2018-01-12T21:20:07Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Dimitry Andric from comment #9)\n\u003e So the address of the _hash_value field is OK, apparently.  As to why this\n\u003e gives a segfault, no idea yet.\n\nActually, it is quite clear: the memory is read-only.  openjdk/hotspot/src/share/vm/utilities/nativeCallStack.cpp has:\n\n28      #include \"utilities/nativeCallStack.hpp\"\n29\n30      const NativeCallStack NativeCallStack::EMPTY_STACK(0, false);\n31\n32      NativeCallStack::NativeCallStack(int toSkip, bool fillStack) :\n33        _hash_value(0) {\n34\n\nI.e. NativeCallStack::EMPTY_STACK is const, and placed into .rodata.  Then openjdk/hotspot/src/share/vm/services/memTracker.cpp has:\n\n70        // Construct NativeCallStack::EMPTY_STACK. It may get constructed twice,\n71        // but it is benign, the results are the same.\n72        ::new ((void*)\u0026NativeCallStack::EMPTY_STACK) NativeCallStack(0, false);\n\nThis new invocation cannot work, because it tries to re-initialize a const object.  Why this worked in previous clang, or in any other compiler, I don't know. :)"
+}

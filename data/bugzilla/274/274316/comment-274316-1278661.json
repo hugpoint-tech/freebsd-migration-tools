@@ -1,0 +1,8 @@
+{
+ "id": 1278661,
+ "bug_id": 274316,
+ "attachment_id": 0,
+ "creation_time": "2023-10-07T00:02:42Z",
+ "creator": "emaste@freebsd.org",
+ "text": "We can switch to run-time sizing for these, but there's a very interesting observation used by Linux that we can adopt, to significantly reduce the memory used.\n\nWe have (currently) MAXCPU count of cpuset_ts, each with one CPU set. Note that all but one of the longs making up each cpuset_t is zero.\n\nIf n=__bitset_words(MAXCPU) then cpuset_t is an array of long __bits[n]. If we have (n-1) long zeros, 0x1, (n-1) long zeros, 0x2, (n-1) long zeros, and so on, with an appropriate offset we can use that same 0x1 for:\n\n0000000000000000 0000000000000000 ... 0000000000000000 0000000000000001\n0000000000000000 0000000000000000 ... 0000000000000001 0000000000000000\n...\n0000000000000000 0000000000000001 ... 0000000000000000 0000000000000000\n0000000000000001 0000000000000000 ... 0000000000000000 0000000000000000\n\nand so on for 0x2, etc."
+}

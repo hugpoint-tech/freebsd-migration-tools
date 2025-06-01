@@ -1,0 +1,8 @@
+{
+ "id": 411211,
+ "bug_id": 116608,
+ "attachment_id": 0,
+ "creation_time": "2007-09-29T06:45:51Z",
+ "creator": "ports@grosbein.net",
+ "text": "Hi!\n\nTrying to minimize effect of change, I've settled with the following\npatch: just ignore \"ro\" options if there is also \"noro\" option,\npresumably added within vfs_donmount(). Now it works as expected\nand does not trigger off another bugs :-)\n\n--- sys/fs/msdosfs/msdosfs_vfsops.c.orig\t2007-09-24 22:16:52.000000000 +0800\n+++ sys/fs/msdosfs/msdosfs_vfsops.c\t2007-09-25 23:48:07.000000000 +0800\n@@ -268,6 +268,7 @@\n \t\t\t\treturn (EOPNOTSUPP);\n \t\t}\n \t\tif (!(pmp-\u003epm_flags \u0026 MSDOSFSMNT_RONLY) \u0026\u0026\n+\t\t    !vfs_flagopt(mp-\u003emnt_optnew, \"noro\", NULL, 0) \u0026\u0026\n \t\t    vfs_flagopt(mp-\u003emnt_optnew, \"ro\", NULL, 0)) {\n \t\t\terror = VFS_SYNC(mp, MNT_WAIT, td);\n \t\t\tif (error)\n@@ -314,10 +315,12 @@\n \n \t\t\tro_to_rw = 1;\n \t\t}\n+\t\tif(!vfs_flagopt(mp-\u003emnt_optnew, \"noro\", NULL, 0)) {\n \t\tvfs_flagopt(mp-\u003emnt_optnew, \"ro\",\n \t\t    \u0026pmp-\u003epm_flags, MSDOSFSMNT_RONLY);\n \t\tvfs_flagopt(mp-\u003emnt_optnew, \"ro\",\n \t\t    \u0026mp-\u003emnt_flag, MNT_RDONLY);\n+\t\t}\n \n \t\tif (ro_to_rw) {\n \t\t\t/* Now that the volume is modifiable, mark it dirty. */\n@@ -417,7 +420,7 @@\n \tstruct g_consumer *cp;\n \tstruct bufobj *bo;\n \n-\tronly = !vfs_getopt(mp-\u003emnt_optnew, \"ro\", NULL, NULL);\n+\tronly = (mp-\u003emnt_flag \u0026 MNT_RDONLY) != 0;\n \t/* XXX: use VOP_ACCESS to check FS perms */\n \tDROP_GIANT();\n \tg_topology_lock();"
+}

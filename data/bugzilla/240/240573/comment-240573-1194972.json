@@ -1,0 +1,8 @@
+{
+ "id": 1194972,
+ "bug_id": 240573,
+ "attachment_id": 0,
+ "creation_time": "2022-01-16T22:15:30Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "For kern_proc_vmmap_out(), we have:\n\n\t\t/* Halt filling and truncate rather than exceeding maxlen */\n\t\tif (maxlen != -1 \u0026\u0026 maxlen \u003c kve-\u003ekve_structsize) {\n\t\t\terror = 0;\n\t\t\tvm_map_lock_read(map);\n\t\t\tbreak;\n\t\t} else if (maxlen != -1)\n\t\t\tmaxlen -= kve-\u003ekve_structsize;\n\n\t\tif (sbuf_bcat(sb, kve, kve-\u003ekve_structsize) != 0)\n\t\t\terror = ENOMEM;\n\nNote that when filling out info for the KERN_PROC_VMMAP sysctl, we have maxlen == -1.  So we just end up calling sbuf_bcat(), which will indeed return an error if the output buffer is too small.  I think there is no bug there.\n\nI think you are right about sysctl_posix_shm_list(), we should return an error if req-\u003eoldptr is non-NULL and the buffer is truncated.  I believe it would be sufficient to just remove the referenced check, sbuf_bcat() will signal an error."
+}

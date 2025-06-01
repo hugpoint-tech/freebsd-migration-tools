@@ -1,0 +1,8 @@
+{
+ "id": 388833,
+ "bug_id": 111831,
+ "attachment_id": 0,
+ "creation_time": "2007-07-19T21:12:26Z",
+ "creator": "linimon@lonesome.com",
+ "text": "----- Forwarded message from Steve Sears \u003csjs@netapp.com\u003e -----\n\nFrom: Steve Sears \u003csjs@netapp.com\u003e\nTo: freebsd-bugs@FreeBSD.org\n\nI hit this bug and fixed it thusly in nfsclient/nfs_bio.c, around line 1735:\n\n            } else {\n            if (error) {\n            bp-\u003eb_ioflags |= BIO_ERROR;\n            /* Mark buffer invalid which will result in invalidating\n             * its pages and other buffer cleanup in brelse().\n             * Cannot set BIO_ERROR without marking buffer B_INVAL.\n             */\n+++         bp-\u003eb_flags |= B_INVAL;\n            bp-\u003eb_error = np-\u003en_error = error;\n            np-\u003en_flag |= NWRITEERR;\n+++         np-\u003en_attrstamp = 0;\n            }\n            bp-\u003eb_dirtyoff = bp-\u003eb_dirtyend = 0;\n\nPart of the problem is that the transport is returning an error that is not\nbeing dealt with gracefully. In my case it was EAGAIN. I also fixed the\nsocket code to retry in the session layer if it gets EAGAIN. I'm using a\nspecialized transport, so that part of the fix is not relevant.\n\nI just looked at the file in the CVS repository and version 1.152.2.5,\n2007/07/17 21:02:08, is the same fix. If this change is MFC'd to 6.2, the\nsubmitter should be happy.\n\n\n -Steve\n\n----- End forwarded message -----"
+}

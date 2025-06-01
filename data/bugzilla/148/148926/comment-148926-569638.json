@@ -1,0 +1,8 @@
+{
+ "id": 569638,
+ "bug_id": 148926,
+ "attachment_id": 0,
+ "creation_time": "2010-08-31T13:56:36Z",
+ "creator": "tijl@coosemans.org",
+ "text": "Hi Yuri,\n\nOn my system, it seems gcc already compiles for i486 by default. The\noutput of \"cc -E -dM - \u003c /dev/null\" shows that __i486__ is defined and\natomic builtins such as __sync_fetch_and_add are defined and produce\ni486 instructions. Only when you explicitly specify -march=i386 does\ngcc produce i386 code.\n\nHowever, it does look like libstdc++ can be optimised somewhat now that\nFreeBSD doesn't support the 80386 anymore. Can you test the attached\npatch and verify that it accomplishes what you want?\n\ndiff --git a/gnu/lib/libstdc++/Makefile b/gnu/lib/libstdc++/Makefile\nindex e0a7bb2..56ca626 100644\n--- a/gnu/lib/libstdc++/Makefile\n+++ b/gnu/lib/libstdc++/Makefile\n@@ -83,7 +83,7 @@ ATOMICITY_H=\t${SRCDIR}/config/cpu/${MARCHDIR}/atomicity.h\n ATOMICITY_H=\t${SRCDIR}/config/cpu/generic/atomicity_mutex/atomicity.h\n .endif\n \n-.if ${MACHINE_ARCH} == \"amd64\"\n+.if ${MACHINE_ARCH} == \"amd64\" || ${MACHINE_ARCH} == \"i386\"\n .if exists(${SRCDIR}/config/cpu/generic/atomicity_builtins/atomicity.h)\n ATOMICITY_H=\t${SRCDIR}/config/cpu/generic/atomicity_builtins/atomicity.h\n .endif\ndiff --git a/gnu/lib/libstdc++/config.h b/gnu/lib/libstdc++/config.h\nindex de4641d..8bc099f 100644\n--- a/gnu/lib/libstdc++/config.h\n+++ b/gnu/lib/libstdc++/config.h\n@@ -671,7 +671,7 @@\n /* #undef VERSION */\n \n /* Define if builtin atomic operations are supported on this host. */\n-#if defined(__amd64__)\n+#if defined(__amd64__) || defined(__i386__)\n #define _GLIBCXX_ATOMIC_BUILTINS 1\n #endif"
+}

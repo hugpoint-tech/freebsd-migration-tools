@@ -1,0 +1,8 @@
+{
+ "id": 635035,
+ "bug_id": 161887,
+ "attachment_id": 0,
+ "creation_time": "2011-10-21T19:10:10Z",
+ "creator": "bsdboot@gmail.com",
+ "text": "External modules calling vm_page_wire() even after calling vm_page_lock()\nresults in the following assertion failure in vm_page.c\n\npanic: mutex page lock not owned at /usr/src/sys/vm/vm_page:1845\n\nInterestingly check for vm page locked is also done in the external module\nbut there is no assertion there. More clearly within the external module\n\nvm_page_lock(pp);\nvm_page_lock_assert(pp, MA_OWNED); /* No panic here */\nvm_page_wire(pp); /* Panic here for the same assertion as above, strange */\nvm_page_unlock(pp);\n\nThe machine in use is a fresh install of FreeBSD 9 Beta 3. No changes\nto the kernel were made. Problem however exists ever after a kernel\nrecompile.\n\nI have also sent a mail to the mailing list on this.\n\nhttp://lists.freebsd.org/pipermail/freebsd-current/2011-October/028550.html\n\nI dont have a backtrace of the crash as i'm unable to configure kernel\ndumps yet. Will post them once i have it.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: Try the attached vmtest.c\n\nMakefile contents are\n\nKMOD    =  vmtest\n\nSRCS    =  vmtest.c\n\n.include \u003cbsd.kmod.mk\u003e"
+}

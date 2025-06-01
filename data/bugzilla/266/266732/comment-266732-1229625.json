@@ -1,0 +1,8 @@
+{
+ "id": 1229625,
+ "bug_id": 266732,
+ "attachment_id": 0,
+ "creation_time": "2022-10-11T07:05:33Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "(In reply to Alexey Dokuchaev from comment #5)\n\nAh, I see.  I can explain this for you.  The source code of john actually builds just fine on AArch64 (aka arm64) if no patches are applied.\n\nHowever, for PowerPC support, the \u003caltivec.h\u003e include file is required.  This include file is present but gated behind\n\n    #ifdef __linux__\n\nin the original source for some reason.  Meaning that on FreeBSD, it is not being included and compilation fails.  In commit 1e66703, pkubaj@ had discovered this build failure on PowerPC targets, but patched it incorrectly.  Instead of removing the #ifdef __linux__ gating around the \u003caltivec.h\u003e include file, he added another \u003caltivec.h\u003e include into a different place.  This fixed the build on PowerPC, but now made the AArch64 build fail as it takes the same path where pkubaj@ added the phony include.  This is because AArch64 too has 32 SIMD registers, so\n\n    #define regs 32\n\nis correct for AArch64 and no extra case is needed.\n\nMy patch fixes pkubaj@'s patch by removing the phony extra include directive and instead removing the #ifdef __linux__ gating from the correct directive."
+}

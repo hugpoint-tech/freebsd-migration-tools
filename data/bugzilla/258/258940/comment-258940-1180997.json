@@ -1,0 +1,8 @@
+{
+ "id": 1180997,
+ "bug_id": 258940,
+ "attachment_id": 228456,
+ "creation_time": "2021-10-05T08:34:28Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 228456\nsysutils/fusefs-ntfs: an NTFS disk image whose corrupt attribute MFT record causes a seg-fault\n\nA corrupt MFT attribute record can cause ntfs_mount() to return\na NULL volume pointer but leave errno = 0. This causes ntfs_open()\nto return zero (indicating no error) but leave ctx-\u003evol == NULL.\nmain() then tries to use ctx-\u003evol.\n\nI've attached a demo disk image:\n\n% gunzip ntx8.img.gz \n% sudo mdconfig -f ntx8.img\nmd0\n% sudo ntfs-3g /dev/md0p1 /mnt\nFailed to open $AttrDef: No error: 0\nFailed to mount '/dev/md0p1': No error: 0\nSegmentation fault\n% ntfs-3g --version\nntfs-3g 2017.3.23 external FUSE 29\n% uname -a\nFreeBSD xxx 13.0-RELEASE-p4 FreeBSD 13.0-RELEASE-p4 #0: Tue Aug 24 07:33:27 UTC 2021     root@amd64-builder.daemonology.net:/usr/obj/usr/src/amd64.amd64/sys/GENERIC  amd64\n\nThe backtrace:\n\n0x0000000000015c14 in main (argc=\u003coptimized out\u003e, argv=\u003coptimized out\u003e) at ntfs-3g.c:4193\n4193            if (!ctx-\u003ero \u0026\u0026 NVolReadOnly(ctx-\u003evol)) {"
+}

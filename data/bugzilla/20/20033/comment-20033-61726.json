@@ -1,0 +1,8 @@
+{
+ "id": 61726,
+ "bug_id": 20033,
+ "attachment_id": 0,
+ "creation_time": "2000-07-19T14:10:04Z",
+ "creator": "roam@orbitel.bg",
+ "text": "\nIn short, buildworld breaks due to a 'char *' -\u003e 'const char *' mismatch.\n\n   1.12.2.3 Wed Jul 19 1:40:14 2000 UTC by archie\n   Branch: RELENG_4\n   Diffs to 1.12.2.2 ; Diffs to 1.16\n   MFC: const'ify parameters to ethers(3) routines.\n\nThis was the commit message of Archie Cobbs's recent MFC.  Unfortunately,\nthere are several programs in the 'world', which do not quite depend on\nnet/ethernet.h to provide function prototypes, providing them themselves\ninstead.  With the char * -\u003e const char * change, these are doomed.\n\nThe files in question are:\n  contrib/libpcap/nametoaddr.c        - for ether_hostton()\n  contrib/ipfilter/iplang/iplang_y.y  - for ether_aton()\n  usr.sbin/wlconfig/wlconfig.c        - for ether_aton()\n\nThis poses a problem - wlconfig's OK, but the other two are pieces of\ncontributed software, and any changes would have to be local to FreeBSD.\n\nThe 'high' priority is due to the upcoming 4.1-RELEASE.\n\nFix: The way I see it, there are three paths to choose from:\n- back out the constify commit;\n- apply patch below, introducing local changes to libpcap and ipfilter;\n- send patches to libpcap and ipfilter teams, requesting special treatment\n  for FreeBSD.\n\nThe second and the third option might also warrand a __FreeBSD_version bump\nto mark the constify spot; or maybe not - 410000 might be bump enough.\n\nAnyway, as a quick-and-dirty fix/workaround, here goes:\nHow-To-Repeat: \ncvsup to RELENG_4 as of 2000/07/19, make buildworld, watch sky fall."
+}

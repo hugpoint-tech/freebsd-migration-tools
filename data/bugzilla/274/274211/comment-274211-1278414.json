@@ -1,0 +1,8 @@
+{
+ "id": 1278414,
+ "bug_id": 274211,
+ "attachment_id": 0,
+ "creation_time": "2023-10-05T06:51:01Z",
+ "creator": "pjfloyd@wanadoo.fr",
+ "text": "As I see it there are 2 possible fixes.\n\nAt the crash\n\n        if (sh-\u003esh_type == SHT_RELX) {\n            s-\u003esh_info = sm_table[sh-\u003esh_info].s-\u003esh_num;\n\nsh is referring to section header 4 for which a new section was created.\nsh-\u003esh_info refers to section header 3 which got skipped.\n\nSo either the above code needs changing to something like\n\n        if (sh-\u003esh_type == SHT_RELX) {\n            if (sm_table[sh-\u003esh_info].new_section) {\n                s-\u003esh_info = sm_table[sh-\u003esh_info].s-\u003esh_num;\n\nOr section header 3 needs to be handled so that sm_table[3] has been initialized.\n\nTrying the easy one as above, I get lots of errors in /usr/include/sys/_types.h because it seems like tcc does not know the size of any builtin types.\n\nI also tried \"hello world\" on FreeBSD 13.2 amd64 and it compiled but the exe coredumps between _start() and main().\n\nFrom what I see in the port git history there was a code fix back in 2015. Otherwise totally dead.\n\nIn the github history a lot has changed.\n\nI don't think that it is worth trying to patch the ports version 0_9_26. It would probably be easier to switch to the upstream 9.28"
+}

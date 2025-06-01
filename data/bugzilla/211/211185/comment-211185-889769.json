@@ -1,0 +1,8 @@
+{
+ "id": 889769,
+ "bug_id": 211185,
+ "attachment_id": 0,
+ "creation_time": "2016-07-24T21:07:39Z",
+ "creator": "karl@denninger.net",
+ "text": "The root cause of this is that libarchive, which was updated via pkg, linked against the system libssl.so.8 while the port version in /usr/local/lib had the required symbols.\n\nSince both have the same version number the linker picks up the first one as it is part of a dependency, the second is never loaded (since the reference is deemed \"satisfied\") and as a result you get the undefined symbol references as the component referencing libssl in this case has the wrong dependent library loaded.\n\nI'm marking this \"closed\" and \"not a bug\" because it technically isn't, although it points to a potentially-larger issue in that pkgng has led a lot of people (myself included!) to believe that using pkg to update components that get flagged for security issues but which we know do not need other than the default options is \"safe\" on a machine that also has ports loaded.\n\nThis is not necessarily true, but it's not immediately obvious how to resolve it in the general sense either, especially for the case here where a system library of wide use such as openssl can be loaded from ports and \"supersede\" that which is potentially already linked against other dependencies, yet the superseding library is missing routines from the installed-as-system level one.  It could be quite a bit worse if the calls were present but arguments incompatible in that such a situation could lead to an executable that links but blows up when the bad call (as defined by the \"new\" shared library) is made."
+}

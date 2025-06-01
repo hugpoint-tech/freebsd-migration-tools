@@ -1,0 +1,8 @@
+{
+ "id": 43131,
+ "bug_id": 14142,
+ "attachment_id": 0,
+ "creation_time": "1999-10-06T01:59:25Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e The following piece of mci_dump() uses bad conversion:\n\u003e \n\u003e         snprintf(p, SPACELEFT(buf, p), \"MCI@%lx: \",\n\u003e                 sizeof(void *) == sizeof(u_long) ?\n\u003e                 (u_long)(void *)mci : (u_long)(u_int)(void *)mci);\n\u003e  \n\u003e On Alpha architecture, conversion from void* to u_int loses significant bits.\n\nOn FreeBSD-alpha sizeof(void *) == sizeof(long), so the conversion from\nvoid * to u_int is never executed.  Unfortunately, gcc apparently warns\nabout casts from pointers to integers of a different size even in dead\ncode.\n\nOn FreeBSD_i386-with-64-bit-longs, gcc warns about the dead code in the\nother arm of the if and about 3 casts from pointers to u_longs.  All these\nproblems can be fixed better now by casting pointers to\n(u_long)(uintptr_t)(void *) and printing them with %lx, or if the format\ndoesn't matter, by casting pointers to (void *) and printing them with %p.\n\n\u003e These conversions are FreeBSD-specific; original Allman's sendmail\n\u003e does not contain them.\n\nThe original code was broken at runtime (it shows only the low 32 bits of\npointers on FreeBSD-alpha).\n\nBruce"
+}

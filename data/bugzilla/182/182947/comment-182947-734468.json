@@ -1,0 +1,8 @@
+{
+ "id": 734468,
+ "bug_id": 182947,
+ "attachment_id": 0,
+ "creation_time": "2013-10-13T12:10:00Z",
+ "creator": "andrew@azar-a.net",
+ "text": "Usually when you want to reload config you need to do a reload or graceful on apache22 rc file. With MPM peruser however this will yield no results because of the chroot and different users.\nThe problem cannot be fixed completely (well it can, but will require a dance with configurations in chroot). HOWEVER you can do an apache22 -k restart.\nThis does not kill the listening process (aka multiplexer in peruser notation) but just TERMs the child processes, rereads the config and starts them up again.\n\nThis restart type yields this results:\nrestart\t7.24s real\t\t2.13s user\t\t0.51s sys\n\nnewreload\t2.65s real\t\t1.48s user\t\t0.48s sys\n\n(This is a setup with few hundred vhosts mod_perl mod_php5 and god knows what else)\n\nFix: \n\n36c36\n\u003c reload_cmd=\"apache22_graceful\"\n---\n\u003e reload_cmd=\"apache22_hrestart\"\n154a155,161\n\u003e apache22_hrestart() {\n\u003e         apache22_requirepidfile\n\u003e \n\u003e         echo \"Performing a graceful restart\"\n\u003e         eval ${command} ${apache22_flags} -k restart\n\u003e }\n\u003e\nHow-To-Repeat: ///"
+}

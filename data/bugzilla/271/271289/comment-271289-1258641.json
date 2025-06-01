@@ -1,0 +1,8 @@
+{
+ "id": 1258641,
+ "bug_id": 271289,
+ "attachment_id": 242024,
+ "creation_time": "2023-05-06T21:00:50Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 242024\nbroken ffs image that causes off-by-one block-number check error in fsck\n\nIn this code in src/sbin/fsck_ffs/inode.c, I think the \"blk \u003e\nmaxfsblock\" should be \u003e=. The cnt - 1 ... check also looks off by one.\n\nint\nchkrange(ufs2_daddr_t blk, int cnt)\n{\n        int c;\n\n        if (cnt \u003c= 0 || blk \u003c= 0 || blk \u003e maxfsblock ||\n            cnt - 1 \u003e maxfsblock - blk) {\n                if (debug)\n                        printf(\"out of range: blk %ld, offset %i, size %d\\n\",\n                            (long)blk, (int)fragnum(\u0026sblock, blk), cnt);\n                return (1);\n        }\n\nI've attached a broken file-system image with an i-node that refers to\na block number that's one too large (64):\n\n% cp fsck4b.img junk\n% fsck_ffs -y junk\n\nOn my CURRENT amd64 machine this yields a core dump, due to writing\nbeyond the end of blockmap[] and corrupting the next heap block, which\nhappens to contain a struct inoinfo in inphash[]. valgrind catches\nthe blockmap[] access."
+}

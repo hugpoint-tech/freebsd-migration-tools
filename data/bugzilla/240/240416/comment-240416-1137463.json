@@ -1,0 +1,8 @@
+{
+ "id": 1137463,
+ "bug_id": 240416,
+ "attachment_id": 0,
+ "creation_time": "2020-12-21T10:44:50Z",
+ "creator": "kp@freebsd.org",
+ "text": "(In reply to Michael Tuexen from comment #25)\n\u003e For incoming packets, NICs at most would try to validate the checksum and figure out that the checksum is wrong. This is the scenario we are looking into.\n\nIs it? My test case assume outbound corruption. I've not checked it, but I'd expect our stack to just ignore checksums if the hardware has verified them. So I wouldn't expect this issue to manifest in inbound traffic.\n\n\u003e For outgoing packets, for the NICs I know, some precomputation by the software is needed, which isn't done by the code we are looking at. I also don't see `CSUM_TCP` or `CSUM_TCP_IPV6` being set.\n\nThat gets complicated. My recollection from the Xen checksum issue is that it depends on the hardware. Some hardware has no checksum support at all (although that's rare these days), some computes it fully independently (and we wouldn't see this issue there, because the incorrect checksum will be fixed up) and some expects a partial 'pseudo header' checksum to be precomputed and updates the checksum based on the actual payload. That style of hardware would be affected as well.\n\nAnyway, it's clear that the pf checksum update code is incorrect in some cases, and we should fix that, regardless of what hardware does later."
+}

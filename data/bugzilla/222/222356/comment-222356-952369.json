@@ -1,0 +1,8 @@
+{
+ "id": 952369,
+ "bug_id": 222356,
+ "attachment_id": 0,
+ "creation_time": "2017-09-17T16:30:31Z",
+ "creator": "tijl@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #3)\nIt's UFS with softupdates and journaling.\n\nThis test program is more like what Firefox does.  It opens and unlinks a file, sets the size with ftruncate and uses mmap.  There's no disk I/O that I can notice except for the final close which causes a lot of I/O.  If you put munmap last the I/O happens on that call.  The bigger the file the longer it takes.  Surely this isn't all metadata?\n\n#include \u003csys/mman.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n\nint\nmain( void ) {\n\tint fd;\n\tsize_t sz;\n\tvoid *base;\n\n\tsz = 128 * 1024 * 1024;\n\tfd = open( \"nosync.data\", O_RDWR | O_CREAT, 0600 );\n\tunlink( \"nosync.data\" );\n\tftruncate( fd, sz );\n\tbase = mmap( NULL, sz, PROT_READ | PROT_WRITE,\n\t\t     MAP_SHARED | MAP_NOSYNC, fd, 0 );\n\tputs( \"calling memset\" );\n\tmemset( base, '0', sz );\n\tputs( \"memset called\" );\n\tsleep( 5 );\n\tputs( \"calling munmap\" );\n\tmunmap( base, sz );\n\tputs( \"munmap called\" );\n\tsleep( 5 );\n\tputs( \"calling close\" );\n\tclose( fd );\n\tputs( \"close called\" );\n\tsleep( 5 );\n\treturn( 0 );\n}\n\n\nI didn't really investigate the problem with your patch.  I could build Firefox fine and then suddenly gmake couldn't find some targets that were clearly defined in the Makefile.  Rerunning the make command a couple times always gave this same error.  Rebooting with the old kernel fixed it."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 833690,
+ "bug_id": 172648,
+ "attachment_id": 0,
+ "creation_time": "2015-07-25T12:53:23Z",
+ "creator": "kp@freebsd.org",
+ "text": "Ok, I think I've got a handle on what the problem is.\n\nWith rdr to ::1 we fail the scope check in ip6_input() (right after the pfil hook) because we have a packet to localhost with a m-\u003em_pkthdr.rcvif which is not a loopback interface.\nThat can be fixed by having pf rewrite the rcvif, but that'd special-case rdr to ::1.\n\nWe've got a similar problem for the reply. There we've got a packet from ::1 to something else. This fails the scope lookup too.\nIn essence the problem is that we've already made the routing decision before pf gets the chance to rewrite the destination address.\n\nI'm not quite sure how to fix this though."
+}

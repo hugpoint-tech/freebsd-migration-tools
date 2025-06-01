@@ -1,0 +1,8 @@
+{
+ "id": 89910,
+ "bug_id": 28680,
+ "attachment_id": 0,
+ "creation_time": "2001-08-17T07:23:38Z",
+ "creator": "dkowatch@ucsd.edu",
+ "text": "The Given fix and cause of this problem are incorrect, but the problem is\nreal.\n\nThis problem surfaces when trying to upgrade a port with a PORTREVISION (or\npresumably a PORTEPOCH or letters in the version string).  The get_version\nfunction doesn't allow enough characters in the version string which has the\neffect of truncating the version string down to only PORTVERSION, which causes\nthe open of the +REQUIRED_BY file to fail due to the fact that it's using an\nimcomplete version string to build the directory name.\n\n\nThe fix is to change get_version so that it allows more characters in the\nversion string.  A Patch against version 1.4.2.1 is below:\n----------cut------------------\n\n--- pkg_update.pl.orig\tThu Aug 16 23:01:54 2001\n+++ pkg_update.pl\tThu Aug 16 23:06:57 2001\n@@ -51,7 +51,9 @@\n sub get_version($) {\n \tmy ($pkg) = @_;\n \n-\t$pkg =~ /(.+)-([0-9\\.]+)/;\n+    # letters shouldn't be in version names, but they are.\n+    # also a ',' and '_' are needed to cope with PORTREVISION and PORTEPOCH\n+\t$pkg =~ /(.+)-([0-9A-Za-z_,\\.]+)/;\n \tif (! $2) {\n \t\treturn($pkg, \"\");\n \t} else {\n------------end--------------------\n-- \nDevin Kowatch                 | dkowatch@ucsd.edu\n                              | http://www.webengruven.org/"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 915118,
+ "bug_id": 215468,
+ "attachment_id": 0,
+ "creation_time": "2017-01-06T18:57:17Z",
+ "creator": "vivek@khera.org",
+ "text": "I don't think the problem is that this mach-o binary exists. According to https://github.com/grafana/grafana/issues/2662 and the updated documentation resulting from that ticket, one is required to install phantomjs binary at the location vendor/phantomjs/phantomjs. Specifically for FreeBSD port, this is /usr/local/share/grafana/vendor/phantomjs/phantomjs.\n\nIf you run grafana3 on command line in the foreground, you will see the exact error. It would be nice if this could have shown up in the grafana logs, but that's another issue.\n\nINFO[01-06|12:23:59] PhantomRenderer::renderToPng url [http://analytics.example.com:3000/dashboard-solo/db/example-application?from=1483592400000\u0026to=1483678799999\u0026panelId=4\u0026width=1000\u0026height=500]\nEROR[01-06|12:23:59] Failed to render to png                  logger=context userId=2 orgId=1 uname=vivek error=\"fork/exec /usr/local/share/grafana/vendor/phantomjs/phantomjs: no such file or directory\"\n\nAnd indeed there is no such binary existing.\n\nThe following gets us past this error:\n\npkg install phantomjs\ncd /usr/local/share/grafana\nmkdir -p vendor/phantomjs\ncd vendor/phantomjs\nln -shf /usr/local/bin/phantomjs\n\nbut then grafana complains: Can't open '/usr/local/share/grafana/vendor/phantomjs/render.js'\n\nbut I have yet to find why that is not installed. It appears to be part of the grafana distribution. I fixed it by copying from github:\n\nfetch https://raw.githubusercontent.com/grafana/grafana/v3.1.1/vendor/phantomjs/render.js\n\nand viola! it works."
+}

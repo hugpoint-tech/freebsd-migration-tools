@@ -1,0 +1,8 @@
+{
+ "id": 1185272,
+ "bug_id": 259639,
+ "attachment_id": 0,
+ "creation_time": "2021-11-04T17:50:00Z",
+ "creator": "yasu@freebsd.org",
+ "text": "(In reply to Bryan Drewery from comment #1)\n\nI saved working directory with `poudriere testport -w` and checked owner of files in question. Then they are owned by root. Next I added 'BUILD_AS_NON_ROOT=no' to poudriere.conf and tried test build. Then build completed successfully. So it is correct that this is build-as-non-root issue.\n\nBut I wonder why these files are owned by root. There is following target in databases/ruby-bdb/Makefile\n\n--------------------------------------------------------------------------------\npost-install-DOCS-on:\n        ${MKDIR} ${STAGEDIR}${DOCSDIR}/doc\n        (cd ${WRKSRC} \u0026\u0026 ${INSTALL_DATA} ${DOCS} ${STAGEDIR}${DOCSDIR})\n        (cd ${WRKSRC}/docs/doc \u0026\u0026 ${COPYTREE_SHARE} . ${STAGEDIR}${DOCSDIR}/doc)\n--------------------------------------------------------------------------------\n\nAnd the error happens with last line.\n\nIf I understand correctly staging phase is done with UID=65534 and GID=65534. And each line of above target is also executed with same UID and GID.\n\nThen why files in question are copied to staging area as owned by root?"
+}

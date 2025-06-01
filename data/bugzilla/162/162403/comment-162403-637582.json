@@ -1,0 +1,8 @@
+{
+ "id": 637582,
+ "bug_id": 162403,
+ "attachment_id": 0,
+ "creation_time": "2011-11-09T14:10:09Z",
+ "creator": "ag-freebsd@muc.de",
+ "text": "pthread operations with a given timeout don't work under FreeBSD 9,\nif the process is running in realtime priority context. The timeout\nis not honoured at all.\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: Compile the given code snippet with  cc -pthread.\n\nIt has two threads, one waiting for a condition to fire up.\nThe producer delays initial signaling of the condition when started;\nthus the consumer should timeout after five seconds.\nAfterwards, it will be signaled every three seconds.\n\nThe call to pthread_cond_timedwait() properly times out if the process is not running with RT prio:\n\n[ag@ag 1024]$ uname -a                                                                      FreeBSD ag.techsat.com 9.0-RC1 FreeBSD 9.0-RC1 #1 r226966M: Mon Oct 31 15:11:15 CET 2011    ag@ag:/usr/obj/usr/src/sys/GENERIC  i386\n\n[ag@ag 1017]$ ./tt\ntt: pthread_cond_timedwait: Operation timed out\nWOKE UP\nWOKE UP\n\nIt does not honour the timeout if running with realtime priority:\n\n[ag@ag 1020]$ SU rtprio 31 ./tt                                                              ~/work/c\nWOKE UP\nWOKE UP\n\nUnder FreeBSD/8, both user and kernel pthread contexts works as expected:\n\n$ uname -a\nFreeBSD release-pc-freebsd 8.2-RELEASE FreeBSD 8.2-RELEASE #0: Fri Feb 18 02:24:46 UTC 2011     root@almeida.cse.buffalo.edu:/usr/obj/usr/src/sys/GENERIC  i386\n\n$ ./tt\ntt: pthread_cond_timedwait: Operation timed out\nWOKE UP\nWOKE UP\n\n[ag@release-pc-freebsd 369]$ SU rtprio 31 ./tt\ntt: pthread_cond_timedwait: Operation timed out\nWOKE UP\nWOKE UP"
+}

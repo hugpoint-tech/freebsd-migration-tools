@@ -1,0 +1,8 @@
+{
+ "id": 1041292,
+ "bug_id": 236379,
+ "attachment_id": 0,
+ "creation_time": "2019-03-07T23:38:03Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "Every FUSE operation includes the pid of the process that issued the request.  However, when an aiod kernel process writes to a fuse-backed file on behalf of a regular user process, fuse(4) only sees aiod's pid_t, not the user process's.  This can cause a fuse filesystem daemon to incorrectly authenticate write commands\n\nThere are three possible solutions:\n1) Set the pid field correctly.  The aio daemon already keeps track of it,\n   but doesn't send that information to fuse(4).  It's not obvious how.\n   a) Perhaps stuff it into a spare field in struct ucred?\n   b) Define custom fileops for fuse and store the pid that opened a file in\n      struct file.f_data?  But this would cause problems when sending a file\n      descriptor from one process to another with sendmsg.\n2) Set FUSE_WRITE_CACHE, just like writes from the pager.  Currently, however,\n   fuse(4) isn't aware of which operations come from aiod.\n3) Alternatively, since FUSE_WRITE is an asynchronous operation, aio(4)\n   could learn to bypass VOP_WRITE and use a threadless direct dispatch like\n   it currently does for disks.  That would improve performance, too.\n\nThis bug probably applies to aio reads as well, but I haven't checked yet."
+}

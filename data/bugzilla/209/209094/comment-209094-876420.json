@@ -1,0 +1,8 @@
+{
+ "id": 876420,
+ "bug_id": 209094,
+ "attachment_id": 169753,
+ "creation_time": "2016-04-27T12:03:30Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 169753\nUse plain isfinite() in science/veusz\n\nDuring the exp-run in bug 208158, it was found that science/veusz gives errors with libc++ 3.8.0 [1]:\n\nveusz/helpers/src/qtloops/qtloops.cpp:354:10: error: no member named 'isfinite' in namespace 'std'; did you mean simply 'isfinite'?\n          if( ! isFinite(val) )\n                ^~~~~~~~~~~~~\nveusz/helpers/src/qtloops/isnan.h:58:24: note: expanded from macro 'isFinite'\n# define isFinite(_a) (std::isfinite(_a))\n                       ^~~~~\n\nThis is because the file includes \u003cmath.h\u003e, not \u003ccmath\u003e, and the isnan.h header checks whether isfinite() is a macro.  Since it is a function in libc++, it attempts to use std::isfinite(), which is only defined if you include \u003ccmath\u003e.\n\nFix this by letting isnan.h always use the plain isfinite() for FreeBSD.  This is similar to how it always selects the plain isnan() for FreeBSD, just above that definition.\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR208158-default/2016-03-22_18h30m05s/logs/errors/veusz-1.19.1_2.log"
+}

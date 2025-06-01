@@ -1,0 +1,8 @@
+{
+ "id": 991270,
+ "bug_id": 226899,
+ "attachment_id": 0,
+ "creation_time": "2018-05-11T10:59:21Z",
+ "creator": "freebsd@oldach.net",
+ "text": "(In reply to Kurt Jaeger from comment #11)\nNothing is wrong. :-)\n\nThe first entry in struct devstat just has devno==0 on your system. On mine, just devno==1. devno is just a sequential number in the devstat table.\n\n\nHere's a more useful example that you might try (the output designed to be fed into RRDtool):\n\n#!/usr/local/bin/perl\n\nuse BSD::Sysctl 'sysctl';\n\n%devstat = %{sysctl(\"kern.devstat.all\")};\n\nforeach my $x (grep { s/\\..*// } grep { /.*\\.device_name/ } keys %devstat) {\n        print $devstat{\"$x.device_name\"}, $devstat{\"$x.unitno\"}, \" \", join(\":\", map { $devstat{\"$x.$_\"} } qw/bytes_read bytes_write bytes_free operations_read operations_write operations_free operations_no_data/), \"\\n\";\n}\n\n\nOutput on my Intel NUC:\n\npass0 21504:0:0:42:0:0:14\nada0 26650459136:83211827712:0:2444761:2213351:0:2\n\n\nand one a system with a few more devices:\n\nada0 80609812480:135090176512:0:5059803:4089766:0:0\npass0 23040:0:0:45:0:0:15\ncd0 0:0:0:4:0:0:8\nada1 17531804160:44417896960:0:2994409:1148838:0:0\npass1 23040:0:0:45:0:0:15\npass2 0:0:0:0:0:0:0"
+}

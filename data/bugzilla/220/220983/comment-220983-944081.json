@@ -1,0 +1,8 @@
+{
+ "id": 944081,
+ "bug_id": 220983,
+ "attachment_id": 0,
+ "creation_time": "2017-07-24T23:28:17Z",
+ "creator": "randy+bsd@terbush.org",
+ "text": "The ports install for www/node is patching common.gypi which includes the following lines.\n\n```\n      ['OS==\"freebsd\"', {\n        # Use this flag because on FreeBSD std::pairs copy constructor is non-trivial\n        # https://lists.freebsd.org/pipermail/freebsd-toolchain/2016-March/002094.html\n        'cflags': [ '-D_LIBCPP_TRIVIAL_PAIR_COPY_CTOR=1' ],\n        'ldflags': [\n          '-Wl,--export-dynamic',\n        ],\n```\n\nSetting _LIBCPP_TRIVIAL_PAIR_COPY_CTOR=1 on FreeBSD 11 systems compling with clang will cause compile of node modules to fail with the following error:\n\n```\ngmake: Entering directory '/home/randy/Develop/tkg/node_modules/sharp/build'\n  TOUCH Release/obj.target/libvips-cpp.stamp\n  CXX(target) Release/obj.target/sharp/src/common.o\nIn file included from ../src/common.cc:15:\nIn file included from /usr/include/c++/v1/cstdlib:85:\n/usr/include/c++/v1/__config:73:2: error: \"_LIBCPP_TRIVIAL_PAIR_COPY_CTOR\" is no longer supported.        use _LIBCPP_DEPRECATED_ABI_DISABLE_PAIR_TRIVIAL_COPY_CTOR instead\n#error \"_LIBCPP_TRIVIAL_PAIR_COPY_CTOR\" is no longer supported. \\\n ^\n1 error generated.\ngmake: *** [sharp.target.mk:151: Release/obj.target/sharp/src/common.o] Error 1\ngmake: Leaving directory '/home/randy/Develop/tkg/node_modules/sharp/build'\ngyp ERR! build error \ngyp ERR! stack Error: `gmake` failed with exit code: 2\n\n```\n\nThe patch in files/patch-common.gypi needs to be removed at least for newer versions of FreeBSD."
+}

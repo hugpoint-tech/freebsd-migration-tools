@@ -1,0 +1,8 @@
+{
+ "id": 1276867,
+ "bug_id": 274074,
+ "attachment_id": 245210,
+ "creation_time": "2023-09-25T07:42:02Z",
+ "creator": "john@sanren.ac.za",
+ "text": "Created attachment 245210\nFix to align the msi vector properly\n\nMSI interrupt vectors needs to be aligned to the size of the request and have to be in powers of 2.\n\nThe code in native_apic_alloc_vectors() does an alignment check in the loop:\n\n    if ((vector \u0026 (align - 1)) != 0)\n        continue;\n    first = vector;\n\nBut when it adds APIC_IO_INTS to the value it returns:\n\n    return (first + APIC_IO_INTS);\n\nThe problem is that APIC_IO_INTS is not a multiple of 32. It is 48:\n\n#define\tNRSVIDT\t\t32\n#define\tIDT_IO_INTS\tNRSVIDT\n#define\tAPIC_IO_INTS\t(IDT_IO_INTS + 16)\n\nMy fix is to include it during the alignment check:\n\n--- /sys/x86/x86/local_apic.c.org       2023-04-07 02:34:45.000000000 +0200\n+++ /sys/x86/x86/local_apic.c   2023-09-24 21:10:04.785720000 +0200\n@@ -1657,7 +1657,7 @@\n \n                /* Start a new run if run == 0 and vector is aligned. */\n                if (run == 0) {\n-                       if ((vector \u0026 (align - 1)) != 0)\n+                       if (((vector + APIC_IO_INTS) \u0026 (align - 1)) != 0)\n                                continue;\n                        first = vector;\n                }\n\nThe patch is against 13.2, but the code in current looks the same.\n\nWithout the patch, pci_alloc_msi() with a count of 32 would return without an error and allocate 32 vectors, but in my case with a base vector of 0x50 and that was configured on the card. But the card would then ignore the bottom 5 bits and generate interrupt vectors from 0x40 to 0x5f."
+}

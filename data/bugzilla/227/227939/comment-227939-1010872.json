@@ -1,0 +1,8 @@
+{
+ "id": 1010872,
+ "bug_id": 227939,
+ "attachment_id": 0,
+ "creation_time": "2018-09-11T10:34:13Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Wiktor Niesiobedzki from comment #9)\n\u003e another strategy available on Linux - invoking gcc in trace mode and extracting library path from there.\n\nWhy Python cannot use dlinfo()?\n\n$ cat a.c\n#define _GNU_SOURCE\n#include \u003cdlfcn.h\u003e\n#include \u003clink.h\u003e\n#include \u003cstdio.h\u003e\n\nint main()\n{\n  void *boost, *python;\n  struct link_map *map;\n\n  /* libboost_python assumes libpython is preloaded by Python interpreter */\n  if (!(python = dlopen(\"libpython3.6m.so\", RTLD_LAZY | RTLD_GLOBAL))) {\n    printf(\"dlopen(python) failed\\n\");\n    return 1;\n  }\n\n  if (!(boost = dlopen(\"libboost_python36.so\", RTLD_LAZY))) {\n    printf(\"dlopen(boost) failed\\n\");\n    return 1;\n  }\n  dlinfo(boost, RTLD_DI_LINKMAP, \u0026map);\n  dlclose(boost);\n  dlclose(python);\n\n  printf(\"%s\\n\", map-\u003el_name);\n\n  return 0;\n}\n\n$ cc -ldl a.c\n$ ./a.out\n/usr/local/lib/libboost_python36.so"
+}

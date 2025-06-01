@@ -1,0 +1,8 @@
+{
+ "id": 465566,
+ "bug_id": 127745,
+ "attachment_id": 0,
+ "creation_time": "2008-09-30T11:40:03Z",
+ "creator": "edwin@mavetju.org",
+ "text": "\nFound on -stable\n\nI recently noticed that kldstat(8) started to dump core for me on\nRELENG_7. I traced the problem down to kldstat(2). r182231 (DTrace\nMFC) introduced a new version of kld_file_stat struct and added\nsome code to support the old version of the structure in kldstat().\nIn the new code the old structure is known as kld_file_stat_1.\nUnfortunately there's a bug in this code: kldstat() copies always\nsizeof(struct kld_file_stat) of data to user space while it should\ncopy sizeof(struct kld_file_stat_1) when the old struct is used.\n\nThis guy is probably suffering from this problem too:\nhttp://lists.freebsd.org/pipermail/freebsd-questions/2008-September/182896.html\n\nFix: %%%\n\n\ntd-\u003etd_retval[0] = 0;\n\n-       return (copyout(\u0026stat, uap-\u003estat, sizeof(struct kld_file_stat)));\n+       if (version_num == 1)\n+               return (copyout(\u0026stat, uap-\u003estat,\n+                   sizeof(struct kld_file_stat_1)));\n+       else\n+               return (copyout(\u0026stat, uap-\u003estat,\n+                   sizeof(struct kld_file_stat)));\n}\n\nint\n%%%--yi7eShLsEw2La7yUAw1DllZiBC4nA2OuXpztN60loaR4YZAp\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: sys/kern/kern_linker.c\n===================================================================\n--- sys/kern/kern_linker.c      (revision 183486)\n+++ sys/kern/kern_linker.c      (working copy)\n@@ -1199,7 +1199,12 @@ kldstat(struct thread *td, struct kldsta"
+}

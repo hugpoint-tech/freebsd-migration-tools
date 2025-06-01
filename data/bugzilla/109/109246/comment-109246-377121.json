@@ -1,0 +1,8 @@
+{
+ "id": 377121,
+ "bug_id": 109246,
+ "attachment_id": 0,
+ "creation_time": "2007-03-04T15:41:59Z",
+ "creator": "bms@incunabulum.net",
+ "text": "Oh boy oh boy this is an interesting one.\n\n1. The kernel isn't treating RTF_REJECT consistently.\n   RTF_REJECT's traditional semantics are 'emit an icmp unreachable and \ndrop when this\n   forwarding entry is used'.\n   Neither ip_fastfwd.c nor route.c seem to be doing this correctly. \nrmx_expire is being inspected\n   if and only if RTF_REJECT is set.\n\n   rt_check() is the function to watch.\n\n2. The ip_fastfwd.c conditional looks to be cloned from the route.c \nconditional.\n   It is cloning a check in rt_check() for the sake of speed.\n\n   When it issues ICMP unreachable it always does so with a code of \nICMP_UNREACH_HOST which is most likely incorrect.\n\n3. I believe this is because the ARP code *used* to use RTF_REJECT to \nmark that an LLINFO entry was dampened due to not being resolved. The \nARP code in RELENG_6 and -CURRENT no longer does this. This behaviour \nwas BSD historical, and OK for a host, but dubious for a router given \nhow the checks were performed.\n\n This is consistent with what I see in netstat -rnA although I never see \nrmx_expire changing for a timed out LLINFO entry due to arp not \nresolving a destination there either.\n\nThe attached patch tries to fix bug #2 which is what you've run into. \nPlease test it and let me know if it does it for you. A more involved \nfix may be needed.\n\nRegards,\nBMS"
+}

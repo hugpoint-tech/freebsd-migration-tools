@@ -1,0 +1,8 @@
+{
+ "id": 1305467,
+ "bug_id": 278426,
+ "attachment_id": 0,
+ "creation_time": "2024-04-18T07:57:23Z",
+ "creator": "freebsd.bugzilla@mail.tinsuke.com",
+ "text": "TL;DR: The RC scripts (paperless-[beat|consumer|flower|migrate|webui|worker]) all have the 'load_rc_config' call after the rc.conf variables are accessed. As a result, they always use the default values.\n\nLong version:\nI wanted to use gunicorn directly to access the service on my local network, instead of using nginx.\n\nSo I made the static dir change that the man page suggests for that and started the 'paperless-webui' service. It wasn't accessible from other machines.\n\nInspecting '/var/log/daemon.log' showed that the webui was:\n\u003e Listening at: http://127.0.0.1:8000\n\nI checked the 'paperless-webui' RC script and found it used a 'paperless_webui_listen_address' variable with a default value of '127.0.0.1', so I set that to 'paperless_webui_listen_address=\"0.0.0.0\"' on my /etc/rc.conf file and restarted the webui service.\n\nIt still didn't work, and I could see that it was still listening on '127.0.0.1'.\n\nBy checking the RC scripting docs, I saw:\nhttps://docs.freebsd.org/en/articles/rc-scripting/#rcng-confdummy\n\u003e ➋ Now load_rc_config is invoked earlier in the script, before any rc.conf(5) variables are accessed.\n\nI checked the RC script and verified that this was not the case, for any of them. Moving 'load_rc_config' to before the variables are accessed fixed it for me, now my setting to listen on '0.0.0.0' is being respected."
+}

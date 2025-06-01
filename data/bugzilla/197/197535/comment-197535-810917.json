@@ -1,0 +1,8 @@
+{
+ "id": 810917,
+ "bug_id": 197535,
+ "attachment_id": 0,
+ "creation_time": "2015-02-19T17:50:55Z",
+ "creator": "luca.pizzamiglio@gmail.com",
+ "text": "I collect some other information about this error and I'm a little bit confused.\nI added some printf in the re_rxeof() function, to understand who's overwriting the memory after free (my suspect was the DMA was writing in the wrong place):\n\nre0: idx 22 - rxstat 0x3201C040 - cur_rx at 0xfffff8000179b160\nre0: rl_rx_list 0xfffff8000179b000 - rl_rx_list_addr 0x179b000\nMemory modified after free 0xfffff800069da800(2048) val=ffffffff @ 0xfffff800069da800\nre0: newbuf m 0xfffff800069f0600 - segs.ds_addr 0x00000000069da800\nre0: newbuf m-\u003em_data 0xfffff800069da800\n\nrl_rx_list is the pointer to the rl_desc list\nrl_rx_list_addr is the phy address used by the device (DMA segment)\nThe newbuf function allocate a new mbuf and load it in a new dma segment:\nm-\u003em_data is the virtual address\nsegs.ds_addr is the phy address used by the device (DMA segment)\n\nApparently, the driver can really get data from DMA.\nI've still to explain:\n* received XX packets, \"netstat -s\" shows 0 packets received\n* after the first 256 packets, the first descriptor of the ring is overwritten by a new one that is always: rl_desc-\u003ecmdstat is 0x80000800 =\u003e no packets\n* how some rl_desc are flying away causing page faults... \n\nThe Linux firmware actually is not a real firmware, but it seems to me a way to encode and hide the chip initialization."
+}

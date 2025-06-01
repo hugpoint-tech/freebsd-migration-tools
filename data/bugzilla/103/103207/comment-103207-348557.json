@@ -1,0 +1,8 @@
+{
+ "id": 348557,
+ "bug_id": 103207,
+ "attachment_id": 0,
+ "creation_time": "2006-09-13T04:30:18Z",
+ "creator": "zhouyi04@ios.cn",
+ "text": "The FreeBSD's DDB backtrace mechanism has a small bug on it.\n\nsys/ddb/db_sym.c\n\n249 void\n250 db_symbol_values(sym, namep, valuep)\n251         c_db_sym_t      sym;\n252         const char      **namep;\n253         db_expr_t       *valuep;\n254 {\n255         db_expr_t       value;\n256 \n257         if (sym == DB_SYM_NULL) {\n258                 *namep = 0;\n259                 return;\n260         }\n261 \n262         X_db_symbol_values(db_last_symtab, sym, namep, \u0026value);\n263 \n264         if (db_symbol_is_ambiguous(sym))\n265                 *namep = db_qualify(sym, db_last_symtab-\u003ename);\n266         if (valuep)\n267                 *valuep = value;\n268 }\n\nsometimes the db_last_symtab will be 0 because of symbol lookup failure in previous stages, this will cause kernel to dump.\n\nFix: \n\nMy modification is:\n257 if (sym == DB_SYM_NULL||db_last_symtab==0) {\nThis seems to settle the problem\nHow-To-Repeat: add configuration option that will trigger kdb_backtrace such as \noptions WITNESS_KDB\nto kernel configuration file"
+}

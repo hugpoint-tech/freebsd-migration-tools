@@ -1,0 +1,8 @@
+{
+ "id": 1276436,
+ "bug_id": 274028,
+ "attachment_id": 0,
+ "creation_time": "2023-09-22T15:54:35Z",
+ "creator": "dpslavov@hotmail.com",
+ "text": "In data receive method when MAC address save is requested a false assumption is made that \"curthread\" is in same VNET as node, which of course is not always true. For example eiface is attached to a bridge and moved to different VNET:\n\nkldload ng_ether\nngctl -f - \u003c\u003c EOF\nmkpeer vtnet0: bridge lower uplink1\nname vtnet0:lower switch0\nmkpeer switch0: eiface link0 ether\nEOF\njail -c path=/ vnet=new vnet.interface=ngeth0 persist host.hostname=test name=test exec.start=\"sh -c 'ifconfig ngeth0 inet 192.168.1.123/24; ifconfig ngeth0 up'\"\njexec test ping -c 1 192.168.1.254\nngctl msg switch0: gettable\nngctl msg switch0: getstats 0\n\nIn this case failures are recorded as \"memoryFailures\".\n\nFix:\n--- a/sys/netgraph/ng_bridge.c\n+++ b/sys/netgraph/ng_bridge.c\n@@ -911,8 +911,10 @@ ng_bridge_rcvdata(hook_p hook, item_p item)\n                strncpy(mh-\u003ehook, NG_HOOK_NAME(ctx.incoming-\u003ehook),\n                    sizeof(mh-\u003ehook));\n                memcpy(mh-\u003eaddr, eh-\u003eether_shost, sizeof(mh-\u003eaddr));\n+               CURVNET_SET(node-\u003end_vnet);\n                NG_SEND_MSG_ID(error, node, msg, NG_NODE_ID(node),\n                    NG_NODE_ID(node));\n+               CURVNET_RESTORE();\n                if (error)\n                        counter_u64_add(ctx.incoming-\u003estats.memoryFailures, 1);\n        }"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 664795,
+ "bug_id": 167847,
+ "attachment_id": 0,
+ "creation_time": "2012-05-20T09:19:51Z",
+ "creator": "moonlightakkiy@yahoo.ca",
+ "text": "On Sat, May 19, 2012 at 10:57 AM, Christopher J. Ruwe \u003ccjr@cruwe.de\u003e wrote:\n\u003e\n\u003e Is there any initialization order that I should follow in my rc.conf?\nFor a workaround, save following script into /usr/local/etc/rc.d/ as \"ap_setup\"\n\n--bigin script--\n\n#!/bin/sh\n\n# PROVIDE: ap_setup\n# REQUIRE: DAEMON\n# REQUIRE: mountcritremote\n# BEFORE: LOGIN\n# KEYWORD: nojail shutdown\n\n. /etc/rc.subr\n\nname=\"ap_setup\"\nrcvar=`set_rcvar`\nstart_cmd=\"${name}_start\"\nstop_cmd=\"${name}_stop\"\n\nload_rc_config $name\neval \"${rcvar}=\\${${rcvar}:-'NO'}\"\n\nap_setup_start()\n{\n\t/etc/rc.d/hostapd onestart\n\tifconfig wlan0 inet 192.168.3.1\n\t/usr/local/etc/rc.d/isc-dhcpd onestart    #if used\n}\n\nap_setup_stop()\n{\n\t/usr/local/etc/rc.d/isc-dhcpd onestop    #if used\n\t/etc/rc.d/hostapd onestop\n}\n\nrun_rc_command \"$1\"\n\n--end script--\n\nThen, add following lines to /etc/rc.conf\nwlans_run0=\"wlan0\"\ncreate_args_wlan0=\"wlanmode ap\"\nap_setup_enable=\"YES\"    #the same name as workaround script\ndhcpd_ifaces=\"wlan0\"    #if used\nTry not to use other standard instructions since it might break init order.\n\n\nAK"
+}

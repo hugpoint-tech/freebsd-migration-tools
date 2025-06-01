@@ -1,0 +1,8 @@
+{
+ "id": 1344822,
+ "bug_id": 276522,
+ "attachment_id": 0,
+ "creation_time": "2025-01-19T20:24:12Z",
+ "creator": "rm@richardmay.net",
+ "text": "(In reply to balchen from comment #8)\n\nI see the [possible] discrepancy after reading your bug report more carefully.\n\nYour ESXi host was somehow detecting \"current logical block size 512\" and yet \"Mode Sense cmd reported block size 4096\" per vmkernel.log.\n\nSo ctl's response to the mode sense query was correct (\"4k logical\") and yet ESXi still thought \"current logical block size\" was 512 -- the implication being ctl *could* have given a wrong answer to a prior and different query.  It begs the question of what gave ESXi that impression.\n\nESXi detecting an existing on-disk format from a prior boot could be one source.  ESXi is notoriously \"sticky\" about block devices -- it seems to cache details about said devices and their filesystems and throws toys out of the crib when something different shows up purporting to carry the same volume.  Or when a different volume arrives on a familiar device.  Hence the existence of hacks like LVM.EnableResignature, SCSI.CompareLUNNumber, and LVM.DisallowSnapshotLUN.\n\nFor sure 512e (i.e. blocksize 512 with option pblocksize 4096) is almost certainly the best path forward.  I've checked the kernel logs from my experiments and found your exact same error on five occasions.  An explicit 512e setup \"just works\" thankfully."
+}

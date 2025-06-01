@@ -1,0 +1,8 @@
+{
+ "id": 753763,
+ "bug_id": 187264,
+ "attachment_id": 0,
+ "creation_time": "2014-03-04T23:23:15Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "In PR bin/187264, you wrote:\n\u003e When the gmake/make clean target contains a command of the form\n\n\u003e rm -rf \"a.out\" \"$(DSYM)\" main.o main.d\n\n\u003e the command fails to remove any of the existing files if DSYM is null.\n\u003e The '-f' option hides the error associated with the zero length file\n\u003e name, but gives no indication that, in fact, NO files/directories have\n\u003e been removed.\n\nI can reproduce this, not only with rm, but also with ls, cp and find.\nThe underlying fts_open(3) fails if any pathname is empty and causes the\nentire command to fail. If a pathname otherwise does not refer to an\nexisting file, this correctly does not prevent processing of other\npathnames.\n\nThe below patch makes fts_open(3) treat an empty pathname like any other\npathname that cannot be lstatted because of [ENOENT]. It is lightly\ntested.\n\nIndex: lib/libc/gen/fts.c\n===================================================================\n--- lib/libc/gen/fts.c\t(revision 262358)\n+++ lib/libc/gen/fts.c\t(working copy)\n@@ -161,11 +161,7 @@ fts_open(argv, options, compar)\n \n \t/* Allocate/initialize root(s). */\n \tfor (root = NULL, nitems = 0; *argv != NULL; ++argv, ++nitems) {\n-\t\t/* Don't allow zero-length paths. */\n-\t\tif ((len = strlen(*argv)) == 0) {\n-\t\t\terrno = ENOENT;\n-\t\t\tgoto mem3;\n-\t\t}\n+\t\tlen = strlen(*argv);\n \n \t\tp = fts_alloc(sp, *argv, len);\n \t\tp-\u003efts_level = FTS_ROOTLEVEL;\n\n-- \nJilles Tjoelker"
+}

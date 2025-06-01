@@ -1,0 +1,8 @@
+{
+ "id": 546531,
+ "bug_id": 144330,
+ "attachment_id": 0,
+ "creation_time": "2010-03-21T13:43:21Z",
+ "creator": "to.my.trociny@gmail.com",
+ "text": "block out on $if from any to \u003cnfs\u003e\n\nwhile sleep 3; do \n    sudo pfctl -t nfs -vT add 10.0.0.217;\n    sleep 2; \n    sudo pfctl -t nfs -vT show;\n    sudo pfctl -t nfs -vT delete 10.0.0.217;\ndone\n\nThe idea was to drop NFS server responses to make the client resend requests\nand make RPC reply comes from the cache. And mbufs usage growth started to\nobserve:\n\n09:30: 2806/1589/4395 mbufs in use (current/cache/total)\n10:00: 5397/1068/6465 mbufs in use (current/cache/total)\n10:30: 7945/1760/9705 mbufs in use (current/cache/total)\n11:00: 9560/1435/10995 mbufs in use (current/cache/total)\n11:30: 10337/2113/12450 mbufs in use (current/cache/total)\n\nAthough it might be another issue then reported in this pr :-).\n\nReviewing rpc/svc.c:svc_getreq() it looks for me that for RS_DONE case args\nare nevere freed. Shouldn't it be like in the attached patch?\n\nRunning the above test on the patched kernel the growth has not been observed\nso far:\n\n13:00: 1501/2219/3720 mbufs in use (current/cache/total)\n13:30: 1514/2971/4485 mbufs in use (current/cache/total)\n14:00: 1096/3389/4485 mbufs in use (current/cache/total)\n14:30: 1107/3378/4485 mbufs in use (current/cache/total)\n15:00: 1105/3380/4485 mbufs in use (current/cache/total)\n15:30: 1105/3380/4485 mbufs in use (current/cache/total)\n\n-- \nMikolaj Golub\n"
+}

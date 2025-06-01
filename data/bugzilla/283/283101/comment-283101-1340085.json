@@ -1,0 +1,8 @@
+{
+ "id": 1340085,
+ "bug_id": 283101,
+ "attachment_id": 0,
+ "creation_time": "2024-12-20T17:52:40Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to vedad from comment #16)\nWe seems to getting close, but still not quite.  The victim thread was\ncaught by SIGCANCEL inside the critical section.  Then, returning from\nthe section should have caused cancellation to trigger.  Since it does\nnot, and I verified manually all places where we leave critical counters,\nlets try with more debugging to see what happens.\n\nPlease provide me with both the backtrace and the p *curthread on the\nvictim thread.\n\ndiff --git a/lib/libthr/thread/thr_sig.c b/lib/libthr/thread/thr_sig.c\nindex b953c430158c..9f7fcbe33566 100644\n--- a/lib/libthr/thread/thr_sig.c\n+++ b/lib/libthr/thread/thr_sig.c\n@@ -191,8 +191,13 @@ sigcancel_handler(int sig __unused,\n        struct pthread *curthread = _get_curthread();\n        int err;\n \n-       if (THR_IN_CRITICAL(curthread))\n+       if (THR_IN_CRITICAL(curthread)) {\n+               void *p[1];\n+\n+               p[0] = curthread;\n+               abort2(\"thr_in_critical %p\", 1, p);\n                return;\n+       }\n        err = errno;\n        check_suspend(curthread);\n        check_cancel(curthread, ucp);"
+}

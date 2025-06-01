@@ -1,0 +1,8 @@
+{
+ "id": 1297324,
+ "bug_id": 276002,
+ "attachment_id": 0,
+ "creation_time": "2024-02-17T15:57:12Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #60)\nYes, that is my understanding as well, with the\nadditional fact that msync(2) calls fix the problem.\n\nMy hunch is that this bug (not the copy_file_range(2) issue)\nhas existed *forever*. I have not been able to come up\nwith a plausible explanation, but...\n- It might be that there is some situation where B_CACHE does\n  not get set when it should be set, causing ncl_write() (the\n  VOP_WRITE() for NFS) to read stale data from the server,\n  overwriting the mmap'd change(s).\n- There might be some race between VOP_PUTPAGES()/VPO_GETPAGES()\n  (which must hold the vnode locked) and the NFS I/O RPCs being\n  done on the buffer cache blocks when no vnode lock is held for them.\n  I have not been able to think of a case where this would cause\n  the corruption, but I'll admit I haven't thought about it lately.\n\nI have thought of doing the equivalent of msync() in ncl_write(),\nat least to see if that avoids the corruption.\nMaybe I'll come up with a test patch for Alan to try."
+}

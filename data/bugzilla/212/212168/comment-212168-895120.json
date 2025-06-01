@@ -1,0 +1,8 @@
+{
+ "id": 895120,
+ "bug_id": 212168,
+ "attachment_id": 0,
+ "creation_time": "2016-08-28T05:30:20Z",
+ "creator": "peter@FreeBSD.org",
+ "text": "It is very confusing as the compiler is doing extensive inlining.\n\nAs near as I can tell, the area you asked about is like this:\n\nsoftdep_freefile():\n                        handle_bufwait(inodedep, \u0026freefile-\u003efx_jwork);\n7568                    clear_unlinked_inodedep(inodedep);\n\n-\u003e\nclear_unlinked_inodedep():\n9685:           bwrite(bp);\n                ACQUIRE_LOCK(ump);\n-\u003e \nbwrite():\n393:      return (BO_WRITE(bp-\u003eb_bufobj, bp));\n-\u003e\nI'm confused after here.  The return address of the frame is softdep_freefile+0x66c, which is the inlined sys/buf.h BO_WRITE macro.\n\nI *think* the chain continues from BO_WRITE() -\u003e ffs_bufwrite() -\u003e bufwrite() -\u003e bstrategy()-\u003e ffs_geom_strategy().\n\nI am 100% confident that it is originating from clear_unlinked_inodedep().  99% sure it is the first bwrite(), not the second one at line 9699.\n\nIs this of any help?"
+}

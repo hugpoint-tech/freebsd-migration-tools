@@ -1,0 +1,8 @@
+{
+ "id": 904329,
+ "bug_id": 213691,
+ "attachment_id": 0,
+ "creation_time": "2016-10-29T15:19:00Z",
+ "creator": "sgs@pichove.org",
+ "text": "The problem is that openntpd-6.0p1_1,2 is forcing the installation of libressl and that is in conflict with the installed security/openssl port.\n\nPreviously I had selected to disable RSSL (SSL support). That option is now removed.\n\nThese changes make things wotk for me:\n\n--- a/net/openntpd/Makefile\n+++ b/net/openntpd/Makefile\n@@ -2,7 +2,7 @@\n \n PORTNAME=\topenntpd\n PORTVERSION=\t6.0p1\n-PORTREVISION=\t2\n+PORTREVISION=\t3\n PORTEPOCH=\t2\n CATEGORIES=\tnet\n MASTER_SITES=\tOPENBSD/OpenNTPD\n@@ -21,6 +21,12 @@ GROUPS=\t\t_ntp\n USES=\t\tssl\n \n GNU_CONFIGURE=\tyes\n+\n+OPTIONS_DEFINE=                RESSL\n+RESSL_DESC=            SSL/TLS support via LibreSSL\n+\n+OPTIONS_DEFAULT=       RESSL\n+\n CONFIGURE_ARGS=\t--with-cacert=${LOCALBASE}/etc/ssl/cert.pem\n \n pre-build:\n@@ -33,6 +39,7 @@ post-stage:\n .include \u003cbsd.port.pre.mk\u003e\n \n # Requires libtls from LibreSSL\n+.if ${PORT_OPTIONS:MRESSL}\n .if ${SSL_DEFAULT:Mlibressl*}\n CPPFLAGS+=\t\t-I${OPENSSLINC}\n LDFLAGS+=\t\t-L${OPENSSLLIB}\n@@ -40,6 +47,8 @@ LDFLAGS+=\t\t-L${OPENSSLLIB}\n BUILD_DEPENDS+=\t\t${NONEXISTENT}:security/libressl:stage\n CPPFLAGS+=\t\t-I${WRKDIR}/libressl/include\n LDFLAGS+=\t\t-L${WRKDIR}/libressl/lib\n+.endif # RESSL\n+\n # security/libressl ignores implicit SSP_UNSAFE, see Mk/bsd.ssp.mk\n . if ${OPSYS} == FreeBSD \u0026\u0026 ${OSVERSION} \u003c 1000036 \u0026\u0026 ${ARCH} == i386\n SSP_CFLAGS?=\t-fstack-protector"
+}

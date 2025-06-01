@@ -1,0 +1,8 @@
+{
+ "id": 1340774,
+ "bug_id": 283583,
+ "attachment_id": 0,
+ "creation_time": "2024-12-25T00:28:41Z",
+ "creator": "editor@callfortesting.org",
+ "text": "While experimenting with PkgBase and makefs(8) -t zfs VM-IMAGES, I inadvertently left a devfs mount in the directory that would become the rootfs image using the soon-to-be-replaced release engineering VM-IMAGE tools in /usr/src/release\n\nSurprisingly, makefs(8) is devfs(8)-friendly:\n\n'makefs -s 1g img.raw /dev'\nCalculated size of `img.raw': 1073741824 bytes, 423 inodes\nExtent size set to 32768\ndensity reduced from 2538397 to 8192\nimg.raw: 1024.0MB (2097152 sectors) block size 32768, fragment size 4096\n\tusing 2 cylinder groups of 626.00MB, 20032 blks, 80128 inodes.\nsuper-block backups (for fsck -b #) at:\n      64, 1282112\nPopulating `img.raw'\nImage `img.raw' complete\n\nHowever mounting devfs(8) on /tmp/test/devfs and making an image of the parent directory /tmp/test results in:\n\n'makefs -t zfs -s 1g -B little -o 'poolname=foo' img.raw /tmp/test/dev'\nAssertion failed: (cur-\u003etype == S_IFREG || cur-\u003etype == S_IFDIR || cur-\u003etype == S_IFLNK), function fsnode_foreach, file /home/pkgbuild/worktrees/releng/14.2/usr.sbin/makefs/zfs/fs.c, line 190.\nAbort trap (core dumped)\n\nThe goal is not necessarily the ability to create a disk image containing devfs(8), but rather to not core dump or provide the user a warning as appropriate.\n\nTested on 14.2-RELEASE and I can provide the core file if this cannot be reproduced."
+}

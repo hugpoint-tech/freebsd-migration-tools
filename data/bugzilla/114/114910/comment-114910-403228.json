@@ -1,0 +1,8 @@
+{
+ "id": 403228,
+ "bug_id": 114910,
+ "attachment_id": 0,
+ "creation_time": "2007-08-03T10:57:27Z",
+ "creator": "jinmei@isl.rdc.toshiba.co.jp",
+ "text": "Thanks for the report.  Yes, it's a bug to be fixed.\n\nI think it should be handled around reorder() rather than in\ngetanswer() since the same problem would happen for other resolution\nmethods.\n\nI've copied an alternate proposed patch below.\n\n\t\t\t\t\tJINMEI, Tatuya\n\t\t\t\t\tCommunication Platform Lab.\n\t\t\t\t\tCorporate R\u0026D Center, Toshiba Corp.\n\t\t\t\t\tjinmei@isl.rdc.toshiba.co.jp\n\nIndex: getaddrinfo.c\n===================================================================\nRCS file: /home/ncvs/src/lib/libc/net/getaddrinfo.c,v\nretrieving revision 1.85\ndiff -u -r1.85 getaddrinfo.c\n--- getaddrinfo.c\t23 Jul 2006 15:31:03 -0000\t1.85\n+++ getaddrinfo.c\t3 Aug 2007 09:52:57 -0000\n@@ -578,8 +578,24 @@\n \t\t\t * in the most efficient order.\n \t\t\t */\n \t\t\tif (hints == NULL || !(hints-\u003eai_flags \u0026 AI_PASSIVE)) {\n-\t\t\t\tif (!numeric)\n+\t\t\t\tif (!numeric) {\n+\t\t\t\t\tchar *canonname;\n+\n+\t\t\t\t\tcanonname =\n+\t\t\t\t\t    sentinel.ai_next-\u003eai_canonname;\n+\t\t\t\t\tif (canonname != NULL) {\n+\t\t\t\t\t\tsentinel.ai_next-\u003eai_canonname\n+\t\t\t\t\t\t    = NULL;\n+\t\t\t\t\t}\n \t\t\t\t\t(void)reorder(\u0026sentinel);\n+\t\t\t\t\tif (sentinel.ai_next-\u003eai_canonname ==\n+\t\t\t\t\t    NULL) {\n+\t\t\t\t\t\tsentinel.ai_next-\u003eai_canonname\n+\t\t\t\t\t\t    = canonname;\n+\t\t\t\t\t} else {\n+\t\t\t\t\t\tfree(canonname);\n+\t\t\t\t\t}\n+\t\t\t\t}\n \t\t\t}\n \t\t\t*res = sentinel.ai_next;\n \t\t\treturn SUCCESS;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 431112,
+ "bug_id": 120781,
+ "attachment_id": 0,
+ "creation_time": "2008-03-04T12:35:44Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "FYI, here's the specific reproduction case I'm using:\n\n(1) Compile a kernel with UFS_EXTATTR and UFS_EXTATTR_AUTOSTART\n\n(2) Create an md device with UFS1 (substitute mdX as required)\n\n     mdconfig -a -t malloc -s 32m\n     newfs -O1 -i128 /dev/mdX\n     mount /dev/mdX /mnt\n\n(3) Populate root directory with a lot of files and unmount\n\n     cd /mnt\n     jot 10000 | xargs touch\n     cd /\n     umount /mnt\n\n(4) Mount and panic\n\n     mount /dev/mdX /mnt\n\nThe actual panic message is:\n\n   panic: ufs_dirbad: /mnt: bad dir ino 2 at offset 16384: mangled entry\n\nufs_dirbad is invoked as follows: ufs_extattr_autostart -\u003e ufs_extattr_lookup \n-\u003e ufs_dirbad.  This is the first call to lookup (for .attribute) in the file \nsystem root so should have nothing to do with the code in UFS1 extended \nattributes for iterating over directories.\n\nRobert N M Watson\nComputer Laboratory\nUniversity of Cambridge"
+}

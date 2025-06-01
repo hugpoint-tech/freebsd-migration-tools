@@ -1,0 +1,8 @@
+{
+ "id": 788227,
+ "bug_id": 193849,
+ "attachment_id": 147610,
+ "creation_time": "2014-09-23T18:31:13Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 147610\n|poudriere testport -P| log (9.3R i386)\n\nIt seems the Porter's Handbook agrees with portlint(1) but I cannot find actual rationale. However, looking at DISTVERSION implementation it should work fine with both set. And attached smoke test log confirms my conjecture.\n\n$ portlint -C\nFATAL: Makefile: either PORTVERSION or DISTVERSION must be specified, not both.\n1 fatal error and 0 warnings found.\n\nPorter's Handbook says:\n\u003e Only one of PORTVERSION and DISTVERSION can be set at a time. If DISTVERSION does not derive a correct PORTVERSION, do not use DISTVERSION, set PORTVERSION to the right value and set DISTNAME with PORTNAME with either some computation of PORTVERSION or the verbatim upstream version.\n\n# Mk/bsd.port.mk has\n.if defined(PORTVERSION)\n.if ${PORTVERSION:M*[-_,]*}x != x\nIGNORE=\t\t\tPORTVERSION ${PORTVERSION} may not contain '-' '_' or ','\n.endif\nDISTVERSION?=\t${PORTVERSION:S/:/::/g}\n.elif defined(DISTVERSION)\nPORTVERSION=\t${DISTVERSION:tl:C/([a-z])[a-z]+/\\1/g:C/([0-9])([a-z])/\\1.\\2/g:C/:(.)/\\1/g:C/[^a-z0-9+]+/./g}\n.endif"
+}

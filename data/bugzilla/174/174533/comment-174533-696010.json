@@ -1,0 +1,8 @@
+{
+ "id": 696010,
+ "bug_id": 174533,
+ "attachment_id": 0,
+ "creation_time": "2012-12-18T00:30:00Z",
+ "creator": "renato@unotel.com.br",
+ "text": "After upgrading to openbgp-5.2.20121014, bgpctl cant reload a config after the config file has any error.\n\nDec 17 18:22:51 bgp2 bgpd[37607]: /etc/bgpd/clientes.conf:855: syntax error\nDec 17 18:22:51 bgp2 bgpd[37607]: /etc/bgpd/clientes.conf:858: start prefixlen is bigger than end\nDec 17 18:22:51 bgp2 bgpd[37607]: config file /usr/local/etc/bgpd.conf has errors, not reloading\n\nAfter you correct the error, bgpctl reload starts giving the following error:\n\nbgp2# bgpctl re\nreload request sent.\nprevious reload still running\n\n\nYou need to restart openbgpd to correct the error\n\nFix: \n\n--- src/usr.sbin/bgpd/bgpd.c\t2012/09/18 10:45:51\t1.169\n+++ src/usr.sbin/bgpd/bgpd.c\t2012/11/02 19:02:45\t1.170\n@@ -1,4 +1,4 @@\n-/*\t$OpenBSD: bgpd.c,v 1.169 2012/09/18 09:45:51 claudio Exp $ */\n+/*\t$OpenBSD: bgpd.c,v 1.170 2012/11/02 18:02:45 florian Exp $ */\n \n /*\n  * Copyright (c) 2003, 2004 Henning Brauer \u003chenning@openbsd.org\u003e\n@@ -436,6 +436,7 @@ reconfigure(char *conffile, struct bgpd_config *conf, \n \t    \u0026rdom_l)) {\n \t\tlog_warnx(\"config file %s has errors, not reloading\",\n \t\t    conffile);\n+\t\treconfpending = 0;\n \t\treturn (1);\n \t}\nHow-To-Repeat: Put any invalid option on the config file, issue a bgpctl reload, correct the file and give another reload to bgpctl"
+}

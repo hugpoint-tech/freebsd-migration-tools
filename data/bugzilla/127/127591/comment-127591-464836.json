@@ -1,0 +1,8 @@
+{
+ "id": 464836,
+ "bug_id": 127591,
+ "attachment_id": 0,
+ "creation_time": "2008-09-23T21:20:01Z",
+ "creator": "20080111.FreeBSD.org@ab.ote.we.lv",
+ "text": "\nDNS DNAME RRs (as defined in RFC 2672) provides a mechanism for\nnon-terminal name redirection.  For example, www.the-7.com does not\nexist in DNS but the-7.com has a DNAME alias to the-7.net; looking up\nwww.the-7.com for an A record would return:\n\n$ dig www.the-7.com IN A +noall +answer\n\n; \u003c\u003c\u003e\u003e DiG 9.4.2-P1 \u003c\u003c\u003e\u003e www.the-7.com IN A +noall +answer\n;; global options:  printcmd\nthe-7.com.\t\t300\tIN\tDNAME\tthe-7.net.\nwww.the-7.com.\t\t0\tIN\tCNAME\twww.the-7.net.\nwww.the-7.net.\t\t300\tIN\tCNAME\tpurple.the-7.net.\npurple.the-7.net.\t300\tIN\tA\t64.71.156.34\n$ \n\n(The nameserver, upon receiving a request that matches a DNAME,\nreturns the DNAME and a synthesized CNAME.)\n\nWhen src/libc/net/{getaddrinfo,gethostbydns}.c examines this result,\nthey see the DNAME record and emits a warning over auth.notice syslog,\nwhich shows up in /var/log/messages and /var/log/auth.log by default.\n\nThese warnings are benign (as the server returns a synthesized CNAME\nthat correctly leads to the targeted name), but on a heavy-loaded\nserver they add up quickly and bloats the log size.\n\nFix: $ patch -d /usr/src \u003c\u003c 'ENDEND'\nHow-To-Repeat: \n$ /sbin/ping www.the-7.com\n...\n^C\n$ fgrep 'www.the-7.com' /var/log/messages | tail -1\nSep 23 12:18:43 purple ping: gethostby*.gethostanswer: asked for \"www.the-7.com IN A\", got type \"DNAME\"\n$"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 397922,
+ "bug_id": 113766,
+ "attachment_id": 0,
+ "creation_time": "2007-06-16T18:50:02Z",
+ "creator": "stas_k_freebsd2@tiger.unisquad.com",
+ "text": "\nHi.\n\nThe problem is similar to PR 63982 (the same bug in \"em\" driver).\n\"re\" driver is using and advertizing hardware checksum capability,\nbut NIC fails to calculate checksums, or at least to calculate them\ncorrectly, for some packets.\n\nRelevant piece of dmesg output:\n\nre0: \u003cRealTek 8168B/8111B PCIe Gigabit Ethernet\u003e port 0xa800-0xa8ff mem 0xff5ff0\n00-0xff5fffff irq 17 at device 0.0 on pci2\nmiibus0: \u003cMII bus\u003e on re0\nrgephy0: \u003cRTL8169S/8110S media interface\u003e on miibus0\nrgephy0:  10baseT, 10baseT-FDX, 100baseTX, 100baseTX-FDX, 1000baseTX, 1000baseTX\n-FDX, auto\nre0: Ethernet address: 00:18:f3:07:9e:e6\nre0: [FAST]\n\nWorkaround:\nifconfig rl0 -txcsum\n\nFix: \n\nWorkaround:\nifconfig re0 -txcsum\nHow-To-Repeat: To reproduce:\n1. Use RealTek 8168B/8111B PCIe Gigabit Ethernet card on computer #1,\nany card on computer #2 (eg Realtek 8139).\n2. Select TCP port on computer #1, eg port 333, and make sure that nothing is\nlistening on it.\n3. run tcpdump on computer #2, eg:\n  tcpdump -i rl0 -n -s 1600 -v port 333\n4. From computer #2 try to connect to closed port on computer #1, eg using telnet:\n  telnet computer1 333\n5. In tcpdump output on computer #2 you will see that TCP RST packet has bad\nip checksum."
+}

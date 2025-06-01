@@ -1,0 +1,8 @@
+{
+ "id": 761658,
+ "bug_id": 189174,
+ "attachment_id": 0,
+ "creation_time": "2014-05-01T10:28:25Z",
+ "creator": "thomas@quinot.org",
+ "text": "* FreeBSD-gnats-submit@FreeBSD.org, 2014-05-01 :\n\n\u003e \u003eCategory:       bin\n\u003e \u003eResponsible:    freebsd-bugs\n\u003e \u003eSynopsis:       dd conv=sparse bs=64k EINVAL on sparse last block\n\u003e \u003eArrival-Date:   Thu May 01 09:20:00 UTC 2014\n\nThe following fix appears to fix the problem here:\n\nIndex: dd.c\n===================================================================\n--- dd.c\t(révision 265172)\n+++ dd.c\t(copie de travail)\n@@ -450,13 +450,16 @@\n \t\t\t\tnw = cnt;\n \t\t\t} else {\n \t\t\t\tif (pending != 0) {\n-\t\t\t\t\tif (force)\n+\t\t\t\t\t/* If forced to write, and we have no data left, we need\n+                                         * to write an explicit 0.\n+                                         */\n+\t\t\t\t\tif (force \u0026\u0026 cnt == 0)\n \t\t\t\t\t\tpending--;\n \t\t\t\t\tif (lseek(out.fd, pending, SEEK_CUR) ==\n \t\t\t\t\t    -1)\n \t\t\t\t\t\terr(2, \"%s: seek error creating sparse file\",\n \t\t\t\t\t\t    out.name);\n-\t\t\t\t\tif (force)\n+\t\t\t\t\tif (force \u0026\u0026 cnt == 0)\n \t\t\t\t\t\twrite(out.fd, outp, 1);\n \t\t\t\t\tpending = 0;\n \t\t\t\t}"
+}

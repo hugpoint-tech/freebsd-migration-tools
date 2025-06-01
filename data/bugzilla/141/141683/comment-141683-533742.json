@@ -1,0 +1,8 @@
+{
+ "id": 533742,
+ "bug_id": 141683,
+ "attachment_id": 0,
+ "creation_time": "2009-12-16T14:50:00Z",
+ "creator": "spolyack@collaborativefusion.com",
+ "text": "A server running FreeBSD 7.1-RELEASE-p5 which acts as an nfs server does not seem to ever let go of closed connections.  The connections in question are from a service monitoring daemon (Nagios check_tcp).  Telnet connections which are then broken will also leave connections lying around in the CLOSE_WAIT state.\n\n$ netstat -tan | grep CLOSE_WAIT |grep 2049 |wc -l\n     454\n\nWe've witnessed the server build up to over 7000 connections kept in the CLOSE_WAIT state after a few weeks.  Restarting nfsd(8) will cause all of these held connections to disappear.\n\nHow-To-Repeat: Start nfsd(8) with the -t switch to serve TCP NFS.  Open several telnet connections to the NFS server on port 2049 and close them immediately after connection (or use Nagios to perform simple TCP port monitoring):\n\nnfs-server$ netstat -tan | grep CLOSE_WAIT |grep 2049 |wc -l\n     455\n\n$ telnet nfs-server 2049\nConnected to nfs-server\nEscape character is '^]'.\n^]\ntelnet\u003e q\nConnection closed.\n$ telnet nfs-server 2049\nConnected to nfs-server\nEscape character is '^]'.\n^]\ntelnet\u003e q\nConnection closed.\n$ telnet nfs-server 2049\nConnected to nfs-server\nEscape character is '^]'.\n^]\ntelnet\u003e q\nConnection closed.\n\n$ netstat -tan | grep CLOSE_WAIT |grep 2049 |wc -l\n     458\n\nWait minutes, hours, days, or weeks and see that the connections are still listed in CLOSE_WAIT by netstat.  Eventually restart nfsd(8) and witness the number of connections drop significantly:\n\n$ sudo /etc/rc.d/nfsd restart\nStopping nfsd.\nStarting nfsd.\n$ netstat -tan | grep CLOSE_WAIT |grep 2049 |wc -l\n       0"
+}

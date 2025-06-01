@@ -1,0 +1,8 @@
+{
+ "id": 835694,
+ "bug_id": 202215,
+ "attachment_id": 0,
+ "creation_time": "2015-08-10T10:12:28Z",
+ "creator": "hhw@pce-net.com",
+ "text": "MFC r267812 for normalizing interface names ($_if) with \".+-\" in them before using it in a pattern to list_vars() broke the ability to have aliases on vlan sub-interfaces by modifying the value of $_if instead of just using the normalized form for matching.\n\nBy using a separate local variable for the matching pattern and leaving the original value of $_if intact, list_vars can return the appropriate values without causing issues for configuring the IP aliases themselves. Unified diff for fix included below:\n\n--- /etc/network.subr.orig      2014-07-10 16:50:15.000000000 -0700\n+++ /etc/network.subr   2015-08-10 02:35:39.000000000 -0700\n@@ -1010,7 +1010,7 @@\n #\n ifalias_af_common()\n {\n-       local _ret _if _af _action alias ifconfig_args _aliasn _c _tmpargs _iaf\n+       local _ret _if _nif _af _action alias ifconfig_args _aliasn _c _tmpargs _iaf\n        local _punct=\".-/+\"\n \n        _ret=1\n@@ -1020,10 +1020,10 @@\n        _action=$3\n \n        # Normalize $_if before using it in a pattern to list_vars()\n-       ltr \"$_if\" \"$_punct\" \"_\" _if\n+       ltr \"$_if\" \"$_punct\" \"_\" _nif\n \n        # ifconfig_IF_aliasN which starts with $_af\n-       for alias in `list_vars ifconfig_${_if}_alias[0-9]\\* |\n+       for alias in `list_vars ifconfig_${_nif}_alias[0-9]\\* |\n                sort_lite -nk1.$((9+${#_if}+7))`\n        do\n                eval ifconfig_args=\\\"\\$$alias\\\""
+}

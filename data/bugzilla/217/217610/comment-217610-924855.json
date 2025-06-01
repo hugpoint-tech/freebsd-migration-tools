@@ -1,0 +1,8 @@
+{
+ "id": 924855,
+ "bug_id": 217610,
+ "attachment_id": 0,
+ "creation_time": "2017-03-07T12:49:04Z",
+ "creator": "fuz@FreeBSD.org",
+ "text": "The ELF loader in imgact_elf.c contains the following code to verify a program header before loading it:\n\n        /*\n         * It's necessary to fail if the filsz + offset taken from the\n         * header is greater than the actual file pager object's size.\n         * If we were to allow this, then the vm_map_find() below would\n         * walk right off the end of the file object and into the ether.\n         *\n         * While I'm here, might as well check for something else that\n         * is invalid: filsz cannot be greater than memsz.\n         */\n        if ((off_t)filsz + offset \u003e imgp-\u003eattr-\u003eva_size || filsz \u003e memsz) {\n                uprintf(\"elf_load_section: truncated ELF file\\n\");\n                return (ENOEXEC);\n        }\n\nHowever, this code is incorrect. If a program header corresponds to sections that are all marked NOBITS, GNU ld generates a program header with p_filesz == 0 and p_offset at the next aligned offset just past the end of the file. This is fine as no bytes are actually ever read from the binary. However, FreeBSD refuses to load such a valid ELF binary. I request to amend this verification procedure to add a special case for program headers with p_filesz == 0:\n\n    if (filesz \u003e memsz || filesz \u003e 0 \u0026\u0026 (off_t)filesz + offset \u003e imgp-\u003eattr-\u003eva_size)"
+}

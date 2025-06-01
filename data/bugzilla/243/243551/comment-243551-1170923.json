@@ -1,0 +1,8 @@
+{
+ "id": 1170923,
+ "bug_id": 243551,
+ "attachment_id": 0,
+ "creation_time": "2021-07-18T20:01:20Z",
+ "creator": "rew@FreeBSD.org",
+ "text": "When using a direct map with a wildcard entry and doing \"cd /net/nonexistent\", a new directory will be created. W.R.T. a special_users map, just because the user exists on the system doesn't necessarily mean that the users home directory is being exported via NFS, no?\n\nThe temporary mountpoint should definitely be cleaned up on failure. I suppose this cleanup should happen after autofs has exhausted its retry attempts? Do you think autofs or automountd (via request from autofs) should do the clean up?\n\nQuick glance through the code; looks like it would be a bit of work to make the mount_nfs bits public that would allow automountd to retrieve the error code that was returned from the NFS server..\n\nThere's not a reliable way to discover exported directories for NFSv3/NFSv4?\n\nI think in a perfect world, the program flow would be:\n\n1. request to automountd to mount from a NFS server\n2. automountd checks if that directory is exported from the NFS server\n3. if yes, create the temporary mountpoint\n4. attempt the mount\n5. if error, remove temporary mountpoint and return the error code to autofs\n6. let autofs, based on the error code, decide if it wants to retry to mount.\n\nBut, it's not a perfect world, is it?"
+}

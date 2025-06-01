@@ -1,0 +1,8 @@
+{
+ "id": 487282,
+ "bug_id": 132158,
+ "attachment_id": 0,
+ "creation_time": "2009-06-18T20:43:17Z",
+ "creator": "stas@FreeBSD.org",
+ "text": "Hi!\r\n\r\nThank you for a bug report.  I expect it will be fixed soon.\r\nFixing it appears to be a lot harder that it seems the firts time.\r\n\r\nThe problem is more deeper than it seems.  The FreeBSD port of ruby\r\nlinks ruby binary against pthreads to solve compatibility problems\r\nwith threaded libraries (so you can use the same unthreaded ruby\r\nbinary with both threaded and non-threaded libraries).\r\n\r\nThe root of the issue is in the fact that ruby uses getrlimit\r\ncall to get the current stack limit.  This obviously is a complete\r\nnoncense in the threaded case.  The nonportable POSIX threads extension\r\nto get the current thread's stack limit should be used in that case.\r\n\r\nThe other side of the problem is the ruby stack overflow detector\r\nis completely opportunistic.  That is it only checks for stack\r\noverflow only every 256th call of rb_call0, so it is often unable to\r\nprevent stack overflow when stack sizes are small enough, which is\r\nthe case with FreeBSD threads.\r\n\r\nThe reason it may not fail on Linux is that Linux seem to use gratuitously\r\nlarge thread stack sizes by default, so it doesn't overflow fast.  Ruby\r\nreserves up to 1/5 of the available stack size, so if the stack size\r\nis too small this reservation is just not enough for another 256 calls\r\nof rb_call0.\r\n\r\nI'm currently working on the solution to this problem, as decreasing\r\ncheck interval doesn't look right as it will increase overhead as well.\r\nI'm not yet sure what is the best way to solve this.\r\n\r\n-- \r\nStanislav Sedov\r\nST4096-RIPE"
+}

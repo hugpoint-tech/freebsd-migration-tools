@@ -1,0 +1,8 @@
+{
+ "id": 1167055,
+ "bug_id": 256712,
+ "attachment_id": 0,
+ "creation_time": "2021-06-20T12:40:18Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "I've been trying to help Graham reproduce this one (per discussions on the libera #freebsd irc channel) but so far what I seem to have managed is to produce a different error:\n\n** SU+J Recovering /dev/vtbd1\n** Reading 4194304 byte journal from inode 4.\n** Building recovery table.\n** Resolving unreferenced inode list.\n** Processing journal entries.\n/dev/vtbd1: ino_remref: ino 2767 mode 0100000 about to go negative\n/dev/vtbd1: UNEXPECTED SU+J INCONSISTENCY\n/dev/vtbd1: INTERNAL ERROR: GOT TO reply()\n/dev/vtbd1: UNEXPECTED SOFT UPDATE INCONSISTENCY; RUN fsck MANUALLY.\n\nI've managed to reproduce this one fairly reliably (3 times out of 4 tries) and I have a copy of a filesystem image taken before the fsck. The steps I used to reproduce were (this is in a 13-stable install in a bhyve vm, where vtbd0 is the system image and vtbd1 is a 256MB md device on the host):\n\nnewfs -O2 -U -j /dev/vtbd1\nmount /dev/vtbd1 /mnt\ntar -xf python38-3.8.10.tgz -C /mnt\nfind /mnt/usr -type f -print0 | xargs -0 rm\ntar -xf python38-3.8.10.tgz -C /mnt\n(when the prompt returns at this point, immediately destroy the vm)\n\nOn booting the vm again and then doing  fsck -p /dev/vtbd1, the above error appears. (vtbd1 is not mentioned in fstab)\n\nShould I split this off into a separate bug? (I will continue to try to reproduce the original issue)"
+}

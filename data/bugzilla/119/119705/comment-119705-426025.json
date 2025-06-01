@@ -1,0 +1,8 @@
+{
+ "id": 426025,
+ "bug_id": 119705,
+ "attachment_id": 0,
+ "creation_time": "2008-01-16T07:41:38Z",
+ "creator": "keramida@FreeBSD.org",
+ "text": "On 2008-01-16 09:39, Giorgos Keramidas \u003ckeramida@freebsd.org\u003e wrote:\n\u003e Both fixed, I think.  The new version of the patch is attached below,\n\u003e after the following changes:\n\u003e\n\u003e   * Reset wresized when doresize() completes its work\n\u003e   * Only call isatty(fileno(stdout)) once, instead of every time\n\u003e   doresize() is called\n\u003e   * Only install a SIGWINCH handler if isatty() is true\n\u003e diff --git a/usr.sbin/iostat/iostat.c b/usr.sbin/iostat/iostat.c\n\u003e --- a/usr.sbin/iostat/iostat.c\n\u003e +++ b/usr.sbin/iostat/iostat.c\n[...]\n\u003e @@ -426,6 +433,20 @@ main(int argc, char **argv)\n\u003e  \t */\n\u003e  \t(void)signal(SIGCONT, needhdr);\n\u003e\n\u003e +\t/*\n\u003e +\t * If our standard output is a tty, then install a SIGWINCH handler\n\u003e +\t * and set wresized so that our first iteration through the main\n\u003e +\t * iostat loop will peek at the terminal's current rows to find out\n\u003e +\t * how many lines can fit in a screenful of output.\n\u003e +\t */\n\u003e +\tif (isatty(fileno(stdout)) != 0) {\n\u003e +\t\twresized = 1;\n\u003e +\t\t(void)signal(SIGWINCH, needresize);\n\u003e +\t} else {\n\u003e +\t\twrows = IOSTAT_DEFAULT_ROWS;\n\u003e +\t\treturn;\n\nOops.  `return' doesn't belong here, of course.  Running iostat | more\ncaught what I missed :)"
+}

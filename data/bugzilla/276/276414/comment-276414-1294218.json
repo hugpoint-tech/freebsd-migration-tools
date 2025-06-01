@@ -1,0 +1,8 @@
+{
+ "id": 1294218,
+ "bug_id": 276414,
+ "attachment_id": 0,
+ "creation_time": "2024-01-26T19:09:31Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "A dtrace script which gives some info about where the notifications are coming from:\n\ndtrace -n 'fbt::rtnl_handle_ifevent:entry /args[1] == 16/{stack();}'\n\nWhen I destroy a wg interface, I get:\n\n  8  22603        rtnl_handle_ifevent:entry \n              kernel`do_link_state_change+0x44\n              kernel`taskqueue_run_locked+0x182\n              kernel`taskqueue_run+0x68\n              kernel`ithread_loop+0x257\n              kernel`fork_exit+0x7f\n              kernel`0xffffffff80fff13e\n\n  8  22603        rtnl_handle_ifevent:entry \n              kernel`do_link_state_change+0x1e7\n              kernel`taskqueue_run_locked+0x182\n              kernel`taskqueue_run+0x68\n              kernel`ithread_loop+0x257\n              kernel`fork_exit+0x7f\n              kernel`0xffffffff80fff13e\n\n  4  22603        rtnl_handle_ifevent:entry \n              kernel`if_detach_internal+0x138\n              kernel`if_detach+0x59\n              0xffffffff843e59cb\n              kernel`if_clone_destroy+0x91\n              kernel`ifioctl+0x899\n              kernel`kern_ioctl+0x255\n              kernel`sys_ioctl+0x114\n              kernel`amd64_syscall+0x109\n              kernel`0xffffffff80ffe9eb\n\nThese are triggered by if_link_state_change(LINK_STATE_DOWN) calls in the wireguard code, of which there are several... perhaps some are redundant?"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1289216,
+ "bug_id": 275905,
+ "attachment_id": 0,
+ "creation_time": "2023-12-24T15:50:38Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "The renew thread RPC (the one that your backtrace shows\nas hung in nfsv4_sequencelookup()) would be using the\nhost/FQDN@REALM entry in the default /etc/krb5.keytab.\n(ie. Your TGT would not be used for this, since the\n renew thread runs as \"root\".)\n\nCould the client's keytab entry be broken somehow?\n(As you probably are aware, when you create a new\n keytab for a principal, old keytabs no longer work.)\n\nYou could go onto the client and do\n# kinit -k host/FQDN\nto see that the keytab entry for \"host\" works ok.\n(I am still wondering what will happen if the TGT\n for the keytab expires just after the RPC request\n is sent to the server. I'll look into that.)\n\nThere could also be a problem where other RPCs were\nusing all slots, so the renew thread slept in\nnfsv4_sequencelookup() and then another thread needed\nthe renew thread to do some work.\n--\u003e The renew thread should really have a dedicated\n    slot in the NFSv4 session, so that no other thread\n    can cause it to block.\n    --\u003e I might work on a patch for that.\n\nDoes this hang occur frequently or was this a \"one time\"\nhang on a mount that usually behaves ok?"
+}

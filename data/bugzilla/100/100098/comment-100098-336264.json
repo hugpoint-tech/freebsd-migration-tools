@@ -1,0 +1,8 @@
+{
+ "id": 336264,
+ "bug_id": 100098,
+ "attachment_id": 0,
+ "creation_time": "2006-07-11T19:00:36Z",
+ "creator": "Daniel.Larsson@servicefactory.com",
+ "text": "ipnat host mappings aren't always \"garbage collected\" due to\nip_fil_freebsd.c:fr_fastroute incrementing the NAT entry reference counting\nwith no corresponding decrement. The NAT entry will later be unhooked from\nthe internal hash, but the corresponding host map will remain since nat_ref \u003e 0.\n\nfr_fastroute calls fr_checknatout under certain circumstances, and this call\nwill increase the refcount on the NAT entry if it's being translated.\nfil.c does similar things, but it makes a fr_natderef call which decreases\nthe refcount. This is missing from fr_fastroute.\n\nFix: The following patch seems to fix the problem:\nHow-To-Repeat: NAT router:/etc/ipnat.conf:\nmap fxp0 10.10.0.0/24 -\u003e 192.168.0.1/32 portmap tcp/udp 9000:65500\n\nFrom 10.10.0.254 (with above machine as default route):\ncurl http://1.2.3.4\n\nNAT router:\n---\n# ipnat -lv\n..\nList of active sessions:\n..\nMAP 10.10.0.254     63258 \u003c- -\u003e 192.168.0.1       9000  [1.2.3.4 80]\n\nList of active host mappings:\n10.10.0.254,1.2.3.4 -\u003e 192.168.0.1 (use = 1 hv = 201)\n---\n\nAfter a couple of minutes, when NAT entries have \"timed out\":\n---\n# ipnat -lv\n..\nList of active sessions:\n\nList of active host mappings:\n10.10.0.254,1.2.3.4 -\u003e 192.168.0.1 (use = 1 hv = 201)\n---\n\nThe NAT entry is gone, but the host mapping remains."
+}

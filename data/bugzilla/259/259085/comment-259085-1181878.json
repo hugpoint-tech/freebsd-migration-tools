@@ -1,0 +1,8 @@
+{
+ "id": 1181878,
+ "bug_id": 259085,
+ "attachment_id": 0,
+ "creation_time": "2021-10-11T23:03:07Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "Why not specify a consistent list with -f? I suspect it is to work around aggressive rebuilds which is becoming more sane very soon and not doing needless rebuilds.\n\nIt's doing what you told it to. 'bulk' is intended to build a repository, not a package.\n\nIf you only tell it about 1 package you are interested in then it may *update a dependency, but not rebuild something you didn't mention depending on that thing*, or create a totally conflicted repository that can't function at the client machine. Same issue if building 1 and then giving a larger list, it may leave that 1 existing package in a broken unusable state if a major dependency of it is updated and it does not get rebuilt.\n\nA basic requirement is that bulk should produce a working repository with working packages, in the sense that Poudriere does not create a bug itself with something like `pkg install` or `pkg upgrade` or `pkg add`. Changing -f up removes that promise.\n\nSo it has 3 options:\n1. Ignore the problem (old behavior)\n2. Delete anything not mentioned, because why else does it exist if the user does not expect it in their repository? If -t is given then it does not do this behavior as it assumes it is a pre-commit testing repo and not a published repo.\n3. Rebuild packages *not listed* because a dependency is updated. This also can be unexpected.\n\nThis change was because people kept asking for auto pkgclean. I admit that I did not expect that people would be using bulk -f with a changing list because it cannot guarantee a working repo in that way."
+}

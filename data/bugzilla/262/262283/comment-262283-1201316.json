@@ -1,0 +1,8 @@
+{
+ "id": 1201316,
+ "bug_id": 262283,
+ "attachment_id": 232193,
+ "creation_time": "2022-03-01T20:13:57Z",
+ "creator": "ronald-lists@klop.ws",
+ "text": "Created attachment 232193\ngit diff in /lib/libfetch against 14-CURRENT\n\nBecause of this mail thread https://lists.freebsd.org/archives/freebsd-ports/2022-February/001461.html I took a look at fetch.\nThere is also information in the github link in the mails.\n\nWhat I found is that it is pretty easy to encode the + in the path of the URL. Although libfetch is spec compliant with and without this patch. This patch would provide more compatibility with non-spec compliant servers like S3/Cloudflare. My experience as a programmer is that encoding a space as a + is only done when building the query string so if we leave the query string as is we don't change valid URLs. If somebody encodes a space as a + in the host or path of an URI before passing it to libfetch the request will not work with the major (spec compliant) web servers. So I do not see possibilities for regression.\n\nSo I think encoding the + as %2B in the path is very safe for requests to spec compliant servers and will prevent ambiguous requests to servers who do not follow the specs.\n\nAn example of the encoding I implemented:\nfetch -vv \"http://example.com/plus+space test?\u0026q=a+b c\"\nscheme:   \"http\"\nuser:     \"\"\npassword: \"\"\nhost:     \"example.com\"\nport:     \"0\"\ndocument: \"/plus%2bspace%20test?\u0026q=a+b%20c\"\n...\n\nSo the + and space before the question mark are percent-escaped. In the query string only the space is escaped for a correct http request line."
+}

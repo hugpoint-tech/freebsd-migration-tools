@@ -1,0 +1,8 @@
+{
+ "id": 662453,
+ "bug_id": 167357,
+ "attachment_id": 0,
+ "creation_time": "2012-04-27T12:00:21Z",
+ "creator": "adrik@salesmanager.nl",
+ "text": "When using sysctl to change variables of the cc_htcp(4) module, changing 1 variable will also change the values of other variables.\n\nFix: \n\nThe problem is probably caused by a mismatch in variable declaration and\nsysctl definition in /usr/src/sys/netinet/cc/cc_htcp.c.\n\nLine 171:\n\nstatic VNET_DEFINE(uint8_t, htcp_adaptive_backoff) = 0;\nstatic VNET_DEFINE(uint8_t, htcp_rtt_scaling) = 0;\n\nLine 515:\n\nSYSCTL_VNET_UINT(_net_inet_tcp_cc_htcp, OID_AUTO, adaptive_backoff, CTLFLAG_RW,\n    \u0026VNET_NAME(htcp_adaptive_backoff), 0, \"enable H-TCP adaptive backoff\");\nSYSCTL_VNET_UINT(_net_inet_tcp_cc_htcp, OID_AUTO, rtt_scaling, CTLFLAG_RW,\n    \u0026VNET_NAME(htcp_rtt_scaling), 0, \"enable H-TCP RTT scaling\");\nHow-To-Repeat: # kldload cc_htcp.ko\n# sysctl net.inet.tcp.cc.htcp\nnet.inet.tcp.cc.htcp.rtt_scaling: 0\nnet.inet.tcp.cc.htcp.adaptive_backoff: 0\n# sysctl net.inet.tcp.cc.htcp.rtt_scaling=1\nnet.inet.tcp.cc.htcp.rtt_scaling: 0 -\u003e 1\n# sysctl net.inet.tcp.cc.htcp\nnet.inet.tcp.cc.htcp.rtt_scaling: 1\nnet.inet.tcp.cc.htcp.adaptive_backoff: 0\n# sysctl net.inet.tcp.cc.htcp.adaptive_backoff=1\nnet.inet.tcp.cc.htcp.adaptive_backoff: 0 -\u003e 1\n# sysctl net.inet.tcp.cc.htcp\nnet.inet.tcp.cc.htcp.rtt_scaling: 257\nnet.inet.tcp.cc.htcp.adaptive_backoff: 1"
+}

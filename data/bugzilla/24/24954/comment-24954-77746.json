@@ -1,0 +1,8 @@
+{
+ "id": 77746,
+ "bug_id": 24954,
+ "attachment_id": 0,
+ "creation_time": "2001-02-08T17:20:02Z",
+ "creator": "m_ilya@agava.com",
+ "text": "\nI've tried to compile port audio/aureal-kmod. I've found that I can't load\nproduced kernel module. In log I can see message 'link_elf: symbol\nchn_allocbuf undefined'. After greping sources of aureal-kmod and kernel I\nfound that the only place where 'chn_allocbuf' function is used is in\n/src/sys/dev/sound/isa/sb.c. I've discovered that it seems to use some old\nAPI that doesn't exists anymore. After comparing sources of other drivers\nI've came up with following patch:\n\n--- sb.c~\tThu Oct  5 09:07:49 2000\n+++ sb.c\tThu Feb  8 19:55:48 2001\n@@ -672,8 +672,8 @@\n \tch-\u003eparent = sb;\n \tch-\u003echannel = c;\n \tch-\u003ebuffer = b;\n-\tch-\u003ebuffer-\u003ebufsize = DSP_BUFFSIZE;\n-\tif (chn_allocbuf(ch-\u003ebuffer, sb-\u003eparent_dmat) == -1)\n+\n+\tif (sndbuf_alloc(ch-\u003ebuffer, sb-\u003eparent_dmat, DSP_BUFFSIZE) == -1)\n \t\treturn NULL;\n \tdch = (dir == PCMDIR_PLAY)? 1 : 0;\n \tif (sb-\u003ebd_flags \u0026 BD_F_SB16X)\n\nBut later I've looked in FreeBSD cvs and found that this file is actually\ndeleted from CURRENT becouse it is outdated. So I have suspicion that this\nfile should be just deleted from STABLE also instead patching.\n\nFix: \n\nSee Description.\nHow-To-Repeat: \nSee Description."
+}

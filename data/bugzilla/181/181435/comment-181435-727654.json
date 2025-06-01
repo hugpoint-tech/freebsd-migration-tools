@@ -1,0 +1,8 @@
+{
+ "id": 727654,
+ "bug_id": 181435,
+ "attachment_id": 0,
+ "creation_time": "2013-08-24T10:57:45Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: jilles\nDate: Sat Aug 24 09:57:32 2013\nNew Revision: 254767\nURL: http://svnweb.freebsd.org/changeset/base/254767\n\nLog:\n  sh: Do not prematurely discard stopped jobs in a wait builtin.\n  \n  If a job is specified to 'wait', wait for it to complete. Formerly, in\n  interactive mode, the job was deleted if it stopped.\n  \n  If no jobs are specified in interactive mode, 'wait' still waits for all jobs\n  to complete or stop.\n  \n  In non-interactive mode, WUNTRACED is not passed to wait3() so stopped jobs\n  are not detected.\n  \n  PR:\t\tbin/181435\n\nModified:\n  head/bin/sh/jobs.c\n\nModified: head/bin/sh/jobs.c\n==============================================================================\n--- head/bin/sh/jobs.c\tSat Aug 24 09:42:14 2013\t(r254766)\n+++ head/bin/sh/jobs.c\tSat Aug 24 09:57:32 2013\t(r254767)\n@@ -495,14 +495,10 @@ waitcmdloop(struct job *job)\n \tin_waitcmd++;\n \tdo {\n \t\tif (job != NULL) {\n-\t\t\tif (job-\u003estate) {\n+\t\t\tif (job-\u003estate == JOBDONE) {\n \t\t\t\tstatus = job-\u003eps[job-\u003enprocs - 1].status;\n \t\t\t\tif (WIFEXITED(status))\n \t\t\t\t\tretval = WEXITSTATUS(status);\n-#if JOBS\n-\t\t\t\telse if (WIFSTOPPED(status))\n-\t\t\t\t\tretval = WSTOPSIG(status) + 128;\n-#endif\n \t\t\t\telse\n \t\t\t\t\tretval = WTERMSIG(status) + 128;\n \t\t\t\tif (! iflag || ! job-\u003echanged)\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

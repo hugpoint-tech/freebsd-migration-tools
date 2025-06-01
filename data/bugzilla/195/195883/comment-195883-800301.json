@@ -1,0 +1,8 @@
+{
+ "id": 800301,
+ "bug_id": 195883,
+ "attachment_id": 150466,
+ "creation_time": "2014-12-11T08:45:18Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "Created attachment 150466\nSuggested patch\n\nHi,\n\nIn the tcp_output() function, nothing is protecting TCP timers from elapsing during its execution. Under certain conditions a TCP timeout can overlap if_transmit() and iff the if_transmit() function returns non-zero in that case, the following repeated check will give a different outcome than previously:\n\n((tp-\u003et_flags \u0026 TF_FORCEDATA) == 0 ||\n!tcp_timer_active(tp, TT_PERSIST))\n\nThis leads up to a panic where the inpcb transmit state gets corrupted.\n\nSuggested solution:\nStore outcome from previous check and use that result later on.\n\n--HPS"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 640844,
+ "bug_id": 163076,
+ "attachment_id": 0,
+ "creation_time": "2011-12-06T13:21:36Z",
+ "creator": "jh@FreeBSD.org",
+ "text": "On 2011-12-06, Poul-Henning Kamp wrote:\n\u003e \u003eShouldn't sbuf_finish() then check s-\u003es_error before appending the\n\u003e \u003etrailing '\\0' and setting the SBUF_FINISHED flag? The problem in\n\u003e \u003equestion wasn't caught earlier because sbuf_finish() happily finishes\n\u003e \u003ethe buffer even if it has an error.\n\u003e \n\u003e I belive the code is written so that there is always reserved space \n\u003e for the final '\\0'\n\u003e \n\u003e sbuf_finish() should finish _any_ sbuf, and return zero only if\n\u003e the finished buffer is fully OK.\n\nAnyway I find it inconsistent that you can successfully call\nsbuf_finish() and sbuf_data() but not for example sbuf_len() on an\nerrored buffer.\n\nThus you can \"fix\" the problem with the subtle change below.\n\n%%%\nIndex: sys/fs/pseudofs/pseudofs_vnops.c\n===================================================================\n--- sys/fs/pseudofs/pseudofs_vnops.c\t(revision 228153)\n+++ sys/fs/pseudofs/pseudofs_vnops.c\t(working copy)\n@@ -651,7 +651,7 @@ pfs_read(struct vop_read_args *va)\n \t}\n \n \tsbuf_finish(sb);\n-\terror = uiomove_frombuf(sbuf_data(sb), sbuf_len(sb), uio);\n+\terror = uiomove_frombuf(sbuf_data(sb), strlen(sbuf_data(sb)), uio);\n \tsbuf_delete(sb);\n ret:\n \tvn_lock(vn, locked | LK_RETRY);\n%%%\n\n-- \nJaakko"
+}

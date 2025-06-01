@@ -1,0 +1,8 @@
+{
+ "id": 99998,
+ "bug_id": 31673,
+ "attachment_id": 0,
+ "creation_time": "2001-10-31T22:30:00Z",
+ "creator": "arr@fledge.watson.org",
+ "text": "\tEssentially, after a call to getenv() in which the code wishes to \n\treceive the data for the TMPDIR key, it either will do a sprintf\n\tor strcpy depending on whether or not a NULL was returned from \n\tgetenv().  The sprintf() could be overflowed.. the strcpy more than \n\tlikely not.  \n\n\tMore specifically the problem is:\n\n        char path[MAXPATHLEN];\n\n        if (!first \u0026\u0026 !envtmp) {\n                envtmp = getenv(\"TMPDIR\");\n                first = 1;\n        }\n\n        if (envtmp)\n                (void)sprintf(path, \"%s/%s\", envtmp, _NAME_ARTMP);\n        else\n                strcpy(path, _PATH_ARTMP);\n\nFix: \n\nif (envtmp)\n-               (void)sprintf(path, \"%s/%s\", envtmp, _NAME_ARTMP);\n+               (void)snprintf(path, sizeof(path), \"%s/%s\", envtmp,\n+                   _NAME_ARTMP);\n        else\n-               strcpy(path, _PATH_ARTMP);\n+               strlcpy(path, _PATH_ARTMP, sizeof(path));\n\n        sigfillset(\u0026set);\n        (void)sigprocmask(SIG_BLOCK, \u0026set, \u0026oset);--Wbzru9s1sOdvfkGdEa7ox8u3e0ppj8ufDMhuhEafU2q8mLbi\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\nIndex: misc.c\n===================================================================\nRCS file: /home/ncvs/src/usr.bin/ar/misc.c,v\nretrieving revision 1.7\ndiff -u -r1.7 misc.c\n--- misc.c      24 Jul 2001 14:04:20 -0000      1.7\n+++ misc.c      31 Oct 2001 14:11:17 -0000\n@@ -73,9 +73,10 @@\n        }"
+}

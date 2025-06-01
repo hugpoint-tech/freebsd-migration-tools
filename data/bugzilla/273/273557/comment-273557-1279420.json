@@ -1,0 +1,8 @@
+{
+ "id": 1279420,
+ "bug_id": 273557,
+ "attachment_id": 0,
+ "creation_time": "2023-10-11T20:09:39Z",
+ "creator": "crest@rlwinm.de",
+ "text": "The patch changes the bhyve tap network backend code invoked to open devices with names starting with \"tap\" or \"vmnet\". Since the code is already exclusive to the if_tuntap driver in tap or vmnet mode I can't see any problem with relying on one *more* driver specific ioctl(). As far as I can tell there is no possible configuration where the existing code works as intended, but the patch wouldn't also work.\n\nNetlink sockets shouldn't offer any way for a bhyve process attached to a vnet enabled jail to even address network interface in its parent jail (normally the unjailed host) to bring it up (or down). Anything else would be a security problem. The device file descriptor is the natural API endpoint to bring an interface up. It is the capability to manipulate a tap device through the single opening allowed per tap device (at a time). Having to query the tap device for its interface name or index to reference the interface in a request to change interface state by name or index is also a race condition since the interface could've been destroyed and its name or index reused. Using the file descriptor precludes any race condition similar to funlinkat() vs unlinkat()."
+}

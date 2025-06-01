@@ -1,0 +1,8 @@
+{
+ "id": 1032647,
+ "bug_id": 235040,
+ "attachment_id": 0,
+ "creation_time": "2019-01-18T16:59:17Z",
+ "creator": "imp@FreeBSD.org",
+ "text": "It doesn't read in /boot/loader.rc either.\n\nThe problem is that while loader.rc and loader.rc.local started out with the notion they would be pure loader commands (whatever that means), over time forth leaked into the mix (because we setup words in such a way as to make the loader commands also forth  words, so that the interpreter really was forth, not some abstract loader language that was, at best poorly defined). The default loader.rc shipped on many platforms had forth code in it at different times in the past. And customer deployed loader.rc.local setups definitely had forth code in them.\n\nThe end result is that we can't have lua parsing loader.rc or loader.rc.local because it would need a forth interpreter to do so.\n\nIf this is highly desirable, we might be able to try to parse loader.rc and do something semi-sane when we hit forth, but it's unclear how to implement semi-sane.\n\nAnd looking at loader.lua we see:\n\ntry_include(\"local\")\n\nwhich will try to include /boot/local.lua, if it exists (or is it /boot/lua/local.lua, I forget). At the very least, we should document this features. And how to translate simple loader.rc.local files into this format.\n\nAs a last resort, we might be able to parse the loader.rc.local file (since we've translated the current loader.rc file into lua) and hope for the best, and have that controlled by a loader.conf variable, but that's not in my top 10 list of things to do with the loader."
+}

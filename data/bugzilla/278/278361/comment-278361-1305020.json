@@ -1,0 +1,8 @@
+{
+ "id": 1305020,
+ "bug_id": 278361,
+ "attachment_id": 0,
+ "creation_time": "2024-04-14T14:35:54Z",
+ "creator": "correabuscar+freebsdboogs@gmail.com",
+ "text": "/usr/sbin/adduser is affected by this issue that happens in /bin/sh and in /usr/local/bin/bash and in /bin/[\n\nhttps://lists.gnu.org/archive/html/bug-bash/2024-04/msg00088.html\n\nie. there's code in adduser that does this:\n[ -z \"\u003e\" -a -z \"\u003e\" ] ...\nwhich errors like:\n[: -a: unexpected operator\n\nso if I want to set the password to \"\u003e\" for example, I get to see that error, but still works as expected in the end.\n\nAny code anywhere that uses bash or sh or /bin/[ , that starts with:\n[ -z \"$something\" -a ...\n\nwhere -z can be -n\nand -a can be -o\nand ... can be anything valid after\nand [ is sh or bash internal, or /bin/[\n\nwill eval as false  if $something evals to one character and is one of the two angle brackets ie. \"\u003e\" or \"\u003c\" (without the double quotes)\n\n\nThe issue doesn't happen on Gentoo's /usr/bin/[ which is from sys-apps/coreutils-9.5::gentoo package.\n\n\nSomething like:\n[ -z \"\u003e\u003e\" -a -z \"\" ]\nwon't error, because it's more than one character (\"\u003e\u003e\") and doesn't trigger the issue.\n\nIn bash it looks like:\n[ -z \"\u003e\" -a -z \"abc\" ] || echo hi\n-bash: [: syntax error: `-z' unexpected\nhi"
+}

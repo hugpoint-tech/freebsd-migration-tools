@@ -1,0 +1,8 @@
+{
+ "id": 973065,
+ "bug_id": 218622,
+ "attachment_id": 0,
+ "creation_time": "2018-01-17T21:54:34Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "FWIW I have further improved upon mav's solution with r326640.  Now, telldir is O(1) in both time and space on 64-bit systems.\n\nr326640 | asomers | 2017-12-06 15:06:48 -0700 (Wed, 06 Dec 2017) | 22 lines\n\nOptimize telldir(3)\n\nCurrently each call to telldir() requires a malloc and adds an entry to a\nlinked list which must be traversed on future telldir(), seekdir(),\nclosedir(), and readdir() calls. Applications that call telldir() for every\ndirectory entry incur O(n^2) behavior in readdir() and O(n) in telldir() and\nclosedir().\n\nThis optimization eliminates the malloc() and linked list in most cases by\npacking the relevant information into a single long. On 64-bit architectures\nmsdosfs, NFS, tmpfs, UFS, and ZFS can all use the packed representation.  On\n32-bit architectures msdosfs, NFS, and UFS can use the packed\nrepresentation, but ZFS and tmpfs can only use it for about the first 128\nfiles per directory.  Memory savings is about 50 bytes per telldir(3) call.\nSpeedup for telldir()-heavy directory traversals is about 20-30x for one\nmillion files per directory.\n\nReviewed by:    kib, mav, mckusick\nMFC after:      3 weeks\nSponsored by:   Spectra Logic Corp\nDifferential Revision:  https://reviews.freebsd.org/D13385"
+}

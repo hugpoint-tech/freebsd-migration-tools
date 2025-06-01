@@ -1,0 +1,8 @@
+{
+ "id": 917749,
+ "bug_id": 211960,
+ "attachment_id": 0,
+ "creation_time": "2017-01-21T02:05:57Z",
+ "creator": "cem@freebsd.org",
+ "text": "I think the mechanism by which we fault here (amd64 and other 64-bit time_t platforms) is:\n\ndays (int) is overflowed to be negative by:\n\n  days = secs / SECDAY;  // (secs is time_t==int64_t on amd64)\n\nct-\u003eday (int) inherits a negative value from days.\n\nIn atrtc_set(), we invoke bin2bcd(ct.day) =\u003e bin2bcd_data[ct.day] (valid indices are 0-99) =\u003e dereferencing 2GB before the array.\n\nIt seems like ct-\u003eday being negative (or more specifically, outside 0-31) is a bug.  It seems like several places here could have better assertions to protect against invalid ranges."
+}

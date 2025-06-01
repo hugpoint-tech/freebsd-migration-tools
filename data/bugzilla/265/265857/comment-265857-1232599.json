@@ -1,0 +1,8 @@
+{
+ "id": 1232599,
+ "bug_id": 265857,
+ "attachment_id": 0,
+ "creation_time": "2022-10-24T01:56:58Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "(In reply to benoitc from comment #1)\n\nI'm not sure whether the interface is not properly initialized or not, but you can try to change the MTU (maximum is 9000 as defined in the driver's source code), and see if it works.\n\nOn node1 and node2, ifconfig ql0 mtu 4000, then ping link-local address from node1 to node2.\n\n\nSome glue in the driver's source code:\n\n```\n        case SIOCSIFMTU:\n                QL_DPRINT4(ha, \"SIOCSIFMTU (0x%lx)\\n\", cmd);\n\n                if (ifr-\u003eifr_mtu \u003e QLNX_MAX_MTU) {\n                        ret = EINVAL;\n                } else {\n                        QLNX_LOCK(ha);\n                        ifp-\u003eif_mtu = ifr-\u003eifr_mtu;\n                        ha-\u003emax_frame_size =\n                                ifp-\u003eif_mtu + ETHER_HDR_LEN + ETHER_CRC_LEN;\n                        if (ifp-\u003eif_drv_flags \u0026 IFF_DRV_RUNNING) {\n                                qlnx_init_locked(ha);\n                        }\n\n                        QLNX_UNLOCK(ha);\n                }\n\n                break;\n```"
+}

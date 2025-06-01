@@ -1,0 +1,8 @@
+{
+ "id": 1149919,
+ "bug_id": 254006,
+ "attachment_id": 222968,
+ "creation_time": "2021-03-04T08:53:11Z",
+ "creator": "pen@lysator.liu.se",
+ "text": "Comment on attachment 222968\nPatch to fix samba_server rc.d script to wait for all processes to die\n\n\u003e--- samba_server.orig\t2021-03-04 09:38:24.177530000 +0100\n\u003e+++ samba_server\t2021-03-04 09:37:48.721550000 +0100\n\u003e@@ -126,11 +126,27 @@\n\u003e \trcvar=${name}_enable\n\u003e \tcommand=\"/usr/local/sbin/${name}\"\n\u003e \tpidfile=\"${samba_server_piddir}/${name}.pid\"\n\u003e+\tmasterpid=\"\"\n\u003e+\tif [ \"${rc_arg}\" = \"stop\" ] ; then\n\u003e+\t    masterpid=\"`cat ${pidfile}`\"\n\u003e+\tfi\n\u003e+\t\n\u003e \t# Daemon should be enabled and running\n\u003e \tif ( [ -n \"${rcvar}\" ] \u0026\u0026 checkyesno \"${rcvar}\" ) || [ -n \"$force_run\" ]; then\n\u003e \t    run_rc_command \"${_rc_prefix}${rc_arg}\" ${rc_extra_args}\n\u003e \t    # If any of the commands failed, take it as a global result\n\u003e \t    result=$((${result} || $?))\n\u003e+\n\u003e+\t    if [ \"${rc_arg}\" = \"stop\" -a \"$masterpid\" != \"\" ] ; then\n\u003e+\t\tif pgrep -q -s \"$masterpid\"; then\n\u003e+\t\t    echo -n \"Waiting for all ${name} subprocesses to terminate...\"\n\u003e+\t\t    while pgrep -q -s \"$masterpid\"; do\n\u003e+\t\t\techo -n \".\"\n\u003e+\t\t\tsleep 1\n\u003e+\t\t    done\n\u003e+\t\t    echo \"\"\n\u003e+\t\tfi\n\u003e+\t    fi\n\u003e \tfi\n\u003e     done\n\u003e     return ${result}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 633170,
+ "bug_id": 161511,
+ "attachment_id": 0,
+ "creation_time": "2011-10-12T05:10:09Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "Mounting a filesystem twice with unionfs like so causes filesystem deadlocks when files are modified on top of unionfs:\n\n#!/bin/sh\n\nmkdir pristine\ncat \u003e supfile \u003c\u003cEOF\n*default host=cvsup1.freebsd.org\n*default base=/FreeBSD/sup\n*default prefix=$PWD/FreeBSD\n*default release=cvs\n*default delete use-rel-suffix\n*default compress\nEOF\ncsup supfile\nmkdir touched union\nmount -t unionfs pristine union\nmount -t unionfs touched union\ncd union\nmake buildworld -j4\n\n=====\n\nAny value of -j above -j1 causes filesystem deadlocks; processes like make will block when trying to access directory information -- it's worse for UFS than ZFS because it seems like some structures -- in particular the UFS_DIRHASH -- might be locked indefinitely causing the entire filesystem to become unusable. In either case I've seen the filesystem will prevent rebooting from completing cleanly as there are processes waiting on filesystem resources to become available.\n\nThis can also be stimulated via freenas builds like so:\n\nsh build/do_build.sh -U\n\nLORs have also been identified within unionfs around when the deadlock occurs, which might suggest that incorrect locking is preventing unionfs from releasing resources when a [soft] failure occurs. I don't have the LORs right now, but I'm hunting them down in my logs..\n\nHow-To-Repeat: See decomposed example above."
+}

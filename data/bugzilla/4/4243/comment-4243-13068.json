@@ -1,0 +1,8 @@
+{
+ "id": 13068,
+ "bug_id": 4243,
+ "attachment_id": 0,
+ "creation_time": "1997-08-08T10:58:53Z",
+ "creator": "tetsuya@secom-sis.co.jp",
+ "text": "Since I remembered the proper specification of flock(), I also think\nthat flock() for a file descriptor shared among different processes\nis obviously useless.\n\nBut fcntl() for a shared file descriptor may be useful because\nfcntl() has the other specification.\nIn fact, the following program prints \"fcntl works fine.\" on\nFreeBSD 2.2-STABLE i386.\n----\n#include \u003csys/file.h\u003e\n#include \u003csys/errno.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n\nint\nmain()\n{\n    int fd;\n    struct flock flbuf;\n    char c;\n    flbuf.l_start = 0;\n    flbuf.l_len = 0;\n    flbuf.l_type = F_WRLCK;\n    flbuf.l_whence = SEEK_SET;\n\n    fd = open(\"lockfile\", O_WRONLY | O_CREAT, 0666);\n    if (fork() == 0) {\n\t/* child */\n\tfcntl(fd, F_SETLKW, \u0026flbuf);\n\tsleep(2);\n\texit(0);\n    }\n\n    /* parent */\n    sleep(1);\n    if (fcntl(fd, F_SETLK, \u0026flbuf) == -1) {\n\tif (errno == EAGAIN)\n\t    printf(\"fcntl works fine.\\n\");\n\telse\n\t    printf(\"fcntl fails: %s\\n\", strerror(errno));\n    } else\n\tprintf(\"fcntl is discarded.\\n\");\n    return 0;\n}\n----\n\nFile locking for a pipe by fcntl() fails on FreeBSD.\nI think the priority of supporting it is low.\n\nTo the developer of the Apache's module, I suggested to do fcntl()\nfor a temporary file. \n\n--\nTetsuya FURUKAWA  in Tokyo, Japan\nPGP Key fingerprint = C2 86 A6 7C 72 A0 A1 94  F4 4C 83 9D D1 E3 47 BD"
+}

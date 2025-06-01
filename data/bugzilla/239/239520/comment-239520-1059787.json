@@ -1,0 +1,8 @@
+{
+ "id": 1059787,
+ "bug_id": 239520,
+ "attachment_id": 0,
+ "creation_time": "2019-07-31T07:53:45Z",
+ "creator": "rootkwok@cpan.org",
+ "text": "1. atomic_fetchadd_long returns previous value, so I think /usr/src/lib/libc/locale/xlocale_private.h:184 should check for count == 0?\n\n2. looks like atomic_fetchadd_long is expecting u_long which is unsigned, would passing -1 in /usr/src/lib/libc/locale/xlocale_private.h:183 works as we expected?\n\n__________________________________________________\nsys/amd64/include/atomic.h\n\n241 /*\n242  * Atomically add the value of v to the long integer pointed to by p and return\n243  * the previous value of *p.\n244  */\n245 static __inline u_long\n246 atomic_fetchadd_long(volatile u_long *p, u_long v)\n247 {\n248 \n249   __asm __volatile(\n250   \" \" MPLOCKED \"    \"\n251   \" xaddq %0,%1 ;   \"\n252   \"# atomic_fetchadd_long\"\n253   : \"+r\" (v),     /* 0 */\n254     \"+m\" (*p)     /* 1 */\n255   : : \"cc\");\n256   return (v);\n257 }"
+}

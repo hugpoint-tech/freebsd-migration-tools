@@ -1,0 +1,8 @@
+{
+ "id": 706739,
+ "bug_id": 176886,
+ "attachment_id": 0,
+ "creation_time": "2013-03-12T18:00:00Z",
+ "creator": "ilya@bakulin.de",
+ "text": "When using tail -F to watch several files and redirecting the output to file, the file name markers come _after_ the contents of the respective file, while when output is going directly to terminal everything is fine.\n\nFix: Attached patch solves the problem for me. It adds an explicit flush for stdout right after printing file name marker. What I don't understand is why it is not flushed by stdio automatically -- there is an '\\n' at the end of the string being printf'ed...\n\nAfter applying the patch the output looks correct:\n\n[kibab@olymp ~/tmp]$ ~/repos/tail/tail -F file1.txt file2.txt \u003e file3.txt\n^C\n[kibab@olymp ~/tmp]$ cat file3.txt \n\n==\u003e file1.txt \u003c==\nFile1_Content\n\n==\u003e file2.txt \u003c==\nFile2_Content\n\n\nPatch attached with submission follows:\nHow-To-Repeat: [kibab@olymp ~/tmp]$ echo \"File1_Content\" \u003e file1.txt\n[kibab@olymp ~/tmp]$ echo \"File2_Content\" \u003e file2.txt\n[kibab@olymp ~/tmp]$ tail -F file1.txt file2.txt\n\n==\u003e file1.txt \u003c==\nFile1_Content\n\n==\u003e file2.txt \u003c==\nFile2_Content\n^C\n\n\n^^^ This is correct output. First we see filename marker for file1, then follows its content, then the same for file2.\n\n\n[kibab@olymp ~/tmp]$ tail -F file1.txt file2.txt \u003e file3.txt\n^C\n[kibab@olymp ~/tmp]$ cat file3.txt \nFile1_Content\n\n==\u003e file1.txt \u003c==\nFile2_Content\n\n==\u003e file2.txt \u003c==\n\n^^^ This is wrong!"
+}

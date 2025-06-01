@@ -1,0 +1,8 @@
+{
+ "id": 658955,
+ "bug_id": 166656,
+ "attachment_id": 0,
+ "creation_time": "2012-04-05T02:50:00Z",
+ "creator": "peterjeremy@acm.org",
+ "text": "\n\t/etc/devd.conf includes a rule to start dhclient when an Ethernet or\n\t802.11 interface reports \"link up\", with a comment: \"No link down rule\n\texists because dhclient automatically exits when the link goes down.\"\n\tIMHO, this is the desired behaviour, unfortunately it's not the way\n\tdhclient actually behaves.  In my experience, dhclient will exit when\n\tthe interface goes down but ignores link status changes.\n\t \n\tLooking at the source, it seems to exit only when there's no usable\n\troute (by monitoring RTF_UP).\n\t \n\tdhclient does monitor the link status using SIOCGIFMEDIA but only at\n\tstartup (it will exit if the link doesn't come up within 10s of\n\tdhclient starting) and during DHCP exchanges (if the link goes down\n\twhen it's expecting a DHCP response then it exits).\n\nFix: dhclient receives RTM_IFINFO messages on link change.  Currently\n\tthe code just monitors RTF_UP on link change.  The attached patch\n\tadds a SIOCGIFMEDIA check when a RTM_IFINFO messages is received\n\tand exits if the link is now down.\nHow-To-Repeat: \n\tStart dhclient and verify a valid lease is obtained.\n\tUnplug network cable and verify that dhclient did not exit."
+}

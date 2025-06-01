@@ -1,0 +1,8 @@
+{
+ "id": 494959,
+ "bug_id": 133772,
+ "attachment_id": 0,
+ "creation_time": "2009-04-16T09:40:01Z",
+ "creator": "zed.0xff@gmail.com",
+ "text": "I need to run a number of arpd's on different interfaces.\nWhen I tried to run more than 16 arpd's - I got an \"arpd: bad interface configuration: not IP or Ethernet\" error.\nLooking into the sources and debugging in got me into the max 32 bpf's restriction in libdnet.\n(I think another 16 ones was used by other processes on my system)\n\nFix: --- src/eth-bsd.c.orig\t2009-04-16 14:22:44.000000000 +0600\n+++ src/eth-bsd.c\t2009-04-16 14:23:31.000000000 +0600\n@@ -45,7 +45,7 @@\n \tint i;\n \n \tif ((e = calloc(1, sizeof(*e))) != NULL) {\n-\t\tfor (i = 0; i \u003c 32; i++) {\n+\t\tfor (i = 0; i \u003c 256; i++) {\n \t\t\tsnprintf(file, sizeof(file), \"/dev/bpf%d\", i);\n \t\t\te-\u003efd = open(file, O_WRONLY);\n \t\t\tif (e-\u003efd != -1 || errno != EBUSY)\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Try to run 33 arpd's. They can be on the same interface or on different interfaces - that does not matter.\nYpu should get an \"arpd: bad interface configuration: not IP or Ethernet\" error."
+}

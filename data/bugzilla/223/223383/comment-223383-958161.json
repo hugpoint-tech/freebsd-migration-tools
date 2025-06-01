@@ -1,0 +1,8 @@
+{
+ "id": 958161,
+ "bug_id": 223383,
+ "attachment_id": 0,
+ "creation_time": "2017-11-04T11:04:12Z",
+ "creator": "marklmi26-fbsd@yahoo.com",
+ "text": "FYI:\n\nlld is now broken on zfs because it use fallocate.\nI had this happen for a amd64 -\u003e aarch64 cross\nbuildworld where it refused to try to deal\nwith making a libc.so.7.full file.\n\nllvm has the code (note the EOPNOTSUPP use):\n\nstd::error_code resize_file(int FD, uint64_t Size) {\n#if defined(HAVE_POSIX_FALLOCATE)\n // If we have posix_fallocate use it. Unlike ftruncate it always allocates\n // space, so we get an error if the disk is full.\n if (int Err = ::posix_fallocate(FD, 0, Size)) {\n   if (Err != EOPNOTSUPP)\n     return std::error_code(Err, std::generic_category());\n }\n#endif\n // Use ftruncate as a fallback. It may or may not allocate space. At least on\n // OS X with HFS+ it does.\n if (::ftruncate(FD, Size) == -1)\n   return std::error_code(errno, std::generic_category());\n\n return std::error_code();\n}\n\n\nSee, for example,\n\nhttps://lists.freebsd.org/pipermail/freebsd-toolchain/2017-November/003413.html\n\nfor other details that lead to the eventual\nerror message from lld.\n\nI reverted to using devel/aarch64-binutils\nfor now."
+}

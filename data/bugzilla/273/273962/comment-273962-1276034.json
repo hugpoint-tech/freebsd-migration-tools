@@ -1,0 +1,8 @@
+{
+ "id": 1276034,
+ "bug_id": 273962,
+ "attachment_id": 0,
+ "creation_time": "2023-09-20T20:41:45Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Long ago when I first worked on 6th edition\n(late 1970s) there was the \"everything was\na file\" philosophy.  However, things like\nshared emeory did not exist. The fact that\nthe code does not use vnodes suggests they\nare not files to me.\n\nRight now the code (including\nvn_generic_copy_file_range() which is\nthe fallback) uses vnodes.\n(The error is actually returned because\n there is no vnode associated with the\n file descriptor.)\n\nTo do this would require a separate chunk\nof code directly under the syscall to do\nthe copying. A simple loop doing shm_read()/shm_write()\nshould work, I'd guess (but it will need to be\ndone as a special case when there are no vnodes) and\nneeds to check for \"no overlapping region\", since that\nis part of the syscall interface.\n\nThe original intent of copy_file_range(2)\nwas to enable file systems to optimize copying,\nsuch as NFSv4 doing the copy locally in the\nNFS server instead of reading data to the client\nand writing it back to the server.\n(The fallback was implemented to simplify the\ncase where the file system does not have a\nspecific VOP_COPY_FILE_RANGE().)\nSince this case is not file system related,\nthe above does not really apply.\n(I suppose do so saves a few syscalls.)\n\nI will ask on freebsd-fs@ to see if others\nfeel this capability is needed.\n\nFeel free to come up with a patch.\nIf others do not, I may do so someday.\n(It would be called from kern_copy_file_range()\nwhen f_vnode == NULL.)"
+}

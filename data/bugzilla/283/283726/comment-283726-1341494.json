@@ -1,0 +1,8 @@
+{
+ "id": 1341494,
+ "bug_id": 283726,
+ "attachment_id": 0,
+ "creation_time": "2024-12-29T16:47:00Z",
+ "creator": "rbranco@suse.com",
+ "text": "To reproduce:\n\n$ wc /compat/linux/proc/self/limits\nwc: /compat/linux/proc/self/limits: read: Operation not permitted\n\nBoth cat(1) and GNU wc run without issues:\n\n$ gwc /compat/linux/proc/self/limits\n17 100 1354 /compat/linux/proc/self/limits\n\nOther problematic files:\n- /compat/linux/proc/self/maps\n\nOther problematic text utilities:\n- head\n- tail\n- maybe others.\n\nWhile I'm aware that files from /proc must be read in one go, this doesn't seem to be the issue because the buffer size in wc.c is big enough (MAXBSIZE = 65536).\n\nAt first, this bug seemed a lot like https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=276043 but I tried removing the code that calls kernel_sysctlbyname in linprocfs_doproclimits() and gives the same error.  So the issue seems to be the Capsicum initialization code.  The difference with cat(1) is that it calls cap_init, so maybe it needs Casper."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1194798,
+ "bug_id": 255072,
+ "attachment_id": 0,
+ "creation_time": "2022-01-15T13:54:31Z",
+ "creator": "tsoome@freebsd.org",
+ "text": "(In reply to spell from comment #28)\n\n\njust remind me, what version of freebsd is this, current?\n\nthe bbuf assignment test is suggesting we do get some sort of buffer overrun there.\n\nok, V86_IO_BUFFER is at 0x8000 and with size 0x1000 (4KB), BIO_BUFFER_SIZE is 0x4000 (16KB), the buffer is allocated from bss segment (see bio.c bio_buffer[BIO_BUFFER_SIZE].\n\nso, both areas should be safe - in low memory and therefore usable by BIOS INT calls.\n\nNow the catch there is, the btx (our V86 mode \"kernel\") is at 0x9000, and loader is at 0xA000 (code start, followed by data, bss segments and then stack). So, if the INT will write past 0x8000 + 0x1000, it will corrupt BTX; if INT will write past end of bio_buffer, it will corrupt next variable in BSS.\n\nSo, if you are using IO size 512, then both buffer spaces should be just fine. If the INT call will actually use more of that memory, then we may be in trouble. I guess the only way to detect how much buffer memory was actually used, can be detected by storing know value into entire buffer, and test how big are it is where the buffer is changed. With no buffer overrun, we would expect exactly the IO size to be changed..."
+}

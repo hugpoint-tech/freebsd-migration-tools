@@ -1,0 +1,8 @@
+{
+ "id": 1242226,
+ "bug_id": 268794,
+ "attachment_id": 0,
+ "creation_time": "2023-01-06T23:56:44Z",
+ "creator": "crowston@protonmail.com",
+ "text": "Guest is Windows 11 22H2. This only happens with a PCI device passed-through, only very early into the boot, and only if there's more than one vCPU. It does not happen reliably, maybe 90% of boots. It happens even on the installer image.\n\nI am running on an AMD Ryzen 1700.\n\nThis does not happen with Windows 10 nor Windows Server 2022, which suggests to me a recent change to the NT kernel might have exposed it.\n\nAction:\n1. Windows writes to the APIC on vCPU x.\n1a. That vCPU exits, and its state toggles to VCPU_FROZEN.\n1b. That vCPU goes into vm_handle_inst_emul() -\u003e emulate_mov() -\u003e vioapic_mmio_write() -\u003e vioapic_write() -\u003e vm_smp_handle_rendezvous().\n1c. vm_handle_rendezvous() waits for all vCPU threads to handle the rendezvous.\n2. Simultaneously, from userland's pci_passthru.c, either vm_map_pptdev_mmio() or vm_unmap_pptdev_mmio() is called.\n2a. vmmdev_ioctl() invokes vcpu_lock_all().\n2b. vcpu_lock_all() iterates through the vCPUs, calling vcpu_lock_one() on each vCPU, eventually reaching vCPU x (the APIC one).\n2c. vCPU x is already in the VCPU_FROZEN state, from (1a). vcpu_set_state_locked() hangs waiting for it to transition to the VCPU_IDLE sate.\n3. All the other vCPUs eventually end up either in vm_handle_rendezvous() or in vcpu_set_state_locked(), and hang there.\n\nIt's not clear to me what the fix should be. Should we check and run the rendezvous func while waiting for the VCPU_IDLE transition in vcpu_set_state_locked()? That will presumably require a strong contract on the kind of rendezvous functions that can be invoked."
+}

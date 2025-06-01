@@ -1,0 +1,8 @@
+{
+ "id": 986399,
+ "bug_id": 227259,
+ "attachment_id": 0,
+ "creation_time": "2018-04-06T14:10:15Z",
+ "creator": "jtl@freebsd.org",
+ "text": "My best guess is that this is due to a new check in soshutdown() added in stable/11:\n\nsys/kern/uipc_socket.c:\n\n2351\t        if ((so-\u003eso_state \u0026\n2352\t            (SS_ISCONNECTED | SS_ISCONNECTING | SS_ISDISCONNECTING)) == 0) {\n2353\t                /*\n2354\t                 * POSIX mandates us to return ENOTCONN when shutdown(2) is\n2355\t                 * invoked on a datagram sockets, however historically we would\n2356\t                 * actually tear socket down. This is known to be leveraged by\n2357\t                 * some applications to unblock process waiting in recvXXX(2)\n2358\t                 * by other process that it shares that socket with. Try to meet\n2359\t                 * both backward-compatibility and POSIX requirements by forcing\n2360\t                 * ENOTCONN but still asking protocol to perform pru_shutdown().\n2361\t                 */\n2362\t                if (so-\u003eso_type != SOCK_DGRAM)\n2363\t                        return (ENOTCONN);\n2364\t                soerror_enotconn = 1;\n2365\t        }\n\nI don't think I ever really considered someone calling shutdown() on a listening socket. I would have expected them to use close(). My guess is that whoever added this didn't consider that case, either.\n\nFWIW, this check was added in r285910.\n\nI suppose the simple fix is to add a check for SOLISTENING(so) (head) or so-\u003eso_options \u0026 SO_ACCEPTCON (stable/11). However, we should consult with someone to see what POSIX requires in this case."
+}

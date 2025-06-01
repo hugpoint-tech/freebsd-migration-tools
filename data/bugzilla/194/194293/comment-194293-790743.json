@@ -1,0 +1,8 @@
+{
+ "id": 790743,
+ "bug_id": 194293,
+ "attachment_id": 0,
+ "creation_time": "2014-10-10T20:30:25Z",
+ "creator": "nishida@asusa.net",
+ "text": "This happens with both 10.1-RC1 and 9.3-Release.\n\nI wrote a simple and straight forward file system program with FUSE.\nIt just does like:\n\nopen: open a file with the same name in a different directory\nread: read a file with the same name in a different directory\nwrite: write a file with the same name in a different directory\netc.\n\nHowever, the program always freezes when saving a xcf file (Gimp's native format) with Gimp.\nOnce it freezes, it cannot be killed even by shutdown.\nTherefore, I always have to reset my PC after shutdown.\n\nAfter investigating Gimp's source code, I found that this happened when Gimp tried to fseek() a position greater than the file size.\n\nIn /usr/ports/graphics/gimp-app/work/gimp-2.8.10/app/xcf/xcf-seek.c, there is xcf_seek_pos().\n\nAdding\n\nfstat(fd, \u0026sb);\nif (pos \u003e sb.st_size) {\n    ftruncate(fd, pos);\n}\n\nto it solved the problem.\n\nThis is not only a FUSE's problem, but I guess it will be better to deal with it.\n\nSincerely,"
+}

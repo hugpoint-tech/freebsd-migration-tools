@@ -1,0 +1,8 @@
+{
+ "id": 372235,
+ "bug_id": 108211,
+ "attachment_id": 0,
+ "creation_time": "2007-01-22T14:50:18Z",
+ "creator": "yong.599@gmail.com",
+ "text": "In sys/netinet/libalias/alias_proxy.c, \nThe following code exist.\n\n158 #ifdef  _KERNEL\n159 static int\n160 inet_aton(cp, addr)\n161         const char *cp;\n162         struct in_addr *addr;\n163 {\n\n\n180                 l = strtoul(c, \u0026endptr, 0);\n181 \n182                 if (l == ULONG_MAX || l == 0)\n183                         return (0);\n\nHowever, if the input cp is \"0.0.0.0\", then it seems this function will return (0) which is considered as an error. \n\nThe reason is because 180:\nl = strtoul(c, \u0026endptr, 0);\nl will return a 0 when the c is \"0\".\n\nNot quite sure if this is done purposely in FreeBSD but I have never experience similiar cases in other unix-platforms.\n\nPossible solution:\n\nchange \n182 (l == ULONG_MAX || l == 0)\n\ninto\n182 (l == ULONG_MAX || (l == 0 \u0026\u0026 (endptr == c))\n\nFix: \n\nPossible solution:\n\nchange \n182 (l == ULONG_MAX || l == 0)\n\ninto\n182 (l == ULONG_MAX || (l == 0 \u0026\u0026 (endptr == c))\nHow-To-Repeat: review the code 180-182 in sys/netinet/libalias/alias_proxy.c"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 465412,
+ "bug_id": 127710,
+ "attachment_id": 0,
+ "creation_time": "2008-09-29T11:10:00Z",
+ "creator": "bagavathykumar.m@hcl.in",
+ "text": "Unable to probe SAS/SATA Controller (Class ID :0x01,Sub Class:0x07,programming interface:0x00) in FreeBSD 6.2\n\nFix: \n\nA PCI to Card Bus Bridge driver is loaded as a static module probed all the devices having the sub class id  0x07 \u0026 programming interface code  0x00.\n\nSource path: /src/sys/dev/pccbb/pccbb_pci.c.\n\nAdd a Check of the Class ID as 06 in the pci probe function of the Card bus driver\n\n static int\n cbb_pci_probe(device_t brdev)\n {\n         const char *name;\n         uint32_t progif;\n         uint32_t subclass;\n++++     uint32_t class;\n ............................\n ................................................................\n         /*\n          * We do support generic CardBus bridges.  All that we've seen\n          * to date have progif 0 (the Yenta spec, and successors mandate\n          * this).\n          */\n++++     class = pci_get_class(brdev);\n         subclass = pci_get_subclass(brdev);\n         progif = pci_get_progif(brdev);\n++++     if(class == PCIC_BRIDGE){ \n         if (subclass == PCIS_BRIDGE_CARDBUS \u0026\u0026 progif == 0) {\n                 device_set_desc(brdev, \"PCI-CardBus Bridge\");\n                 return (BUS_PROBE_DEFAULT);\n         }\n++++     }\n         return (ENXIO);\n }\nHow-To-Repeat: Every Time When iam loading my driver my probe function is not called for my corresponding Device ID \u0026 Vendor ID."
+}

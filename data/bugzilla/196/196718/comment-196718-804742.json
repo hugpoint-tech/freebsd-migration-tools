@@ -1,0 +1,8 @@
+{
+ "id": 804742,
+ "bug_id": 196718,
+ "attachment_id": 0,
+ "creation_time": "2015-01-14T11:22:15Z",
+ "creator": "walter@pelissero.de",
+ "text": "From a look at kern_fcntl_freebsd() it seems to me that the old lock structure is not properly filled in case of the F_OGETLK operation.\nThis should fix the bug:\n\n\n--- kern_descrip.c\t(revision 276910)\n+++ kern_descrip.c\t(working copy)\n@@ -419,8 +419,10 @@\n \tstruct __oflock ofl;\n \tintptr_t arg1;\n \tint error;\n+\tint newcmd;\n \n \terror = 0;\n+\tnewcmd = cmd;\n \tswitch (cmd) {\n \tcase F_OGETLK:\n \tcase F_OSETLK:\n@@ -438,13 +440,13 @@\n \n \t\tswitch (cmd) {\n \t\tcase F_OGETLK:\n-\t\t    cmd = F_GETLK;\n+\t\t    newcmd = F_GETLK;\n \t\t    break;\n \t\tcase F_OSETLK:\n-\t\t    cmd = F_SETLK;\n+\t\t    newcmd = F_SETLK;\n \t\t    break;\n \t\tcase F_OSETLKW:\n-\t\t    cmd = F_SETLKW;\n+\t\t    newcmd = F_SETLKW;\n \t\t    break;\n \t\t}\n \t\targ1 = (intptr_t)\u0026fl;\n@@ -462,7 +464,7 @@\n \t}\n \tif (error)\n \t\treturn (error);\n-\terror = kern_fcntl(td, fd, cmd, arg1);\n+\terror = kern_fcntl(td, fd, newcmd, arg1);\n \tif (error)\n \t\treturn (error);\n \tif (cmd == F_OGETLK) {"
+}

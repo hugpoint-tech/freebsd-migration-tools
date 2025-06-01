@@ -1,0 +1,8 @@
+{
+ "id": 1231813,
+ "bug_id": 267178,
+ "attachment_id": 237439,
+ "creation_time": "2022-10-18T18:28:18Z",
+ "creator": "karl@denninger.net",
+ "text": "Created attachment 237439\nShut off MTU increases if compiled on FreeBSD\n\nThis may impact everyone -- not sure, so labeling it \"affects some people.\"\n\nThe vpnserver code attempts to use jumbo frames and, when it tries to send larger frames than the current MTU, attempts to set the interface MTU high enough to accommodate it.  This occurs unless the interface was opened \"Raw\", which is only supported in the code on Linux; for all other BSD variants the assumption is made that the MTU can be raised high enough to allow a transmission to fit.  That would seem to be wishful thinking and the code does indeed try to send data that won't fit in the default ethernet MTU.\n\nThe result is a cascade of up/down events on the interface which never ends as the server will try to send something larger than even a typical jumbo frame capability (e.g. 8k) and when it does, it will continually bang on the MTU trying to raise it, logging each such event as well.\n\nThe following couple-of-line patch shuts this off if the code is built on FreeBSD and stops that behavior.  As near as I can tell this has no bad side effects but my work with the package is, thus far, quite rudimentary so further testing is likely called for before accepting this as a build-time patch to be applied.\n\nI've also reported this on the forum for the package itself here: https://www.vpnusers.com/viewtopic.php?f=7\u0026t=67841"
+}

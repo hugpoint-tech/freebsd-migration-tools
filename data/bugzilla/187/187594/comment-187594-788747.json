@@ -1,0 +1,8 @@
+{
+ "id": 788747,
+ "bug_id": 187594,
+ "attachment_id": 147733,
+ "creation_time": "2014-09-27T20:10:27Z",
+ "creator": "smh@FreeBSD.org",
+ "text": "Created attachment 147733\nARC reclaim refactor + uma clear down (against stable/10)\n\nThis version is very much WIP it builds on ARC reclaim refactor (against stable/10) adding automatic UMA free space clear down.\n\nThe following new sysctls are available:\n* vfs.zfs.arc_cache_reclaim_period\n* vfs.zfs.arc_cache_reclaim_partial\n* vfs.zfs.arc_cache_free_max\n* vfs.zfs.arc_cache_free_period\n* vfs.zfs.arc_cache_target\n\nThe ARC reclaim thread now monitors triggers a free size based cleanup of its UMA zones.\n\nThis cleanup has multiple strategies:\n\n1. ARC_CACHE_RECLAIM_SIZE\nEvery arc_cache_free_period we that all zones have no more than arc_cache_free_max of free space. This prevents zones which spike from sitting with large amounts of ram allocated but unused (free).\n2. ARC_CACHE_RECLAIM_NOW\nIf free memory is lower than arc_cache_target a full cleanup of all zones is triggered.\nIf zfs_arc_cache_partial is none zero then this strategy will return early (not process all zones) if free memory is more than arc_cache_target.\n3. ARC_CACHE_RECLAIM_FORCE\nThe same as ARC_CACHE_RECLAIM_NOW but will ignore when the last reclaim ran.\n\nARC cache reclaim for ARC_CACHE_RECLAIM_NOW and ARC_CACHE_RECLAIM_SIZE strategies will only run at most once every arc_cache_reclaim_period.\n\nBefore allocating new buffers arc_get_data_buf checks if allocating this amount of memory would cross cache reclaim threshold and if so it runs a cache reclaim with ARC_CACHE_RECLAIM_NOW."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 633039,
+ "bug_id": 161483,
+ "attachment_id": 0,
+ "creation_time": "2011-10-11T11:00:19Z",
+ "creator": "dam@my.gd",
+ "text": "Refer: my post on -stable\nhttp://docs.freebsd.org/cgi/getmsg.cgi?fetch=368260+0+current/freebsd-stable\n\nRefer the same problem on 8.x\nhttp://www.freebsd.org/cgi/query-pr.cgi?pr=161123\n\nUnder normal operating circumstances, a CARP interface goes through the following states:\n- INIT : when it's down\n- BACKUP : immediately upon being brought up, the interface assumes a BACKUP role and starts its timer to know if it should claim mastership.\n- MASTER : if the delay has expired (advbase * 3) without the interface seeing another master, it assumes mastership.\n\n\nBUG: When preemption is enabled (net.inet.carp.preempt=1) , the CARP interface immediately assumes MASTERship regardless of its advbase and advskew values.\n\nThis causes CARP switchovers when a firewall from a CARP cluster is rebooted, for example.\n\nIn our case, this actually led to lost client connections, lost database sessions, developers' daemons crashes because of lost java/db connections...\n\n\n\nThis is a known problem with OpenBSD 3.8 and lower's implementation of CARP.\nThis has been fixed as of OpenBSD 3.9.\n\nFix: Remove all the code portion from sys/netinet/ip_carp.c that handles the INIT-\u003eMASTER transition immediately if preemption is enabled.\n\nPatch attached.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Set up 2 boxes with a shared CARP IP.\nEnable CARP preemption.\n\nBring down your CARP interface on the BACKUP box.\nBring it up again.\nNotice how your interface assumed MASTERship for a short time.\nCheck with dmesg which confirms that your box actually preempted."
+}

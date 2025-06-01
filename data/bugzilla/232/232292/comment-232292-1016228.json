@@ -1,0 +1,8 @@
+{
+ "id": 1016228,
+ "bug_id": 232292,
+ "attachment_id": 0,
+ "creation_time": "2018-10-15T15:54:34Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "In a few places in the world build infrastructure we have a target, such as:\n\nlib/libpam/pam.d/Makefile:\n\n     26 .if ${MK_FTP} != \"no\"\n     27 CONFGROUPS+=    FTP\n     28 FTP+=   ftpd\n     29 FTPPACKAGE+=    ftp\n     30\n     31 afterinstallconfig:\n     32         ${INSTALL_LINK} ${TAG_ARGS} ${DESTDIR}${CONFDIR}/ftpd ${DESTDIR}${CONFDIR}/ftp\n     33 .endif\n\n\nThe problem seems that this hardlink is a not getting a \",config\" in the TAG_ARGS automatically, and later on seems to create problems when creating packages:\n\npkg: Plist error, @config /etc/pam.d/ftpd: not a regular file\npkg: Plist error, @config /root/.cshrc: not a regular file\npkg: Plist error, @config /root/.profile: not a regular file\n\n% grep pam.d METALOG | grep ftp\n./etc/pam.d/ftpd type=file uname=root gname=wheel mode=0644 size=528 tags=package=runtime,config\n./etc/pam.d/ftp type=file uname=root gname=wheel mode=0555 size=528 tags=package=runtime\n\n% grep pam.d *.plist | grep ftp\nruntime.plist:@(root,wheel,0555,) /etc/pam.d/ftp\nruntime.plist:@config(root,wheel,0644,) /etc/pam.d/ftpd\n\nI am not yet sure how this will translate into the hardlink re-created properly when the package will be installed?\n\nPS: MLINKS seem to be fine for some reason probably because they are handled in the infrastructure, but not manually in the application/library specific Makefiles manually?"
+}

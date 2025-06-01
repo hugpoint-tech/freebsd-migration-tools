@@ -1,0 +1,8 @@
+{
+ "id": 27873,
+ "bug_id": 9169,
+ "attachment_id": 0,
+ "creation_time": "1998-12-22T09:40:00Z",
+ "creator": "vadim@gc.lviv.ua",
+ "text": "In netatalk+asun in original paths.h looks:\n#ifndef _PATH_LOCKDIR\n#ifdef BSD4_4\n#define _PATH_LOCKDIR           \"/var/spool/lock/\"\n#else\n#ifdef linux\n#define _PATH_LOCKDIR           \"/var/lock/\"\n#endif /* linux */\n#endif /* BSD4_4 */\n#endif\n\nIn patch-ah added:\n #else\n-#define _PATH_LOCKDIR           \"/var/spool/locks/\"\n+#define _PATH_LOCKDIR           \"/var/run/\"\n\nBut it never take in effect because of FreeBSD is in BSD4_4 family\n(see \u003csys/param.h\u003e) and path are /var/spool/locks\n\nBecause of  /usr/local/etc/rc.d/netatalk.sh stop doesn't work.\nAnd more: combination start, stop, start freese mashine: it doesn't \nresponce to ping and keyboard. But it seems to kernell bug?\n\nFix: \n\nI propose paths.h:\n#include \u003csys/param.h\u003e\n...\n...\n/* lock file path. this should be re-organized a bit. */\n#ifndef _PATH_LOCKDIR\n#ifdef __FreeBSD__\n#define _PATH_LOCKDIR           \"/var/run/\"\n#else\n#ifdef BSD4_4\n#define _PATH_LOCKDIR           \"/var/spool/lock/\"\n#else\n#ifdef linux\n#define _PATH_LOCKDIR           \"/var/lock/\"\n#endif /* FreeBSD */\n#endif /* linux */\n#endif /* BSD4_4 */\n#endif\nHow-To-Repeat: Install from ports netatalk-asun. Run daemons: \n/usr/local/etc/rc.d/netatalk.sh start\nafpd.pid, papd.pid, atalkd.pid are in /usr/local/lock instead of\n/var/run."
+}

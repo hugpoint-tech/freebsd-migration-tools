@@ -1,0 +1,8 @@
+{
+ "id": 1355137,
+ "bug_id": 265001,
+ "attachment_id": 0,
+ "creation_time": "2025-03-16T14:51:21Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch main references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=b39f500e6ac8404aa0acdc025bd12829e881fcd1\n\ncommit b39f500e6ac8404aa0acdc025bd12829e881fcd1\nAuthor:     Cyrus Rahman \u003ccrahman@gmail.com\u003e\nAuthorDate: 2025-03-16 14:44:57 +0000\nCommit:     Warner Losh \u003cimp@FreeBSD.org\u003e\nCommitDate: 2025-03-16 14:46:57 +0000\n\n    stand: lines with comments a '\"' in loader.conf are ignored\n\n    So the problem is that the lua parser in /boot/lua/config.lua is\n    splitting the line on the '=', sending the first match to the key and\n    the second to the value.\n\n    In the problem case, the value is:\n       '\"test b\"               # This is \"test_directive_b\"'\n    Then the value gets matched against QVALEXPR = '\"(.*)\"'.\n\n    This cleans up the value by removing the first and last '\"', but in this\n    case turns it into:\n      test b\"               # This is \"test_directive_b\n    which then gets rejected in processEnvVar() with MSG_FAILSYN_QUOTE,\n    since values aren't allowed to contain '\"'.\n\n    Changing QVALEXPR to '([-%w_]+)' fixes this problem.  Since the value is\n    explicitly prevented from containing quotes, it's not unreasonable to\n    load it from an expression that excludes them.  The only other place\n    this is used is in the 'exec=\"command\"' expression, which also should\n    not contain '\"' in the command value.\n\n    PR: 265001\n    Reviewed by: imp\n    Differential Revision: https://reviews.freebsd.org/D35975\n\n stand/lua/config.lua | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)"
+}

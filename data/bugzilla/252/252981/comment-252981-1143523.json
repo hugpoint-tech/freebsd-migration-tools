@@ -1,0 +1,8 @@
+{
+ "id": 1143523,
+ "bug_id": 252981,
+ "attachment_id": 0,
+ "creation_time": "2021-01-25T22:56:21Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Mark Johnston from comment #1)\nWith this fixed I hit the same panic as in the PR title.  QAT has some weird constraints around the AAD length for GCM/CCM; in particular, it must be no more than 240 bytes in length.  This is implemented in the Intel and DPDK QAT drivers as well as ours.\n\nZFS is submitting GCM encryption requests with a large AAD (I think when encrypting a block of dnodes?) and hitting the check in qat_process(), and it can't tolerate the error.  Weirdly, the ZFS QAT stub for Linux has no check for this case, but it also only uses QAT for data blocks, which I believe have no AAD.  See qat_crypt_use_accel().\n\nSo for now we should at least change ZFS to not use hardware crypto since it doesn't work and clearly hasn't been tested (see comment 1).  I'm not sure how hard it would be to permit the use of hardware crypto only for data blocks (and not for the ZIL and dnode blocks, which requires support for large AAD buffers."
+}

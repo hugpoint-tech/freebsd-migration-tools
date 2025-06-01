@@ -1,0 +1,8 @@
+{
+ "id": 1201988,
+ "bug_id": 262406,
+ "attachment_id": 0,
+ "creation_time": "2022-03-07T19:33:15Z",
+ "creator": "evgeni@debian.org",
+ "text": "Ohai,\n\nthere exists hardware (like [1]) that has no ethernet address burned into the EEPROM. Loading if_re on such a HW brings the device up with '00:00:00:00:00:00' as the address, and that doesn't get you too far in a real network.\n\nOther drivers use ether_gen_addr(9) in such cases, to generate an address, and so should if_re, I think?\n\nProbably something like this (untested yet):\n\ndiff --git sys/dev/re/if_re.c sys/dev/re/if_re.c\nindex 5d1446e51ab..7905740a930 100644\n--- sys/dev/re/if_re.c\n+++ sys/dev/re/if_re.c\n@@ -1676,6 +1676,11 @@ re_attach(device_t dev)\n \t\tgoto fail;\n \t}\n \n+\t/* If address was not found, create one based on the hostid and name. */\n+\tif (ETHER_IS_ZERO(eaddr)) {\n+\t\tether_gen_addr(ifp, eaddr);\n+\t}\n+\n \t/*\n \t * Call MI attach routine.\n \t */\n\nThanks!\n\n[1] https://www.dfrobot.com/product-2242.html"
+}

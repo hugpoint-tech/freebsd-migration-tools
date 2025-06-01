@@ -1,0 +1,8 @@
+{
+ "id": 357499,
+ "bug_id": 105093,
+ "attachment_id": 0,
+ "creation_time": "2006-11-03T01:00:46Z",
+ "creator": "csaba.henk@creo.hu",
+ "text": "In ext_mountfs of sys/gnu/fs/ext2fs/ext2_vfsops.c it's checked\nerrorneously whether mounter wants a read-only mount. Therefore\nthis function will always act as in case of a writable mount which\nyields an EROFS if the media is actually read-only.\n\nThis might also lead to unintended fs modification despite the \"-o ro\"\noption; I haven't made experiments of such type though, it's just a\nhypothetical problem at this point.\n\nThis bug is present at least in RELENG6 and HEAD branches.\n\nFix: Apply the follwing patch:\n\n\n\n\nCsaba--Sf3BVGoCl2Lwm3R65S2ZhnEwryVMOQQDGbO1fgiVp6dpYKDA\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- ext2_vfsops.c.orig\tFri Nov  3 01:31:42 2006\n+++ ext2_vfsops.c\tFri Nov  3 01:34:10 2006\n@@ -601,7 +601,7 @@ ext2_mountfs(devvp, mp, td)\n \tint error;\n \tint ronly;\n \n-\tronly = vfs_flagopt(mp-\u003emnt_optnew, \"ro\", NULL, 0);\n+\tronly = (mp-\u003emnt_flag \u0026 MNT_RDONLY) ? : 1 : 0;\n \t/* XXX: use VOP_ACESS to check FS perms */\n \tDROP_GIANT();\n \tg_topology_lock();\nHow-To-Repeat: - Create a sparse file in some of your filesystems.\n- Format the sparse file as an ext2 filesystem by mke2fs(8).\n- Remount the host filesystem read-only.\n- Create an md node backed by the ext2 file using mdconfig(8).\n- Try to mount the resulting md node with ext2 type. You will\n  get EROFS either you use \"-o ro\" or not."
+}

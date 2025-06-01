@@ -1,0 +1,8 @@
+{
+ "id": 857870,
+ "bug_id": 206019,
+ "attachment_id": 0,
+ "creation_time": "2016-01-08T03:33:42Z",
+ "creator": "henry.hu.sh@gmail.com",
+ "text": "For a python port which uses gtk and installs icons, gtk-update-icon-cache is not executed.\nThe plist for such ports is automatically generated, and it seems like that the check for icons happens before the real plist is generated.\n\nLet's take deskutils/syncthing-gtk as an example. The check for icons happens in bsd.gnome.mk:\n.  if defined(INSTALLS_ICONS)\n\t@${RM} -f ${TMPPLIST}.icons1\n\t@for i in `${GREP} \"^share/icons/.*/\" ${TMPPLIST} | ${CUT} -d / -f 1-3 | ${SORT} -u`; do \\\n\t\t${ECHO_CMD} \"@rmtry $${i}/icon-theme.cache\" \\\n\t\t\t\u003e\u003e ${TMPPLIST}.icons1; \\\n\t\t${ECHO_CMD} \"@postexec ${LOCALBASE}/bin/gtk-update-icon-cache -q -f %D/$${i} 2\u003e/dev/null || /usr/bin/true\" \\\n\t\t\t\u003e\u003e ${TMPPLIST}; \\\n\t\t${ECHO_CMD} \"@postunexec ${LOCALBASE}/bin/gtk-update-icon-cache -q -f %D/$${i} 2\u003e/dev/null || /usr/bin/true\" \\\n\t\t\t\u003e\u003e ${TMPPLIST}; \\\n\tdone\n\nHowever, if we insert \"cat ${TMPPLIST}\" before the \"@for\", you can see that\ncat /usr/ports/deskutils/syncthing-gtk/work/.PLIST.mktmp\n/usr/local/share/licenses/syncthing-gtk-0.8/catalog.mk\n/usr/local/share/licenses/syncthing-gtk-0.8/LICENSE\n/usr/local/share/licenses/syncthing-gtk-0.8/GPLv2\n\nso the plist is not yet filled, and no icon is detected. As a result, gtk-update-icon-cache is not executed, and the new icons cannot be used by the applications."
+}

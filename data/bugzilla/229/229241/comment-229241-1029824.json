@@ -1,0 +1,8 @@
+{
+ "id": 1029824,
+ "bug_id": 229241,
+ "attachment_id": 0,
+ "creation_time": "2019-01-05T11:35:26Z",
+ "creator": "henno@schooljan.nl",
+ "text": "This is still an issue, I can reproduce it with a minimal /etc/pf.conf on a fresh 11/stable starting with r338181, just do this:\n\n- Install clean FreeBSD installation, at least stable/11 r338181.\n- No jails involved, do everything on the host.\n- Install /etc/pf.conf with only this content:\n\nset skip on lo\nblock all\n\n- Enable pf in /etc/rc.conf.\n- Start pf: service pf start\n\nping localhost now works.\n\n- Reload rules: pfctl -f /etc/pf.conf\n\nping localhost now fails, block rule is matched (this can be verified by using pflog + block log all if you want)\n\n- Reload rules: pfctl -f /etc/pf.conf\n\nping localhost now works.\n\nAnd so on.\n\nI have also tested this on 12.0-RELEASE-p1 and even the 13-CURRENT 20190103 r342707 snapshot, same issue. FreeBSD 11.1 and earlier work fine.\n\nIf I revert my stable/11 tree by just 1 commit to r338180 and rebuild world, everything works fine, so r338181 seems to have introduced this issue (r333084 in HEAD). Link to commit: https://svnweb.freebsd.org/base?view=revision\u0026revision=333181\n\nAlso interesting: After reproducing this issue and then changing the skip rule to 'set skip on lo0' will cause the next pfctl -f call to not reload the rules. After calling pfctl a second time everything works fine and keeps working on subsequent calls. On FreeBSD 12 specifically, this will cause pfctl to segfault the first time... o_O\n\nI'm happy to provide more info if needed. I got a fresh 13-CURRENT virtual machine ready where I can reproduce this, so perhaps I can provide you with more debugging info if you need it."
+}

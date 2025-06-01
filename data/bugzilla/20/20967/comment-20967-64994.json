@@ -1,0 +1,8 @@
+{
+ "id": 64994,
+ "bug_id": 20967,
+ "attachment_id": 0,
+ "creation_time": "2000-08-31T18:10:01Z",
+ "creator": "s.moeding@ndh.net",
+ "text": "\nThe SMC 9432TX NIC is supported by the tx driver.  The card works like\na charm, only during startup the driver complains:\n\ntx0: \u003cSMC 83c170\u003e port 0xe800-0xe8ff mem 0xe8001000-0xe8001fff irq 11 at device 10.0 on pci0\ntx0: WARNING! PHY unknown (0x895): address 00:e0:29:6c:40:71, type SMC9432TX_2, Auto-Neg 100Mbps FD\n\nFix: \n\nIn /usr/src/sys/kern/pci/if_tx.c around line 765:\n\n/* Identify PHY */\nsc-\u003ephyid = PHY_READ_2(sc, DP83840_PHYIDR1 )\u003c\u003c6;\nsc-\u003ephyid|= (PHY_READ_2( sc, DP83840_PHYIDR2 )\u003e\u003e10)\u00260x3F;\nif( QS6612_OUI != sc-\u003ephyid )\n        printf(\": WARNING! PHY unknown (0x%x)\",sc-\u003ephyid);\n\n\nExcept for the printf there is nothing else happening, so it looks to\nme as if this can either be removed completely or a second comparison\ncould be added to the if-expression.\n\n\nFeel free to send patches for testing to me,\nStefan"
+}

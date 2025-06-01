@@ -1,0 +1,8 @@
+{
+ "id": 70904,
+ "bug_id": 22758,
+ "attachment_id": 0,
+ "creation_time": "2000-11-10T23:20:00Z",
+ "creator": "jogibson@cisco.com",
+ "text": "On receipt of a SIGALRM, select will return 0 when linked to the \nreentrant C library libc_r (for pthreads) and not set errno to EINTR.\nWhen linked to libc (no pthreads) select returns -1 and sets errno\nto EINTR.\n\nHow-To-Repeat: /*\n * testsel.c\n * On receipt of SIGALRM, select() returns:\n *      0 when linked with libc_r\n *      -1 otherwise.\n *\n * Tp compile with threads...\n * cc -o testsel testsel.c -pthread\n *\n * To compile without threads...\n * cc -o testsel testsel.c \n */\n#include \u003cstdio.h\u003e\n#include \u003cstdlib.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003csignal.h\u003e\n#include \u003cstring.h\u003e\n#include \u003cunistd.h\u003e\n\nhandle_sigalarm(void)\n{\n  fprintf(stderr,\"ALARM!\\n\");\n}\n\nint\nmain(void)\n{\n  struct sigaction sact;\n  fd_set fds;\n  int error;\n\n  sact.sa_flags   = 1;\n  sact.sa_handler = (sig_t) handle_sigalarm;\n  sigaction(SIGALRM, \u0026sact, NULL);\n\n  FD_ZERO(\u0026fds);\n  alarm(1);\n\n  fprintf(stderr, \"test: calling select...\\n\");\n  error = select(0, \u0026fds, 0, 0, 0);\n\n  fprintf(stderr, \"test: select returned %d\\n\", error); \n  if (errno == EINTR)\n    fprintf(stderr, \"test: errno=EINTR\\n\");\n  else\n    fprintf(stderr, \"test: errno!=EINTR (error: %s)\\n\", strerror(errno));\n}"
+}

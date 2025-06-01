@@ -1,0 +1,8 @@
+{
+ "id": 59331,
+ "bug_id": 19354,
+ "attachment_id": 0,
+ "creation_time": "2000-06-17T17:30:01Z",
+ "creator": "bjh21@cam.ac.uk",
+ "text": "From NetBSD PRs 10384 and 10385:\n\nIf I create a symlink (on ffs) whose name contains a newline (ASCII\nLF) character, \"ls -l\" fails to display the contents of the link\ncorrectly, giving \"No such file or directory\".  The message seems to\nindicate that ls is passing the filename to readlink() after replacing odd\ncharacters with question marks.  Sending the output of ls through\n\"cat\" (to disable -q) works around the problem.\n\nWhen giving a long (-l) listing, ls(1) doesn't replace special characters\nin the targets of symlinks with question marks.  This means that by\ninserting suitable escape sequences in the contents of symbolic links, one\ncan do arbitrary awkward things to the display of someone running\n\"ls -l\" on a directory, and probably cause ls to appear not to list\ncertain files.\n\nFix: \n\nSee patches in NetBSD PR#10385.  I suspect these are applicable to FreeBSD.\nHow-To-Repeat: cromarty:/tmp$ ln -s \"one line\" \"two\n\u003e lines\"\ncromarty:/tmp$ ls -l \"two\n\u003e lines\"\n\nls: two?lines: No such file or directory\nlrwxrwxr-x  1 bjh21  wheel  8 Jun 17 15:02 two?lines\ncromarty:/tmp$ ls -l \"two\n\u003e lines\" | cat\nlrwxrwxr-x  1 bjh21  wheel  8 Jun 17 15:02 two\nlines -\u003e one line\n\n\n$ ln -s `printf '\\033c'` link\n$ ls -l\nOr, more fun:\n$ mkdir hidden\n$ ln -s `printf '\\033[2K\\033[F\\033[2K\\033[F'` hidden2\n$ ls -l"
+}

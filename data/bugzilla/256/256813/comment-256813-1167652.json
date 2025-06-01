@@ -1,0 +1,8 @@
+{
+ "id": 1167652,
+ "bug_id": 256813,
+ "attachment_id": 0,
+ "creation_time": "2021-06-24T16:00:43Z",
+ "creator": "jcaplan@blackberry.com",
+ "text": "Overview\n-------\n\nRepeatedly setting the ipv6 address for an interface on two targets and then trying to ping one from the other fails. The sender sends neighbor solicitations but gets no reply. \n\n\nSteps to Reproduce\n------------------\nTwo devices D1 and D2\n\nD1\u003e ifconfig vmx0 inet6 2001::2 up\nD2\u003e ifconfig vmx0 inet6 2001::3 up\nD1\u003e ping6   2001::3              \nPING6(56=40+8+8 bytes) 2001::2 --\u003e 2001::3\n\n--- 2001::3 ping6 statistics ---\n9 packets transmitted, 0 packets received, 100.0% packet loss\n\nCheck with tcpdump that D2 shows no received packets.\nActual Results\n--------------\n\nAll packets lost\n\n\nExpected Results\n----------------\nD2 replies with neighbor advertisement and ping works\n\n\nBuild Date \u0026 Hardware\n---------------------\nvmware\n\nFreeBSD freebsd 13.0-RELEASE FreeBSD 13.0-RELEASE #6 releng/13.0-n244733-ea31abc261f: Sat Jun 19 06:23:53 UTC 2021\n\n\n\nAdditional Information\n----------------------\n\n- Produced same result with both em and vmx drivers.\n- Flapping the interface does not fix the problem, only deleting the address and then re-adding it.\n- Sometimes it takes multiple address assignments for problem to manifest.\n- DDB breakpoint for ip6_input is never hit when problem occurs\n- Wireshark on linux host shows solicitation packets.\n\nIssue is not reproduceable with Linux because they have:\n\nsudo ifconfig vmnet21 inet6 add 2001::4/64\nSIOCSIFADDR: File exists\n\nwhile on freebsd it appears that ifconfig tries to delete and then re-add the same interface"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1114519,
+ "bug_id": 244648,
+ "attachment_id": 0,
+ "creation_time": "2020-07-21T14:14:36Z",
+ "creator": "freebsd@gregv.net",
+ "text": "This appears to be an upstream bug.  Between 4.3 and 4.4, Samhain added support for OpenBSD signify to sign the database.  Because of that, the samhainadmin.pl script was split out into two variants, one for GnuPG and one for signify.  The configure script contains logic to figure out which one is actually in use and copy it to the actual samhainadmin.pl script, which the build process expects to be present with the network server option:\n\n+if test \"x${mysignify}\" != x\n+then\n+       cp -a scripts/samhainadmin-sig.pl scripts/samhainadmin.pl\n+fi\n+if test \"x${mygpg}\" != x\n+then\n+       cp -a scripts/samhainadmin-gpg.pl scripts/samhainadmin.pl\n+fi\n+\n+\n\nThe problem is the default port build options don't use GnuPG.  Based on that configure logic, in this case neither variant gets copied to samhainadmin.pl, which breaks the install-program make target.\n\nI've created an updated patch which adds a fix to the configure script to deal with this case.  I'm not sure if using server mode without either GnuPG or signify is an unsupported configuration, but I'll also submit this upstream to see if this can be fixed there."
+}

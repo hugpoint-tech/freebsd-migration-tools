@@ -1,0 +1,8 @@
+{
+ "id": 51583,
+ "bug_id": 16950,
+ "attachment_id": 0,
+ "creation_time": "2000-02-28T03:46:01Z",
+ "creator": "robert@cyrus.watson.org",
+ "text": "Steve,\n\nI'm having stability problems with this patch.  When an arp lookup is\nattempted, I get a hang.  The kernel is still live, and apparently in\nkernel/interrupt context.  I don't have much debugging turned onin the\nkernel, and don't have a proper debugging setup here, but here's ddb's\nstack trace (from breaking to the debugger)\n\nDebugger(c032a989) at Debugger+0x35\nscgetc(c0398de0,2,c06ae100,c03913a0,ffffffff) at scgetc+0x37e\nsckbdevent(c03913a0,0,c0398de0,c06ae100,1a0f080a) at sckbdevent+0x1b9\natkbd_intr(c03913a0,0,c0339dac,c02c14d2,c03913a0) at atkbd_intr+0x22\natkbd_isa_intr(c03913a0,40020000,40020010,10,c06a0010) at\natkbd_isa_intr+0x18\nXresume1() at Xresume1+0x2b\n--- interrupt, eip = 0xc01d2531, esp = 0xc0339d9c, ebp = 0xc0339dac ---\narpintr(c02c1d7b,0, c0210010,40000010,ffff0010) at arpintr+0xd9\nswi_net_next() at swi_net_next\n\nMy guess is you're recusively locking or something from interrupt context,\nor the like.  As the console is still live, it's not as dead as it could\nbe, for example :-)\n\nInterestingly, this is (I believe) the second ARP lookup, not the first\none, if that helps any. Prior to the hang, arp -an reported one entry, it\nwas attempting to contact a second IP that caused the trouble.\n\n  Robert N M Watson \n\nrobert@fledge.watson.org              http://www.watson.org/~robert/\nPGP key fingerprint: AF B5 5F FF A6 4A 79 37  ED 5F 55 E9 58 04 6A B1\nTIS Labs at Network Associates, Safeport Network Services"
+}

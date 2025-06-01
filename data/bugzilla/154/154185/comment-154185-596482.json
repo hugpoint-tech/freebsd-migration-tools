@@ -1,0 +1,8 @@
+{
+ "id": 596482,
+ "bug_id": 154185,
+ "attachment_id": 0,
+ "creation_time": "2011-01-21T05:40:06Z",
+ "creator": "zhouzhouyi@gmail.com",
+ "text": "There is race condition in function mb_dupcl in src/sys/kern/uipc_mbuf.c \n\nThe code to add reference count in mb_dupcl is as follows\n     \n\n 390         if (*(m-\u003em_ext.ref_cnt) == 1)\n 391                 *(m-\u003em_ext.ref_cnt) += 1;\n\nThe x86 asm code for these two lines is:\n0xffffffff807aa28d \u003cmb_dupcl+13\u003e:       sub    $0x1,%eax\n0xffffffff807aa290 \u003cmb_dupcl+16\u003e:       je     0xffffffff807aa2f0 \u003cmb_dupcl+112\u003e\n..\n0xffffffff807aa2f0 \u003cmb_dupcl+112\u003e:      mov    (%rdx),%ecx\n0xffffffff807aa2f2 \u003cmb_dupcl+114\u003e:      add    $0x1,%ecx\n0xffffffff807aa2f5 \u003cmb_dupcl+117\u003e:      mov    %ecx,(%rdx)\n\nIt is appearant that multiple threads will race for the contents of (%rdx)\n\nFix: \n\nfunction mb_dupcl\n    390 -        if (*(m-\u003em_ext.ref_cnt) == 1)\n    391 -                *(m-\u003em_ext.ref_cnt) += 1;\n    392 -        else\n    393                 atomic_add_int(m-\u003em_ext.ref_cnt, 1);\nHow-To-Repeat: Can write a kernel module like:\n\nstruct mbuf *m;\nMGETHDR(m, M_DONTWAIT, MT_DATA);\nMCLGET(m, M_DONTWAIT);\n\nThen let multiple threads \nexecute simulately:\n m1 = m_copypacket(m, M_DONTWAIT);\n m_freem(m1);"
+}

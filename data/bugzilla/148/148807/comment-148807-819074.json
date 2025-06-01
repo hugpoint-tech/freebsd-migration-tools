@@ -1,0 +1,8 @@
+{
+ "id": 819074,
+ "bug_id": 148807,
+ "attachment_id": 0,
+ "creation_time": "2015-04-10T11:33:31Z",
+ "creator": "rwatson@FreeBSD.org",
+ "text": "sbdrop() performs invariant checks as it tears down a socket buffer on final close -- originally intended to validate a set of values cached by the socket buffer that could (in the presence of a socket-buffer bug) get out of sync with the chain stored there.  However, these checks have proven something of a 'canary' for many possible underlying bugs involving mbuf chains and socket buffers.  I've seen the panics most frequently in the presence of device-driver concurrency bugs -- e.g., in which a driver makes changes to the mbuf chain after handing the mbuf off to the network stack via netisr, for example, or involving improper freeing of an mbuf by other code while it remains referenced by a socket buffer.  Others have spotted them in the presence of other classes of network-stack race conditions -- most involving a failure to have a single thread or object own an mbuf.  As such, seeing this panic is a symptom of many possible underlying problems and hence not a specific 'bug' per se.\n\nHowever, as a useful rule of thumb: when I spot this panic, I look first at the device driver to make sure that there is no possible use of mbuf after it is passed as an argument to netisr."
+}

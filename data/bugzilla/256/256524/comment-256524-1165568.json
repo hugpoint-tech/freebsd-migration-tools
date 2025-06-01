@@ -1,0 +1,8 @@
+{
+ "id": 1165568,
+ "bug_id": 256524,
+ "attachment_id": 0,
+ "creation_time": "2021-06-10T06:23:34Z",
+ "creator": "ota@j.email.ne.jp",
+ "text": "Looking at /usr/src/contrib/llvm-project/clang/lib/Driver/ToolChains/FreeBSD.cpp, amd64 seems to support while i386 does not for clang10, on 12.2-RELEASE:\n\n  SanitizerMask Res = ToolChain::getSupportedSanitizers();\n  Res |= SanitizerKind::Address;\n  Res |= SanitizerKind::PointerCompare;\n  Res |= SanitizerKind::PointerSubtract;\n  Res |= SanitizerKind::Vptr;\n  if (IsX86_64 || IsMIPS64) {\n    Res |= SanitizerKind::Leak;\n    Res |= SanitizerKind::Thread;\n  }\n  if (IsX86 || IsX86_64) {\n    Res |= SanitizerKind::Function;\n    Res |= SanitizerKind::SafeStack;   \n    Res |= SanitizerKind::Fuzzer;\n    Res |= SanitizerKind::FuzzerNoLink;\n  }\n\nHowever, amd64 mach gives me \"No such file\" error while linking.\namd64% clang++ -fsanitize=leak address_sanitizer.cpp\nld: error: cannot open /usr/lib/clang/10.0.1/lib/freebsd/libclang_rt.lsan-x86_64\n.a: No such file or directory\nclang++: error: linker command failed with exit code 1 (use -v to see invocation\n)\n\ni386 explicitly says it is not supported.\ni386% clang++ -fsanitize=leak address_sanitizer.cpp\nclang++: error: unsupported option '-fsanitize=leak' for target 'i386-unknown-freebsd13.0'\n\nGiven Clang 13 document, https://clang.llvm.org/docs/LeakSanitizer.html, doesn't say FreeBSD is supported, I'm not sure if amd64 case is unsupported or an error.\nI only have 12.2 RELEASE for amd64 and cannot experiment other FreeBSD version.\n\n% cat address_sanitizer.cpp\nint main()\n{\n    int *i = new int( 1 );\n    *i = 0;\n}"
+}

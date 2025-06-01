@@ -1,0 +1,8 @@
+{
+ "id": 577059,
+ "bug_id": 150390,
+ "attachment_id": 0,
+ "creation_time": "2010-09-08T17:10:02Z",
+ "creator": "rercola@acm.jhu.edu",
+ "text": "System deadlocks 100% reliably when a disk is reported FAULTED in the arcmsr card.\n\ndmesg looks like:\narcmsr0:block 'read/write' command with gone raid volume Cmd= 8, TargetId=1, Lun=5 \narcmsr0:block 'read/write' command with gone raid volume Cmd= 8, TargetId=1, Lun=5 \narcmsr0:block 'read/write' command with gone raid volume Cmd= 8, TargetId=1, Lun=5 \n\nzpool and zfs-related commands, and all IO to the affected pool, hang forever in state D.\n\nprocstat reports:\n[root@manticore ~]# ps aux | grep zpool\nstump  3287  0.0  0.0 15700  1540   0  D+   12:03PM   0:00.00 zpool status\nroot   3286  0.0  0.0 15700  1528   1  T+   12:03PM   0:00.00 zpool status\nroot   3316  0.0  0.0  9120  1164   3  S+   12:07PM   0:00.00 grep zpool\n[root@manticore ~]# procstat -k 3286\n  PID    TID COMM             TDNAME           KSTACK                       \n 3286 100484 zpool            -                mi_switch sleepq_wait _cv_wait spa_config_enter spa_config_generate spa_open_common spa_get_stats zfs_ioc_pool_stats zfsdev_ioctl devfs_ioctl_f kern_ioctl ioctl syscall Xfast_syscall \n[root@manticore ~]# procstat -k 3287\n  PID    TID COMM             TDNAME           KSTACK                       \n 3287 100532 zpool            -                mi_switch sleepq_wait _cv_wait spa_config_enter spa_config_generate spa_open_common spa_get_stats zfs_ioc_pool_stats zfsdev_ioctl devfs_ioctl_f kern_ioctl ioctl syscall Xfast_syscall\n\nHow-To-Repeat: 1) Have a disk fault on an arcmsr card.\n2) Hang!"
+}

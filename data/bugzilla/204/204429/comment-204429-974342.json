@@ -1,0 +1,8 @@
+{
+ "id": 974342,
+ "bug_id": 204429,
+ "attachment_id": 0,
+ "creation_time": "2018-01-26T11:47:51Z",
+ "creator": "tobik@freebsd.org",
+ "text": "The problem is in tcsh(1) and not tmux.  Here is ktrace -i tmux new tcsh output\nthat shows it in action (look for connect to port 53):\n\n 58552 tcsh     CALL  connect(0x3,0x800718fbc,0x10)\n 58552 tcsh     STRU  struct sockaddr { AF_INET, 192.168.0.1:53 }\n 58552 tcsh     RET   connect 0\n 58552 tcsh     CALL  sendto(0x3,0x800dd3540,0x20,0,0,0)\n 58552 tcsh     GIO   fd 3 wrote 32 bytes\n       0x0000 1071 0100 0001 0000 0000 0000 0b74 6d75  |.q...........tmu|\n       0x0010 7828 3538 3533 3829 0225 3000 0001 0001  |x(58538).%0.....|\n 58552 tcsh     RET   sendto 32/0x20\n\nTry editing /usr/src/contrib/tcsh/config_f.h and change\n\n-#define REMOTEHOST\n+#undef REMOTEHOST\n\nand rebuild the shell in /usr/src/bin/csh.\n\nI don't think that disabling utempter support in tmux is the right\nsolution since tmux sessions then no longer appear in w(1) output etc."
+}

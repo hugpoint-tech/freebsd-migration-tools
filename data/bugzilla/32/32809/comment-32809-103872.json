@@ -1,0 +1,8 @@
+{
+ "id": 103872,
+ "bug_id": 32809,
+ "attachment_id": 0,
+ "creation_time": "2001-12-13T17:50:01Z",
+ "creator": "yar@comp.chem.msu.su",
+ "text": "\nAfter any panic, the system tries to sync disks,\nbut gets yet another panic as follows:\n\nstylish# sysctl debug.debugger_on_panic=0\ndebug.debugger_on_panic: 1 -\u003e 0\nstylish# ./666\npanic: test panic\n\nsyncing disks... panic: bremfree: bp 0xc217a428 not locked\nUptime: 4m43s\npfs_vncache_unload(): 1 entries remaining\n\ndumping to dev ad0s1b, offset 139376\ndump ata0: resetting devices ..\n[the system hangs dead at this point sometimes]\n\nA stack trace looks like as follows (sorry, the above bp pointer\ndoesn't match the stack trace):\n\n#0  dumpsys () at /usr/src/sys/kern/kern_shutdown.c:492\n#1  0xc0167847 in boot (howto=260) at /usr/src/sys/kern/kern_shutdown.c:335\n#2  0xc0167c81 in panic (fmt=0xc0224c01 \"bremfree: bp %p not locked\")\n    at /usr/src/sys/kern/kern_shutdown.c:634\n#3  0xc01935d1 in bremfree (bp=0xc218debc) at /usr/src/sys/kern/vfs_bio.c:545\n#4  0xc0194bcd in vfs_bio_awrite (bp=0xc218debc)\n    at /usr/src/sys/kern/vfs_bio.c:1535\n#5  0xc01cc6d4 in ffs_fsync (ap=0xc68819d4)\n    at /usr/src/sys/ufs/ffs/ffs_vnops.c:239\n#6  0xc01caf12 in ffs_sync (mp=0xc0dcae00, waitfor=2, cred=0xc05a6e00,\n    td=0xc02a2b24) at vnode_if.h:441\n#7  0xc019fb8d in sync (td=0xc02a2b24, uap=0x0)\n    at /usr/src/sys/kern/vfs_syscalls.c:657\n#8  0xc0167490 in boot (howto=256) at /usr/src/sys/kern/kern_shutdown.c:244\n#9  0xc0167c81 in panic (fmt=0xc0235c5e \"test panic\")\n    at /usr/src/sys/kern/kern_shutdown.c:634\n\nFix: \n\nI had better left it to the disk/fs subsystem wizards for now.\nHow-To-Repeat: \nJust make a system of a close version panic."
+}

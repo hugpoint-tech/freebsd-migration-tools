@@ -1,0 +1,8 @@
+{
+ "id": 933377,
+ "bug_id": 219159,
+ "attachment_id": 0,
+ "creation_time": "2017-05-09T07:40:33Z",
+ "creator": "parakleta@darkreality.org",
+ "text": "When sending a message over a SOCK_DGRAM that has control data `sosend_generic()` in `sys/kern/uipc_socket.c` checks `if ((atomic \u0026\u0026 resid \u003e so-\u003eso_snd.sb_hiwat) ...` to return `ESMSGSIZE` but then next checks `if (space \u003c resid + clen \u0026\u0026 (atomic || ...` and either returns `EWOULDBLOCK` or waits in `sbwait()` and then restarts.\n\n`space` is calculated from `sbspace(\u0026so-\u003eso_snd)` which is calculated to be the minimum of `sb_hiwat - sb_cc` and another value, and so strictly less or equal to `so-\u003eso_snd.sb_hiwat`.\n\nThis means then that if it is the case that `resid \u003c= so-\u003eso_snd.sb_hiwat` but `resid + clen \u003e so-\u003eso_snd.sb_hiwat` the code will always pass the first test and always fail the second and so will loop forever via the `goto restart` instruction.\n\nI believe the it should be the case that `if ((atomic \u0026\u0026 resid + clen \u003e so-\u003eso_snd.sb_hiwat) ...` the error `ESMSGSIZE` will be returned.\n\nThis may be related to 181092."
+}

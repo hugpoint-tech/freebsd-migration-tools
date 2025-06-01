@@ -1,0 +1,8 @@
+{
+ "id": 638526,
+ "bug_id": 162588,
+ "attachment_id": 0,
+ "creation_time": "2012-01-23T16:21:08Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "On 2012-01-23 16:01, Henri Hennebert wrote:\n\u003e On 01/23/2012 15:54, Dimitry Andric wrote:\n\u003e\u003e First thing of interest are your make.conf and src.conf files. If you\n\u003e\u003e compile world with non-standard settings, it may be the cause for libz\n\u003e\u003e breakage.\n\u003e\u003e\n\u003e\n\u003e [root@avoriaz etc]# egrep -v '^#' /etc/make.conf\n...\n\nAlright, those look just fine.  I managed to reproduce the problem with\na prepackage version of cvsup (since the port does not compile).\n\nIt looks like there is some problem with stack alignment, specific to\ncvsup (or most likely, the Modula3 compiler).  Zlib's inflate_table()\nfunction starts with:\n\n     unsigned len;               /* a code's length in bits */\n[...]\n     unsigned short count[MAXBITS+1];    /* number of codes of each length */\n[...]\n     for (len = 0; len \u003c= MAXBITS; len++)\n         count[len] = 0;\n\nNote, MAXBITS is 15.  On amd64, clang optimizes this loop to SSE code:\n\n         xorps   %xmm0, %xmm0\n         movaps  %xmm0, -64(%rbp)\n         movaps  %xmm0, -80(%rbp)\n\nHowever, the 'movaps' instructions only work on 16-byte aligned memory,\nand apparently the stack is not 16-byte aligned in this particular case.\n\nIt looks like this only happens with ezm3 compiled applications, since\nrunning gzip, tar, and even csup all work fine.  So maybe there is\nsomething in ezm3 that mis-aligns the stack..."
+}

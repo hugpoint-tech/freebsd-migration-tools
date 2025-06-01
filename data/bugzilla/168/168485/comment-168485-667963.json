@@ -1,0 +1,8 @@
+{
+ "id": 667963,
+ "bug_id": 168485,
+ "attachment_id": 0,
+ "creation_time": "2012-05-31T05:00:15Z",
+ "creator": "peter@rulingia.com",
+ "text": "\tWhen running (eg)\n\t# pmcstat -r 1231 -O logfile -S unhalted-cycles\n\tlogfile will collect some callchain entries and then stop.\n\tAt about the same time, the system reports \"NMI ISA 30, EISA ff\".\n\tThis happens for both OS versions above (identical hardware).\n\n\tLooking at the output from \"pmccontrol -s\" and the code in\n\tsys/dev/hwpmc/hwpmc_piv.c, it appears that under some\n\tconditions, p4_intr() will be invoked (due to an NMI) without\n\tany PMC interrupts being present.  In this case, the PMC 'pcint'\n\tentry is not unmasked so no further PMC events are reported.\n\nFix: \n\nI removed 'if (did_interrupt)' from the -current code (so\n\tthat lapic_reenable_pmc() is always invoked).  This led so\n\tsome (spurious) NMI reports on the console but hwpmc works.\n\n\tThis is a work-around, rather than a fix but possibly someone\n\twith better knowledge of the P4 PMC can provide the correct fix.\nHow-To-Repeat: \tRun \"pmcstat -r 1231 -O logfile -S unhalted-cycles\" on a P4"
+}

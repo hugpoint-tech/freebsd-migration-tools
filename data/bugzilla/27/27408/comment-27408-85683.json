@@ -1,0 +1,8 @@
+{
+ "id": 85683,
+ "bug_id": 27408,
+ "attachment_id": 0,
+ "creation_time": "2001-05-17T14:30:01Z",
+ "creator": "B.Candler@pobox.com",
+ "text": "FreeBSD-4.2 preserves NFS state across reboots in /var/db. I had a\nclassful of machines which had temporarily mounted an NFS server - there\nwas no entry in /etc/fstab. However once these machines had been powered\ndown, moved, renumbered and rebooted (and the NFS servers gone), I found\nthey hung during bootup.\n\nThe problem was traced to the following in /etc/rc.network:\n\n        if [ -f /var/db/mounttab ]; then\n                rpc.umntall -k\n        fi\n\nEach of the workstations was then in a badly broken state, which even\na further reboot could not repair. To fix them required:\n- boot into single-user mode\n- fsck -y /var\n- mount /var\n- rm /var/db/mounttab\n- fsck -y \u003call other partitions\u003e\non all machines.\n\nFix: \n\nNot sure. Perhaps sensible (short) timeouts. Perhaps rpc.umntall should\nremove mounttab entries _before_ attempting to contact the servers -\nthen at least a second reboot would clear the problem.\n\nRFC1813 says of the UMNTALL call:\n     \"since this procedure\n      is generally implemented using broadcast RPC, it is only\n      of limited usefullness.\"\n\nI know very little about NFS, but personally I don't think this sort\nof state should be maintained across a reboot at all.\nHow-To-Repeat: Mount an NFS server just using 'mount' at the command line (no entry\nin /etc/fstab).\nPower off both the client and the NFS server.\nPower up the client. Watch it hang."
+}

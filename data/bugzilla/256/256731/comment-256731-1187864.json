@@ -1,0 +1,8 @@
+{
+ "id": 1187864,
+ "bug_id": 256731,
+ "attachment_id": 0,
+ "creation_time": "2021-11-24T16:56:15Z",
+ "creator": "adridg@freebsd.org",
+ "text": "Since I had an older 13-, and didn't search bugzilla before starting, I re-debugged this whole issue. There were a couple of workarounds available: `stty speed 38400` being the weirdest. That works because the matching of tty baud rates and output speeds is broken in ncurses -- too many signed short \u003c-\u003e unsigned short \u003c-\u003e int conversions happen -- and so for speeds above 32767 no output delays are done. Now they still aren't done, but they won't dereference a NULL pointer, if they were.\n\nPR 260016 works around this problem from another side: libtextstyle shouldn't call `tputs()` with arbitrary user strings. The user string it generates starts with a digit, which BSD ncurses interprets as a delay, which causes the call to `delay_output()` -- it also eats part of the output, which wasn't the point.\n\nI've blogged some more investigations at https://euroquis.nl/freebsd/2021/11/24/bison.html (also about fixing things in terminal emulators to properly accept the URLs bison is outputting)."
+}

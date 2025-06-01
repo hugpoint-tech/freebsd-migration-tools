@@ -1,0 +1,8 @@
+{
+ "id": 1045486,
+ "bug_id": 237058,
+ "attachment_id": 0,
+ "creation_time": "2019-04-06T07:23:52Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "(In reply to Guido Falsi from comment #1)\n\n\u003e The full build log could be useful too, since I can't find the\n\u003e \"-fno-partial-inlining\" in the build log from poudriere, it could be useful\n\u003e to try to understand where it's coming from in your case.\n\nI found the possible cause in an asterisk Makefile:\n\n# gcc version 8.2.1 and above must have partial-inlining disabled to avoid documented bug\nGCC_VER_GTE821:=$(shell expr `gcc --version | grep ^gcc | cut -d ' ' -f 3 | sed -e 's/\\.\\([0-9][0-9]\\)/\n\\1/g' -e 's/\\.\\([0-9]\\)/0\\1/g' -e 's/^[0-9]\\{3,4\\}$$/\u002600/'` \\\u003e= 80201)\nifeq ($(GCC_VER_GTE821),1)\n    OPTIMIZE+=-fno-partial-inlining\nendif\n\n\nit's unconditionally running \"gcc --version\", so if you have a recent gcc installed it can trigger this.\n\nI'm preparing a fix for you to test."
+}

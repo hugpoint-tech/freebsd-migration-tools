@@ -1,0 +1,8 @@
+{
+ "id": 25453,
+ "bug_id": 8348,
+ "attachment_id": 0,
+ "creation_time": "1998-10-17T00:00:00Z",
+ "creator": "wefa@callcenter.systemhaus.net",
+ "text": "1) zforce does nothing. (it fails to identify gzip files and \n   therefore doesn't 'force' anything)\n2) if you fix 1) it behaves nonsensical - it tries to truncate\n   filenames to 14 chars, even though there is no such limit\n   in the FreeBSD filesystem\n3) the code doing 2) is broken as well - it actually only \n   squeezes '.gz' into the last 3 chars of files of any \n   length \u003e 12, but doesn't shorten them. Oh, and this \n   doesn't work in MSDOS file systems either, because it \n   _loves_ to produce files ending in ..gz, which are illegal\n   in 8.3 filesystems.\n\nFix: \n\nI suggest the appended fix:\n\nparis# [bin] diff zforce.org zforce\n6c6,13\n\u003c # 12345678901234 is renamed to 12345678901.gz\n---\n\u003e #\n\u003e # Fixed gzip call (added -v option)\n\u003e # Removed trunking code. Code\n\u003e #  - is unnecessary on FreeBSD\n\u003e #  - was used in FreeBSD despite of that\n\u003e #  - was buggy anyway (it didn't work as advertized)\n\u003e #  19981010   CWF\n\u003e\n27c34,36\n\u003c   if gzip -l \u003c \"$i\" 2\u003e/dev/null | grep '^defl' \u003e /dev/null; then\n---\n\u003e   if gzip -vl \u003c \"$i\" 2\u003e/dev/null | grep '^defl' \u003e /dev/null; then\n\u003e\n\u003e     new=\"$i.gz\"\n29,33d37\n\u003c     if test `expr \"$i\" : '^............'` -eq 12; then\n\u003c       new=`expr \"$i\" : '\\(.*\\)...$`.gz\n\u003c     else\n\u003c       new=\"$i.gz\"\n\u003c     fi\nHow-To-Repeat: use it"
+}

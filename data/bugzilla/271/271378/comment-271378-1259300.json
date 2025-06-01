@@ -1,0 +1,8 @@
+{
+ "id": 1259300,
+ "bug_id": 271378,
+ "attachment_id": 242130,
+ "creation_time": "2023-05-12T10:44:32Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 242130\ngzipped ffs image with bad journal record that causes fsck to crash in ino_trunc\n\nIf a truncate journal record has a negative size, suj.c's ino_trunc()\nwill index di_db[] with a negative index here:\n\n        lastlbn = lblkno(fs, blkroundup(fs, size));\n        for (i = lastlbn; i \u003c UFS_NDADDR; i++) {\n                if ((bn = DIP(dp, di_db[i])) == 0)\n\nI've attached a gzipped file system image; here's the backtrace\nfrom fsck_ffs -y fsck22a.img:\n\nProgram received signal SIGSEGV, Segmentation fault.\nAddress not mapped to object.\n0x000000000022aaca in ino_trunc (ino=3, size=-4420917493761) at suj.c:1329\n1329                    if ((bn = DIP(dp, di_db[i])) == 0)\n(gdb) where\n#0  0x000000000022aaca in ino_trunc (ino=3, size=-4420917493761) at suj.c:1329\n#1  0x00000000002270f7 in cg_trunc (sc=0x800a8a8c0) at suj.c:1574\n#2  0x0000000000226dc5 in cg_apply (apply=0x227090 \u003ccg_trunc\u003e) at suj.c:1638\n#3  0x0000000000225562 in suj_check (filesys=0x7fffffffed74 \"junk\")\n    at suj.c:2460\n#4  0x00000000002195c6 in checkfilesys (filesys=0x7fffffffed74 \"junk\")\n    at main.c:356\n#5  0x0000000000218f72 in main (argc=1, argv=0x7fffffffea20) at main.c:210"
+}

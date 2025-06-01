@@ -1,0 +1,8 @@
+{
+ "id": 1227809,
+ "bug_id": 266627,
+ "attachment_id": 0,
+ "creation_time": "2022-09-26T21:19:40Z",
+ "creator": "se@FreeBSD.org",
+ "text": "(In reply to Konstantin Belousov from comment #1)\n\n\u003e What would you expect in this case to happen? TIOCSETA override the job\n\u003e control rules?  I do not think this is wise.  Or TIOCSETA returning EAGAIN\n\u003e for instance.  The later may be reasonable, but I am not sure how much code\n\u003e would break.\n\nYes, I'm also afraid that making \"stty sane \u0026\" return with an error code instead of waiting for the terminal to be controlled by the stty process might cause a violation of POLA.\n\nA program that runs in the background must not change the setting of a terminal in use by the foreground process. Both, blocking until the stty program has control of the terminal, or exiting with an error code seem to be possible approaches.\n\nBut I can imagine that programs that want to set the terminal mode to \"raw\" may rather want to wait for access to the terminal when started in the background, but this would still work if the terminal is not opened with O_NONBLOCK.\n\nAccording to the documentation \"stty sane\" does not imply O_NONBLOCK, thus the blocking behavior would still be available.\n\nIf there is a way that a shell script can determine whether \"stty sane\" would block, I could skip that call in the script running in the background.\nBut I do not know of a reliable method to detect that case.\n\n\u003e Anyway, the later option probably could be done by the attached change.  Do you\n\u003e know what e.g. Linux does in this case?\n\nLinux blocks the system call in the same way as FreeBSD:\n\n$ stty sane \u0026\n[1] 8\n$ fg\nstty sane\n$"
+}

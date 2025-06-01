@@ -1,0 +1,8 @@
+{
+ "id": 933350,
+ "bug_id": 219154,
+ "attachment_id": 182421,
+ "creation_time": "2017-05-08T22:22:54Z",
+ "creator": "jan.kokemueller@gmail.com",
+ "text": "Created attachment 182421\nfixes for realpath(3)\n\nThere are some buffer overflows in realpath(3). The attached patch fixes them:\n\n - The statement \"left_len -= s - left;\" does not take the slash into account if one was found. This results in the invariant \"left[left_len] == '\\0'\" being violated (and possible buffer overflows). The patch replaces the variable \"s\" with a size_t \"next_token_len\" for more clarity.\n\n - \"slen\" from readlink(2) can be 0 when encountering empty symlinks. Then, further down, \"symlink[slen - 1]\" underflows the buffer. When slen == 0, realpath(3) should probably return ENOENT (http://austingroupbugs.net/view.php?id=825, https://lwn.net/Articles/551224/).\n\n\nSome other minor issues:\n\n - The condition \"resolved_len \u003e= PATH_MAX\" cannot be true.\n\n - Similarly, \"s - left \u003e= sizeof(next_token)\" cannot be true, as long as \"sizeof(next_token) \u003e= sizeof(left)\".\n\n - Return ENAMETOOLONG when a resolved symlink from readlink(2) is too long for the symlink buffer (instead of just truncating it).\n\n - \"resolved_len \u003e 1\" below the call to readlink(2) is always true as \"strlcat(resolved, next_token, PATH_MAX);\" always results in a string of length \u003e 1. Also, \"resolved[resolved_len - 1] = '\\0';\" is not needed; there can never be a trailing slash here.\n\n - The truncation check for \"strlcat(symlink, left, sizeof(symlink));\" should be against \"sizeof(symlink)\" (the third argument to strlcat) instead of \"sizeof(left)\"."
+}

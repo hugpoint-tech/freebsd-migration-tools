@@ -1,0 +1,8 @@
+{
+ "id": 1006064,
+ "bug_id": 230538,
+ "attachment_id": 0,
+ "creation_time": "2018-08-11T20:36:50Z",
+ "creator": "please@forget.me.uk",
+ "text": "To make apr1 compile with mysql80-client I found that 2 files need to updated from apr-util:\n\napr-util-1.6.1/dbd/apr_dbd_mysql.c\n\nadd to after line 50:\n/* MySQL 8.0 replaces my_bool with C99 bool. Earlier versions of MySQL had\n* a typedef to char. Gem users reported failures on big endian systems when\n* using C99 bool types with older MySQLs due to mismatched behavior. */\n#ifndef HAVE_TYPE_MY_BOOL\n#include \u003cstdbool.h\u003e\ntypedef bool my_bool;\n#endif\n\nsecond file : apr-util-1.6.1/build/dbd.m4\nreplace line 178:\nAC_CHECK_HEADERS([mysql.h my_global.h my_sys.h],\nwith \nAC_CHECK_HEADERS([mysql.h],\n\nreplace line 183:\nAC_CHECK_HEADERS([mysql/mysql.h mysql/my_global.h mysql/my_sys.h],\nwith\nAC_CHECK_HEADERS([mysql/mysql.h],\n\nthe same on lines 209 and 215\n\nthen replace all occurrence of \n[#include \u003cmysql/my_global.h\u003e]) \nwith \n[#include \u003cmysql/mysql.h\u003e])\n\nand\n\n[#include \u003cmy_global.h\u003e]) \nwith \n[#include \u003cmysql.h\u003e])\n\nthen commands to test it : \nautoconf\n./configure\nmake\n\nsee if dbd/apr_dbd_mysql.o file was generated.\n\nI am no expert at doing patches, hope someone will pick it app and apply this with some testing, ah this is only when mysql80-client is installed."
+}

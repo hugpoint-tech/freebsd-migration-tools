@@ -1,0 +1,8 @@
+{
+ "id": 1125047,
+ "bug_id": 221613,
+ "attachment_id": 0,
+ "creation_time": "2020-10-01T20:39:20Z",
+ "creator": "andrew.daugherity@gmail.com",
+ "text": "I can confirm this is still an issue on 12.1.\n\nI have in /etc/login.conf:\ndefault:\\\n        [...]\n        :passwordtime=1y:\\\n        :warnpassword=7d:\n\nBut this was not applied to newly-created accounts (regardless of using either adduser or \"pw useradd\"), which had 0 in the sixth field of master.passwd, meaning password expiration was ignored.\n\nI first tried editing adduser.conf, adding 'upwexpire=1y', but then creating users failed with the error \"pw: Invalid date\".  (I guess adduser calls pw useradd internally, which makes sense.)  I then tried the example straight out of adduser.conf(5) of 'upwexpire=91d', which also fails.  A bare number does work, but gets copied directly to the change field of master.passwd, rather than being converted to epoch-relative time.\n\nSimilarly, setting 'password_days = 365' in pw.conf, makes users get a literal 365 in master.passwd, just like Andres' report.\n\n\nWorkaround: Don't set password_days in pw.conf, but immediately after user creation, set the expiration time with \"pw usermod -p\"; date(1) can help convert relative dates to the epoch format, e.g. for 60 days in the future:\n    pw useradd $USER ...\n    pw usermod $USER -p `date -v +60d +%s`"
+}

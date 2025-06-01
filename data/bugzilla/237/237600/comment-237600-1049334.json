@@ -1,0 +1,8 @@
+{
+ "id": 1049334,
+ "bug_id": 237600,
+ "attachment_id": 0,
+ "creation_time": "2019-05-01T11:51:13Z",
+ "creator": "vas@sibptus.ru",
+ "text": "My final conclusion. The default way apcupsd is started by the port (with --kill-on-powerfail) is wrong. You cannot rely on the UPS grace shutdown delay even with the default setting of rcshutdown_timeout=\"90\", while using virtual machines necessitates making rcshutdown_timeout even longer. A race between the UPS grace delay and the FreeBSD shutdown procedure must be eradicated.\n\nThe only feasible way of doing it is:\n\n1. Starting apcupsd with apcupsd_flags=\"--term-on-powerfail\" so that the daemon exits once it has started the doshutdown procedure and does not send any commands to the UPS at this stage.\n\n2. Putting the line\n\"test -f /var/run/powerfail \u0026\u0026 /usr/local/sbin/apcupsd --hibernate\"\nor\n\"test -f /var/run/powerfail \u0026\u0026 /usr/local/sbin/apcupsd --power-off\"\n\n(depending on the desired behaviour of the UPS after the mains is restored) at the very end of the /etc/rc.shutdown script, after the \"Insert other shutdown procedures here\" line.\n\nThus the shutdown procedure started by \"apcupsd --term-on-powerfail\" can proceed at its own tempo, with \"apcupsd --hibernate\" being called when all the daemons and VMs have been safely shut down."
+}

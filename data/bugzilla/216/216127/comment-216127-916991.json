@@ -1,0 +1,8 @@
+{
+ "id": 916991,
+ "bug_id": 216127,
+ "attachment_id": 0,
+ "creation_time": "2017-01-17T01:29:29Z",
+ "creator": "cem@freebsd.org",
+ "text": "It appears that dump just dumps raw extattr data from UFS.  The routine in restore responsible for parsing that raw data and turning it into syscalls on the receiving filesystem is set_extattr_fd() in tape.c.\n\nThe intent of the \"system, (16 bytes), mb1946a (unable to set)\" print is to print the namespace, extattr data length, and name of the extattr.  The problem appears to be that restore is using \"%*s\" rather than \"%.*s\" to print the non-null-terminated eap-\u003eea_name.  The former is the field width, while the latter is the precision.  Only precision controls the number of characters printed by a %s format.\n\nThe same naive behavior around non-null-terminated ea_name leads to the same bogus string being passed into extattr_set_fd() (or extattr_set_link, etc for the other variants) and used to check for ACL attributes."
+}

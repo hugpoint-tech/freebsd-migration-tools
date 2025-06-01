@@ -1,0 +1,8 @@
+{
+ "id": 807220,
+ "bug_id": 197139,
+ "attachment_id": 0,
+ "creation_time": "2015-01-27T21:02:22Z",
+ "creator": "rupavath@juniper.net",
+ "text": "igb_attach has this code \n\nerr_late:\n        igb_detach(dev);\n        igb_free_transmit_structures(adapter);\n        igb_free_receive_structures(adapter);\n        igb_release_hw_control(adapter);\nerr_pci:\n        igb_free_pci_resources(adapter);\n        if (adapter-\u003eifp != NULL)\n                if_free(adapter-\u003eifp);\n        free(adapter-\u003emta, M_DEVBUF);\n        IGB_CORE_LOCK_DESTROY(adapter);\n\n        return (error);\n\nHowever, I see that igb_detach does all this cleanup when it's successfully completed. Only exception I see is that it return EBUSY if vlantrunk is in use\n        /* Make sure VLANS are not using driver */\n        if (if_vlantrunkinuse(ifp)) {\n                device_printf(dev,\"Vlan in use, detach first\\n\");\n                return (EBUSY);\n        }\n\nThis results in duplicate cleanup in igb_attach and can cause crashes. \nThe fix would be the following. \nIndex: if_igb.c\n===================================================================\n--- if_igb.c\t(revision 298053)\n+++ if_igb.c\t(working copy)\n@@ -723,7 +723,8 @@ igb_attach(device_t dev)\n \treturn (0);\n \n err_late:\n-\tigb_detach(dev);\n+\tif(igb_detach(dev) == 0) /* igb_detach did the cleanup */\n+\t\treturn(error); \n \tigb_free_transmit_structures(adapter);\n \tigb_free_receive_structures(adapter);\n \tigb_release_hw_control(adapter);\n\n\nThe issue exists in stable/10 as well as current."
+}

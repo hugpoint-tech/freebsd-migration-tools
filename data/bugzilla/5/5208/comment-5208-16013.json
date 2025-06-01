@@ -1,0 +1,8 @@
+{
+ "id": 16013,
+ "bug_id": 5208,
+ "attachment_id": 0,
+ "creation_time": "1997-12-03T22:00:01Z",
+ "creator": "rjb@calyx.com",
+ "text": "Umount will not unmount a device that was mounted via a symlink. I \nlink /dev/wcd0a to /dev/cdrom so it's easier to remember. When trying\nto umount it, it fails saying the device is not mounted. Check it \nout:\n\n\u003c Link /dev/wcd0a to /dev/cdrom\u003e\n\n# ln -s /dev/wcd0a /dev/cdrom\n# ls -l /dev/cdrom\nlrwxrwxrwx   1 root     wheel          10 Nov 18 15:50 /dev/cdrom -\u003e /dev/wcd0a\n\n\u003cMount /dev/cdrom with fstype cd9660\u003e\n\n# mount_cd9660 /dev/cdrom /mnt\n# mount\n/dev/wd0a on / (local)\nprocfs on /proc (local)\n/dev/cdrom on /mnt (local, read-only)\n\n\u003cTry to unmount it\u003e\n\n# umount /dev/cdrom\numount: /dev/wcd0a: not currently mounted\n\n\u003cBut it IS mounted! Ok, let's try to unmount the actual device\u003e\n\n# umount /dev/wcd0a\numount: /dev/wcd0a: not currently mounted\n\n\u003cJust to be sure we're not fooling ourselves, let's look at mount output again\u003e\n\n# mount\n/dev/wd0a on / (local)\nprocfs on /proc (local)\n/dev/cdrom on /mnt (local, read-only)\n\n\nSo, we can't unmount the filesystem because mount doesn't think it is\nmounted. I think this is a bug.\n\nFix: \n\nModify mount/umount to recognize and properly handle symlinks.\nHow-To-Repeat: See above"
+}

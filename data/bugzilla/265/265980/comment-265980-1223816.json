@@ -1,0 +1,8 @@
+{
+ "id": 1223816,
+ "bug_id": 265980,
+ "attachment_id": 0,
+ "creation_time": "2022-08-21T23:04:57Z",
+ "creator": "emaste@freebsd.org",
+ "text": "Related commit:\n\ncommit 14fb9485a4dc9c8212bfae6c2049cb4930f4b8e5\nAuthor: Emmanuel Vadot \u003cmanu@FreeBSD.org\u003e\nDate:   Fri Nov 8 20:08:44 2019 +0000\n\n    loader.efi: Default to serial if we don't have a ConOut variable\n    \n    In the EFI implementation in U-Boot no ConOut efi variable is created,\n    this cause loader to fallback to TERM_EMU implementation which is very\n    very very slow (and uses the ConOut device in the system table anyway).\n    The UEFI spec aren't clear as if this variable needs to exists or not.\n    \n    Reviewed by:    imp, kevans\n\nNotes:\n    svn path=/head/; revision=354559\n\ndiff --git a/stand/efi/loader/main.c b/stand/efi/loader/main.c\nindex c5d664dce65e..641cc7154f13 100644\n--- a/stand/efi/loader/main.c\n+++ b/stand/efi/loader/main.c\n@@ -703,8 +703,11 @@ parse_uefi_con_out(void)\n        how = 0;\n        sz = sizeof(buf);\n        rv = efi_global_getenv(\"ConOut\", buf, \u0026sz);\n-       if (rv != EFI_SUCCESS)\n+       if (rv != EFI_SUCCESS) {\n+               /* If we don't have any ConOut default to serial */\n+               how = RB_SERIAL;\n                goto out;\n+       }\n        ep = buf + sz;\n        node = (EFI_DEVICE_PATH *)buf;\n        while ((char *)node \u003c ep) {"
+}

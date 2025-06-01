@@ -1,0 +1,8 @@
+{
+ "id": 575750,
+ "bug_id": 150143,
+ "attachment_id": 0,
+ "creation_time": "2010-09-07T23:41:09Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: ivoras\nDate: Tue Sep  7 22:40:45 2010\nNew Revision: 212305\nURL: http://svn.freebsd.org/changeset/base/212305\n\nLog:\n  Avoid \"Entry can disappear before we lock fdvp\" panic.\n  \n  PR:\t\t150143\n  Submitted by:\tGleb Kurtsou \u003cgk at FreeBSD.org\u003e\n  Pretty sure it won't blow up: mckusick\n  MFC after:\t2 weeks\n\nModified:\n  head/sys/fs/tmpfs/tmpfs_vnops.c\n\nModified: head/sys/fs/tmpfs/tmpfs_vnops.c\n==============================================================================\n--- head/sys/fs/tmpfs/tmpfs_vnops.c\tTue Sep  7 21:28:45 2010\t(r212304)\n+++ head/sys/fs/tmpfs/tmpfs_vnops.c\tTue Sep  7 22:40:45 2010\t(r212305)\n@@ -981,10 +981,14 @@ tmpfs_rename(struct vop_rename_args *v)\n \tfnode = VP_TO_TMPFS_NODE(fvp);\n \tde = tmpfs_dir_lookup(fdnode, fnode, fcnp);\n \n-\t/* Avoid manipulating '.' and '..' entries. */\n+\t/* Entry can disappear before we lock fdvp,\n+\t * also avoid manipulating '.' and '..' entries. */\n \tif (de == NULL) {\n-\t\tMPASS(fvp-\u003ev_type == VDIR);\n-\t\terror = EINVAL;\n+\t\tif ((fcnp-\u003ecn_flags \u0026 ISDOTDOT) != 0 ||\n+\t\t    (fcnp-\u003ecn_namelen == 1 \u0026\u0026 fcnp-\u003ecn_nameptr[0] == '.'))\n+\t\t\terror = EINVAL;\n+\t\telse\n+\t\t\terror = ENOENT;\n \t\tgoto out_locked;\n \t}\n \tMPASS(de-\u003etd_node == fnode);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

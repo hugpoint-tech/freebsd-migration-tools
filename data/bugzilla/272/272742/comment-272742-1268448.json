@@ -1,0 +1,8 @@
+{
+ "id": 1268448,
+ "bug_id": 272742,
+ "attachment_id": 0,
+ "creation_time": "2023-08-01T04:59:18Z",
+ "creator": "kargl@FreeBSD.org",
+ "text": "I don't understand why your patch is necessary. The ld128/s_tanpil.c does not do bit twiddling like the other routines.\n\nAh, now, I see.  There is a bug in the patch. :(\n\n \t/*\n-\t * |x| \u003e= 0x1p112 is always an integer, so return +-0.\n+\t * For 0x1p112 \u003c= |x| \u003c 0x1p113 need to determine if x is an even\n+\t * or odd integer to set t = +0 or -0.\n+\t * For |x| \u003e= 0x1p113, it is always an even integer, so t = 0.\n \t */\n-\treturn (copysignl(0, x));\n+\tt = fmodl(xf, 2.L) == 1 ? 0 : (copysign(0, (lx \u0026 1) ? -1 : 1));\n+\treturn ((hx \u0026 0x80000000) ? -t : t);\n\n\nThe copysign() is wrong.  In fact, the whole evaluation of t is wrong.\n\nThis can be\n\n      t = fmodl(ax, 2.L) == 0 ? 0 : copysignl(0.L, -1,L);\n\nThat is, t = 0 for even |x| and t = -0 for odd |x|.\n\nApologies for the mess up.  For future testing, I still have an account on freefall.freebsd.org.  Is there an aarch64 reference system that I can ssh into for testing.\n\nPS: Thanks for looking at this bug report."
+}

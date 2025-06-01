@@ -1,0 +1,8 @@
+{
+ "id": 827683,
+ "bug_id": 200613,
+ "attachment_id": 0,
+ "creation_time": "2015-06-14T02:37:42Z",
+ "creator": "sson@freebsd.org",
+ "text": "firebird25-client has not been ported to arm and contains some machine dependent code, namely in Firebird-2.5.3.26780-0/src/common/classes/fb_atomic.h:\n\nHere is the compiler error:\n\n../src/include/../common/classes/fb_atomic.h:382:4: error: invalid instruction\n                        \"lock; xaddl %0, %1\"\n                        ^\n\u003cinline asm\u003e:1:2: note: instantiated into assembly here\n        lock; xaddl r1, [r0]\n              ^~~~~\n\nHere is the code:\n\n// Assembler version for x86 and AMD64. Note it uses xaddl thus it requires i486\nclass AtomicCounter\n{\npublic:\n        typedef AtomicType counter_type;\n\n        explicit AtomicCounter(AtomicType value = 0) : counter(value) {}\n        ~AtomicCounter() {}\n\n        AtomicType exchangeAdd(AtomicType value)\n        {\n                register counter_type result;\n                __asm __volatile (\n#if SIZEOF_VOID_P == 8\n                        \"lock; xaddq %0, %1\"\n#else\n                        \"lock; xaddl %0, %1\"\n#endif\n                         : \"=r\" (result), \"=m\" (counter)\n                         : \"0\" (value), \"m\" (counter));\n                return result;\n        }"
+}

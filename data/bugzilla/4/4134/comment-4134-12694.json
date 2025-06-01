@@ -1,0 +1,8 @@
+{
+ "id": 12694,
+ "bug_id": 4134,
+ "attachment_id": 0,
+ "creation_time": "1997-07-21T14:40:01Z",
+ "creator": "nick@foobar.org",
+ "text": "\n\t__hashpw() in lib/libc/gen/getpwent.c uses a flawed mechanism\n\tfor allocating on-the-fly static buffer space for passwd\n\tentries.  The mechanism checks to see if the currently\n\tassigned buffer is big enough.  If it isn't, then it\n\tincreases it by 1024 chars.  If __hashpw() is called with\n\ta data structure of size more than 1024 bytes larger that\n\tthe currently assigned buffer, it's possible that other\n\tdata could be overwritten.\n\nFix: \n\nOn line 292 of getpwent.c, replace:\n\n        if (data.size \u003e max \u0026\u0026 !(line = realloc(line, max += 1024)))\n                return(0);\n\nwith:\n\n        if (data.size \u003e max) {\n                max = data.size + 1024;\n                if (!(line = realloc(line, max)))\n                        return NULL;\n        }\nHow-To-Repeat: \n\tSet gecos to be large (\u003e1024 chars) and then call getpwent()."
+}

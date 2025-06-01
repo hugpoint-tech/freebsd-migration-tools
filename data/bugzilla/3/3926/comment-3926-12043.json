@@ -1,0 +1,8 @@
+{
+ "id": 12043,
+ "bug_id": 3926,
+ "attachment_id": 0,
+ "creation_time": "1997-06-22T15:20:00Z",
+ "creator": "kzmi@ca2.so-net.or.jp",
+ "text": "\tIf PPP negotiation succeed, new default route is set to alternate\n\tgateway.\n\tnew route is : 0.0.0.0 --\u003e xx.xx.xx.xx (gateway addr) (tun0)\n\tWhen close the connection or quit the process, this route must\n\tbe deleted. But, this default route is remained after quit the ppp.\n\n\tIf ppp was stand next time, the old default route is not removed, so\n\tnew gateway address is not set.\n\nFix: \n\nIn source code \"ppp/route.c\", function \"void DeleteIfRoutes()\"\n\t---------- BEGIN\n\t{\n\t\u003csnip\u003e\n      \t    if (dstnet.s_addr == INADDR_ANY) {\n\t      gateway.s_addr = INADDR_ANY;\n\t      mask = INADDR_ANY;\n\t    }\n\t    maddr.s_addr = htonl(mask);\n\t    OsSetRoute(RTM_DELETE, dstnet, gateway, maddr);\n\t\u003csnip\u003e\n\t}\n\t---------- END\n\t( This code is also exist in original iij-ppp v0.94 )\n\t\n\tThis function is called to delete routes before set alternate\n\tgataway address, or before quit the process, etc.\n\t\n\tIn above part, when destaddr == INADDR_ANY is true, gateway-addr and\n\tmask is set to INADDR_ANY.\n\tINADDR_ANY is defined as 0.0.0.0 in \u003cnetinet/in.h\u003e.\n\tSo, if this function was called to delete the default route which\n\trouted to another gateway, this function try to delete default route\n\twhich gateway is 0.0.0.0  --- and it fail.\n\t( I think that there is no problem in \"routed\"... )\n\n\tI delete \"if(...){...}\" sequence above, then it seems that\n\tthe problem was fixed...\n\t\n\tI'm not a expert of the network or IP routings.\n\tI have no idea about a necessity of this operations of gateway-addr and\n\tmask."
+}

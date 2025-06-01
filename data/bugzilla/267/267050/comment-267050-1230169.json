@@ -1,0 +1,8 @@
+{
+ "id": 1230169,
+ "bug_id": 267050,
+ "attachment_id": 237300,
+ "creation_time": "2022-10-14T13:52:56Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 237300\nauditreduce input that causes a segmentation fault in free()\n\nau_read_rec() in /usr/src/contrib/openbsm/libbsm/bsm_io.c says:\n\n                *buf = malloc(recsize);\n                ...;\n                        free(buf);\n\nThe free(buf) should be free(*buf).\n\nI've attached a demo:\n\n% auditreduce \u003c auditreduce1a.dat\nSegmentation fault\n\nThread 2.1 received signal SIGSEGV, Segmentation fault.\nAddress not mapped to object.\n[Switching to LWP 100451 of process 16127]\n0x000000080120ad11 in ?? () from /lib/libc.so.7\n(gdb) where\n#0  0x000000080120ad11 in ?? () from /lib/libc.so.7\n#1  0x0000000801084680 in au_read_rec (fp=0x80127c6c0, buf=0x7fffffffde28)\n    at /usr/src/contrib/openbsm/libbsm/bsm_io.c:4600\n#2  0x0000000001024851 in select_records (fp=0x80127c6c0)\n    at /usr/src/contrib/openbsm/bin/auditreduce/auditreduce.c:532\n#3  0x0000000001024384 in main (argc=\u003coptimized out\u003e, argv=\u003coptimized out\u003e)\n    at /usr/src/contrib/openbsm/bin/auditreduce/auditreduce.c:829\n\nThis is on 13.1-RELEASE-p2 as well as a recent CURRENT."
+}

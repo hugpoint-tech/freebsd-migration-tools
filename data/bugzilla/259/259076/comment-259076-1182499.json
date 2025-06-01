@@ -1,0 +1,8 @@
+{
+ "id": 1182499,
+ "bug_id": 259076,
+ "attachment_id": 0,
+ "creation_time": "2021-10-15T17:59:11Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to Denis Koreshkov from comment #8)\nWhy do not they help?  When mmap(2) returns MMAP_FAILED, morepages() returns 0.\nThen, morecore would not touch pagepool_start.\n\nHmm, It is probably wrong that pagepool_end is not reset there.  I think I can\nagree to some part of your note, that we should e.g. set both pagepool_start\nand pagepool_end to 0 to avoid munmap(2)-ing something not own by us on the\nnext allocation attempt.\n\nLike this (didn't tested)\n\ndiff --git a/libexec/rtld-elf/rtld_malloc.c b/libexec/rtld-elf/rtld_malloc.c\nindex 64218b5bb786..54159bec8e4e 100644\n--- a/libexec/rtld-elf/rtld_malloc.c\n+++ b/libexec/rtld-elf/rtld_malloc.c\n@@ -271,21 +271,21 @@ morepages(int n)\n \t\t}\n \t}\n \n-\tif (pagepool_start == MAP_FAILED)\n-\t\tpagepool_start = 0;\n \toffset = (uintptr_t)pagepool_start - rounddown2(\n \t    (uintptr_t)pagepool_start, pagesz);\n \n-\tpagepool_start = mmap(0, n * pagesz, PROT_READ | PROT_WRITE,\n+\taddr = mmap(0, n * pagesz, PROT_READ | PROT_WRITE,\n \t    MAP_ANON | MAP_PRIVATE, -1, 0);\n-\tif (pagepool_start == MAP_FAILED) {\n+\tif (addr == MAP_FAILED) {\n #ifdef IN_RTLD\n \t\trtld_fdprintf(STDERR_FILENO, _BASENAME_RTLD \": morepages: \"\n \t\t    \"cannot mmap anonymous memory: %s\\n\",\n \t\t    rtld_strerror(errno));\n #endif\n+\t\tpagepool_start = pagepool_end = 0;\n \t\treturn (0);\n \t}\n+\tpagepool_start = addr;\n \tpagepool_end = pagepool_start + n * pagesz;\n \tpagepool_start += offset;"
+}

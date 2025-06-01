@@ -1,0 +1,8 @@
+{
+ "id": 1054949,
+ "bug_id": 238353,
+ "attachment_id": 0,
+ "creation_time": "2019-06-19T11:56:13Z",
+ "creator": "o.hushchenkov@gmail.com",
+ "text": "(In reply to Jan Beich from comment #9)\ngn relies on uname(3) to determine the machine architecture. We can patch it like this:\n\ndiff --git a/util/sys_info.cc b/util/sys_info.cc\nindex a1ce3e92..92ae69d8 100644\n--- a/util/sys_info.cc\n+++ b/util/sys_info.cc\n@@ -7,6 +7,11 @@\n #include \"base/logging.h\"\n #include \"util/build_config.h\"\n \n+#if defined(OS_FREEBSD)\n+#include \u003csys/sysctl.h\u003e\n+#include \u003csys/types.h\u003e\n+#endif\n+\n #if defined(OS_POSIX)\n #include \u003csys/utsname.h\u003e\n #include \u003cunistd.h\u003e\n@@ -17,7 +22,24 @@\n #endif\n \n std::string OperatingSystemArchitecture() {\n-#if defined(OS_POSIX)\n+#if defined(OS_FREEBSD)\n+  int mib[] = { CTL_HW, HW_MACHINE_ARCH };\n+  char march[1024];\n+  size_t march_size = 1024;\n+  if (sysctl(mib, 2, march, \u0026march_size, nullptr, 0) == -1) {\n+    NOTREACHED();\n+    return std::string();\n+  }\n+  std::string arch(march);\n+  if (arch == \"i386\") {\n+    arch = \"x86\";\n+  } else if (arch == \"amd64\") {\n+    arch = \"x86_64\";\n+  } else if (arch == \"powerpc64\") {\n+    arch = \"ppc64\";\n+  }\n+  return arch;\n+#elif defined(OS_POSIX)\n   struct utsname info;\n   if (uname(\u0026info) \u003c 0) {\n     NOTREACHED();\n\nBut I have only amd64 machines and can't test it. Maybe we need to create different PR for this issue."
+}

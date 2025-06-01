@@ -1,0 +1,8 @@
+{
+ "id": 1280867,
+ "bug_id": 274509,
+ "attachment_id": 0,
+ "creation_time": "2023-10-22T10:23:38Z",
+ "creator": "matthew@FreeBSD.org",
+ "text": "(In reply to Nathan Huff from comment #4)\n\nHmm... close_range(2) exists in FreeBSD and autoconf does produce the correct settings in FreeBSD:\n\n```\npkg:~...rsyslog8/work/rsyslog-8.2310.0:% grep -C 1 CLOSE_RANGE config.h\n/* Define to 1 if you have the `close_range' function. */\n#define HAVE_CLOSE_RANGE 1\n\n--\n/* Define to 1 if you have the \u003clinux/close_range.h\u003e header file. */\n/* #undef HAVE_LINUX_CLOSE_RANGE_H */\n```\n\nso this patch (https://bz-attachments.freebsd.org/attachment.cgi?id=245790) would be a no-op.  On reading the code, messages about:\n\n```\n3284.449464175:main thread : rsyslogd.c: closes unneeded files: opendir failed for /proc/self/fd\n3284.449487278:main thread : rsyslogd.c: closes unneeded files: opendir failed for /proc/fd\n```\nare informational only, just tracing process execution -- since FreeBSD does not have '/proc/self/fd' nor necessarily '/proc/fd' the two calls to close_unneeded_open_files() fail and the code falls back to using close_range().   Nothing wrong there.\n\nThis seems a red-herring to me -- the real issue is with imuxsock and both the reports in https://github.com/rsyslog/rsyslog/issues/5241 really are actually about the same issue (contrary to my initial impression)."
+}

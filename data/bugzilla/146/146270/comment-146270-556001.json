@@ -1,0 +1,8 @@
+{
+ "id": 556001,
+ "bug_id": 146270,
+ "attachment_id": 0,
+ "creation_time": "2010-05-15T19:40:48Z",
+ "creator": "intel@intrans.baku.az",
+ "text": "1) 6.3 have same problem\n2)\nI seems found where is exception\nfile\n/usr/src/sys/dev/ata/ata-lowlevel.c\nfunction ata_tf_write\nafter line 793\n  ATA_IDX_OUTB(ch, ATA_SECTOR, (request-\u003eu.ata.lba % sectors)+1);\n\u003c------\u003e    ATA_IDX_OUTB(ch, ATA_CYL_LSB,\n\u003c------\u003e\u003c------\u003e\u003c------\u003e (request-\u003eu.ata.lba / (sectors * heads)));\n\u003c------\u003e    ATA_IDX_OUTB(ch, ATA_CYL_MSB,\n\u003c------\u003e\u003c------\u003e\u003c------\u003e (request-\u003eu.ata.lba / (sectors * heads)) \u003e\u003e 8);\n\u003c------\u003e    ATA_IDX_OUTB(ch, ATA_DRIVE, ATA_D_IBM | \nATA_DEV(request-\u003eunit) |.\n\u003c------\u003e\u003c------\u003e\u003c------\u003e (((request-\u003eu.ata.lba% (sectors * heads)) /\n\u003c------\u003e\u003c------\u003e\u003c------\u003e   sectors) \u0026 0xf));\n\nseems that in variable heads or sectors is 0\nafter I add check (head !=0 \u0026\u0026 sectors !=0) around this lines exception \nis gone\nbut it still don't mount root fs\n\nlogs in attachment\n\n63.log - log from v6.3\n60m.log - log after modification"
+}

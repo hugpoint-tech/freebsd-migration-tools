@@ -1,0 +1,8 @@
+{
+ "id": 82777,
+ "bug_id": 26506,
+ "attachment_id": 0,
+ "creation_time": "2004-11-26T15:08:58Z",
+ "creator": "viny@FreeBSD.org",
+ "text": "I had the same problem on a FreeBSD 5.3-BETA4. An ircd wouldn't resolve\nIPs as DNS requests would fail, sendto() returning EINVAL. As available\npatches didn't apply to 5.X, I did some search and I eventually found\nthat it came from a test in src/sys/netinet/in_pcb.c, in function\nin_pcbbind_setup(inp, nam, laddrp, lportp, cred) :\n\nif (sin-\u003esin_port != *lportp) {\n\t/* Don't allow the port to change. */\n\tif (*lportp != 0)\n\t\treturn (EINVAL);\n\tlport = sin-\u003esin_port;\n}\n/* NB: lport is left as 0 if the port isn't being changed. */\n\nFor some reason, *lportp isn't null. By looking a little further, it\nseems that in_pcbbind_setup() is called by udp_output(inp, m, addr,\ncontrol, td) in src/sys/netinet/udp_usrreq.c.\n\nif (lport == 0) {\n\terror = EINVAL;\n\tgoto release;\n}\nerror = in_pcbbind_setup(inp, (struct sockaddr *)\u0026src,\n    \u0026laddr.s_addr, \u0026lport, td-\u003etd_ucred);\n\nSo just before the call, there is a test which returns EINVAL if lport\nis null. Then in_pcbbind_setup() is called with lport as value, which is\nnot null (else it would return EINVAL there). As nothing seems to affect\n*lportp in in_pcbbind_setup(), *lportp is still not null when the second\ntest occurs and it returns EINVAL.\n\nBy commenting the test in in_pcbbind_setup (diff attached), I was able\nto make my ircd work. I didn't see any problems since, but I'm not\nreally sure I did the best thing."
+}

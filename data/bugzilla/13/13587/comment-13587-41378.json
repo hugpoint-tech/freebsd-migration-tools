@@ -1,0 +1,8 @@
+{
+ "id": 41378,
+ "bug_id": 13587,
+ "attachment_id": 0,
+ "creation_time": "1999-09-06T01:50:01Z",
+ "creator": "aa8vb@ipass.net",
+ "text": "\n        int stomp_me = 0x12345678;\n        unsigned char  vol[2];\n\n        ioctl( mixer_fd, MIXER_READ( SOUND_MIXER_LINE ), vol )\n\n        The ioctl overwrites the lower two bytes of 'stomp_me'.  This is\n        how Linux apps like xmix declare vol, so apparently this is a bug\n        in our Voxware drivers.  xmix may be saved from memory corruption\n        only by the structure alignment policy of FreeBSD.\n\nHow-To-Repeat: \n        The output of the following program is:\n\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cmachine/soundcard.h\u003e\n#include \u003cassert.h\u003e\n\nint main( int argc, char *argv[] )\n{\n  int mixer_fd, ret, ctrls;\n  int stomp_me = 0x12345678;\n  unsigned char  vol[2];\n\n  mixer_fd = open( \"/dev/mixer0\", O_RDWR, 0 );\n  assert( mixer_fd \u003e= 0 );\n\n  ret = ioctl( mixer_fd, SOUND_MIXER_READ_DEVMASK, \u0026ctrls );\n  assert( ret \u003e= 0 );\n\n  assert( ctrls \u0026 SOUND_MASK_LINE );\n\n  ret = ioctl( mixer_fd, MIXER_READ( SOUND_MIXER_LINE ), vol );\n  assert( ret \u003e= 0 );\n\n  printf( \"Volume is %d,%d\\n\", vol[0], vol[1] );\n\n  if ( stomp_me != 0x12345678 ) {\n    fprintf( stderr, \"\\n\\nWhooah!  Sound ioctl() stomped memory!\\n\"\n                     \"Value was 0x12345678, now it's 0x%.8x\\n\",\n             stomp_me );\n    exit(1);\n  }\n\n  close( mixer_fd );\n\n  return 0;\n}"
+}

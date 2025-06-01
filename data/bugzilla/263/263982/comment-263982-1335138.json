@@ -1,0 +1,8 @@
+{
+ "id": 1335138,
+ "bug_id": 263982,
+ "attachment_id": 0,
+ "creation_time": "2024-11-16T01:10:06Z",
+ "creator": "dxdt@dev.snart.me",
+ "text": "UPDATE: a few things to look out for\n\nI just learned that NetworkManager ignores lifetime value in RA messages. What it also ignores is the RIO with zero prefix length, which is in violation of RFC 4191. Pushing default route with an RIO is valid, inferred from following:\n\n\u003e When a type C host receives a Router Advertisement, it modifies its\n   Routing Table as follows.  When processing a Router Advertisement, a\n   type C host first updates a ::/0 route based on the Router Lifetime\n   and Default Router Preference in the Router Advertisement message\n   header.  Then as the host processes Route Information Options in the\n   Router Advertisement message body, it updates its routing table for\n   each such option.  The Router Preference and Lifetime values in a\n   ::/0 Route Information Option override the preference and lifetime\n   values in the Router Advertisement header.\n\nhttps://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/blob/main/src/core/ndisc/nm-lndp-ndisc.c#L243\n\nBugs like these may have prompted pfSense devs to use RIO to push default route. There could be some implementations that ignore the lifetime value in the header but honor lifetime value in the RIO. I'd suggest carefully reviewing RFC 4191 before implementing it in rtsold.\n\nThe lifetime field is crucial when making the network fault-tolerant against router failures."
+}

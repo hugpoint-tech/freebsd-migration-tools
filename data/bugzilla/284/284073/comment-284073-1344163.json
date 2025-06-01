@@ -1,0 +1,8 @@
+{
+ "id": 1344163,
+ "bug_id": 284073,
+ "attachment_id": 0,
+ "creation_time": "2025-01-17T09:04:22Z",
+ "creator": "zlei@FreeBSD.org",
+ "text": "addr2line shows that the line of source code is https://cgit.freebsd.org/src/tree/sys/dev/bnxt/bnxt_en/bnxt_sysctl.c?h=releng/14.2#n1959 , but no clue how that line can panic.\n\nMaybe the kernel actually panic within `sysctl_handle_string()` ?\n\nHi Daniel, Can you please build the kernel with INVARIANTS enabled, or directly with the kernel conf `GENERIC-DEBUG` and test with the new kernel / driver ?\n\n\n```\n% readelf -s if_bnxt.ko.debug | grep bnxt_dcb_list_app\n   163: 000000000001a5c0   368 FUNC    LOCAL  DEFAULT    1 bnxt_dcb_list_app\n% echo \"obase=16; ibase=16; 1A5C0 + 144\" | bc\n1A704\n% addr2line -fip -e if_bnxt.ko.debug -j .text 0x1A704\nbnxt_dcb_list_app at /usr/src/sys/dev/bnxt/bnxt_en/bnxt_sysctl.c:1959\n```"
+}

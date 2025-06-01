@@ -1,0 +1,8 @@
+{
+ "id": 618358,
+ "bug_id": 158541,
+ "attachment_id": 0,
+ "creation_time": "2011-06-30T22:40:07Z",
+ "creator": "pabuhr@uwaterloo.ca",
+ "text": "The following program stops printing; it hangs spinning in the for loop.  The\nproblem appears to be a missed signal for ITIMER_REAL to the program.\n\nI have tried 4 versions of the program. Two with durations 9999 and 99999\nmicroseconds, and two different versions to reset the time, one resets the\ntimer in the handler and the other uses the interval times 9999 and 99999\nmicroseconds, respectively. All 4 versions never complete. The only conclusion\nis that the kernel stops sending signals to the program.\n\nThe problem does not occur on RELEASE 8.2, so it has been fixed. Nevertheless,\nI spent several hours tracking this problem down in RELEASE 8.1. After\nisolating the problem, I searched the bug database and found no reference to\nthis problem. So it should be marked as a bug when searching the bug database\nso that others do not have to discover the bug again in RELEASE 8.1.\n\nHow-To-Repeat: #include \u003cstdio.h\u003e\n#include \u003csignal.h\u003e\n#include \u003csys/time.h\u003e\n\nstruct itimerval value;\nint itimer_real = 1;\n\nvoid alarm( int ) {\n    itimer_real += 1;\n//    signal( SIGALRM, alarm );\n//    setitimer(ITIMER_REAL, \u0026value, 0);\n    if ( itimer_real % 10 == 0 ) printf( \"%d\\n\", itimer_real );\n}\n\nint main() {\n    value.it_value.tv_sec = 0;\n    value.it_value.tv_usec = 99999;\n    value.it_interval.tv_sec = 0;\n    value.it_interval.tv_usec = 99999;\n\n    signal( SIGALRM, alarm );\n    setitimer( ITIMER_REAL, \u0026value, 0 );\n\n    for ( ; itimer_real \u003c 1000000; );\n}\n\n// Local Variables: //\n// compile-command: \"g++ test.cc\" //\n// End: //"
+}

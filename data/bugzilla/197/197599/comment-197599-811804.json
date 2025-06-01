@@ -1,0 +1,8 @@
+{
+ "id": 811804,
+ "bug_id": 197599,
+ "attachment_id": 0,
+ "creation_time": "2015-02-24T00:26:42Z",
+ "creator": "cmt@freebsd.org",
+ "text": "The \"oauth\" test dumps core like this:\n\n(gdb) bt\n#0  0x0000000801931a90 in g_string_append_uri_escaped ()\n   from /usr/local/lib/libglib-2.0.so.0\n#1  0x0000000800831911 in sign_hmac (proxy=0x80642c0b0, call=0x80923a0b0, \n    oauth_params=0x809148de0) at oauth-proxy-call.c:149\n#2  0x0000000800831476 in _prepare (call=0x80923a0b0, error=0x7fffffffd870)\n    at oauth-proxy-call.c:292\n#3  0x000000080082aee7 in prepare_message (call=0x80923a0b0, \n    error_out=0x7fffffffd970) at rest-proxy-call.c:830\n\nand:\n149         g_string_append_uri_escaped (text, url_str, NULL, FALSE);\n(gdb) print url_str\n$1 = 0x664e580 \u003cerror: Cannot access memory at address 0x664e580\u003e\n\nLo and behold, there was a warning on the assignment to just that url_str:\noauth-proxy-call.c:130:11: warning: incompatible integer to pointer conversion\n      assigning to 'const char *' from 'int' [-Wint-conversion]\n  url_str = rest_proxy_call_get_url (call);\n\nwhich explains the garbage address in url_str.\nAnd for real, upstream fixed that bug without realising it's impact:\nhttps://git.gnome.org/browse/librest/commit/?id=b50ace7738ea03817acdad87fb2b338a86018329"
+}

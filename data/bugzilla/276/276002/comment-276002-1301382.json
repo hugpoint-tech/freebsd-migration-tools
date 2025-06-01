@@ -1,0 +1,8 @@
+{
+ "id": 1301382,
+ "bug_id": 276002,
+ "attachment_id": 0,
+ "creation_time": "2024-03-18T15:54:55Z",
+ "creator": "pho@FreeBSD.org",
+ "text": "I ran the test scenario variations I have for 3 hours without seeing any problems.\nThis with:\n16:49 /usr/src/tools/test/stress2/misc $ sysctl vfs.nfs.iodmin vfs.nfs.iodmax\nvfs.nfs.iodmin: 0\nvfs.nfs.iodmax: 0\n16:50 /usr/src/tools/test/stress2/misc $ \n\nUnfortunately, the original test scenario still fails:\n\nmount -t nfs -o tcp -o retrycnt=3 -o rw \\\n    127.0.0.1:$mp1 $mp2; s=$?\n\n(\ncargo run --release -- -N 1024 -S 3381155135556591634 -f copy_file_range.toml -m 149264:149265 -v -v -v $mp2/foo.bin    # FAIL\ns=$?\necho \"Exit status is $s\"\n) 2\u003e\u00261 | grep -Ev 'DEBUG|INFO|WARN'\n    Finished release [optimized] target(s) in 2.97s\n     Running `target/release/fsx -N 1024 -S 3381155135556591634 -f copy_file_range.toml -m '149264:149265' -v -v -v /mnt11/foo.bin`\n[ERROR fsx] miscompare: offset= 0x1eedd, size = 0x19f6\n[ERROR fsx] OFFSET  GOOD  BAD  RANGE  \n[ERROR fsx] 0x1eedd 0x38 0x35   0x6c6\n[ERROR fsx] Step# (mod 256) for a misdirected write may be 145\n[ERROR fsx] Using seed 3381155135556591634\n[ERROR fsx] LOG DUMP\n[ERROR fsx]    1 SKIPPED  (read)\n:\n[ERROR fsx]  699 MAPWRITE  0x563e =\u003e 0x1445e ( 0xee20 bytes)\n[ERROR fsx]  700 READ     0x1eedd =\u003e 0x208d3 ( 0x19f6 bytes)\nExit status is 1\numount $mp2\numount $mp1\nmdconfig -d -u $mdstart\nexit 0\n16:52 /home/pho/fsx-rs $"
+}

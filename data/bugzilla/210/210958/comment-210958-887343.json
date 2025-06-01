@@ -1,0 +1,8 @@
+{
+ "id": 887343,
+ "bug_id": 210958,
+ "attachment_id": 172307,
+ "creation_time": "2016-07-10T10:09:04Z",
+ "creator": "mail@fbsd2.e4m.org",
+ "text": "Created attachment 172307\nbad.cpp\n\nFor some reasons I won't discuss here I tried to build firefox-esr with the bundled icu. Base system's clang failes here with an assertion:\n\nAssertion failed: ((OtherT-\u003eisIntegerType() \u0026\u0026 ConstantT-\u003eisIntegerType()) \u0026\u0026 \"comparison with non-integer type\"), function DiagnoseOutOfRangeComparison, file /src/src-9/lib/clang/libclangsema/../../../contrib/llvm/tools/clang/lib/Sema/SemaChecking.cpp, line 4871.\n\nTo reproduce simply compile attached \"bad.cpp\" by running \"clang -cc1 bad.cpp\".\n\nA fix to make it compile (not to fix clang!!!) can be made by this patch:\n\n--- bad.cpp    2016-07-10 11:51:30.236826000 +0200\n+++ bad.cpp    2016-07-10 11:51:30.237273000 +0200\n@@ -12069,7 +12069,8 @@\n         pthread_mutex_unlock(\u0026initMutex);\n         return TRUE;   // Caller will next call the init function.\n     } else {\n-        while (uio.fState == 1) {\n+       int32_t XXXstate;\n+        while ( (XXXstate=uio.fState) == 1) {\n             // Another thread is currently running the initialization.\n             // Wait until it completes.\n             pthread_cond_wait(\u0026initCondition, \u0026initMutex);"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 850258,
+ "bug_id": 204340,
+ "attachment_id": 0,
+ "creation_time": "2015-11-21T23:55:53Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: rmacklem\nDate: Sat Nov 21 23:55:46 UTC 2015\nNew revision: 291150\nURL: https://svnweb.freebsd.org/changeset/base/291150\n\nLog:\n  When the nfsd threads are terminated, the NFSv4 server state\n  (opens, locks, etc) is retained, which I believe is correct behaviour.\n  However, for NFSv4.1, the server also retained a reference to the xprt\n  (RPC transport socket structure) for the backchannel. This caused\n  svcpool_destroy() to not call SVC_DESTROY() for the xprt and allowed\n  a socket upcall to occur after the mutexes in the svcpool were destroyed,\n  causing a crash.\n  This patch fixes the code so that the backchannel xprt structure is\n  dereferenced just before svcpool_destroy() is called, so the code\n  does do an SVC_DESTROY() on the xprt, which shuts down the socket upcall.\n\n  Tested by:\tg_amanakis@yahoo.com\n  PR:\t\t204340\n  MFC after:\t2 weeks\n\nChanges:\n  head/sys/fs/nfs/nfs_var.h\n  head/sys/fs/nfsserver/nfs_nfsdkrpc.c\n  head/sys/fs/nfsserver/nfs_nfsdstate.c"
+}

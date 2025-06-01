@@ -1,0 +1,8 @@
+{
+ "id": 38216,
+ "bug_id": 12611,
+ "attachment_id": 0,
+ "creation_time": "1999-07-13T11:46:45Z",
+ "creator": "sheldonh@uunet.co.za",
+ "text": "On Mon, 12 Jul 1999 11:05:07 MST, frodef@acm.org wrote:\n\n\u003e \u003eHow-To-Repeat:\n\u003e % jot -r 1 -p 4294967296\n\u003e zsh: floating point exception (core dumped)  jot -r 1 -p 4294967296\n\nIt's not always reproducible because it relies on a random number, which\nmight be small on any given run. However, when it does fail, I get the\nfollowing:\n\n| (gdb) set args -r 1 -p 4294967296\n| (gdb) run\n| Starting program: /usr/bin/jot -r 1 -p 4294967296\n| \n| Program received signal SIGFPE, Arithmetic exception.\n| 0x804918b in putdata (x=4058183150.1194973, notlast=0)\n|     at /usr/src/usr.bin/jot/jot.c:313\n| 313             long            d = x;\n| (gdb) back\n| #0  0x804918b in putdata (x=4058183150.1194973, notlast=0)\n|     at /usr/src/usr.bin/jot/jot.c:313\n| #1  0x804881e in main (argc=5, argv=0xbfbfd680)\n|     at /usr/src/usr.bin/jot/jot.c:106\n| #2  0x80486d1 in _start ()\n\nIt looks like a simple assignment from a long to a double. Try the\nfollowing patch.\n\nCiao,\nSheldon.\n\nIndex: jot.c\n===================================================================\nRCS file: /home/ncvs/src/usr.bin/jot/jot.c,v\nretrieving revision 1.9\ndiff -u -d -r1.9 jot.c\n--- jot.c\t1999/05/13 12:18:24\t1.9\n+++ jot.c\t1999/07/13 10:42:06\n@@ -310,8 +310,8 @@\n \tdouble x;\n \tlong notlast;\n {\n-\tlong\t\td = x;\n-\tregister long\t*dp = \u0026d;\n+\tdouble\t\td = x;\n+\tregister double\t*dp = \u0026d;\n \n \tif (boring)\t\t\t\t/* repeated word */\n \t\tprintf(format);"
+}

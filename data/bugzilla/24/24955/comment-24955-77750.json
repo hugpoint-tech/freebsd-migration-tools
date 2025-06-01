@@ -1,0 +1,8 @@
+{
+ "id": 77750,
+ "bug_id": 24955,
+ "attachment_id": 0,
+ "creation_time": "2001-11-03T08:43:33Z",
+ "creator": "maxim@macomnet.ru",
+ "text": "Hello,\n\nTry this patch:\n\nIndex: forward.c\n===================================================================\nRCS file: /home/ncvs/src/usr.bin/tail/forward.c,v\nretrieving revision 1.27\ndiff -u -r1.27 forward.c\n--- forward.c\t1 Sep 2001 22:22:44 -0000\t1.27\n+++ forward.c\t2 Nov 2001 21:46:27 -0000\n@@ -94,10 +94,10 @@\n \toff_t off;\n \tstruct stat *sbp;\n {\n-\tint ch, kq = -1;\n+\tint ch, dirfd, kq = -1;\n \tint action = USE_SLEEP;\n-\tstruct kevent ev[2];\n-\tstruct stat sb2;\n+\tstruct kevent ev[3];\n+\tstruct stat sb2, sbl;\n\n \tswitch(style) {\n \tcase FBYTES:\n@@ -179,6 +179,15 @@\n \t\taction = ADD_EVENTS;\n \t}\n\n+\tif (lstat(fname, \u0026sbl) != -1) {\n+\t\tif ((sbl.st_mode \u0026 S_IFLNK) == S_IFLNK) {\n+\t\t\tdirfd = open((const char *)dirname(fname), O_RDONLY);\n+\t\t\tif (dirfd == -1)\n+\t\t\t\terr(1, \"open\");\n+\t\t}\n+\t} else\n+\t\terr(1, \"lstat\");\n+\n \tfor (;;) {\n \t\twhile ((ch = getc(fp)) != EOF)\n \t\t\tif (putchar(ch) == EOF)\n@@ -202,6 +211,13 @@\n \t\t\t\t    EV_ADD | EV_ENABLE | EV_CLEAR,\n \t\t\t\t    NOTE_DELETE | NOTE_RENAME, 0, 0);\n \t\t\t\tn++;\n+\n+\t\t\t\tif ((sbl.st_mode \u0026 S_IFLNK) == S_IFLNK) {\n+\t\t\t\t\tEV_SET(\u0026ev[n], dirfd, EVFILT_VNODE,\n+\t\t\t\t\t    EV_ADD | EV_ENABLE | EV_CLEAR,\n+\t\t\t\t\t    NOTE_WRITE, 0, 0);\n+\t\t\t\t\tn++;\n+\t\t\t\t}\n \t\t\t}\n \t\t\tEV_SET(\u0026ev[n], fileno(fp), EVFILT_READ,\n \t\t\t    EV_ADD | EV_ENABLE | EV_CLEAR, 0, 0, 0);\n\n-- \nMaxim Konovalov, MAcomnet, Internet-Intranet Dept., system engineer\nphone: +7 (095) 796-9079, mailto: maxim@macomnet.ru"
+}

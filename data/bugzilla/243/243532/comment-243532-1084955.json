@@ -1,0 +1,8 @@
+{
+ "id": 1084955,
+ "bug_id": 243532,
+ "attachment_id": 0,
+ "creation_time": "2020-01-23T00:10:22Z",
+ "creator": "rozhuk.im@gmail.com",
+ "text": "I got:\nkern.ipc.maxsockets: 517552\nkern.maxfiles: 262144\n\n/sys/kern/uipc_socket.c\nstatic void\ninit_maxsockets(void *ignored)\n{\n\n\tTUNABLE_INT_FETCH(\"kern.ipc.maxsockets\", \u0026maxsockets);\n\tmaxsockets = imax(maxsockets, maxfiles);\n}\nSYSINIT(param, SI_SUB_TUNABLES, SI_ORDER_ANY, init_maxsockets, NULL);\n\nlooks like imin() should be used instead of imax():\nsysctl_maxsockets(SYSCTL_HANDLER_ARGS)\n{\n\tint error, newmaxsockets;\n\n\tnewmaxsockets = maxsockets;\n\terror = sysctl_handle_int(oidp, \u0026newmaxsockets, 0, req);\n\tif (error == 0 \u0026\u0026 req-\u003enewptr) {\n\t\tif (newmaxsockets \u003e maxsockets \u0026\u0026\n\t\t    newmaxsockets \u003c= maxfiles) {\n\t\t\tmaxsockets = newmaxsockets;\n\t\t\tEVENTHANDLER_INVOKE(maxsockets_change);\n\t\t} else\n\t\t\terror = EINVAL;\n...\n\n\nAlso, IMHO sysctl_maxsockets() (and some other sysctl val handlers) should not return EINVAL in case: oldval == newval.\nThis will avoid multiple error generation on system boot in case sysctl.conf contains kern.ipc.maxsockets, kern.maxfiles and other things that could not be decreased."
+}

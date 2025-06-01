@@ -1,0 +1,8 @@
+{
+ "id": 1268424,
+ "bug_id": 272856,
+ "attachment_id": 243757,
+ "creation_time": "2023-07-31T21:36:07Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "Created attachment 243757\na gzipped cd9660 image that causes bread() to be called w/o brelse()\n\ncd9660_rrip_loop() in sys/fs/cd9660/cd9660_rrip.c says:\n\n        while (1) {\n            ...;\n                            || bread(ana-\u003eimp-\u003eim_devvp,\n                                     ana-\u003eiso_ce_blk \u003c\u003c\n                                     (ana-\u003eimp-\u003eim_bshift - DEV_BSHIFT),\n                                     ana-\u003eimp-\u003elogical_block_size, NOCRED, \u0026bp))\n            ...;\n        }\n        if (bp)\n                brelse(bp);\n\nThe brelse(bp) is outside the loop; if the loop bread()s twice, a\nblock is left locked.\n\nI've attached a demo image:\n\n# gunzip cd7a.iso.gz\n# mdconfig cd7a.iso\n# mount_cd9660 /dev/md0 /mnt\npanic: userret: Returning with 1 locks held\npanic() at panic+0x26\nuserret() at userret+0xf4\nsyscallret() at syscallret+0xa0\necall_handler() at ecall_handler+0x22\ndo_trap_user() at do_trap_user+0xf2\ncpu_exception_handler_user() at cpu_exception_handler_user+0x72\n--- syscall (378, FreeBSD ELF64, nmount)"
+}

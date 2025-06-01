@@ -1,0 +1,8 @@
+{
+ "id": 684722,
+ "bug_id": 171840,
+ "attachment_id": 0,
+ "creation_time": "2012-09-21T08:20:02Z",
+ "creator": "venkatduvvuru.ml@gmail.com",
+ "text": "1. The below code is absent for ip6_output? This is causing the ipv6 traffic to always flow in just one queue. Flowid is filled by the driver in the receive path and the same flowid will be used to transmit packets. I think this logic is missing for ipv6 packets.\n\n\"netinet/ip_output.c\" Function: ip_output\nif (inp != NULL) {\n                INP_LOCK_ASSERT(inp);\n                M_SETFIB(m, inp-\u003einp_inc.inc_fibnum);\n                if (inp-\u003einp_flags \u0026 (INP_HW_FLOWID|INP_SW_FLOWID)) {\n                        m-\u003em_pkthdr.flowid = inp-\u003einp_flowid;\n                        m-\u003em_flags |= M_FLOWID;\n                }\n        }\n2. \"fle\" is NULL after enabling FLOWTABLE for IPv6\n \n\"net/flowtable.c\"\n        if (af == AF_INET6)\n        {\n                fle = flowtable_lookup_mbuf6(ft, m);\n                if (fle != NULL \u0026\u0026 m != NULL \u0026\u0026 (m-\u003em_flags \u0026 M_FLOWID) == 0) {\n                        m-\u003em_flags |= M_FLOWID;\n                        m-\u003em_pkthdr.flowid = fle-\u003ef_fhash;\n                }\n        }\n\nFix: \n\nFor the first problem I think we should populate inp-\u003einp_flowid in the mbuf packet header. For the second problem, I'm not sure why flowtable_lookup_mbuf6 is returning NULL after enabling FLOWTABLE.\nHow-To-Repeat: Run ipv6 traffic with any tool and check the number of packets transmitted on all the created transmit queues. Only num packets on queue0 increases."
+}

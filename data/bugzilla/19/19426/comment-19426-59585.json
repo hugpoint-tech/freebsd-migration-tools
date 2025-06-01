@@ -1,0 +1,8 @@
+{
+ "id": 59585,
+ "bug_id": 19426,
+ "attachment_id": 0,
+ "creation_time": "2000-06-21T23:30:00Z",
+ "creator": "iedowse@maths.tcd.ie",
+ "text": "\t\n\tThe FreeBSD ffs code assumes that the di_size field of a device\n\tspecial file's inode will always be zero. However fsck(8) does\n\tnot ensure that this is the case. \n\n\tThis is only a problem if part of a filesystem's inode tables\n\tshould become corrupted. In this case it is possible for fsck\n\tto consider the filesystem as 'clean' when it is not; attempts\n\tto delete these corrupted device special files wil result in\n\tsystem panics.\n\n\t(After a relatively minor case of disk corruption on a machine\n\tI was working on, deleting the affected device file appeared to\n\tmake ffs_truncate go wild. The resulting corruption was much\n\tworse than the original problem.)\n\nFix: Apply the following patch in src/sbin/fsck. Someone might like\n\tto comment on whether checking for types IFIFO and IFSOCK is\n\tsensible here?\nHow-To-Repeat: \n\tThe following commands demonstrate the problem by specifically\n\twriting junk into the di_size field of a special file's inode. \n\n\tdd if=/dev/zero bs=1k of=/tmp/fdimage count=1440\n\tvnconfig -e /dev/vn0 /tmp/fdimage\n\tnewfs -T fd1440 /dev/vn0c\n\tmount /dev/vn0c /mnt\n\tmknod /mnt/chardev c 1 1\n\tumount /mnt\n\n\t# some magic to corrupt the di_size field of 'chardev'\n\tdd if=/dev/vn0c skip=56 count=1 \u003e /tmp/x\n\t(head -c 395 /tmp/x; echo -n x; tail -c 116 /tmp/x) \u003e /tmp/x1\n\tdd if=/tmp/x1 of=/dev/vn0c seek=56 count=1\n\n\t# Perform a full check, note how no errors are found\n\tfsck /dev/vn0\n\n\tmount /dev/vn0c /mnt\n\trm /mnt/chardev\t\t # *Boom*"
+}

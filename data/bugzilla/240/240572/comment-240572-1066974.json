@@ -1,0 +1,8 @@
+{
+ "id": 1066974,
+ "bug_id": 240572,
+ "attachment_id": 0,
+ "creation_time": "2019-09-13T21:54:58Z",
+ "creator": "xypron.glpk@gmx.de",
+ "text": "Booting current FreeBSD fails since patch\nf59f0825e8b9fdeb8abe43ffd10c5119ca1a032f\nefi_loader: parameter checks BLOCK_IO_PROTOCOL\n\nThe reason is that the buffer used by FreeBSD to read is not block aligned.\n\nThe UEFI spec requires that EFI_BLOCK_IO_PROTOCOL.ReadBlocks() returns\nEFI_INVALID_PARAMETER if the buffer is not properly aligned (i.e. is not\na multiple of EFI_BLOCK_IO_MEDIA.IoAlign)\n\nFreeBSD does not guarantee this alignment, e.g. efi_disk_read_blocks()\nis called with buffer 00000000995b08d0 which is not aligned to a\nmultiple of 512.\n\nFreeBSD function efipart_readwrite writes this error message:\nefipart_readwrite: rw=1, blk=62333952 size=1 status=2\n\nThe problem can be traced back to the FreeBSD line:\n\nstand/efi/libefi/efipart.c(1043) efipart_realstrategy():\nblkbuf = malloc(blkio-\u003eMedia-\u003eBlockSize);\n\nU-Boot does not yet implement the EFI_DISK_IO_PROTOCOL which is a\nwrapper for the EFI_BLOCK_IO_PROTOCOL allowing unaligned access.\n\nmalloc() could be replaced in FreeBSD by AllocatePages() which returns a\n4096 byte aligned memory block."
+}

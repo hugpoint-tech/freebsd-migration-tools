@@ -1,0 +1,8 @@
+{
+ "id": 1272083,
+ "bug_id": 273414,
+ "attachment_id": 0,
+ "creation_time": "2023-08-29T08:54:31Z",
+ "creator": "dchagin@FreeBSD.org",
+ "text": "here it rather makes sense to speak about regression in vfs/namecache/ufs due to the fact that:\n1. starting from https://cgit.freebsd.org/src/commit/sys/kern/vfs_cache.c?id=739ecbcf1c4fd22b5f6ee0bb180a67644046a3e0 file systems should cache symbolic link targets on their own. This method is not implemented for UFS, so the described bug does not occur for UFS.\n\n2. UFS currently does not use namecache at all, so this bug does not occur. See here: https://reviews.freebsd.org/D41337, https://reviews.freebsd.org/D41338\n\nI think it would be correct to modify the algorithm of the namei() and cache_fplookup() functions so that file systems are not responsible for caching symlink targets, ie, cache_fplookup() should stop its loop and return PARTIAL in case of a symbolic link, and namei() should resolve the symlink and go to the cache lookup starting from the current directory.\n\nAs a temporary fix, try this patch, please: https://people.freebsd.org/~dchagin/vfs.patch"
+}

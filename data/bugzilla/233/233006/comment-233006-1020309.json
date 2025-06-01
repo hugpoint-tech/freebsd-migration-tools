@@ -1,0 +1,8 @@
+{
+ "id": 1020309,
+ "bug_id": 233006,
+ "attachment_id": 0,
+ "creation_time": "2018-11-05T21:36:43Z",
+ "creator": "eugen@freebsd.org",
+ "text": "I use nightly periodic job to make an archive by means of tar(1) for a directory with large set of subdirectories (over 2500) containing two sets of files: always present RRD databases and frequently created/removed temporary files. The process of their creation/removal never stops and presence/absence of temporary files it not important for resulting archieve.\n\nRecently I've found that bsdtar (used as tar for 11.2) aborts archive creation if it finds that a file disappeared in-process. Plus, it emits strang messages in this case:\n\ntar: db/parxomenko/71a/.newdata: Cannot stat: No such file or directory\ntar: Error exit delayed from previous errors.\n: tar format cannot archive socket: tar format cannot archive socket: tar format cannot archive socket: tar format cannot archive socket\n\nThere are no sockets nor file system object types other than regular files or directories in this tree.\n\nThe problem lies in the contrib/libarchive/libarchive/archive_read_disk_posix.c file, function next_entry() that returns ARCHIVE_FAILED in case of failure of tree_current_lstat() even for ENOENT case. It should tolerate ENOENT and continue with execution as it the file in question was not seen at all or found empty.\n\nGNU tar responds with \"File removed before we read it\" message and continues."
+}

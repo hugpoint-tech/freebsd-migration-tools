@@ -1,0 +1,8 @@
+{
+ "id": 1116758,
+ "bug_id": 248463,
+ "attachment_id": 0,
+ "creation_time": "2020-08-04T08:31:18Z",
+ "creator": "danfe@FreeBSD.org",
+ "text": "While porting some software which originates from GNU/Linux and collects memory usage information from /proc/meminfo, I've noticed one common pattern of failure when the same code runs on FreeBSD: the amount of estimated \"free\" memory is larger than total memory.\n\n(Obligatory disclaimer: It's been known for years that reasoning about free/used memory is to a certain extent short of black magic, and it's probably better to avoid broad generalisations like \"used\" and \"free\" at all, but people still do this in otherwise nice and useful software, so we'd better make sure it runs properly on FreeBSD.)\n\nBack to the popular calculation formula: the amount of memory actually in use is often assessed, in the /proc/meminfo field terms, as \"MemTotal - (MemFree + Buffers + Cached)\".  Now, the problem is that on FreeBSD, apparently, \"MemFree + Cached\" is always larger than MemTotal (Buffers are always zero, because \"bufspace is internal to vfs_bio.c and we don't feel like unstaticizing it just for linprocfs's sake\" per the comment in the linprocfs.c).\n\nReading the code in /sys/compat/linprocfs/linprocfs.c around line 163 (search for \"cheat\") shows that while trying to avoid misleading Linux binaries into thinking there is very little memory left by reporting that all memory that isn't wired down is free, we instead mislead them in a different way by screwing their calculations as the amount of used memory becomes negative.\n\nSVN-blaming shows that this \"cheating\" logic had been added more than 20 years ago.  Perhaps it's time to revisit it?"
+}

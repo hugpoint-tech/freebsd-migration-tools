@@ -1,0 +1,8 @@
+{
+ "id": 1277109,
+ "bug_id": 273280,
+ "attachment_id": 0,
+ "creation_time": "2023-09-26T13:29:40Z",
+ "creator": "mikael@FreeBSD.org",
+ "text": "(In reply to Yuri Victorovich from comment #0)\nThis problem arise if there are multiple Cargo.toml containing the same crates in the [patch.crates-io] section, example with libsignal 0.31.0:\n\ncat work/libsignal-0.31.0/rust/protocol/fuzz/Cargo.toml\n[patch.crates-io]\n# Use our fork of curve25519-dalek for zkgroup support.\ncurve25519-dalek = { git = 'https://github.com/signalapp/curve25519-dalek', tag = 'signal-curve25519-4.0.0' }\nx25519-dalek = { git = 'https://github.com/signalapp/curve25519-dalek', tag = 'signal-curve25519-4.0.0' }\n\ncat work/libsignal-0.31.0/Cargo.toml\n[patch.crates-io]\n# Use our fork of curve25519-dalek for zkgroup support.\ncurve25519-dalek = { git = 'https://github.com/signalapp/curve25519-dalek', tag = 'signal-curve25519-4.0.0' }\nx25519-dalek = { git = 'https://github.com/signalapp/curve25519-dalek', tag = 'signal-curve25519-4.0.0' }\nboring = { git = 'https://github.com/signalapp/boring', branch = 'libsignal' }\n# This revision of snow is where curve25519-dalek v4.0.0 changes were merged in\nsnow = { git = 'https://github.com/mcginty/snow.git', rev = '586292364a30ecc74c785228b41e60b3ef03e773' }\n\nSo x25519-dalek and curve25519-dalek appears twice in work/.cargo/config.toml\n\nRemoving the duplicate in work/.cargo/config.toml won't work as the various awk scripts remove the [patch.crates-io] section in cargo.toml, cf https://cgit.freebsd.org/ports/tree/Mk/Scripts/cargo-crates-git-configure.awk?h=2023Q3#n65\nSo the second run won't put the needed dependency in work/.cargo/config.toml"
+}

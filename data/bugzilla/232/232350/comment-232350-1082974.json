@@ -1,0 +1,8 @@
+{
+ "id": 1082974,
+ "bug_id": 232350,
+ "attachment_id": 0,
+ "creation_time": "2020-01-10T06:46:13Z",
+ "creator": "matthew@FreeBSD.org",
+ "text": "(In reply to Tatsuki Makino from comment #27)\n\nThe pkg_lock table is used by pkg-lock(8), not for the database locking used as a part of the routine operations of pkg(8) as a whole.\n\nThe sqlite3 locking used by pkg(8) is a global lock over the whole database -- sqlite3 is not a multiuser database and has essentially no support for concurrent access or MVCC.  If one instance of pkg(8) is active it will hold either a write lock -- giving it exclusive access -- or a read lock -- which could be shared with other consumers, but all are blocked from writing or obtaining a write lock themselves.  That's always going to be a potential cause of problems whenever multiple invocations of pkg(8) are run simultaneously.\n\nThis is unfortunately intrinsic to the use of sqlite3.  Possible alternatives might include much heavier-weight RDBMSes like mysql or postgresql, which would solve the concurrency problem but doesn't really seem practical for general use."
+}

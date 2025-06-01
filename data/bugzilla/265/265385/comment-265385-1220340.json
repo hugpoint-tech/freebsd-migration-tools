@@ -1,0 +1,8 @@
+{
+ "id": 1220340,
+ "bug_id": 265385,
+ "attachment_id": 0,
+ "creation_time": "2022-07-22T15:01:46Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "When a 9P server sends an L9P_RWALK reply, it specifies the number of\nqids enclosed as a 16-bit number. l9p_puqids() unpacks the specified\nnumber of qids into its qids argument, which is the wqid element of a\nstruct l9p_f_rwalk:\n\n  struct l9p_f_rwalk {\n        struct l9p_hdr hdr;\n        uint16_t nwqid;\n        struct l9p_qid wqid[L9P_MAX_WELEM];\n  };\n\n#define L9P_MAX_WELEM   256\n\nl9p_puqids() doesn't check the server's number against this maximum:\n\nstatic ssize_t\nl9p_puqids(struct l9p_message *msg, uint16_t *num, struct l9p_qid *qids)\n{\n        size_t i, lim;\n        ssize_t ret, r;\n\n        r = l9p_pu16(msg, num);\n\n        if (r \u003e 0) {\n                for (i = 0, lim = *num; i \u003c lim; i++) {\n                        ret = l9p_puqid(msg, \u0026qids[i]);\n                        if (ret \u003c 0)\n                                return (-1);\n                        r += ret;\n                }\n        }\n        return (r);\n}\n\nSo if a malicious or enthusiastic server sends back more than 256\nqids, the client will write them beyond the end of wqid[]."
+}

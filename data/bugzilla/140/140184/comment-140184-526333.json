@@ -1,0 +1,8 @@
+{
+ "id": 526333,
+ "bug_id": 140184,
+ "attachment_id": 0,
+ "creation_time": "2010-07-17T21:46:37Z",
+ "creator": "mikko.tyolajarvi@gmail.com",
+ "text": "The modified patch to use ${REINPLACE_CMD} instead of perl\ndoes not work, since sed cannot handle binary files, nor\ndoes it understand hex escapes.\n\nPresumably the idea was to only use tools in the base system.\n\nThe below change to use dd instead works.  (Inline as well as\nattached, hopefully one version will survive)\n\n    Thanks,\n    /Mikko\n\ndiff -ru linux-nx-client.orig/Makefile linux-nx-client/Makefile\n--- linux-nx-client.orig/Makefile\t2010-07-17 13:33:20.000000000 -0700\n+++ linux-nx-client/Makefile\t2010-07-17 13:33:56.000000000 -0700\n@@ -30,8 +30,9 @@\n  # Patch binary to expect EINVAL (FreeBSD) instead of EOPNOTSUPP (Linux) when\n  # trying to set TCP_NODELAY on the X11 unix domain socket.\n  do-build:\n-\t${REINPLACE_CMD} -e 's/\\x83\\xf8\\x5f\\x0f\\x84/\\x83\\xf8\\x16\\x0f\\x84/' \\\n-\t\t${NXSRC}/lib/libXcomp.so.${PORTVERSION}\n+\tdd bs=1 skip=1324 seek=295072 count=1 conv=notrunc \\\n+\t\tif=${NXSRC}/lib/libXcomp.so.${PORTVERSION} \\\n+\t\tof=${NXSRC}/lib/libXcomp.so.${PORTVERSION}\n\n  do-install:\n  \t${MKDIR} ${NXDST}/bin"
+}

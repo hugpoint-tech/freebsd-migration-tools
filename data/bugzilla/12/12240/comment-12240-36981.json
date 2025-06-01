@@ -1,0 +1,8 @@
+{
+ "id": 36981,
+ "bug_id": 12240,
+ "attachment_id": 0,
+ "creation_time": "1999-06-16T12:20:00Z",
+ "creator": "ftobin@bigfoot.com",
+ "text": "\ninetd rereads the inetd.conf file incorrectly when given a HUP.\nBy doing some simple testing in inetd.c with printf's, it\nseems it does not set se_server_name correctly at a minumum.\nIt probably does not set se_server correctly either.  This has a\nwide range of effects, specifically causing /etc/hosts.allow to\nnot process correctly on a per-server basis.\n\nFix: \n\nUnknown at the moment; currently, avoid HUPing inetd; just\nkill, restart.\nHow-To-Repeat: \nI have the following inetd.conf file:\n\nident\tstream\ttcp\twait\tkmem:kmem\t/usr/local/sbin/identd\tidentd -w -t120\nsmtp\tstream\ttcp\tnowait\tqmaild\t\t/var/qmail/bin/tcp-env\ttcp-env /var/qmail/bin/qmail-smtpd\n\nStart inetd as normal.  This is the inetd that is libwrapped.\nVerify that one can connect to the second service,\ntcp-env in this case.  In hosts.allow have:\n\ntcp-env : ALL : allow\nALL : DENY : twist /bin/echo %s\n\nNow HUP inetd.  One cannot connect to port 25, tcp-env; the connect\nis wrap-dropped.  Analysis of the though-to-be server name is printed\nas _@foo.bar.com.  On the other hand, the first service, idnetd is\nnot blocked at all.  Neither tcp-env nor identd are libwrapped\ninternally.  All wrapping is supposed to be performed by inetd, no?"
+}

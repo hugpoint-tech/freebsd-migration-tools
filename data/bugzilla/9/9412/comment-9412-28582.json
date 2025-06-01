@@ -1,0 +1,8 @@
+{
+ "id": 28582,
+ "bug_id": 9412,
+ "attachment_id": 0,
+ "creation_time": "1999-01-28T07:09:23Z",
+ "creator": "dcs@newsguy.com",
+ "text": "\u003eSubmitter-Id:   current-users\n\u003eOriginator:     Daniel C. Sobral\n\u003eOrganization:   \n\u003eConfidential:   no\n\u003eSynopsis:       ficlExecFD wasn't modified to deal with changes in kern/9412\n\u003eSeverity:       serious\n\u003ePriority:       medium\n\u003eCategory:       bin\n\u003eRelease:        FreeBSD 4.0-CURRENT i386\n\u003eClass:          sw-bug\n\u003eEnvironment: \n\n\tCurrent since kern/9412 (EXCEPTION word set) got in.\n\n\u003eDescription: \n\n\tIt turns out a bug I was blaming on ficl was actually my fault.\nWhen EXCEPTION word set got in, the ordering of the VM_* results was\nchanged, to conform with ANS Forth standard. Unfortunately, ficlExecFD\ndepended on that ordering, and didn't get modified.\n\n\tSay... about these pointy hats... are they committers' only?\n'cause I think I'll be needing a load of them... (see next (or previous,\ndepending how they get queued) PR...)\n\n\u003eHow-To-Repeat: \n\n\tcp /usr/share/examples/bootforth/* /boot\n\treboot\n\n\u003eFix: \n\t\n\tApply the following fix:\n\n\n--- src/sys/boot/ficl/ficl.c\t1999/01/25 04:37:06\t1.7\n+++ src/sys/boot/ficl/ficl.c\t1999/01/28 06:34:10\n@@ -374,7 +374,8 @@\n \t\tbreak;\n \t    continue;\n \t}\n-        if ((rval = ficlExec(pVM, cp, i)) \u003e= VM_ERREXIT)\n+        rval = ficlExec(pVM, cp, i);\n+\tif(rval != VM_QUIT \u0026\u0026 rval != VM_USEREXIT \u0026\u0026 rval != VM_OUTOFTEXT)\n         {\n             pVM-\u003esourceID = id;\n             vmThrowErr(pVM, \"ficlExecFD: Error at line %d\", nLine);"
+}

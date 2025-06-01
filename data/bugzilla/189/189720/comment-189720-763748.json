@@ -1,0 +1,8 @@
+{
+ "id": 763748,
+ "bug_id": 189720,
+ "attachment_id": 0,
+ "creation_time": "2014-05-30T18:16:10Z",
+ "creator": "rizzo@iet.unipi.it",
+ "text": "On Sat, May 31, 2014 at 12:53:56AM +0800, bycn82 wrote:\n\u003e 1.       Add static int to store the value of kern.hz\n\nthis is unnecessary. There is already a global variable\ncalled \"hz\" which contains the correct information\n\n\u003e 2.       Convert the duration into number of ticks based on  kern.hz\n\nthis is done incorrectly.\n\nFirst, hz does not change at runtime so it is unnecessary to recompute\nthe duration on every instace, even more since this is costing you\none division.  You should adjust the value when the rule is injected\nin the kernel, perhaps adding a couple of fields in the rule\nso you can store the adjusted duration and threshold (see below).\n\nSecond, you are still not doing the rounding correctly.\nWhen the requested interval is shorter than a tick, you adjust the\ninterval but leave the limit unchanged, which means you are reducing\nthe limit below what the user wants.\nInstead you should correct the limit so that it approximates\nthe desired rate; one above or one below is not a problem,\nbut your code might be off by a very large factor.\n\nBTW even in the other case you are always adding 1 tick unconditionally.\nA correct way to do the rounding is (pps-\u003eduration * hz + 999)/1000\n(and then again adjust the count according to the actual duration)\n\ncheers\nluigi"
+}

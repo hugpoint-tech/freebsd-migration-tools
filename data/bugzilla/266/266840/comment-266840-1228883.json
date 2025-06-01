@@ -1,0 +1,8 @@
+{
+ "id": 1228883,
+ "bug_id": 266840,
+ "attachment_id": 0,
+ "creation_time": "2022-10-05T10:07:30Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "Hi,\n\nThere is something called a CM descriptor, and your device apparently got it wrong!\n\nsys/dev/usb/usb.h:#define\tUDESC_CS_INTERFACE\t0x24\nsys/dev/usb/usb_cdc.h:#define\tUDESCSUB_CDC_CM\t\t1\t/* Call Management */\nsys/dev/usb/usb_cdc.h:struct usb_cdc_cm_descriptor {\n\n      Additional Descriptor\n\n      bLength = 0x05\n      bDescriptorType = 0x24\n      bDescriptorSubType = 0x01\n       RAW dump: \n       0x00 | 0x05, 0x24, 0x01, 0x00, 0x00\n                                      ^^^ bDataInterface should be 1, because that is were the data BULK endpoints are!\n\nstruct usb_cdc_cm_descriptor {\n        uByte   bLength;\n        uByte   bDescriptorType;\n        uByte   bDescriptorSubtype;\n        uByte   bmCapabilities;\n#define USB_CDC_CM_DOES_CM              0x01\n#define USB_CDC_CM_OVER_DATA            0x02\n        uByte   bDataInterface;\n} __packed;\n\nI'm sorry to say that your USB modem device is not USB class compliant.\n\nPlease notify the manufacturer!\n\n--HPS"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1137664,
+ "bug_id": 242747,
+ "attachment_id": 0,
+ "creation_time": "2020-12-22T16:22:27Z",
+ "creator": "cem@freebsd.org",
+ "text": "Thanks, Eirik.  Let me see if I can come up with some copy-paste incantations to try.  I'm not a dtrace expert myself. :-)\n\nLoad dtrace support: sudo kldload dtraceall\n\nFirst, to see if aesni functions are being hit at all:\n\n  sudo dtrace -n 'fbt:aesni::entry { @[probefunc] = count() }'\n\nLet it run for maybe a few seconds while there is any mild load to the GELI disks, then hit Ctrl-C.  After Ctrl-C, wait a few seconds for dtrace to print output and exit.  If the output is empty, nothing is calling into aesni.  Otherwise, you should see a listing of (aesni) function name, invocation count pairs.\n\nIf you get anything from the earlier trace, the following one should print out (approximately) any errors returned by aesni functions (columns are: function, error number, count):\n\n  sudo dtrace -n 'fbt:aesni::return /arg1 \u003e 0 \u0026\u0026 arg1 \u003c 1000/ { @[probefunc,arg1] = count() }'"
+}

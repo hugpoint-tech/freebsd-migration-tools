@@ -1,0 +1,8 @@
+{
+ "id": 1290141,
+ "bug_id": 276043,
+ "attachment_id": 0,
+ "creation_time": "2023-12-31T20:59:27Z",
+ "creator": "rbranco@suse.com",
+ "text": "I was looking why the output of `md5 /compat/linux/proc/cpuinfo` is different from `cat /compat/linux/proc/cpuinfo | md5` and came across this code in sbin/md5/md5.c:\n\n```\n        char block[4096];\n...\n        while ((len = fread(block, 1, sizeof(block), f)) \u003e 0) {\n```\n\n```\n\nThe issue is a truncated read as confirmed by truss and GNU wc:\n\n```\n$ sudo truss md5 /compat/linux/proc/cpuinfo \n...\nread(3,\"processor\\t: 0\\nvendor_id\\t: Gen\"...,4096) = 3549 (0xddd)\n...\n```\n\nIt obviously affects all tools using libc when comparing the output of wc vs. GNU wc:\n\n```\n$ wc -m /compat/linux/proc/cpuinfo\n    3549 /compat/linux/proc/cpuinfo\n$ gwc -m /compat/linux/proc/cpuinfo\n3685 /compat/linux/proc/cpuinfo\n```"
+}

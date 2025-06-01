@@ -1,0 +1,8 @@
+{
+ "id": 1252866,
+ "bug_id": 260628,
+ "attachment_id": 0,
+ "creation_time": "2023-03-28T19:17:33Z",
+ "creator": "djimeha@yahoo.ca",
+ "text": "Looks the same or similar to:\nhttps://bugs.freebsd.org/bugzilla/show_bug.cgi?id=262170\n\nI recently upgraded a FreeBSD 10.4 LDAP auth client system to 12.4 using \"freebsd-update upgrade -r 12.4-RELEASE\" and the usual install (Kernel stuff), reboot, install (Userland stuff), steps after that.  I also ran a \"pkg update\", which didn't work, got the 'version 2' error, so I ran \"pkg bootstrap -f\", then \"pkg update\", then \"pkg upgrade -y\", which bumped bash, nss_ldap, etc.\n\nOn the next reboot I discovered 2 things:\n\n#1. The system hung after the \"ifconfig\" output from netif and the \"Starting devd\" message.  Hitting ctrl+t listed:\n\nload: 0.13  cmd: env 340 [nanslp] 15.57r 0.00u 0.02s 0% 6192k\n\nSame thing if I waited a bit and hit it again, incrementing the #r runtime value of course.  NOTE: Manually typed since this was on an ESXi video console.\n\n\n----\nI resolved #1 using the info in the bug link above, reboot, hit 2 for single-user mode, then /bin/sh, then 'mount -at ufs', then 'vi /usr/sbin/service' and change the exec line back to not having -L 0/daemon for now.  I left a comment and the original line for my future self to patch it:\n\n$ less -N /usr/sbin/service\n...\n    168                 # Open bug PR#262170, hang on boot in [env]\n    169                 #exec env -i -L 0/daemon HOME=/ PATH=/sbin:/bin:/usr/sbin:/usr/bin \"$dir/$script\" \"$@\"\n    170                 exec env -i HOME=/ PATH=/sbin:/bin:/usr/sbin:/usr/bin \"$dir/$script\" \"$@\"\n    171         fi\n    172 done\n..."
+}

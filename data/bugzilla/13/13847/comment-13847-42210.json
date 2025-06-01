@@ -1,0 +1,8 @@
+{
+ "id": 42210,
+ "bug_id": 13847,
+ "attachment_id": 0,
+ "creation_time": "1999-09-20T05:20:01Z",
+ "creator": "Tor.Egge@fast.no",
+ "text": "\nAt a first glance, booting from the end of a large disk seems simple:\n\n\tboot0cfg -B -v -o packet wd0\n\nBut this only enables the BIOS Int 0x13 disk packet interface in boot0,\nand he machine hung during boot with the message \"Read error\".\n\nI then adjusted B1FLAGS in /usr/src/sys/boot/i386/boot2/Makefile and\nrecompiled and reinstalled the boot blocks.\n\nNow the machine hung during boot with the message \"Boot error\".\n\nboot1 seems to depend upon the content of the word at offset 0x1f6 in the\nfirst sector of the FreeBSD slice being 0 in order to be able read the MBR.\n\nAfter performing\n\n\tdd if=/dev/zero of=/dev/rwd0s4 bs=512 count=1\n\tdisklabel -B wd0s4\n\nI got one step further.  /boot/loader now started.  But it did not find\nany valid kernels.\n\nI then took a look at /usr/src/sys/boot/i386/libi386/biosdisk.c and\napplied the suggested fix below.\n\nFinally, a successful boot.\n\nHow-To-Repeat: \nSee above."
+}

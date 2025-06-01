@@ -1,0 +1,8 @@
+{
+ "id": 973052,
+ "bug_id": 193568,
+ "attachment_id": 0,
+ "creation_time": "2018-01-17T21:25:18Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "This is NOT a duplicate of 179392.  It has nothing to do with checksums.  In fact, it technically isn't a bug at all.  The problem is that you're asking PF to do something that's illegal in IPv6.\n\nIPv6 addresses have the concept of \"scopes\".  A scope is the domain in which a particular address is valid.  Localhost (::1) has local scope, link-local addresses (fe80:*) have link-local scope, site-local addresses (fec0:*) have site-local scope, and global addresses (everythign else) have global scope.  Since ::1 only has local scope, it's only valid for traffic that originates and ends on the local machine.  For that reason, it is specifically forbidden to assign ::1 to a real network interface.\n\nYour PF rule redirects a packet to ::1, but doesn't change the receiving interface.  Thus, it violates scoping rules.  You can tell by running 'netstat -s -f inet6 | grep \"violated scope\"' before and after generating the traffic that you want to redirect.  The check is in in6_setscope().\n\nThe simple workaround is to change your rdr rule to redirect to your actual link-local, site-local, or global IPv6 address instead of ::1."
+}

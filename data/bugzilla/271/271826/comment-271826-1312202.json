@@ -1,0 +1,8 @@
+{
+ "id": 1312202,
+ "bug_id": 271826,
+ "attachment_id": 0,
+ "creation_time": "2024-06-07T00:27:02Z",
+ "creator": "jhibbits@FreeBSD.org",
+ "text": "(In reply to Mitch from comment #35)\n\nmpc85xx platforms I've personally tested with FreeBSD are the AmigaOne X5000 and AmigaOne A1222.  I wrote the mpc85xx timebase sync specifically for those targets, after seeing strange hanging behavior.\n\nAs for why we want to use memory barriers, we really need just execution barriers (isync), I think, because we need to make sure the timebase is correct before it's unlocked by the BSP.  This can only be ensured by using a barrier between setting the timebase and declaring done (atomic_add_int() of cpu_done).  But, yes, a weak memory model does mean we need more explicit syncs where on strong models they would be implicit (but pay the penalty on all accesses).\n\nWe really shouldn't need any syncs for tb_ready, because it can be done lazily.  The only sync we should really need is the cpu_done.\n\nBefore this timebase sync we used a synchronization mechanism at AP launch time, where we simply \"hoped\" that they were close enough to all get the same timebase.  This is obviously problematic.  It was changed during the 12-CURRENT time frame.  The powermac sync change was done in 2021, though."
+}

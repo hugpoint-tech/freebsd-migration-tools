@@ -1,0 +1,8 @@
+{
+ "id": 22820,
+ "bug_id": 7420,
+ "attachment_id": 0,
+ "creation_time": "1998-07-28T02:40:00Z",
+ "creator": "ioannis@andrew.cmu.edu",
+ "text": "Hi,\n\nI was trying to increase the maximum socket buffer size (SB_MAX or kern.maxsockbuf)\nin my kernel and I realized that the maximum I could go was: 2097151 (2^21 - 1).\nIf the SB_MAX was \u003e= 2^21 I could not open any socket.\n\nAfter spending a lot of time I realised that in the file:\n\nkern/uipc_socket2.c in the sbreserve function there is the following line:\n\nif (cc \u003e sb_max * MCLBYTES / (MSIZE + MCLBYTES))\n\nTaking into account that the highest number we can have is 2^32 -1 and that\n\nMCLBYTES = 2048 = 2^11 it is obvious that if sb_max was 2^21 we would have\nan overflow (sb_max * MCLBYTES = 2^21 * 2^11 = 2^32 overflow)\n\nFix: \n\nThe above can be easily corrected by replacing the above line with the \nfollowing:\n\nif (cc \u003e (sb_max / (MSIZE + MCLBYTES)) * MCLBYTES)\n\nIn this case we can have SB_MAX with greater values.\n\nThanks."
+}

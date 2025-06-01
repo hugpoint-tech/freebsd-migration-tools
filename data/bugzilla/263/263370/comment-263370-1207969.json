@@ -1,0 +1,8 @@
+{
+ "id": 1207969,
+ "bug_id": 263370,
+ "attachment_id": 0,
+ "creation_time": "2022-04-21T12:22:28Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "(In reply to Tijl Coosemans from comment #11)\nIn the base system we have historically never installed those headers, since they conflict with our own versions. For the full list, see https://cgit.freebsd.org/src/tree/lib/clang/headers/Makefile#n142 :\n\n# Headers which possibly conflict with our own versions:\n.ifdef INSTALL_CONFLICTING_CLANG_HEADERS\nINCS+=\t\tfloat.h\nINCS+=\t\tintrin.h\nINCS+=\t\tinttypes.h\nINCS+=\t\tiso646.h\nINCS+=\t\tlimits.h\nINCS+=\t\tstdalign.h\nINCS+=\t\tstdarg.h\nINCS+=\t\tstdatomic.h\nINCS+=\t\tstdbool.h\nINCS+=\t\tstddef.h\nINCS+=\t\tstdint.h\nINCS+=\t\tstdnoreturn.h\nINCS+=\t\ttgmath.h\nINCS+=\t\tunwind.h\nINCS+=\t\tvarargs.h\n.endif # INSTALL_CONFLICTING_CLANG_HEADERS\n\nThe llvm ports have a different method to disable some of these, but not exactly the same ones, unfortunately:\n\nhttps://cgit.freebsd.org/ports/tree/devel/llvm13/files/patch-clang_lib_Headers_CMakeLists.txt\n\nEffectively, this stops the following from being installed:\n\n-  limits.h\n-  stdalign.h\n-  stdarg.h\n-  stdatomic.h\n-  stdbool.h\n-  stddef.h\n-  stdint.h\n-  stdnoreturn.h\n-  varargs.h\n\nbut not unwind.h! So yet *another* incompatible header, as clang's internal unwind.h does not include the \n\n#if __SIZEOF_POINTER__ == 4\n  // The implementation of _Unwind_Exception uses an attribute mode on the\n  // above fields which has the side effect of causing this whole struct to\n  // round up to 32 bytes in size (48 with SEH). To be more explicit, we add\n  // pad fields added for binary compatibility.\n  uint32_t reserved[3];\n#endif\n\nblock."
+}

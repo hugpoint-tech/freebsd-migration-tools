@@ -1,0 +1,8 @@
+{
+ "id": 667869,
+ "bug_id": 168464,
+ "attachment_id": 0,
+ "creation_time": "2012-05-30T14:00:18Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Modifying .am files without proper version[1] of automake or defining\nUSE_AUTOTOOLS may not always work. And so .am changes are not propagated\nto .in files leading to confusion.\n\nThe origin of that reinplace line is a bit unclear to me. It was added\nduring gegl-0.1.2 supposedly[2] to help --disable-docs. But from my testing\n--disable-docs comments out `docs' from SUBDIRS just fine in 0.1.2.\n\nSo, instead of skipping tests do something useful with them, like\nactually running them before install.\n\n[1] gegl-0.1.8 wants automake-1.11 while devel/automake provides automake-1.12\n[2] nowadays, it tries to disable examples, tests, tools and can be written as\n\n\t${REINPLACE_CMD} -Ee '/^SUBDIRS/,/^$$/s/tools|examples|tests//g' \\\n\t\t${WRKSRC}/Makefile.am ${WRKSRC}/Makefile.in\n\nHow-To-Repeat: $ make\n===\u003e  Building for gegl-0.1.8_3\n cd . \u0026\u0026 /bin/sh /usr/ports/graphics/gegl/work/gegl-0.1.8/missing --run automake-1.11 --gnu Makefile\n/usr/ports/graphics/gegl/work/gegl-0.1.8/missing: automake-1.11: not found\nWARNING: `automake-1.11' is missing on your system.  You should only need it if\n         you modified `Makefile.am', `acinclude.m4' or `configure.ac'.\n         You might want to install the `Automake' and `Perl' packages.\n         Grab them from any GNU archive site.\n cd . \u0026\u0026 /bin/sh ./config.status Makefile\nconfig.status: creating Makefile\n[...]\n\n$ ls $(make -V WRKSRC)/tools/.libs\nimg_cmp             introspect          operation_reference"
+}

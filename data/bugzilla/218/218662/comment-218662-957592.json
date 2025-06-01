@@ -1,0 +1,8 @@
+{
+ "id": 957592,
+ "bug_id": 218662,
+ "attachment_id": 187571,
+ "creation_time": "2017-10-29T21:45:28Z",
+ "creator": "freebsd@bdragon.rtk0.net",
+ "text": "Created attachment 187571\nVMM patch (from HardenedBSD)\n\nThis affects me too.\n\nHardenedBSD has the most elegant fix at https://github.com/HardenedBSD/hardenedBSD/commit/e76fcb77ba82649bc6aed808af06d6d2184847d8 -- I have attached a copy of the patch. I can confirm that with just that patch I can successfully run OpenBSD 6.1 in bhyve on my machine that is otherwise affected by this problem.\n\nI believe it makes a lot more sense than emulating the MSR (i.e. what https://github.com/HardenedBSD/hardenedBSD/commit/cc91b57f4d1dabddfbf8b1e7655 does.)\n\nMy SuperMicro C7Z170-OCE board actually has bios options for enabling and disabling the silicon debug status and lock bit, so if I were to misconfigure my bios, the countermeasure would have actually been effective (when applied to the host).\n\nI can verify though that with it disabled in the bios, it is indeed locked down, without needing the countermeasure.\nroot@narwhal:~ # kldload cpuctl\nroot@narwhal:~ # cpucontrol -m 0xc80 /dev/cpuctl0\nMSR 0xc80: 0x00000000 0x40000000\n\nI still think the countermeasure is a good idea though!\nhttps://github.com/HardenedBSD/hardenedBSD/commit/da28546280938e19e866d2e11a9ccda3c4ca82fa is a version of the countermeasure that checks the virtualization flag too so it will avoid tickling the bhyve limitation while still providing protection.\n\nBut at the very least, filter the SDBG feature flag."
+}

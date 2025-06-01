@@ -1,0 +1,8 @@
+{
+ "id": 863001,
+ "bug_id": 204990,
+ "attachment_id": 0,
+ "creation_time": "2016-02-02T21:30:05Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "(In reply to Mikhail Teterin from comment #8)\n\u003e Was this determination based simply on the shared library's number, or something else?\n\nThe number represents ABI stability promise by upstream. Most modern build systems like autotools or cmake embed it into SONAME via ld(1). After phasing out a.out support our ld.so(1) only supports tracking major version. However, a small number of ports have neither SONAME nor .so -\u003e .so.MAJOR symlink. Those are \"allowed\" to crash after updates.\n\n  # hypothetical scenario with no bump in ports r403038\n  $ ffmpeg\n  Shared object \"libx265.so.59\" not found, required by \"libavcodec.so.56\"\n\n  $ readelf -d /usr/local/lib/libx265.so | fgrep SONAME\n   0x000000000000000e (SONAME)             Library soname: [libx265.so.68]\n\nFor more complex cases there're tools like devel/abi-compliance-checker e.g., symbols cannot be removed unless they're loaded on demand (dlopen + dlsym).\n\n  # libx265.so.59 libx265.so.68 in libmap.conf(5)\n  $ ffmpeg\n  /usr/local/lib/libavcodec.so.56: Undefined symbol \"x265_api_get_59\"\n\nhttps://people.freebsd.org/~jbeich/compat_reports/x265/1.7_to_1.8/compat_report.html"
+}

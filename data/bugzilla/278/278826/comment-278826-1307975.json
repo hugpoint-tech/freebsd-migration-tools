@@ -1,0 +1,8 @@
+{
+ "id": 1307975,
+ "bug_id": 278826,
+ "attachment_id": 0,
+ "creation_time": "2024-05-07T11:47:34Z",
+ "creator": "austin.zhang@dell.com",
+ "text": "Normally, when a process exits, the si_refcount associated with /dev/hpet0 should return to its expected value, assuming it’s incremented and decremented correctly during cdev ops. However, we can inflate the si_refcount using a simple bash script below:\n\nwhile true; do uname \u003e/dev/null;done\n\n\nThis unusually high count suggests that the si_refcount isn't being managed properly\n```\n[root@freebsd-main ~]# while true; do uname \u003e/dev/null;done\n^C\n[root@freebsd-main ~]# dtrace -n 'fbt::dev_ref:entry {printf(\"[%s]: invoke dev_ref: %s, refcount:%d\", execname, args[0]-\u003esi_name, args[0]-\u003esi_refcount)}'\ndtrace: description 'fbt::dev_ref:entry ' matched 1 probe\nCPU     ID                    FUNCTION:NAME\n  1  43845                    dev_ref:entry [uname]: invoke dev_ref: hpet0, refcount:42439\n```"
+}

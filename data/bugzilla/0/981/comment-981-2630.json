@@ -1,0 +1,8 @@
+{
+ "id": 2630,
+ "bug_id": 981,
+ "attachment_id": 0,
+ "creation_time": "1997-07-05T21:45:21Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "The bug in the PR was fixed in rev 1.5 by guido.  However, now this is\nbroken in a different, subtle way -- if you have aliases on a different\nsubnet, as opposed to aliases on the same subnet (which most people use),\nit won't broadcast on the alternate subnet.\n\nI believe this patch fixes the problem and lets both cases work properly.\nThis causes SIOCGIFBRDADDR to get the broadcast address for the particular\nalias we're looking up and not for the first address on the interface.\n\n  Bill\n\ncvs diff: Diffing .\nIndex: pmap_rmt.c\n===================================================================\nRCS file: /home/ncvs/src/lib/libc/rpc/pmap_rmt.c,v\nretrieving revision 1.11\ndiff -u -r1.11 pmap_rmt.c\n--- pmap_rmt.c\t1997/02/22 15:01:19\t1.11\n+++ pmap_rmt.c\t1997/07/05 20:11:30\n@@ -198,6 +198,7 @@\n \t\t    (ifreq.ifr_flags \u0026 IFF_UP)) {\n \t\t\tsin = (struct sockaddr_in *)\u0026ifr-\u003eifr_addr;\n #ifdef SIOCGIFBRDADDR   /* 4.3BSD */\n+\t\t\tifreq = *ifr;\n \t\t\tif (ioctl(sock, SIOCGIFBRDADDR, (char *)\u0026ifreq) \u003c 0) {\n \t\t\t\taddr =\n \t\t\t\t    inet_makeaddr(inet_netof(sin-\u003esin_addr),"
+}

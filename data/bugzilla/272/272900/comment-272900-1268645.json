@@ -1,0 +1,8 @@
+{
+ "id": 1268645,
+ "bug_id": 272900,
+ "attachment_id": 0,
+ "creation_time": "2023-08-02T20:06:25Z",
+ "creator": "diizzy@FreeBSD.org",
+ "text": "Some upstream projects have specific optimized code paths which is great for peformance however many times they're are not detected during run-time but instead hardcoded and selected during configure/build stage. Currently we have no way of detecting features but instead need to rely on OPTIONS which is a pain and can lead to incorrect choices and/or broken binaries if wrong options are selected.\n\nHaving a quick look grep returns the following and I'm quite sure we have more potential users however maintainers haven't bothered because lack of framework functionality.\n\ngrep -ir AVX --include Makefile /usr/ports/ | grep OPTIONS_DEFINE | wc -l\n23\ngrep -ir SSE --include Makefile /usr/ports/ | grep OPTIONS_DEFINE | wc -l\n63\ngrep -ir NEON --include Makefile /usr/ports/ | grep OPTIONS_DEFINE | wc -l\n7\ngrep -ir VSX --include Makefile /usr/ports/ | grep OPTIONS_DEFINE | wc -l\n2\n\nThere are at least two way of getting what features the compiler defines:\n\nclang -v -march=native -E - \u003c/dev/null\necho | clang -E - -march=native -###\n\nI'm not entirely sure on how to implement this though but I think most one viable solution would to be adding a bunch of variables under a specific temple and -march=native would follow CPUTYPE.\n\nTarget output looks like this:\n-target-feature +crc32 -target-feature -fma4\n\nCPU_FEAT_\u003cFEATURE\u003e crc32 would be CPU_FEAT_CRC32 and fma4 not initialized at all since it's being disabled etc\n\nAny ideas and/or input?"
+}

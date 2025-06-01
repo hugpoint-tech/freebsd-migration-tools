@@ -1,0 +1,8 @@
+{
+ "id": 672081,
+ "bug_id": 169336,
+ "attachment_id": 0,
+ "creation_time": "2012-06-23T01:50:07Z",
+ "creator": "adrian@freebsd.org",
+ "text": "I've noticed that ANI isn't triggering when in a noisy environment.\n\n* The ANI poll is called every 1/10th of a second, which updates listenTime;\n* However, since we're still doing things via the MIB interrupt (grr), it's triggering frequently upon a hardware counter (in this case, CCK)\n* .. so I see upwards of 1600 CCK errors a second;\n* .. but ar5416ProcessMibIntr() calculates cckPhyErrCount based on how many just overflowed, so it's seeing the 200 CCK errors that just occured, and that's not greater than cckTrigHigh;\n* .. so it's never calling ar5416AniCckTrigger().\n* Then, ar5416AniRestart() is called, which sets ofdm/cck error count and listentime to 0.\n\nNow, because of all of this, the ANI code never seems to trigger on _enough_ of any kind of CCK errors.\n\nIt's also unclear how the math in ar5416AniPoll() should work. From what I can gather, listenTime is likely supposed to be a value out of 1000. listenTime just never gets that high at the moment, as it keeps being cleared by ar5416AniRestart() whenever the MIB event fires.\n\nFix: \n\nNot sure."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1173209,
+ "bug_id": 257642,
+ "attachment_id": 0,
+ "creation_time": "2021-08-05T18:51:14Z",
+ "creator": "nreilly@qnx.com",
+ "text": "The e1000 driver doesn't check for checksum errors on Rx UDP checksum, it marks all packets as having a good checksum.\n\nSuggested fix:\n\ndiff --git a/sys/dev/e1000/em_txrx.c b/sys/dev/e1000/em_txrx.c\nindex 458de96a7b9..1328e12daf4 100644\n--- a/sys/dev/e1000/em_txrx.c\n+++ b/sys/dev/e1000/em_txrx.c\n@@ -797,7 +797,8 @@ em_receive_checksum(uint32_t status, if_rxd_info_t ri)\n                ri-\u003eiri_csum_flags |= (CSUM_DATA_VALID | CSUM_PSEUDO_HDR);\n                ri-\u003eiri_csum_data = htons(0xffff);\n        }\n-       if (status \u0026 E1000_RXD_STAT_UDPCS) {\n+       if ((status \u0026 E1000_RXD_STAT_UDPCS | E1000_RXDEXT_STATERR_TCPE)) ==\n+               E1000_RXD_STAT_UDPCS) {\n                ri-\u003eiri_csum_flags |= (CSUM_DATA_VALID | CSUM_PSEUDO_HDR);\n                ri-\u003eiri_csum_data = htons(0xffff);\n        }"
+}

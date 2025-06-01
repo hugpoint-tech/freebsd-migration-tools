@@ -1,0 +1,8 @@
+{
+ "id": 1088818,
+ "bug_id": 208205,
+ "attachment_id": 0,
+ "creation_time": "2020-02-19T06:33:46Z",
+ "creator": "ralf.wostrack@gmx.de",
+ "text": "Hi,\n\nstarting from version 12.0, i facing this issue on my mini-itx server.\n\nHardware Info:\nre0@pci0:3:0:0:\tclass=0x020000 card=0xe0001458 chip=0x816810ec rev=0x0c hdr=0x00\n    vendor     = 'Realtek Semiconductor Co., Ltd.'\n    device     = 'RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller'\n    class      = network\n    subclass   = ethernet\nre1@pci0:4:0:0:\tclass=0x020000 card=0xe0001458 chip=0x816810ec rev=0x0c hdr=0x00\n    vendor     = 'Realtek Semiconductor Co., Ltd.'\n    device     = 'RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller'\n    class      = network\n    subclass   = ethernet\n\nI solved it, by commenting out re_txeof in re_tick function in if_re.c.\nIn my oppinion its a timing issue during high load situtations, blocking the interrupt/dma of the device.\nAnd of course the job is done by watchdog function after 5 timer ticks.\n\nstatic void\nre_tick(void *xsc)\n{\n\tstruct rl_softc\t\t*sc;\n\tstruct mii_data\t\t*mii;\n\n\tsc = xsc;\n\n\tRL_LOCK_ASSERT(sc);\n\n\tmii = device_get_softc(sc-\u003erl_miibus);\n\tmii_tick(mii);\n\tif ((sc-\u003erl_flags \u0026 RL_FLAG_LINK) == 0)\n\t\tre_miibus_statchg(sc-\u003erl_dev);\n\t/*\n\t * Reclaim transmitted frames here. Technically it is not\n\t * necessary to do here but it ensures periodic reclamation\n\t * regardless of Tx completion interrupt which seems to be\n\t * lost on PCIe based controllers under certain situations.\n\t */\n\t// re_txeof(sc);\n\tre_watchdog(sc);\n\tcallout_reset(\u0026sc-\u003erl_stat_callout, hz, re_tick, sc);\n}"
+}

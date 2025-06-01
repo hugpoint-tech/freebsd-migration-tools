@@ -1,0 +1,8 @@
+{
+ "id": 1221103,
+ "bug_id": 265519,
+ "attachment_id": 0,
+ "creation_time": "2022-07-30T13:56:27Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "During an exp-run for llvm 15 (see bug 265425), it turned out that devel/libunwind fails to build with clang and lld 15, with multiple errors:\n\n    setjmp/siglongjmp.c:111:48: error: incompatible pointer to integer conversion passing 'unw_word_t *' (aka 'unsigned long *') to parameter of type 'unw_word_t' (aka 'unsigned long'); remove \u0026 [-Wint-conversion]\n              if (unw_set_reg (\u0026c, UNW_REG_EH + 2, \u0026wp[JB_MASK]) \u003c 0)\n                                                   ^~~~~~~~~~~~\n    ../include/libunwind-common.h:283:56: note: passing argument to parameter here\n    extern int unw_set_reg (unw_cursor_t *, int, unw_word_t);\n                                                           ^\n\n    dwarf/Gparser.c:901:5: error: call to undeclared function '_Ux86_64_stash_frame'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]\n        tdep_stash_frame (c, rs);\n        ^\n    ../include/tdep-x86_64/libunwind_i.h:246:41: note: expanded from macro 'tdep_stash_frame'\n    #define tdep_stash_frame                UNW_OBJ(stash_frame)\n                                            ^\n\nThe first error is because the syntax is indeed wrong, the '\u0026' should be\nremoved.\n\nThe second error is because tdep_stash_frame() is only declared for\nLinux in libunwind_i.h, but it is used in Gparser.c. Declare it\nunconditionally to fix the problem."
+}

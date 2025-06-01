@@ -1,0 +1,8 @@
+{
+ "id": 1008207,
+ "bug_id": 230851,
+ "attachment_id": 0,
+ "creation_time": "2018-08-24T23:27:41Z",
+ "creator": "mckusick@FreeBSD.org",
+ "text": "(In reply to Ali Abdallah from comment #2)\nI have looked at nano and it does not follow the proper protocol for writing out the file (which is detailed in my comment #1). It simply does:\n\nfd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0666);\nwrite new contents\nclose(fd);\n\nThe O_TRUNC flag truncates the file to zero length. If the system crashes before the new contents are written, you get a zero length file. By default the contents will not be written for up to 30 seconds. So if you panic within 30 seconds of the file being written, you will get a zero length file. The proper way to fix this is detailed in my comment #1. The gap could be closed significantly by adding an fsync(fd) before calling close as that would cause the file to be written to disk within a few milliseconds of its finishing being written thus closing the gap considerably (but it would still be possible to get a zero length file). So, it really should be fixed properly.\n\nI am closing this bug because it is a bug in nano and not in FreeBSD."
+}

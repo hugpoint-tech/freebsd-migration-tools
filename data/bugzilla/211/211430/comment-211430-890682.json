@@ -1,0 +1,8 @@
+{
+ "id": 890682,
+ "bug_id": 211430,
+ "attachment_id": 0,
+ "creation_time": "2016-07-31T21:29:16Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "I originally stumbled across this while debugging another user of apr1.  The amd64 host I was using has both IPv4 and IPv6 connectivity and I was trying to access a web page on another of my hosts that also has IPv4 and IPv6 addresses.  I wasn't able to access the page and unfortunately the diagnostic message that I got wasn't at all helpful.  Accessing the same page from my i386 laptop worked fine.  Nothing was showing up in the server log when I was using the \"broken\" host, and I wasn't seeing any connect attempts in tcpdump.  I spent a long time looking for amd64 vs. i386 issues.\n\nThe problem turned out to be my nginx configuration.  I'd configured it to listen to IPv4 port 80, but neglected to also configure it for IPv6.  My tcpdump check was also only looking for IPv4.  When I looked at all connect attempts to port 80, I noticed that the client was only attempting to connect using IPv6 and was not trying IPv4 at all.  My laptop was working because it is configured to use DHCP and was only getting an IPv4 address.  Firefox and other tools didn't have any problem connecting to this server.\n\nThis problem is very easy to reproduce.  Try to do an svn http checkout from a host that has both IPv4 and IPv6 addresses, but is not listening to port 80 on either.  You should see svn attempt to connect using IPv6 and then quit after it gets the RST response.  It won't try the IPv4 address at all.  That's how I got the strace output in my original comment."
+}

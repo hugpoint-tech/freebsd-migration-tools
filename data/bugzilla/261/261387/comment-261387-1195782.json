@@ -1,0 +1,8 @@
+{
+ "id": 1195782,
+ "bug_id": 261387,
+ "attachment_id": 0,
+ "creation_time": "2022-01-21T17:33:17Z",
+ "creator": "Herbie.Robinson@stratus.com",
+ "text": "The documentation for callout says that callout_drain must be called before destroying any storage containing a callout structure.  I noticed the CAM doesn't do that for struct cam_sim and struct cam_id.\n\nI pose this bug report as a question, because it does seem a little scary to fix it and it's certainly beyond my level of experience with the FreeBSD kernel.\n\nThe simple patches to fix this would be\n\n--- cam_sim.c\n+++ cam_sim.c\n@@ -165,6 +165,7 @@\n\n     if (free_devq)\n          cam_simq_free(sim-\u003edevq);\n+    callout_drain(\u0026sim-\u003ecallout);\n     free(sim, M_CAMSIM);\n }\n\n--- cam_xpt.c\n+++ cam_xpt.c\n@@ -4831,6 +4831,7 @@\n {\n     struct cam_ed  *device = context;\n\n+    callout_drain(\u0026device-\u003ecallout);\n     mtx_lock(\u0026device-\u003edevice_mtx);\n     mtx_destroy(\u0026device-\u003edevice_mtx);\n     free(device, M_CAMDEV);\n\nThis is relative to the main branch https://cgit.freebsd.org/src/commit/?id=b252fb24301c1f7e7d83eab631e7d9fa947e227d.\n\nThe routines patched are cam_sim_free and xpt_destroy_device."
+}

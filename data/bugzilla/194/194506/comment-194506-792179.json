@@ -1,0 +1,8 @@
+{
+ "id": 792179,
+ "bug_id": 194506,
+ "attachment_id": 148530,
+ "creation_time": "2014-10-21T06:38:39Z",
+ "creator": "accornehl@fastmail.fm",
+ "text": "Created attachment 148530\npatch\n\nI noticed that passing an unenumerated device name to pciconf caused an assert, for what otherwise looks like valid input.\n\n# /usr/sbin/pciconf -a bge\nAssertion failed: (*cp == '\\0'), function getdevice, file /usr/home/acornehl/freebsd/usr.sbin/pciconf/pciconf.c, line 677.\nAbort trap (core dumped)\n\n# /usr/sbin/pciconf -a bge0\nbge0: attached\n\nThe function, getdevice(), expects that the device name is enumerated before processing the string, and hits the assert when it isn't. I've added a small patch checking before walking the string to check if it is enumerated or not and returning an error instead of an assert.\n\n# ./pciconf -a bge\npciconf: Device not found\n\n# ./pciconf -a bge0\nbge0: attached\n\n# ./pciconf -a foobar\npciconf: Device not found\n\n# ./pciconf -a foobar0\npciconf: Device not found"
+}

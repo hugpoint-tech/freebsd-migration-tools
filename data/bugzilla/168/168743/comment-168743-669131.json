@@ -1,0 +1,8 @@
+{
+ "id": 669131,
+ "bug_id": 168743,
+ "attachment_id": 0,
+ "creation_time": "2012-06-27T12:04:18Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: mav\nDate: Wed Jun 27 11:04:04 2012\nNew Revision: 237638\nURL: http://svn.freebsd.org/changeset/base/237638\n\nLog:\n  MFC r237398:\n  In camisr() clear CAM_SIM_ON_DONEQ flag after camisr_runqueue() purged SIM\n  done queue. Clearing it before caused extra SIM queueing in some cases.\n  It was invisible during normal operation, but during USB device unplug and\n  respective SIM destruction it could keep pointer on SIM without having\n  counted reference and as result crash the system by use afer free.\n  \n  PR:             usb/168743\n\nModified:\n  stable/8/sys/cam/cam_xpt.c\nDirectory Properties:\n  stable/8/sys/   (props changed)\n\nModified: stable/8/sys/cam/cam_xpt.c\n==============================================================================\n--- stable/8/sys/cam/cam_xpt.c\tWed Jun 27 11:02:35 2012\t(r237637)\n+++ stable/8/sys/cam/cam_xpt.c\tWed Jun 27 11:04:04 2012\t(r237638)\n@@ -4944,8 +4944,8 @@ camisr(void *dummy)\n \t\twhile ((sim = TAILQ_FIRST(\u0026queue)) != NULL) {\n \t\t\tTAILQ_REMOVE(\u0026queue, sim, links);\n \t\t\tCAM_SIM_LOCK(sim);\n-\t\t\tsim-\u003eflags \u0026= ~CAM_SIM_ON_DONEQ;\n \t\t\tcamisr_runqueue(\u0026sim-\u003esim_doneq);\n+\t\t\tsim-\u003eflags \u0026= ~CAM_SIM_ON_DONEQ;\n \t\t\tCAM_SIM_UNLOCK(sim);\n \t\t}\n \t\tmtx_lock(\u0026cam_simq_lock);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1004788,
+ "bug_id": 230258,
+ "attachment_id": 0,
+ "creation_time": "2018-08-04T03:34:35Z",
+ "creator": "cem@freebsd.org",
+ "text": "Ok, dirent timeouts (entry_timeout*), as well as attr timeouts (attr_timeout) are encoded in fuse_entry_out via e.g., fuse_reply_entry().\n\nAttribute timeout data is also encoded in fuse_attr_out (attr_valid) via e.g. fuse_reply_attr().\n\nThere also seems to be some fuse_config entry, attr, and negative timeouts?\n\nI'm not sure how all of these are supposed to interact; are implementations supposed to cache the attr_timeout value from lookup?  Any documentation of the protocol expectations here would be very welcome.\n\nTimeout values don't look optional.  I.e., technically we aren't allowed to cache indefinitely.  But it's probably safe enough to treat any ULONG_MAX timeout value as an infinity sentinel (if I did the math right, it represents about 600 billion years).\n\nIt's easy to say what reasonable behavior should be at the limits:\n\n1. Use our normal caching if attr_valid is the maximal value.\n2. Don't cache if attr_valid is zero.  (Meets your needs.)\n\nBut that leaves undefined the entire (0, ULONG_MAX) range.  I'm confident that actually implementing some sort of timer based cache invalidation would be fairly complicated code-wise, and seems like it would have limited utility vs on-demand cache invalidation.\n\nThe safe thing is to not cache, but I'm not sure if real-world filesystems actually pass the ULONG_MAX \"infinity\" timeout value.  I guess I can try to dig into the ones I'm familiar with (probably ntfs-3g being most popular) and see what they do."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 473551,
+ "bug_id": 129378,
+ "attachment_id": 0,
+ "creation_time": "2008-12-02T23:40:01Z",
+ "creator": "steve@Watt.COM",
+ "text": "tcsh 6.15.00 appears to lose track of the foreground process group when SIGINT comes in during backquote expansion.  This problem does not show up with tcsh 6.14.00.\n\nThe symptom is that when I do a long-ish running task inside a `` expansion\nthat I then ^C, nobody gets the foreground process group...  I never get\na prompt back after the ^C, and ^T gets me\n\n  load: 0.27 no foreground process group\n\nSending SIGCHLD and/or SIGCONT to the tcsh doesn't seem to make any\ndifference at all.\n\nThe tcsh is sitting in \"pause\" WCHAN, which seems sensible.  A truss\non tcsh reveals (oddly enough) that it's sitting in sigsuspend().\nSending it signals makes it loop through a wait4() call and go back into\nsigsuspend().\n\nIt happens running either as root (from sudo) or as a regular user.  It\nhappens under xterm, under ssh sessions, and on a direct console login.\n\nOne portable reproduction:\n# cd /usr/src\n# less `egrep -lir '^Foo.*baz' *`\n^Cload: 0.02 no foreground process group\n\n(I typed ^C ^T)\n\nSIGKILL to the shell seems to be the only way to get things back, and it does in your shell.\n\nI also got a \"me too\" from my posting on -hackers about this which stated that a SIGHUP would also make the shell go away.\n\nFix: \n\nUse tcsh 6.14.00 (probably not a desirable workaround).\nHow-To-Repeat: % cd /usr/src\n% less `egrep -lir '^Foo.*baz' *`\n^C^T"
+}

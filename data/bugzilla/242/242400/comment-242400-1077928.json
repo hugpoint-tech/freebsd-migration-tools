@@ -1,0 +1,8 @@
+{
+ "id": 1077928,
+ "bug_id": 242400,
+ "attachment_id": 0,
+ "creation_time": "2019-12-03T11:27:36Z",
+ "creator": "arcade@b1t.name",
+ "text": "I'll try to summarize what I'm facing since the last lmdb update:\n\nDec  3 13:07:45 limbo httpd[65465]: unable to tell master 1: Broken pipe\nDec  3 13:08:33 limbo ctl_cyrusdb[76556]: skiplist: clean shutdown file missing, updating recovery stamp\nDec  3 13:08:33 limbo ctl_cyrusdb[76556]: recovering cyrus databases\nDec  3 13:08:33 limbo ctl_cyrusdb[76556]: cyrusdb_lmdb(/var/imap/quotas.db): No such file or directory\nDec  3 13:08:33 limbo ctl_cyrusdb[76556]: cyrusdb_lmdb(/var/imap/quotas.db): No such file or directory\nDec  3 13:08:33 limbo ctl_cyrusdb[76556]: DBERROR: opening /var/imap/quotas.db: cyrusdb error\nDec  3 13:08:33 limbo ctl_cyrusdb[76556]: cyrusdb_lmdb: closing stray database /var/imap/mailboxes.db\n\nThis is happening for some time to me now. I checked databases, nagged cyrus people on IRC but generally without any results. The whole problem is somewhere around LMDB usage. During night when backups start the database gets locked and is not released. All processes spawned by master died. The only ones staying alive are 'master' and 'idled'. Starting processes gives file not found error. The file is indeed in place, it's just not detected or not properly locked...\n\nAlso when the processes are holding there I can't restart 'master' to make everything work, I need to also kill all stray processes.\n\nCurrently I have only LMDB to blame so I reverted to previous version. Moving quota from LMDB also works, but that's kindda funny cause whole quota db is like 8k only.\n\nI'll try to update if I find something else."
+}

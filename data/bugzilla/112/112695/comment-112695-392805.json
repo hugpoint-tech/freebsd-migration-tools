@@ -1,0 +1,8 @@
+{
+ "id": 392805,
+ "bug_id": 112695,
+ "attachment_id": 0,
+ "creation_time": "2007-05-16T00:10:06Z",
+ "creator": "ccowart@rescomp.berkeley.edu",
+ "text": "When I ssh into FreeBSD hosts without allocating a tty, sshd segfaults\nafter the process terminates. This problem occurs on both 6_1_REL and\n6_2_REL installations at all sorts of patch levels.\n\nExamples:\n\nClient: `ssh -t server ls`\nServer Logs: \n| May  9 15:33:44 server sshd[1503]: Accepted publickey for ccowart from \n|     client port 43604 ssh2\n| May  9 15:33:45 server sshd[1505]: pam_sm_close_session(): no utmp \n|     record for ttyp5\n\nClient: `ssh server ls`\nServer Logs:\n| May  9 15:33:50 server sshd[1509]: Accepted publickey for ccowart from\n|   client port 42119 ssh2\n| May  9 15:33:51 server pid 1511 (sshd), uid 1225: exited on signal 11\n\nIn either example, the client thinks the command has completed\nsuccessfully, shows proper output, and propogates the return value from\nthe remote command. The main problem is I don't like seeing a bunch of\nsegfaults being logged in the daily run output.\n\nFix: \n\nNo known solution.\nHow-To-Repeat: Uncommenting one rule at a time in my pam stack, I discovered the\nculprit: pam_lastlog\n\nThe session section of my system pam configuration looks like this:\n\n| # session\n| session     required    pam_lastlog.so      no_fail\n| session     optional    /usr/local/lib/pam_ldap.so no_warn\n\nWhen I comment out the pam_lastlog, the segfaults vanish.\n\nWhen I change the entire pam stack to pam_permit, with the exception of pam_lastlog, the segfaults still occur."
+}

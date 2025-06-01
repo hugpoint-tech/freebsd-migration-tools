@@ -1,0 +1,8 @@
+{
+ "id": 869914,
+ "bug_id": 207975,
+ "attachment_id": 0,
+ "creation_time": "2016-03-14T14:34:04Z",
+ "creator": "cejkar@fit.vutbr.cz",
+ "text": "After commit 272130 (https://lists.freebsd.org/pipermail/svn-src-head/2014-September/062990.html), mac_bsdextended allows renaming and moving, when it should not. Unfortunately, the change is rather old, so the same problem is in 10-STABLE already too.\n\nQuick test (change \"user\" to your favorite login in you system):\n\n# kldload mac_bsdextended\n# ugidfw add subject uid user object type l mode rs\n# su - user\n$ ln -s src dst\n$ rm -v dst\nrm: dst: Permission denied         # correct\n$ mv -v dst dst2\ndst -\u003e dst2                        # incorrect, it should be permission denied\n$ exit\n#\n\nYou can look into sys/security/mac_bsdextended/ugidfw_vnode.c, functions ugidfw_vnode_check_rename_from() and ugidfw_vnode_check_unlink() - the codes are the same, but behavior is different. Before 272130, it really worked and mv was not possible, so probably change 272130 changed behavior, so that ugidfw_vnode_check_rename_from() is not called for rename operation anymore?"
+}

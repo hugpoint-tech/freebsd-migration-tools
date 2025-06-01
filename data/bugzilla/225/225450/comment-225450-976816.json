@@ -1,0 +1,8 @@
+{
+ "id": 976816,
+ "bug_id": 225450,
+ "attachment_id": 0,
+ "creation_time": "2018-02-11T03:11:26Z",
+ "creator": "pablo.ruiz@gmail.com",
+ "text": "And, finally if I move the while(1) just after the mtx_unlock_spin call, like this:\n\ndiff --git a/sys/x86/x86/mp_x86.c b/sys/x86/x86/mp_x86.c\nindex 1c257d87e58..04975dd8a2e 100644\n--- a/sys/x86/x86/mp_x86.c\n+++ b/sys/x86/x86/mp_x86.c\n@@ -950,9 +950,9 @@ init_secondary_tail(void)\n        load_es(_udatasel);\n        load_fs(_ufssel);\n #endif\n-while(1);\n\n        mtx_unlock_spin(\u0026ap_boot_mtx);\n+while(1);\n\n        /* Wait until all the AP's are up. */\n        while (atomic_load_acq_int(\u0026smp_started) == 0)\n\nWe arrive to the original behaviour of no 'db' prompt, and somewhat garbaged crash:\n\n[...]\ncpu0 BSP:\n     ID: 0x00000000   VER: 0x80050010 LDR: 0x00000000 DFR: 0xffffffff\n  lint0: 0x00010700 lint1: 0x00000400 TPR: 0x00000000 SVR: 0x000001ff\n  timer: 0x000100ef therm: 0x00010000 err: 0x000000f0 pmc: 0x00010400\n   AMD ext features: 0x00010003\n   AMD elvt0: 0x00010000\nSMP: AP CPU #1 Launched!\ncpu1 AP:\n\nFa\nFa\n\nFFa\nFa\nFa\nFa\nFata\n\n.................\n\nI hope this helps."
+}

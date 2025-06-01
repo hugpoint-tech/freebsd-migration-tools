@@ -1,0 +1,8 @@
+{
+ "id": 840866,
+ "bug_id": 201611,
+ "attachment_id": 0,
+ "creation_time": "2015-09-18T20:15:54Z",
+ "creator": "aritger@nvidia.com",
+ "text": "(In reply to Konstantin Belousov from comment #2)\n\nThanks for taking a look.\n\nSorry that I didn't describe things well in my original post.  The intent\nis for this usage pattern:\n\n    process A:\n        fda_dev = open(\"/dev/nvidia0\");\n\n        // [...allocate resources...]\n\n        // allocate file to pass resource to process B\n        fda = open(\"/dev/nvidia0\");\n\n        // associate resource with fda\n        params.resource = handleForResource;\n        params.fd = fda;\n        ioctl(fda_dev, opcode, \u0026params, sizeof(params));\n\n        SendFdToProcessB(fda);\n        close(fda);\n\n    process B:\n        fdb_dev = open(\"/dev/nvidia0\");\n\n        // resource resource from process A\n        fdb = RecvFdFromProcessA();\n\n        // look up resource assocated with fd\n        params.fd = fdb;\n        ioctl(fdb_dev, opcode, \u0026params, sizeof(params));\n        close(fdb);\n\n        resource = params.handleForResource\n\n(i.e., the fd for the resource is different than the fd on which the\nioctl is performed)\n\nIt is important that fd[ab] are different than fd[ab]_dev: process A\ndoesn't want to give process B access to _everything_: just a specific\nresource.\n\nDoes that make sense?\n\nThanks."
+}

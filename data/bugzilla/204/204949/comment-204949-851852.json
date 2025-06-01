@@ -1,0 +1,8 @@
+{
+ "id": 851852,
+ "bug_id": 204949,
+ "attachment_id": 0,
+ "creation_time": "2015-12-02T20:05:37Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "Since the vnode change not all fields get reinitialized and chances some of \"surviving\" fields should not. In particular the union used to store v_mountdhere vnode is suspicious.\n\nUnfortunately I'm unable to reproduce the problem.\n\nCan you try running with the following?\n\ndiff --git a/sys/kern/vfs_subr.c b/sys/kern/vfs_subr.c\nindex ddab9f0..3c39c05 100644\n--- a/sys/kern/vfs_subr.c\n+++ b/sys/kern/vfs_subr.c\n@@ -2784,6 +2784,7 @@ _vdrop(struct vnode *vp, bool locked)\n #endif\n        vp-\u003ev_iflag = 0;\n        vp-\u003ev_vflag = 0;\n+       bzero(\u0026vp-\u003ev_un, sizeof(vp-\u003ev_un));\n        bo-\u003ebo_flag = 0;\n        uma_zfree(vnode_zone, vp);\n }\n\nThere are few more suspicious fields, but they should not matter for your issue ('clustering stuff')."
+}

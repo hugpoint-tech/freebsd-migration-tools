@@ -1,0 +1,8 @@
+{
+ "id": 787341,
+ "bug_id": 193053,
+ "attachment_id": 0,
+ "creation_time": "2014-09-18T04:11:45Z",
+ "creator": "ncrogers@gmail.com",
+ "text": "From what I can tell, the changes in the newer ixgbe driver here:\n\nhttps://downloadcenter.intel.com/Detail_Desc.aspx?DwnldID=14688\n\nFix two of three problems with the IXGBE_LEGACY_TX path that I changed in the attached diff. My guess is because they were fixed because its pretty obvious when auditing the code.\n\n#1\n\n #ifdef IXGBE_LEGACY_TX\n-\tif (!IFQ_DRV_IS_EMPTY(ifp-\u003eif_snd))\n+\tif (!IFQ_DRV_IS_EMPTY(\u0026ifp-\u003eif_snd))\n\nThis is fixed in the newer Intel driver. Not in FBSD.\n\n\n#2\n\n-#ifdef IXGBE_LEGACY_TX\n-\tif (txr-\u003ebr != NULL)\n-\t\tbuf_ring_free(txr-\u003ebr, M_DEVBUF);\n-#endif\n\nThis also seems to be fixed in the Intel driver, not FBSD, which as far as I can tell affects the non-legacy path behavior (i.e., most everyone). In my diff I opted to remove it, but in the newer Intel driver apparently its implied that its necessary for the non-legacy path, as the #ifdef is changed to #ifndef.\n\n\n#3\n\n \t\telse if (txr-\u003equeue_status == IXGBE_QUEUE_WORKING)\n+#ifndef IXGBE_LEGACY_TX\n \t\t\ttaskqueue_enqueue(que-\u003etq, \u0026txr-\u003etxq_task);\n+#else\n+\t\t\ttaskqueue_enqueue(que-\u003etq, \u0026que-\u003eque_task);\n+#endif\n\nI still believe this change is necessary, and its not in the newer Intel driver from what I can tell, and its not so obvious unless you actually try to use the legacy path. Again, I'm not an expert, so I hope someone can validate all of this.\n\n\n10/stable (and HEAD, I think) still have all three problems. It would indeed be nice for this to be fixed in 10.1-RELEASE.\n\nThanks!"
+}

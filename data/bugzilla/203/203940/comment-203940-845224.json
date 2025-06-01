@@ -1,0 +1,8 @@
+{
+ "id": 845224,
+ "bug_id": 203940,
+ "attachment_id": 0,
+ "creation_time": "2015-10-21T18:15:12Z",
+ "creator": "scdbackup@gmx.net",
+ "text": "usr.sbin/makefs/cd9660/cd9660_write.c\n\nCID 976847 (#1 of 1): Argument cannot be negative (NEGATIVE_RETURNS)\n   4. negative_returns: curpos is passed to a parameter that cannot be\n   negative. [Note: The source code implementation of the function hasi\n   been overridden by a builtin model.]\n\n406        curpos = ftello(fd);\n\n413        if (fseeko(fd, curpos, SEEK_SET) == -1)\n\n--------------- Source analysis:\n\nThis gesture lacks of an error check. The fseeko() call has one\n\n413        if (fseeko(fd, curpos, SEEK_SET) == -1)\n414                err(1, \"fseeko\");\n\nIt is not easy to imagine how a file pointer which is not suitable for\nftello() should get here, as makefs obviously is not prepared for\nsequential output.\n\n--------------- Remedy proposal:\n\nIt cannot harm to show the user the direct error cause and not\nan error of the subsequent fseeko(SEEK_SET).\n\n         curpos = ftello(fd);\n+        if (curpos \u003c 0)\n+                err(1, \"ftello\");"
+}

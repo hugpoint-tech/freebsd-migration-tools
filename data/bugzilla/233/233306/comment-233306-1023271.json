@@ -1,0 +1,8 @@
+{
+ "id": 1023271,
+ "bug_id": 233306,
+ "attachment_id": 199511,
+ "creation_time": "2018-11-24T12:53:32Z",
+ "creator": "lenzi.sergio@gmail.com",
+ "text": "Created attachment 199511\nremove code that panics the system due to invalid memory access\n\nThe panic happens when the code:  both i386 and amd64\ninfo.rti_info[RTAX_IFP] = rt-\u003ert_ifp-\u003eif_addr-\u003eifa_addr;\nat /usr/src/sys/net/rtsock.c near line 1568  the code tries to access rt-\u003ert_ifp-\u003eif_addr-\u003eifa_addr, but because rt-\u003ert_ifp points to an already freed memory, and the pointer is NOT NULL, probably because the free code does not nulls the pointer. or a race condition in the code, the system panics at page fault in kernel mode\n\nThe patch removes the line from the rtsock.c for a while until some guru tracks the race condition or fixes the pointer to a null value after rt-\u003ert_ifp is freed and so a test can be done..\n\nthe server in test holds many (100+) pppoi connections that changes every time, the server runs routed with flags=-s so the route tables are stressed in add/delete routes all the time... sometimes it panics in seconds, sometimes after hours...  Now with this patch, it is working 24/7  for some days..."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1170439,
+ "bug_id": 257193,
+ "attachment_id": 0,
+ "creation_time": "2021-07-14T20:22:12Z",
+ "creator": "rtm@lcs.mit.edu",
+ "text": "The risc-v kernel copyin() routine loops forever if the user passs a\npointer with the high bit set. I\"m using qemu 5.2.0 to run this image:\n\nhttps://download.freebsd.org/ftp/snapshots/VM-IMAGES/14.0-CURRENT/riscv64/Latest/FreeBSD-14.0-CURRENT-riscv-riscv64.raw.xz\n\nI compile and run this program:\n\n  #include \u003cfcntl.h\u003e\n  main()\n  {\n    fcntl(1, F_GETLK, 0x800000c000000000);\n  }\n\nThe kernel fcntl calls copyin(), which never returns. I'm guessing that\ncopyin's bgt in copyinout.S should be a bgtu:\n\nENTRY(copyin)\n    beqz    a2, copyin_end  /* If len == 0 then skip loop */\n    add a3, a0, a2\n    li  a4, VM_MAXUSER_ADDRESS\n    bgt  a3, a4, copyio_fault_nopcb\n    ..."
+}

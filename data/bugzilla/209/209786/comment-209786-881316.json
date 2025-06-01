@@ -1,0 +1,8 @@
+{
+ "id": 881316,
+ "bug_id": 209786,
+ "attachment_id": 0,
+ "creation_time": "2016-05-31T21:35:04Z",
+ "creator": "bdrewery@FreeBSD.org",
+ "text": "(In reply to Adam Weinberger from comment #9)\n\u003e If I've manually set CCACHE_DIR to something specific for this jail, chowned\n\u003e to nobody:nobody, BUILD_AS_NON_ROOT works just fine.\n\u003e \n\u003e Could it perhaps only disable BUILD_AS_NON_ROOT if CCACHE_DIR is\n\u003e /root/.ccache, or if CCACHE_DIR is not nobody:nobody?\n\nEven that is not a sure way to detect if it is OK.  I would need to check\nevery directory inside of the ccache dir, and even then it would assume the\nuser is not sharing the ccache dir outside of Poudriere from root which would\nthen break.\n\n~/.ccache # chown nobody:nobody .\n~/.ccache # touch hm # Simulating running ccache from outside of Poudriere\n~/.ccache # ls -al hm\n-rw-r--r--  1 root  nobody  0 May 31 14:31 hm\n\nBam, broken for the next Poudriere build.  The stats files would be a problem with\nthis as well.\n\nThe only thing I see working for everyone is an override option to force\nusing these options together.\n\nI didn't flip the default for BUILD_AS_NON_ROOT for all of this time precisely\nbecause ccache would break.  Then I did.  Then I've received numerous reports\nabout it breaking.  This commit was to restore *working* behavior for everyone,\nnot just some."
+}

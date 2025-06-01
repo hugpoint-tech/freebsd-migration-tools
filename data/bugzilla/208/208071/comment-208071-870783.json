@@ -1,0 +1,8 @@
+{
+ "id": 870783,
+ "bug_id": 208071,
+ "attachment_id": 0,
+ "creation_time": "2016-03-19T02:06:40Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Every time you mount(8) any file system on the NFS server, mountd reloads\nthe /etc/exports. This has two effects:\n1 - Unless you are running mountd with the \"-S\" option, the file systems\n    will become unexported for a short period of time during the reload.\n2 - If the new file system is mounted on top of the exported file system,\n    mountd will try to export that new file system.\n    --\u003e NFS mounts can never be exported, so if the new file system is\n        an NFS client mount, the export will no longer work. (This has\n        been the case since 1985 and is in part the case because you\n        can't safely put a file handle inside a file handle.)\n\nTo fix #1, add \"-S\" to mountd_flags.\n#2 just won't work and needs to be avoided. You can look at\n/var/log/messages for entries related to export problems generated\nby mountd.\n\nI don't know amd-utils or autofs, but it may be that one of them uses\nmount(8) and the other does not. FreeBSD's mount(8) always sends a\nSIGHUP to mountd, which makes it reload /etc/exports.\n\nBasically #1 and #2 only occurs because mountd reloads /etc/exports\nand that happens when mountd receives a SIGHUP. It may be that amd-utils\ndoesn't send a SIGHUP to mountd?)\n\nrick"
+}

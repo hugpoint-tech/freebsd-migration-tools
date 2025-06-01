@@ -1,0 +1,8 @@
+{
+ "id": 1264526,
+ "bug_id": 272238,
+ "attachment_id": 243025,
+ "creation_time": "2023-06-26T23:41:16Z",
+ "creator": "greg@codeconcepts.com",
+ "text": "Created attachment 243025\nPatch to ameliorate false sharing with pthread rw and spin locks.\n\nIf an application allocates two or more pthread rwlocks (or spin locks) and then heavily accesses them from different CPUs it's quite likely that the application will experience severe performance degradation due to false sharing.\nThe problem is that these locks are small (36 and 32 bytes, respectively) and allocated on the heap via jemalloc(3).  Depending upon the state of the allocator they may wind up within the same or straddling adjacent cache lines.\n\nFor example, if I initialize four rwlocks and hammer on them from four different CPUs (one lock per CPU, such each lock is always uncontended) then on my dual E2697a 2.6GHz server I get about 10.52 million lock+inc+unlock calls per second.\n\nWith the attached patch, which rounds up the allocations to CACHE_LINE_SIZE, I get 47.68 million calls per second.  Similarly, for pthread spin locks I get about 4.53 and 50.94 million calls per second, respectively.\n\nOverall, I am seeing roughly a 4.5x improvement with pthread rwlocks, and an 11.2x improvement with pthread spin locks.\n\nThe patch is very simple and ignores adajacent cacheline prefetch as seen on amd64 hardware.\n\nDeveloped and test on:\n\nFreeBSD sm1.cc.codeconcepts.com 14.0-CURRENT FreeBSD 14.0-CURRENT #4 n263748-b95d2237af40: Mon Jun 26 17:08:50 CDT 2023     greg@sm1.cc.codeconcepts.com:/usr/obj/usr/src/amd64.amd64/sys/SM1 amd64\n\nPasses the kyua test:\n\nkyua test -k /usr/tests/lib/libthr/Kyuafile"
+}

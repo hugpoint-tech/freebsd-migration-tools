@@ -1,0 +1,8 @@
+{
+ "id": 618953,
+ "bug_id": 158665,
+ "attachment_id": 0,
+ "creation_time": "2011-07-05T11:47:53Z",
+ "creator": "cuicui@gmail.com",
+ "text": "Got a kernel dump, here's the stack trace. Unfortunately I didn't\nbuild the kernel with debugging info.\n\n\n#7  0xc069cee8 in in6_setscope ()\n#8  0xc0685bb9 in in6_selectsrc ()\n#9  0xc069aa80 in rip6_output ()\n#10 0xc069b193 in rip6_send ()\n#11 0xc05a7885 in sosend_generic ()\n#12 0xc05a38cf in sosend ()\n#13 0xc05ab139 in kern_sendit ()\n#14 0xc05ab341 in sendit ()\n#15 0xc05ab3f1 in sendmsg ()\n#16 0xc0581d2c in syscallenter ()\n#17 0xc07278a4 in syscall ()\n\nFrom the stack trace, it looks like the call happened on in6_src.c:309:\n\n        IN6_IFADDR_RLOCK();\n        TAILQ_FOREACH(ia, \u0026V_in6_ifaddrhead, ia_link) {\n                int new_scope = -1, new_matchlen = -1;\n                struct in6_addrpolicy *new_policy = NULL;\n                u_int32_t srczone, osrczone, dstzone;\n                struct in6_addr src;\n                struct ifnet *ifp1 = ia-\u003eia_ifp;\n\n                /*\n                 * We'll never take an address that breaks the scope\nzone\n                 * of the destination.  We also skip an address if its\nzone\n                 * does not contain the outgoing interface.\n                 * XXX: we should probably use sin6_scope_id here.\n                 */\n                if (in6_setscope(\u0026dst, ifp1, \u0026dstzone) ||  \u003c---- HERE\n                    odstzone != dstzone) {\n                        continue;\n                }"
+}

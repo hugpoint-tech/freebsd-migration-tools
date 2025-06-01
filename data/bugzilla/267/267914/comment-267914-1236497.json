@@ -1,0 +1,8 @@
+{
+ "id": 1236497,
+ "bug_id": 267914,
+ "attachment_id": 0,
+ "creation_time": "2022-11-22T11:21:11Z",
+ "creator": "bsd@j-star.org",
+ "text": "Ahh, I hadn't seen https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=263760 . I'm also running it in a jail, so it does look like it could be something jail specific.\n\nThis reproduces for me, without using any jail management tools other than in the base system:\n\nuname -a\n# FreeBSD pop-bsd 13.1-RELEASE-p3 FreeBSD 13.1-RELEASE-p3 GENERIC amd64\nsudo zfs create zroot/jails/grafana-test\n# Empty root password, nothing but base installed, no services, no users:\nsudo bsdinstall jail /usr/jails/grafana-test\nsudo sysrc -f /usr/jails/grafana-test/etc/rc.conf sendmail_enable=\"NONE\"\nsudo cp /etc/resolv.conf /usr/jails/grafana-test/etc/resolv.conf\nsudo sh -c 'cat \u003c\u003c EOF \u003e\u003e /etc/jail.conf\ngrafana-test {\n  host.hostname = grafana-test.j-star.org;\n  ip4.addr = hn0|10.0.0.199/24;\n  path = /usr/jails/grafana-test;\n  mount.devfs;\n  exec.clean;\n  exec.start = \"/bin/sh /etc/rc\";\n  exec.stop = \"/bin/sh /etc/rc.shutdown\";\n}\nEOF'\nsudo service jail start grafana-test\nsudo pkg -j grafana-test install grafana9\nsudo jexec grafana-test service grafana enable\nsudo jexec grafana-test service grafana start\n# Grafana is running as expected at this point\nsudo service jail restart grafana-test\n# Grafana has not restarted"
+}

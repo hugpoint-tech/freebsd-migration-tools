@@ -1,0 +1,8 @@
+{
+ "id": 13135,
+ "bug_id": 4265,
+ "attachment_id": 0,
+ "creation_time": "1997-08-10T22:20:01Z",
+ "creator": "andrew@erlenstar.demon.co.uk",
+ "text": "System panics when fsck -p is invoked (if kernel built with DIAGNOSTIC)\nor shortly thereafter (if not built with DIAGNOSTIC). This occurs if\nmultiple FreeBSD slices are used on a disk (other than the root disk?).\nThe panic is due to a race condition in dsopen/dsinit; dsopen is being\ncalled simultaneously from two of the fsck subprocesses, and this\nsequence results:\n\ndsopen() called; dsopen() calls dsinit(); dsinit() allocates dummy\nslice table and stores its address; a context switch occurs\ndsopen() called again; dsisopen() is false at this point, but a\nslice table for the unit is present (the dummy one allocated above) so\ndsgone() is called, freeing the slice table;\ndsinit() resumes, and calls free() on the dummy slice table to replace\nit with the real one, but panics as it has already been freed.\n\nFix: \n\ndsopen needs to be protected against simultaneous calls for multiple\nslices on the same physical unit.\nHow-To-Repeat: timing dependent, so it might be hard, but creating a filesystem on a\nsecond FreeBSD slice on a non-root disk and adding a suitable entry\nto /etc/fstab, then rebooting and running fsck -p, does it every time\nfor me."
+}

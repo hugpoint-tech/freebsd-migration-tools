@@ -1,0 +1,8 @@
+{
+ "id": 1193146,
+ "bug_id": 260923,
+ "attachment_id": 0,
+ "creation_time": "2022-01-04T13:04:35Z",
+ "creator": "d8zNeCFG@aon.at",
+ "text": "Scenario:\n- FreeBSD main latest\n- Cross-compiling for armv6 target RPI-B on an amd64 machine:\n\n[0]# cd /usr/src\n[0]# make -j8 buildworld buildkernel KERNCONF=\"RPI-B GENERIC VERSATILEPB\" TARGET=arm TARGET_ARCH=armv6 |\u0026 tee /usr/obj$PWD/make.-j8.buildworld.buildkernel.KERNCONF=RPI-B.GENERIC.VERSATILEPB.TARGET=arm.TARGET_ARCH=armv6.`stddate`@`hostname -s`\n\n- /usr/src and /usr/obj are shared via NFS (autofs)\n- On the target machine (Raspberry Pi B+, hostname rpi-b), executing\n\n[0]# cd /usr/src\n[0]# nice -20 make installkernel installworld KERNCONF=\"RPI-B\" DESTDIR=/d/26s4a/usr/VOL/rpi-b/tmp/x |\u0026 tee /d/26s4a/usr/VOL/rpi-b/tmp/make.installkernel.installworld.KERNCONF=RPI-B.DESTDIR=_d_26s4a_usr_VOL_rpi-b_tmp_x.`stddate`@`hostname -s`\n\nResult:\n- The command fails with (the paths below reflect their absolute position, /usr/src and /usr/obj are appropriate symlinks):\n\n/bin/sh: make: Exec format error\n*** Error code 126\n\nStop.\nmake[1]: stopped in /net/hal/z/SRC/FreeBSD/src/MBi/main\n*** Error code 1\n\nStop.\nmake: stopped in /net/hal/z/SRC/FreeBSD/src/MBi/main\n\n- The reason is that make(1) is found in /usr/obj/usr/src/arm.armv6/tmp/legacy/bin/make, but this is an amd64 executable.\n\nExpected result:\n- The directory /usr/obj/usr/src/tmp should be named according to the host architecture, e.g., /usr/obj/usr/src/tmp.amd64.amd64\n- This shall avoid it being found on the target machine.\n\n-- Martin"
+}

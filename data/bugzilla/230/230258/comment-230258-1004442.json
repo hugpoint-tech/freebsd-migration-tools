@@ -1,0 +1,8 @@
+{
+ "id": 1004442,
+ "bug_id": 230258,
+ "attachment_id": 0,
+ "creation_time": "2018-08-02T06:41:14Z",
+ "creator": "acid@moosefs.com",
+ "text": "I've checked it using \"DIRECT\" flag - result is almost the same:\n\nhello1:\nt1\nt3\nt5\nt6\n\nhello2:\nt1\nt3\nt5\nt6\n\nStill no 't2' and no 't4'. Our problem is not in data caching - this can be fixed using 'direct_io' (not vary good solution, but it works). The problem is connected with dentry cache - i.e. file length. Because of this cache operation \"echo 't3' \u003e\u003e /mnt/llfuse/hello1\" uses old file length and overwrites 't2'.\n\nIn Linux and OS X this works fine. On FreeBSD it looks like 'timeout' parameter returned with attributes (getattr) and entry data (lookup) is totally ignored.\n\nFor example - output from OS X (original version - without direct):\n\n\nhello1:\nt1\nt2\nt3\nt4\nt5\n\nhello2:\nt1\nt2\nt3\nt4\nt5\nt6\n\n\nStill no 't6' in 'hello1' - probably they had similar issue and 'fixed' this by invoking 'getattr' whenever file is opened with O_APPEND, so data are appended properly, but then when 'hello1' is read without 'O_APPEND' it also uses \"old\" file length.\n\nOn Linux there is 't6' in 'hello1' (proper timeouting attributes).\n\n\nAs for now there is no work-around for this issue. We've mentioned 'fuse_lowlevel_notify_inval_entry' only because it could be used as a work-around. We do not use this function in our current implementation."
+}

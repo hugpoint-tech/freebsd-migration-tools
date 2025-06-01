@@ -1,0 +1,8 @@
+{
+ "id": 1232025,
+ "bug_id": 267215,
+ "attachment_id": 237472,
+ "creation_time": "2022-10-20T01:02:42Z",
+ "creator": "yasu@freebsd.org",
+ "text": "Created attachment 237472\nPatch file\n\nI'm not sure why it is included in the logic to determine which version of GCC is used. But it sometimes causes unexpected result in non-cleanroom environment.\n\nLet me assume following situation.\n\n* I'm user of portmaster.\n* On my FreeBSD system some ports that use 'USE_GCC=yes' are installed.\n* I'd like to change default version of GCC from 11 to 12.\n\nTo achieve my purpose I take following steps.\n\n1. Add 'DEFAULT_VERSIONS+=gcc=12' to /etc/make.conf\n2. Execute `portmaster \"$(pkg info -r gcc11 | grep -v ':$')\"`\n\nAfter finishing them, it is expected that gcc12 is installed and all packages that depended on gcc11 now depend on it. But what really happens is that gcc12 isn't installed and dependency doesn't change at all.\n\nIt is because Mk/bsd.gcc.mk checks if specific version requested is already installed and installed gcc11 package is detected and used. But obviously it conflicts with the result user usually expects when he sets DEFAULT_VERSIONS in /etc/make.conf.\n\nSo change the logic so it doesn't check installed version of GCC at all."
+}

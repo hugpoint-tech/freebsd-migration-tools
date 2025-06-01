@@ -1,0 +1,8 @@
+{
+ "id": 1337940,
+ "bug_id": 283159,
+ "attachment_id": 0,
+ "creation_time": "2024-12-06T16:38:38Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Nothing has changed in unwinding for kgdb in a long while, and the only frame unwinding that is custom in kgdb is for exception frames.  Unwinding out of doadump() is a \"normal\" frame just like a userspace frame and should be using DWARF unwind info.  The most likely regression here is an issue with the DWARF.\n\nOh, is this with PAC?  The PC value looks like the upper N bits are \"wrong\":\n\n#0  0xffff0000004b5aa8 in doadump (textdump=1) at /usr/home/trasz/git/freebsd/sys/kern/kern_shutdown.c:404\n#1  0x67fd0000004b5868 in ?? ()\n\nThe real PC for frame 1 probably starts with 'ffff' instead of '67fd'.  As a workaround you can disable PAC for now (not sure if that's a thing you can do currently).  I'll try to see if I can reproduce."
+}

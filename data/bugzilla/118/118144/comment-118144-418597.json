@@ -1,0 +1,8 @@
+{
+ "id": 418597,
+ "bug_id": 118144,
+ "attachment_id": 0,
+ "creation_time": "2007-11-20T08:30:01Z",
+ "creator": "os@rsu.ru",
+ "text": "\tFrom lib/libpam/modules/pam_lastlog/pam_lastlog.c\n\nPAM_EXTERN int\npam_sm_close_session(pam_handle_t *pamh __unused, int flags __unused,\n    int argc __unused, const char *argv[] __unused)\n{\n        const void *tty;\n\n        pam_get_item(pamh, PAM_TTY, (const void **)\u0026tty);\n        if (strncmp(tty, _PATH_DEV, strlen(_PATH_DEV)) == 0)\n                tty = (const char *)tty + strlen(_PATH_DEV);\n        if (*(const char *)tty == '\\0')\n                return (PAM_SERVICE_ERR);\n        if (logout(tty) != 1)\n                syslog(LOG_ERR, \"%s(): no utmp record for %s\",\n                    __func__, (const char *)tty);\n        logwtmp(tty, \"\", \"\");\n        return (PAM_SUCCESS);\n}\n\n\t1. pam_get_item may fail\n\t2. tty may be NULL resulting in SIGSEGV in strncmp."
+}

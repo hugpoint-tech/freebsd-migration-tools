@@ -1,0 +1,8 @@
+{
+ "id": 821054,
+ "bug_id": 199676,
+ "attachment_id": 155958,
+ "creation_time": "2015-04-25T01:04:06Z",
+ "creator": "avos@freebsd.org",
+ "text": "Created attachment 155958\nRemove old iv_bss entry from the node table\n\nThis may happen on RUN -\u003e SCAN -\u003e RUN -\u003e SCAN state transition:\n\n1. RUN -\u003e SCAN: in ieee80211_sta_join1(): iv_bss will be moved to obss, refcnt will be reduced by 2 (default minimum).\n\nNow, if old iv_bss have some extra references (for example, from unacknowledged probe responses), it will not be freed and will stay in the node table.\n\n2. SCAN -\u003e RUN.\n\n3. If old iv_bss will not be deleted by the time when the next RUN -\u003e SCAN state transition occurs, then sta_leave() will reduce it's reference counter once more. As a result, two last users will free it -\u003e this will lead to kernel panic.\n\nIn this patch old iv_bss entry is explicitly removed from the node table in ieee80211_sta_join1() (as a result, it will not be processed by sta_leave())."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 635152,
+ "bug_id": 161908,
+ "attachment_id": 0,
+ "creation_time": "2012-01-23T08:28:01Z",
+ "creator": "rozhuk.im@gmail.com",
+ "text": "\nI took the opportunity and left the \"vlan\" in addfilter and gettable, while\nthere you can enter and \"vid\".\nIn addfilter if \"vid\" is not specified, it uses the \"vlan\".\nIn gettable just returned both parameters, they are always equal.\n\n# ngctl msg re0:lower addfilter '{ vlan=1001 hook=\"vlan1001\" }'\nequal\n# ngctl msg re0:lower addfilter '{ vid=1001 hook=\"vlan1001\" }'\n\n# ngctl msg re0:lower gettable\nRec'd response \"gettable\" (4) from \"[14]:\":\nArgs:   { n=1 filter=[ { hook=\"vlan1001\" vlan=1001 vid=1001 } ] }\n\nWhen it is not longer needed, simply remove\n# define NG_VLAN_USE_OLD_VLAN_NAME 1\nand rebuild a node\n\n\nI added one more option: decapsulate (getdecap NUM, setdecap NUM) - all\npackets coming from nomatch hook, the tag will be saved in the packet header\n(mbuf) and will be exposed flag M_VLANTAG. If the package has already been\nexposed to flag M_VLANTAG (when he entered the downstream hook), then\ndecapsulation is performed.\nDefault: 0 - disabled (old behavior).\n\nEncapsulate (getencap NUM, setencap NUM) - can take 4 values:\n0 - packets belonging to the filter hook is not encapsulated, the tag is\nwritten in the header mbuf flag and put up M_VLANTAG\n1 - The default (= VLAN_ENCAP_FROM_FILTER), packets are encapsulated hooks\nbelonging filters (old behavior)\n2 - (= VLAN_ENCAP_FROM_NOMATCH) packages come with a nomatch hook flag\nM_VLANTAG - encapsulated, the flag is removed.\n3 = 1 + 2\n\n"
+}

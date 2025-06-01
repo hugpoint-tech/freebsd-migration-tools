@@ -1,0 +1,8 @@
+{
+ "id": 403242,
+ "bug_id": 114915,
+ "attachment_id": 0,
+ "creation_time": "2007-07-25T23:00:08Z",
+ "creator": "strauman@slac.stanford.edu",
+ "text": "a) The if_pcn driver is not endian-safe. It won't work on a big-endian platform.\nb) The driver accesses a field in a RX descriptor after handing the descriptor\n   over to the pcn chip which may alter the value before the CPU access happens.\n   Unless the ring is completely filled this is unlikely\n   to cause problems but IMO it should nevertheless be fixed.\n   Also, IMO, descriptor fields should be 'volatile'.\nc) No attempts are made to synchronize access to descriptors in memory --\n   reordering of accesses by the compiler and/or the CPU itself may cause\n   problems (e.g., if on a platform that does out-of-order stores the OWN bit\n   is effectively written before other fields in the descriptor are).\n\nThe attached patch addresses a-c. I don't know how to properly address c] in\nFreeBSD (probably, descriptors should be allocated using bus_space_alloc()\nrather than contigmalloc() and synchronized with bus_space_barrier() ?).\n\nAnyhow, the places where synchronization would be prudent can be located in\nthe patch by looking for\n\n#ifdef __rtems__\n       membarrier_xy();\n#endif\n\nconstructs. In addition to using synchronization, relevant fields in the\ndescriptors have been declared 'volatile'.\n\nFix: See attached patch.\n\nPatch attached with submission follows:"
+}

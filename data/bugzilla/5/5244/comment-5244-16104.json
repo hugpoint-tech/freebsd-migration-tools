@@ -1,0 +1,8 @@
+{
+ "id": 16104,
+ "bug_id": 5244,
+ "attachment_id": 0,
+ "creation_time": "1997-12-08T21:53:21Z",
+ "creator": "smp@csn.net",
+ "text": "Hi,\n\n\u003e \u003eNumber:         5244\n\u003e \u003eCategory:       kern\n\u003e \u003eSynopsis:       F00F workaround dosn't always work on SMP system.\n\u003e \u003e ...\n\u003e \u003eDescription:\n\u003e Intel F00F workaround appears to only install on the first CPU in a dual CPU configuration.\n\u003e \n\u003e \u003eHow-To-Repeat:\n\u003e Execute the 'F00F' code, repeatedly.  Sometimes it dies with Illegal instruction, sometimes the system hangs.\n\u003e \n\nThe basic problem is the fact that r_idt is local in UP, and global in SMP.\nThis is because SMP:init_secondary() uses the global r_idt to sync the\nadditional CPUs to the boot CPU:\n\n---\nmachdep.c:\n\n ...\n\n#ifdef SMP\n/* table descriptors - used to load tables by microp */\nstruct region_descriptor r_gdt, r_idt;\n#endif\n\n ...\n\ninit386(first)\n\tint first;\n{\n ...\n#ifndef SMP\n\t/* table descriptors - used to load tables by microp */\n\tstruct region_descriptor r_gdt, r_idt;\n#endif\n\n---\nmp_machdep.c:\n\ninit_secondary(void)\n{\n ...\n\tlidt(\u0026r_idt);\n\tlldt(_default_ldt);\n\n---\nI think to trick is to rework f00f_hack() to use the global in the SMP case,\nAND to insure that init_secondary() runs AFTER f00f_hack().\n\nI'm not clear on what f00f_hack() does, and do not have the available\nhardware to test it (ie dual P5), so I'll have to leave this to someone\nelse to deal with...\n\n--\nSteve Passe\t| powered by \nsmp@csn.net\t|            Symmetric MultiProcessor FreeBSD"
+}

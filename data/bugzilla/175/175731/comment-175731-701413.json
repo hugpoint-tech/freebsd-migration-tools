@@ -1,0 +1,8 @@
+{
+ "id": 701413,
+ "bug_id": 175731,
+ "attachment_id": 0,
+ "creation_time": "2013-02-11T10:26:08Z",
+ "creator": "hselasky@c2i.net",
+ "text": "On Thursday 07 February 2013 22:40:01 Hans Petter Selasky wrote:\n\u003e The following reply was made to PR usb/175731; it has been noted by GNATS.\n\u003e \n\nHi,\n\nYou should look into HAL and xf86-input-keyboard ports. I don't have time to \ndebug this currently.\n\nTo prevent KBD X11 driver unload by /usr/ports/x11-drivers/xf86-input-keyboard \nchange this in the source code:\n\n {\n-    xf86AddInputDriver(\u0026KBD, NULL, 0);\n+    xf86AddInputDriver(\u0026KBD, module, 0);\n \n     return module;\n }\n\nThe problem is deeper. When X11 sees that the keyboard is gone it \nissues some IOCTLs on /dev/console, like the keyboard MODE and then no more \nkeys are received. See using ktrace on Xorg. This is a shared device receiving \nkey-presses for all keyboards as far as I can see and it should only be \nprogrammed once. This is currently not handled.\n\nInside the file referenced below code is present to set \"x11_driver\" to \"kbd\". \nProbably changing this will affect the outcome too:\n\n/usr/local/share/hal/fdi/policy/10osvendor/10-x11-input.fdi\n\nHow to reproduce:\n\nPlug two USB keyboards using a HAL enabled Xorg server. Unplug one keyboard. \nInput from the other keyboard disappears until some other keyboard device is \nplugged again!\n\n--HPS"
+}

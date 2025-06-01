@@ -1,0 +1,8 @@
+{
+ "id": 1072040,
+ "bug_id": 241388,
+ "attachment_id": 0,
+ "creation_time": "2019-10-22T12:53:38Z",
+ "creator": "manu@freebsd.org",
+ "text": "We've been discussing this on irc, here's what we've found :\n\nThis seems to be a regression from the LLVM9 import.\nSome of the generated code use the d17 VFP register which doesn't exists for vfpv2.\nSome patch in LLVM might fix this : https://reviews.llvm.org/D67375\nSetting -mfpu=vfp2d16sp to cpuflags might also fix this\ndiff --git a/share/mk/bsd.cpu.mk b/share/mk/bsd.cpu.mk\nindex 8a72368babb..25b2a2ae5f5 100644\n--- a/share/mk/bsd.cpu.mk\n+++ b/share/mk/bsd.cpu.mk\n@@ -128,7 +128,7 @@ _CPUCFLAGS = -march=${CPUTYPE}\n #      arm1176jzf-s, generic-armv7-a, cortex-a5, cortex-a7, cortex-a8,\n #      cortex-a9, cortex-a12, cortex-a15, cortex-a17, cortex-a53, cortex-a57,\n #      cortex-a72, exynos-m1\n-_CPUCFLAGS = -mcpu=${CPUTYPE}\n+_CPUCFLAGS = -mcpu=${CPUTYPE} -mfpu=vfp2d16sp\n . endif\n . elif ${MACHINE_ARCH} == \"powerpc\"\n .  if ${CPUTYPE} == \"e500\"\n\nmmel@ and I thinks that we should backport the LLVM commit into the tree and test what is the default vfp usage when we do not use -mfpu."
+}

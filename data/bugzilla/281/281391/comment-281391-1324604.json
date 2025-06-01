@@ -1,0 +1,8 @@
+{
+ "id": 1324604,
+ "bug_id": 281391,
+ "attachment_id": 0,
+ "creation_time": "2024-09-09T13:39:55Z",
+ "creator": "cmfitch1@gmail.com",
+ "text": "An application that joins an IPv6 multicast group without performing an IPV6_MULTICAST_IF setsockopt() will see packets sent to the wrong MAC address. According to RFC2464 section 7 [1], the MAC should be 33:33:DST[13]:DST[14]:DST[15]:DST[16], but FreeBSD is sending to 33:33:last:four:of:gateway. Setting IPV6_MULTICAST_IF results in the expected destination MAC.\n\nMy uneducated analysis - It looks to me like this is because setting IPV6_MULTICAST_IF bypasses (sys/netinet6/ip6_output.c:753) the routing code that would otherwise modify the destination IP to be the gateway. I expect what's missing is the equivalent of sys/netinet/ip_output.c:551 where the destination is restored to be the multicast address after the routing decision is made:\n\n/*\n * IP destination address is multicast.  Make sure \"gw\"\n * still points to the address in \"ro\".  (It may have been\n * changed to point to a gateway address, above.)\n */\ngw = (const struct sockaddr *)dst;\n\n[1] https://datatracker.ietf.org/doc/html/rfc2464#section-7"
+}

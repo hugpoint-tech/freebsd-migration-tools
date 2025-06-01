@@ -1,0 +1,8 @@
+{
+ "id": 1065824,
+ "bug_id": 230246,
+ "attachment_id": 0,
+ "creation_time": "2019-09-06T20:30:50Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "Just to wrap this up for the record (I explained all this to the OP in another place):\n\nThere's no bug in the code as such, the odd behavior is just an artifact of how geom tasting works, and the fact that it works rather unpredictably when geoms are being created and removed while the system is up (rather than at boot time).\n\nSpecifically, the sort of thing that happens is that a partition might become visible via many different provider paths, such as ada0p1, diskid/DISK-NNNNp1, gpt/partname, gptid/someuuid, and then if there is existing metadata at the partition's last sector, in this case for gmirror, the mirror geom might attach to any of the providers. If it attaches (say) diskid/DISK-NNNNp1, then the exclusive open of the underlying disk causes the gpart instances providing ada0p*, gpt/*, etc. to detach, so those labels go away.\n\nThis shows up as more of an issue with GPT because the combination of GPT and glabel produces many providers, often inconveniently many. (For example you can end up with \"gmirror stop\" failing to work, because as soon as the mirror closes, it becomes visible via another provider and immediately starts again.)\n\nSo this is ultimately, in my view, a \"user experience\" issue."
+}

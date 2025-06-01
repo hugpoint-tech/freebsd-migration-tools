@@ -1,0 +1,8 @@
+{
+ "id": 855417,
+ "bug_id": 194293,
+ "attachment_id": 0,
+ "creation_time": "2015-12-25T04:03:13Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "I think I know what causes the hang for the small write\n(test.c).\nCould you try the program, but change \"w\" to \"rw\" in the\nfopen().\n\n- I think the problem happens when a file is opened \"write only\"\n  and then a partial block is written. The write of the partial\n  buffer cache block requires that the block first be read from\n  the file, but \"write only\" doesn't allow that to happen and\n  it gets stuck.\n\nIf test.c works ok when opening \"rw\", then I think this is what\nis happening.\n\n--\u003e I am thinking that fuse_vnop_open(..O_WRONLY..) should actually\n    do a O_RDWR open. It means that files that only give the user\n    write access won't be able to be opened, but that seems to be\n    preferred to a hang?\n\nPlease let us know if you get to try this, rick."
+}

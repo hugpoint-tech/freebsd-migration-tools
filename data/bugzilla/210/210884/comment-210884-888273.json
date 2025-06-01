@@ -1,0 +1,8 @@
+{
+ "id": 888273,
+ "bug_id": 210884,
+ "attachment_id": 0,
+ "creation_time": "2016-07-15T14:26:29Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "(In reply to commit-hook from comment #57)\n\nHi,\n\nI think r302894 and r302350 changes the return value of the following case, which is not described in the commit message? Is this also a regression?\n\nIn this revision:\n\u003e https://svnweb.freebsd.org/base/head/sys/kern/kern_timeout.c?view=markup\u0026pathrev=296320\n\nAssume we enter _callout_stop_safe() having the following assertions:\n\n(c-\u003ec_iflags \u0026 CALLOUT_PENDING) == 0 (satisfied)\ncc_exec_curr(cc, direct) != c (satisfied)\n\nThen we exit returning (-1).\n\nIn this revision:\n\u003e https://svnweb.freebsd.org/base/head/sys/kern/kern_timeout.c?view=markup\u0026pathrev=296320#l1253\n\nAfter your changes, entering the same function under the same conditions:\n\ncc_exec_curr(cc, direct) == c (not satisifed)\n(c-\u003ec_iflags \u0026 CALLOUT_PENDING) == 0 (satisfied)\n\nThen we exit returning (0).\n\n\u003e https://svnweb.freebsd.org/base/head/sys/kern/kern_timeout.c?revision=302894\u0026view=markup#l1384\n\nIf we call callout_stop() on a never scheduled callout, we now get a return value of 0 instead of -1, which by manual page definition is wrong ????\n\n\nAm I wrong? Do others see this too?\n\n\n--HPS"
+}

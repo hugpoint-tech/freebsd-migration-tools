@@ -1,0 +1,8 @@
+{
+ "id": 481924,
+ "bug_id": 131080,
+ "attachment_id": 0,
+ "creation_time": "2009-01-28T13:10:01Z",
+ "creator": "bamby@sippysoft.com",
+ "text": "Almost a year ago I've created an issue in Python's bugtracker but the issue seems to be stuck since then so I'm sending the patch here in hope it could be included in ports collection.\n\nIn short there is a problem in the Python that can be seen under FreeBSD and Sun Solaris but not under MacOSX or Linux. The problem is that when a Python program started a thread in a background, then it can be impossible to interrupt the program with Ctrl-C.\n\nThe reason why this problem is FreeBSD specific is that the FreeBSD has different order of processing of signals. The  signal handler under FreeBSD fires up in the context of the last started thread, while under Linux signals are processed in the main thread. It should be noted that both behaviors are standards conformant.\n\nThis bug at Python bugtracker: http://bugs.python.org/issue1975\n\nFix: To ensure that signal handler runs in the correct thread context the developer should use pthread_sigmask(). Initially the Python contained this code but starting from Python 2.4 it was thrown away.\n\nThe attached patch restores the code that ensures correct execution context of the signal handler code.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Here is an example script. Start it and try to interrupt by hitting ^C.\n\nimport time\nimport select\nfrom threading import Thread\n\nsome_time = 6000000 # seconds\n\nclass MyThread(Thread):\n    def run(self):\n        while (True):\n            time.sleep(some_time)\n\nt = MyThread()\nt.setDaemon(True)\nt.start()\nwhile(True):\n    select.select([], [], [], some_time)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 724967,
+ "bug_id": 180820,
+ "attachment_id": 0,
+ "creation_time": "2013-07-25T04:48:50Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: kientzle\nDate: Thu Jul 25 03:48:37 2013\nNew Revision: 253636\nURL: http://svnweb.freebsd.org/changeset/base/253636\n\nLog:\n  Clear entire map structure including locks so that the\n  locks don't accidentally appear to have been already\n  initialized.\n  \n  In particular, this fixes a consistent kernel crash on\n  armv6 with:\n    panic: lock \"vm map (user)\" 0xc09cc050 already initialized\n  that appeared with r251709.\n  \n  PR: arm/180820\n\nModified:\n  head/sys/vm/vm_map.c\n\nModified: head/sys/vm/vm_map.c\n==============================================================================\n--- head/sys/vm/vm_map.c\tThu Jul 25 03:44:12 2013\t(r253635)\n+++ head/sys/vm/vm_map.c\tThu Jul 25 03:48:37 2013\t(r253636)\n@@ -239,8 +239,7 @@ vm_map_zinit(void *mem, int size, int fl\n \tvm_map_t map;\n \n \tmap = (vm_map_t)mem;\n-\tmap-\u003enentries = 0;\n-\tmap-\u003esize = 0;\n+\tmemset(map, 0, sizeof(*map));\n \tmtx_init(\u0026map-\u003esystem_mtx, \"vm map (system)\", NULL, MTX_DEF | MTX_DUPOK);\n \tsx_init(\u0026map-\u003elock, \"vm map (user)\");\n \treturn (0);\n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

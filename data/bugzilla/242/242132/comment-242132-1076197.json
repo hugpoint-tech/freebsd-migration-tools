@@ -1,0 +1,8 @@
+{
+ "id": 1076197,
+ "bug_id": 242132,
+ "attachment_id": 209312,
+ "creation_time": "2019-11-21T07:31:41Z",
+ "creator": "pen@lysator.liu.se",
+ "text": "Created attachment 209312\nPatch to fix the cred_lifetime bug and add a kern.rpc.gss.lifetime_max sysctl\n\nThis is a bug that probably never happens in real life, or is masked by other factors, but I think it's a bug anyway...\n\nIn /usr/src/sys/rpc/rpcsec_gss/svc_rpcsec_gss.c:svc_rpc_gss_accept_sec_context() there is a check:\n\n             if (cred_lifetime == GSS_C_INDEFINITE)\n                        cred_lifetime = time_uptime + 24*60*60;\n\n                client-\u003ecl_expiration = time_uptime + cred_lifetime;\n\nThe assignment in the if-statement should be \"cred_lifetime = 24*60*60;\" because the current code would set client-\u003ecl_expiration to 2*time_uptime+24*60*60 - if it ever was GSS_C_INDEFINITE. Atleast until year 2106 or so (when the unsigned 32bit cred_lifetime will wrap around)... \n\nCache entries are invalidated when NFS shares are unmounted and most Kerberos tickets do have a lifetime (10 hours typically) so this probably almost never happens in real life but anyway...\n\nI'd also like to propose adding a sysctl() where one can cap the cred_lifetime to a lower value than the default (which is the ticket lifetime - about 10 hours on a \"typical\" system). With the current code a user being added to a new group will not be \"visible\" for NFS until after the GSS cache entry expires (if the user have something NFS-mounted from that server). It might be a good idea to be able to force a lower timeout (like 1 hour or so)."
+}

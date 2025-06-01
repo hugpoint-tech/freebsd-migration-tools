@@ -1,0 +1,8 @@
+{
+ "id": 446474,
+ "bug_id": 123908,
+ "attachment_id": 0,
+ "creation_time": "2008-05-22T18:40:01Z",
+ "creator": "nejc@skoberne.net",
+ "text": "I was trying to make devd automount my USB stick and I stumbled upon a page fault, when I tried to also automatically unmount the usb drive. \n\npanic: vinvalbuf: dirty bufs\ncpuid = 1\nUptime: 5m7s\n\nFatal trap 12: page fault while in kernel mode\ncpuid = 0; apic id = 00\nfault virtual address\t= 0x0\nfault code\t\t= supervisor write, page not present\ninstruction pointer\t= 0x20:0xc046e8db\nstack pointer\t\t= 0x28:0xe79df3c0\nframe pointer\t\t= 0x28:0xe79df3dc\ncode segment\t\t= base 0x0, limit 0xfffff, type 0x1b\n\t\t\t= DPL 0, pres 1, def32 1, gran 1\nprocessor eflags\t= interrupt enabled, resume, IOPL = 0\ncurrent process\t\t= 1102 (ps)\ntrap number\t\t= 12\n\nHow-To-Repeat: Add this to /etc/devd.conf:\n\nattach 20 {\n        device-name \"umass0\";\n        action \"sleep 2; \\\n                sh /etc/rc.d/devfs restart; \\\n                /sbin/kldload msdosfs; \\\n                /sbin/mount /dev/da0s1; \\\n                /usr/local/sbin/usbsync\";\n};\n\ndetach 20 {\n        device-name \"umass0\";\n        action \"/sbin/umount /dev/da0s1; \\\n                /sbin/kldunload msdosfs\";\n};\n\nrestart devd and then plug in the USB stick device. It is nicely mounted into /mnt. Then unplug it - it is normal that this gives an error since it tries to unmount not-any-more-existing device. \n\nIf you now plug it back in, the kernel page fault happens."
+}

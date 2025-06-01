@@ -1,0 +1,8 @@
+{
+ "id": 876427,
+ "bug_id": 209097,
+ "attachment_id": 169757,
+ "creation_time": "2016-04-27T12:41:46Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 169757\nDon't declare max_align_t if libc++'s stddef.h already did it\n\nDuring the exp-run in bug 208158, it was found that security/hpenc gives errors with libc++ 3.8.0 [1]:\n\nIn file included from aead.cc:29:\nIn file included from ./aead.h:29:\n./common.h:37:3: error: typedef redefinition with different types ('struct max_align_t' vs 'long double')\n} max_align_t;\n  ^\n/usr/include/c++/v1/stddef.h:57:21: note: previous definition is here\ntypedef long double max_align_t;\n                    ^\n\nIf __CLANG_MAX_ALIGN_T_DEFINED is not defined, libc++'s new stddef.h also declares max_align_t, and this conflicts with the max_align_t declaration in common.h.  There is already an \"Ugly, ugly hack\" part in common.h, which unfortunately must now be made even uglier, as in the attached patch.  This adds a !defined(_LIBCPP_STDDEF_H) to detect whether libc++'s stddef.h was included.\n\n[1] http://package18.nyi.freebsd.org/data/headamd64PR208158-default/2016-03-22_18h30m05s/logs/errors/hpenc-2.0_1.log"
+}

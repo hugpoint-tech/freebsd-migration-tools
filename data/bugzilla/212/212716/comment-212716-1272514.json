@@ -1,0 +1,8 @@
+{
+ "id": 1272514,
+ "bug_id": 212716,
+ "attachment_id": 0,
+ "creation_time": "2023-08-31T16:07:43Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Greg Becker from comment #6)\nIn addition, sbwait() should probably assert that SBS_CANTRECVMORE and SBS_CANTSENDMORE are not set for SO_RCV and SO_SND directions, respectively.\n\nRegarding the patch, the new check should happen in the \"pr-\u003epr_flags \u0026 PR_WANTRCVD\" block, since that's where the sockbuf lock is dropped.  Otherwise the existing check is effectively duplicated.\n\nThe general behaviour of soreceive_generic() appears to be to consume data as long as it's present, even in the face of SBS_CANTRECVMORE and socket errors; see the \"goto dontblock\" statements near the beginning of the function.  soreceive_stream() similarly drains the receive buffer before handling termination.  I'd argue for the same approach in the MSG_WAITALL loop."
+}

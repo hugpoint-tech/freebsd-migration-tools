@@ -1,0 +1,8 @@
+{
+ "id": 1047059,
+ "bug_id": 237321,
+ "attachment_id": 0,
+ "creation_time": "2019-04-16T20:59:10Z",
+ "creator": "ncrogers@gmail.com",
+ "text": "This is regarding the MFC of r343291 to 12-STABLE in r344027 (Convert vmx(4) to being an iflib driver.)\n\nIf you configure a VMware ESXi guest with vmxnet3 interfaces and atypical number of CPU cores (e.g 6), the iflib/vmx(4) driver throws an error \"device enable command failed\" at bootup and periodically when trying to use the interface. This is because , for reasons I do not understand, the driver is unhappy when number of TX/RX queues is not a power of two. Because the driver defaults to 8 queues, whenever a guest boots with 6 cores iflib automatically reduces the number of queues to equal the number of CPU cores.\n\nThis is resolved by setting the number of tx/rx queues to 1,2, or 4, whichever is less than or equal to the number of CPU cores.\n\nFor example, on a 6 core system the following works:\ndev.vmx.0.iflib.override_ntxqs=4\ndev.vmx.0.iflib.override_nrxqs=4\n\nI believe either iflib or the vmx driver specifically needs to be corrected to handle an irregular number of queues or limit it to powers of two when there is fewer than 8 cores.\n\nNote that this for whatever reason does NOT happen in VMware Fusion under macOS, but seems to always happen in an ESXi environment.\n\nIn all cases, hw.pci.honor_msi_blacklist is set to 0."
+}

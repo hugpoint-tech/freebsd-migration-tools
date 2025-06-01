@@ -1,0 +1,8 @@
+{
+ "id": 798619,
+ "bug_id": 195515,
+ "attachment_id": 150014,
+ "creation_time": "2014-11-30T00:52:31Z",
+ "creator": "sbruno@FreeBSD.org",
+ "text": "Created attachment 150014\nmake test output from python27\n\nThe \"make test\" target in python27 fails for arm on emulated and real hardware.\n\ntest scenario:\n\nInstall emulators/qemu-user-static and ports-mgmt/poudriere-devel\n\nUse the binmisc activator to setup redirection to qemu-bsd-user:\n/usr/sbin/binmiscctl add armv6 --interpreter \"/usr/local/bin/qemu-arm-static\" \\\n--magic \"\\x7f\\x45\\x4c\\x46\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x28\\x00\" \\\n--mask  \"\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff\" \\\n--size 20 --set-enabled\n\nuse poudriere devel 3.1 to create a test jail and ports tree:\n  poudriere jail -c -j 11-armv6 -m svn -v head -a arm.armv6 -x\n  poudriere ports -c -p 11-armv6-test\n\nMount devfs and the ports tree into the jail:\n  mkdir -p /usr/local/poudriere/jails/11-armv6/usr/ports\n  mount -t nullfs /usr/local/poudriere/ports/11-armv6-test /usr/local/poudriere/jails/11-armv6/usr/ports\n  mount -t devfs devfs usr/local/poudriere/jails/11-armv6/dev\n\n\nChroot into jail and start build of python27:\n chroot /usr/local/poudriere/jail/11-armv6/\n cd /usr/ports/lang/python27\n make -DBATCH\n\nThis should take about 20 minutes with emulation.  If the build fails or hangs, it can be cancelled.\n\nRun regression tests:\ncd work/Python-2.7.8\nmake test\n\nThis should yield the same results as one would find on real hardware.  I have attached the output of my test run for your examination."
+}

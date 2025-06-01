@@ -1,0 +1,8 @@
+{
+ "id": 869426,
+ "bug_id": 207898,
+ "attachment_id": 0,
+ "creation_time": "2016-03-12T07:56:36Z",
+ "creator": "truckman@FreeBSD.org",
+ "text": "Most of the kernel linker code is MI, but there is some MD code in /usr/src/sys/{amd64/amd64,i386/i386}/elf_machdep.c.  I didn't see anything suspicious there.\n\nThe MI code is difficult to figure out, but that is where I suspect the problem is.  I suspect that whether or not the problem is triggered depends on the order of the relocation entries in the .ko file.  On amd64, I see this when I run nm on the .ko file:\n\n[snip]\n                 U module_register_init\n0000000000000000 b msg1\n                 U msg1\n0000000000000050 b msg2\n                 U msg2\n                 U strcpy\n                 U uprintf\n\nOn i386, I see this:\n\n[snip]\n         U module_register_init\n         U msg1\n000014c4 b msg1\n         U msg2\n00001514 b msg2\n         U strcpy\n         U uprintf\n\nNote that the \"b\" entries for msg1 and msg2 precede the \"U\" entries on amd64, but the reverse is true on i386.\n\nUnfortunately this is difficult to test because swapping the order of SRCS does not change the order as reported by nm."
+}

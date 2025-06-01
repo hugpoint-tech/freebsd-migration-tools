@@ -1,0 +1,8 @@
+{
+ "id": 464905,
+ "bug_id": 127605,
+ "attachment_id": 0,
+ "creation_time": "2008-09-24T20:26:12Z",
+ "creator": "rea-fbsd@codelabs.ru",
+ "text": "I got why the mentioned error shows up on my machine, but it seems to be\r\nrare on the others: my particular host has no SCSI bus #0, ATAPI CAM\r\nCD-ROM is at the bus #1.  Two other machines I had tried EDT members\r\nenumeration at, have bus #0.  And since 'union cbb' is zeroed before\r\nuse, the path_id is effectively set to 0.  And the code in\r\nsys/cam/cam_xpt.c that handles XPT_DEV_MATCH just checks if the passed\r\nbus exists, but, if I am not mistaken, does not use the obtained 'bus'\r\nargument in any specific way.\r\n\r\nSooo, it seems to me that it is a bit redundant to set the fields\r\ntarget_id and target_lun, but it is wise to initialize path_id to\r\nCAM_XPT_PATH_ID, since this bus is always initialized within xpt_init()\r\nand if this bus is not created, xpt_init() bails out with EINVAL, thus\r\nrefusing to create the xpt instance.\r\n-- \r\nEygene\r\n _                ___       _.--.   #\r\n \\`.|\\..----...-'`   `-._.-'_.-'`   #  Remember that it is hard\r\n /  ' `         ,       __.--'      #  to read the on-line manual   \r\n )/' _/     \\   `-_,   /            #  while single-stepping the kernel.\r\n `-'\" `\"\\_  ,_.-;_.-\\_ ',  fsc/as   #\r\n     _.-'_./   {_.'   ; /           #    -- FreeBSD Developers handbook \r\n    {_.-``-'         {_/            #"
+}

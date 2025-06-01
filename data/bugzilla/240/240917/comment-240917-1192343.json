@@ -1,0 +1,8 @@
+{
+ "id": 1192343,
+ "bug_id": 240917,
+ "attachment_id": 0,
+ "creation_time": "2021-12-29T00:49:15Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I can't reproduce it on BHyve using virtual block devices, simply because I can't make any virtual block device whose size I can change and can reprobe:\n* virtio-blk: not a CAM device, so I can't \"camcontrol reprobe\" it\n* nvme: not a CAM device, so I can't \"camcontrol reprobe\" it\n* virtio-scsi: not supported by vm-bhyve.\n* ahci-hd: bhyve doesn't seem to notice when the zvol gets expanded\n\nInstead, I reproduced it with iSCSI.  The iSCSI server is physical (but probably could be a VM):\n\n$ sudo zfs create -V 1g -o volmode=dev zroot/test/disk0\n$ # write the following to /etc/ctl.conf\nauth-group {\n    disk {\n        auth-type = none\n\tinitiator-portal = [ 192.168.0.0/24 ]\n    }\n}\n\nportal-group {\n    pg0 {\n        discovery-auth-group no-authentication\n        listen 0.0.0.0\n        listen [::]\n    }\n}\n\nlun {\n    \"disk0\" {\n        blocksize = 4096\n\tdevice-id = \"disk0\"\n\tpath = \"/dev/zvol/zroot/test/disk0\"\n    }\n}\n\ntarget {\n    \"iqn.2018-10.mydomain.myhost:disk0\" {\n        auth-group = disk\n\tportal-group { name = pg0 }\n\tlun = [\n\t    { number = 0, name = disk0 },\n\t]\n    }\n}\n\n$ sudo sysrc ctld_flags=\"-u\"\n$ sudo service ctld onestart\n\nThen do the following on the client\n$ sudo service iscsid onestart\n$ sudo iscsictl -A -d myhost.mydomain\n$ sudo iscsictl -L   # to see the device name\n\nBack on the server, do the following:\n$ sudo zfs set volsize=2g zroot/test/disk0\n$ sudo service ctld onereload\n\nThen do the following on the client\n$ sudo camcontrol reprobe da0"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 934116,
+ "bug_id": 219315,
+ "attachment_id": 0,
+ "creation_time": "2017-05-15T20:44:52Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "I wrote somewhere else:\n\nIt is a bug in the g_journal code. Journal thread initiates\nsuspension and waits for it to occur. If meantime other thread\ncreates snapshot, that snapshot thread initiated a suspension\nitself and needs to read and write some blocks to lift its\nsuspension.\n                                                                                \nTwo suspensions cannot be established simultaneously, they\nsynchronize against each, so the journal thread is blocked.  But\nit must run and proceed bio's for the system to execute\nsnapshotting thread' io requests.  So the situation is plain\narchitectural deadlock.  See the thread pid 26459 tid\n100586 (journal) and pid 30498 tid 100208 (snapshot).\n\nOne possible fix is for journal geom thread to delegate\nsuspension to some other context, without blocking.  I do\nnot intend to code this."
+}

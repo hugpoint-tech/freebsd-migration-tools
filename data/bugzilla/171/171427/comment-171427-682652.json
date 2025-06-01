@@ -1,0 +1,8 @@
+{
+ "id": 682652,
+ "bug_id": 171427,
+ "attachment_id": 0,
+ "creation_time": "2012-09-16T22:11:33Z",
+ "creator": "jilles@FreeBSD.org",
+ "text": "\u003e [while : ; do netperf -cCjt TCP_STREAM -H 10.7.187.52 -l 10 -- -D; done\n\u003e works strangely with ^C/^Z]\n\nFor the case with ^C, I indeed deliberately fixed that for 9.0.\n\nFor the case with ^Z, this is indeed a caveat that is complained about\nmore frequently, and different shells handle it differently because\nPOSIX leaves it vague.\n\nPOSIX discusses suspending jobs (process groups), but a sequence or\nwhile loop is not a job.\n\nOne workaround is to make it a job by placing parentheses around the\nloop. With most shells, this creates a new process group and job that\ncan be suspended normally. An exception is ksh93 which attempts to\nexecute the subshell in the same process; I do not like this but I think\nPOSIX permits it (and in non-interactive or no-job-control mode it is\nfine to execute a subshell in that way).\n\nWhat sh does is return status 146 (128+SIGTSTP) and continue (so while\nnetperf; do :; done will abort if ^Z'ed).\n\nWhat bash appears to do is break loops if something was ^Z'ed.\n\nWhat zsh appears to do is fork and continue the loop after the suspended\nprocess terminates. However, it gets $? wrong. Also, it needs a fair bit\nof code and changes to the shell environment after the suspension do not\naffect the parent.\n\n-- \nJilles Tjoelker"
+}

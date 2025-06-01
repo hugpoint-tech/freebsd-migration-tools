@@ -1,0 +1,8 @@
+{
+ "id": 1342170,
+ "bug_id": 271087,
+ "attachment_id": 0,
+ "creation_time": "2025-01-04T13:18:06Z",
+ "creator": "mmel@FreeBSD.org",
+ "text": "I think the aeabi_ functions with floating point arguments were not added correctly. By definition, they must be compiled with -mfloat-abi=softfp event if the rest of the library is compiled with hardfp abi.\n\nIt is also not clear why they are added to lib/libgcc_s/arm/Symbol.map and not to lib/libc/arm/aeabi/Symbol.map, where the other (some now duplicated) aeabi_ symbols are.\n\nAlso, the list of aeabi_ functions in is not complete, although the compiler_rt library contains them (__aeabi_f2d, __aeabi_f2iz...).\n\nWhen I looked at it, I found another problem - the whole vfp suffix dance in https://cgit.freebsd.org/src/tree/lib/libcompiler_rt/Makefile.inc#n277 is pointless, all these functions have the same extension in their name. They are expected to be compiled (again with -mfloat-abi=softfp) together with the version without the suffix , and the rt linker will select the appropriate version depending on the VFP  presence.\n\nIn addition, the makefile searches for resources in the wrong order,\ncontrib/llvm-project/compiler-rt/lib/builtins is searched before\ncontrib/llvm-project/compiler-rt/lib/builtins/\u003carch\u003e, so for example a non-specific fp_mode is built, not an architecture-specific one.\n\nWhat now? For me the most important question is in which map (and namespace) should the aeabi_ symbols be defined (without breaking the ABI for the user space).\n\nMichal"
+}

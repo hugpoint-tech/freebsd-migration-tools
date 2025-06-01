@@ -1,0 +1,8 @@
+{
+ "id": 846226,
+ "bug_id": 204097,
+ "attachment_id": 0,
+ "creation_time": "2015-10-28T18:15:04Z",
+ "creator": "ecturt@gmail.com",
+ "text": "The witness_count sysctl node is of type CTLFLAG_RDTUN, which means it's a read-only variable, but can be set during boot by creating a \"debug.witness.count\" entry in /boot/loader.conf.\n\nThe witness_initialize() function of sys/kern/subr_witness.c does not perform bound checks on witness_count which could lead to integer overflows, and memory corruption.\n\nThe following line from witness_initialize() can cause an overflow, if witness_count is 2147483647 for example, since a signed comparison is used:\n\n\tfor (i = 0; i \u003c witness_count + 1; i++) {\n\nThis means that the w_rmatrix[i] buffers are never allocated, which would lead to kernel reads and writes from an uninitialized pointer.\n\nA potential fix would be to add the following bound check at the beginning of the function:\n\n\tif (witness_count \u003c 0 || witness_count \u003e= 2147483647) {\n\t\tprintf(\"Invalid witness_count value of %d, setting to 2147483646\\n\", witness_count);\n\t\twitness_count = 2147483646;\n\t}"
+}

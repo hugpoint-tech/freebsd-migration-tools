@@ -1,0 +1,8 @@
+{
+ "id": 1012085,
+ "bug_id": 231510,
+ "attachment_id": 0,
+ "creation_time": "2018-09-20T12:00:08Z",
+ "creator": "yangx92@hotmail.com",
+ "text": "There is a use-after-free vulnerability in function g_raid_tr_iodone_raid0 (sys/geom/raid/tr_raid0.c)\n\n313 static void\n314 g_raid_tr_iodone_raid0(struct g_raid_tr_object *tr,\n315     struct g_raid_subdisk *sd,struct bio *bp)\n316 {\n317         struct bio *pbp;\n318 \n319         pbp = bp-\u003ebio_parent;\n320         if (pbp-\u003ebio_error == 0)\n321                 pbp-\u003ebio_error = bp-\u003ebio_error;\n322         g_destroy_bio(bp);\n323         pbp-\u003ebio_inbed++;\n324         if (pbp-\u003ebio_children == pbp-\u003ebio_inbed) {\n325                 pbp-\u003ebio_completed = pbp-\u003ebio_length;\n326                 g_raid_iodone(pbp, bp-\u003ebio_error);\n327         }\n328 }\n\nbp is destroyed in line 322, while it is used in line 326 again.\n\nthe proposal patch should be like below.\n\n        pbp-\u003ebio_inbed++;\n        if (pbp-\u003ebio_children == pbp-\u003ebio_inbed) {\n                pbp-\u003ebio_completed = pbp-\u003ebio_length;\n-               g_raid_iodone(pbp, bp-\u003ebio_error);\n+               g_raid_iodone(pbp, pbp-\u003ebio_error);\n        }\n }"
+}

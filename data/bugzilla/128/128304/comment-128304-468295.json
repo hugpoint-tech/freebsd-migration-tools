@@ -1,0 +1,8 @@
+{
+ "id": 468295,
+ "bug_id": 128304,
+ "attachment_id": 0,
+ "creation_time": "2008-10-22T23:50:00Z",
+ "creator": "dwhite@FreeBSD.org",
+ "text": "The first few lines of vn_pollrecord() are:\n\n\tif (vp-\u003ev_pollinfo == NULL)\n\t\tv_addpollinfo(vp);\n\tmtx_lock(\u0026vp-\u003ev_pollinfo-\u003evpi_lock);\n\nv_addpollinfo() leaves vp-\u003ev_pollinfo NULL if the malloc attempt fails. vfs_kqfilter() checks for failure, but this function does not.  If allocation were to fail then the mtx_lock() call would result in a null pointer dereference panic.\n\nFix: \n\nvn_pollrecord() should ensure v_addpollinfo() succeeds in allocating the pollinfo lists. However vn_pollrecord() uses its return value to convey the original event mask so there does not appear to be a method to return an error value (ENOMEM, etc.) in the current implementation.\nHow-To-Repeat: Problem was found by code inspection."
+}

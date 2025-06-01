@@ -1,0 +1,8 @@
+{
+ "id": 976272,
+ "bug_id": 218517,
+ "attachment_id": 0,
+ "creation_time": "2018-02-08T13:35:10Z",
+ "creator": "emikulic@gmail.com",
+ "text": "(In reply to Eugene Grosbein from comment #15)\n\n--- a/usr.sbin/ppp/id.c\n+++ b/usr.sbin/ppp/id.c\n@@ -50,6 +50,7 @@\n #include \u003clibutil.h\u003e\n #endif\n #include \u003cutmpx.h\u003e\n+#include \u003cerrno.h\u003e\n \n #include \"log.h\"\n #include \"main.h\"\n@@ -93,10 +94,14 @@ int\n ID0ioctl(int fd, unsigned long req, void *arg)\n {\n   int ret;\n+  int saved_errno;\n \n   ID0set0();\n   ret = ioctl(fd, req, arg);\n+  saved_errno = errno;\n   log_Printf(LogID0, \"%d = ioctl(%d, %lu, %p)\\n\", ret, fd, req, arg);\n+  log_Printf(LogID0, \"bug 218517: errno = %d (%s)\\n\", saved_errno,\n+    strerror(saved_errno));\n   ID0setuser();\n   return ret;\n }\n\nResulting in:\n\nppp[4390]: tun0: IPV6CP: deflink: LayerUp.\nppp[4390]: tun0: ID0: 2 = socket(28, 2, 0)\nppp[4390]: tun0: ID0: -1 = ioctl(2, 2156423451, 0x7fffffffd790)\nppp[4390]: tun0: ID0: bug 218517: errno = 17 (File exists)\nppp[4390]: tun0: Warning: iface add: ioctl(SIOCAIFADDR_IN6, fe80::a9df:fac8:17ee:204d -\u003e fe80::5aac:78ff:fe22:8f00): Value too large to be stored in data type\nppp[4390]: tun0: Error: ipv6cp_InterfaceUp: unable to set ipv6 address\nppp[4390]: tun0: IPV6CP: deflink: LayerDown: fe80::a9df:fac8:17ee:204d\n\nerrno must be getting clobbered somewhere between ioctl() and the \"iface add\" log line."
+}

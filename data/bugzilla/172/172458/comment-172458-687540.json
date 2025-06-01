@@ -1,0 +1,8 @@
+{
+ "id": 687540,
+ "bug_id": 172458,
+ "attachment_id": 0,
+ "creation_time": "2012-10-07T19:10:15Z",
+ "creator": "vmagerya@gmail.com",
+ "text": "The uhid(4) driver that can attach to the same devices that\nums(4) and ukbd(4) can. Since uhid should generally be used as\na fallback, it performs this check:\n\n\t/*\n\t * Don't attach to mouse and keyboard devices, hence then no\n\t * \"nomatch\" event is generated and then ums and ukbd won't\n\t * attach properly when loaded.\n\t */\n\tif ((uaa-\u003einfo.bInterfaceClass == UICLASS_HID) \u0026\u0026\n\t    (uaa-\u003einfo.bInterfaceSubClass == UISUBCLASS_BOOT) \u0026\u0026\n\t    ((uaa-\u003einfo.bInterfaceProtocol == UIPROTO_BOOT_KEYBOARD) ||\n\t     (uaa-\u003einfo.bInterfaceProtocol == UIPROTO_MOUSE))) {\n\t\treturn (ENXIO);\n\t}\n\nThe problem here is that we have UQ_KBD_IGNORE and UQ_UMS_IGNORE\nquirks that prevent ukbd and ums from attaching -- if such a\nquirk is set, it may be the case that because of this check no\ndriver will attach to the device, while uhid should take over\nin such a case.\n\nFix: The proper fix would be to remove the above check altogether and\nsomehow ensure that uhid is given lower priority than ukbd and\nums. Since I don't really know how to do that, I propose just\ntesting for UQ_KBD_IGNORE and UQ_UMS_IGNORE quirks in uhid too.\n\nPatch attached with submission follows:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1300757,
+ "bug_id": 276990,
+ "attachment_id": 0,
+ "creation_time": "2024-03-13T21:00:35Z",
+ "creator": "freebsd@dev.thsi.be",
+ "text": "(In reply to Yasuhiro Kimura from comment #5)\n\nJust remark because I stumbled on the same issue,\n\nAltough this makes sense to me.\n\n  @comment Following line is necessary to remove stale ${PREFIX}/man/man1/gpg.1.gz symlink created by previous version\n  @preexec if [ -L %D/man/man1/gpg.1.gz ]; then rm -f %D/man/man1/gpg.1.gz; fi\n\nI don't quite understand why the logic needed to be changed as to remove and reinstall the link on each upgrade. The following would still have worked fine, wouldn't it?\n\n  @postexec [ -e %D/bin/gpg ] || ln -sf gpg2 %D/bin/gpg\n  @postunexec [ -e %D/bin/gpg ] || rm -f %D/bin/gpg\n  @postexec [ -e %D/share/man/man1/gpg.1.gz ] || ln -sf gpg2.1.gz %D/share/man/man1/gpg.1.gz\n  @postunexec [ -e %D/share/man/man1/gpg.1.gz ] || rm -f %D/share/man/man1/gpg.1.gz\n\nTo which I'd simply add (using the same conditional style):\n  @postexec [ -L %D/man/man1/gpg.1.gz ] \u0026\u0026 rm -f %D/man/man1/gpg.1.gz\n\nOr is the expectation that mandir may again change, and then it would be nicer to handle without having to carry some cleanup script for an undeterminated time? -- but yet here we are, so that argument seems weak to me :=)"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1094529,
+ "bug_id": 245179,
+ "attachment_id": 0,
+ "creation_time": "2020-03-30T02:39:54Z",
+ "creator": "andrew@tao11.riddles.org.uk",
+ "text": "In function ObjFile\u003cELFT\u003e::shouldMerge in lld/ELF/InputFiles.cpp:\n\n  if (sec.sh_size % entSize)\n    fatal(toString(this) +\n          \": SHF_MERGE section size must be a multiple of sh_entsize\");\n\n  uint64_t flags = sec.sh_flags;\n  if (!(flags \u0026 SHF_MERGE))\n    return false;\n\nNotice that the size is checked _before_ looking at whether SHF_MERGE is set. This means that the error is produced for sections that do not have SHF_MERGE set at all, which is either misleading or wrong.\n\nJudging by the report in #219717 where this was found, the BFD linker did not care about sh_entsize of non-mergeable sections. If this check is only needed for mergeable sections, then surely it should be made _after_ SHF_MERGE is checked for.\n\nSince this check is skipped when -Wl,-O0 is in effect, I do not believe it is actually necessary to check that size is a multiple of sh_entsize when not merging sections. If I'm wrong about that, though, then the check would need to be both moved to somewhere else and changed to not mention SHF_MERGE in the error message."
+}

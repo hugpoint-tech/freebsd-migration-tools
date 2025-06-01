@@ -1,0 +1,8 @@
+{
+ "id": 1261827,
+ "bug_id": 271780,
+ "attachment_id": 0,
+ "creation_time": "2023-06-02T05:16:34Z",
+ "creator": "t_uemura@macome.co.jp",
+ "text": "On RPi4B, PSCI reset, precisely, PSCI_FNID_SYSTEM_RESET doesn't work. This causes a reset (a key press) after shutdown -h to halt the board rather than to reboot, and need a powercycle to restart. To workaround, SoC's watchdog must handle the reset, as its 32-bit sibling did so in bcm2835_machdep.c:bcm2835_cpu_reset() .\n\nThis happens on 13.2-RELEASE image, 13.2-STABLE and 14-CURRENT with more recent u-boot and firmware.\n\n\nLong story:\n\nAfter shutdown -h, the \"Please press any key to reboot.\" message is shown, and by a key press, architecture dependent cpu_reset() is called to try to reset:\n\non 32-bit RPis,\n  arm/platform.c:cpu_reset()\n  broadcom/bcm2835/bcm2835_machdep.c:bcm2835_cpu_reset()\n  broadcom/bcm2835/bcm2835_wdog.c:bcmwd_watchdog_reset()\n\non arm64,\n  arm64/arm64/vm_machdep.c:cpu_reset()\n  dev/psci/psci.c:psci_reset()\n  dev/psci/psci.c:psci_shutdown()\n  dev/psci/psci.h:psci_call(PSCI_FNID_SYSTEM_RESET)\n\nSince PSCI reset works properly on RPi3B+, I guess this issue is specific to BCM2711 and is due to a bug in this newer generation SoC's PSCI implementation.\n\nTo workaround, watchdog is armed to fire immediately instead of psci_call(). I wasn't sure if I could add SoC dependent snippet in this location (arm64/arm64), but I found a quirk for Cavium in GIC v3 code, so I thought it might be OK.\n\n\nFinally note that about simple reboots, triggered by shutdown -r or reboot(8), are all handled by watchdog on both arm and arm64; broadcom/bcm2835/bcm2835_wdog.c:bcmwd_reboot_system() via shutdown_final event handler."
+}

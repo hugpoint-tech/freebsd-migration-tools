@@ -1,0 +1,8 @@
+{
+ "id": 1170217,
+ "bug_id": 238014,
+ "attachment_id": 0,
+ "creation_time": "2021-07-13T20:13:58Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch main references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=431ddd94360a9e86c91294eaa2c7b859911984b7\n\ncommit 431ddd94360a9e86c91294eaa2c7b859911984b7\nAuthor:     Young Xiao \u003c92siuyang@gmail.com\u003e\nAuthorDate: 2019-05-21 07:36:29 +0000\nCommit:     Warner Losh \u003cimp@FreeBSD.org\u003e\nCommitDate: 2021-07-13 20:13:21 +0000\n\n    Fix potential NULL pointer dereference of device physical path\n\n    In ata_dev_advinfo() and nvme_dev_advinfo(), if the physical path is\n    being stored and there is a malloc failure (malloc(9) is called with\n    M_NOWAIT), we could wind up in a situation where the device's\n    physpath_len is set to the length the user provided, but the physpath\n    itself is NULL.\n\n    If another context then comes in to fetch the physical path value, we\n    would wind up trying to memcpy a NULL pointer into the caller's buffer.\n\n    So, set the physpath_len to 0 when we free the physpath on entry into\n    the store case for the physical path.  Reset the length to a non-zero\n    value only after we've successfully malloced a buffer to hold it.\n\n    This code mirrors scsi_xpt.c does already as well.\n\n    Signed-off-by:  Young Xiao \u003c92siuyang@gmail.com\u003e\n    Reviewed by:    imp\n    PR:             238014\n\n sys/cam/ata/ata_xpt.c   | 7 +++++--\n sys/cam/nvme/nvme_xpt.c | 7 +++++--\n 2 files changed, 10 insertions(+), 4 deletions(-)"
+}

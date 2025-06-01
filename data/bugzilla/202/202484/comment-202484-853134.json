@@ -1,0 +1,8 @@
+{
+ "id": 853134,
+ "bug_id": 202484,
+ "attachment_id": 0,
+ "creation_time": "2015-12-10T22:02:17Z",
+ "creator": "olivier@cochard.me",
+ "text": "errno(2) translate error number 45 by a EOPNOTSUPP.\n\nAnd code in netinet/ip_mroute.c can return EOPNOTSUPP in 2 cases:\n\n if ((vifcp-\u003evifc_flags \u0026 VIFF_TUNNEL) != 0) {\n    CTR1(KTR_IPMF, \"%s: tunnels are no longer supported\", __func__);\n    VIF_UNLOCK();\n    return EOPNOTSUPP;\n\nor\n\n    } else {        /* Make sure the interface supports multicast */\n    if ((ifp-\u003eif_flags \u0026 IFF_MULTICAST) == 0) {\n        VIF_UNLOCK();\n        return EOPNOTSUPP;\n\nBut a vtnet interface seems to correctly set IFF_MULTICAST because dev/virtio/network/if_vtnet.c includes:\n\nvtnet_setup_interface(struct vtnet_softc *sc)\n{\n    ...\n    ifp-\u003eif_flags = IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST;\n    ...\n\n}\n\nThen how to troubleshoot deeper this problem ?"
+}

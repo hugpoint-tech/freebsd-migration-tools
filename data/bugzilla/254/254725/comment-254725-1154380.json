@@ -1,0 +1,8 @@
+{
+ "id": 1154380,
+ "bug_id": 254725,
+ "attachment_id": 0,
+ "creation_time": "2021-04-02T22:12:17Z",
+ "creator": "rscheff@freebsd.org",
+ "text": "received the core and kernel.debug symbols.\n\nThe panic is likely a off-by-one related to the FIN bit, but not with the\nrescue retransmission, but rather PRR.\n\nThe TCP state indicates, that only the last data byte, and the final FIN bit\nare unacknowledged. \n\nframe 11:\n(kgdb) p *tp-\u003esackhint.nexthole\n$48 = {start = 935342315, end = 935342316, rxmit = 935342315, scblink = {tqe_next = 0x0, tqe_prev = 0xfffffe013eac0618}}\n(kgdb) p tp-\u003esnd_max\n$49 = 935342317\n(kgdb) p tp-\u003esnd_una\n$50 = 935342315\n\n(kgdb) p/x tp-\u003et_flags\n$6 = 0x603003f4  ====\u003e TF_SENTFIN is set.\n\nNow, the FIN bit occupys the last Seq# (..317).\nThe SACK hole should therefore be a valid 1 byte hole, which hasn't been retransmitted...\n\nThe incoming SACK appears to be SACKing the FIN bit?\n\n(kgdb) p/x *(struct sackblk *)to.to_sacks\n$53 = {start = 0xec30c037, end = 0xed30c037}\n(kgdb) p 0x37c030ec\n$54 = 935342316\n(kgdb) p 0x37c030ed\n$55 = 935342317"
+}

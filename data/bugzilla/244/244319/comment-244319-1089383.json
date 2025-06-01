@@ -1,0 +1,8 @@
+{
+ "id": 1089383,
+ "bug_id": 244319,
+ "attachment_id": 0,
+ "creation_time": "2020-02-22T18:24:13Z",
+ "creator": "alex_y_xu@yahoo.ca",
+ "text": "after https://svnweb.freebsd.org/base/head/sys/vm/vm_pageout.c?r1=327954\u0026r2=328954 (https://reviews.freebsd.org/D14000), the various v_* targets were made domain-specific, and vm_cnt was made a sum of the individual domain metrics. however, it doesn't seem to consider that those sysctls are actually read-write, not read-only in vm_meter. the easy fix is to just make the top-level sysctls read-only, but I think that it would be better to make the per-domain sysctls also writable. the top-level sysctls can't be removed because vm/swap_pager.c checks vm_cnt.v_free_reserved, and cddl/contrib/opensolaris/uts/common/fs/zfs/arc.c checks vm_cnt.v_free_target. I suspect that the swap accounting should actually be domain-aware though. anyways, you still need to update vm_cnt.v_free_reserved and vm_cnt.v_free_target, and at that point you might as well keep everything.\n\nI think VM_STATS_UINT(v_*) except v_*_count should probably be removed though, since they are not really \"statistics\", and sysctls for vmd_interrupt_free_min and vmd_pageout_free_min should be added.\n\nI tried making a patch, but I couldn't figure out how to work SYSCTL_ADD_PROC."
+}

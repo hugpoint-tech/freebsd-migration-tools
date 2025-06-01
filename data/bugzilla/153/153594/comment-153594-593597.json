@@ -1,0 +1,8 @@
+{
+ "id": 593597,
+ "bug_id": 153594,
+ "attachment_id": 0,
+ "creation_time": "2011-01-04T09:06:05Z",
+ "creator": "bschmidt@FreeBSD.org",
+ "text": "On Tuesday, January 04, 2011 09:08:24 Eugene Grosbein wrote:\n\u003e \u003e There is race in devd and our rc-subsystem if wpa_supplicant is involved\n\u003e \u003e effectivly resulting in starting wpa_supplicant twice. Both instances try\n\u003e \u003e to take over the wlan device which results in what you are seeing.\n\u003e \u003e I have no idea how to fix this right now, so this has to wait until I'm\n\u003e \u003e able to think of proper fix.\n\u003e \n\u003e Perhaps, wrapping wpa_supplicant invocation into \"lockf -t0\" would help\n\u003e to eliminate race?\n\nPossibly, but I don't think this is the way to go.\n\nCurrently wpa_supplicant has this code:\n        /*\n         * Mark the interface as down to ensure wpa_supplicant has exclusive\n         * access to the net80211 state machine, do this before opening the\n         * route socket to avoid a false event that the interface disappeared.\n         */\n        if (getifflags(drv, \u0026flags) == 0)\n                (void) setifflags(drv, flags \u0026~ IFF_UP);\n\nThis code works such that it will send an event to already running \nwpa_supplicant instances which will then terminate. This does indeed work if \nthere's enough delay between invocations, though, if there is just a small \ndelay (~100ms or something), that event doesn't get passed probably. I think \nwe should start looking into possible solution at that point, trying to figure \nout why the the event doesn't get passed (probably because the interface is \nnot yet up at that point) will get us closer to proper solution.\n\n-- \nBernhard"
+}

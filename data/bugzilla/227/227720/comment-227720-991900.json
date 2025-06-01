@@ -1,0 +1,8 @@
+{
+ "id": 991900,
+ "bug_id": 227720,
+ "attachment_id": 0,
+ "creation_time": "2018-05-14T14:46:29Z",
+ "creator": "eugen@freebsd.org",
+ "text": "I've downloaded it, thanks.\n\n(kgdb) p *((struct rtentry *)rn)-\u003ert_ifp\n$7 = {if_link = {tqe_next = 0xdeadc0dedeadc0de, tqe_prev = 0xdeadc0dedeadc0de}, if_clones = {\n    le_next = 0xdeadc0dedeadc0de, le_prev = 0xdeadc0dedeadc0de}, if_groups = {\n    tqh_first = 0xdeadc0dedeadc0de, tqh_last = 0xdeadc0dedeadc0de}, if_alloctype = 222 'ч',\n  if_softc = 0xdeadc0dedeadc0de, if_llsoftc = 0xdeadc0dedeadc0de, if_l2com = 0xdeadc0dedeadc0de,\n  if_dname = 0xdeadc0dedeadc0de \u003cAddress 0xdeadc0dedeadc0de out of bounds\u003e,\netc.\n\nThis means race condition in the kernel between interface removal procedure when some tunnel is being disconnected and sysctl handler for \"net.routetable\" that ppp calls, or some subroutine this handler uses.\n\nPerhaps, this is guilt of sysctl_rtsock() function that uses RIB_RLOCK() before calling rnh-\u003ernh_walktree(\u0026rnh-\u003ehead, sysctl_dumpentry, \u0026w) but that does not protect from interface destruction:\n\nhttps://svnweb.freebsd.org/base/release/11.1.0/sys/net/rtsock.c?annotate=321354#l1898\n\nWe need some more eyes of networking people here."
+}

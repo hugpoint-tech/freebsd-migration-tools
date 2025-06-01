@@ -1,0 +1,8 @@
+{
+ "id": 53037,
+ "bug_id": 17422,
+ "attachment_id": 0,
+ "creation_time": "2004-02-04T13:08:49Z",
+ "creator": "bde@zeta.org.au",
+ "text": "On Tue, 3 Feb 2004, Felipe Gasper wrote:\n\n\u003e  Just for curiosity, what is the status of this PR? I'm using 4.9-RELEASE\n\u003e  and am still getting this error. \"pstat\" also gives \"undefined symbol:\n\u003e  _numvnodes\"; I don't know if that would be something to do with it or no.\n\nThe bug is still present in RELENG_4: the system must be booted with\n/boot/loader to get these symbols.\n\nThe bug is almost moot in -current.  Most statistics utilities including\npstat use sysctl() instead of nlist()+kvm_read() to read kernel data in\nthe live kernel case, so they don't need kldsym() to return these symbols.\nThe symbols are missing mainly for kernel debugging using ddb, but using\nDDB_NOKLDSYM is a better workaround for that and other bugs in loading\nsymbols at boot time.\n\nMy patch in the PR followup should be harmless but there is a report\nof it causing panics.  It caused panics in -current because initialization\nof the bootinfo was broken by gcc putting zero data in the bss; this\nresulted in the symbol table info in bootinfo being all-0 and passing\nthe 0's up to kern_linker.c using the fake module didn't work.  The\ninitialization has been fixed in -current and in\nRELENG_4-compiled-by-gcc-3.3, but other ways of passing null symbol\ninfo might cause problems.  boot2 always passes non-null symbol info.\nThis used to be for ddb, but became essential for kernel symbols.\n\nBruce"
+}

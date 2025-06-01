@@ -1,0 +1,8 @@
+{
+ "id": 1289057,
+ "bug_id": 266532,
+ "attachment_id": 0,
+ "creation_time": "2023-12-22T15:48:19Z",
+ "creator": "rozhuk.im@gmail.com",
+ "text": "This issue also actual for slim and probably other logon managers and tools that do user logon.\n\nAs far I understand FreeBSD logon process a bit more complex than linux, at least it requires additional syscalls to handle login classes.\n\n\nTo fix this I use \"su -l ${USER}\" in 2 wrapper scripts:\n 1. logon_pre.sh: it save env to XDG_RUNTIME_DIR (\"/var/run/user/`id -ur ${USER} | tr -d '\\n'`\") and run: /usr/bin/su -l \"${USER}\" -c \"env XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR} ${THIS_SCRIPT_DIR}/logon_post.sh ${@}\"\n\n 2. logon_post.sh: it save its own env, restore env from firs script, restore its own env and run Xsession.\n\nTo use this you need:\n1. save both scripts to /usr/local/etc/lightdm\n2. chmod +x them\n3. in file /usr/local/etc/lightdm/lightdm.conf replace:\nsession-wrapper=/usr/local/etc/lightdm/Xsession\nwith\nsession-wrapper=/usr/local/etc/lightdm/logon_pre.sh\n\n\nAnother cool hack:\nxmir-command=/usr/bin/nice -n -15 /usr/local/bin/Xmir\nxserver-command=/usr/bin/nice -n -15 /usr/local/bin/X\nthis increase xorg priority and fix some frizes.\n\n\nFor slim I use for a while:\nlogin_cmd\t\t/usr/bin/su -l ${USER} -c \"env XAUTHORITY=${XAUTHORITY} XDG_SESSION_COOKIE=${XDG_SESSION_COOKIE} DISPLAY=${DISPLAY} ~/.xinitrc %session\"\n\nThis is a bit insecure since XDG_SESSION_COOKIE visible via \"ps axd\".\n\nTi increase xorg priority:\ndefault_xserver\t\t/usr/bin/nice\nxserver_arguments\t-n -15 /usr/local/bin/X -nolisten tcp vt09\n\n\nHope lightdm and slim maintainers will assimilate these scripts and config hacks into ports tree."
+}

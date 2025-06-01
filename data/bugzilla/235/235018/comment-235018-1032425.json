@@ -1,0 +1,8 @@
+{
+ "id": 1032425,
+ "bug_id": 235018,
+ "attachment_id": 0,
+ "creation_time": "2019-01-17T10:26:01Z",
+ "creator": "michael.osipov@siemens.com",
+ "text": "This affects java.io.UnixFileSystem and probably java.io.File. Well, File#lastModified() has millisecond precision. Looking at the code in Java 11 you see:\n\n\u003e JNIEXPORT jlong JNICALL\n\u003e Java_java_io_UnixFileSystem_getLastModifiedTime(JNIEnv *env, jobject this,\n\u003e                                                 jobject file)\n\u003e {\n\u003e     jlong rv = 0;\n\u003e \n\u003e     WITH_FIELD_PLATFORM_STRING(env, file, ids.path, path) {\n\u003e         struct stat64 sb;\n\u003e         if (stat64(path, \u0026sb) == 0) {\n\u003e #if defined(_AIX)\n\u003e             rv =  (jlong)sb.st_mtime * 1000;\n\u003e             rv += (jlong)sb.st_mtime_n / 1000000;\n\u003e #elif defined(MACOSX)\n\u003e             rv  = (jlong)sb.st_mtimespec.tv_sec * 1000;\n\u003e             rv += (jlong)sb.st_mtimespec.tv_nsec / 1000000;\n\u003e #else\n\u003e             rv  = (jlong)sb.st_mtim.tv_sec * 1000;\n\u003e             rv += (jlong)sb.st_mtim.tv_nsec / 1000000;\n\u003e #endif\n\u003e         }\n\u003e     } END_PLATFORM_STRING(env, path);\n\u003e     return rv;\n\u003e }\n\nThis is the default now.\n\nHow does it break Tomcat, I don't get it? The RFC you are quoting is invalid. Look into RFC 7231, chapter 7.1.1."
+}

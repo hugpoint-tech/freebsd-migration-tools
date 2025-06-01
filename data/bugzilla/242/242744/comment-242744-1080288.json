@@ -1,0 +1,8 @@
+{
+ "id": 1080288,
+ "bug_id": 242744,
+ "attachment_id": 0,
+ "creation_time": "2019-12-20T18:41:02Z",
+ "creator": "vas@sibptus.ru",
+ "text": "When you configure transport mode IPSec between two FreeBSD hosts (no tunnels or if_ipsec), TCP connectivity between those hosts breaks. It happens because a) ESP packets are always generated with the DF flag set, b) PMTUD does not work in IPSec transport mode because there is no interface (?) c) when TCP segments of standard size are encapsulated into ESP packets, the resulting oversized ESP packets cannot pass through any interface with MTU=1500, nor can they be fragmented because of the DF flag, so they are just blackholed and never leave the host.\n\nHow to reproduce. Configure a simple transport mode IPSec between two FreeBSD hosts and try to scp files from one host to another. The file transfer will inevitably stall, until you clear all IPSec policies. Watch with tcpdump: all ESP packets have the DF flag set, but large ESP packets will be missing.\n\nA workaround. A host route to the peer with \"-mtu 1400\" can be configured as described in https://lists.freebsd.org/pipermail/freebsd-net/2019-December/054952.html but it is not scalable.\n\nWhat is to be done. ESP packets should not have the DF flags set by default for things to \"just work.\"\n\nI've checked that the net.inet.ipsec.dfbit does not affect transport mode. Regardless of its value, the DF flag is always on."
+}

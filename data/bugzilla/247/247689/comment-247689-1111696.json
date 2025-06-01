@@ -1,0 +1,8 @@
+{
+ "id": 1111696,
+ "bug_id": 247689,
+ "attachment_id": 0,
+ "creation_time": "2020-07-03T10:26:23Z",
+ "creator": "newton.ja.terry@gmail.com",
+ "text": "I can reproduce the error. Current www/uwsgi, version 2.0.18, having set plugins in configuration file, returns plugin error message when starting service:\n\nservice uwsgi onestart\n\n[uWSGI] getting INI configuration from /usr/local/etc/uwsgi/uwsgi.ini\n!!! UNABLE to load uWSGI plugin: Cannot open \"./router_redirect_plugin.so\" !!!\n\n/usr/local/etc/uwsgi/uwsgi.ini\n\n[uwsgi]\nplugins=router_redirect\n\nIn ports work-py37 directory no router_redirect_plugin.so is present. Recording the build process with less verbosity (Makefile: #PYDISTUTILS_BUILDARGS= --verbose) demonstrates the plugins are build embedded into the binary. From the build log:\n\n...\nusing profile: buildconf/default.ini\n\ncut  ---------------------\nwork-py37/uwsgi-2.0.18/buildconf/default.ini\n[uwsgi]\nmain_plugin = python,gevent\ninherit = base\n\nwork-py37/uwsgi-2.0.18/buildconf/base.ini\n[uwsgi]\n...\nembedded_plugins = %(main_plugin)s, ..., router_redirect,...\n\ncontinue  ----------------\n\n*** uWSGI compiling embedded plugins ***\n...\n[thread 4][cc] plugins/router_redirect/router_redirect.o\n...\n\nAlso the build binary indicates having the plugins, inclusive router_redirect_plugin, embedded:\n\nstrings /usr/local/bin/uwsgi | grep router_redirect\nrouter_redirect_plugin\nrouter_redirect\n\nUpdating the port to version 2.0.19.1 doesn't resolve, error message remains.\n\nAttached:\nuwsgi-2.0.18-build.log\nuwsgi-2.0.19.1-build.log\nuwsgi18-binary-embedd-plugins-list.txt\nuwsgi19.1-binary-embedd-plugins-list.txt"
+}

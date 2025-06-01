@@ -1,0 +1,8 @@
+{
+ "id": 1307893,
+ "bug_id": 278694,
+ "attachment_id": 0,
+ "creation_time": "2024-05-06T20:59:56Z",
+ "creator": "hiroo.ono+freebsd@gmail.com",
+ "text": "(In reply to Li-Wen Hsu from comment #1)\n\nIn short, it is difficult.\n\nThe access to network in build phase is with DOCS option and happens at three points.\n1. To retrieve UnicodeData.txt.\n   It can be easily converted to be fetched at fetch phase.\n2. After julia program is built, doc/make.jl is invoked with it, and  Pkg.instantiate() is issued. It retrieves non standard Documenter.jl package and its dependencies.\n   I could not find a way to prefetch the packages and place it to proper position to avoid Pkg.instantiate() not to trigger network access.\n3. Documenter.jl package that is invoked from doc/make.jl (so, by julia built in build phase) accesses GitHub with git to determine the version of packages.\n   I tried to hack make.jl to suppress it, but in vain.\n\nSo, my workaround is to make DOCS option not default, and leave it to people who build julia by themselves. (setting ALLOW_NETWORKING_PACKAGES=\"julia\" in poudriere.conf in poudriere.conf is needed.) Maybe, I should have documented\n* DOCS option needs network access in build phase (and poudriere.conf setting maybe)\n* For those installing official package who do not have the julia document, write an instruction that it can be found at https://docs.julialang.org/en/v1/ (maybe in pkg-message?)"
+}

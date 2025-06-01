@@ -1,0 +1,8 @@
+{
+ "id": 1083687,
+ "bug_id": 242827,
+ "attachment_id": 0,
+ "creation_time": "2020-01-14T00:51:45Z",
+ "creator": "timur@FreeBSD.org",
+ "text": "(In reply to ml from comment #1)\n\nThanks a lot for the provided information.\n\nThis seems to be an interesting case of clashing of the OPTIONS variables and plain normal Makefile variables.\n\nDEBUG_FLAGS(not CFLAGS!) is a documented way of influencing the debugging flags for building the base system and ports:\n\n# Reset value from bsd.own.mk.\n.if defined(WITH_DEBUG)\n.if !defined(INSTALL_STRIPPED)\nSTRIP=  #none\nMAKE_ENV+=      DONTSTRIP=yes\nSTRIP_CMD=      ${TRUE}\n.endif\nDEBUG_FLAGS?=   -g\nCFLAGS:=                ${CFLAGS:N-O*:N-fno-strict*} ${DEBUG_FLAGS}\n.if defined(INSTALL_TARGET)\nINSTALL_TARGET:=        ${INSTALL_TARGET:S/^install-strip$/install/g}\n.endif\n.endif\n\n\nI guess the proper combination would be:\n\nDEBUG_CONFIGURE_ON=             --verbose --enable-debug\nDEBUG_MAKE_ARGS=                --verbose\nDEBUG_FLAGS=                    -g -ggdb3 -O0\nDEBUG_VARS=                     WITH_DEBUG=yes\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nWhich gives us:\n\n# make -V CFLAGS\n-pipe  -DLIBICONV_PLUG -fno-color-diagnostics -g -ggdb3 -O0 -fstack-protector-strong -DLDAP_DEPRECATED -isystem /usr/local/include -fno-strict-aliasing -fno-omit-frame-pointer\n\n\nCan you, please, try, if such an fix makes sense for you?"
+}

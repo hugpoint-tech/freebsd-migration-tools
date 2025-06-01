@@ -1,0 +1,8 @@
+{
+ "id": 1082756,
+ "bug_id": 243195,
+ "attachment_id": 0,
+ "creation_time": "2020-01-08T18:30:57Z",
+ "creator": "myoga.murase@gmail.com",
+ "text": "I'm running FreeBSD 12.1-RELEASE in VirtualBox on Windows 10.\n\n  $ uname -a\n  FreeBSD vm-freebsd 12.1-RELEASE FreeBSD 12.1-RELEASE r354233 GENERIC  i386\n\nThe following reduced program results in a segmentation fault.\n\n  $ cat test1.c\n  #include \u003clocale.h\u003e\n  #include \u003cstdio.h\u003e\n\n  int main(int argc, char** argv) {\n    int i;\n\n    if (argc != 2) return 2;\n    printf(\"start\\n\");\n    fflush(stdout);\n    for (i = 0; i \u003c 100000; i++) {\n      setlocale(LC_COLLATE, argv[1]);\n      setlocale(LC_COLLATE, \"C\");\n    }\n    printf(\"done\\n\");\n    fflush(stdout);\n    return 0;\n  }\n  $ gcc -o test1 test1.c\n  $ ./test1 en_US.UTF-8\n  start\n  Segmentation fault\n  $ ./test1 ja_JP.UTF-8\n  start\n  Segmentation fault\n  $ ./test1 ja_JP.eucJP\n  start\n  Segmentation fault\n\nThe number of successful invocation of `setlocale' until the\nsegmentation fault is always the same for the same locale, but it is\ndifferent for different locales.  The segmentation fault is only\ncaused when the category LC_COLLATE is changed (through LC_COLLTE or\nLC_ALL).  There are no problems with the other categories.\n\nI suspect the implementation of `__collate_load_tables_l' in\n`lib/libc/locale/collate.c'.  I'm not sure but maybe there is a memory\nleak caused by missing `munmap'?\n\nhttps://github.com/freebsd/freebsd/blob/b6fca3ee8065a5cfd3a36abfd7a2663eb5bfee7d/lib/libc/locale/collate.c#L184"
+}

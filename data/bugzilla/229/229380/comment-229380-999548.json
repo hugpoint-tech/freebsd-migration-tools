@@ -1,0 +1,8 @@
+{
+ "id": 999548,
+ "bug_id": 229380,
+ "attachment_id": 0,
+ "creation_time": "2018-06-28T04:09:12Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "On startup, auditd(8) expires any audit trails that satisfy the criteria for expiration.  It logs each expiration not using syslog(3), but by executing the script /etc/security/audit_warn.  However, it does not attempt to reap any of its children until it enters the main loop.  This is a problem if there are thousands of audit trail files, as it can quickly hit kern.maxproc.  That can easily lock up the system if the admin cannot kill auditd.  I've seen it happen 3 times (I have a lot of audit trail files because I'm working on the audit(4) test suite).\n\nA simple solution would be to use system(3) instead of fork(2)/execve(2) to execute /etc/security/audit_warn.  However, this would cause a slight delay, which could conceivably result in audit records being dropped, especially if /etc/security/audit_warn does something slow, like pipe over the network.  A subtler solution would be to call auditd_reap_children in the loop in auditd_expire_trails, if sigchlds gets too high.  Or, have a \"startup mode\", which uses system(3) to fix the kern.maxproc problem, but fork/execve for lower latency after startup is complete."
+}

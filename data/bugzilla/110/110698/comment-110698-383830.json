@@ -1,0 +1,8 @@
+{
+ "id": 383830,
+ "bug_id": 110698,
+ "attachment_id": 0,
+ "creation_time": "2007-03-23T09:00:10Z",
+ "creator": "hw@ksue.edu.ua",
+ "text": "    Such rule:\n        nat from $local_me to ! local -\u003e { ($if1), ($if2) } round-robin\n    i.e. without corresponding \"on iface\" clause causes outgoing packets\n    to be with incorrect checksum. this behaviour is only applied to packets\n    originated from kernel (i.e. locally bound sockets). packets, that\n    arrive on interfaces and travels thru system are processed correctly.\n\n    it doesn't matter whether \"local_me\" specified as a single address or\n    as a member of \"some_table\". i tried multiply configurations and\n    effect was reproducible (from FreeBSD v6.1 PRERELEASE up to current RELEASE)\n\nFix: \n\ni looked inside /usr/src/sys/contrib/pf/net/pf.c but dunno\n     what to change here, seems invokation pf_cksum_fixup()\n     has been forgotten somewhere\nHow-To-Repeat:     pf.conf file with rule:\n        table local const { 192.168.0.0/16, 172.16.0.0/12, 10.0.0.0/8 }\n        nat from $local_me to ! local -\u003e ($external_if)\n        pass out quick route-to ($external_if $external_peer) from $external_me to ! \u003clocal\u003e\n        # dunno if last rule has effect, but i have multply outbound\n        # interfaces and \"floating\" default route, so i need symmetric\n        # outgoing routing\n\n    then to check we run (with effect):\n      # tcpdump -v -v -v -l -s 1600 -i vlan0 host f1news.ru                           \n\n###### S, cksum 0xee62 (incorrect (-\u003e 0xfcc5), 3464239052:3464239052(0)\n###### here the effect ^^^^^^^^^^^^^^^^^^^^^^^\n\n      # telnet f1news.ru 80\n\n     and we may run telnet from the local network, everything will go OK"
+}

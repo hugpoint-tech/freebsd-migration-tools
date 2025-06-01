@@ -1,0 +1,8 @@
+{
+ "id": 861145,
+ "bug_id": 206573,
+ "attachment_id": 0,
+ "creation_time": "2016-01-24T13:44:32Z",
+ "creator": "ecturt@gmail.com",
+ "text": "The `aac_ioctl_send_raw_srb` function can be reached by supplying the `FSACTL_LNX_SEND_RAW_SRB` command to `aac_ioctl`. This code path dereferences a user supplied pointer directly:\n\nstatic int\naac_ioctl_send_raw_srb(struct aac_softc *sc, caddr_t arg)\n{\n\tstruct aac_srb *user_srb = (struct aac_srb *)arg;\n\t\n\t...\n\t\n\tif ((error = copyin((void *)user_srb, srbcmd, fibsize) != 0)) \n\t\tgoto out;\n\t\n\t...\n\t\n\tstruct aac_sg_entry *sgp = srbcmd-\u003esg_map.SgEntry;\n\t\n\t...\n\t\n\tsrb_sg_bytecount = sgp-\u003eSgByteCount;\n\t\n\t...\n}\n\n`srbcmd` has user controlled contents (after `copyin` from `user_srb`).\n\n`sgp` is set to a user controlled address (`srbcmd-\u003esg_map.SgEntry`).\n\n`sgp` is then dereferenced numerous times (`sgp-\u003eSgByteCount`).\n\nOne impact of this improper handling is that `sgp` could be `NULL`, which would result in a `NULL` dereference, and panic."
+}

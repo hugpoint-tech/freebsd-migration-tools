@@ -1,0 +1,8 @@
+{
+ "id": 951151,
+ "bug_id": 222077,
+ "attachment_id": 0,
+ "creation_time": "2017-09-09T01:41:35Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit references this bug:\n\nAuthor: cem\nDate: Sat Sep  9 01:41:01 UTC 2017\nNew revision: 323338\nURL: https://svnweb.freebsd.org/changeset/base/323338\n\nLog:\n  Fix information leak in geli(8) integrity mode\n\n  In integrity mode, a larger logical sector (e.g., 4096 bytes) spans several\n  physical sectors (e.g., 512 bytes) on the backing device.  Due to hash\n  overhead, a 4096 byte logical sector takes 8.5625 512-byte physical sectors.\n  This means that only 288 bytes (256 data + 32 hash) of the last 512 byte\n  sector are used.\n\n  The memory allocation used to store the encrypted data to be written to the\n  physical sectors comes from malloc(9) and does not use M_ZERO.\n\n  Previously, nothing initialized the final physical sector backing each\n  logical sector, aside from the hash + encrypted data portion.  So 224 bytes\n  of kernel heap memory was leaked to every block :-(.\n\n  This patch addresses the issue by initializing the trailing portion of the\n  physical sector in every logical sector to zeros before use.  A much simpler\n  but higher overhead fix would be to tag the entire allocation M_ZERO.\n\n  PR:\t\t222077\n  Reported by:\tMaxim Khitrov \u003cmax AT mxcrypt.com\u003e\n  Reviewed by:\temaste\n  Security:\tyes\n  Sponsored by:\tDell EMC Isilon\n  Differential Revision:\thttps://reviews.freebsd.org/D12272\n\nChanges:\n  head/sys/geom/eli/g_eli_integrity.c"
+}

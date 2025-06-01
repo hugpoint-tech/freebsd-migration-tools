@@ -1,0 +1,8 @@
+{
+ "id": 878286,
+ "bug_id": 209441,
+ "attachment_id": 0,
+ "creation_time": "2016-05-10T23:56:19Z",
+ "creator": "000.fbsd@quip.cz",
+ "text": "I had \"PrintLastLog yes\" in my sshd_config for many years but after upgrade to 10.3 I got this error message:\n\n/etc/ssh/sshd_config line 112: Unsupported option PrintLastLog\n\nIt is confusing because \"#PrintLastLog yes\" is still included in default sshd_config file and mentioned in manpage.\n\nIs it error in default config or error in sshd? What should be fixed? \n\n\nI found in /usr/src/crypto/openssh/servconf.c\n\n#ifdef DISABLE_LASTLOG\n        { \"printlastlog\", sUnsupported, SSHCFG_GLOBAL },\n#else\n        { \"printlastlog\", sPrintLastLog, SSHCFG_GLOBAL },\n#endif\n\n\nDoes it means that new sshd in FreeBSD 10.3 was (un)intentionally compiled with \"DISABLE_LASTLOG\" (--disable-lastlog)\n\n\nWe have own buildserver with svnup /usr/src and  buildworld \u0026 buildkernel  and installkernel \u0026 installworld \n\n# cat /etc/src.conf\n\nWITHOUT_KERNEL_SYMBOLS=yes\n\n\n\n# cat /etc/make.conf\n\nWITH_PKGNG= yes\n\nSVN_UPDATE=yes\nSVN=\"/usr/local/bin/svnup\"\nSVNFLAGS=\"\"\n\n\nWITH_GHOSTSCRIPT_VER=9\n\nDEFAULT_VERSIONS= perl=5.20 mysql=5.5m php=55 python=2.7 apache=2.4\n\n## https://wiki.freebsd.org/Ports/Options/OptionsNG\n## OptionsNG sets DOCS, EXAMPLES and NLS as default - we do not need them\nOPTIONS_UNSET= X11 GUI CUPS DOCS EXAMPLES NLS\n\n\n## cd /usr/ports/www/apache22 \u0026\u0026 make print-closest-mirrors\nMASTER_SITE_APACHE_HTTPD?= http://apache.miloslavbrada.cz/httpd/ http://mirror.hosting90.cz/apache/httpd/ ftp://mirror.hosting90.cz/apache/httpd/ http://www.eu.apache.org/dist/httpd/\n\n## closest PHP mirror\nMASTER_SITE_PHP= http://cz.php.net/%SUBDIR%/"
+}

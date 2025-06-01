@@ -1,0 +1,8 @@
+{
+ "id": 683935,
+ "bug_id": 171678,
+ "attachment_id": 0,
+ "creation_time": "2012-09-16T07:00:27Z",
+ "creator": "markjdb@gmail.com",
+ "text": "When running dtrace -h, I get the following unintuitive error message:\n\n$ dtrace -h -s perldtrace.d\ndtrace: failed to compile script perldtrace.d: \"/usr/lib/dtrace/regs_x86.d\", line 2: type redeclared: struct devinfo\n\nThis error doesn't occur if I run it without -h, which doesn't make much sense since the scripts in /usr/lib/dtrace/ are processed regardless.\n\nFix: \n\nThe root of the problem is the \"#pragma D depends_on provider\" in /usr/lib/dtrace/io.d. When dtrace sees that directive, it calls a DTRACEIOC_PROVIDER ioctl on /dev/dtrace/dtrace with the appropriate provider argument (\"io\" in this case) to verify that that provider really is available.\n\nTurns out that the -h (and -G) option sets the DTRACE_O_NODEV flag, which basically means \"don't open /dev/dtrace/dtrace or /dev/dtrace/fasttrap.\" This allows dtrace -h to be used without needing root privileges. But obviously we need to open /dev/dtrace/dtrace for the reason mentioned above, and dtrace aborts because it can't call the ioctl.\n\nFor now, I'm working around this by just removing /usr/lib/dtrace/io.d - I don't need it at the moment. I'm not sure what the right fix is. Probably the error message could also be improved in this case, but I haven't really looked into that."
+}

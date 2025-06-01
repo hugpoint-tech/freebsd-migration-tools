@@ -1,0 +1,8 @@
+{
+ "id": 1043129,
+ "bug_id": 236659,
+ "attachment_id": 203000,
+ "creation_time": "2019-03-20T11:51:04Z",
+ "creator": "freebsd-bugs@virtualtec.ch",
+ "text": "Created attachment 203000\ncore.txt\n\nI'm setting up an HP DL380 G7 with a Chelsio T520-CR card as a zfs iscsi storage server. The server is connected\nmultipath with a vsphere 5.5 test server. After a while with iSCSI traffic, the freebsd server panics. It seems\nto be caused by a certain time of operation, not primarily by the amount of traffic, since I can frequently finish\none run of CrystalMark on a VM on the vsphere server before I get the panic. Also, just keeping the server idle (but\nwith the vsphere server reconnecting after the crash) can cause the panic after 20-30min of uptime. \n\nI'm only seeing the panic when I enable \"offload cxgbei\" in the ctl.conf portal-group, just having toe enabled on the\ninterfaces will not cause the panic (at least not in the timeframe I monitored the server). The server crashes whether\nI have dev.t5nex.0.toe.ddp enabled or not (it's currently enabled, it was originally not).\n\nThese are configuration settings:\n/etc/rc.conf:\nifconfig_cxl0=\"mtu 9000 toe up\"\nifconfig_cxl1=\"mtu 9000 toe up\"\ncloned_interfaces=\"vlan1513 vlan1514\"\n\n# scsi-a\nifconfig_vlan1513=\"inet 10.140.3.2/24 vlan 1513 vlandev cxl0 up\"\n# iscsi-b\nifconfig_vlan1514=\"inet 10.140.4.2/24 vlan 1514 vlandev cxl1 up\"\n\nctld_enable=\"YES\"                # CAM Target Layer / iSCSI target daemon.\n\nkld_list=\"t5fw_cfg if_cxl t4_tom cxgbei\"\n\n/etc/ctl.conf:\nportal-group pg0 {\n        discovery-auth-group no-authentication\n        listen 10.140.3.2\n        listen 10.140.4.2\n\n        offload cxgbei\n}"
+}

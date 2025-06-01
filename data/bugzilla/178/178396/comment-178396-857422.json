@@ -1,0 +1,8 @@
+{
+ "id": 857422,
+ "bug_id": 178396,
+ "attachment_id": 165129,
+ "creation_time": "2016-01-06T00:42:37Z",
+ "creator": "thomas@gibfest.dk",
+ "text": "Created attachment 165129\nupdated patch against stable/10 r293209\n\nThe original attachment in this bug no longer works since it doesn't use the newish jailed() to check if the process is jailed. \n\nThe attachment I'm adding is a patch against stable/10 base r293209 which fixes the jailed detection, and also adds jail hostname to the log entry (when a jail hostname is available).\n\nFor this patch to work on HEAD the exit1() call needs to be changed, no other changes needed I think.\n\nThis patch could be a few lines shorter by only having one log() call, which includes a empty string for nonjailed processes and something like \", jid: xxx (example.com)\" for jailed processes. The current is arguably more readable though.\n\nTesting with this patch applied:\n\n-------------------------------------------------\n[tykling@test /usr/src]$ sudo jail -c path=/ command=/bin/sh\n# perl -e 'dump'\nAbort trap (core dumped)\n# ^Djail: /bin/sh: failed\n[tykling@test /usr/src]$ sudo jail -c path=/ host.hostname=example.com command=/bin/sh\n# perl -e 'dump'\nAbort trap (core dumped)\n# ^Djail: /bin/sh: failed\n[tykling@test /usr/src]$ perl -e 'dump'\nAbort trap\n[tykling@test /usr/src]$ dmesg | tail -3\npid 847 (perl), uid 0, jid 3: exited on signal 6 (core dumped)\npid 853 (perl), uid 0, jid 4 (example.com): exited on signal 6 (core dumped)\npid 857 (perl), uid 1001: exited on signal 6\n[tykling@test /usr/src]$\n-------------------------------------------------\n\nI am not good with C so please feel free to comment on style and other problems. Thanks :)"
+}

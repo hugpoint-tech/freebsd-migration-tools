@@ -1,0 +1,8 @@
+{
+ "id": 1031513,
+ "bug_id": 234888,
+ "attachment_id": 0,
+ "creation_time": "2019-01-11T22:59:34Z",
+ "creator": "gerald@FreeBSD.org",
+ "text": "Recently portlint started to issue the following warnings in most of my\nlang/gcc* ports such as lang/gcc7:\n\n  WARN: Makefile: MULTILIB appears in PORT_OPTIONS:M, but is not listed in   \n  OPTIONS_DEFINE\n\n\nIf we look at lang/gcc7/Makefile we find\n\n  OPTIONS_DEFINE=         BOOTSTRAP GRAPHITE\n  :\n  .if exists(/usr/lib32/libc.so)\n  OPTIONS_DEFINE_powerpc64+=      MULTILIB\n  :\n\nso the later\n\n  .if ${ARCH} == powerpc64 \u0026\u0026 ${PORT_OPTIONS:MMULTILIB}\n        ${MKDIR} ${STAGEDIR}${TARGLIB32}/gcc${SUFFIX}\n        ${MV} ${STAGEDIR}${PREFIX}/lib/lib32/*${STAGEDIR}${TARGLIB32}/gcc${SUFFIX}\n  .endif\n\nshould be fine.  \n\n(Well, technically the two .if-s do not feature exactly the same\ncondition, but I bet portlint would warn in any case.)\n\n\nSuggested approach: combine the contents of *all* OPTIONS_DEFINE*\nstatements and use that superset for this warning."
+}

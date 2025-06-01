@@ -1,0 +1,8 @@
+{
+ "id": 1032426,
+ "bug_id": 234741,
+ "attachment_id": 0,
+ "creation_time": "2019-01-17T10:35:46Z",
+ "creator": "tsoome@freebsd.org",
+ "text": "(In reply to David Chisnall from comment #15)\n\nFirst of all: make sure you have backup/snapshot of the disk..\n\ngpart create -s BSD da1\ngpart add -t freebsd-zfs -b 0 da1\n\nThat should create BSD label and partition starting from sector 0 (label is 512B, one sector). Since zfs does have reserved 8KB from the very start, this will not disturb zfs. (and would be good to test first!).\n\nNote you *can not* use GPT, because GPT will store backup at the end of the disk and that will clash with zfs. Also you must use partition scheme which does allow to create  partition from absolute sector 0.\n\nHowever, there also is alternate and much better approach. Since you have VM, if you can provision new, a bit larger disk, you can create proper partition table on it, large enough to fit da1, then *attach* it to da1:\n\nzpool attach zpool da1 \u003cnewdisk\u003epX, wait for resilver, then zpool detach zpool da1.\n\njust do not mix up the zpool attach and zpool add, those are 2 very different commands.\n\nif you do not have enough space to make full copy but can extend the existing da1, then  you can move its content to make space for partition table, but thats also complicated operation..."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 857104,
+ "bug_id": 205873,
+ "attachment_id": 165051,
+ "creation_time": "2016-01-04T13:28:37Z",
+ "creator": "stephane.rochoy@stormshield.eu",
+ "text": "Created attachment 165051\nBacktrace of the fatal trap triggered by the jailed pfctl -sr\n\nRunning \"pfctl -sr\" from within a jail having its own vnet trigger a \"Fatal trap 12: page fault while in kernel mode\" (backtrace in the screenshot attached).\n\nSurprisingly, the \"dump\" command successfully generate a core dump that can be read with kgdb but \"bt\" don't show any thread containing the pfioctl call.\n\nAnyway, the jail is configured as follow:\n\n$ head -n 17 /etc/jail.conf\nallow.mount;\nallow.mount.devfs;\nallow.sysvipc;\ndevfs_ruleset = 5;\nexec.clean;\nexec.poststop = \"/jail/etc/poststop $name\";\nexec.prestart = \"/jail/etc/prestart $name\";\nexec.start    = \"sh /etc/rc\";\nhost.hostname = \"$name.fb11.lab.local\";\nmount.devfs;\npath          = /jail/$name;\npersist;\n\nleft {\n        vnet           = new;\n        vnet.interface = epair0a;\n}\n[...]\n$ grep -e pf -e jail /etc/rc.conf\njail_enable=\"NO\"\n# Set the jail list to \"\" to create all the jails found in jail.conf(5)\njail_list=\"\"\npf_enable=\"YES\"\npf_log=\"YES\"\n$ cat /etc/pf.conf \npass from any to any\n$ pfctl -sr\npass all flags S/SA keep state\n$ cat /etc/devfs.rules \n[ruleset=5]\nadd include $devfsrules_jail\nadd path 'pf' unhide\n$ ll -i /dev/pf\n88 crw-------  1 root  wheel  0x58 Jan  4 14:30 /dev/pf\n$ sudo jexec left ls -li /dev/pf\n88 crw-------  1 root  wheel  0x58 Jan  4 13:30 /dev/pf\n$"
+}

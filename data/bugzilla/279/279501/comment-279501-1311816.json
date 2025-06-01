@@ -1,0 +1,8 @@
+{
+ "id": 1311816,
+ "bug_id": 279501,
+ "attachment_id": 251198,
+ "creation_time": "2024-06-03T16:11:15Z",
+ "creator": "theron.tarigo@gmail.com",
+ "text": "Created attachment 251198\nMinimal test of executing 32bit code from 64bit process\n\nOn amd64, a program may jump between 32bit and 64bit code using far returns to set the code segment register.  The mechanism is OS-dependent since it depends on the layout of the Global Descriptor Table initialized by the kernel.  It is used for example for a 64bit program to utilize 32bit assembly libraries or for a 32bit compatibility layer implemented using 64bit libraries as with WINE's WOW64.\n\nCurrently this mechanism is broken in the linux compatibility layer: whereas the program expects a Linux GDT, it is the FreeBSD GDT in effect.  Also, Linux program code reading the cs register gets different results than expected: 0x23 vs 0x33 for 32bit, 0x33 vs 0x43 for 64bit.\n\n$ yasm -fbin -o test testgdt.asm\nproduces a FreeBSD executable which writes \"A\", then writes \"B\", then exits.\n\n$ yasm -fbin -o test testgdt.asm -DLINUX -DLINUX_GDT\nproduces a Linux executable with the expected result only when run on Linux x86_64.\nOn FreeBSD it writes \"A\" before dying with a bus error.\n\n$ yasm -fbin -o test testgdt.asm -DLINUX\nproduces an executable which writes the \"expected result\" only when run on FreeBSD amd64 with linux compatibility.\nOn Linux it writes \"A\" before dying with a segfault."
+}

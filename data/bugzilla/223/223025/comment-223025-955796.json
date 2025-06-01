@@ -1,0 +1,8 @@
+{
+ "id": 955796,
+ "bug_id": 223025,
+ "attachment_id": 0,
+ "creation_time": "2017-10-15T09:38:14Z",
+ "creator": "fletch-devel+freebsd@rtfm.net.au",
+ "text": "Hi.\n\nI am running bind910 on FreeBSD 11.1.\n\nWhen running named chrooted, if syslogd stops for some reason, when syslogd is restarted, named does not resume logging.\n\nMy guess for this is that the file descriptor for the /var/run/log socket is opened by named before dropping privileges and doing a chroot. So when syslogd stops, I assume named regularly checks for the existence of the socket /var/run/log, but cannot because it is running chrooted.\n\nThe obvious way around this is to make sure syslogd creates an additional socket file in the /var/run/log directory UNDER the chroot path (eg. /usr/local/var/named/var/run/log).\n\nUnfortunately, this needs to be done with the /etc/rc.conf variable: syslogd_flags (eg. syslogd_flags=\"-l /usr/local/var/named/var/run/log\"), so the named script in /usr/local/etc/rc.d/ cannot do it for us.\n\nIn my opinion, some sort of warning could be added to the named rc script when chrooting is requested, but the socket file cannot be found in the chroot filespace.\n\nThis would be an easy modification and could be important for security for those who overlook this possibility and restart syslogd for some reason. On a critical system that runs for a long time, this could be a very bad thing if their logging disappears."
+}

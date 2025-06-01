@@ -1,0 +1,8 @@
+{
+ "id": 951843,
+ "bug_id": 222308,
+ "attachment_id": 0,
+ "creation_time": "2017-09-13T19:07:14Z",
+ "creator": "brent@beanfield.com",
+ "text": "Issue is detailed in a patch to FreeNAS by Chris Torek, seen here: https://github.com/freenas/os/commit/34462da8e3b1089311dd4627953d558929cc04fc#diff-c9065ed6e74837c7cb1ded9eb39e7fb9\n\nI believe this panic is currently affecting me on nas4free 11.1.0.4 which utilizes FreeBSD 11.1-RELEASE-P1\n\nCopying his comments:\n\nIn in_leavegroup_locked(), when we're shedding a multicast\ngroup, we may (or may not) delete it from an interface via\nthe igmp_change_state() call.  This is where we currently\nset the multicast's vnet, and then restore the old vnet on\nreturn.\n\nHowever, a few lines later we use inm_release_locked() to\nrelease the inet multicast data structure, and that in turn\nmay -- not necessarily will, only if the inm really is being\nfreed -- call if_delmulti_ifma(), which may -- not necessarily\nwill, again -- call the interface's SIOCDELMULTI ioctl\n(if and only if there is an interface and this was the last\nref to this multicast address).\n\nFor (at least) the lagg interface, we still need the current\nvnet to be valid during the SIOCDELMULTI.  So, don't restore\nthe old vnet until we've not only finished the IGMP code but\nalso inm_release_locked()."
+}

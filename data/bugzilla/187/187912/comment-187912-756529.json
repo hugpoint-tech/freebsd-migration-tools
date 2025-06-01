@@ -1,0 +1,8 @@
+{
+ "id": 756529,
+ "bug_id": 187912,
+ "attachment_id": 0,
+ "creation_time": "2014-03-24T23:50:00Z",
+ "creator": "zivkovic.nick@gmail.com",
+ "text": "When executing the following DTrace script:\n\nsudo dtrace -n 'syscall:::entry /execname == \"Xorg\"/ {@[ustack()] = count();}'\n\nand pressing ^C, the Xserver freezes. The machine (a laptop) is unresponsive.\n\nSo I ssh'd into the laptop (from a different laptop), and did:\n\npgrep dtrace\n\nSure enough the dtrace exec was still alive, but not doing anything (that I can tell).\n\nFirefox still did IO and stuff, but Xorg didn't have _any_ activity (according to top).\n\nSo I did a `kill -9 $(my-dtrace-pid)`\n\nThis caused Xorg to restart.\n\nBottom line: running that simple (and common) DTrace script froze Xorg. I don't mean to be inflammatory but, this should _never_ happen, especially not in production --- which means that the FreeBSD DTrace implementation is violating DTrace's original design constraints. This is a critical error, and shows that FreeBSD's DTrace may not be suitable for production use, yet.\n\nSo far I've only been able to replicate this on Xorg.\n\nIt may be of importance that I did `make buildworld` and `make installworld` with the following options:\n\nCFLAGS+=-fno-omit-frame-pointer\nSTRIP=\nWITH_CTF=1\n\nIn other words I made all of my installed packages dtrace-friendly.\n\nHow-To-Repeat: When running Xorg (not stripped, no frame-pointer optimization, and with CTF) run:\n\nsudo dtrace -n 'syscall:::entry /execname == \"Xorg\"/ {@[ustack] = count();}'\n\nresize windows, click around, etc.\n\ngo back to terminal and hit ^C."
+}

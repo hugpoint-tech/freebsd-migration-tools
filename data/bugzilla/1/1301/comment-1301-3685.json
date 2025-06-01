@@ -1,0 +1,8 @@
+{
+ "id": 3685,
+ "bug_id": 1301,
+ "attachment_id": 0,
+ "creation_time": "1996-06-07T22:50:02Z",
+ "creator": "tk@pars.sics.se",
+ "text": "\nUnder high load conditions and with certain packet sizes,\nthe FDDI card reports an DMA error. The FDDI link goes down\nand the computer is locked for a couple of seconds due to\nongoing adapter reinitialization.\t\n\nThe DMA error occurres with ping packet sizes of 2040 and\n4089 bytes (it looks like that all ping packet sizes greater\nthan 4088 create that error). Adding IP and FDDI headers,\nthose ping packet sizes correspond to DMA segments of size\n41+2048+1 and 41+2048+2048+1. Segment sizes of 41+2048 \nand 41+2048+2048 don't create an DMA error.\n\nFix: \n\nReduce mtu size and load.\nHow-To-Repeat: \nping 2.1.0. has been modified to create higher output (see below):\n\n359c359\n\u003c                       timeout.tv_sec = 0;\n---\n\u003e                       /* timeout.tv_sec = 0;\n363c363\n\u003c                           (fd_set *)NULL, \u0026timeout) \u003c 1)\n---\n\u003e                           (fd_set *)NULL, \u0026timeout) \u003c 1) */\n448c448\n\u003c       if (i \u003c 0 || i != cc)  {\n---\n\u003e       if ((i \u003c 0 || i != cc) \u0026\u0026 errno != 55)  {\n\nCreate an ARP entry for a non-existing host (might not be neccessary,\nthat's how I've tested it). \n\n./ping -q -f -s 4088 host\t\t# no error \n./ping -q -f -s 4089 host\t\t# dma error\n\n/kernel.210_GEN_FDDI: fpa0: Halted: halt code = 6 (DMA Error)"
+}

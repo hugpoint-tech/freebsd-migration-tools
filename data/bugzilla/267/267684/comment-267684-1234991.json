@@ -1,0 +1,8 @@
+{
+ "id": 1234991,
+ "bug_id": 267684,
+ "attachment_id": 0,
+ "creation_time": "2022-11-10T05:37:33Z",
+ "creator": "keen.sand4331@fastmail.com",
+ "text": "[Noticed in the OpenBSD port.]\n\n$ printf \"0\\n0\\n0\\n\" | ministat - -\nSegmentation fault (core dumped)\n\nThe problem is [in ministat.c] at line 646:\n\t\tnds = argc;\n\t\tfor (i = 0; i \u003c nds; i++) {\n\t\t\tsetfilenames[i] = argv[i];\n\t\t\tif (!strcmp(argv[i], \"-\"))\n----\u003e\t\t\t\tsetfiles[0] = stdin;\n\t\t\telse\n\t\t\t\tsetfiles[i] = fopen(argv[i], \"r\");\n\t\t\tif (setfiles[i] == NULL)\n\t\t\t\terr(2, \"Cannot open %s\", argv[i]);\n\t\t}\n\nThe simplest fix is just to change that to:\n\t\t\t\tsetfiles[i] = stdin;\n\nWith that in place, ministat will error out reporting that\n(on second reading) the input has fewer than 3 data points."
+}

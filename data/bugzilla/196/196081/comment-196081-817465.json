@@ -1,0 +1,8 @@
+{
+ "id": 817465,
+ "bug_id": 196081,
+ "attachment_id": 0,
+ "creation_time": "2015-03-29T19:05:49Z",
+ "creator": "omgalvan.86@gmail.com",
+ "text": "(In reply to Pratik Singhal from comment #6)\nI looked at the patch you sent. Did you actually test this on the\nboard with CURRENT? The reason I'm asking is that I don't think that\npatch could work as intended.\n\nYou're doing:\n\ndo {\n    reg_value = a10_mmc_read_4(sc, A10_MMC_GLOBAL_CONTROL_REG);\n} while ((!reg_value \u0026 A10_MMC_HARDWARE_RESET_BITS) \u0026\u0026 (--time_left));\n\nDo you realize the ! is zeroing reg_value before it gets AND-ed with\nA10_MMC_HARDWARE_RESET_BITS? I think what you wanted to do was:\n\n!(reg_value \u0026 A10_MMC_HARDWARE_RESET_BITS)\n\nNow, I don't remember every detail of how the host worked, but I\nrecall I had to wait while the hardware reset bits were set on the\nglobal control reg; it would be safe to proceed only after those bits\nwere cleared. I think the hardware automatically clears those bits\nafter the reset is finished. I may be wrong, though.\n\nThe problem Bas reported sounds to me like a NULL pointer being\ndereferenced somewhere, or something like that. I think that may be\nthe cause because we'd always get a translation fault when doing\nsomething like that, while waiting forever would usually just cause\nthe system to hang."
+}

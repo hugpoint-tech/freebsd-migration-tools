@@ -1,0 +1,8 @@
+{
+ "id": 853300,
+ "bug_id": 205249,
+ "attachment_id": 0,
+ "creation_time": "2015-12-11T16:45:35Z",
+ "creator": "sgalabov@gmail.com",
+ "text": "According to MIPS® Architecture For Programmers Volume III, page 149, Figure 9-29 (Config Register Format), accessed via http://www.t-es-t.hu/download/mips/md00090c.pdf, bit 3 of config0 is supposed to be VI (Virtual Instruction Cache), while the current definition of MIPS_CONFIG0_VI (0x00000004) implies that it’s bit 2.\n\nThis leads to a lot of headaches when trying to bring up a new CPU (1004KC in my case) and trying to use Cachable-Coherent CCA (0x5 or 0b101) for Kseg0 :-)\nI guess we’ve been able to get away with this so far due to mainly 2 things:\n1. CPUs that use CCA 0x4 - 0x7 for Kseg0 usually are cache-coherent anyway, so their cache ops are most likely no-op.\n2. CPUs that use CCA 0x0 - 0x3 for Kseg0 work just fine, as bit 2 is not set :-)\n\nThis leads to improper detection of the I-Cache type (it’s detected as virtual when it actually isn’t) on kernels that use CCA \u003e= 0x4 for Kseg0, which, in turn, leads to a lot of fun trying to figure out what’s wrong and why things work with CCA 0x3 and not with 0x5 on a single core...\nAfter changing the definition of MIPS_CONFIG0_VI from 0x00000004 to 0x00000008 everything goes back to normal even with CCA 0x5.\n\nI would appreciate it if someone would commit this change (if you guys think it’s necessary). I would do it myself if I but I have no commit privileges."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1187857,
+ "bug_id": 260011,
+ "attachment_id": 0,
+ "creation_time": "2021-11-24T15:44:42Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Assorted comments:\n- FreeBSD 13.0 shipped with a bug in the TCP stack which could\n  result in a missed socket receive upcall.\n  --\u003e This normally causes problems for the server, but could\n      cause problems for the client side as well.\n  When you do a \"netstat -a\" on the hung system, the TCP connection\n  for the mount is shown as ESTABLISHED with Recv-Q non-zero.\n  --\u003e The fix is tp upgrade to stable/13.\n  There is more info on this in PR#254590.\n\n- AWS uses a small, fixed number of open_owners, which is why\n  \"oneopenown\" is needed. If it also uses a small, fixed number\n  of lock_owners (for byte range locking instead of Windows Open locks),\n  then you could run out of these.\n  --\u003e If so, you are SOL (Shit Outa Luck) and my only suggestion\n      would be to try an nfsv3 mount with the \"nolockd\" mount option.\n  \"netstat -E -c\" should show you how many lock_owners are allocated\n  at the time of the hang.\n\nOther than that, if AWS has now added support for delegations, there\ncould be assorted breakage. Not running the nfscbd(8) daemon should\navoid isuuing of delegations, if that is the case.\n\nIf a soft mount fails a syscall, then the session slot is screwed up\nand this makes the mount fail in weird ways.\n\"umount -N \u003cmnt_path\u003e\" is a much better way to deal with hung mounts.\n\nAs a starting point, posting the output of:\nps axHl\nprocstat -kk\nnetstat -a\nnfsstat -E -c\non the client when hung will give us more information.\n\nGood luck with it, rick"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 385504,
+ "bug_id": 111101,
+ "attachment_id": 0,
+ "creation_time": "2007-04-01T19:50:04Z",
+ "creator": "arne_woerner@yahoo.com",
+ "text": "I use lockf in order to coordinate the access to my TV frame grabbers\n(/dev/cxm?).\n\nWhen another recording starts (process B) it can happen that a previous\nrecording (process A) still needs some seconds, I end up with an unlink-ed\nlock file.\n\nI would expect the following order:\n\n1. process A: holds file LCK\n2. process B: blocks on file LCK\n3. process A: unlinks file LCK\n4. process A: releases lock on file LCK\n5. process B: locks the already opened but unlinked file LCK\n6. process B: checks, if file LCK still exists\n7. process B: creates file LCK\n8. process B: locks file LCK\n\nAs a workaround I use lockf with option \"-k\", which should solve that problem...\n\nFurthermore I would like to recommend, to make the \"-k\" behaviour the\ndefault behaviour, so that we will not remove data files, that were\nco-used as lock files...\n\n-Arne\n\nFix: \n\n1.\nUse \"-k\" as a work around.\n\n2.\nCheck if file exists after holding the lock. And if it doesnt exist\nanymore, re-create it and close the old (in the meantime unlinked) lock\nfile and start again... \u003c-- Maybe that contains another error, that I\ndont see yet...\nHow-To-Repeat: Let LCK be a file, that does not exist in the work directory\n% lockf LCK sleep 10 \u0026 sleep 1 ; lockf LCK ls -l LCK\n[1] 38788\nls: LCK: No such file or directory\n[1]  + Done                          lockf LCK sleep 10\n\nI was able to repeat that on a i586 (Pentium) and a i686 (Athlon XP),\nwhich both used R6.2 with multimedia/pvr250 related kernel patches."
+}

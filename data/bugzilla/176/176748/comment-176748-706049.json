@@ -1,0 +1,8 @@
+{
+ "id": 706049,
+ "bug_id": 176748,
+ "attachment_id": 0,
+ "creation_time": "2013-03-08T13:40:01Z",
+ "creator": "ardovm@yahoo.it",
+ "text": "BTX probes for disk drives using interrupt 0x13.\nThe \"EDD\" information is parsed incorrectly: the loader may incorrectly assume that the EDD information is present, and therefore overwrite the number of sectors and their size with incorrect values.\n\nThe error is in file /usr/src/sys/boot/i386/libi386/biosdisk.c, inside function bd_int13probe().\n\nThe call to interrupt 0x13, AH=0x41 returns values in the bits of the CX register. The bit EDD_INTERFACE_EDD is not checked, while it should be.\n\nThe effect on my configuration was that bd_int13probe() incorrectly assumed that EDD information was present; it requested for it with int 0x13, AH=0x48 and overwrote the number and size of sectors with invalid values (zero, in my case). This resulted in a zero by zero division in file\n/usr/src/sys/boot/i386/common/disk.c, function disk_open().\n\nMy setup had some buildworld/buildkernel tunings through src.conf(5). For instance, ZFS support was not compiled in. I believe such customization should not influence this particular problem.\n\nFix: The attached patch adds the check for the EDD_INTERFACE_EDD bit inside the data returned by the call to interrupt 0x13, AH=0x41.\nIt solves the problem on my hardware configuration.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Find a system with a mass memory that does not provide EDD information.\nThis problem was detected on a AMD Geode GX CPU, using a USB drive for boot.\nPlease let me know if you need any more information about this."
+}

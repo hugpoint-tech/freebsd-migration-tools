@@ -1,0 +1,8 @@
+{
+ "id": 1031338,
+ "bug_id": 230160,
+ "attachment_id": 0,
+ "creation_time": "2019-01-11T11:21:04Z",
+ "creator": "theraven@FreeBSD.org",
+ "text": "(In reply to Bill Sorenson from comment #5)\n\n`MADV_FREE` and Linux's `MADV_DONTNEED` have different use cases.  For C, where malloc is called a lot more often than calloc, `MADV_FREE` provides much better semantics.  For higher-level languages or for higher-security applications where we need to guarantee zero initialisation, `MADV_FREE` is useless because we have to `bzero` on either allocation or deallocation.\n\nAs I said, at $WORK, we have a number of use cases where Linux's behaviour gives significantly better performance (less cache churn from redundant zeroing).  We have to fall back to the zeroing behaviour when using anonymous shared memory though and that's a big perf hit for us.  A `MADV_ZERO` would be a big win.\n\nNote, however, that `MADV_FREE` is currently broken in the Linuxulator, because the constant has a different value in FreeBSD and Linux and the Linuxulator just passes the flags through unmodified."
+}

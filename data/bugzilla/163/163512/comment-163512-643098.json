@@ -1,0 +1,8 @@
+{
+ "id": 643098,
+ "bug_id": 163512,
+ "attachment_id": 0,
+ "creation_time": "2011-12-21T19:10:09Z",
+ "creator": "swills@FreeBSD.org",
+ "text": "1) libc defaults to being single-threaded\n2) thus apps not linked against libthr don't initialize the structures that threading depends on\n3) this causes bugs when said app loads a library that loads libthr\n4) said library will take the threaded code path and reference uninitialized data structures\n\nAn example of this can be seen by removing ports/devel/p5-Glib2/files/patch-threadstest then after building, run \"make test\" from work/Glib-1.241. Perl will hang in state umtxn.\n\nI believe this may also be the source of an intermittent hang in automoc4 (also stuck in state umtxn) seen while building x11/kde4. This was discussed here:\n\nhttp://mail.kde.org/pipermail/kde-freebsd/2011-November/012211.html\nhttps://bugs.kde.org/show_bug.cgi?id=276461\n\nFix: \n\nI'm told merging libthr into libc may help, but I'm not really sure. No ideas beyond that.\nHow-To-Repeat: 1. update ports tree\n2. Ensure perl is not build with threads (currently not building with threads is the default)\n2. cd /usr/ports/devel/p5-Glib2\n3. rm files/patch-threadstest\n4. make\n5. cd work/Glib-1.241\n6. make test\n7. Verify perl is hung trying to run t/9.t"
+}

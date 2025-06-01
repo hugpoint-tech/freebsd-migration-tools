@@ -1,0 +1,8 @@
+{
+ "id": 15702,
+ "bug_id": 5103,
+ "attachment_id": 0,
+ "creation_time": "1997-11-22T18:38:54Z",
+ "creator": "fenner@parc.xerox.com",
+ "text": "Bill Paul \u003cwpaul@skynet.ctr.columbia.edu\u003e wrote:\n\u003eThis breaks the loop, though I'm not\n\u003esure if this also breaks TCP behavior in other cases.\n\nI think it breaks the case where the SYN/ACK is lost and the originator\nretransmits the SYN.  Then we'll be in SYN_RECEIVED and have received\na packet that's completely outside the window (immediately before it).\n\nAlso, using the window to break this loop doesn't work when the attacker\nhas guessed your new ISS.  In this case, the connection could even move\nto ESTABLISHED, and the result would look like a self-connect.  I think\ntelnetd would be pretty confused to be talking to itself.\n\nThanks for the analysis, though, Bill - it'll definitely help.  If you\nfeel like making your ISS predictable and forging a packet with the right\nISS it'd be nice to see what happens in that case as well.\n\nI wonder if we could RST if we get a SYN/ACK in SYN_RECEIVED state (Don\nLewis suggested this in freebsd-security).  We can get a SYN-only, if\nthe other end lost our SYN/ACK so is retransmitting, or we can get an\nACK-only, if the other end is ACK'ing our SYN, but I'm pretty sure that\nyou can't get a SYN/ACK.  Unfortunately, the SYN/ACK is likely to be\noutside the window, so we can't do the window checks.  Without the\nwindow checks, we're vulnerable to old packets from the same connection\nthat happened earlier coming back from la-la-land in the network\n(unlikely, but one of the things that TCP was designed to handle).\n\n  Bill"
+}

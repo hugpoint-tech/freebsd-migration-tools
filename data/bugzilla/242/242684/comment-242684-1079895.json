@@ -1,0 +1,8 @@
+{
+ "id": 1079895,
+ "bug_id": 242684,
+ "attachment_id": 0,
+ "creation_time": "2019-12-17T11:55:18Z",
+ "creator": "bernhard@blberger.de",
+ "text": "I found a problem with VM-BHYVE.\n\nVM-BHYVE provides a service vm which starts /stop the VM's on system startup and on system stop. \n\nThe problem is with shutdown of the host system. The script in /usr/local/etc/rc.d/vm uses \"vm stopall\" to terminate the VM's. \nvm stopall sends the VM's the signal to shut down the system. if \"vm stopall\" is done, the script \"/usr/local/etc/rc.d/vm\" is done, too, so that the shutdown process of the host is continued and this is the problem, because \"vm stopall\" does not wait until the VM's are really finished and the shutdown processes of the host are continued, the VM's which are not finished with the schutdown will be aborted. This leads to broken file systems in the VM's -\u003e fatal\n\nthey can easily verify that. Start a VM in a shell a: vm -f start test and now stop the VM: vm stop test in another shell b and you will see that the command in shell b is finished faster and the VM in shell a is still in the shutdown process.  \n\nMy suggestion:\nIn the script:\n/usr/local/lib/vm-bhyve/vm-core \nin the function core::stopall() or core::stop()\n\nto add a check function that waits with the continuation until the VM's are actually finished. so the task: bhyve \u003cvm-name\u003e has disappeared.\n\nThis way you can make sure that when the host system is stopped, all VM's are really stopped."
+}

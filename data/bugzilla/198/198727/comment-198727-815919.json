@@ -1,0 +1,8 @@
+{
+ "id": 815919,
+ "bug_id": 198727,
+ "attachment_id": 154559,
+ "creation_time": "2015-03-20T08:39:09Z",
+ "creator": "radovanovic@gmail.com",
+ "text": "Created attachment 154559\npatch - ready to go into files directory of port\n\nThere were 2 problems with mono's original implementation of kevent FileSystemWatcher on FreeBSD:\n\n* FileSystemWatcher implementation in mono's HEAD for kevent was relying on Darwin's specific behavior (when kevent is executed with NULL timeout, if kqueue FD is closed kevent call on Darwin returns with error, however FreeBSD doesn't behave that way - in fact according to feedback I got from kernel developers on FreeBSD close would block waiting for kevent to complete thus causing deadlock)\n\n* All watcher events were generated from the same thread which detected them and that presented possibility of deadlock if change handler was to disable/reset watcher (this manifested in ASP.Net applications not being restarted after dll changes, and not recompiling individual components on aspx/ascx file changes)\n\nAttached patch fixes those problems (I was able to verify that after applying it XSP and mono's fastcgi servers behave in expected way).\n\nAttached patch does several things:\n\n* renames member of imported timespec structure from misleading tv_usec to proper tv_nsec (value is in nanoseconds, not microseconds)\n\n* adds watcher thread abort in case it doesn't gracefully shutdown within 2 seconds (I think not really needed, but better safe than sorry)\n\n* moves actual event dispatching to separate thread (thus eliminating potential for deadlock described earlier)\n\nAttached patch is to be applied on latest version of port at this moment (3.12.1)"
+}

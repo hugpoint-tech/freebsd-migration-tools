@@ -1,0 +1,8 @@
+{
+ "id": 1021491,
+ "bug_id": 233161,
+ "attachment_id": 0,
+ "creation_time": "2018-11-12T14:23:14Z",
+ "creator": "sigsys@gmail.com",
+ "text": "This seems to be caused by an optimization in lib/libc/gen/fts.c that assumes that there can be no more subdirectories in a given directory than indicated by st_nlink (since each subdirectory increases the link count of the parent with its \"..\" entry).  This doesn't work when st_nlink gets capped by ZFS.  AFAIK, UFS does not allow more subdirectories than st_nlink can count so the problem does not happen there.\n\nRemoving \"zfs\" from ufslike_filesystems[] in fts.c should avoid the bug.  A better fix would be to check if st_nlink seems saturated (with pathconf(2)/_PC_LINK_MAX I guess) and disable the optimization only then.\n\nnlink_t is 64 bits on 12.X so the problem probably doesn't exist there."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 412341,
+ "bug_id": 116837,
+ "attachment_id": 0,
+ "creation_time": "2008-01-12T06:48:39Z",
+ "creator": "fwkg7679@mb.infoweb.ne.jp",
+ "text": "The KASSERT() check in tun_destroy() seems incorrect\nsince the function can actually be called while\na user thread is opening /dev/tunX.  If we needed to\nensure that no threads have fd for /dev/tunX in\ntun_destroy(), we should implement it in if_tun.\n\nInstead, we can rely on destroy_dev() to ensure that\nno threads access /dev/tunX anymore (the function\nblocks when there are threads accessing the device).\nBut just deleting KASSERT() is insufficient because\nthere is a race condition: tun_destroy() calls\nif_free() before destroy_dev(), so user threads might\naccess the destroyed ifnet structure by read()/write()/...\non /dev/tunX.\n\nI guess the following change is needed for if_tun.c:\n\n--- sys/net/if_tun.c\t2008/01/11 04:14:11\t1.1\n+++ sys/net/if_tun.c\t2008/01/12 04:04:39\n@@ -249,15 +249,12 @@ tun_destroy(struct tun_softc *tp)\n {\n \tstruct cdev *dev;\n \n-\t/* Unlocked read. */\n-\tKASSERT((tp-\u003etun_flags \u0026 TUN_OPEN) == 0,\n-\t    (\"tununits is out of sync - unit %d\", TUN2IFP(tp)-\u003eif_dunit));\n-\n \tdev = tp-\u003etun_dev;\n+\t/* destroy_dev() ensures no threads access /dev/tunX anymore. */\n+\tdestroy_dev(dev);\n \tbpfdetach(TUN2IFP(tp));\n \tif_detach(TUN2IFP(tp));\n \tif_free(TUN2IFP(tp));\n-\tdestroy_dev(dev);\n \tknlist_destroy(\u0026tp-\u003etun_rsel.si_note);\n \tmtx_destroy(\u0026tp-\u003etun_mtx);\n \tfree(tp, M_TUN);"
+}

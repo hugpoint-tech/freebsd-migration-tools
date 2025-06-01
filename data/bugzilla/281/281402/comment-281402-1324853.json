@@ -1,0 +1,8 @@
+{
+ "id": 1324853,
+ "bug_id": 281402,
+ "attachment_id": 0,
+ "creation_time": "2024-09-10T23:52:09Z",
+ "creator": "robn@despairlabs.com",
+ "text": "I know its just one example, but I'm a little confused by the trace, and if you can help me understand it, that might shed some light on what's happening.\n\nIt came through zio_flush(), which is a data-less op (io_abd == NULL). That ultimately lands in zfs_vop_fsync(), and from there to VOP_FSYNC(), which doesn't take any data.\n\nHmm, though now I think about it, if VOP_FSYNC() is just forcing out previously-submitted writes, then could it be that the write op returned, the underlying system (VFS? UFS?) has just held the iovec and not actually processed it yet, ZFS frees the ABD and now that thing is holding a stale ref?\n\nvdev_file_io_strategy() for write() is:\n\n    buf = abd_borrow_buf_copy(zio-\u003eio_abd, zio-\u003eio_size);\n    err = zfs_file_pwrite(vf-\u003evf_file, buf, size, off, \u0026resid);\n    abd_return_buf(zio-\u003eio_abd, buf, size);\n\nThat calles zfs_file_write_impl(buf), which submits a single iovec, with iov_base = buf:\n\n    aiov.iov_base = (void *)(uintptr_t)buf;\n    aiov.iov_len = count;\n    auio.uio_iov = \u0026aiov;\n    auio.uio_iovcnt = 1;\n    ...\n    rc = fo_write(fp, \u0026auio, td-\u003etd_ucred, FOF_OFFSET, td);\n\nSo is ZFS holding fo_write() wrong? Should it be copying the buffer and/or setting some kind of completion callback to do the free in?"
+}

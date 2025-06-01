@@ -1,0 +1,8 @@
+{
+ "id": 772678,
+ "bug_id": 191799,
+ "attachment_id": 144567,
+ "creation_time": "2014-07-11T01:25:37Z",
+ "creator": "andrew.daugherity@gmail.com",
+ "text": "Created attachment 144567\npatch to fix \"ccs received early\" error\n\nI've recently been having issues with net/relayd randomly (e.g. once every 10 minutes or so) flagging backend HTTPS servers as down for one check, then back up the next.\n\nRunning it in debug+extra verbose mode showed a libssl error:\nSSL library error: 10.95.8.221: cannot connect: error:14094085:SSL routines:SSL3_READ_BYTES:ccs received early\nhce_notify_done: 10.95.8.221 (ssl connect failed)\nhost 10.95.8.221, check http code use ssl (94ms), state up -\u003e down, availability 95.65%\n\nThe only relevant results I found searching for this error was the changelog for Ubuntu's openssl package, where apparently the patch for CVE-2014-0224 introduced this error for people running pg_dump (postgres) with ssl enabled.  The issue was fixed upstream in openssl's git (post-1.0.1h), and Debian \u0026 Ubuntu cherry-picked this commit.  After manually applying the same one-line patch to my tree and rebuilding world, relayd is back to 100% uptime.\n\nI've attached the diff (against ^/releng/8.4); 9/10/HEAD are also affected and the patch should apply with only changing line numbers.  I suppose the security/openssl port should also be fixed.\n\n\nExternal links:\nOpenSSL bug: https://rt.openssl.org/Ticket/Display.html?id=3400\u0026user=guest\u0026pass=guest\nOpenSSL git commit: https://git.openssl.org/gitweb/?p=openssl.git;a=history;f=ssl/s3_clnt.c;hb=3b77f01702cbbb75c77\nUbuntu bug: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1332643"
+}

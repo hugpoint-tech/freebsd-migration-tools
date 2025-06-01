@@ -1,0 +1,8 @@
+{
+ "id": 1177975,
+ "bug_id": 258364,
+ "attachment_id": 0,
+ "creation_time": "2021-09-13T15:25:55Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "We do not consider this to be a security bug.  Jails do not provide perfect resource isolation, and there are many cases beyond the vnode cache and dirty buffer pool where this is evident.  Any resources utilized by a jail become unavailable to the host by definition.\n\nIn the case of vnodes, numvnodes counts the number of cached vnodes.  This cache is subject to an eviction policy, so reaching maxvnodes (using mkdir(1)) should not prevent the host from opening files.  Similarly, ZFS imposes a limit on the amount of dirty buffers that may be accumulated, but will (eventually) make space for newly dirtied data by flushing.  So I do not think that these problems result in anything other than a marginal performance degradation, which appears to agree with your report.\n\nCertainly it's desirable to have some way of limiting consumption of these resources by a particular jail (e.g., via rctl), but for vnodes at least it's not immediately obvious to me how one would go about that, since filesystem namespaces are shared with the host.  Opened vnodes are not subject to reclamation in general but can be limited using rctl."
+}

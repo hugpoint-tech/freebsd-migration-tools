@@ -1,0 +1,8 @@
+{
+ "id": 689304,
+ "bug_id": 172880,
+ "attachment_id": 0,
+ "creation_time": "2012-10-19T14:00:01Z",
+ "creator": "andre@mrx.com.br",
+ "text": "It looks like the lldp protocol (openlldp) triggers the below error when the system has a carp interface:\n\n..\ncarp_looutput: af=1 unexpected\ncarp_looutput: af=1 unexpected\ncarp_looutput: af=1 unexpected\n..\n\nInvestigating a little bit I've found this in /usr/src/sys/net/netinet/ip_carp.c:\n\ncarp_looutput(struct ifnet *ifp, struct mbuf *m, struct sockaddr *dst,\n    struct route *ro)\n{\n..\n#if 1   /* XXX */\n        switch (dst-\u003esa_family) {\n        case AF_INET:\n        case AF_INET6:\n        case AF_IPX:\n        case AF_APPLETALK:\n                break;\n        default:\n                printf(\"carp_looutput: af=%d unexpected\\n\", dst-\u003esa_family);\n                m_freem(m);\n                return (EAFNOSUPPORT);\n        }\n..\n}\n\nIt looks like the switch (dst-\u003esa_family) is returning 1 (dmesg log says: carp_looutput: af=1 unexpected). \n\nI thought I could just ignore this (and comment the printf out, but after some hours lldp consumes a bunch of swap and eventually dies:\n\n..\nswap_pager_getswapspace(2): failed\nswap_pager_getswapspace(16): failed\npid 2628 (lldpd), uid 0, was killed: out of swap space\n\nI wonder if ip_carp.c, when checking the address_family was not supposed to  accomodate the lldp packages.\n\nHow-To-Repeat: 1- Create a carp interface, no peer required, any ip address\n2- Install and install openlldp\n3- Follow up dmesg and logs"
+}

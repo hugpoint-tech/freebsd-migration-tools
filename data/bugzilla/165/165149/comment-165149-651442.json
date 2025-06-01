@@ -1,0 +1,8 @@
+{
+ "id": 651442,
+ "bug_id": 165149,
+ "attachment_id": 0,
+ "creation_time": "2012-02-15T06:16:31Z",
+ "creator": "adrian@freebsd.org",
+ "text": "The problem is .. well, annoying:\n\n* ieee80211_fragment() creates a fragment list by chaining mbufs\ntogether using m-\u003em_nextpkt;\n* IFQ_DEQUEUE() (well, _IF_DEQUEUE()) clears m-\u003em_nextpkt when the\nmbuf is being returned;\n* ath_start() uses IFQ_DEQUEUE() to dequeue a frame;\n* .. since it notes its a fragment, it punts it to ath_txfrag_setup();\n* .. and ath_txfrag_setup(), finding m-\u003em_nextpkt to be NULL, bails\nout with an error (since the fragment list is empty.)\n* ath_start() tosses the initial frame, and nothing is sent.\n\nNow it looks like the rest of the frames in the list are also\nunceremoniously ignored (since m-\u003em_nextpkt is completely blanked\nout); which is likely the mbuf leak you noticed.\n\n\n\nAdrian"
+}

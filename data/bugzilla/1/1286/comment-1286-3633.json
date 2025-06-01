@@ -1,0 +1,8 @@
+{
+ "id": 3633,
+ "bug_id": 1286,
+ "attachment_id": 0,
+ "creation_time": "1996-06-02T06:10:01Z",
+ "creator": "kato@eclogite.eps.nagoya-u.ac.jp",
+ "text": "\nThe allocbuf() set b_flags == (B_MALLOC | B_BUSY) in certain cases after\nthe change of vfs_bio.c on Mar 2.  The cruster_rbuild() contains:\n\n\ttbp = getblk(vp, lbn, size, 0, 0);\n\tif (tbp-\u003eb_flags \u0026 (B_CACHE|B_MALLOC))\n\t\treturn tbp;\n\nIf getblk returns a buffer whose b_flags == B_MALLOC | B_BUSY,\ncluster_rbuild() returns a buffer without B_READ.  Then cluster_read()\ncalls VOP_STRATEGY(), lower level routines assumes that the action is\nwriting, because B_READ is not set.\n\nI realize this problem with CD-ROM access.  When I execute egrep */* \nfor CD-ROM, I got the panic:\n\tpanic: vwakeup: neg numoutput\n\nIn addition to above panic, this problem may have potential to crash\nfile system.\nWhen strategy routine is called by cluster_read without B_READ, lower level\nroutine assumes writing, and writes wrong data into filesystem.\n\nFix: The following patch fix the problem.\n---------- BEGIN ----------\nHow-To-Repeat: \n1) mount CD-ROM\n2) run egrep */* for CD-ROM"
+}

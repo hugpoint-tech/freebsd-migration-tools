@@ -1,0 +1,8 @@
+{
+ "id": 408680,
+ "bug_id": 116077,
+ "attachment_id": 0,
+ "creation_time": "2007-09-04T14:17:53Z",
+ "creator": "bms@incunabulum.net",
+ "text": "I wrote this, but I may not have time to fix it, because I need to do \nwork other than FreeBSD to support myself.\n\nI have no idea what an elvin or avis is. It isn't clear to me how you \nare triggering this panic, it looks like you are removing or tearing \ndown interfaces from the system? Are you using a network driver which \nhas IFF_NEEDSGIANT set?\n\nUnfortunately because the ifp lock has to be taken before other locks if \nIFF_NEEDSGIANT is set, it dereferences the ifp provided which may have \nalready gone away.\n\nThe link layer multicast code will try to invalidate the ifp pointer in \nthe underlying ifma. However in this case the cached ifp used is the one \nin struct in_multi.\n\nTry the following. Change\n\n1063 ifp = inm-\u003einm_ifp;\n1064 IFF_LOCKGIANT(ifp);\n1065 IN_MULTI_LOCK();\n...\n\nto\n\nifp = inm-\u003einm_ifma-\u003eifp;\nif (ifp != NULL)\n  IFF_LOCKGIANT(ifp);\n...\nand put\nif (ifp != NULL)\n  IFF_UNLOCKGIANT(ifp);\n\nat the end of the function.\n\nIt is safe to deref inm-\u003einm_ifma as ifma is refcounted.\n\n\nThe real fix is to either eliminate Giant completely or to implement \nreference counting for struct ifnet.\n\nI should point out that this code gets rewritten for IGMPv3.\n\nPlease let me know if this works around the issue. If it doesn't, I'll \nleave it to someone else for now - there should be enough in here to go on."
+}

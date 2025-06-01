@@ -1,0 +1,8 @@
+{
+ "id": 1147323,
+ "bug_id": 253612,
+ "attachment_id": 222548,
+ "creation_time": "2021-02-18T08:18:19Z",
+ "creator": "devin@sevenlayer.studio",
+ "text": "Created attachment 222548\nPatch to databases/galera26\n\ngalera26 is currently marked as broken on FreeBSD 13 due to __bswap_64_var being undefined.\n\nIn the unpatched source code for galera26, in galerautils/src/gu_byteswap.h, we have:\n\n#elif defined(__FreeBSD__)\n/* do not use bswapXX, because gcc44 gives old-style cast warnings */\n#  define gu_bswap16 __bswap16_var\n#  define gu_bswap32 __bswap32_var\n#  define gu_bswap64 __bswap64_var\n\nBased on the comment, this appears to be a workaround for a problem that no longer exists (because we don't use gcc44 anymore).  This worked by using __bswap_xx_var which in earlier versions of FreeBSD was an implementation detail of the bswapXX macros.  This detail no longer exists in FreeBSD 13 and later.\n\nThe correct thing to do is simply use the bswap16, bswap32 and bswap64 macros as provided by FreeBSD.\n\nLater in the gu_byteswap.h file it checks for these macros and defines accordingly:\n\n#elif defined(bswap16)\n#  define gu_bswap16 bswap16\n#  define gu_bswap32 bswap32\n#  define gu_bswap64 bswap64\n\nSo the easiest fix here is simply to remove any special-casing for FreeBSD in galerautils/src/gu_byteswap.h.\n\nAttached is a patch to update the port to do exactly this, and remove the BROKEN_FreeBSD_13, BROKEN_FreeBSD_14, and BROKEN_riscv64 lines.\n\nI have tested that this change allows the port to build for FreeBSD 11.4, 12.2 and 13.0 on amd64."
+}

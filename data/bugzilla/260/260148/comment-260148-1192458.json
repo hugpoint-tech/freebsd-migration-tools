@@ -1,0 +1,8 @@
+{
+ "id": 1192458,
+ "bug_id": 260148,
+ "attachment_id": 0,
+ "creation_time": "2021-12-29T17:09:28Z",
+ "creator": "commit-hook@FreeBSD.org",
+ "text": "A commit in branch main references this bug:\n\nURL: https://cgit.FreeBSD.org/src/commit/?id=f1442847c9404d4bc5f5524a0c3362dd39cb14f9\n\ncommit f1442847c9404d4bc5f5524a0c3362dd39cb14f9\nAuthor:     Bjoern A. Zeeb \u003cbz@FreeBSD.org\u003e\nAuthorDate: 2021-12-23 14:59:49 +0000\nCommit:     Bjoern A. Zeeb \u003cbz@FreeBSD.org\u003e\nCommitDate: 2021-12-29 17:01:05 +0000\n\n    bhyve: passthru: enable BARs before possibly mmap(2)ing them\n\n    The first time we start bhyve with a passthru device everything is fine\n    as on boot we do enable BARs.  If a driver (unload) inside bhyve disables\n    the BAR(s) as some Linux drivers do, we need to make sure we re-enable\n    them on next bhyve start.\n\n    If we are trying to mmap a disabled BAR for MSI-X (PCIOCBARMMAP)\n    the kernel will give us an EBUSY.\n    While we were re-enabling the BAR(s) in the current code loop\n    cfginit() was writing the changes out too late to the real hardware.\n\n    Move the call to init_msix_table() after the register on the real\n    hardware was updated.  That way the kernel will be happy and the\n    mmap will succeed and bhyve will start.\n    Also simplify the code given the last argument to init_msix_table()\n    is unused we do not need to do checks for each bar. [1]\n\n    MFC after:      3 days\n    PR:             260148\n    Pointed out by: markj [1]\n    Sponsored by:   The FreeBSD Foundation\n    Reviewed by:    markj\n    Differential Revision: https://reviews.freebsd.org/D33628\n\n usr.sbin/bhyve/pci_passthru.c | 21 ++++++++++++---------\n 1 file changed, 12 insertions(+), 9 deletions(-)"
+}

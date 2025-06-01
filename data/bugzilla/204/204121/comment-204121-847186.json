@@ -1,0 +1,8 @@
+{
+ "id": 847186,
+ "bug_id": 204121,
+ "attachment_id": 0,
+ "creation_time": "2015-11-03T21:21:34Z",
+ "creator": "adrian@freebsd.org",
+ "text": "This is a long-standing VM issue that earlier first-touch page allocation (in freebsd-8?) would also hit.\n\nI had a local modification in my NUMA branch that handled the case of the page allocation failing.\n\ndiff --git a/sys/vm/vm_page.c b/sys/vm/vm_page.c\nindex 3b58fb7..9bd4adc 100644\n--- a/sys/vm/vm_page.c\n+++ b/sys/vm/vm_page.c\n@@ -1625,6 +1625,7 @@ vm_page_alloc(vm_object_t object, vm_pindex_t pindex, int req)\n         * vm_page_cache().\n         */\n        mtx_lock_flags(\u0026vm_page_queue_free_mtx, MTX_RECURSE);\n+       m = NULL;\n        if (vm_cnt.v_free_count + vm_cnt.v_cache_count \u003e vm_cnt.v_free_reserved ||\n            (req_class == VM_ALLOC_SYSTEM \u0026\u0026\n            vm_cnt.v_free_count + vm_cnt.v_cache_count \u003e vm_cnt.v_interrupt_free_min) ||\n@@ -1669,7 +1670,19 @@ vm_page_alloc(vm_object_t object, vm_pindex_t pindex, int req)\n                        }\n #endif\n                }\n-       } else {\n+       }\n+\n+       /*\n+        * Can't allocate or attempted to and couldn't allocate a page\n+        * given the current VM policy.  Give up.\n+        *\n+        * Note - yes, this is one of the current shortcomings of the\n+        * VM domain design - there's a global set of vm_cnt counters,\n+        * and it's quite possible things will get unhappy with this.\n+        * However without it'll kernel panic below - the code didn't\n+        * check m == NULL here and would continue.\n+        */\n+       if (m == NULL) {\n                /*\n                 * Not allocatable, give up.\n                 */"
+}

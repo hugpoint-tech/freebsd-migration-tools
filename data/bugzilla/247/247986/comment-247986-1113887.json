@@ -1,0 +1,8 @@
+{
+ "id": 1113887,
+ "bug_id": 247986,
+ "attachment_id": 0,
+ "creation_time": "2020-07-17T17:26:36Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "Ok, it may have to do with the size of the request.  The '-z' flag will try various sizes.  However, it may be good to figure out what algorithms the kyua test is using and then test that specifically, e.g. 'cryptocheck -a aes-xts+sha256hmac -d padlock0 -z'.\n\nHmm, however, I do see a bug, but it's a bug in 12 as well.  The padlock() function returns the crp_error value from its process() callback.  Probably the cipher and hash functions just never returned errors before until gaining verify mode in head which can return EBADMSG.\n\nTry this:\n\nIndex: sys/crypto/via/padlock.c\n===================================================================\n--- padlock.c\t(revision 363276)\n+++ padlock.c\t(working copy)\n@@ -275,7 +275,7 @@ out:\n #endif\n \tcrp-\u003ecrp_etype = error;\n \tcrypto_done(crp);\n-\treturn (error);\n+\treturn (0);\n }\n \n static device_method_t padlock_methods[] = {"
+}

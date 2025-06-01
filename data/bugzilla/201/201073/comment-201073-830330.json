@@ -1,0 +1,8 @@
+{
+ "id": 830330,
+ "bug_id": 201073,
+ "attachment_id": 0,
+ "creation_time": "2015-07-04T04:23:22Z",
+ "creator": "masato@itc.naist.jp",
+ "text": "Thank you Rick,\n\nI read line#590-600 of mount_nfs.c.\nThis code generates principal name from canonical hostname for the server\nonly if mount_nfs is executed with \"sec=krb5/krb5i/krb5p\" arguments.\nIf mount_nfs is executed without any of \"sec\" arguments,\nmount_nfs negotiates which sec flavor to use with the NFS server (line #316-330, #830-865)\nand creates a \"sec\" argument for nmount(2) from the results of the negotiation (line #882-886).\n\nAs a result, bad principal name is used\nif we execute mount_nfs command without \"sec\" and \"principal\" arguments\nfor NFS servers which support krb5/krb5i/krb5p security flavors.\nI met this situation.\n\nI think it is better to remove checks for secflavor from line#590-600 of mount_nfs.c.\n\ndiff with stable/10:\nIndex: sbin/mount_nfs/mount_nfs.c\n===================================================================\n--- sbin/mount_nfs/mount_nfs.c\t(revision 285123)\n+++ sbin/mount_nfs/mount_nfs.c\t(working copy)\n@@ -591,8 +591,7 @@\n \t\t * For a Kerberized nfs mount where the \"principal\"\n \t\t * argument has not been set, add it here.\n \t\t */\n-\t\tif (got_principal == 0 \u0026\u0026 secflavor \u003e= 0 \u0026\u0026\n-\t\t    secflavor != AUTH_SYS \u0026\u0026 ai_nfs-\u003eai_canonname != NULL) {\n+\t\tif (got_principal == 0 \u0026\u0026 ai_nfs-\u003eai_canonname != NULL) {\n \t\t\tsnprintf(pname, sizeof (pname), \"nfs@%s\",\n \t\t\t    ai_nfs-\u003eai_canonname);\n \t\t\tbuild_iovec(iov, iovlen, \"principal\", pname,"
+}

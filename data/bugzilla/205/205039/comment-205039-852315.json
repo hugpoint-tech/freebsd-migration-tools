@@ -1,0 +1,8 @@
+{
+ "id": 852315,
+ "bug_id": 205039,
+ "attachment_id": 163870,
+ "creation_time": "2015-12-05T16:22:12Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Created attachment 163870\nuse poll(2) and copy strchrnul(3) from 10.x\n\nLooking at how ppoll(2) is implemented it seems the following is true\n\n  ppoll(,, NULL, NULL) == poll(,, INFTIM)\n\nOur manpage is a bit vague but the one on Linux has\n\n  If the sigmask argument is specified as NULL, then no signal mask\n  manipulation is performed (and thus ppoll() differs from poll() only\n  in the precision of the timeout argument).\n\n  If timeout_ts is specified as NULL, then ppoll() can block\n  indefinitely.\n\nBut FreeBSD 9.x also needs another fix\n\n  client.c: In function 'get_token_pin':\n  client.c:244:3: error: implicit declaration of function 'strchrnul' [-Werror=implicit-function-declaration]\n     char *c = strchrnul(pin, '\\n');\n     ^\n  client.c:244:13: error: initialization makes pointer from integer without a cast [-Werror]\n     char *c = strchrnul(pin, '\\n');\n\t       ^\n  client.c:262:13: error: initialization makes pointer from integer without a cast [-Werror]\n     char *c = strchrnul(pin, '\\n');\n\t       ^\n  cc1: all warnings being treated as errors\n\npoudriere bulk -t build logs:\n- 9.3R i386: http://sprunge.us/MaEO\n- 9.3R amd64: http://sprunge.us/cTYG\n- 10.1R i386: http://sprunge.us/fjGN\n- 10.2R amd64: http://sprunge.us/ZfFK\n- 11.0C i386: http://sprunge.us/JcIb\n\nWould you like the patch land in /branches/2015Q4 as well?"
+}

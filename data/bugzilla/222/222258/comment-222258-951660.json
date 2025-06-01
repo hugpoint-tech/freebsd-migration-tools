@@ -1,0 +1,8 @@
+{
+ "id": 951660,
+ "bug_id": 222258,
+ "attachment_id": 0,
+ "creation_time": "2017-09-12T19:00:34Z",
+ "creator": "cem@freebsd.org",
+ "text": "This is a little odd.  The kernel implementation of rename(2) just invokes kern_renameat() with AT_FDCWD, like renameat() with AT_FDCWD.  But perhaps Perl in *at() mode uses fds other than AT_FDCWD.\n\nLooking at namei() and sys_capability.c, I don't see where we ever check if a thread is sandboxed or not.  It seems like something like this might be needed, although I'm not sure if it is sufficient:\n\n--- a/sys/kern/kern_descrip.c\n+++ b/sys/kern/kern_descrip.c\n@@ -2492,9 +2492,11 @@ fget_cap_locked(struct filedesc *fdp, int fd, cap_rights_t *needrightsp,\n        }\n\n #ifdef CAPABILITIES\n-       error = cap_check(cap_rights_fde(fde), needrightsp);\n-       if (error != 0)\n-               goto out;\n+       if (IN_CAPABILITY_MODE(curthread)) {\n+               error = cap_check(cap_rights_fde(fde), needrightsp);\n+               if (error != 0)\n+                   goto out;\n+       }\n #endif\n\n        if (havecapsp != NULL)\n@@ -2593,9 +2595,11 @@ fget_unlocked(struct filedesc *fdp, int fd, cap_rights_t *needrightsp,\n                if (fp == NULL)\n                        return (EBADF);\n #ifdef CAPABILITIES\n-               error = cap_check(\u0026haverights, needrightsp);\n-               if (error != 0)\n-                       return (error);\n+               if (IN_CAPABILITY_MODE(curthread)) {\n+                       error = cap_check(\u0026haverights, needrightsp);\n+                       if (error != 0)\n+                               return (error);\n+               }\n #endif\n                count = fp-\u003ef_count;\n        retry:"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1285278,
+ "bug_id": 275264,
+ "attachment_id": 0,
+ "creation_time": "2023-11-23T10:59:41Z",
+ "creator": "oleg@pcbtech.ru",
+ "text": "One more (imho related) bug:\n\n/etc/mail $ make\n/usr/sbin/sendmail -bi -OAliasFile=/etc/mail/aliases\nsendmail: no recipients\n*** Error code 66\n\nStop.\nmake: stopped in /etc/mail\n\non this server (another one, now it's 14.0-RELEASE FreeBSD 14.0-RELEASE #0 releng/14.0-n265380-f9716eee8ab4: Fri Nov 10 05:51:26 UTC 2023     root@releng1.nyi.freebsd.org:/usr/obj/usr/src/i386.i386/sys/GENERIC i386, also freebsd-update'd) all the files are in place\n\n-r-xr-sr-x  1 root smmsp -  657K Nov 23 09:45 /usr/libexec/sendmail/sendmail*\n-r-sr-xr--  1 root mail  -  6.0K Nov 23 09:45 /usr/libexec/dma-mbox-create*\n-r-xr-sr-x  1 root mail  -   56K Nov 23 09:45 /usr/libexec/dma*\n\n\nrevert mailer.conf to sendmail:\n\n/etc/mail $ sed -Ei -dma -e 's,/usr/libexec/dma,/usr/libexec/sendmail/sendmail,' mailer.conf \n\n--- mailer.conf-dma\t2023-11-23 09:44:27.014665000 +0300\n+++ mailer.conf\t2023-11-23 12:27:53.311738000 +0300\n@@ -7,3 +7,3 @@\n-sendmail\t/usr/libexec/dma\n-mailq\t\t/usr/libexec/dma\n-newaliases\t/usr/libexec/dma\n+sendmail\t/usr/libexec/sendmail/sendmail\n+mailq\t\t/usr/libexec/sendmail/sendmail\n+newaliases\t/usr/libexec/sendmail/sendmail\n\n\nand now it runs ok:\n\n/etc/mail $ make\n/usr/sbin/sendmail -bi -OAliasFile=/etc/mail/aliases\n/etc/mail/aliases: 29 aliases, longest 10 bytes, 297 bytes total\nchmod 0640 /etc/mail/aliases.db"
+}

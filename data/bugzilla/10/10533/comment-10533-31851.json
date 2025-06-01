@@ -1,0 +1,8 @@
+{
+ "id": 31851,
+ "bug_id": 10533,
+ "attachment_id": 0,
+ "creation_time": "1999-03-10T21:40:00Z",
+ "creator": "frodef@dslab7.cs.uit.no",
+ "text": "\n\tThe meteor driver (sys/pci/meteor.c) provides an ioctl\n\tSSIGNAL for specifying a signal to send to the process\n\twhen a video frame is delivered. When this ioctl is used,\n\tthe kernel will (more often than not) panic (pagefault)\n\tjust when the process exits.\n\nFix: \n\nAdding a line \"mtr -\u003e proc = NULL;\" somewhere in\n\tmeteor_close() seems to remove the symptom. However,\n\tI guess the real problem is somewhere else.\n\n\tAlso, the SSIGNAL ioctl interface is broken, as there\n\tis no way to return the device-driver to the original\n\tstate (i.e. mtr -\u003e proc == NULL) once this ioctl is\n\tused by a process. The code in meteor_ioctl() should\n\tgo something like this:\n\n\tcase SSIGNAL:\n\t\tmtr -\u003e signal = arg;\n\t\tif (mtr -\u003e signal) {\n\t\t\tmtr -\u003e proc = p;\n\t\t} else {\n\t\t\tmtr -\u003e proc = NULL;\n\t\t}\n\t\tbreak;\nHow-To-Repeat: \n\tmain() {\n\t\topen device\n\t\tioctl (SSIGNAL)\n\t\tioctl (CAPTUR)\n\t\texit\n\t}"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 523868,
+ "bug_id": 139651,
+ "attachment_id": 0,
+ "creation_time": "2009-10-15T19:40:02Z",
+ "creator": "alexander.haderer@loescap.de",
+ "text": "When trying to read-only remount a NFS volume with 'mount -u -r /mnt'\nthe volume will be/remain mounted read-write. Neither the mount command\nnor the logfiles show any diagnostics, mount's exitcode is 0.\n\nNote: This problem is strongly related to PR 136470\n\n   kern/136470: [nfs] Cannot mount / in read-only, over NFS\n\nPR Summary: A network booted machine has root NFS mounted read-write,\nalthough in rc.conf   root_rw_mount=\"NO\"  is set. \n\nBecause I run diskless setups, I stumbled over the same problem and\nfound the PR above. My further investigations of such a network boot\nenvironment show, that rc.d/root respects the config var set, but later\nrc.d/mountcritremote calls \"mount -a -t nfs\", which will silently\nremount / as read-write.\n\nI marked this PR as serious because with the current behaviour of mount\none can accidently read-write mount a volume.\n\nFix: \n\nOnly workarounds:\n\n- make the exported filesystem read-only\n- export the NFS volume as read-only\n- umount and NFS remount read-only\nHow-To-Repeat: Setup an NFS server (here: FreeBSD 4.9 running a NFS server with\ndefaults), then goto 7.2 nfs client machine and do:\n\n# mount server:/fs /mnt\n# mount\nserver:/fs on /mnt (nfs)\n# mount -u -r /mnt\n# mount\nserver:/fs on /mnt (nfs)\n# umount /mnt\n\n# mount -r server:/fs /mnt\n# mount\nserver:/fs on /mnt (nfs, read-only)\n# mount -u -r /mnt\n# mount\nserver:/fs on /mnt (nfs)"
+}

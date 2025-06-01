@@ -1,0 +1,8 @@
+{
+ "id": 736664,
+ "bug_id": 183428,
+ "attachment_id": 0,
+ "creation_time": "2013-10-31T02:05:01Z",
+ "creator": "dfilter@FreeBSD.ORG",
+ "text": "Author: adrian\nDate: Thu Oct 31 02:04:53 2013\nNew Revision: 257412\nURL: http://svnweb.freebsd.org/changeset/base/257412\n\nLog:\n  Don't treat the node as an 11n node if 11n rates are disabled.\n  \n  For now, the AMRR code only knows about _either_ MCS or non-MCS rates.\n  It doesn't know how to downgrade (ie, doing 11b CCK rates if MCS0 isn't\n  reliable.)\n  \n  PR:\t\tkern/183428\n\nModified:\n  head/sys/net80211/ieee80211_amrr.c\n\nModified: head/sys/net80211/ieee80211_amrr.c\n==============================================================================\n--- head/sys/net80211/ieee80211_amrr.c\tThu Oct 31 02:03:30 2013\t(r257411)\n+++ head/sys/net80211/ieee80211_amrr.c\tThu Oct 31 02:04:53 2013\t(r257412)\n@@ -131,6 +131,12 @@ amrr_deinit(struct ieee80211vap *vap)\n \tfree(vap-\u003eiv_rs, M_80211_RATECTL);\n }\n \n+/*\n+ * Return whether 11n rates are possible.\n+ *\n+ * Some 11n devices may return HT information but no HT rates.\n+ * Thus, we shouldn't treat them as an 11n node.\n+ */\n static int\n amrr_node_is_11n(struct ieee80211_node *ni)\n {\n@@ -139,6 +145,8 @@ amrr_node_is_11n(struct ieee80211_node *\n \t\treturn (0);\n \tif (ni-\u003eni_chan == IEEE80211_CHAN_ANYC)\n \t\treturn (0);\n+\tif (IEEE80211_IS_CHAN_HT(ni-\u003eni_chan) \u0026\u0026 ni-\u003eni_htrates.rs_nrates == 0)\n+\t\treturn (0);\n \treturn (IEEE80211_IS_CHAN_HT(ni-\u003eni_chan));\n }\n \n_______________________________________________\nsvn-src-all@freebsd.org mailing list\nhttp://lists.freebsd.org/mailman/listinfo/svn-src-all\nTo unsubscribe, send any mail to \"svn-src-all-unsubscribe@freebsd.org\""
+}

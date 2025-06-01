@@ -1,0 +1,8 @@
+{
+ "id": 395076,
+ "bug_id": 113177,
+ "attachment_id": 0,
+ "creation_time": "2008-07-07T17:17:17Z",
+ "creator": "gavin@FreeBSD.org",
+ "text": "Diff below:\n\nIndex: src/sys/i386/pci/pci_cfgreg.c\n===================================================================\nRCS file: /home/ncvs/src/sys/i386/pci/pci_cfgreg.c,v\nretrieving revision 1.126\ndiff -u -r1.126 pci_cfgreg.c\n--- src/sys/i386/pci/pci_cfgreg.c\t28 Nov 2007 22:22:05 -0000\t1.126\n+++ src/sys/i386/pci/pci_cfgreg.c\t7 Jul 2008 16:12:45 -0000\n@@ -163,14 +163,38 @@\n  \tvid = pci_cfgregread(0, 0, 0, PCIR_VENDOR, 2);\n  \tdid = pci_cfgregread(0, 0, 0, PCIR_DEVICE, 2);\n  \tif (vid == 0x8086) {\n-\t\tif (did == 0x3590 || did == 0x3592) {\n+\t\tswitch (did) {\n+\t\tcase 0x3590:\n+\t\tcase 0x3592:\n  \t\t\t/* Intel 7520 or 7320 */\n  \t\t\tpciebar = pci_cfgregread(0, 0, 0, 0xce, 2) \u003c\u003c 16;\n  \t\t\tpciereg_cfgopen();\n-\t\t} else if (did == 0x2580 || did == 0x2584) {\n+\t\t\tbreak;\n+\n+\t\tcase 0x2580:\n+\t\tcase 0x2584:\n  \t\t\t/* Intel 915 or 925 */\n  \t\t\tpciebar = pci_cfgregread(0, 0, 0, 0x48, 4);\n  \t\t\tpciereg_cfgopen();\n+\t\t\tbreak;\n+\n+\t\tcase 0x25d8:\n+\t\tcase 0x25d0:\n+\t\tcase 0x25d4:\n+\t\t\t/* Intel 5000P or 5000Z or 5000V */\n+\t\t\tpciebar = pci_cfgregread(0, 16, 0, 0x64, 4);\n+#ifndef PAE\n+\t\t\tif (pciebar \u003e= 0x10000) {\n+\t\t\t\tprintf(\"%s: Memory mapped PCI configuration \"\n+\t\t\t\t    \"area base 0x%08x too high\\n\", \n+\t\t\t\t    __FUNCTION__, pciebar);\n+\t\t\t\tpciebar = 0;\n+\t\t\t\tbreak;\n+\t\t\t}\n+#endif\n+\t\t\tpciebar = pciebar \u003c\u003c 16;\n+\t\t\tpciereg_cfgopen();\n+\t\t\tbreak;\n  \t\t}\n  \t}"
+}

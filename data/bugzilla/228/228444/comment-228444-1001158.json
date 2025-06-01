@@ -1,0 +1,8 @@
+{
+ "id": 1001158,
+ "bug_id": 228444,
+ "attachment_id": 0,
+ "creation_time": "2018-07-10T21:57:19Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "I reproduced this bug in a different way.  Simply doing a kernel build while \"pc\" is in the audit mask and auditd is running will do it.  I also found the root cause:\n\n1) kern_thr_exit locks the process's spin lock with PROC_SLOCK(p)\n2) thread_exit() calls AUDIT_SYSCALL_EXIT while the spin lock is still held\n3) a few stack frames later, au_event_class tries to lock a rwlock with EVCLASS_RLOCK.  However, witness forbids grabbing an rwlock while holding a spin lock.\n\nThe likeliest solution is to fix thread_exit so that AUDIT_SYSCALL_EXIT isn't called with the spin lock held."
+}

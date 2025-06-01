@@ -1,0 +1,8 @@
+{
+ "id": 722291,
+ "bug_id": 180226,
+ "attachment_id": 0,
+ "creation_time": "2013-07-03T09:30:00Z",
+ "creator": "woodsb02@freebsd.org",
+ "text": "Samba4 daemon fails to start via the rc script after installing from ports. This is caused by the following errors in the files/samba4.in rc script:\n- incorrect executable file: /usr/local/sbin/samba should be /usr/local/sbin/smbd\n- incorrectly PID file: samba.pid should be smbd.pid.\n\nThis is confirmed by the following text found in /var/log/samba4/log.%m:\n\n[2013/07/03 15:24:42,  0] ../source4/smbd/server.c:461(binary_smbd_main)\n  At this time the 'samba' binary should only be used for either:\n  'server role = active directory domain controller' or to access the ntvfs file server with 'server services = +smb' or the rpc proxy with 'dcerpc endpointservers = remote'\n  You should start smbd/nmbd/winbindd instead for domain member and standalone file server tasks\n\nFix: \n\nModify rc script (files/samba4.in) in port net/samba4:\n\n42c42\n\u003c command=\"%%PREFIX%%/sbin/${name}\"\n---\n\u003e command=\"%%PREFIX%%/sbin/smbd\"\n\n44c44\n\u003c pidfile=\"%%SAMBA4_RUNDIR%%/samba.pid\"\n---\n\u003e pidfile=\"%%SAMBA4_RUNDIR%%/smbd.pid\"\nHow-To-Repeat: 1. Install net/samba4-4.0.4_1 from ports or packages\n2. Add samba4_enable=\"YES\" to /etc/rc.conf\n3. Run # service samba4 start\n4. Review running status via # service samba4 status\n5. Review log file at /var/log/samba4/log.%m"
+}

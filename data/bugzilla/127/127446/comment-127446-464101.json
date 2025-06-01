@@ -1,0 +1,8 @@
+{
+ "id": 464101,
+ "bug_id": 127446,
+ "attachment_id": 0,
+ "creation_time": "2008-09-19T17:20:41Z",
+ "creator": "maksim.yevmenkin@gmail.com",
+ "text": "[moving to -current]\n\nOn 9/18/08, Eygene Ryabinkin \u003crea-fbsd@codelabs.ru\u003e wrote:\n\u003e Me again.\n\u003e\n\u003e\n\u003e  Thu, Sep 18, 2008 at 11:10:17AM +0400, Eygene Ryabinkin wrote:\n\u003e  \u003e OK, I had tried substituting KBDMUX_LOCK/UNLOCK with Giant operations --\n\u003e  \u003e it works as expected.\n\u003e\n\u003e\n\u003e Tried my initial patch on some 7.0-PRERELEASE -- it locks keyboard when\n\u003e  geli asks for the password.  Had not much time to dig it out, will try\n\u003e  to do it as soon as I can.  Substituting KBDMUX_LOCK/UNLOCK with Giant\n\u003e  locking helps even on this FreeBSD version.\n\u003e\n\u003e  More testing needed, may be there are some other issues that aren't\n\u003e  revealing themselves...\n\ndid you have a chance to do some testing? i tried substituting\nKBDMUX_LOCK/UNLOCK with Giant locking here locally and played with a\ncouple of keyboards under X and console. no apparent issues or witness\ncomplains.\n\nwould it be ok for me to commit this?\n\n--- kbdmux.c.orig       2008-07-29 14:21:20.000000000 -0700\n+++ kbdmux.c    2008-09-19 09:02:54.000000000 -0700\n@@ -104,9 +104,11 @@\n\n #define KBDMUX_LOCK_DESTROY(s)\n\n-#define KBDMUX_LOCK(s)\n+#define KBDMUX_LOCK(s) \\\n+       mtx_lock(\u0026Giant)\n\n-#define KBDMUX_UNLOCK(s)\n+#define KBDMUX_UNLOCK(s) \\\n+       mtx_unlock(\u0026Giant)\n\n #define KBDMUX_LOCK_ASSERT(s, w)\n\nthanks,\nmax"
+}

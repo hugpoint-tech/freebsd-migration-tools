@@ -1,0 +1,8 @@
+{
+ "id": 1292737,
+ "bug_id": 276410,
+ "attachment_id": 0,
+ "creation_time": "2024-01-17T23:22:21Z",
+ "creator": "leres@freebsd.org",
+ "text": "The HPN patchset for openssh-portable was updated with b3f86656fc67 however when enabled it causes issues with ssh. When a user specifies a destination host that is not a fully qualified domain name (relying on the resolver search path to complete the hostname) ssh is unable to find SSHFP records (even when present) or known_host entries.\n\nFor example, given a resolv.conf with:\n\n    search freebsd.org\n\nUsing the FQDN works as before:\n\n    ice 146 % /usr/local/bin/ssh freefall.freebsd.org hostname\n    freefall.freebsd.org\n\nBut using just the hostname does not:\n\n    ice 147 % /usr/local/bin/ssh freefall hostname\n    The authenticity of host 'freefall (2610:1c1:1:6074::16:84)' can't be established.\nED25519 key fingerprint is SHA256:oJ7FKX5UTBWP4CncsrsaIb1JbfbtqzKOMYni3oVLAo0.\n    No matching host key fingerprint found in DNS.\n    This key is not known by any other names.\n    Are you sure you want to continue connecting (yes/no/[fingerprint])?\n\nIn this case tcpdump shows that \"freefall.freebsd.org\" is used for the A and AAAA DNS lookups but \"freefall.\" is queried when the SSHFP lookup happens.\n\nRebuilding with HPN disable solves this."
+}

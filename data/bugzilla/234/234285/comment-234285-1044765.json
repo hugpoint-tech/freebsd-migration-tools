@@ -1,0 +1,8 @@
+{
+ "id": 1044765,
+ "bug_id": 234285,
+ "attachment_id": 0,
+ "creation_time": "2019-04-01T02:56:16Z",
+ "creator": "grembo@FreeBSD.org",
+ "text": "(In reply to Tobias C. Berner from comment #44)\n\nI could reproduce the problem on 13-CURRENT - as base LLVM includes OpenMP now and tesseract defaults to using it, it's picked up in the build, but tesseract doesn't link the library against libomp (it links all other binaries correctly).\n\nThe same issue can be seen on 11.2 if devel/openmp is installed on the machine building from the ports tree (which won't ever happen in cleanroom builds, that's why it didn't show up in the poudriere builds).\n\nI'll commit a patch shortly. Besides the man page fixes, it includes a configuration option to use OpenMP on amd64/i386. This way --enable-openmp/--disable-openmp is always set explicitly. It also patches configure.ac to look for libomp, so it's linked against it (-fopenmp, as set by AC_OPENMP in OPENMP_CXXFLAGS didn't do the trick). It feels a bit dirty, but it seems to be a viable workaround. On top, it makes sure that libomp is a dependency on systems without OpenMP in base (necessary until 11.2 is EoL).\n\nI enabled OpenMP builds by default, as this is the default configuration upstream and is supposed to improve performance (even though reports on that differ). I did a few quick checks and could confirm speed gains with OpenMP enabled locally.\n\nI'll leave the bug \"In Progress\" until there's sufficient feedback that the problem is solved for everyone."
+}

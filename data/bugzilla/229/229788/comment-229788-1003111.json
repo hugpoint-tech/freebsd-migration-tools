@@ -1,0 +1,8 @@
+{
+ "id": 1003111,
+ "bug_id": 229788,
+ "attachment_id": 195456,
+ "creation_time": "2018-07-25T19:41:21Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "Created attachment 195456\nAvoid undefined behavior in cuTreeFix8Pack\n\nAs noted in the upstream x265 bug report, it turns out cuTreeFix8Pack() has undefined behavior when it attempts to fit negative double values into uint16_t.  There needs to be an intermediate cast to int16_t to avoid this, and I verified that the input values are never outside the range [INT16_MIN..INT16_MAX].\n\nIn addition I added a part to the port Makefile which sets the port LLD_UNSAFE on i386.  (I have had this patch in my tree for a while, might as well get it applied now...)\n\nNote that independently of this patch, or adding -mno-avx, for me TestBench still crashes with a segfault at the end, but that is apparently unrelated to this particular bug:\n\nUsing random seed 5B58D03E 8bit\nTesting primitives: SSE2\nTesting primitives: SSE3\nTesting primitives: SSSE3\nTesting primitives: SSE4\nTesting primitives: AVX\nTesting primitives: AVX2\nTesting primitives: BMI2\nTesting primitives: ARMv6\nTesting primitives: NEON\nTesting primitives: FastNeonMRC\n\nTest performance improvement with full optimizations\n== pixel primitives ==\n           satd[  4x4]  3.65x    147.78          538.83\n         avg_pp[  4x4]  1.25x    244.77          305.50\n[... much more of these stats ... ]\npelFilterLumaStrong_Vertical    1.49x    723.31          1075.46\n*** Signal 11\n\nStop.\nmake: stopped in /share/dim/ports/multimedia/x265"
+}

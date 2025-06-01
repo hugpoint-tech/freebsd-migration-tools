@@ -1,0 +1,8 @@
+{
+ "id": 1286524,
+ "bug_id": 275436,
+ "attachment_id": 0,
+ "creation_time": "2023-12-01T01:14:33Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "tmpfs_setattr()-\u003etmpfs_chsize()-\u003etmpfs_truncate()-\u003etmpfs_reg_resize()\n\nThe free target has nothing to do with the availability of the (managed AKA\nswappable) memory for usermode.  If it is used, it would cause transient 'no\nmemory' errors, mostly due to pagedaemon not able to cope with working set\nchanges in timely manner.  This is same as requirement to not return transient\nENOMEMs to userspace from malloc(M_NOWAIT) in the top-level syscall code.\n\nBy default, system allows most consumers to eat as much memory as they want\nand can.  For instance, you can mmap(MAP_ANON) insanely large region, and\nfault physical pages on demand (recent Chrome does exactly this, it mmaps\n1Tb for heap).  Or you could create posix shm memory segment of that size.\nOr you can write a file on tmpfs.\n\nIn each case, if the facility could be mis-used to exhaust memory (not physical\nRAM but pageable storage) then specific limit should be applied.  For instance,\nfor tmpfs the 'size' mount option should be used to limits its total use.\n\nThe thing that is unclear to me, are you reporting that mount -o size=\u003climit\u003e\ndoes not work? So that you can create and fill file larger than the limit?"
+}

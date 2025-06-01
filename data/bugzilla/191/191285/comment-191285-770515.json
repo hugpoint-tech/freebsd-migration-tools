@@ -1,0 +1,8 @@
+{
+ "id": 770515,
+ "bug_id": 191285,
+ "attachment_id": 0,
+ "creation_time": "2014-06-25T08:30:55Z",
+ "creator": "gahr@FreeBSD.org",
+ "text": "I don't think it's related to ckalloc / ckfree. The problem is the definition of Tcl_ErrnoMsg:\n\n#define Tcl_ErrnoMsg (tclStubsPtr-\u003etcl_ErrnoMsg)\n\nI fear you don't have a properly setup interp.\n\nPlease try this sample program:\n\n#include \u003csys/types.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003ctcl.h\u003e\n#include \u003cexpect.h\u003e\n#include \u003cexpect_tcl.h\u003e\n\nint main(void)\n{\n    Tcl_Interp * interp = Tcl_CreateInterp();\n    Expect_Init(interp);\n\n    char * date = \"/bin/date\";\n    char * args[] = {date, NULL};\n\n    int fd = exp_spawnv(date, args);\n\n    char buf[64];\n    read(fd, buf, sizeof(buf));\n    puts(buf);\n    close(fd);\n\n    return (0);\n}\n\nCompile with something like this:\n\ncc -o test-spawn test-spawn.c -I/usr/local/include/tcl8.6 -I/usr/local/include -L/usr/local/lib -lexpect -ltcl86\n\nIt works as expected here. However, if you remove the assignment to interp and just leave the variable uninitialized or NULL-initialized, it will segfault exactly as you described."
+}

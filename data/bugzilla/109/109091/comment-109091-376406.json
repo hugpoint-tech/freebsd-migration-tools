@@ -1,0 +1,8 @@
+{
+ "id": 376406,
+ "bug_id": 109091,
+ "attachment_id": 0,
+ "creation_time": "2007-02-12T16:00:11Z",
+ "creator": "rea-fbsd@codelabs.ru",
+ "text": "\nStarting from the middle of January (not precisely) the Xorg binary,\nwhen built from ports, is unable to start on 7-CURRENT since it can\nnot dlopen() some required modules (the bitmap module is the most\nfrequent cause of the errors). Investigation showed that Xorg\nlacks the global symbols from the 'loader' subsystem to be\nexported for the glopen()/dlsym(). The addition of the --export-dynamic\nflag to the 'ld' linker solved that problem.\n\nNot sure that this is related to the recent removal of the objformat,\nbut I've not investigated this.\n\nHere are two relevant mailing list topics:\nhttp://lists.freebsd.org/pipermail/freebsd-ports/2007-February/038495.html\nhttp://lists.freebsd.org/pipermail/freebsd-current/2007-February/069116.html\n\nThe problem is not specific to sparc: it is spotted on sparc64,\ni386 and ia64. My fix was tested for i386 and ia64. No answer from\nsparc64 side yet.\n\nFix: \n\nYou should add the following lines to the end of the\nfiles/FreeBSD.cf file:\n-----\n/*\n * Add --export-dynamic flag for FreeBSD 7.x and later.\n */\n#if OSMajorVersion \u003e= 7\n#define ExtraLoadOptions -Wl,--export-dynamic\n#endif\n-----\nHow-To-Repeat: Install 7-CURRENT, build xorg-server on it and try to start Xorg\nbinary. It will complain about the libbitmap.so and unresolved\nsymbols."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 914537,
+ "bug_id": 215740,
+ "attachment_id": 0,
+ "creation_time": "2017-01-03T16:47:31Z",
+ "creator": "bugzilla.freebsd@omnilan.de",
+ "text": "Using a passthru device with bhyve(8) for hosting guests with a physical device as storage backend (regardless if accessed through virtio-blk or ahci-hd)\ncorrupts guest-disk access, while file-backed ahci-hd (or virtio-blk) doesn't show that problem with passthru.\n\nSteps to reproduce:\n\nUse any harddrive containing any installed OS.\nOn the host: 'hd /dev/ada6 | less'\nSee MBR/PMBR code.\n\nUse the same device (ada6 in that example) and conncet it to a FreeBSD-Live-DVD guest with a passthru device involved\n(e. g.\nbhyveload -d ./releases/ISO-IMAGES/11.0/FreeBSD-11.0-RELEASE-amd64-disc1.iso -S -m 2G ppttest \u0026\u0026 bhyve -u -A -H -P -s 0,hostbridge -s 3,ahci,cd:./releases/ISO-IMAGES/11.0/FreeBSD-11.0-RELEASE-amd64-disc1.iso,hd:/dev/ada6 -s 5,passthru,0/25/0 -s 31,lpc -l com1,stdio -S -m 2G -c 4 ppttest\n)\n\nInside the guest, 'hd /dev/ada0 | less' doesn't work anymore (endless I/O)\nUsing 'dd if=/dev/ada6 count=1 | hd' shows only 0x0 instead of the output you saw on the host!\n\nSimply repeating this without the passthru device in place solves the problem, you see exactly the same bytes inside the guest as on the host."
+}

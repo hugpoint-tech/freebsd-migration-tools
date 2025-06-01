@@ -1,0 +1,8 @@
+{
+ "id": 76209,
+ "bug_id": 24455,
+ "attachment_id": 0,
+ "creation_time": "2001-01-19T10:05:22Z",
+ "creator": "jose@we.lc.ehu.es",
+ "text": "\nThe apsfilter script (/usr/local/share/apsfilter/bin/apsfilter) uses a\nshell expression in two places that does not work properly with\nFreeBSD's sh(1) (BTW, it does not work with Solaris' /bin/sh either).\nThat shell expression takes the form\n\n  A=XXX B=$A\n\nSh(1) does variable expansion _before_ evaluating all the asignments; as\na consequence, the \"B\" variable is set to an empty value. The same expression\nworks fine with other shells such as bash and zsh.\n\nFix: [This problem was reported to apsfilter's developers, but they said that\n maintaining a script compatible with the bugs of all flavors of sh(1)\n is very hard, so they prefer to assume that /bin/sh is fully POSIX\n compliant.]\n\nThe following patch changes the two lines which have the \"A=XXX B=$A\" form\ninserting a semicolon between the asignments, turning them into two commands:\nHow-To-Repeat: \nInstall and configure the apsfilter-6.0.0 port. Check that your lpr.c supports\nthe \"-C class\" option without printing the banner page (recent -STABLE). Then,\ntry to print an ASCII file with two pages per sheet using the \"2pps\" option:\n\n  lpr -C 2pps \u003cplain text file\u003e\n\nThe file will be printed with one page per sheet instead of two. This happens\nbecause the apsfilter script uses\n\n  case \"$option\" in\n       [...]\n    1pps|2pps|4pps|8pps)\t# pages per sheet\n      PS_NUP=${option%pps} ASCII_PPS=$PS_NUP ;;\n       [...]\n\nBecause of the bug (?) of sh(1), ASCII_PPS is set to an empty value\ndespite the value assigned to PS_NUP."
+}

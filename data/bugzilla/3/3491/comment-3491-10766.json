@@ -1,0 +1,8 @@
+{
+ "id": 10766,
+ "bug_id": 3491,
+ "attachment_id": 0,
+ "creation_time": "1997-05-04T20:16:56Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003eTried to create a kernel with enhanced profiling support.\n\nDon't do that.  Even ordinary profiling doesn't actually work in SMP\nkernels.\n\nFor ordinary profiling, I think clock interrupts are taken by only\none (random) CPU and the other CPUs aren't accounted for.  I think\nthey need to all take clock interrupts and all except one handle only\nper-CPU profiling.  A single profiling buffer should work OK unless you\nare interested in per-CPU statistics, but accesses to it would have to\nbe locked.\n\nFor enhanced profiling, there is a TSC and a set of performance counters\nfor each CPU, so the global variables related to these must be arrays in\nthe SMP case.  This is not implemented.\n\n\u003eBrowsed through .../isa/clock.c\n\u003eSeems to be ifdef'ed out for the SMP case ... Why ?\n\u003e\n\u003e[...snip...]\n\u003e#if (defined(I586_CPU) || defined(I686_CPU)) \u0026\u0026 !defined(SMP)\n\u003eu_int\ti586_ctr_bias;\n\u003eu_int\ti586_ctr_comultiplier;\n\u003eu_int\ti586_ctr_freq;\n\u003eu_int\ti586_ctr_multiplier;\n\u003e#endif\n\nThese need to be arrays, except possibly if the CPU frequencies are almost\nthe same (e.g., +-1% for profiling and +-0.001% for timekeeping).\n\nBruce"
+}

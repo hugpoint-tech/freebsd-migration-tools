@@ -1,0 +1,8 @@
+{
+ "id": 1134788,
+ "bug_id": 251125,
+ "attachment_id": 0,
+ "creation_time": "2020-12-04T13:45:24Z",
+ "creator": "dev@submerge.ch",
+ "text": "(In reply to Hans Petter Selasky from comment #43)\n\nThanks for the hint. Reading the fragment size is not a problem, we do that, but requesting one that is e.g. a multiple of 512 * 4 * 18. If you know of any way to do this, please tell me.\n\nIf I follow the code path from the IOCTLs to chn_resizebuf(...) in sys/dev/sound/pcm/channel.c:\n\n\u003e /*\n\u003e  * The application has requested their own blksz/blkcnt.\n\u003e  * Just obey with it, and let them toast alone. We can\n\u003e  * clamp it to the nearest latency profile, but that would\n\u003e  * defeat the purpose of having custom control. The least\n\u003e  * we can do is round it to the nearest ^2 and align it.\n\u003e  */\n\nAnd the code around it looks accordingly, which is why I see no way to request a fragment size that matches the period cycle from jack. Not if the channel count or the sample size are non-2^N.\n\nEven if jack cannot obtain a matching fragment size, it's still possible to write and read arbitrary chunks, e.g. 512 * 4 * 18 bytes. That's what my patch is for. In that case my question is: How does the fragment size affect performance and timing tolerance? Are single fragments only processed when they are full, or more continuously like the scatter / gather buffers in read(...) and write(...)?"
+}

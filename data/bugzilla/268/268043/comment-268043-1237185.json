@@ -1,0 +1,8 @@
+{
+ "id": 1237185,
+ "bug_id": 268043,
+ "attachment_id": 0,
+ "creation_time": "2022-11-28T16:49:26Z",
+ "creator": "dinoex@FreeBSD.org",
+ "text": "Enviroment:\n\nmake.conf:\nDEFAULT_VERSIONS+=      ssl=openssl\n\nafter upgrading matrix-synapse and its dependencies, server fails to start.\n\nLogfile:\nmatrix pkg[26938]: py39-twisted upgraded: 22.4.0 -\u003e 22.10.0\nmatrix root[37561]: /usr/local/etc/rc.d/synapse: WARNING: failed to start synapse\n\nBacktrace ... ends with\nAttributeError: module 'OpenSSL.SSL' has no attribute 'TLS_METHOD'\n\n\nCrude workaround, I changed 2 files to make synapse starting again.\nThis maybe not well tested.\n\nvim /usr/local/lib/python3.9/site-packages/twisted/internet/_sslverify.py\n\nline 1492\n-self.method = SSL.TLS_METHOD\n+self.method = SSL.TLSv1_2_METHOD\n\nline 1807\n- SSL.TLS_METHOD,\n+ SSL.TLSv1_2_METHOD,\n\nvim /usr/local/lib/python3.9/site-packages/twisted/internet/ssl.py\"\n\nline 95\n-sslmethod=SSL.TLS_METHOD,\n+sslmethod=SSL.TLSv1_2_METHOD,\n\nline 145\n-method = SSL.TLS_METHOD\n+method = SSL.TLSv1_2_METHOD\n\nAa alternate solution may be adding:\n\n${REINPLACE_CMD} -e 's|TLS_METHOD|TLSv1_2_METHOD|' ....\n\nIf you pick one of the ways, I will generate a build tested patch."
+}

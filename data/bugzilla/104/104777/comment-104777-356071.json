@@ -1,0 +1,8 @@
+{
+ "id": 356071,
+ "bug_id": 104777,
+ "attachment_id": 0,
+ "creation_time": "2006-10-24T22:20:23Z",
+ "creator": "tbyte@OTEL.net",
+ "text": "\n\n\nIt seems that after I load and then unload a driver its name stays\nlinked to the device e.g:\n\nnfe0@pci0:10:0: class=0x068000 card=0x81411043 chip=0x005710de rev=0xa3\nhdr=0x00\n\nbut ofcourse if_nfe is neither compiled in kernel nor is loaded as\nmodule anymore.\n  I digged around in kernel and saw this in device_detach():\n\n        if (!(dev-\u003eflags \u0026 DF_FIXEDCLASS))\n                devclass_delete_device(dev-\u003edevclass, dev);\n\n        dev-\u003estate = DS_NOTPRESENT;\n        device_set_driver(dev, NULL);\n        device_set_desc(dev, NULL);\n        device_sysctl_fini(dev);\n\nI've put some device_printf()s around and then looked at\ndevclass_delete_device(). It destroys (frees) a lot of the info about\nthe device and so the device_printf() prints device name as\n\"unknown\" (NULL). That seems to be a problem for atleast\ndevice_set_driver(dev, NULL) - it dosn't unset the driver. I'm not so\nsure about the other 2 but I gues it same there. So when I changed the\norder of this funcs everything worked fine (atleast it looks like it\nworked fine :) I'm not absolutely sure that this won't broke something\nelse).\n\nHow-To-Repeat: \n\nLoad and unload some driver."
+}

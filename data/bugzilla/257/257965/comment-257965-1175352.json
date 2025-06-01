@@ -1,0 +1,8 @@
+{
+ "id": 1175352,
+ "bug_id": 257965,
+ "attachment_id": 0,
+ "creation_time": "2021-08-23T14:56:43Z",
+ "creator": "zec@FreeBSD.org",
+ "text": "The net.route.algo.debug_level=6 logs which Konrad posted indicate that DXR trie updating takes much longer than what range table updating does, while it should be the opposite, since range table updating involves costly radix tree walks and a lot of bit shuffling, while trie updating is less complex.\n\nIn this particular case (full BGP view with frequent live updates) the observed FIB updating behavior may have been triggered by batched updates over a large portion of the entire IP address space, combined with naive / inefficient trie updating scan in dxr_build().  The attached patch should speed things up by skipping over trie parts which are entirely unaffected by the batched RIB updates.\n\nNevertheless, even if this patch succeeds in reducing the duration of incremental updates with DXR, it might lessen but can not solve the original problem Konrad reported, i.e. packet loss somewhere in the forwarding path.  Since over the entire duration of the DXR FIB update process the radix tree is read-locked, I can only guess there might be some obscure call path which requires a write lock on the radix tree and thus can't make any forward progress until DXR rebuild completes, but this is far beyond my grasp of the current state of the forwarding path."
+}

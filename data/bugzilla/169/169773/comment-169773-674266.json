@@ -1,0 +1,8 @@
+{
+ "id": 674266,
+ "bug_id": 169773,
+ "attachment_id": 0,
+ "creation_time": "2012-09-06T20:03:36Z",
+ "creator": "markjdb@gmail.com",
+ "text": "The root of the problem is some questionable error-handling in libedit.\n\nFirst, read_char() doesn't do the right thing if its call to\nread(2) is interrupted by a signal (SIGWINCH in this case). Basically,\nit retries the read once, and returns an error if the second read failed\n(which is why it takes two SIGWINCHs to trigger the delete). IMHO,\nread_char() should always retry the read(2) if its interrupted by a\nsignal. The attached patched fixes this.\n\nThe second problem has to do with how read(2) errors are handled higher\nup in libedit's stack. We have read_getcmd(), which calls el_getc(),\nwhich calls the read_char() function mentioned above. read_char()\nreturns -1 on error, and then -1 gets returned to read_getcmd() by\nel_getc(). el_getc() returns OKCMD on success, and OKCMD is defined to\nbe... -1. Thus read_getcmd() has no idea that an error occured and ends\nup reusing a local variable (cmdnum) which causes the second backspace.\n\nI think the fix here is to define OKCMD to be 1 (the value returned by\nread_char() on success). For the purpose of fixing the bug reported\nhere, the check for EINTR is enough, but this second bug should probably\nbe fixed too. I'm happy to test alternative fixes. =)\n\nThanks,\n-Mark"
+}

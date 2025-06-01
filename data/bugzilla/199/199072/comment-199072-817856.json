@@ -1,0 +1,8 @@
+{
+ "id": 817856,
+ "bug_id": 199072,
+ "attachment_id": 0,
+ "creation_time": "2015-03-31T17:58:52Z",
+ "creator": "kcwu@csie.org",
+ "text": "src/lib/libmd/mdXhl.c\nMDXFileChunk(const char *filename, char *buf, off_t ofs, off_t len)\n{\n        unsigned char buffer[BUFSIZ];\n\nwhere BUFSIZE is 1024 from stdio.h\n\nThis will make lots of read(2) syscalls. All utilities depend on libmd, including md5(1) and sha256(1), are affected.\n\n==============\nFor example, on my system, (file content is already cached in ram)\n$ du -h file.bin\n4.9G    file.bin\n$ time md5 file.bin\nMD5 (file.bin) = 422bb7e6759dee9dd1af940f9d9db5ab\n\nreal    0m31.848s\nuser    0m11.500s\nsys     0m19.526s\n\nNotice that 19.526s spend in sys.\n\nYou could also verify the read size is 1024 using truss(1)\n$ truss md5 file.bin\n...\nread(3,\"^3fEiRA\\M^S\\^]\\M-Rf\\M-7\\M-E\\M-g\"...,1024) = 1024 (0x400)\n...\n==============\nIf modified buffer[] to larger, say 1MB, md5(1) becomes much faster.\n$ time md5 file.bin\nMD5 (file.bin) = 422bb7e6759dee9dd1af940f9d9db5ab\n\nreal    0m14.369s\nuser    0m11.220s\nsys     0m1.933s"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 479383,
+ "bug_id": 130555,
+ "attachment_id": 0,
+ "creation_time": "2009-01-14T18:30:01Z",
+ "creator": "p-fbsd-bugs@ziemba.us",
+ "text": "ipfilter has a number of tunable variables (run \"ipf -T list\" to see the list). Although many (all?) of these are made available via sysctl, it is not possible to configure them in the context of the current /etc/rc.conf or /etc/sysctl.conf arrangements due to the following constraints/interactions:\n\n1. Some of the tunables can be set only if ipfilter is disabled.\n\n2. The current /etc/rc.d/ipfilter startup script enables ipfilter and\n   causes it to load the filter rules before doing anything about\n   ipfilter_flags, which might theoretically be set to \"-D -T \u003cfoo\u003e -E\".\n\n3. You could try ipfilter_flags=\"-D -T \u003cfoo\u003e -E -f ${ipfilter_rules}\" to\n   reload the rules. However, ipfilter_flags are also used for the reload\n   and resync commands of the startup script (i.e., later on), so you\n   run into...\n\n4. disabling ipfilter not only flushes existing configured filter rules, it\n   also flushes any configured NAT rules (loaded independently via\n   /etc/rc.d/ipnat).\n\n5. /etc/sysctl.conf is processed after /etc/rc.d/ipfilter runs, so ipfilter\n   tunables set in sysctl.conf fail due to ipfilter being enabled.\n\n6. Oh, and they can't be set in /boot/loader.conf either\n\nHere is a fix that allows variables to be specified in /etc/rc.conf so they will be set early in the /etc/rc.d/ipfilter script\n\nFix: Patch attached\n\nPatch attached with submission follows:"
+}

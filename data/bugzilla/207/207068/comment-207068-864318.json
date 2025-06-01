@@ -1,0 +1,8 @@
+{
+ "id": 864318,
+ "bug_id": 207068,
+ "attachment_id": 0,
+ "creation_time": "2016-02-10T00:26:24Z",
+ "creator": "joss.upton@yahoo.com",
+ "text": "hwpmc_intel writes the old value of a counter back to the counter value register during a context switch in.  However, those registers ignore the upper 32 bits (EDX) and instead sign extended to the register width based on EAX[31].  This is the behavior on all machines not supporting \"full width writes\" (indicated by CPUID2_PDCM being set \u0026\u0026 and IA32_PERF_CAPABILITIES(0x345) \u0026 FW_WRITE(bit 13) being set).\n\nIf full width writes are supported, full-width aliases for IA32_PMCn exist 0x400 MSRs higher (e.g. IA32_PMC0 == 0xC1 and IA32_A_PMC0 = 0x4C1).\n\nThis affects processes monitoring CPU_CLK for processes running more than a second or two.  Using this counter quickly runs into a \"negative increment\" assertion in hwpmc_mod.c because of the sign extension.  Attached is the least invasive patch I could come up with and it's against 10.2-R.\n\nIt also fixes a few debugging PMCDBGs and adjusts the size of PMC_DEFAULT_DEBUG_FLAGS to match the size of the structure."
+}

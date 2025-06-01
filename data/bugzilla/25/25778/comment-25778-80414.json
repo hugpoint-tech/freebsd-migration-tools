@@ -1,0 +1,8 @@
+{
+ "id": 80414,
+ "bug_id": 25778,
+ "attachment_id": 0,
+ "creation_time": "2001-03-14T01:11:39Z",
+ "creator": "dima@unixfreak.org",
+ "text": "Rob Simmons \u003crsimmons@duckman.wlcg.com\u003e writes:\n\u003e \n\u003e \u003eNumber:         25778\n\u003e \u003eCategory:       bin\n\u003e \u003eSynopsis:       sshd core after login attempt for non-existant user\n\u003e \u003eDescription:\n\u003e When someone tries to login with a username that does not exist,\n\u003e sshd dumps core.  Here is the gdb output from the core file,\n\u003e followed by the ident info from the sshd binary:\n\nTry the patch below.  It looks like a FreeBSD-specific problem.  Well,\nat least I tried OpenSSH 2.5 (I know that's not what we use) and it\ndidn't have this bug.\n\nI don't think this can be classified as a security bug.  The sshd that\ncores is one that was already spawned for that connection; the main\none stays alive.  Also, the crash is from dereferencing a bad pointer,\nand the malicious user can't control it.  All that said, I'm not a\nsecurity expert, so take that for what it is: a hypothesis.\n\nThanks\n\n\t\t\t\t\tDima Dorfman\n\t\t\t\t\tdima@unixfreak.org\n\n\nIndex: auth2.c\n===================================================================\nRCS file: /st/src/FreeBSD/src/crypto/openssh/auth2.c,v\nretrieving revision 1.9\ndiff -u -r1.9 auth2.c\n--- auth2.c\t2001/03/04 02:22:03\t1.9\n+++ auth2.c\t2001/03/14 01:08:44\n@@ -201,6 +201,7 @@\n \tdebug(\"userauth-request for user %s service %s method %s\", user, service, method);\n \tdebug(\"attempt #%d\", authctxt-\u003eattempt);\n \n+\tauthctxt-\u003epw = 0;\n \tif (authctxt-\u003eattempt == 1) { \n \t\t/* setup auth context */\n \t\tstruct passwd *pw = NULL;"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1246013,
+ "bug_id": 265395,
+ "attachment_id": 0,
+ "creation_time": "2023-02-07T20:43:59Z",
+ "creator": "uzsolt@FreeBSD.org",
+ "text": "IMHO revision 14978 (\"Fix poorly written timezone parsing\") fixes this bug:\n\n$ svn diff -r14978:14976\nIndex: functions/date.php\n===================================================================\n--- functions/date.php  (revision 14978)\n+++ functions/date.php  (revision 14976)\n@@ -81,16 +81,13 @@ function getGMTSeconds($stamp, $tzc) {\n             break;\n     }\n     $neg = false;\n-    if (preg_match('/^([+-]?)(\\d\\d)(\\d\\d)$/', $tzc, $matches)) {\n-        if ($matches[1] === '-')\n-            $neg = true;\n-        $hh = $matches[2];\n-        $mm = $matches[3];\n-    } else {\n-        // anything not listed above and not in the form +0400\n-        // defaults to UTC\n-        $hh = $mm = 0;\n+    if (substr($tzc, 0, 1) == '-') {\n+        $neg = true;\n+    } else if (substr($tzc, 0, 1) != '+') {\n+        $tzc = '+'.$tzc;\n     }\n+    $hh = substr($tzc,1,2);\n+    $mm = substr($tzc,3,2);\n     $iTzc = ($hh * 60 + $mm) * 60;\n     if ($neg) $iTzc = -1 * (int) $iTzc;\n     /* stamp in gmt */\n\n\nI send a bug report to update squirrelmail: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=269396"
+}

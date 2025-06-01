@@ -1,0 +1,8 @@
+{
+ "id": 622464,
+ "bug_id": 159355,
+ "attachment_id": 0,
+ "creation_time": "2011-08-01T14:50:09Z",
+ "creator": "spencer_minear@mcafee.com",
+ "text": "It appears that changes in the lock processing related to the unpcb list and socket receive buffers opened up a timing window in which the unp_gc processing will see unpcb's in the unpcb list that look like they should be recycled but are currently in the process of being received or have been received.\n\nFrom an operational point what we could see is that a client sent one end of a socket pair to a server, closed its end.  We saw some data exchanged between the server and the client and then unp_gc would get around to finishing up its processing which included marking the socket as one that cannot receive more data.  The client would try to send some data and get a broken pipe error code.\n\nFix: We fixed the problem by adding a check in the unp_gc code to make sure that the socket still looks like one that should be reclaimed before before it is added to the unref array.  We also added some extra counters to make sure that if there is a mix of recycles and false recycles to make sure that later loops over the unref array act on the correct number of entries.\n\nA diff in our code base is as follows.  The line numbers do not match your code files but it does includes the FreeBSD original code along with compiler flag that we use to mark our changes from the base code.  This should make it clear what we did to fix the problem.\nHow-To-Repeat: Run the test program provided with PR 112554.  It will report the problem again and you can also see it by monitoring the net.local.recycled sysctl value."
+}

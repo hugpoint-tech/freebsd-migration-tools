@@ -1,0 +1,8 @@
+{
+ "id": 1344773,
+ "bug_id": 284167,
+ "attachment_id": 0,
+ "creation_time": "2025-01-19T15:56:14Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "While doing test builds for bug 284159 (math/linbox), I ran into an\nissue compiling against one of the math/givaro headers, with clang and\nlibc++ 19:\n\n  /usr/local/include/givaro/random-integer.h:40:14: error: reference to 'bool_constant' is ambiguous\n     40 |         std::bool_constant\u003c_Exact_Size\u003e::type _Exact_Size_t;\n        |              ^\n  /usr/include/c++/v1/__type_traits/integral_constant.h:42:1: note: candidate found by name lookup is 'std::__1::bool_constant'\n     42 | using bool_constant = integral_constant\u003cbool, __b\u003e;\n        | ^\n  /usr/local/include/givaro/random-integer.h:16:5: note: candidate found by name lookup is 'std::bool_constant'\n     16 |     using bool_constant = integral_constant\u003cbool, B\u003e;\n        |     ^\n\nThe problem is that random-integer.h attempts to declare\nstd::bool_constant, even though libc++ headers already have this\ntemplate.\n\nConditionalize it on __cpp_lib_bool_constant [1], so it is only declared\nwhen necessary (i.e. if somebody compiles against and older C++\nlibrary).\n\n[1] https://en.cppreference.com/w/cpp/feature_test#cpp_lib_bool_constant"
+}

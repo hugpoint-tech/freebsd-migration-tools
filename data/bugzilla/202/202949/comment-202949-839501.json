@@ -1,0 +1,8 @@
+{
+ "id": 839501,
+ "bug_id": 202949,
+ "attachment_id": 0,
+ "creation_time": "2015-09-07T13:57:13Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "ports r394503 introduced do-* target option helpers. However, do-* targets are special as defining them in Makefile overrides default definitions provided by Mk/bsd.*.mk and Mk/Uses/*.mk. If a port only has helpers but not main do-* target it'd lead to an undocumented behavior. So, NO_INSTALL can be used as a workaround.\n\nHere's an example:\n\n  do-install:\n  .if ${PORT_OPTIONS:MSDL}\n  \t${MKDIR} ${STAGEDIR}${DATADIR}\n  \t${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${DATADIR}/${PORTNAME}\n  \t${LN} -sf ${DATADIR}/${PORTNAME} ${STAGEDIR}${PREFIX}/bin\n  .else\n  \t${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/bin\n  .endif\n\ncannot be converted into\n\n  do-install-SDL-on:\n  \t${MKDIR} ${STAGEDIR}${DATADIR}\n  \t${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${DATADIR}/${PORTNAME}\n  \t${LN} -sf ${DATADIR}/${PORTNAME} ${STAGEDIR}${PREFIX}/bin\n\n  do-install-SDL-off:\n  \t${INSTALL_PROGRAM} ${WRKSRC}/${PORTNAME} ${STAGEDIR}${PREFIX}/bin\n\ndo-install in bsd.port.mk calls vendor install target which may not be defined thus leading to an error."
+}

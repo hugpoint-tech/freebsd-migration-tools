@@ -1,0 +1,8 @@
+{
+ "id": 1133818,
+ "bug_id": 251433,
+ "attachment_id": 0,
+ "creation_time": "2020-11-28T17:53:48Z",
+ "creator": "raj@gusw.net",
+ "text": "I'm badly handicapped with using debuggers, and I focus on static code analysis. \n\nSo here is the shadow directory creation which works well\n\nunionfs_mkshadowdir:\n\n\tstruct vattr\tva;\n\tstruct vattr\tlva;\n\n\t...\n\n\tif ((error = VOP_GETATTR(lvp, \u0026lva, cnp-\u003ecn_cred)))\n\t\tgoto unionfs_mkshadowdir_abort;\n\n\t...\n\n\tunionfs_create_uppervattr_core(ump, \u0026lva, \u0026va, td);\n\n\terror = VOP_MKDIR(udvp, \u0026uvp, \u0026cn, \u0026va);\n \ncutting out stuff that isn't about any \"va\" and that I don't understand. Now here is the corresponding sequence for unionfs_copyfile, calls \n\nunionfs_vn_create_on_upper(..., struct vattr *uvap, ...):\n\n\tstruct vattr\tlva;\n\n\t...\n\n\tif ((error = VOP_GETATTR(lvp, \u0026lva, cred)) != 0)\n\t\treturn (error);\n\tunionfs_create_uppervattr_core(ump, \u0026lva, uvap, td);\n\n\t...\n\n\tif ((error = VOP_CREATE(udvp, \u0026vp, \u0026cn, uvap)) != 0)\n\t\tgoto unionfs_vn_create_on_upper_free_out1;\n\n\nso this looks completely fine and parallel and because unionfs_create_uppervattr_core is working in the mkshadowdir case it is probably working fine in the create_on_upper case.\n\nThis leaves our problem inside VOP_CREATE. \n\nSo, how do I find the specific source code of VOP_CREATE? I'm sure this is some macro which uses the struct vnode *udvp. Where should I look to figure out what is happening in VOP_CREATE?"
+}

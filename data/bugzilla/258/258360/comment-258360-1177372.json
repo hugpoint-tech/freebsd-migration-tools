@@ -1,0 +1,8 @@
+{
+ "id": 1177372,
+ "bug_id": 258360,
+ "attachment_id": 0,
+ "creation_time": "2021-09-08T13:37:32Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "(In reply to Xin LI from comment #1)\nThe basic problem is that localeconv_l() updates the global lconv lazily.  When setlocale() updates the process-global locale, it sets a couple of flags, monetary_locale_changed and numeric_locale_changed, to indicate that the lconv needs to be reloaded.  But setlocale() sets those flags before it's actually finished doing some swizzling.\n\nNote that the problem doesn't directly involve iconv_open(), it just happens to be triggered because iconv calls snprintf() at some point.  I'm having a hard time understanding what guarantees we're supposed to provide here, POSIX doesn't seem to say much about thread-safety and setlocale(), but it seems pretty reasonable to expect localeconv_l() to behave correctly wrt a concurrent setlocale() call, though."
+}

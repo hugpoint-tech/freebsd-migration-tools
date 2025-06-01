@@ -1,0 +1,8 @@
+{
+ "id": 1301268,
+ "bug_id": 277764,
+ "attachment_id": 0,
+ "creation_time": "2024-03-17T19:21:30Z",
+ "creator": "5mxnbm6q5@mozmail.com",
+ "text": "Using daemon utility to execute a program (child) and then sending a stop signal (ex. SIGSTOP) to the child process and afterwards sending the continue signal (SIGCONT) can make the daemon process get stuck at 100% CPU usage.\n\nFull setup:\ncreate a script test.sh containing the following:\n```\n#!/bin/sh\n\nwhile true; do echo hello; sleep 1; done\n```\nexecute daemon utility: `daemon -f -p test.pid ./test.sh`\nsend stop signal: `pkill -STOP -F test.pid`\nsend continue signal: `pkill -CONT -F test.pid`\nwait until test.sh executes `echo hello`\ndaemon process rises to 100% usage (single core)\n\n\nAs far as i can tell stopping and continuing the child process sends a SIGCHLD signal and the daemon utility assumes that the child is closing. It then keeps calling waitpid (which returns immediately, returning 0) inside an infinite loop in the daemon_is_child_dead function and this causes the high CPU usage. Also before entering daemon_is_child_dead function, the daemon process is waiting / listening for child output in the listen_child function. That's why the above script contains an echo so the daemon will exit that function and go on to process the SIGCHLD event.\n\nMaybe the fix could be to include WCONTINUED option and setting status output parameter (currently set to NULL) when calling waitpid inside daemon_is_child_dead and then checking if WIFCONTINUED(status) equals True and in that case returning false?"
+}

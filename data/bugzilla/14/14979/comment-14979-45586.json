@@ -1,0 +1,8 @@
+{
+ "id": 45586,
+ "bug_id": 14979,
+ "attachment_id": 0,
+ "creation_time": "1999-11-18T18:26:42Z",
+ "creator": "bde@zeta.org.au",
+ "text": "\u003e \u003eDescription:\n\u003e \n\u003e \twhen fifo (maden by mkfifo(1)) has select(2)ed or poll(2)ed\n\u003e \tselect(2) and poll(2) returns without timeout even\n\u003e \tfifo has no bytes to read.\n\u003e \t\n\u003e \tIn FreeBSD 2.X and NetBSD 1.4.1 there is timeout as expected.\n\nI think the timeout is unexpected.  read() on a fifo with no writers\nwas broken in FreeBSD-2.x.  I fixed this, and the select() and poll()\nbehaviour changed automatically to match the read() behaviour.\n\nSome details: POSIX.1 requires read() on a fifo with no writers to\nreturn 0 without blocking.  FreeBSD-2.x did extra work to break this\nin some cases.  IIRC, the only broken case was for fifos that never\nhad a writer.  POSIX doesn't distinguish this case.  Sockets have\nflags to control the behaviour precisely, but these are not available\nfor fifos.\n\nselect() and poll() return immediately because there is an interesting\nstate to read, namely EOF.\n\nAt least some versions of Linux and Sunos have special handling for\nselect() on fifos.  I think they break select() to do what you want.\n\nBruce"
+}

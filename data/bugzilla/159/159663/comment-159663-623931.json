@@ -1,0 +1,8 @@
+{
+ "id": 623931,
+ "bug_id": 159663,
+ "attachment_id": 0,
+ "creation_time": "2011-09-25T16:32:27Z",
+ "creator": "rmh@FreeBSD.org",
+ "text": "2011/9/24 Robert Millan \u003crmh@freebsd.org\u003e:\n\u003e I found a thread from 2007 with further discussion about this problem:\n\u003e\n\u003e http://lists.freebsd.org/pipermail/freebsd-fs/2007-February/002669.html\n\nHi,\n\nI've looked at the situation in a bit more detail, for now only with\nsockets in mind (not named pipes).  My understanding is (please\ncorrect me if I'm wrong):\n\n- nullfs holds reference counts for each vnode, but sockets have their\nown mechanism for reference counting (so_count / soref / sorele).\nvnode reference counting doesn't protect against socket being closed,\nwhich would leave a stale pointer in the upper nullfs layer.\n\n- Increasing the reference count of the socket itself can't be done in\nnull_nodeget() because this function is merely a getter whose call\ndoesn't indicate any meaningful event.\n\n- It's not clear to me that there's any event in time where the socket\nreference can be increased.  If mounting a nullfs were that event,\nthen all existing sockets would be soref'ed but we wouldn't be\nsoref'ing future sockets created in the lower layer after the mount.\nThis doesn't seem correct.\n\n- Possible solution: null_nodeget() semantics are replaced with\nsomething that actually allows vnodes in the upper layer to be created\nand destroyed.\n\n- Possible solution: upper layer has a memory structure to keep track\nof which sockets in the lower layer have been soref'ed."
+}

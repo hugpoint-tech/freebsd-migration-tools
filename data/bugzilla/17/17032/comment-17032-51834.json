@@ -1,0 +1,8 @@
+{
+ "id": 51834,
+ "bug_id": 17032,
+ "attachment_id": 0,
+ "creation_time": "2000-02-29T07:27:37Z",
+ "creator": "nobu@rd.isac.co.jp",
+ "text": "  I checked my send-pr alpha/17032 problem.\n\n  The problem live in src/lib/libc/stdlib/strtod.c source code.\nThe source code assume sizeof(long)==4, then bounded value make\nto be exception.\n\n  Well, There is need fix to mach. Then I tried import from NetBSD\nsource code and hacked that. It seem to work.\n\nBased NetBSD-current source as\n    $NetBSD: strtod.c,v 1.33 1999/11/26 07:39:45 msaitoh Exp $\n\nand patched for FreeBSD are:\n--- /tmp/strtod.c\tTue Feb 29 15:49:07 2000\n+++ strtod.c\tTue Feb 29 16:11:36 2000\n@@ -108,6 +108,9 @@\n #endif\n #endif\n \n+#if defined(__FreeBSD__) \u0026\u0026 defined(__alpha__)\n+#define IEEE_LITTLE_ENDIAN\n+#endif\n #ifdef __arm32__\n /*\n  * Although the CPU is little endian the FP has different\n@@ -142,8 +145,13 @@\n #include \"memory.h\"\n #endif\n #endif\n+#if defined(__FreeBSD__)\n+#define mutex_lock(x)\n+#define mutex_unlock(x)\n+#else\n #include \"extern.h\"\n #include \"reentrant.h\"\n+#endif\n \n #ifdef MALLOC\n #ifdef KR_headers\n@@ -283,8 +291,13 @@\n #define LSB 1\n #define Sign_bit 0x80000000\n #define Log2P 1\n+#if defined(__FreeBSD__) \u0026\u0026 defined(__alpha__)\n+#define Tiny0 0x100000\n+#define Tiny1 0\n+#else  /* !FreeBSD/alpha */\n #define Tiny0 0\n #define Tiny1 1\n+#endif /* FreeBSD/alpha */\n #define Quick_max 14\n #define Int_max 14\n #define Infinite(x) (word0(x) == 0x7ff00000) /* sufficient test for here */\n\n---\nNobuhiro Yasutomi  ISAC, Inc.\nhttp://www.isac.co.jp/"
+}

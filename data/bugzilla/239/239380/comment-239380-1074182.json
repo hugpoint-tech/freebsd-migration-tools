@@ -1,0 +1,8 @@
+{
+ "id": 1074182,
+ "bug_id": 239380,
+ "attachment_id": 0,
+ "creation_time": "2019-11-06T13:51:05Z",
+ "creator": "bz@FreeBSD.org",
+ "text": "(In reply to Bjoern A. Zeeb from comment #17)\n\nAs a follow-up.\n\nThe problem for the test cases was as follows (at least for the IPv6 ones).\n\nTo resolve the neighbour's address, scapy sends a NS.\nThe kernel of the destination/next hop replies with a NA.\nScapy receives the packets but due to the wrong offsets within the bpf header the frame sizes are all way off and way too large.\nAs a result there is no result packet to the internal AsyncSniffer and neither the original packet nor the NA reply is seen.\nWith the failed address resolution scapy uses a broadcast Ethernet destination MAC address on the ethernet packets.  FreeBSD will mark this packet with M_BCAST as a result and higher up in the kernel certain functions will check for that and get an invalid result (or not accept the packet, or not trigger and ICMPv6 reply).\nWith that the expected reply packet from the test cases are missing and the sniffer there will not see any further packets and either timeout or checks will fail and with that the test times out or fails.\n\nHope that explains some of this."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 971390,
+ "bug_id": 225120,
+ "attachment_id": 0,
+ "creation_time": "2018-01-12T21:49:04Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "g_concat_kernel_dump() configures kernel dumps to write to the first disk in the request range:\n\n219         for (i = 0; i \u003c sc-\u003esc_ndisks; i++) {\n220                 if (sc-\u003esc_disks[i].d_start \u003c= gkd-\u003eoffset \u0026\u0026\n221                     sc-\u003esc_disks[i].d_end \u003e gkd-\u003eoffset)\n222                         break;\n223         }\n\nWhen configuring a multi-disk gconcat device as the dump device, this means that we'll never be able to recover kernel dumps. In particular, savecore(8) looks for the trailing kernel dump header in the last sector of the provider. Moreover, we can't even easily recover the kernel dump directly from the provider for the first disk, since the last sector of that provider will contain gconcat metadata. (It is possible to use gnop to trim off that last sector, but that's a bit too manual.)\n\nI think gconcat (and gmirror) should do what graid does, and implement their own dumper functions which map writes to the corresponding disk(s), instead of selecting a single disk and passing all writes through to it. This would address this bug and fix the caveat described in the NOTES section of the gmirror man page."
+}

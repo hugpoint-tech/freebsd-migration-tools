@@ -1,0 +1,8 @@
+{
+ "id": 795761,
+ "bug_id": 194985,
+ "attachment_id": 0,
+ "creation_time": "2014-11-13T14:14:29Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "+\tp = td-\u003etd_proc;\n+\tPROC_LOCK(p);\n+\tfdp = p-\u003ep_fd;\n+\tFILEDESC_SLOCK(fdp);\n+\ttd-\u003etd_retval[0] = fdp-\u003efd_openfd;\n+\tFILEDESC_SUNLOCK(fdp);\n+\tPROC_UNLOCK(p);\n\nproc lock has no useful purpose here. p_fd can change in some cases during fork, but then the process is singlethreaded.\n\nproc lock is a mutex with bound sleep, while filedesc lock has unbound sleep. As such, they cannot be taken in this order anyway.\n\nAs a side note, they happen to be taken in the opposide order, so this code gives 2 different opportunities for deadlocks.\n\nThe kernel would tell you that if you enabled WITNESS and INVARIANTS.\n\nLastly, I'm not a fan of counting fds if it can be avoided. As mentioned in my previous comment, the kernel maintains a bitmap of open descriptors. I would suspect counting set bits (= open descriptors) would be fast enough for real life cases."
+}

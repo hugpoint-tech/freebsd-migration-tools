@@ -1,0 +1,8 @@
+{
+ "id": 1122646,
+ "bug_id": 237666,
+ "attachment_id": 0,
+ "creation_time": "2020-09-19T08:04:53Z",
+ "creator": "hselasky@FreeBSD.org",
+ "text": "Mark,\n\nYour finding indicate a problem in usb_pc_cpu_flush() and \n\nbus_dmamap_sync(pc-\u003etag, pc-\u003emap, BUS_DMASYNC_PREWRITE);\n\nTry to put the dsb only after dmamap_sync.\n\nvoid\nusb_pc_cpu_flush(struct usb_page_cache *pc)\n{\n        if (pc-\u003epage_offset_end == pc-\u003epage_offset_buf) {\n                /* nothing has been loaded into this page cache! */\n                return;\n        }\n        bus_dmamap_sync(pc-\u003etag, pc-\u003emap, BUS_DMASYNC_PREWRITE);\n}\n\nThe PCI I/O memory should be coherent and should not need any DSB's.\n\n--HPS"
+}

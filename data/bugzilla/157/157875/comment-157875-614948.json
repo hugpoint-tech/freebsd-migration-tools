@@ -1,0 +1,8 @@
+{
+ "id": 614948,
+ "bug_id": 157875,
+ "attachment_id": 0,
+ "creation_time": "2011-06-15T03:24:08Z",
+ "creator": "lcampbell@ironclad.mobi",
+ "text": "The issue is that the binary built by lang/v8 is compiled with\n-fvisibility=hidden during compilation. This directive tells GCC to\nexclude all symbols from the resultant object file except those which\nare explicitly annotated otherwise; unfortunately, some of the hidden\nsymbols used in every node addon (things like v8::HandleScope, which\nis going to always be the first function called in any\nproperly-written addon) are hidden by the directive. When you attempt\nto `require` a node addon (which is just a shared object file), the\ndynamic linker can't figure out how to link it in because all the\nnecessary symbols aren't exposed.\n\nReading through www/node/work/*/wscript revealed this in the bits\nwhere it compiles the version of V8 it comes bundled with, and I just\nhappened to stumble across it while trying to debug this today:\n\n 535   # NOTE: We want to compile V8 to export its symbols. I.E. Do not want\n 536   # -fvisibility=hidden. When using dlopen() it seems that the loaded DSO\n 537   # cannot see symbols in the executable which are hidden, even if the\n 538   # executable is statically linked together...\n\nAnyway, attached is a patch to lang/v8/Makefile which sets the scons\nargument to remove the -fvisibility=hidden directive. If you apply the\npatch, recompile lang/v8, then recompile www/node, addons should work\nagain (shouldn't need to recompile the addons).\n\n:D"
+}

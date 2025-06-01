@@ -1,0 +1,8 @@
+{
+ "id": 589381,
+ "bug_id": 152768,
+ "attachment_id": 0,
+ "creation_time": "2010-12-02T18:30:51Z",
+ "creator": "jhb@FreeBSD.org",
+ "text": "I think it should be 'ccb-\u003ecsio.data_ptr[0] \u0026 0xe0 | T_NODEVICE', or even \nshorter would be to do this:\n\nIndex: mfi_cam.c\n===================================================================\n--- mfi_cam.c\t(revision 216122)\n+++ mfi_cam.c\t(working copy)\n@@ -340,14 +340,14 @@\n \t\tccbh-\u003estatus = CAM_REQ_CMP;\n \t\tcsio-\u003escsi_status = pt-\u003eheader.scsi_status;\n \t\tif (ccbh-\u003eflags \u0026 CAM_CDB_POINTER)\n-\t\t\tcommand = ccb-\u003ecsio.cdb_io.cdb_ptr[0];\n+\t\t\tcommand = csio-\u003ecdb_io.cdb_ptr[0];\n \t\telse\n-\t\t\tcommand = ccb-\u003ecsio.cdb_io.cdb_bytes[0];\n+\t\t\tcommand = csio-\u003ecdb_io.cdb_bytes[0];\n \t\tif (command == INQUIRY) {\n-\t\t\tdevice = ccb-\u003ecsio.data_ptr[0] \u0026 0x1f;\n+\t\t\tdevice = csio-\u003edata_ptr[0] \u0026 0x1f;\n \t\t\tif ((device == T_DIRECT) || (device == T_PROCESSOR))\n \t\t\t\tcsio-\u003edata_ptr[0] =\n-\t\t\t\t     (device \u0026 0xe0) | T_NODEVICE;\n+\t\t\t\t     (csio-\u003edata_ptr[0] \u0026 0xe0) | T_NODEVICE;\n \t\t}\n \t\tbreak;\n \t}\n\nThe intention from the code seems to be to mask T_DIRECT and T_PROCESSOR\ndevices by mapping them to T_NODEVICE instead.\n\n-- \nJohn Baldwin"
+}

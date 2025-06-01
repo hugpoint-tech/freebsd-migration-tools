@@ -1,0 +1,8 @@
+{
+ "id": 1153593,
+ "bug_id": 254596,
+ "attachment_id": 0,
+ "creation_time": "2021-03-27T03:57:31Z",
+ "creator": "paul@redbarn.org",
+ "text": "today i added a vlan subinterface to a bridge, and dmesg reported:\n\nbridge1: can't disable some capabilities on igb0.203: 0x400\n\nthis is IFCAP_LRO. bridge(4) says:\n\n\"on all interfaces added to the bridge ... The LRO capability is always disabled.\"\n\nwikipedia(Large receive offload) says:\n\n\"LRO should not operate on machines acting as routers, as it breaks the end-to-end principle and can significantly impact performance.\"\n\nsys/net/if_vlan.c says:\n\n        /*\n         * If the parent interface can do LRO and checksum offloading on\n         * VLANs, then guess it may do LRO on VLANs.  False positive here\n         * cost nothing, while false negative may lead to some confusions.\n         */\n        if (p-\u003eif_capabilities \u0026 IFCAP_VLAN_HWCSUM)\n                cap |= p-\u003eif_capabilities \u0026 IFCAP_LRO;\n        if (p-\u003eif_capenable \u0026 IFCAP_VLAN_HWCSUM)\n                ena |= p-\u003eif_capenable \u0026 IFCAP_LRO;\n\nto get LRO to not be sticky-on for a vlan subinterface, i would have to remove LRO from the parent interface. i don't think this is functioning as intended, because i have other non-bridged subinterfaces for which LRO is appropriate.\n\ni am not posting a candidate fix because too many layers are being crossed here and there's not an obvious way to relax this deep constraint. someone with recent kernel architecture chops should take a look."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1181394,
+ "bug_id": 258990,
+ "attachment_id": 228504,
+ "creation_time": "2021-10-07T19:50:15Z",
+ "creator": "jlduran@FreeBSD.org",
+ "text": "Created attachment 228504\nsecurity/acme.sh: Fix $DEFAULT_INSTALL_HOME\n\nThis is more a request for comments from the maintainer/community, than a bug report:\n\nWhile facing an issue, best described here:\n\nhttps://github.com/acmesh-official/acme.sh/issues/3724\n\nThe solution was to set a preferred chain[1], by running:\n\n    # su -l acme -c \"acme.sh --set-default-chain --preferred-chain ISRG --server letsencrypt\"\n\nHowever --and this is where I might get this port wrong-- I believe the idea is that you could also run acme.sh as root and get the same result.\n\nThe problem is acme.sh defines $DEFAULT_INSTALL_HOME as $HOME/.$PROJECT_NAME.\n\nIf acme.sh is executed as root, it will use root's $HOME as part of $DEFAULT_INSTALL_HOME, and files created under that path will be ignored.\n\nFor example, when issuing:\n\n    # acme.sh --set-default-chain --preferred-chain ISRG --server letsencrypt\n\nTo set the preferred chain, a new $_DEFAULT_CA_CONF file under\n\n    /root/.acme.sh/ca/$_ACME_SERVER_HOST/$_ACME_SERVER_PATH/ca.conf\n\nwith the contents \"DEFAULT_PREFERRED_CHAIN='ISRG'\" will be created, instead of appending to\n\n    /var/db/acme/.acme.sh/ca/$_ACME_SERVER_HOST/$_ACME_SERVER_PATH/ca.conf\n\nWhile this can be avoided by su'ing as acme, given the hard-coded nature of acme's $HOME, I believe it's better to patch $DEFAULT_INSTALL_HOME to prevent foot-shootings. What do you think?\n\n[1]: https://github.com/acmesh-official/acme.sh/wiki/Preferred-Chain"
+}

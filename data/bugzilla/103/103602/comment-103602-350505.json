@@ -1,0 +1,8 @@
+{
+ "id": 350505,
+ "bug_id": 103602,
+ "attachment_id": 0,
+ "creation_time": "2007-04-24T17:20:08Z",
+ "creator": "thomas@FreeBSD.org",
+ "text": "* Josh Carroll, 2007-04-04 :\n\n\u003e Thinking out of the box, I decided to use sg3_utils on both the\n\u003e semi-working 7.0-CURRENT kernel I had, and on a Linux Knoppix 5.1 live\n\u003e CD.\n\nOK, this is a useful experiment. It really looks to me like some error\ncondition that *could* be correctly detected (because it *is* detected\nunder Knoppix) is *not* correctly detected in FreeBSD, causing various\ncommands to time out.\n\nNow what I think would be really useful would be to try to reproduce\nthese timeouts with ATAPI/CAM out of the loop, calling directly the\nATAPI layer instead.\n\nI wrote a small program that tests that, which you'll find attached to\nthis message.  You can compile it using:\n  gcc -o readcap readcap.c\n\nYou can then try:\n  $ readcap /dev/acd0\n\nHere's what I observe here, first with no disk in the drive (the\nimportant item is sk=02, NOT READY), second with a disk in the drive.\n\n$ ./readcap /dev/acd0\nioctl returned error 5 Input/output error\nSense data: error=70 sk=02 asc=3a ascq=00\n$ ./readcap /dev/acd0\nioctl returned error 0 Unknown error: 0\nSense data: error=00 sk=00 asc=00 ascq=00\nLBA of last sector in last session: 187279\nSector size: 2048\n\n\u003e Interestingly, the sg_vpd command fails to read the serial # as well,\n\u003e so that is definitely a known bug with this drive I think. Here is the\n\u003e sg_vpd output on Knoppix:\n\nOK, so ultimately we might need to include this quirk anyway. We'll see.\n\nThomas.\n"
+}

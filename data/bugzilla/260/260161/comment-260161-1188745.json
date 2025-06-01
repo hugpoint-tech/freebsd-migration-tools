@@ -1,0 +1,8 @@
+{
+ "id": 1188745,
+ "bug_id": 260161,
+ "attachment_id": 0,
+ "creation_time": "2021-12-02T17:17:49Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "ng_ubt_intel is missing the device ID for this particular adapter.  Adding it \"fixes\" the problem, but only because ng_ubt_intel then fails to probe the firmware version.  It seems that newer devices return firmware version info in a TLV array, and ng_ubt_intel (and iwmbtfw) doesn't know about it.\n\nDumping the returned TLV:\n\n0000   00 10 04 10 04 40 00 11 04 10 04 40 00 12 04 00  |.....@.....@....|\n0010   37 17 00 15 02 13 04 16 02 00 00 17 02 87 80 18  |7...............|\n0020   02 32 00 1c 01 01 1d 02 28 13 1e 01 01 1f 04 26  |.2......(......\u0026|\n0030   00 00 00 27 01 00 28 01 01 29 01 00 2a 01 01 2b  |...'..(..)..*..+|\n0040   01 01 2c 01 00 2d 03 01 0a 0e 2e 01 00 2f 01 01  |..,..-......./..|\n0050   30 06 20 6f 9c 09 7b f4 31 01 00 00 00 00        |0. o..{.1.....  |\n\nImage type TLV: 1c 01 01, and apparently a value of 0x01 there means that the device is in boot loader mode.\n\nI'm not sure how much work it is to extend ng_ubt_intel to support this device.  I'll try adding TLV parsing support and see how it goes.\n\nI wonder if ng_ubt_intel should match on all Intel bluetooth devices, otherwise we'll keep having to diagnose the same problem over and over again."
+}

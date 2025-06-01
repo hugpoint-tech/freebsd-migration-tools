@@ -1,0 +1,8 @@
+{
+ "id": 924584,
+ "bug_id": 217545,
+ "attachment_id": 0,
+ "creation_time": "2017-03-05T17:39:31Z",
+ "creator": "jamie@FreeBSD.org",
+ "text": "Filesystems mounted with mount.fstab are indeed unmounted when a jail is stopped, and the exec.poststop command(s) are indeed executed.  But what you're doing isn't jail removal.\n\nAm existing jail is removed by running \"jail -r\", which will run the prestop and stop commands, actually remove the jail, then run poststop commands and then clean up mounts and IP address assignments.  But note that you never ran \"jail -r\".\n\nWhen a jail is created, it will (among other things) run the exec.start and/or \"command\" commands.  Those commands are not expected to all finish - generally the command is something like \"sh /etc/rc\" which starts daemons which continue to run.  If all commands complete, and the jail isn't marked with the \"persist\" parameter, the jail will naturally die on its own.  That has nothing to do with the jail(8) command, which is likely no longer running at the time, and which thus cannot running any of the shutdown commands.\n\nIf you intend on running jails this way, I recommend unmounting the filesystems not in exec.poststop, but in exec.poststart which runs as the last step in the creation process."
+}

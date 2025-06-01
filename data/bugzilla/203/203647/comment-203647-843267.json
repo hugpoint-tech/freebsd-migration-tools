@@ -1,0 +1,8 @@
+{
+ "id": 843267,
+ "bug_id": 203647,
+ "attachment_id": 0,
+ "creation_time": "2015-10-08T19:04:28Z",
+ "creator": "scdbackup@gmx.net",
+ "text": "usr.sbin/makefs/cd9660/cd9660_write.c\n\nCID 978431: Resource leak (RESOURCE_LEAK)\n   9. leaked_storage: Variable buffer going out of scope leaks the\n   storage it points to.\n\n216        return cd9660_write_filedata(fd, sector, buffer_head,\n217            path_table_sectors);\n\n--------------- Source analysis:\n\nThere are two return statements in the function.\nThe first one (return 0) is ok, because malloc() returned NULL.\nThe second one uses the allocated buffer and does not free it.\n\n--------------- Remedy proposal:\n\nUntangle the return statement.\n\n-        return cd9660_write_filedata(fd, sector, buffer_head,\n+        ret = cd9660_write_filedata(fd, sector, buffer_head,\n              path_table_sectors);\n+        free(buffer);\n+        return ret;"
+}

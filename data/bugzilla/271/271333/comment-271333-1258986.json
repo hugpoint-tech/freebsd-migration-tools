@@ -1,0 +1,8 @@
+{
+ "id": 1258986,
+ "bug_id": 271333,
+ "attachment_id": 0,
+ "creation_time": "2023-05-09T19:05:02Z",
+ "creator": "markj@FreeBSD.org",
+ "text": "Looks like a LinuxKPI bug:\n- i915_vma_coredump contains an array of pages, freed in __i915_gpu_coredump_free() -\u003e cleanup_gt() -\u003e i915_vma_coredump_free() with\n\n    for (page = 0; page \u003c vma-\u003epage_count; page++)\n        free_page((unsigned long)vma-\u003epages[page]);\n\n- free_page() just calls FreeBSD's kmem_free().  That is, it expects to receive a page mapped into the kernel map.\n\n- Looks like those pages are allocated by pool_alloc() in i915_gpu_error.c.  It uses alloc_page() in the LinuxKPI, which just allocates and returns an unmapped page.  pool_alloc() extracts the direct map address.\n\nSo, i915kms is passing a direct map address to free_page(), which doesn't handle that.  Probably free_page() should handle direct-mapped addresses by resolving them to a page and freeing that with linux_free_pages(page, 0)."
+}

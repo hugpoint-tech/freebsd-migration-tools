@@ -1,0 +1,8 @@
+{
+ "id": 1101727,
+ "bug_id": 246350,
+ "attachment_id": 214335,
+ "creation_time": "2020-05-10T07:22:40Z",
+ "creator": "njs@pobox.com",
+ "text": "Created attachment 214335\nfbsd-kqueue-pipe-bug-demo.py\n\nConsider the following sequence of events:\n\n1. Call pipe() to open a pipe\n2. Set the write side to non-blocking\n3. Write into the write side until the pipe buffer is full and write() returns EWOULDBLOCK\n4. Use kqueue to register a wait for the write end to become writable again (EVFILT_WRITE)\n5. Close the read end of the pipe\n\nAt this point, I would expect that kqueue would return an event to report that the pipe is \"writable\". The man page says it will (\"The filter will set EV_EOF when the reader disconnects\"). On the same pipe, in this situation, select() reports that it's writable. On macOS, kqueue reports that it's writable.\n\nHowever, on FreeBSD 12, kqueue does *not* report any event in this situation.\n\nI've attached a minimal Python script to demonstrate.\n\nOutput from the script when running on macOS:\n\n------------\nfilling pipe buffer\nselect() says the write pipe is NOT writable\nclosing read end of pipe\nselect() says the write pipe is writable\nwaiting for kqueue to report the write end is writable\ndone!\n[\u003cselect.kevent ident=4 filter=-2 flags=0x8001 fflags=0x0 data=0x0 udata=0x0\u003e]\n------------\n\nOutput from the script when running on FreeBSD 12.1-RELEASE:\n\n------------\nfilling pipe buffer\nselect() says the write pipe is NOT writable\nclosing read end of pipe\nselect() says the write pipe is writable\nwaiting for kqueue to report the write end is writable\n[...hangs forever...]\n------------"
+}

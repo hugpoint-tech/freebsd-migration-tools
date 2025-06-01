@@ -1,0 +1,8 @@
+{
+ "id": 347862,
+ "bug_id": 103046,
+ "attachment_id": 0,
+ "creation_time": "2006-09-08T19:40:23Z",
+ "creator": "sigsegv@radiotube.org",
+ "text": "cups 1.2 started to use select(2) to check for \"backchannel\" data.\nSince the ulpt driver does not have a poll function, and therefore\nselect(2) will return with an read-event immediately. But since some\nprinters just doesn't return any backchannel data the subsequent read(2)\nsyscall will just block forever. This effectively prevents printing with\ndefault settings to these printers. I will therefore suggest having\nsome minimal nonblocking I/O with a select(2) syscall that works for\nreading data from the printer.\n\nFix: \n\nI can see mainly two ways to solve this issue, either:\n\n* time out the bulk reads and return EIO or similar if the printer\ndoes not respond.\n\n* or, implement event driven and/or nonblocking I/O.\n\nI have created a patch that at least currently applies to\n6.1-STABLE that implements minimal event driven I/O for reading\nand nonblocking reads:\nhttp://www.radiotube.org/ulpt_poll.diff\nHow-To-Repeat: This can be repeated with printers that does not give any data back\non the receive pipe. Bulk reads initiated by read(2) syscalls blocks\nforever. You can see this with 'cat /dev/ulpt0'. It'll just hang.\nBut the most serious issue is that cups tries to read from these\nprinters effectively blocking the print job in a read(2) syscall."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1023892,
+ "bug_id": 233397,
+ "attachment_id": 0,
+ "creation_time": "2018-11-27T21:11:05Z",
+ "creator": "emaste@freebsd.org",
+ "text": "/usr/local/bin/objdump: a.out symbol number 1030 references nonexistent SHT_SYMTAB_SHNDX section\n/usr/local/bin/objdump: a.out: File in wrong format\n\n% readelf -s a.out | grep '^ *1030:'\n  1030: 0000000000000000     0 NOTYPE  LOCAL  HIDDEN   65535 __rela_iplt_end\n\nThese symbols are added by:\n\n// The beginning and the ending of .rel[a].plt section are marked\n// with __rel[a]_iplt_{start,end} symbols if it is a statically linked\n// executable. The runtime needs these symbols in order to resolve\n// all IRELATIVE relocs on startup. For dynamic executables, we don't\n// need these symbols, since IRELATIVE relocs are resolved through GOT\n// and PLT. For details, see http://www.airs.com/blog/archives/403.\ntemplate \u003cclass ELFT\u003e void Writer\u003cELFT\u003e::addRelIpltSymbols() {\n  if (!Config-\u003eStatic)\n    return;\n  StringRef S = Config-\u003eIsRela ? \"__rela_iplt_start\" : \"__rel_iplt_start\";\n  addOptionalRegular(S, InX::RelaIplt, 0, STV_HIDDEN, STB_WEAK);\n\n  S = Config-\u003eIsRela ? \"__rela_iplt_end\" : \"__rel_iplt_end\";\n  addOptionalRegular(S, InX::RelaIplt, -1, STV_HIDDEN, STB_WEAK);\n}\n\nSo what I think happens is when we have ifuncs these special symbols are emitted with Ndx set to the appropriate iplt section (.rela.plt), but when we have no ifuncs we still emit the symbols but there is no section for them to refer to."
+}

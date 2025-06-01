@@ -1,0 +1,8 @@
+{
+ "id": 665241,
+ "bug_id": 167932,
+ "attachment_id": 0,
+ "creation_time": "2012-05-15T17:30:02Z",
+ "creator": "madpilot@FreeBSD.org",
+ "text": "\nWhile experimenting with the .cshrc examples I discovered that the\nsample for automatically setting SSH_AUTH_SOCK does not work as is.\n\nIt's easily tricked by other processes and cut seems to split on\nevery single space character, not grouping them.\n\nI was using this revision of the file:\n\n# $FreeBSD: stable/9/share/examples/csh/dot.cshrc 234978 2012-05-03 19:55:36Z eadler $\n\nI tested a few possible solutions. I'm quite aware that none of\nthese is rock solid, but they do perform better than the sample\ncode in the file. I'm sure someone will come up with an even better\nimplementation.\n\nIt is my personal opinion that sample code should be as correctly\nworking as possible.\n\nThe simpliest and most legible (used in the attached patch):\n\nsetenv SSH_AUTH_SOCK `sockstat | grep \"${USER}\" | grep ssh-agent | awk '{ print $6 }'`\n\na slightly less legible one, but avoiding the double grep:\n\nsetenv SSH_AUTH_SOCK `sockstat | egrep \"${USER}.*ssh-agent\" | awk '{ print $6 }'`\n\nand a simplier(but with horrible legibility) one relying only on sed:\n\nsetenv SSH_AUTH_SOCK `sockstat | sed -n \"/${USER}.*ssh-agent/s/[^\\/]*\\(.*\\)/\\1/p\"`\n\nI know this is a minor glitch, but I thought it was worth reporting\nanyway.\n\nHow-To-Repeat: \nEnable the sample code to populate SSH_AUTH_SOCK.\nlaunch an ssh-agent on teh target machine.\nLogin via ssh.\nRun \"env\" and notice that the SSH_AUTH_SOCK variable will be empty\neven if there is an ssh-agent running."
+}

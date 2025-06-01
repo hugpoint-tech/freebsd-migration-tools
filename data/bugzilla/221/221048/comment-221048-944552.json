@@ -1,0 +1,8 @@
+{
+ "id": 944552,
+ "bug_id": 221048,
+ "attachment_id": 0,
+ "creation_time": "2017-07-27T14:30:09Z",
+ "creator": "victor.stinner@gmail.com",
+ "text": "A commit made at May, 23, changed dev_t type from 32 bits to 64 bits:\n\n* https://reviews.freebsd.org/D10439\n* https://github.com/freebsd/freebsd/commit/e75ba1d5c4c79376a78351c8544388491db49664#diff-12c2f5b61ce3b017a25144619d13ca66L108\n\nThe problem is that the userland minor() macro explicitly truncates to 32 bits:\n\n#define\tminor(x) ((int)((x)\u00260xffff00ff)) /* minor number */\n\nhttps://github.com/freebsd/freebsd/blob/master/sys/sys/types.h#L373\n\n64-bit dev_t broke a unit test Python:\nhttp://bugs.python.org/issue31044\n\nIn short, Python checks that makedev(major(dev), minor(dev))==dev, whereas dev comes from stat.st_dev of a file created in the current directory (ex: ZFS filesystem for $HOME).\n\nExample:\n\n* stat() returns st_dev = 0xde4d0429ab\n* major(0xde4d0429ab) returns 0x29\n* minor(0xde4d0429ab) returns 0x4d0400ab\n\nThe problem is that minor() truncates 0xde00000000 high bits."
+}

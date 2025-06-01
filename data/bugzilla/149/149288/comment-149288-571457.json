@@ -1,0 +1,8 @@
+{
+ "id": 571457,
+ "bug_id": 149288,
+ "attachment_id": 0,
+ "creation_time": "2012-05-20T20:54:12Z",
+ "creator": "kristof@sigsegv.be",
+ "text": "Hi,\n\nI can reproduce this problem on an OpenRD (Marvell Kirkwood, just like\nthe Sheevaplug) on version r235647.\n\nThe problem appears to be triggered by the test for shared mmaps:\n\n#include \u003cstdio.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/stat.h\u003e\n#include \u003cunistd.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003csys/mman.h\u003e\n\nint main() {\n        /* return 0 if we're signed */\n        int f = open(\"conftest.mmap\", O_RDWR|O_CREAT|O_TRUNC, 0600);\n        void *mem;\n        if (f == -1) {\n                perror(\"open()\");\n                return 1;\n        }\n        unlink(\"conftest.mmap\");\n\n        write(f, \"1\", 2);\n        mem = mmap(NULL, 2, PROT_READ|PROT_WRITE, MAP_SHARED, f, 0);\n        if (mem == MAP_FAILED) {\n                perror(\"mmap()\");\n                return 1;\n        }\n        strcpy(mem, \"2\");\n        msync(mem, 2, MS_SYNC);\n        lseek(f, 0, SEEK_SET);\n        write(f, \"3\", 2);\n\n        return strcmp(mem, \"3\") == 0 ? 0 : 1;\n}\n\nRegards,\nKristof"
+}

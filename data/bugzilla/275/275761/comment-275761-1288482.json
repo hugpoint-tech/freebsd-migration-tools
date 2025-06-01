@@ -1,0 +1,8 @@
+{
+ "id": 1288482,
+ "bug_id": 275761,
+ "attachment_id": 0,
+ "creation_time": "2023-12-17T16:48:54Z",
+ "creator": "novel@FreeBSD.org",
+ "text": "Hm, sorry, I'm not an X11 programming expert, so my assumptions below could be incorrect.\n\nFrom what I can see, xidle uses the XScreenServer extension for handling execution on timeout. I took the suggested repro with \"xidle -timeout 2 -program '/bin/echo OK'\" and could notice the issue too. I was curios what happens when it sees the second event, and both of them are from if (ev.type == x.saver_event) block in the default case of the \"switch (ev.type)\". The difference between these two events, however, is that the first event (before locking) has state \"ScreenSaverOn\" and the second has \"ScreenSaverOff\".\n\nFrom what I can see, we don't need to execute anything on \"ScreenSaverOff\" case. So I've patched xidle.c like this:\n\n--- xidle.c.orig        2023-12-17 17:06:14.826105000 +0100\n+++ xidle.c     2023-12-17 17:32:45.625797000 +0100\n@@ -426,7 +426,7 @@\n                                 * Was for real or due to terminal\n                                 * switching or a locking program?\n                                 */\n-                               if (timeout \u003e 0 \u0026\u0026 se-\u003eforced == False)\n+                               if (timeout \u003e 0 \u0026\u0026 se-\u003eforced == False \u0026\u0026 se-\u003estate == ScreenSaverOn)\n                                        action(\u0026x, args);\n                        }\n                        break;\n\nand it seem to work fine for me. Could you please give it a try?"
+}

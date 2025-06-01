@@ -1,0 +1,8 @@
+{
+ "id": 49940,
+ "bug_id": 16396,
+ "attachment_id": 0,
+ "creation_time": "2000-01-27T08:50:00Z",
+ "creator": "ganssauge@mpwsoftware.de",
+ "text": "I'm using libtool-1.3.3 to produce a shared library with some routines written in C++.\nThe C++-Compiler I'm using is g++295 from ports on Nov 1, 1999.\nThe linker command line is\n        libtool --mode=link g++295 -v -O -o $@ \\\n        `lorder $(OBJS) | tsort -q` \\\n        -rpath $(INSTALLDIR) -version-info $(MAJOR) \\\n        -export-symbols $(symbols)\n\nwhere $(symbols) contains the name of a file with all symbols to be\nexported.\nThe library itself seems to work OK, but when I'm trying to use it with\na TCL-Extension strange crashes occur.\nAfter tracing it back I finally found the cause:\nThe TCL-Extension, which itself is also using C++, calls library routines\nfrom the first shlib which are, according to $(symbols) above, not supposed\nto be exported but in fact are.\n\nHow-To-Repeat: Run the following script:\n----\u003e\u003c---- SNIP ----\u003e\u003c----\ncat \u003ex.cpp \u003c\u003c_EOF_\n# include \u003cfstream\u003e\n\nextern \"C\"\nint do_it (const char *file)\n{\n        ifstream i (file);\n        char ch;\n\n        while (i.get(ch))\n                ch = 0;\n\n        return (0);\n}\n_EOF_\nlibtool --mode=compile g++295 -c x.cpp\ncat \u003esymbols \u003c\u003c_EOF_\ndo_it\n_EOF_\nlibtool --mode=link g++295 -v -o libx.la x.lo -rpath /usr/local/lib -version-info 0 -export-symbols symbols\nnm -D .libs/libx.so\n----\u003e\u003c---- SNIP ----\u003e\u003c----\n\nThe output of the last nm command shows in fact that all routines from the\nC++-library which have been linked to the shared library are in fact\nexported although only 'do_it' was supposed to be visible."
+}

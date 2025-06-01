@@ -1,0 +1,8 @@
+{
+ "id": 940187,
+ "bug_id": 202609,
+ "attachment_id": 183931,
+ "creation_time": "2017-06-30T18:05:53Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Comment on attachment 183931\nv2 against r444690\n\n\u003e +DEBUG_MAKE_ENV=\t\tV=1\n\nDoes it have any effect nowadays? Verbose builds should be unconditional since ports r421635.\n\n\u003e  .include \u003cbsd.port.pre.mk\u003e\n\nNothing later in the file relies on USES for flow control (.if/.for) or target names/prerequisites (foo: a b c), so you can either replace bsd.port.pre.mk with bsd.port.options.mk or drop it via bmake syntax e.g.,\n\n-.include \u003cbsd.port.pre.mk\u003e\n[...]\n # Work around base r261801\n-.if ${OPSYS} == FreeBSD \u0026\u0026 ${OSVERSION} \u003c 1100508\n-GN_ARGS+=\textra_cxxflags=\"-D_LIBCPP_TRIVIAL_PAIR_COPY_CTOR=1\"\n-.endif\n+GN_ARGS+=\t${${OPSYS} == FreeBSD \u0026\u0026 ${OSVERSION} \u003c 1100508:? \\\n+\t\t  extra_cxxflags=\"-D_LIBCPP_TRIVIAL_PAIR_COPY_CTOR=1\":}\n\n\u003e +TEST_VARS=\t\tRUN_TESTS=\"${TEST_TARGETS}\"\n[...]\n\u003e  test regression-test: build\n\u003e -.for t in ${TEST_TARGETS}\n\u003e +.for t in ${RUN_TESTS}\n\nIIRC, this disables tests if they haven't been built. After ports r398125 it can be simplified to\n\n-TEST_VARS=\t\tRUN_TESTS=\"${TEST_TARGETS}\"\n[...]\n-test regression-test: build\n+do-test-TEST-on:\n .for t in ${TEST_TARGETS}\n\n\u003e +CC=\t\t\tclang40\n\u003e +CXX=\t\t\tclang++40\n\u003e +EXTRA_PATCHES+=\t\t${FILESDIR}/extra-patch-clang\n\nCan you move it higher in the file, just above the first GN_ARGS occurence? Also drop USES=compiler as CC/CXX are set manually while ${COMPILER_TYPE}, ${CHOSEN_COMPILER_TYPE}, ${COMPILER_VERSION} are unused. It would avoid pointless call to ${CC} --version which may not yet be installed."
+}

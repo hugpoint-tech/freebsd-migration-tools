@@ -1,0 +1,8 @@
+{
+ "id": 843271,
+ "bug_id": 203649,
+ "attachment_id": 0,
+ "creation_time": "2015-10-08T19:38:49Z",
+ "creator": "scdbackup@gmx.net",
+ "text": "usr.sbin/makefs/cd9660.c\n\nCID 1305659: Dereference before null check (REVERSE_INULL)i\n  check_after_deref: Null-checking var suggests that it may be null,\n  but it has already been dereferenced on all paths leading to the check.\n\n431        if (var)\n432                free(var);\n\n--------------- Source analysis:\n\nIndeed the function should bail out when allocation fails.\n\n327        if ((var = strdup(option)) == NULL)\n328                err(1, \"allocating memory for copy of option string\");\n\nIf err() does not finally call exit(), then the program runs\ninto a SIGSEGV by\n\n331        val = strchr(var, '=');\n\nThe function cd9660_parse_opts() gets called by usr.sbin/makefs/makefs.c\n\n                                if (! fstype-\u003eparse_options(p, \u0026fsoptions))\n                                        usage();\n\nusage() calls exit(1).\nSo i assume that return NULL would be the way to indicate error\nand cause abort. But usage() will indicate a user error where\na resource shortage is the reason.\n\n--------------- Remedy proposal:\n\nCall exit(1) if no memory is available. (Unless you can find the\ndefinition of err() and verify that it calls exit().)\n\n-        if ((var = strdup(option)) == NULL)\n+        if ((var = strdup(option)) == NULL) {\n                 err(1, \"allocating memory for copy of option string\");\n+                exit(1);\n+        }\n\nIn any case remove the test which made Coverity suspicious.\n\n-        if (var)\n-                free(var);\n+        free(var);"
+}

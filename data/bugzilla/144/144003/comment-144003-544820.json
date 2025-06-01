@@ -1,0 +1,8 @@
+{
+ "id": 544820,
+ "bug_id": 144003,
+ "attachment_id": 0,
+ "creation_time": "2010-02-16T16:30:05Z",
+ "creator": "mfleming@isilon.com",
+ "text": "We've been seeing LOR #185 on http://sources.zabbadoz.net/freebsd/lor.html since October 2007 on and off.\n\nlock order reversal:\n 1st 0xffffff010a371600 kqueue (kqueue) @ /build/mnt/src/sys/kern/kern_event.c:1056\n 2nd 0xffffff009541b3d0 system map (system map) @ /build/mnt/src/sys/vm/vm_map.c:2424\nStack: -------------------------------------------------\n\n0xffffffff802117f9 -\u003e 0xffffffff802117b0 (fp=0xffffffffde8f95c0): _mtx_lock_flags\n0xffffffff80366047 -\u003e 0xffffffff80366020 (fp=0xffffffffde8f95e0): _vm_map_lock\n0xffffffff80368d8d -\u003e 0xffffffff80368d60 (fp=0xffffffffde8f9610): vm_map_remove\n0xffffffff8035f0a4 -\u003e 0xffffffff8035f050 (fp=0xffffffffde8f9630): uma_large_free\n0xffffffff8020ea20 -\u003e 0xffffffff8020e9b0 (fp=0xffffffffde8f9660): free\n0xffffffff801f82ed -\u003e 0xffffffff801f8120 (fp=0xffffffffde8f96a0): kqueue_expand\n0xffffffff801f9675 -\u003e 0xffffffff801f9110 (fp=0xffffffffde8f9720): kqueue_register\n0xffffffff801f9e60 -\u003e 0xffffffff801f9d70 (fp=0xffffffffde8f98e0): kern_kevent\n0xffffffff803ba626 -\u003e 0xffffffff803ba5e0 (fp=0xffffffffde8f9940): freebsd32_kevent\n0xffffffff803b97aa -\u003e 0xffffffff803b94c0 (fp=0xffffffffde8f9c20): ia32_syscall\n\nFix: Patch attached with submission follows:\nHow-To-Repeat: unknown; kqueue_expand will call free(9) regularly but I think most of the time it doesn't cause the LOR."
+}

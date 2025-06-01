@@ -1,0 +1,8 @@
+{
+ "id": 582642,
+ "bug_id": 151435,
+ "attachment_id": 0,
+ "creation_time": "2010-10-13T21:00:18Z",
+ "creator": "aboyer@averesystems.com",
+ "text": "SVN 194760 changed ifa_ifwithaddr() so that it returns a reference along with the ifa.  ifa_ifwithaddr_check() was added to simplify things for callers who didn't want to deal with a reference.\n\nOn line 344 of sys/netinet/ip_options.c, there's a call to ifa_ifwithaddr() that does not store a return value.  It looks like it should have been converted to ifa_ifwithaddr_check().\n\nThis is only an issue if packets with IPOPT_TS_PRESPEC set are received, so it's not likely been a problem for anyone.\n\nFix: \n\n--- sys/netinet/ip_options.c\n+++ sys/netinet/ip_options.c\n@@ -341,7 +341,7 @@ dropit:\n                                }\n                                (void)memcpy(\u0026ipaddr.sin_addr, sin,\n                                    sizeof(struct in_addr));\n-                               if (ifa_ifwithaddr((SA)\u0026ipaddr) == NULL)\n+                               if (ifa_ifwithaddr_check((SA)\u0026ipaddr) == 0)\n                                        continue;\n                                cp[IPOPT_OFFSET] += sizeof(struct in_addr);\n                                off += sizeof(struct in_addr);\nHow-To-Repeat: Unknown - found by code review."
+}

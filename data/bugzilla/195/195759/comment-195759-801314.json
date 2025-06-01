@@ -1,0 +1,8 @@
+{
+ "id": 801314,
+ "bug_id": 195759,
+ "attachment_id": 0,
+ "creation_time": "2014-12-18T04:30:45Z",
+ "creator": "henry.hu.sh@gmail.com",
+ "text": "Ok, I know why.\n\nIn app.cpp, slim creates child_env, and uses it as the environment of the child.\nIf PAM is not used, the array child_env is manually created and filled with predefined entries. Else, the array is obtained from the pam module.\n\nSo it seems hard to support all the environment variables that setusercontext() supports. Which environment variables do you really need? LANG and PATH and anything else?\n\nsetusercontext() supports these env vars:\n                          path          PATH\n                          manpath       MANPATH\n                          lang          LANG\n                          charset       MM_CHARSET\n                          timezone      TZ\n                          term          TERM\nFor PATH, because there is an option called default_path in slim's configuration file, maybe we should just ignore the login.conf.\nFor LANG, we can get the entry \"lang\" from login database and set it.\nFor TERM, slim sets it from its own version. Anyway, we're using slim so it's not that important.\nFor other variables(TZ, MM_CHARSET, MANPATH), we can do it in a similar way.\n\nBut it might be still better to use setusercontext() because it sets resource limits, priorities, umask and other things."
+}

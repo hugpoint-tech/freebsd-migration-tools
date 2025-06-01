@@ -1,0 +1,8 @@
+{
+ "id": 1069600,
+ "bug_id": 240989,
+ "attachment_id": 0,
+ "creation_time": "2019-10-01T23:44:31Z",
+ "creator": "iwtcex@gmail.com",
+ "text": "Here's a small example:\n\n#define _GNU_SOURCE\n\n#include \u003cassert.h\u003e\n#include \u003cerrno.h\u003e\n#include \u003cfcntl.h\u003e\n#include \u003cstdio.h\u003e\n#include \u003cunistd.h\u003e\n\n#include \u003csys/syscall.h\u003e\n#include \u003csys/time.h\u003e\n#include \u003csys/types.h\u003e\n#include \u003csys/mman.h\u003e\n\n#include \u003clinux/futex.h\u003e\n\n#define SHM_FILE_PATH \"/futex-bug\"\n\nint main() {\n\n  int fd = shm_open(SHM_FILE_PATH, O_CREAT | O_RDWR, 0777);\n  assert(fd != -1);\n\n  ftruncate(fd, 4);\n\n  int* addr = mmap(NULL, 4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);\n  assert(addr != MAP_FAILED);\n\n  close(fd);\n\n#ifdef WAIT\n\n  struct timespec timeout = {.tv_sec = 1, .tv_nsec = 0};\n  int err = -1;\n  do {\n    err = syscall(SYS_futex, addr, FUTEX_WAIT, 0, \u0026timeout, NULL, 0);\n    if (err == -1) {\n      printf(\"FUTEX_WAIT: %d [%s]\\n\", err, strerror(errno));  \n    } else {\n      printf(\"FUTEX_WAIT: %d\\n\", err);\n    }\n  } while (err == -1 \u0026\u0026 errno == ETIMEDOUT);\n\n  shm_unlink(SHM_FILE_PATH);\n\n#else\n\n  int err = syscall(SYS_futex, addr, FUTEX_WAKE, 1, NULL, NULL, 0);\n  printf(\"FUTEX_WAKE: %d\\n\", err);\n\n#endif\n\n  return 0;\n}\n\nCompile this with:\n\n/compat/linux/bin/cc -DWAIT -m32 --sysroot=/compat/linux futex_bug.c -lrt -o wait32\n/compat/linux/bin/cc        -m32 --sysroot=/compat/linux futex_bug.c -lrt -o wake32\n/compat/linux/bin/cc        -m64 --sysroot=/compat/linux futex_bug.c -lrt -o wake64\n\nRun wait32, then try wake64 and wake32."
+}

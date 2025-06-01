@@ -1,0 +1,8 @@
+{
+ "id": 887414,
+ "bug_id": 203864,
+ "attachment_id": 0,
+ "creation_time": "2016-07-10T17:10:58Z",
+ "creator": "avg@FreeBSD.org",
+ "text": "And another deadlock of the same nature, but with an even more obvious LOR:\n\n 5087 100846 zfs              -                mi_switch+0x167 sleepq_switch+0xe7 sleepq_wait+0x43 _cv_wait+0x1e4 rrw_enter_read_impl+0x9b dsl_pool_hold+0x77 dmu_objset_own+0x31 zvol_create_minor+0x16f zvol_create_minors+0x9d zfs_ioc_create+0x3df zfsdev_ioctl+0x65c devfs_ioctl_f+0x156 kern_ioctl+0x246 sys_ioctl+0x171 amd64_syscall+0x2db Xfast_syscall+0xfb\n                                                                                                                      6 100572 zfskern          txg_thread_enter mi_switch+0x167 sleepq_switch+0xe7 sleepq_wait+0x43 _sx_xlock_hard+0x49d _sx_xlock+0xc5 zvol_rename_minors+0x104 dsl_dir_rename_sync+0x406 dsl_sync_task_sync+0xef dsl_pool_sync+0x45b spa_sync+0x7c7 txg_sync_thread+0x383 fork_exit+0x84 fork_trampoline+0xe\n\n\nThread 100846 took spa_namespace_lock in zvol_create_minor() and wants to get dp_config_rwlock (as a reader) in dsl_pool_hold().\nThread 100572 took as dp_config_rwlock (as a writer) in dsl_sync_task_sync() and wants to take spa_namespace_lock in zvol_rename_minors()."
+}

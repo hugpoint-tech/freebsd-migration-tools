@@ -1,0 +1,8 @@
+{
+ "id": 604151,
+ "bug_id": 155752,
+ "attachment_id": 0,
+ "creation_time": "2011-03-21T15:40:01Z",
+ "creator": "phk@critter.freebsd.dk",
+ "text": "\n\tWith the change from sio(4) to uart(4), tcdrain(3) broke.\n\n\tNow tcdrain(3) only tests if the characters have been\n\tdelivered to the uart(4) subdriver, it does not wait for\n\tthem to have actually been sent on the wire.\n\n\tThis prevents half-duplex communications with CTS/RTS from\n\tworking.\n\n\tThis contradicts both our own manpage and The Open Group\n\tStandards.\n\nFix: \n\nThere don't seem to be a newbus uart(4) method to ask or\n\twait until all transmitted characters have been sent.\n\n\tOne is obviously necessary.\nHow-To-Repeat: \n\t#define AZ(x) assert ((x) == 0)\n\tint j, fd;\n\n\tfd = open(),\n \tmakeraw() etc.\n\tset speed 300BPS\n\n\tj = TIOCM_RTS;\n        AZ(ioctl(fd, TIOCMBIS, \u0026j));\n        assert(3 == write(fd, \"FOO\", 3))\n        AZ(tcdrain(fd));\n        AZ(ioctl(fd, TIOCMBIC, \u0026j));\n\n\tObserve that RTS flips high + low, long before the three\n\tcharacters make it out through the TXD pin."
+}

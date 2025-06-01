@@ -1,0 +1,8 @@
+{
+ "id": 1279618,
+ "bug_id": 274419,
+ "attachment_id": 0,
+ "creation_time": "2023-10-13T09:40:40Z",
+ "creator": "jbeich@FreeBSD.org",
+ "text": "Why port OpenSSL 3.0 (in FreeBSD 13.2) needs OpenSSL 1.1 API compat but base OpenSSL 3.0 (in FreeBSD 14.0) does not? Looks like a workaround for an ABI mismatch: /usr/local/include/openssl vs. /usr/lib/libcrypto.so. This mainly affects libpipewire-module-raop-sink.so, so runtime may be tricky to test.\n\n$ pkg install openssl30\n$ pkg-config --modversion openssl\n1.1.1t\n\ndiff --git a/multimedia/pipewire/Makefile b/multimedia/pipewire/Makefile\nindex d5d154acd4e5..b3b9866e0514 100644\n--- a/multimedia/pipewire/Makefile\n+++ b/multimedia/pipewire/Makefile\n@@ -111,8 +111,9 @@ post-install-MEDIASESSION-on:\n \n .include \u003cbsd.port.pre.mk\u003e\n \n-.if ${SSL_DEFAULT:C,3[0-9],3,} == openssl3\n-CFLAGS+=\t-DOPENSSL_API_COMPAT=0x10100000L\n+.if ${SSL_DEFAULT} != base\n+# XXX Move into USES=ssl to fix for USES=meson and other USES=pkgconfig consumers\n+CONFIGURE_ENV+=\tPKG_CONFIG_PATH=${LOCALBASE}/libdata/pkgconfig\n .endif\n \n .include \u003cbsd.port.post.mk\u003e"
+}

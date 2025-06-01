@@ -1,0 +1,8 @@
+{
+ "id": 527023,
+ "bug_id": 140325,
+ "attachment_id": 0,
+ "creation_time": "2009-11-06T00:30:07Z",
+ "creator": "robertjenssen@hotmail.com",
+ "text": "I was getting some weird values for usb configuration descriptor extra\nlength. Valgrind is a wonderful tool recently ported to FreeBSD by\nstas@FreeBSD.org. Using valgrind I found the following problems (fixed\nin the attached patch):\n\n1. In libusb10_desc.c, libusb_get_config_descriptor(), at line 162:\n\tpconfd-\u003einterface = (libusb_interface *) (pconfd +\n\t    sizeof(libusb_config_descriptor));\nshould be:\n\tpconfd-\u003einterface = (libusb_interface *) (pconfd + 1);\nThis problem causes illegal writes past the end of pconfd.\n\n2. In libusb20_ugen20.c , ugen20_get_config_desc_full(), cdesc and ptr\nare not initialised. This problem causes branches on uninitialised values.\n\n3. In libusb20.c, libusb20_be_free(), pbe is not free'd. This problem\ncauses a minor memory leak.\n\nFix: Apply the attached patch in /usr/src/lib/libusb\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Compile the following test, link with a debug version of libusb.a and\nrun valgrind.\n\n#include \u003clibusb.h\u003e\nint main(void) {\n  libusb_context *context;\n  struct libusb_device **devs;\n  struct libusb_config_descriptor *config;\n\n  libusb_init(\u0026context);\n  libusb_get_device_list(context, \u0026devs);\n  libusb_get_active_config_descriptor(devs[0], \u0026config);\n  libusb_free_config_descriptor(config);\n  libusb_free_device_list(devs, 1);\n  libusb_exit(context);\n  return 0;\n}"
+}

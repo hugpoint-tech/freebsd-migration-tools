@@ -1,0 +1,8 @@
+{
+ "id": 576321,
+ "bug_id": 150251,
+ "attachment_id": 0,
+ "creation_time": "2010-09-03T17:00:07Z",
+ "creator": "aboyer@averesystems.com",
+ "text": "On an 82599 card, the PHY type is not known until the SFP+ module is connected.  If no module is installed when the driver loads, the PHY type will be set to ixgbe_phy_none in ixgbe_identify_phy_82599().  Once it is set there, it will never be re-set, even after a cable is plugged in.  SFP+ modules which require initialization won't get it.\n\nThe detection logic in ixgbe_sfp_probe() won't do anything unless the PHY type is set to ixgbe_phy_nl, so it works on 82598 cards but not on 82599 cards.\n\nFix: Add PHY detection logic to ixgbe_handle_mod().\nAdd locking to ixgbe_handle_mod() and ixgbe_handle_msf() since PHY detection sometimes fails without it.\nSince mod_task will call msf_task if necessary, simplify logic in ixgbe_config_link().\n\nPatch attached with submission follows:\nHow-To-Repeat: Install an 82599 card but no SFP+ module.  Boot the system, then install a cable (copper or optical)."
+}

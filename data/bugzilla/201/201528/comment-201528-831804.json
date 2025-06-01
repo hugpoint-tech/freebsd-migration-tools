@@ -1,0 +1,8 @@
+{
+ "id": 831804,
+ "bug_id": 201528,
+ "attachment_id": 0,
+ "creation_time": "2015-07-13T14:43:07Z",
+ "creator": "mjg@FreeBSD.org",
+ "text": "Quick look suggests the problem seems to be here:\n\n        while (count) {\n                KQ_OWNED(kq);\n                kn = TAILQ_FIRST(\u0026kq-\u003ekq_head);\n\n                if ((kn-\u003ekn_status == KN_MARKER \u0026\u0026 kn != marker) ||\n                    (kn-\u003ekn_status \u0026 KN_INFLUX) == KN_INFLUX) {\n                        if (influx) {\n                                influx = 0;\n                                KQ_FLUX_WAKEUP(kq);\n                        }\n                        kq-\u003ekq_state |= KQ_FLUXWAIT;\n                        error = msleep(kq, \u0026kq-\u003ekq_lock, PSOCK,\n                            \"kqflxwt\", 0);\n                        continue;\n                }\n\n\ncount is not modified, so the code just loops after a signal is received."
+}

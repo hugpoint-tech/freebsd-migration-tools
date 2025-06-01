@@ -1,0 +1,8 @@
+{
+ "id": 1014586,
+ "bug_id": 231998,
+ "attachment_id": 197832,
+ "creation_time": "2018-10-06T13:29:38Z",
+ "creator": "andreas.sommer87@googlemail.com",
+ "text": "Created attachment 197832\ncryptopp 7.0.0 build log on 2018Q4 / FreeBSD 11.2 amd64\n\nBy default, the SIMD option is off, resulting in disabling certain features:\n\nc++ -O2 -pipe -fstack-protector -fno-strict-aliasing -std=c++11 -stdlib=libc++ -Wno-deprecated-declarations -fPIC -DNDEBUG -DCRYPTOPP_DISABLE_ASM -DCRYPTOPP_DISABLE_SSE2 -DCRYPTOPP_DISABLE_SSSE3 -DCRYPTOPP_DISABLE_SSE4 -pthread -pipe -c misc.cpp\n\nThus, the `AlignedDeallocate` function does not get compiled.\n\nTrying to use the shared object with `-lcryptopp` results in the above linker error because `config.h` determines enabled features by the `CRYPTOPP_DISABLE_*` macros.\n\nIn this case:\n\n#if (CRYPTOPP_BOOL_X86 || CRYPTOPP_BOOL_X32 || CRYPTOPP_BOOL_X64 || CRYPTOPP_BOOL_PPC32 || CRYPTOPP_BOOL_PPC64) \u0026\u0026 !defined(CRYPTOPP_DISABLE_ASM)\n        #define CRYPTOPP_BOOL_ALIGN16 1\n#else\n        #define CRYPTOPP_BOOL_ALIGN16 0\n#endif\n\nSo a program linking against libcryptopp will think that CRYPTOPP_BOOL_ALIGN16=1 while it was actually compiled (using default option) with CRYPTOPP_BOOL_ALIGN16=0, leading to the missing function.\n\nNot sure how to approach this. Maybe write the chosen `CRYPTOPP_DISABLE_*` into the installed `config.h`?!"
+}

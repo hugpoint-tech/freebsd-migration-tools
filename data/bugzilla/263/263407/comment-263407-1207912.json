@@ -1,0 +1,8 @@
+{
+ "id": 1207912,
+ "bug_id": 263407,
+ "attachment_id": 0,
+ "creation_time": "2022-04-20T21:13:00Z",
+ "creator": "mm@FreeBSD.org",
+ "text": "I have started debugging and here is my finding:\n\nThere are no errors with 13.1-BETA3. But this doesn't mean it is \"fine\".\n\nWhen doing a 13.1-RC3 install with ZFS+GELI, the loader fails to load /boot/kernel/geom_eli.ko with the following error message:\nelf64_obj_loadimage: read section headers failed\n\nThat way geom_eli.ko is not loaded and ZFS is of course unable to find the \"zroot\" pool when trying to mount root, because the geli device does not exist.\n\nThe file has the correct checksum. But the loader can't cope with it - unknown reason. You can load other modules.\n\nI have found this workaround:\nWhen you exit to shell after running the automated installer (before doing reboot) and do the following:\n\ncp /boot/kernel/geom_eli.ko /tmp\nrm /boot/kernel/geom_eli.ko\ncp /tmp/geom_eli.ko /boot/kernel/geom_eli.ko\n\nAnd then reboot, the system boots fine.\nIs this a problem in the ZFS support of our loader (not being able to read a specific file out of ZFS) or elsewhere?\n\nIn BETA3, the geom_eli.ko might be just located on a different position on the root pool and that why it is being read correctly by the loader."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 1255221,
+ "bug_id": 270785,
+ "attachment_id": 0,
+ "creation_time": "2023-04-14T15:39:42Z",
+ "creator": "bllcha013@myuct.ac.za",
+ "text": "Interestingly, there is a bug report for Minecraft that seems related: https://bugs.mojang.com/browse/MC-183518\n\nIt seems that an extremely low timeout is causing massive numbers of calls per second. This issue wasn't noticeable before, but now is, probably due to the increased precision of timing allowed with the commit. For Linux, changing the value in /proc/\u003cpid\u003e/timerslack_ns apparently helps, but it isn't there on FreeBSD.\n\nI noticed that the difference between \"steps\" of the tv_nsec value in the dtrace output was seemingly tied to kern.hz before the commit, so kern.hz=100 would give a 10ms step, and kern.hz=1000 would give a 1ms step, no matter what kern.eventtimer.periodic is set to, which I confirmed with dtrace. After the commit, kern.hz doesn't seem to have an impact when kern.eventtimer.periodic=0: the step is always 0.1ms. However, using kern.eventtimer.periodic=1 changes things: it becomes 0.5ms with kern.hz=1000 and 2.5ms with kern.hz=100.\n\nFrom my (limited) understanding, the commit improves the precision of timed waits, but the old behavior inadvertently helped with CPU utilization and power efficiency by preventing software from being too abusive with short timeouts and constantly waking the CPU.\n\nPlease let me know if there is any other information I can provide."
+}

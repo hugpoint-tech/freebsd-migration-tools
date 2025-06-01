@@ -1,0 +1,8 @@
+{
+ "id": 876727,
+ "bug_id": 209112,
+ "attachment_id": 0,
+ "creation_time": "2016-04-29T23:24:18Z",
+ "creator": "jamie@FreeBSD.org",
+ "text": "There are a couple problems with the jail startup script, neither of which is exactly at the center of this complaint.\n\nThe first is the lack of logging in case of failure.  The $_tmp file is removed (after printing only the last line), which it should be preserved somehow.  I don't know if printing the whole thing out is the right answer, or appending it to some long file, but removing it is problematic.\n\nThe second is the parallel start.  There is a jail_parallel_start flag, but it's only checked when starting a subset of jails (i.e. \"service jail start foo bar\") and not when starting all jails.\n\nBoth of these should be fixed, but they're not the source of your problem, only something that makes it harder to solve.  Unfortunately, I wasn't able to recreate your issue, and was in fact able to create 100 jails each with a nullfs-mount directory, in a setup based on your noted jail.conf file.\n\nStill, I have a guess: the nullfs module.  The error you're getting is ENODEV, is given when mounting a filesystem type that depends on a kernel module and loading that module fails.  Now there's some kernel locking around the module load that should make it so different mounts tying to load the same module at the same time don't run into each other, and like I mentioned it worked out for me.  But of the places where ENODEV was mentioned, that seemed the most likely.\n\nI'll leave this bug open, but I'll only be looking at the jail part of it, not at the central issue.  That's out of my area and what I failed to duplicate."
+}

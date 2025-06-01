@@ -1,0 +1,8 @@
+{
+ "id": 1019303,
+ "bug_id": 232835,
+ "attachment_id": 0,
+ "creation_time": "2018-10-30T23:27:39Z",
+ "creator": "cem@freebsd.org",
+ "text": "This is related to bug 232671 , but not identical.\n\nHere is the example scenario:\n\n1. I start with a GMIRROR with three ACTIVE disks\n   (sc_ndisks = md_all = 3)\n\n2. I essentially disconnect one of the disks\n\n3. The remaining mirrors lower md_all to 2 and the syncid /\n   generation gets bumped\n\n4. I reboot, and the removed disk reappears\n\n5. Geom tastes the stale removed disk first, and populates\n   sc_ndisks from its md_all (3)\n\n6. The two valid mirrors are tasted afterwards and the gmirror\n   rejects both as having invalid metadata (md_all=2), despite\n   their having a higher generation / sync id\n\nThe problem is basically that gmirror doesn't \"upgrade\" its metadata\nto the newest valid mirrorset it finds -- it just sticks with whatever\nit found first.\n\nI think the solution is being a bit clever about detecting the latest\nmirror generation while a gmirror is still in the STARTING state;\nand also perhaps a little more clever about when we transition from\nSTARTING to RUNNING (at which point a newer generation mirror showing\nup means we have corruption)."
+}

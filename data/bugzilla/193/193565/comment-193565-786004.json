@@ -1,0 +1,8 @@
+{
+ "id": 786004,
+ "bug_id": 193565,
+ "attachment_id": 0,
+ "creation_time": "2014-09-11T15:38:10Z",
+ "creator": "eric@vangyzen.net",
+ "text": "With code that exercises contigmalloc, I can reliably induce a panic (page fault or GPF) in vm_reserv_alloc_contig.  The immediate cause is a bad pointer around line 431 (without INVARIANTS), or failing the (rv-\u003eobject == NULL) assertion.\n\nAfter a little digging, I see that vm_reserv_alloc_contig calls vm_phys_alloc_contig with an allocpages value that is not a multiple of VM_LEVEL_0_NPAGES.  This seems bad.  Before the call to vm_phys_alloc_contig, I see the following values (via printf):\n\nallocpages=646\nminpages=646\nmaxpages=1024\npindex=2013184\nVM_RESERV_INDEX(object, pindex)=0\nnpages=646\nobject=0xffffffff80bd3fe8\n\nallocpages is set to minpages by the (msucc != NULL) case.\n\nI'm not very familiar with the current VM system, and I unfortunately don't have a lot of time to study it, so I'll need some help from here.  It's trivial to reproduce, and the system is set up for remote kgdb, so I can answer questions or try diagnostic code pretty quickly.\n\nThis is 10.0-RELEASE-p7 with no interesting changes in sys/vm."
+}

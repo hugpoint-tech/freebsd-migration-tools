@@ -1,0 +1,8 @@
+{
+ "id": 1290196,
+ "bug_id": 275224,
+ "attachment_id": 0,
+ "creation_time": "2024-01-01T15:50:15Z",
+ "creator": "netchild@FreeBSD.org",
+ "text": "I tried with samba shares physically on zfs, which are nullfs mounted into a jail which runs samba and exports to Windows 11 and Windows 10. I can see the directory contents, but when I try to access a file (e.g. text file), Windows tells me it can not access the file. The samba log contains in the log log.\u003cwindows_host_name\u003e the lines\n---snip---\n[2024/01/01 16:01:16.059649,  0] ../../source3/modules/vfs_zfsacl.c:363(fget_zfsacl)\n fget_zfsacl: fdescfs filesystem must be mounted with 'nodup' option\n---snip---\n\nInside this jail I have this:\n---snip---\n# mount -v | grep fdesc\nfdescfs on /dev/fd (fdescfs, vnodes: count 5 )\nfdescfs on /var/run/samba4/fd (fdescfs, vnodes: count 2 )\n---snip---\n\nThe second fdescfs (in the samba pid dir) is mounted from the jail-host with the options rw,noatime,nodup.\n\nChanging files/0099-s3-modules-zfsacl-fix-get-set-ACL-on-FreeBSD-13.patch to comment out (=workaround) this (2 times) makes it work:\n---snip---\n+/*             if (!fsp-\u003efsp_flags.have_proc_fds) {\n+                       DBG_ERR(\"fdescfs filesystem must be mounted with 'nodup' \"\n+                               \"option \\n\");\n+                       errno = EBADF;\n+                       return -1;\n+               }*/\n---snip---\n\nSo the check for have_proc_fds for jails is not correct."
+}

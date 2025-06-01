@@ -1,0 +1,8 @@
+{
+ "id": 824559,
+ "bug_id": 200319,
+ "attachment_id": 156928,
+ "creation_time": "2015-05-19T08:20:35Z",
+ "creator": "eri@pfsense.org",
+ "text": "Created attachment 156928\nFixes on carp+bridge freeze\n\nThe interaction between carp and bridge code makes the OS hang.\n\nIf there is a bridge with member an interface that has a CARP ip and no minimal amount of traffic flowing in the system result is a hang of the system and sometimes a crash.\n\nReference https://redmine.pfsense.org/issues/4607\n\nAfter analysis seems that the carp code uses taskqueue_swi for scheduling demotion events.\nThe carp CIF lock had a lot of contention.\nether_input was doing duplicate checks of bridge_input causing even more contention on the CIF lock.\n\nAttached patch converts CIF lock to RW lock.\nIt avoids duplicate checks from ether_input in case of bridge\nschedules the taskqueue as taskqueue_thread rather than a SWI thread."
+}

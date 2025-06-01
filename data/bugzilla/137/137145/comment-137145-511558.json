@@ -1,0 +1,8 @@
+{
+ "id": 511558,
+ "bug_id": 137145,
+ "attachment_id": 0,
+ "creation_time": "2009-07-26T04:20:01Z",
+ "creator": "mclos.lin@gmail.com",
+ "text": "In our products, there exists one mbuf+mclust which is used to storage the certificate. And there're 3 threads will call m_copypacket to copy the packet during the communication. At some cases, the reference count of the mclust isn't correct, and which will cause double free the mclust.\n\nFix: Following is my fix for this problem:\n\n--- uipc_mbuf.c.org\t2009-07-26 10:58:56.000000000 +0800\n+++ uipc_mbuf.c\t2009-07-26 10:59:27.000000000 +0800\n@@ -317,10 +317,7 @@ mb_dupcl(struct mbuf *n, struct mbuf *m)\n \tKASSERT(m-\u003em_ext.ref_cnt != NULL, (\"%s: ref_cnt not set\", __func__));\n \tKASSERT((n-\u003em_flags \u0026 M_EXT) == 0, (\"%s: M_EXT set\", __func__));\n \n-\tif (*(m-\u003em_ext.ref_cnt) == 1)\n-\t\t*(m-\u003em_ext.ref_cnt) += 1;\n-\telse\n-\t\tatomic_add_int(m-\u003em_ext.ref_cnt, 1);\n+\tatomic_add_int(m-\u003em_ext.ref_cnt, 1);\n \tn-\u003em_ext.ext_buf = m-\u003em_ext.ext_buf;\n \tn-\u003em_ext.ext_free = m-\u003em_ext.ext_free;\n \tn-\u003em_ext.ext_args = m-\u003em_ext.ext_args;\n\n\nPatch attached with submission follows:\nHow-To-Repeat: In kernel, you can write a test program, which will call m_copypacket. Then use loadrunner to stress the program. After some time, system will panic."
+}

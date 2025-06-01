@@ -1,0 +1,8 @@
+{
+ "id": 519457,
+ "bug_id": 138764,
+ "attachment_id": 0,
+ "creation_time": "2009-09-12T17:30:07Z",
+ "creator": "tdb@FreeBSD.org",
+ "text": "I'm running with a ZFS root file system using GPT partitioning and gptzfsboot. I then started using ZFS snapshots by using the sysutils/freebsd-snapshot port. This port basically just runs \"zfs snapshot\" and does some housekeeping.\n\nThe first snapshot went fine (when the machine was quiet). The second (when the machine was doing a portupgrade) caused a panic. All I have on the console is:\n\npanic: dirtying snapshot\n\nI traced this down to:\n\nsys/cddl/contrib/opensolaris/uts/common/fs/zfs/dsl_dataset.c:1104\n\nvoid\ndsl_dataset_dirty(dsl_dataset_t *ds, dmu_tx_t *tx)\n{\n        dsl_pool_t *dp;\n\n        if (ds == NULL) /* this is the meta-objset */\n                return;\n\n        ASSERT(ds-\u003eds_user_ptr != NULL);\n\n        if (ds-\u003eds_phys-\u003eds_next_snap_obj != 0)\n                panic(\"dirtying snapshot!\");\n\n        dp = ds-\u003eds_dir-\u003edd_pool;\n\n        if (txg_list_add(\u0026dp-\u003edp_dirty_datasets, ds, tx-\u003etx_txg) == 0) {\n                /* up the hold count until we can be written out */\n                dmu_buf_add_ref(ds-\u003eds_dbuf, ds);\n        }\n}\n\nI'm not sure what this means though.\n\nSadly I have no debugging enabled and no crash dump.\n\nHow-To-Repeat: Hard to say. Run ZFS root and do snapshots when the machine is busy? I've only seen it once."
+}

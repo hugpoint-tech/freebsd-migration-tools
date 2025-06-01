@@ -1,0 +1,8 @@
+{
+ "id": 405534,
+ "bug_id": 115414,
+ "attachment_id": 0,
+ "creation_time": "2007-08-11T04:00:04Z",
+ "creator": "ports@grosbein.net",
+ "text": "\tmake buildworld breaks on tap(4) module build:\n\n===\u003e sys/modules/if_tap (depend)\nrm -f .depend\nmkdep -f .depend -a   -nostdinc -D_KERNEL -DKLD_MODULE -I- -I. -I@\n-I@/contrib/altq -I@/../include\n/usr/obj/src/sys/modules/if_tap/../../net/if_tap.c\n/usr/obj/src/sys/modules/if_tap/../../net/if_tap.c:38:24: opt_compat.h: No such file or directory\nmkdep: compile failed\n*** Error code 1\n\n\tThe reason is that fix for PR: kern/111480 was incomplete.\n\nFix: Perform MFC of src/sys/modules/if_tap/Makefile,v1.6:\n\n\n\nEugene Grosbein--yso5xb8NK3HYyUVFqv8WSEi58x3ZI1WmZzV9fey9H2CveyJS\nContent-Type: text/plain; name=\"file.diff\"\nContent-Transfer-Encoding: 7bit\nContent-Disposition: attachment; filename=\"file.diff\"\n\n--- Makefile.orig\t2007-08-11 10:47:19.000000000 +0800\n+++ Makefile\t2007-08-11 10:48:14.000000000 +0800\n@@ -5,9 +5,12 @@\n .PATH: ${.CURDIR}/../../net\n \n KMOD=\tif_tap\n-SRCS=\tif_tap.c opt_inet.h vnode_if.h\n+SRCS=\tif_tap.c opt_compat.h opt_inet.h vnode_if.h\n \n .if !defined(KERNBUILDDIR)\n+opt_compat.h:\n+\techo \"#define COMPAT_FREEBSD6 1\" \u003e ${.TARGET}\n+\n opt_inet.h:\n \techo \"#define INET 1\" \u003e opt_inet.h\n .endif\nHow-To-Repeat: \tcd /usr/src \u0026\u0026 make MODULES_WITH_WORLD=true buildworld"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 45458,
+ "bug_id": 14941,
+ "attachment_id": 0,
+ "creation_time": "1999-11-17T13:10:00Z",
+ "creator": "root@d074.paris-222.cybercable.fr",
+ "text": "\n\tthe init(8) manual says :\n\n\tAny super-user process can raise the security level, but only\n\tinit can lower it.\n\t...\n\tIf the security level is initially -1, then init leaves it\n\tunchanged.  Otherwise, init arranges to run the system in\n\tlevel 0 mode while single-user and in level 1 mode while\n\tmulti-user. \n\n\tbut in the kernel says :\n\n\tin function sysctl_kern_securelvl in /sys/kern/kern_mib.c :\n\n\t\tif (securelevel \u003e 1 \u0026\u0026 level \u003c securelevel)\n\t\t\treturn (EPERM);\n\n\tas well as the sysctl(3) manual and some other docs :\n\n\tKERN_SECURELVL\n\t\tThe system security level.  This level may be raised\n\t\tby processes with appropriate privilege.  It may not\n\t\tbe lowered.\n\n\tso, if you have a security level greater or equal to 1,\n\teven when going to single-user mode, you cannot lower\n\tthe security level to 0 to install a new kernel and you\n\thave reboot into single-user or to set the\n\tkern_securelevel_enable to NO in the /etc/rc.conf file,\n\tthen reboot.\n\nFix: # diff -rcb kern_mib.c.orig kern_mib.c\na much portable solution would be :\n\n# diff -rcb kern_mib.c.orig kern_mib.c\nHow-To-Repeat: \n\tin /etc/rc.conf :\n\n\tkern_securelevel_enable=\"YES\"\n\tkern_securelevel=\"0\"\n\n\tboot to multi-user mode then switch to single user mode using :\n\n\tinit 1\n\n\tyou got a syslog message saying :\n\n\tcannot change kernel security level from 1 to 0: Permission denied."
+}

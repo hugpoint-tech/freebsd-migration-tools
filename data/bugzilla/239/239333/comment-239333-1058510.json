@@ -1,0 +1,8 @@
+{
+ "id": 1058510,
+ "bug_id": 239333,
+ "attachment_id": 0,
+ "creation_time": "2019-07-20T11:12:08Z",
+ "creator": "d@dcepelik.cz",
+ "text": "URL: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/make.html\n\nPOSIX.2017 states the following about -s: \"Do not write makefile command lines or touch messages (see -t) to standard output before executing. This mode shall be the same as if the special target .SILENT were specified without prerequisites.\"\n\nHowever, with -s the \"Entering/Leaving directory ...\" messages are suppressed, while with .SILENT: they're not.\n\nI'm not sure whether bmake is actually aiming for POSIX compliance (it would seem so), if that's the case, this minor discrepancy should be fixed.\n\n  ~% uname -a\n  Linux a285 5.1.16-arch1-1-ARCH #1 SMP PREEMPT Wed Jul 3 20:23:07 UTC 2019 x86_64 GNU/Linux\n\n  ~% pacman -Qi bmake | fgrep Version\n  Version         : 20181221-1\n\nSince this is relatively obscure bug, I assume this wasn't addressed before and all versions of bmake are affected.\n\nTo demonstrate, two Makefiles are needed. First:\n\n  ~/bsdreport% cat Makefile\n  .POSIX:\n  .PHONY: all\n  .SILENT:\n\n  all:\n          make -f Makefile.2\n\nSecond:\n\n  ~/bsdreport% cat Makefile.2\n  foo:\n          touch $@\n\nThen:\n\n  ~/bsdreport% bmake\n  make[1]: Entering directory '/home/d/bsdreport'\n  make[1]: 'foo' is up to date.\n  make[1]: Leaving directory '/home/d/bsdreport'\n\nWhile bmake -s is indeed silent. (The help for -s states that -s is equivalent to prefixing each command with @; that's not true as adding @ before the recursive make call does not suppress the Entering/Leaving messages.)\n\nPlease let me know if I can provide further details.\n\n- David"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 503421,
+ "bug_id": 135485,
+ "attachment_id": 0,
+ "creation_time": "2009-06-11T21:50:01Z",
+ "creator": "nmisaghian@sandvine.com",
+ "text": "During a shutdown, kernel modules should be unloaded in reverse order in which they where loaded. Otherwise, modules that other modules depend on are unloaded first, which could cause problems.\n\nFix: \n\nsrc/sys/kern/kern_module.c\n\n\n\u003c typedef TAILQ_HEAD(modulelist, module) modulelist_t;\n\u003e typedef TAILQ_HEAD(, module) modulelist_t;\n\n\nstatic void\nmodule_shutdown(void *arg1, int arg2)\n{\n\tmodule_t mod;\n\n\tif (arg2 \u0026 RB_NOSYNC)\n\t\treturn;\n\tMOD_SLOCK;\n\u003c\tTAILQ_FOREACH_REVERSE(mod, \u0026modules, modulelist, link)\n\u003e       TAILQ_FOREACH(mod, \u0026modules, link)\n\t\tMOD_EVENT(mod, MOD_SHUTDOWN);\n\tMOD_SUNLOCK;\n}"
+}

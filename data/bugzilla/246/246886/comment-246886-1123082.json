@@ -1,0 +1,8 @@
+{
+ "id": 1123082,
+ "bug_id": 246886,
+ "attachment_id": 0,
+ "creation_time": "2020-09-21T17:16:14Z",
+ "creator": "glebius@FreeBSD.org",
+ "text": "Then that's a crazy mix of subsystems involved!\n\nHere goes description of how nginx combines aio and sendfile. When sendfile(2) returns EBUSY, nginx would do aio_read(2) of 1 byte out of the file, and use a side effect of the page being cached, then it would retry sendfile again.\n\nNote, that EBUSY from sendfile in FreeBSD 11 and before means totally different thing than EBUSY from sendfile on FreeBSD 12 and after. On older versions EBUSY means that SF_NODISKIO was set on request and file is not in memory. On new versions EBUSY is a soft error that means page is busy (again SF_NODISKIO is set). The busy condition would go away in a few milliseconds. However, nginx doesn't differentiate between versions of FreeBSD and always does this aio_read() of 1 byte. It is harmless on newer versions of FreeBSD and just adds a small delay before retry. At Netflix we have removed this code from nginx and in case of EBUSY we just retry after a timer, so we don't use aio.\n\nIt is entirely possible that problem shows up only when aio_read() and sendfile are combined on the same region of a file on NFS or FUSE :("
+}

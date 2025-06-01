@@ -1,0 +1,8 @@
+{
+ "id": 1021720,
+ "bug_id": 233205,
+ "attachment_id": 0,
+ "creation_time": "2018-11-13T19:44:11Z",
+ "creator": "kevans@freebsd.org",
+ "text": "I'm certain there's other ways to reproduce, but the simplest version I have is:\n\ncd /usr/src\nrm lib/Makefile.inc\nmake -j4 buildworld\n\nbuildworld will stall early on, probably in cleandir or obj walk. truss reveals tons and tons of:\n\nfstatat(AT_FDCWD,\"/usr/src/lib/ncurses/ncurses/../../Makefile.inc\",0x7fffffffca20,0x0) ERR#2 'No such file or directory'\nfstatat(AT_FDCWD,\"/usr/src/lib/ncurses/ncurses/../../Makefile.inc\",0x7fffffffca20,0x0) ERR#2 'No such file or directory'\nfstatat(AT_FDCWD,\"../Makefile.inc\",0x7fffffffc908,0x0) ERR#2 'No such file or directory'\nopenat(AT_FDCWD,\"/usr/src/lib/ncurses/ncurses/../Makefile.inc\",O_RDONLY,00) = 3 (0x3)\nfstat(3,{ mode=-rw-r--r-- ,inode=43789,size=94,blksize=4096 }) = 0 (0x0)\nmmap(0x0,4096,PROT_READ|PROT_WRITE,MAP_PRIVATE,3,0x0) = 35266478080 (0x8360bc000)\nclose(3)                                         = 0 (0x0)\n\nIt dies in different places, but always in a grandchild of lib/. The immediate examples I have being:\n\nmake obj DIRPRFX=lib/csu/amd64/\nmake obj DIRPRFX=lib/geom/cache/\nmake obj DIRPRFX=lib/libalias/libalias/\nmake obj DIRPRFX=lib/csu/tests/\nmake cleandir DIRPRFX=lib/libbsnmp/libbsnmp/ [markj]\n\nEventually the system runs out of memory and make(1) is killed, killing the buildworld. As indicated above, markj was also able to reproduce this."
+}

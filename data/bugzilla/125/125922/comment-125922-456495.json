@@ -1,0 +1,8 @@
+{
+ "id": 456495,
+ "bug_id": 125922,
+ "attachment_id": 0,
+ "creation_time": "2008-07-24T09:00:15Z",
+ "creator": "da.deville@gmail.com",
+ "text": "When two concurrent arp are running one doing an 'arp -a -d' and the other one doing an 'arp -a -d' or 'arp -S', one of the two get blocked in rtmsg function doing a read syscall.\n\nBoth processes will be in concurrence to access the table. One process will successfully nuke all entries of the arp table, the other one will be blocked in rtmsg function on the read while executing a RTM_GET or RTM_DELETE command after some time. By instrumenting arp we noticed that it happened when both process access to the same entry.\n\nIt seems that the process that block read all entries available in the PF_ROUTE socket, do not find the one it is looking for and ends blocked on the PF_ROUTE socket as no more entries are available after reading and entry with rtm-\u003ertm_pid == 0 and rtm-\n\nFix: A patch for arp.c is provided for FreeBSD 6.3 it prevent the deadlock but might not be the right solution to the issue.\n\n\nPatch attached with submission follows:\nHow-To-Repeat: Here is a way to reproduce it:\n- add a bunch of arp entries in your arp table (best is around 255 entries).\n- launch two arp -a -d in parallel ('arp -a -d \u0026 arp -a -d \u0026')\n\nIt can also be done with an 'arp -a -d' in parallel of an 'arp -S' but is more difficult to reproduce."
+}

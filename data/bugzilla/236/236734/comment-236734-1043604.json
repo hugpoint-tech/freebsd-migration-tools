@@ -1,0 +1,8 @@
+{
+ "id": 1043604,
+ "bug_id": 236734,
+ "attachment_id": 0,
+ "creation_time": "2019-03-23T13:54:12Z",
+ "creator": "rakuco@FreeBSD.org",
+ "text": "When C++ libraries are built with libtool, they are linked with -nostdlib by default, which then causes flags such as -pthread to be ignored, resulting in shared libraries that do not have all necessary DT_NEEDED entries.\n\nThis happens to graphics/ilmbase, where libIlmThread.so is linked with -nostdlib -pthread and ends up not linking against libthr.so. With the recent work in HEAD to make lld use --no-allow-shlib-undefined by default when linking executables, we end up with failures like the one in graphics/krita (http://beefy12.nyi.freebsd.org/data/head-amd64-default/p496405_s345355/logs/krita-4.1.8_1.log):\n\nld: error: /usr/local/lib/libIlmThread.so: undefined reference to pthread_create\nc++: error: linker command failed with exit code 1 (use -v to see invocation)\n\nThere are some old reports from Linux distros complaining about the same problem: https://bugzilla.redhat.com/show_bug.cgi?id=661333 and https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=468555\n\nDistros have since just started patching ilmbase to make it use -lpthread instead of -pthread when linking: https://git.archlinux.org/svntogit/packages.git/tree/trunk/ilmbase-2.0.1-no_undefined.patch?h=packages/ilmbase and https://salsa.debian.org/debian-phototools-team/ilmbase/blob/master/debian/rules#L29, for example.\n\nI wonder if we should change the libtool port, or just start patching ilmbase as well."
+}

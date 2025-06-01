@@ -1,0 +1,8 @@
+{
+ "id": 46387,
+ "bug_id": 15228,
+ "attachment_id": 0,
+ "creation_time": "1999-12-02T18:20:01Z",
+ "creator": "rcarter@pinyon.org",
+ "text": "\n\tThrowing a c++ exception across threads causes core dump.\n\nFix: \n\nNone yet.\nHow-To-Repeat: \n$ c++ -pthread -D_THREAD_SAFE ex_test.cpp\n$ ./a.out\nThrowing Ex:\nCaught Ex, now rethrowing it...\nCaught Ex thrown from main thread.\nThrowing Ex:\nCaught Ex, now rethrowing it...\nAbort trap (core dumped)\n$\n\nex_test.cpp:\n\n#include \u003cstdio.h\u003e\n#include \u003cpthread.h\u003e\n\nclass Ex {};\n\nclass testEx {\npublic:\n  void throwEx () {\n    fprintf(stderr, \"Throwing Ex:\\n\");\n    throw Ex (); \n  }\n};\n\nvoid *\nf(void *)\n{\n  testEx thetest;\n  thetest.throwEx ();\n}\n\nvoid *\ng(void *arg) \n{  \n  try {\n    f(arg);\n  } catch (Ex \u0026ex) {\n    fprintf(stderr, \"Caught Ex, now rethrowing it...\\n\");\n    throw;\n  }\n}\n\nint\nmain (void)\n{\n  int *arg = 0;\n  \n  try {\n    g((void *) arg);\n  } catch (Ex \u0026ex) {\n    fprintf(stderr, \"Caught Ex thrown from main thread.\\n\");\n  }\n  \n  pthread_t ex_thread;\n  pthread_attr_t *attr = 0;\n  \n  try {\n    pthread_create(\u0026ex_thread, attr, g, (void *) arg);\n  } catch (Ex \u0026ex) {\n    fprintf(stderr, \"Caught Ex thrown from child thread.\\n\");\n  }\n  pthread_join(ex_thread, (void **) \u0026arg);\n  \n  return 0;\n}"
+}

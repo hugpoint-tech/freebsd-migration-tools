@@ -1,0 +1,8 @@
+{
+ "id": 74511,
+ "bug_id": 23906,
+ "attachment_id": 0,
+ "creation_time": "2000-12-28T12:10:00Z",
+ "creator": "dima@unixfreak.org",
+ "text": "\nThe '-fstype local' primary in find(1) is used to match files on a\nlocal filesystem.  Among others, periodic(8) scripts use it to look\nfor files on local filesystems that have unknown user or group ids.\nThe problem is that although find(1) correctly doesn't match files on\nremote filesystem when using the aforementioned primary, it still\ntraverses the remote filesystem.  This is a problem, for example, when\nthe noid periodic(8) script goes looking for files with unknown user\nids on remote filesystems.  The filesystem traversal causes\nunnecessary load to the remote filesystem.\n\nFix: The attached patch causes '-fstype local' not to traverse a remote\nfilesystem.  In most cases, this should not affect the results\nreturned.  The only case I can think of where this may be undesireable\nis when a local filesystem's mount point resides on a remote\nfilesystem (i.e., /path/to/nfs/filesystem/local is a local\nmountpoint).  This is possible in theory, but I've never tried it; nor\ncan I think of why somebody would want to do that.\nHow-To-Repeat: \nFor the purpose of this example, I will assume that a remote NFS\nfilesystem is mounted on /path/to/nfs/filesystem.\n\n$ cd /path/to/nfs                  # don't add /filesystem!\n$ find . -fstype local -print\n\nfind(1) will not match (and thus, won't print) files it finds on the\nNFS server, but it is still traversing the tree.  You can use top(1)\nor ps(1) on the NFS server to check that nfsd is consuming more\nresources than it normally would if it were idle."
+}

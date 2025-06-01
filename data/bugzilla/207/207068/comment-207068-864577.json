@@ -1,0 +1,8 @@
+{
+ "id": 864577,
+ "bug_id": 207068,
+ "attachment_id": 0,
+ "creation_time": "2016-02-11T13:57:35Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "(In reply to joss.upton from comment #6)\nI believe that the behaviour of reading MSR 0xc1 is architectural ?  Anyway, on sandybridge:\n\nsandy% sudo cpucontrol -m 0xc1=0x80000000 /dev/cpuctl0\nsandy% sudo cpucontrol -m 0xc1 /dev/cpuctl0\nMSR 0xc1: 0x0000ffff 0x80000000\n\nSB does have full-width PMC write capability:\nsandy% sudo cpucontrol -m 0x345 /dev/cpuctl0\nMSR 0x345: 0x00000000 0x000031c3\nbit 13 (FW_WRITE) is set\n\nBut my concern is that I cannot reproduce the issue with the following script:\nfor x in $(jot 8); do pmcstat -P CPU_CLK_UNHALTED_CORE perl ./loop.pl 2\u003e/dev/null \u0026; done\n\nUnpatched kernel must exhibit the problem because it does not write to PMC through aliases and all writes are clipped.  I want to be able to reproduce this before commit, at least I need to validate the change and to understand that it is complete (I agree that this is the right approach, at least)."
+}

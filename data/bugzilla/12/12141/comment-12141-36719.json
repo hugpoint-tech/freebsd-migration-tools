@@ -1,0 +1,8 @@
+{
+ "id": 36719,
+ "bug_id": 12141,
+ "attachment_id": 0,
+ "creation_time": "1999-06-11T20:00:01Z",
+ "creator": "davids@webmaster.com",
+ "text": "It seems that under some circumstances, the pthreads (libc_r) library computes a negative tv_usec value which it passes to setitimer. setitimer returns EINVAL, causing the threaded program to crash.\n\nFix: \n\nThis is the *wrong* fix, but it does make the problem go away.\n\nin uthread_kern.c:\n                                /*\n                                 * Start the interval timer for the\n                                 * calculated time interval: \n                                 */\n                                if(itimer.it_value.tv_usec\u003c=0)\n                                 itimer.it_value.tv_usec=1000;\n                                if (setitimer(_ITIMER_SCHED_TIMER, \u0026itimer, NULL\n) != 0) {\n\n\nThe 'if' has been added to remove the problem. But the real problem is why it's computing negative values in the first place.\nHow-To-Repeat: I'm not sure what it is specifically that's causing it. But it is happening to three of my pthreads-based programs."
+}

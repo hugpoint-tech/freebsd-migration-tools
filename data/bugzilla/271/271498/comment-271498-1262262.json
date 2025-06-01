@@ -1,0 +1,8 @@
+{
+ "id": 1262262,
+ "bug_id": 271498,
+ "attachment_id": 0,
+ "creation_time": "2023-06-05T19:57:47Z",
+ "creator": "dim@FreeBSD.org",
+ "text": "FWIW, on my 14-CURRENT i386 VM, which is built by clang 16, I could build databases/postgresql15-server just fine with clang, and it also starts up correctly. I didn't do any heavy testing, but it seems to work fine.\n\nNote that even on 'plain' i386 it still tries to check for some compiler builtins that require CPU support, e.g.:\n\nchecking for _mm_crc32_u8 and _mm_crc32_u32 with CFLAGS=... no\nchecking for _mm_crc32_u8 and _mm_crc32_u32 with CFLAGS=-msse4.2... yes\nchecking for __crc32cb, __crc32ch, __crc32cw, and __crc32cd with CFLAGS=... no\nchecking for __crc32cb, __crc32ch, __crc32cw, and __crc32cd with CFLAGS=-march=armv8-a+crc... no\nchecking which CRC-32C implementation to use... SSE 4.2 with runtime check\n\nAnd later on it compiles a few specific files with the -msse4.2 option:\n\ncc -Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Werror=vla -Werror=unguarded-availability-new -Wendif-labels -Wmissing-format-attribute -Wcast-function-type -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-unused-command-line-argument -Wno-compound-token-split-by-macro -Wno-deprecated-non-prototype -O2 -pipe  -fstack-protector-strong -fno-strict-aliasing  -msse4.2 -I../../src/port -DFRONTEND -I../../src/include -I/usr/local/include  -I/usr/local/include -I/usr/local/include -I/usr/local/include -I/usr/local/include -I/usr/local/include  -c -o pg_crc32c_sse42.o pg_crc32c_sse42.c\n\nSo I think this is just a CPU specific optimization. I don't have any ancient hardware that does not support SSE anymore, though. :)"
+}

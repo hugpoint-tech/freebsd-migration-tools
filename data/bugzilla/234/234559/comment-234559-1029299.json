@@ -1,0 +1,8 @@
+{
+ "id": 1029299,
+ "bug_id": 234559,
+ "attachment_id": 200695,
+ "creation_time": "2019-01-02T07:44:44Z",
+ "creator": "freebsd@oldach.net",
+ "text": "Created attachment 200695\nmemory graph\n\nI have recently upgrade from 11-STABLE to 12-STABLE. While the total memory (active+inactive+laundry+wired+cache+free) in 11-STABLE was fixed, this sum seems to be somewhat floating in 12-STABLE. Occasionally it even appears to be above physical memory!\n\nPlease see attached graph (similar to what is produced by munin): The picture is covering the last 14 days with the oldest data to the left; reboot to 12-STABLE was last Sunday afternoon (where the gap is visible). Before the upgrade (running 11-STABLE) there is almost a flat total, after the upgrade (running 12-STABLE) the total is jumpy.\n\nAlso the top(1) output is weird on this machine with 4G DRAM:\n\n# top -n | fgrep Mem\nMem: 269M Active, 2083M Inact, 15M Laundry, 700M Wired, 336M Buf, 1073M Free\n# echo $((269+2083+15+700+1073))\n4140\n#\n\nClearly this cannot be just a rounding issue - it appears the stats counters are not updated appropriately in 12-STABLE:\n\n# sysctl -a vm.stats.vm | fgrep _count\nvm.stats.vm.v_cache_count: 0\nvm.stats.vm.v_laundry_count: 3926\nvm.stats.vm.v_inactive_count: 533266\nvm.stats.vm.v_active_count: 76185\nvm.stats.vm.v_wire_count: 179345\nvm.stats.vm.v_free_count: 267048\nvm.stats.vm.v_page_count: 980845\n# echo $((0+3926+533266+76185+179345+267048))\n1059770\n# echo $(($(sysctl -n vm.stats.vm.v_page_size)/1024))\n4\n# echo $((1059770*4))\n4239080\n#"
+}

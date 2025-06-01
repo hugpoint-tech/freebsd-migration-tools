@@ -1,0 +1,8 @@
+{
+ "id": 527917,
+ "bug_id": 140493,
+ "attachment_id": 0,
+ "creation_time": "2009-11-11T22:10:03Z",
+ "creator": "erik@datahack.se",
+ "text": "The truss -o log file descriptor is shared with the traced program when truss starts the program with vfork/execvp, for no obvious reason(?).\n\nSo it may play with your head when you are trying to debug a program if you are not aware of this!\n\nAs a security/technical problem this may affects badly written programs that  expects a certain file descriptor to be opened at some target, causing the log file to be modified (by accident or evil...ftruncate).\n\nFix: \n\nClose the file descriptor trussinfo-\u003eoutfile after the vfork().\n\nSuggested changes would be to either make setup_and_wait(char *command[]) (setup.c) also take the file descriptor that should be closed as an argument or close all file descriptors from fd#3 and above after the vfork().\nHow-To-Repeat: In one terminal\n\n# truss -o /tmp/truss.log sleep 60\n\nfollowed by .. in another terminal\n\n# fstat | grep sleep\nroot     sleep      37193 root /             2 drwxr-xr-x     512  r\nroot     sleep      37193   wd /         45516 drwxr-xr-x     512  r\nroot     sleep      37193 text /         46256 -r-xr-xr-x    5964  r\nroot     sleep      37193    0 /dev        100 crw--w----   ttyp2 rw\nroot     sleep      37193    1 /dev        100 crw--w----   ttyp2 rw\nroot     sleep      37193    2 /dev        100 crw--w----   ttyp2 rw\nroot     sleep      37193    3 /tmp          4 -rw-r--r--    2278  w\n\nFile descriptor 3 is pointing at the log file provided by -o"
+}

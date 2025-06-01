@@ -1,0 +1,8 @@
+{
+ "id": 731629,
+ "bug_id": 182297,
+ "attachment_id": 0,
+ "creation_time": "2013-09-22T15:00:00Z",
+ "creator": "gabucino@gabucino.be",
+ "text": "Driver output:\n\n\u003e cm0 at port 0x2e0-0x2ef iomem 0xd0000-0xd07ff irq 5 on isa0\n\u003e cm0: [ITHREAD]\n\u003e cm0: link addr 0xf5 (245)\n\nThe problem is, the card's address is not 0xF5.\n\nThe detection would take place in dev/cm/smc90cx6.c (cm_attach):\n\n\u003e         linkaddress = GETMEM(CMMACOFF); // CMMACOFF is 1\n\nIn fact, not only the offset 1, but any offset I read is \"0xF5\". This\nleads me to think there could be some breakage around memory handling.\n\nsmc90cx6var.h:\n\u003e #define GETMEM(off)                                                     \\\n\u003e        bus_space_read_1(rman_get_bustag((sc)-\u003emem_res),                \\\n\u003e                         rman_get_bushandle((sc)-\u003emem_res),             \\\n\u003e                         (off))\n\nThe card otherwise works fine in DOS and Linux (both can read the link\naddress correctly).\n\nI also tried with another card, same model. It made no difference. Also\ntried setting the card to actually have 0xf5 link address, but it still\ndidn't work.\n\nHow-To-Repeat: Try to use it."
+}

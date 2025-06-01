@@ -1,0 +1,8 @@
+{
+ "id": 41256,
+ "bug_id": 13550,
+ "attachment_id": 0,
+ "creation_time": "1999-09-03T00:50:01Z",
+ "creator": "pckizer@tamu.edu",
+ "text": "\nI'm sending this as a FreeBSD send-pr since the Sys/Hostname.pm that came\nwith perl5.005_03 as of my latest cvsup this morning differs from the\nSys/Hostname.pm as shipped with perl5.005_03 as distributed via CPAN.\n\nThe Sys/Hostname.pm as cvsup-ed this morning differs from the CPAN\ndistributed perl5.005_03 Sys/Hostname.pm as follows:\n\n--- /tmp/perl5.005_03/lib/Sys/Hostname.pm\tThu Sep  2 18:13:51 1999\n+++ Hostname.pm-orig\tThu Sep  2 18:27:32 1999\n@@ -95,4 +95,7 @@\n     || eval {\n+\t$pathstack = $ENV{'PATH'};\n+\t$ENV{'PATH'} = \"/bin:/usr/bin\";\n \tlocal $SIG{__DIE__};\n \t$host = `(hostname) 2\u003e/dev/null`; # bsdish\n+\t$ENV{'PATH'} = $pathstack;\n     }\n@@ -101,4 +104,7 @@\n     || eval {\n+\t$pathstack = $ENV{'PATH'};\n+\t$ENV{'PATH'} = \"/bin:/usr/bin\";\n \tlocal $SIG{__DIE__};\n \t$host = `uname -n 2\u003e/dev/null`; ## sysVish\n+\t$ENV{'PATH'} = $pathstack;\n     }\n\nThe problem this causes is that the eval-ed blocks are guarenteed to be\ntaken as having failed as they will exit with the undef from the $ENV{'PATH'}\nvariable assignment in the case where there is no PATH defined prior to the\nfunction call (such as, in my case, an automated invocation from sendmail),\n\nFix: The code blocks need to exit with a return value based on the success of\nthe hostname determination.  My quick fix was the following:\nHow-To-Repeat: \n  % /usr/bin/perl -e 'use Sys::Hostname; print Sys::Hostname::hostname(),\"\\n\";'\n  chariot.tamu.edu\n\n  % env PATH= /usr/bin/perl -e 'use Sys::Hostname; print Sys::Hostname::hostname(),\"\\n\";'\n  Cannot get host name of local machine at -e line 1"
+}

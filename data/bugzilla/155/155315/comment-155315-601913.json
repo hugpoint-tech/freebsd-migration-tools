@@ -1,0 +1,8 @@
+{
+ "id": 601913,
+ "bug_id": 155315,
+ "attachment_id": 0,
+ "creation_time": "2011-03-06T16:50:00Z",
+ "creator": "mezz@FreeBSD.org",
+ "text": "When you have libevent and libevent2 installed then try to build\ntransmission* and other ports that depend on libevent2. Those ports will\nget build failure because of incorrect in the libevent*.pc when build\nran like this:\n\n# pkg-config --libs libevent\n-L/usr/local/lib/event2 -levent\n# pkg-config --libs libevent_openssl\n-L/usr/local/lib/event2 -levent_openssl -levent\n# pkg-config --libs libevent_pthreads\n-L/usr/local/lib/event2 -levent_pthreads -levent\n\nIt will pick up libevent-1.4 library instead of libevent-2.0.\n\nFix: \n\nThe fix is to patch in those libevent*.pc by add '-2.0' in the front of those\nlibevent*.\n\n# ldconfig -r | grep libevent\n\t606:-levent-2.0.5 =\u003e /usr/local/lib/event2/libevent-2.0.so.5\n\t607:-levent_core-2.0.5 =\u003e /usr/local/lib/event2/libevent_core-2.0.so.5\n\t608:-levent_extra-2.0.5 =\u003e /usr/local/lib/event2/libevent_extra-2.0.so.5\n\t609:-levent_pthreads-2.0.5 =\u003e /usr/local/lib/event2/libevent_pthreads-2.0.so.5\n\n# pkg-config --libs libevent\n-L/usr/local/lib/event2 -levent-2.0\n# pkg-config --libs libevent_openssl\n-L/usr/local/lib/event2 -levent_openssl-2.0 -levent-2.0\n pkg-config --libs libevent_pthreads\n-L/usr/local/lib/event2 -levent_pthreads-2.0 -levent-2.0\n\nWith that, those ports are able to build while have devel/libevent and\ndevel/libevent2 installed in the system with no problem. Oh yeah, here's\npatch:\n\nhttp://people.freebsd.org/~mezz/diff/libevent2.diff"
+}

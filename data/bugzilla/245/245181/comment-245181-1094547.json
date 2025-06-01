@@ -1,0 +1,8 @@
+{
+ "id": 1094547,
+ "bug_id": 245181,
+ "attachment_id": 0,
+ "creation_time": "2020-03-30T07:50:59Z",
+ "creator": "freebsd-bugzilla@thismonkey.com",
+ "text": "Through troubleshooting and subsequent source code verification (sys/netinet/if_ether.c) it appears that FreeBSD does not perform proxy ARP for ARP requests whose target host reside in any FIB other than FIB 0.\n\nCode at line 1073 indicates this:\n\n/* XXX MRT use table 0 for arp checks */             \nif (fib4_lookup_nh_basic(0, isaddr, 0, 0, \u0026nh4) != 0)\n        goto drop;                                   \n\nThis seems to be an incomplete implementation of the FIB functionality.  FreeBSD should\n1) lookup the FIB of the interface on which the ARP request arrived\n2) perform a route lookup of the target in correct FIB\n3) perform sanity checks\n4) proxy-reply to the ARP request accordingly\n\nWithout this, operations like dropping some cloned interfaces into a non-zero FIB are futile.\n\nThanks."
+}

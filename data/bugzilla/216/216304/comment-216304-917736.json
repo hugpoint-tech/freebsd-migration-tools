@@ -1,0 +1,8 @@
+{
+ "id": 917736,
+ "bug_id": 216304,
+ "attachment_id": 0,
+ "creation_time": "2017-01-20T22:18:05Z",
+ "creator": "kp@freebsd.org",
+ "text": "I think what happens here is that the bridge code (through bridge_ioctl_add() calls the xen driver's ioctl() handler for SIOCSIFCAP, which through xn_ioctl() calls xs_rm(xenbus_get_node(dev), \"feature-gso-tcp4\"), which tries to compose a string with the sbuf functions, which use a M_WAITOK allocation.\n\nThat means that we can end up sleeping (because malloc(M_WAITOK)) with the bridge lock (a standard mutex) held.\nThat violates locking rules, by sleeping with a mutex held, so WITNESS warns us about this.\n\nIf we're unlucky enough to actually try to acquire the bridge lock from another thread (say because we want to transmit a packet) we can end up panic()ing.\n\nIt's not obvious to me how this can be fixed however. I'm cc-ing royger because he touched the xen-netfront code at some point.\n\nPerhaps we can allocate the strings the xs_rm() needs at device initialisation time, but that would require the result of xenbus_get_node(dev) to be constant, and I don't know if that's a valid assumption."
+}

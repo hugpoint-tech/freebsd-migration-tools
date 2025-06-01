@@ -1,0 +1,8 @@
+{
+ "id": 1259349,
+ "bug_id": 271384,
+ "attachment_id": 0,
+ "creation_time": "2023-05-13T02:53:47Z",
+ "creator": "phryk-ports@wzff.de",
+ "text": "Without `zfs_load=\"YES\"` and `zpool_cache_*` (presumably both, but haven't\ntested in isolation) in `loader.conf`, zpools don't get imported during\ninit – even if `/etc/rc.conf` contains `zfs_enable=\"YES\"`.\n\nThis means that on setups with zfs-independent boot, at least automatic\nmounting doesn't work – but probably also that mounting zfs datasets\nvia fstab becomes impossible.\n\nThere is an `/etc/rc.d/zpool` that does the import, but it only seems to be\ninvoked by `/etc/rc.d/zfskeys` which seems to be for a completely different\nuse-case. I fixed this on my system by adding this to `/etc/rc.d/zfs`:\n\n```\nstart_precmd=\"zfs_prestart\"\n\nzfs_prestart(){\n    if checkyesno zpool_enable; then\n        /etc/rc.d/zpool start\n    fi\n}\n```\n\nAnd then `zpool_enable=\"YES\"` to my rc.conf.\n\nThere might be a more elegant way of checking whether the `zpool start`\nshould be invoked than introducing a new variable to `rc.conf` and there\nprobably should also be a poststop command to do `zpool stop` but I'm\nmigrating away from zfs, it's already over 10 hours after I wanted to be\ndone with the initial migration and I'm definitely not pouring more time\ninto this – just wanted to hand this over on my way out the door."
+}

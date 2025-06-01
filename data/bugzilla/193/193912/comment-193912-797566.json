@@ -1,0 +1,8 @@
+{
+ "id": 797566,
+ "bug_id": 193912,
+ "attachment_id": 0,
+ "creation_time": "2014-11-24T01:24:51Z",
+ "creator": "dewayne@heuristicsystems.com.au",
+ "text": "Thank-you for pursuing this issue.  Yes, the approach taken is good, and enables a successful heimdal \u0026 bind build on 10.1Stable.\n\nThough you should note that with -lcom_err, both the heimdal port and bind99 will link with the /usr/lib/libcom_err.so from heimdal in base.  If a system has both the heimdal port and base installed, this works.  However if you don't have heimdal base, then it doesn't.  So I have modified \ndns/bind99/files/extra-patch-configure-gssapi-heimdal to omit com_err.\n\n-+                  \"-lgssapi -lkrb5 -lgssapi_krb5 -lcrypto -lcrypt -lasn1 -lroken -lcom_err\" \\\n++                  \"-lgssapi -lkrb5 -lcrypto -lcrypt -lasn1 -lroken\" \\\n\nI've also modified heimdal to build without base heimdal, by\nrm /usr/ports/security/heimdal/files/patch-lib-com_err-Makefile.in\n\nand force this result in the heimdal/Makefile\nPLIST_SUB+=    LIBCOM_ERR=\"\"\n\nThen everything is happy.\n\nAs an aside, I also have in bind99/Makefile\n-BIND_DESTETC=  /etc/namedb\n+BIND_DESTETC?= /etc/namedb\nso I can place namedb files under /var via a variable where, I think, they belong without (further) changing the Makefile ;)\n\nDewayne"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 675803,
+ "bug_id": 170073,
+ "attachment_id": 0,
+ "creation_time": "2012-07-22T21:00:18Z",
+ "creator": "ariane@stack.nl",
+ "text": "First a little disclaimer: I tested this with clang-3.1 on bitrig. The freebsd I ran this on is using clang-3.0 which does returns 0 for the c{,xx}_atomic feature/extension.\n\nstdatomic.h tests for __has_feature(cxx_atomic) which is only true when compiling in c++11 mode.\nHowever since stdatomic.h is a C header file, it should also work in c11 mode.\n\nRunning:\n  echo '__has_feature(cxx_atomic)' | clang-3.1 -x c -std=c11 -E -\nyields 0, while running:\n  echo '__has_feature(c_atomic)' | clang-3.1 -x c -std=c11 -E -\nyields 1.\n\nIn addition, I'm contemplating if __has_feature should be replaced by __has_extension, so that non-c11 code can also include stdatomic.h.\n\nFix: See provided diff below, using __has_extension instead of __has_feature.\nThis also requires a compatibility define in sys/cdefs.h:\n#ifndef __has_extension\n#define __has_extension(x) 0\n#endif\n\nHow-To-Repeat: Run the clang 3.1 preprocessor on stdatomic.h for C code and it will use the GNU counterparts of the contained code. Running the same code through the clang++ 3.1 preprocessor yields the clang counterpart of the code."
+}

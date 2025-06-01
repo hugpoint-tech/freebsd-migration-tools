@@ -1,0 +1,8 @@
+{
+ "id": 1126840,
+ "bug_id": 250315,
+ "attachment_id": 0,
+ "creation_time": "2020-10-14T17:05:22Z",
+ "creator": "rozhuk.im@gmail.com",
+ "text": "Problem in include order:\n/tmp/ports/usr/ports/emulators/virtualbox-ose/work/VirtualBox-5.2.44/src/VBox/HostServices/SharedOpenGL\n/tmp/ports/usr/ports/emulators/virtualbox-ose/work/VirtualBox-5.2.44/src/VBox/HostServices/SharedOpenGL/crserverlib\n/tmp/ports/usr/ports/emulators/virtualbox-ose/work/VirtualBox-5.2.44/include/VBox/Graphics\n/usr/local/include\n/tmp/ports/usr/ports/emulators/virtualbox-ose/work/VirtualBox-5.2.44/src/VBox/GuestHost/OpenGL/include\n\n/usr/local/include - must be after /src/VBox/GuestHost/OpenGL/include.\n\n\n/usr/local/include is set via TEMPLATE_VBOXR3EXE_INCS.\nVBOX_GRAPHICS_INCS = $(PATH_ROOT)/include/VBox/Graphics\nVBOX_PATH_CROGL_INCLUDE     = $(PATH_ROOT)/src/VBox/GuestHost/OpenGL/include\n\n\nThis hack help with OpenGL, but build fail later.\n\t@${REINPLACE_CMD} \\\n\t    -e 's|TEMPLATE_VBOXR3EXE_INCS|TEMPLATE_VBOXR3EXE___INCS|' \\\n\t    -e 's|/GuestHost/OpenGL/include|/GuestHost/OpenGL/include /usr/local/include|' \\\n\t    ${WRKSRC}/Config.kmk\n\t@${REINPLACE_CMD} \\\n\t    -e 's|$$(VBOX_GRAPHICS_INCS)|$$(VBOX_GRAPHICS_INCS) /usr/local/include|' \\\n\t    ${WRKSRC}/src/VBox/Devices/Makefile.kmk\n\nI do not understand kBuild template mess, at least today."
+}

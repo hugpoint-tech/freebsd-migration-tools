@@ -1,0 +1,8 @@
+{
+ "id": 1188131,
+ "bug_id": 260055,
+ "attachment_id": 0,
+ "creation_time": "2021-11-26T21:51:52Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "\u003e Maybe there is some application logic error if some payload data is discarded,\n\u003e but recvmsg() still has control message to return because of IP_RECVDSTADDR\n\u003e socket option, hasn't it? So it should not block just after first UDP datagramm\n\u003e arrived, I believe.\n\nNo, this is completely off how the control messages work.  You do not have\ncontrol message 'sit' in the socket buffer.  CMSG is generated _on the packet\ninsertion into the sockbuf queue_.  On receive, associated cmsg is either\nexternalized and copied out, if cmsg buffer is provided by userspace, or\nsimply dropped.\n\nSo the behavior you see is probably right (I cannot assert if fully because\nI do not know app logic and protocol): you have blocked socket, which sometimes\nhappens to have empty receive queue, and you call recvmsg(2) on it.  Until\nsomething is received, the syscall is blocked."
+}

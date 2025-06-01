@@ -1,0 +1,8 @@
+{
+ "id": 1000983,
+ "bug_id": 229523,
+ "attachment_id": 0,
+ "creation_time": "2018-07-09T22:19:17Z",
+ "creator": "ler@FreeBSD.org",
+ "text": "Prevent accidental linking of system-supplied copies of libpq.so etc.\n\nBack-patch commit dddfc4cb2, which broke LDFLAGS and related Makefile\nvariables into two parts, one for within-build-tree library references and\none for external libraries, to ensure that the order of -L flags has all\nof the former before all of the latter.  This turns out to fix a problem\nrecently noted on buildfarm member peripatus, that we attempted to\nincorporate code from libpgport.a into a shared library.  That will fail on\nplatforms that are sticky about putting non-PIC code into shared libraries.\n(It's quite surprising we hadn't seen such failures before, since the code\nin question has been like that for a long time.)\n\nI think that peripatus' problem could have been fixed with just a subset\nof this patch; but since the previous issue of accidentally linking to the\nwrong copy of a Postgres shlib seems likely to bite people in the field,\nlet's just back-patch the whole change.  Now that commit dddfc4cb2 has\nsurvived some beta testing, I'm less afraid to back-patch it than I was\nat the time.\n\nThis also fixes undesired inclusion of \"-DFRONTEND\" in pg_config's CPPFLAGS\noutput (in 9.6 and up) and undesired inclusion of \"-L../../src/common\" in\nits LDFLAGS output (in all supported branches).\n\nBack-patch to v10 and older branches; this is already in v11.\n\nDiscussion: https://postgr.es/m/20180704234304.bq2dxispefl65odz@ler-imac.local\n\n\nThe next minor releases should have this fix, and allow you to remove LLD_UNSAFE and not do anything else."
+}

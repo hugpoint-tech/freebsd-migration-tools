@@ -1,0 +1,8 @@
+{
+ "id": 1245699,
+ "bug_id": 269328,
+ "attachment_id": 0,
+ "creation_time": "2023-02-05T22:47:06Z",
+ "creator": "kib@FreeBSD.org",
+ "text": "It would be somewhat interesting to see where the corruption occurs, on client\nor on server.  My intuition is that the problem happens on client, esp. because\nserver does not have fspacectl() at all.\n\nFrom the code reading, nfs client does enough page flushing both in\nnfs_deallocate() and in ncl_vinvalbuf().  At least, it is not obvious what\nis missed and why msync(2) before deallocation helps. The sequence seems to\nbe, from nfs_deallocate() for NFSv4.2:\n  ncl_vinvalbuf(V_SAVE)\n    vm_object_page_clean(OBJPC_SYNC) \u003c- sync pages synchronously\n    vinvalbuf(V_SAVE)\n      vm_object_page_remove(OBJPR_CLEANONLY) \u003c- only remove clean pages\n    vnode_pager_purge_range()\n      vm_object_page_remove(0)\n    nfsrpc_deallocate()\n\nIt might be that a clean page somehow avoided being removed from the queue,\nbut as I said, I do not see how this could occur.  Or it might be the handling\nof the partially deallocated pages is somewhat wrong."
+}

@@ -1,0 +1,8 @@
+{
+ "id": 341447,
+ "bug_id": 101450,
+ "attachment_id": 0,
+ "creation_time": "2006-08-06T01:20:07Z",
+ "creator": "chadf@bookcase.com",
+ "text": "tcprobe fails on CD/DVD devices. The transcode 1.0.2_3 port uses device\nmajor numbers to determine how to use a device path. With devfs no longer\nusing well known major device numbers, the function used to identify it\nthinks all devices are OSS (major 0).\n\nThe broken code is in import/ioaux.c:probe_path():\n\n# ifdef __FreeBSD__\n              case 4: /* acd */\n                  return(TC_PROBE_PATH_ABSPATH);\n              case 229: /* bktr */\n                  return(TC_PROBE_PATH_BKTR);\n              case 0: /* OSS */\n                  return(TC_PROBE_PATH_OSS);\n# endif\n\nThis causes an indirect error with tcprobe (which also effects the dvdrip\nport) when it attempts to do an SNDCTL_DSP_GETFMTS ioctl() [misreported in\nthe error message as SNDCTL_DSP_SETFMT].\n\nOpenBSD may also be affected if it has, or plans to, make simular device\nchanges (in case any one cross project monitoring is reading this).\n\nFix: \n\nAbstact: Determine reliable method to distinguish between CD/DVD, BKTR, OSS,\nand other devices and add approriete patch to the port and/or submit to\noriginal authors.\n\nPossibly even adding a warning message to the port during installation so\nthat users know it is broken in this respect, until a real fix can be made.\nHow-To-Repeat: % tcprobe -i /dev/acd0\n[tcprobe] OSS audio device\nSNDCTL_DSP_SETFMT: Inappropriate ioctl for device\n[tcprobe] failed to probe source\n\n\n% tcprobe -i /dev/null\n[tcprobe] OSS audio device\nSNDCTL_DSP_SETFMT: Inappropriate ioctl for device\n[tcprobe] failed to probe source"
+}

@@ -1,0 +1,8 @@
+{
+ "id": 15841,
+ "bug_id": 5148,
+ "attachment_id": 0,
+ "creation_time": "1997-11-25T16:40:00Z",
+ "creator": "Joel.Faedi@esial.u-nancy.fr",
+ "text": "Owner mode is nver tested on NFS mounted file system from FreeBSD\nserver.An exemple will explain problem:\n\n1) on an UFS partition:\n   --------------------\n\u003e touch foo\n\u003e chmod 0000 foo\n\u003e ls -al foo\n----------  1 faedi  admin  21 Nov 25 11:31 foo\n\u003e more foo \nfoo: Permission denied\n\u003e echo Hello \u003e\u003e foo\nfoo: Permission denied.\n\u003e\n\n2) on the same partition NFS mounted (on another machine):\n   -------------------------------------------------------\n\u003e ls -al foo\n----------  1 faedi  admin  21 Nov 25 11:31 foo\n\u003e more foo\nShould never be seen\n\u003e echo Hello \u003e\u003e foo\n\u003e more foo\nShould never be seen\nHello\n\u003e\n\nFix: \n\nFix the function \"nfsrv_access\" in the file /usr/src/sys/nfs/nfs_serv.c.\n\n(near line 3430)\n\n\tif (error = VOP_GETATTR(vp, \u0026vattr, cred, p))\n\t\treturn (error);\n\tif ((error = VOP_ACCESS(vp, flags, cred, p)) /* \u0026\u0026 \u003c\u003c\u003c\u003c\n\t    cred-\u003ecr_uid != vattr.va_uid */ )    \u003c\u003c\u003c\u003c\n\treturn (0);\nHow-To-Repeat: See example in full description."
+}

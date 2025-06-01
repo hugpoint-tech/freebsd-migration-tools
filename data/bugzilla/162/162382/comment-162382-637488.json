@@ -1,0 +1,8 @@
+{
+ "id": 637488,
+ "bug_id": 162382,
+ "attachment_id": 0,
+ "creation_time": "2011-11-08T20:00:24Z",
+ "creator": "ngie@FreeBSD.org",
+ "text": "If one sets up multiple swaps that are striped across disks and one goes\nsouth, the kernel retains a reference to the lost swap, but unfortunately\ndoesn't remove the phantom reference; furthermore, the user can't remove\nthe phantom reference, because the bogus device doesn't exist. This can\ncause issues if the swap was being used, either at a kernel or userland\nlevel.\n\nEventually [with mps at least] the system gets cranky and kicks the device\nout of some subsystems, but doesn't get rid of the bogus reference -- thus\nit could cause serious issues if a process tries to swap back from the\nphantom swap device.\n\nWhat I'm recommending is that the phantom reference be reaped immediately.\nThis should trickle up through all affected subsystems (GEOM -\u003e vm -\u003e etc).\nAny processes trying to access memory that was swapped out should be\nSIGKILLed immediately in a worst case scenario, but other potentially more\ngraceful (or quicker) methods of notifying affected processes could be\nemployed so processes that carve out a large chunk of memory that's gone\nMIA (SIGABRT? SIGSEGV?).\n\ndelphij@ might have more details or context into the underlying issue.\n\nHow-To-Repeat: 1. Install FreeBSD on a system with an HBA or gmirror that's capable of\n   hotswap and setup the RAID in a redundant manner.\n2. Setup swaps on multiple devices in a striped manner.\n3. Yank a disk with a swap on it.\n4. Look at swapctl -l; you'll see a gobbledygook reference to a dead\n   device (something like \"/dev/C@#$A6^7\")."
+}

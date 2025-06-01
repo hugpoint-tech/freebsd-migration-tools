@@ -1,0 +1,8 @@
+{
+ "id": 833030,
+ "bug_id": 201738,
+ "attachment_id": 159041,
+ "creation_time": "2015-07-21T10:12:58Z",
+ "creator": "john@jmarshall.id.au",
+ "text": "Created attachment 159041\nRemove stray -lmd from LDADD assignment\n\ni386 FreeBSD 10.2-BETA2 r285662\n\nTesting base system ntpd with old keys in /etc/ntp. Saw syslog entries every couple of minutes like the following but the server seemed to operate OK otherwise - as a client of unauthenticating servers.\n\nJul 21 16:16:53 rwsrv04 ntpd[2169]: crypto_encrypt: error:00000000:lib(0):func(0):reason(0)\n\nGenerated new host keys with ntp-keygen. Now ntpd failed to start.\n\nJul 21 16:55:42 rwsrv04 ntpd[91910]: crypto_key: error:06074078:digital envelope routines:EVP_PBE_CipherInit:keygen failure\n\nAn independent build of ntp 4.2.8p3 on 10.2-BETA2 worked fine.\n\nldd(1) revealed that the base system ntpd was linked to libmd but the working ntpd was not. Also the base system ntp-keygen was not linked to libmd. All were linked to libcrypto.\n\nChecked the usr.sbin/ntp/ntpd/Makefile and saw what appeared to be a stray -lmd in the LDADD= assignment at Line 31. Conditional code follows at Line 42 to inclide libmd ONLY if OpenSSL has been disabled.\n\nI removed the -lmd from Line 31 and rebuilt ntpd. All is good :-)"
+}

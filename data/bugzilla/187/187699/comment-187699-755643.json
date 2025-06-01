@@ -1,0 +1,8 @@
+{
+ "id": 755643,
+ "bug_id": 187699,
+ "attachment_id": 0,
+ "creation_time": "2014-03-18T15:50:00Z",
+ "creator": "asomers@FreeBSD.org",
+ "text": "\"ping 127.0.0.1\" and \"ping6 ::1\" should always work, regardless of which\nFIB is in use.  However, they don't.  ipv4_up() in network.subr ensures\nadds the 127.0.0.1 address to lo0 in the default fib, which causes the\nkernel to add it to the default fib's routing table.  But nothing adds\nthat address to alternate fibs.  Nor does anything add ::1 to the inet6\nrouting tables for alternate FIBs.\n\nIMHO, the best way to solve this bug would be to add 127.0.0.1 and ::1\nstatic routes in /etc/rc.d/routing in the functions static_inet() and\nstatic_inet6().\n\nFix: \n\nWorking on a patch now ...\nHow-To-Repeat: In /boot/loader.conf.local:\nnet.fibs=\"4\"\nnet.add_addr_allfibs=\"0\"\n\nsetfib 1 ping localhost    # This will fail, but it should succeed\nsetfib 1 ping6 ::1         # This will fail, but it should succeed."
+}

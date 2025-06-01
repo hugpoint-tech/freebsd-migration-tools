@@ -1,0 +1,8 @@
+{
+ "id": 9864,
+ "bug_id": 3188,
+ "attachment_id": 0,
+ "creation_time": "1997-04-03T19:20:04Z",
+ "creator": "roberto@keltia.freenix.fr",
+ "text": "\nThe new file(1) is trying to directly read ELF headers to show\ninformation. It seems that the following section of code is failing:\n\nstatic void\ndoshn(fd, off, num, size, buf)\n        int fd;\n        off_t off;\n        int num;\n        size_t size;\n        char *buf;\n{\n        /*\n         * This works for both 32-bit and 64-bit ELF formats,\n         * because it looks only at the \"sh_type\" field, which is\n         * always 32 bits, and is preceded only by the \"sh_name\"\n         * field which is also always 32 bits, and because it uses\n         * the shdr size from the ELF header rather than using\n         * the size of an \"Elf32_Shdr\".\n         */\n        Elf32_Shdr *sh = (Elf32_Shdr *) buf;\n\n        if (lseek(fd, off, SEEK_SET) == -1)\n                error(\"lseek failed (%s).\\n\", strerror(errno));\n\n        for ( ; num; num--) {\n                if (read(fd, buf, size) == -1)\n                        error(\"read failed (%s).\\n\", strerror(errno));\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nFix: \n\nUnknown.\nHow-To-Repeat: \nTrying to identify some ELF binaries (both Linux and FreeBSD ones)\nleads to the following error message:\n\nLinux:\n\n284 [19:58] roberto@keltia:/tmp/file\u003e file acroread \nacroread: ELF 32-bit LSB executable, Intel 80386, version 1file: read failed (Invalid argument).\n\nFreeBSD:\n\n286 [19:59] roberto@keltia:/tmp/file\u003e file ../foo\n../foo: ELF 32-bit LSB executable, Intel 80386, version 1file: read failed (Invalid argument).\n\nThe old method -- using /etc/magic ELF section -- worked right."
+}

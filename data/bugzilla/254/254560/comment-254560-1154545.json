@@ -1,0 +1,8 @@
+{
+ "id": 1154545,
+ "bug_id": 254560,
+ "attachment_id": 223813,
+ "creation_time": "2021-04-05T00:45:45Z",
+ "creator": "rmacklem@FreeBSD.org",
+ "text": "Created attachment 223813\nfix bindconnectiontosession so that it clears LCL_CBDOWN\n\nThe back channel is needed for two cases for NFSv4.1/4.2:\n- the NFS server has delegations enabled\n- the NFS server is a pNFS configuration\n--\u003e Neither of these are common, so most don't need\n    this patch.\n    It is also only needed for Linux NFSv4.1/4.2 mounts.\n\nAfter a network partitioning that has caused a TCP connection\nreset, the server will not be able to do callbacks and will\nindicate this via the NFSV4SEQ_CBPATHDOWN reply flag on Sequence.\n--\u003e This triggers the Linux client to do a BindConnectionToSession,\n    but without this patch, the client will repeat this until an\n    Open notices that the back channel is again working.\n\nThis patch clears LCL_CBDOWN, assuming that the BindConnectionToSession\nworked, until tested at the next Open, avoiding making the\nLinux client do many BindConnectionToSession RPCs."
+}

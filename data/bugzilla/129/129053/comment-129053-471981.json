@@ -1,0 +1,8 @@
+{
+ "id": 471981,
+ "bug_id": 129053,
+ "attachment_id": 0,
+ "creation_time": "2008-11-21T16:40:02Z",
+ "creator": "huntting@glarp.com",
+ "text": "My device driver (a proprietary USB device called 'scmicro') appears to have tickled a lock order reversal.  When witness.watch is enabled, all goes well until my driver detach()es.  At which point my system panics with:\n\nlock order reversal:\n 1st 0xc0c932a0 syscons video lock (syscons video lock) @ dev/syscons/syscons.c:2534\n 2nd 0xc0c23400 sched lock 0 (sched lock) @ kern/kern_clock.c:286\n\npanic: blockable sleep lock (sleep mutex) sellck @ kern/sys_generic.c:1127\n\nMy driver creates two taskqueue(9) threads in attach() and destroys them in detach().  It has 4 mutexes which it uses to protect it's own data structures.  In addition, it holds Giant around any code section which calls usb functions.  With the exception of wakeup(9), cv_signal(9), cv_destroy(9) and taskqueue_enqueue_fast(), it always release it's own locks (except for Giant) before it calls external code.\n\nOf course, this does not happen when my devices uses the ugen(4) driver.\n\nIs this a known issue?  Am I doing something wrong?\n\nHow-To-Repeat: Sorry, my client wont let me release details of the driver."
+}

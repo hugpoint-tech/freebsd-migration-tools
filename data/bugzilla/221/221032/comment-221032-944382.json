@@ -1,0 +1,8 @@
+{
+ "id": 944382,
+ "bug_id": 221032,
+ "attachment_id": 184747,
+ "creation_time": "2017-07-26T18:28:51Z",
+ "creator": "tatu.kilappa@iki.fi",
+ "text": "Created attachment 184747\nPatch to enable absolute pathname as target in libmap.conf\n\nIt seems it's not possible to replace entries in libmap configuration with absolute pathnames and have them work.\n\nFor example, consider installing Nvidia driver from package or ports, it will create the following libmap directive:\n\nlibGL.so\tlibGL-NVIDIA.so\nlibGL.so.1\tlibGL-NVIDIA.so.1\n\nWhile investigating other things, I found out that replacing the target shared object with the following:\n\nlibGL.so\t/usr/local/lib/libGL-NVIDIA.so.1\n\nCreates an error:\n\nShared object \"/usr/local/lib/libGL-NVIDIA.so.1\" not found, required by \"\u003cbinary\u003e\"\n\nThe problem lies in rtld.c line 1519 and onward, that checks for absolute path before going to lm_find. This means, that if libmap.conf contains a mapping with an absolute pathname, it will try to search that name from the library search paths, which will obviously not work.\n\nI've attached a patch that fixes the issue at least for me.\n\nIf current behavior is intended, or if this should be handled elsewhere, please disregard this bug report."
+}

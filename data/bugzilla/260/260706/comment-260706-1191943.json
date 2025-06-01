@@ -1,0 +1,8 @@
+{
+ "id": 1191943,
+ "bug_id": 260706,
+ "attachment_id": 0,
+ "creation_time": "2021-12-26T18:03:04Z",
+ "creator": "dan.kotowski@a9development.com",
+ "text": "From poudriere build log:\n\n```\n===\u003e   firefox-95.0.2,2 depends on file: /usr/local/llvm13/lib/clang//lib/wasi/libclang_rt.builtins-wasm32.a - not found\n===\u003e   Installing existing package /packages/All/wasi-compiler-rt13-13.0.0.pkg\n[13amd64-usrports] Installing wasi-compiler-rt13-13.0.0...\n[13amd64-usrports] Extracting wasi-compiler-rt13-13.0.0: .... done\n===\u003e   firefox-95.0.2,2 depends on file: /usr/local/llvm13/lib/clang//lib/wasi/libclang_rt.builtins-wasm32.a - not found\n```\n\nThis occurs because of Mk/bsd.gecko.mk:L96#L99\n\n```\n  95 # Ignore Mk/bsd.default-versions.mk but respect make.conf(5) unless LTO is enabled\n  96 .if !defined(DEFAULT_VERSIONS) || ! ${DEFAULT_VERSIONS:Mllvm*} || ${PORT_OPTIONS:MLTO}\n  97 LLVM_DEFAULT=   13 # chase bundled LLVM in lang/rust for LTO\n  98 LLVM_VERSION=   13.0.0 # keep in sync with devel/wasi-compiler-rt${LLVM_DEFAULT}\n  99 .endif\n```\n\nSo with no LTO but llvm=13 explicitly set in make.conf DEFAULT_VERSIONS, it fails to set LLVM_VERSION and thus can't find the necessary file.\n\nPossibly fix by checking for ${DEFAULT_VERSIONS:Mllvm13}"
+}

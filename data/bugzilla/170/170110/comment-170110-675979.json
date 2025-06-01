@@ -1,0 +1,8 @@
+{
+ "id": 675979,
+ "bug_id": 170110,
+ "attachment_id": 0,
+ "creation_time": "2012-07-24T13:20:06Z",
+ "creator": "ded3axap@gmail.com",
+ "text": "After adding a line \n\npassword=\"supersecret\"\n\nto /boot/loader.conf OS does not booting unless correct password is given.\n\nIn older versions of FreeBSD (I was tested 4.11, 5.5, 6.4, 7.4, 8.3) this setting will protect Boot Menu to prevent setting custom options on boot, but not to completely stopping OS booting.\n\nThis problem affects only FreeBSD 9.0.\n\nFix: \n\nAdd a line \"0 autoboot\" as first command in section \"check-password\" of /boot/check-password.4th:\n\n: check-password ( -- )\n\n        0 autoboot\n\n        \\ Exit if a password was not set\n        s\" password\" getenv dup -1 = if\n                drop exit\n        then\n\n\n        begin \\ Loop as long as it takes to get the right password\n\n                s\" Password: \" \\ Output a prompt for a password\n                read           \\ Read the user's input until Enter\n\n                2dup readval readlen @ compare 0= if\n                        2drop exit \\ Correct password\n                then\n\n                \\ Bad Password\n                3000 ms\n                .\" loader: incorrect password\" 10 emit\n\n        again \\ Not the right password; repeat\n;\nHow-To-Repeat: Add a line:\n\npassword=\"supersecret\"\n\nto /boot/loader.conf and reboot the machine.\n\nAfter that you cannot load OS without typing correct password."
+}
